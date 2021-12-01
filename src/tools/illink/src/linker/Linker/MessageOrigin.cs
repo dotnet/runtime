@@ -39,11 +39,18 @@ namespace Mono.Linker
 		}
 
 		public MessageOrigin (string fileName, int sourceLine = 0, int sourceColumn = 0)
+			: this (fileName, sourceLine, sourceColumn, null)
+		{
+		}
+
+		// The assembly attribute should be specified if available as it allows assigning the diagnostic
+		// to a an assembly (we group based on assembly).
+		public MessageOrigin (string fileName, int sourceLine, int sourceColumn, AssemblyDefinition? assembly)
 		{
 			FileName = fileName;
 			SourceLine = sourceLine;
 			SourceColumn = sourceColumn;
-			Provider = null;
+			Provider = assembly;
 			_suppressionContextMember = null;
 			ILOffset = null;
 		}

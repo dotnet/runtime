@@ -23,12 +23,13 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 
 	[SetupCompileBefore (
 		"lib.dll",
-		new[] { "Dependencies/LinkerAttributeRemovalAndPreserveAssembly_Lib.cs" })]
-	// https://github.com/dotnet/linker/issues/2358 - adding the descriptor currently causes nullref in the linker
-	// resources: new object[] { new string[] { "Dependencies/LinkerAttributeRemovalAndPreserveAssembly_Lib.Descriptor.xml", "ILLink.Descriptors.xml" } })]
+		new[] { "Dependencies/LinkerAttributeRemovalAndPreserveAssembly_Lib.cs" },
+		resources: new object[] { new string[] { "Dependencies/LinkerAttributeRemovalAndPreserveAssembly_Lib.Descriptor.xml", "ILLink.Descriptors.xml" } })]
 
+	[ExpectedWarning ("IL2045", FileName = "ILLink.Descriptors.xml in lib, Version=0.0.0.0, Culture=neutral, PublicKeyToken")]
 	[ExpectedNoWarnings]
 
+	[KeptMember (".ctor()")]
 	class LinkerAttributeRemovalAndPreserveAssembly
 	{
 		public static void Main ()
@@ -44,5 +45,10 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 		}
 	}
 
+	// The attribute is kept (partially) because we found out about it too late
+	// It does report a warning though
+	[Kept]
+	[KeptBaseType (typeof (Attribute))]
+	[KeptMember (".ctor()")]
 	public class AttributeToRemoveAttribute : Attribute { }
 }

@@ -37,6 +37,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[LogDoesNotContain ("--UnusedImplementationClass.UnusedMethod--")]
 	// [LogDoesNotContain ("UnusedVirtualMethod2")] // https://github.com/dotnet/linker/issues/2106
 	// [LogContains ("--RequiresOnlyViaDescriptor--")]  // https://github.com/dotnet/linker/issues/2103
+
+	[ExpectedWarning ("IL2026", "RequiresOnFieldOnlyViaDescriptor.Field", FileName = "RequiresCapability.descriptor.xml", ProducedBy = ProducedBy.Trimmer)]
+
 	[ExpectedNoWarnings]
 	public class RequiresCapability
 	{
@@ -730,6 +733,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[RequiresUnreferencedCode ("Message for --RequiresOnlyViaDescriptor--")]
 		static void RequiresOnlyViaDescriptor ()
 		{
+		}
+
+		[RequiresUnreferencedCode ("Message for --RequiresOnFieldOnlyViaDescriptor--")]
+		class RequiresOnFieldOnlyViaDescriptor
+		{
+			public static int Field;
 		}
 
 		class RequiresOnGenerics

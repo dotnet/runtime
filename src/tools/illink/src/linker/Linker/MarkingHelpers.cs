@@ -11,24 +11,24 @@ namespace Mono.Linker
 			_context = context;
 		}
 
-		public void MarkMatchingExportedType (TypeDefinition typeToMatch, AssemblyDefinition assembly, in DependencyInfo reason)
+		public void MarkMatchingExportedType (TypeDefinition typeToMatch, AssemblyDefinition assembly, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			if (typeToMatch == null || assembly == null)
 				return;
 
 			if (assembly.MainModule.GetMatchingExportedType (typeToMatch, out var exportedType))
-				MarkExportedType (exportedType, assembly.MainModule, reason);
+				MarkExportedType (exportedType, assembly.MainModule, reason, origin);
 		}
 
-		public void MarkExportedType (ExportedType exportedType, ModuleDefinition module, in DependencyInfo reason)
+		public void MarkExportedType (ExportedType exportedType, ModuleDefinition module, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			if (!_context.Annotations.MarkProcessed (exportedType, reason))
 				return;
 
-			_context.Annotations.Mark (module, reason);
+			_context.Annotations.Mark (module, reason, origin);
 		}
 
-		public void MarkForwardedScope (TypeReference typeReference)
+		public void MarkForwardedScope (TypeReference typeReference, in MessageOrigin origin)
 		{
 			if (typeReference == null)
 				return;
@@ -38,7 +38,7 @@ namespace Mono.Linker
 				if (assembly != null &&
 					_context.TryResolve (typeReference) is TypeDefinition typeDefinition &&
 					assembly.MainModule.GetMatchingExportedType (typeDefinition, out var exportedType))
-					MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, typeReference));
+					MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, typeReference), origin);
 			}
 		}
 	}

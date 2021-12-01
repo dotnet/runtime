@@ -49,7 +49,7 @@ namespace Mono.Linker
 		// Annotations.Mark will add unmarked items to marked_pending, to be fully marked later ("processed") by MarkStep.
 		// Items go through state changes from "unmarked" -> "pending" -> "processed". "pending" items are only tracked
 		// once, and once "processed", an item never becomes "pending" again.
-		protected readonly HashSet<IMetadataTokenProvider> marked_pending = new HashSet<IMetadataTokenProvider> ();
+		protected readonly Dictionary<IMetadataTokenProvider, MessageOrigin> marked_pending = new Dictionary<IMetadataTokenProvider, MessageOrigin> ();
 		protected readonly HashSet<IMetadataTokenProvider> processed = new HashSet<IMetadataTokenProvider> ();
 		protected readonly Dictionary<TypeDefinition, (TypePreserve preserve, bool applied)> preserved_types = new Dictionary<TypeDefinition, (TypePreserve, bool)> ();
 		protected readonly HashSet<TypeDefinition> pending_preserve = new HashSet<TypeDefinition> ();
@@ -161,15 +161,16 @@ namespace Mono.Linker
 		[Obsolete ("Mark token providers with a reason instead.")]
 		public void Mark (IMetadataTokenProvider provider)
 		{
+			// No origin provided, so use the provider itself if possible
 			if (!processed.Contains (provider))
-				marked_pending.Add (provider);
+				marked_pending.TryAdd (provider, new MessageOrigin (provider as ICustomAttributeProvider));
 		}
 
-		public void Mark (IMetadataTokenProvider provider, in DependencyInfo reason)
+		public void Mark (IMetadataTokenProvider provider, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			Debug.Assert (!(reason.Kind == DependencyKind.AlreadyMarked));
 			if (!processed.Contains (provider))
-				marked_pending.Add (provider);
+				marked_pending.TryAdd (provider, origin); // It's OK if it already exists, one origin is enough to remember
 			Tracer.AddDirectDependency (provider, reason, marked: true);
 		}
 
@@ -186,19 +187,14 @@ namespace Mono.Linker
 			Tracer.AddDirectDependency (attribute, reason, marked: true);
 		}
 
-		public IMetadataTokenProvider[] GetMarkedPending ()
+		public KeyValuePair<IMetadataTokenProvider, MessageOrigin>[] GetMarkedPending ()
 		{
 			return marked_pending.ToArray ();
 		}
 
-		public bool IsMarkedPending (IMetadataTokenProvider provider)
-		{
-			return marked_pending.Contains (provider);
-		}
-
 		public bool IsMarked (IMetadataTokenProvider provider)
 		{
-			return processed.Contains (provider) || marked_pending.Contains (provider);
+			return processed.Contains (provider) || marked_pending.ContainsKey (provider);
 		}
 
 		public bool IsMarked (CustomAttribute attribute)
@@ -493,7 +489,7 @@ namespace Mono.Linker
 		void AddPreservedMethod (IMemberDefinition definition, MethodDefinition method)
 		{
 			if (IsMarked (definition)) {
-				Mark (method, new DependencyInfo (DependencyKind.PreservedMethod, definition));
+				Mark (method, new DependencyInfo (DependencyKind.PreservedMethod, definition), new MessageOrigin (definition));
 				Debug.Assert (GetPreservedMethods (definition) == null);
 				return;
 			}

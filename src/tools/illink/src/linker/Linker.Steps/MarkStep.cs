@@ -361,7 +361,7 @@ namespace Mono.Linker.Steps
 					MarkEntireType (nested, new DependencyInfo (DependencyKind.NestedType, type));
 			}
 
-			Annotations.Mark (type, reason);
+			Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 			MarkTypeSpecialCustomAttributes (type);
 
@@ -437,6 +437,10 @@ namespace Mono.Linker.Steps
 				}
 			}
 
+			// Setup empty scope - there has to be some scope setup since we're doing marking below
+			// but there's no "origin" right now (command line is the origin really)
+			using var localScope = ScopeStack.PushScope (new MessageOrigin ((ICustomAttributeProvider?) null));
+
 			// Beware: this works on loaded assemblies, not marked assemblies, so it should not be tied to marking.
 			// We could further optimize this to only iterate through assemblies if the last mark iteration loaded
 			// a new assembly, since this is the only way that the set we need to consider could have changed.
@@ -479,10 +483,12 @@ namespace Mono.Linker.Steps
 				marked = true;
 
 				// Some pending items might be processed by the time we get to them.
-				if (Annotations.IsProcessed (pending))
+				if (Annotations.IsProcessed (pending.Key))
 					continue;
 
-				switch (pending) {
+				using var localScope = ScopeStack.PushScope (pending.Value);
+
+				switch (pending.Key) {
 				case TypeDefinition type:
 					MarkType (type, DependencyInfo.AlreadyMarked);
 					break;
@@ -911,7 +917,7 @@ namespace Mono.Linker.Steps
 					return;
 				}
 
-				MarkingHelpers.MarkMatchingExportedType (type, assembly, new DependencyInfo (DependencyKind.DynamicDependency, type));
+				MarkingHelpers.MarkMatchingExportedType (type, assembly, new DependencyInfo (DependencyKind.DynamicDependency, type), ScopeStack.CurrentScope.Origin);
 			} else if (dynamicDependency.Type is TypeReference typeReference) {
 				type = Context.TryResolve (typeReference);
 				if (type == null) {
@@ -1007,7 +1013,7 @@ namespace Mono.Linker.Steps
 					return;
 				}
 
-				MarkingHelpers.MarkMatchingExportedType (td, assemblyDef, new DependencyInfo (DependencyKind.PreservedDependency, ca));
+				MarkingHelpers.MarkMatchingExportedType (td, assemblyDef, new DependencyInfo (DependencyKind.PreservedDependency, ca), ScopeStack.CurrentScope.Origin);
 			} else {
 				td = context.DeclaringType;
 			}
@@ -1369,7 +1375,7 @@ namespace Mono.Linker.Steps
 
 		protected void MarkAssembly (AssemblyDefinition assembly, DependencyInfo reason)
 		{
-			Annotations.Mark (assembly, reason);
+			Annotations.Mark (assembly, reason, ScopeStack.CurrentScope.Origin);
 			if (CheckProcessed (assembly))
 				return;
 
@@ -1437,13 +1443,13 @@ namespace Mono.Linker.Steps
 
 			protected override void ProcessTypeReference (TypeReference type)
 			{
-				markingHelpers.MarkForwardedScope (type);
+				markingHelpers.MarkForwardedScope (type, new MessageOrigin (assembly));
 			}
 
 			protected override void ProcessExportedType (ExportedType exportedType)
 			{
-				markingHelpers.MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, assembly));
-				markingHelpers.MarkForwardedScope (CreateTypeReferenceForExportedTypeTarget (exportedType));
+				markingHelpers.MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, assembly), new MessageOrigin (assembly));
+				markingHelpers.MarkForwardedScope (CreateTypeReferenceForExportedTypeTarget (exportedType), new MessageOrigin (assembly));
 			}
 
 			protected override void ProcessExtra ()
@@ -1453,7 +1459,7 @@ namespace Mono.Linker.Steps
 				foreach (TypeReference typeReference in assembly.MainModule.GetTypeReferences ()) {
 					if (!Visited!.Add (typeReference))
 						continue;
-					markingHelpers.MarkForwardedScope (typeReference);
+					markingHelpers.MarkForwardedScope (typeReference, new MessageOrigin (assembly));
 				}
 			}
 
@@ -1663,7 +1669,7 @@ namespace Mono.Linker.Steps
 			if (reason.Kind == DependencyKind.AlreadyMarked) {
 				Debug.Assert (Annotations.IsMarked (field));
 			} else {
-				Annotations.Mark (field, reason);
+				Annotations.Mark (field, reason, ScopeStack.CurrentScope.Origin);
 			}
 
 			if (reason.Kind != DependencyKind.DynamicallyAccessedMemberOnType &&
@@ -1747,7 +1753,7 @@ namespace Mono.Linker.Steps
 			if (reason.Kind == DependencyKind.AlreadyMarked) {
 				Debug.Assert (Annotations.IsMarked (module));
 			} else {
-				Annotations.Mark (module, reason);
+				Annotations.Mark (module, reason, ScopeStack.CurrentScope.Origin);
 			}
 			if (CheckProcessed (module))
 				return;
@@ -1859,7 +1865,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (Annotations.IsMarked (type));
 				break;
 			default:
-				Annotations.Mark (type, reason);
+				Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
 				break;
 			}
 
@@ -2129,7 +2135,7 @@ namespace Mono.Linker.Steps
 					break;
 				typeDefinition = Context.TryResolve (typeRef);
 				if (typeDefinition != null)
-					MarkingHelpers.MarkMatchingExportedType (typeDefinition, assemblyDefinition, new DependencyInfo (DependencyKind.CustomAttribute, provider));
+					MarkingHelpers.MarkMatchingExportedType (typeDefinition, assemblyDefinition, new DependencyInfo (DependencyKind.CustomAttribute, provider), ScopeStack.CurrentScope.Origin);
 
 				break;
 			case TypeReference type:
@@ -3037,7 +3043,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (Annotations.IsMarked (method));
 				break;
 			default:
-				Annotations.Mark (method, reason);
+				Annotations.Mark (method, reason, ScopeStack.CurrentScope.Origin);
 				break;
 			}
 

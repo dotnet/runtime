@@ -44,7 +44,7 @@ namespace Mono.Linker.Steps
 				// If the assigned action (now taking into account the IsTrimmable attribute) requires us
 				// to root the assembly, do so.
 				if (IsFullyPreservedAction (Annotations.GetAction (assembly)))
-					Annotations.Mark (assembly.MainModule, new DependencyInfo (DependencyKind.AssemblyAction, assembly));
+					Annotations.Mark (assembly.MainModule, new DependencyInfo (DependencyKind.AssemblyAction, assembly), new MessageOrigin (assembly));
 			}
 		}
 
