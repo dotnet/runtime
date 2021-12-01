@@ -32,7 +32,6 @@ namespace System.Diagnostics
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -41,7 +40,6 @@ namespace System.Diagnostics
         /// <summary>Gets the time the associated process was started.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         internal DateTime StartTimeCore
         {
             get { throw new PlatformNotSupportedException(); }
@@ -54,7 +52,6 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -66,7 +63,6 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }

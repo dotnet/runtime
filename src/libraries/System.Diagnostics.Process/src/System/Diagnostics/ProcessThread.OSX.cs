@@ -25,7 +25,6 @@ namespace System.Diagnostics
         /// Returns the amount of time the thread has spent running code inside the operating
         /// system core.
         /// </summary>
-        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime => new TimeSpan((long)GetThreadInfo().pth_system_time);
 
         private DateTime GetStartTime() => throw new PlatformNotSupportedException(); // macOS does not provide a way to get this data
@@ -35,7 +34,6 @@ namespace System.Diagnostics
         /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
         /// System.Diagnostics.ProcessThread.PrivilegedProcessorTime.
         /// </summary>
-        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get
@@ -49,7 +47,6 @@ namespace System.Diagnostics
         /// Returns the amount of time the associated thread has spent running code
         /// inside the application (not the operating system core).
         /// </summary>
-        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime => new TimeSpan((long)GetThreadInfo().pth_user_time);
 
         private Interop.libproc.proc_threadinfo GetThreadInfo()

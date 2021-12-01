@@ -13,7 +13,6 @@ namespace System.Diagnostics
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        [SupportedOSPlatform("maccatalyst")]
         public static ProcessInfo[] GetProcessInfos(string machineName)
         {
             ThrowIfRemoteMachine(machineName);
