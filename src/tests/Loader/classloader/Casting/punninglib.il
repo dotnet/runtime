@@ -9,15 +9,19 @@
 {
     .field public int32 Field
 }
+.class public sequential ansi sealed beforefieldinit Caller.Struct`1<T> extends [System.Runtime]System.ValueType
+{
+    .field public int32 Field
+}
 .class public auto ansi abstract sealed beforefieldinit Caller.Class
     extends [System.Runtime]System.Object
 {
-    .method public hidebysig static 
+    .method public hidebysig static
         int32 CallGetField (
             valuetype Caller.Struct s,
             native int callbackRaw,
             object inst
-        ) cil managed 
+        ) cil managed
     {
         ldarg.2
         ldnull
@@ -39,6 +43,33 @@
 
         DONE: ret
     }
+    .method public hidebysig static
+        int32 CallGetField<T> (
+            valuetype Caller.Struct`1<!!T> s,
+            native int callbackRaw,
+            object inst
+        ) cil managed
+    {
+        ldarg.2
+        ldnull
+        ceq
+        brfalse.s FALSE
+
+        TRUE: nop
+        ldarg.0
+        ldarg.1
+        calli int32(valuetype Caller.Struct`1<!!T>)
+        br.s DONE
+
+        FALSE: nop
+        ldarg.2
+        ldarg.0
+        ldarg.1
+        calli instance int32(valuetype Caller.Struct`1<!!T>)
+        br.s DONE
+
+        DONE: ret
+    }
 }
 
 //
@@ -48,18 +79,29 @@
 {
     .field public int32 Field
 }
+.class public sequential ansi sealed beforefieldinit A.Struct`1<T> extends [System.Runtime]System.ValueType
+{
+    .field public int32 Field
+}
 .class public auto ansi beforefieldinit A.Class
     extends [System.Runtime]System.Object
 {
-    .method public hidebysig static 
+    .method public hidebysig static
         int32 GetField (valuetype A.Struct s) cil managed
     {
         ldarg.0
         ldfld int32 A.Struct::Field
         ret
     }
-    .method public hidebysig specialname rtspecialname 
-        instance void .ctor () cil managed 
+    .method public hidebysig static
+        int32 GetFieldGeneric<T> (valuetype A.Struct`1<!!T> s) cil managed
+    {
+        ldarg.0
+        ldfld int32 valuetype A.Struct`1<!!T>::Field
+        ret
+    }
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
     {
         ldarg.0
         call instance void [System.Runtime]System.Object::.ctor()
@@ -74,25 +116,43 @@
 {
     .field public int32 Field
 }
+.class public sequential ansi sealed beforefieldinit B.Struct`1<T> extends [System.Runtime]System.ValueType
+{
+    .field public int32 Field
+}
 .class public auto ansi beforefieldinit B.Class
     extends [System.Runtime]System.Object
 {
-    .method public hidebysig static 
-        native int GetFunctionPointer () cil managed 
+    .method public hidebysig static
+        native int GetFunctionPointer () cil managed
     {
         ldftn int32 B.Class::GetField(valuetype B.Struct)
         call native int [System.Runtime]System.IntPtr::op_Explicit(void*)
         ret
     }
-    .method public hidebysig static 
+    .method public hidebysig static
         int32 GetField (valuetype B.Struct s) cil managed
     {
         ldarg.0
         ldfld int32 B.Struct::Field
         ret
     }
-    .method public hidebysig specialname rtspecialname 
-        instance void .ctor () cil managed 
+    .method public hidebysig static
+        native int GetFunctionPointer<T> () cil managed
+    {
+        ldftn int32 B.Class::GetFieldGeneric<!!T>(valuetype B.Struct`1<!!T>)
+        call native int [System.Runtime]System.IntPtr::op_Explicit(void*)
+        ret
+    }
+    .method public hidebysig static
+        int32 GetFieldGeneric<T> (valuetype B.Struct`1<!!T> s) cil managed
+    {
+        ldarg.0
+        ldfld int32 valuetype B.Struct`1<!!T>::Field
+        ret
+    }
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
     {
         ldarg.0
         call instance void [System.Runtime]System.Object::.ctor()
@@ -107,25 +167,43 @@
 {
     .field public int32 Field
 }
+.class public sequential ansi sealed beforefieldinit C.Struct`1<T> extends [System.Runtime]System.ValueType
+{
+    .field public int32 Field
+}
 .class public auto ansi beforefieldinit C.Class
     extends [System.Runtime]System.Object
 {
-    .method public hidebysig static 
-        native int GetFunctionPointer ( object inst ) cil managed 
+    .method public hidebysig static
+        native int GetFunctionPointer ( object inst ) cil managed
     {
         ldarg.0
         ldvirtftn instance int32 C.Class::GetField(valuetype C.Struct)
         call native int [System.Runtime]System.IntPtr::op_Explicit(void*)
         ret
     }
-    .method public hidebysig newslot virtual 
+    .method public hidebysig newslot virtual
         instance int32 GetField (valuetype C.Struct s) cil managed
     {
         newobj instance void [System.Runtime]System.NotImplementedException::.ctor()
         throw
     }
-    .method public hidebysig specialname rtspecialname 
-        instance void .ctor () cil managed 
+    .method public hidebysig static
+        native int GetFunctionPointer<T> ( object inst ) cil managed
+    {
+        ldarg.0
+        ldvirtftn instance int32 C.Class::GetFieldGeneric<!!T>(valuetype C.Struct`1<!!T>)
+        call native int [System.Runtime]System.IntPtr::op_Explicit(void*)
+        ret
+    }
+    .method public hidebysig newslot virtual
+        instance int32 GetFieldGeneric<T> (valuetype C.Struct`1<!!T> s) cil managed
+    {
+        newobj instance void [System.Runtime]System.NotImplementedException::.ctor()
+        throw
+    }
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
     {
         ldarg.0
         call instance void [System.Runtime]System.Object::.ctor()
@@ -135,15 +213,22 @@
 .class public auto ansi beforefieldinit C.Derived
     extends C.Class
 {
-    .method public hidebysig virtual 
+    .method public hidebysig virtual
         instance int32 GetField (valuetype C.Struct s) cil managed
     {
         ldarg.1
         ldfld int32 C.Struct::Field
         ret
     }
-    .method public hidebysig specialname rtspecialname 
-        instance void .ctor () cil managed 
+    .method public hidebysig virtual
+        instance int32 GetFieldGeneric<T> (valuetype C.Struct`1<!!T> s) cil managed
+    {
+        ldarg.1
+        ldfld int32 valuetype C.Struct`1<!!T>::Field
+        ret
+    }
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
     {
         ldarg.0
         call instance void C.Class::.ctor()
