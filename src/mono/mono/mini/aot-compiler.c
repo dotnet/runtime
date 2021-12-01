@@ -6699,7 +6699,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 		// Enable to force dedup to link these symbols and forbid compiling
 		// in duplicated code. This is an "assert when linking if broken" trick.
-#if FALSE
+#if 0
 		if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))
 			debug_sym = mono_aot_get_mangled_method_name (method);
 		else
@@ -6713,7 +6713,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 		// Enable to force dedup to link these symbols and forbid compiling
 		// in duplicated code. This is an "assert when linking if broken" trick.
-#if FALSE
+#if 0
 		if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))
 			emit_global_inner (acfg, debug_sym, TRUE);
 		else
