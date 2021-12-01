@@ -2704,7 +2704,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         GenTreeCall::Use* nodeArgs = call->gtCallArgs;
         // It could include many arguments not included in `sig->numArgs`, for example, `this`, runtime lookup, cookie
         // etc.
-        unsigned nodeArgsCount = call->NumChildren();
+        unsigned nodeArgsCount = 0;
+        call->VisitOperands([&nodeArgsCount](GenTree* operand) -> GenTree::VisitResult {
+            nodeArgsCount++;
+            return GenTree::VisitResult::Continue;
+        });
 
         if (call->gtCallThisArg != nullptr)
         {

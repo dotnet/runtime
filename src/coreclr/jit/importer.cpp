@@ -3652,6 +3652,120 @@ const char* Compiler::impGetIntrinsicName(CorInfoIntrinsics intrinsicID)
 
 #endif // DEBUG
 
+GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
+{
+    assert(sig->numArgs == 1);
+    assert(sig->sigInst.methInstCount == 1);
+
+    GenTree* fieldTokenNode = impStackTop(0).val;
+
+    //
+    // Verify that the field token is known and valid.  Note that it's also
+    // possible for the token to come from reflection, in which case we cannot do
+    // the optimization and must therefore revert to calling the helper.  You can
+    // see an example of this in bvt\DynIL\initarray2.exe (in Main).
+    //
+
+    // Check to see if the ldtoken helper call is what we see here.
+    if (fieldTokenNode->gtOper != GT_CALL || (fieldTokenNode->AsCall()->gtCallType != CT_HELPER) ||
+        (fieldTokenNode->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+    {
+        return nullptr;
+    }
+
+    // Strip helper call away
+    fieldTokenNode = fieldTokenNode->AsCall()->gtCallArgs->GetNode();
+    if (fieldTokenNode->gtOper == GT_IND)
+    {
+        fieldTokenNode = fieldTokenNode->AsOp()->gtOp1;
+    }
+
+    // Check for constant
+    if (fieldTokenNode->gtOper != GT_CNS_INT)
+    {
+        return nullptr;
+    }
+
+    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->gtCompileTimeHandle;
+    if (!fieldTokenNode->IsIconHandle(GTF_ICON_FIELD_HDL) || (fieldToken == nullptr))
+    {
+        return nullptr;
+    }
+
+    CORINFO_CLASS_HANDLE fieldOwnerHnd = info.compCompHnd->getFieldClass(fieldToken);
+
+    CORINFO_CLASS_HANDLE fieldClsHnd;
+    var_types            fieldElementType =
+        JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd, fieldOwnerHnd));
+    unsigned totalFieldSize;
+
+    // Most static initialization data fields are of some structure, but it is possible for them to be of various
+    // primitive types as well
+    if (fieldElementType == var_types::TYP_STRUCT)
+    {
+        totalFieldSize = info.compCompHnd->getClassSize(fieldClsHnd);
+    }
+    else
+    {
+        totalFieldSize = genTypeSize(fieldElementType);
+    }
+
+    // Limit to primitive or enum type - see ArrayNative::GetSpanDataFrom()
+    CORINFO_CLASS_HANDLE targetElemHnd = sig->sigInst.methInst[0];
+    if (info.compCompHnd->getTypeForPrimitiveValueClass(targetElemHnd) == CORINFO_TYPE_UNDEF)
+    {
+        return nullptr;
+    }
+
+    const unsigned targetElemSize = info.compCompHnd->getClassSize(targetElemHnd);
+    assert(targetElemSize != 0);
+
+    const unsigned count = totalFieldSize / targetElemSize;
+    if (count == 0)
+    {
+        return nullptr;
+    }
+
+    void* data = info.compCompHnd->getArrayInitializationData(fieldToken, totalFieldSize);
+    if (!data)
+    {
+        return nullptr;
+    }
+
+    //
+    // Ready to commit to the work
+    //
+
+    impPopStack();
+
+    // Turn count and pointer value into constants.
+    GenTree* lengthValue  = gtNewIconNode(count, TYP_INT);
+    GenTree* pointerValue = gtNewIconHandleNode((size_t)data, GTF_ICON_CONST_PTR);
+
+    // Construct ReadOnlySpan<T> to return.
+    CORINFO_CLASS_HANDLE spanHnd     = sig->retTypeClass;
+    unsigned             spanTempNum = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
+    lvaSetStruct(spanTempNum, spanHnd, false);
+
+    CORINFO_FIELD_HANDLE pointerFieldHnd = info.compCompHnd->getFieldInClass(spanHnd, 0);
+    CORINFO_FIELD_HANDLE lengthFieldHnd  = info.compCompHnd->getFieldInClass(spanHnd, 1);
+
+    GenTreeLclFld* pointerField = gtNewLclFldNode(spanTempNum, TYP_BYREF, 0);
+    pointerField->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(pointerFieldHnd));
+    GenTree* pointerFieldAsg = gtNewAssignNode(pointerField, pointerValue);
+
+    GenTreeLclFld* lengthField = gtNewLclFldNode(spanTempNum, TYP_INT, TARGET_POINTER_SIZE);
+    lengthField->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(lengthFieldHnd));
+    GenTree* lengthFieldAsg = gtNewAssignNode(lengthField, lengthValue);
+
+    // Now append a few statements the initialize the span
+    impAppendTree(lengthFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
+    impAppendTree(pointerFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
+
+    // And finally create a tree that points at the span.
+    return impCreateLocalNode(spanTempNum DEBUGARG(0));
+}
+
 //------------------------------------------------------------------------
 // impIntrinsic: possibly expand intrinsic call into alternate IR sequence
 //
@@ -3809,6 +3923,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         // the return address of.
         info.compHasNextCallRetAddr = true;
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+    }
+
+    if ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) && IsTargetAbi(CORINFO_CORERT_ABI))
+    {
+        // CreateSpan must be expanded for NativeAOT
+        mustExpand = true;
     }
 
     GenTree* retNode = nullptr;
@@ -4076,6 +4196,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 op1->gtFlags |= GTF_EXCEPT;
 
                 retNode = op1;
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+            {
+                retNode = impCreateSpanIntrinsic(sig);
                 break;
             }
 
@@ -5195,6 +5321,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
     }
 #endif // FEATURE_HW_INTRINSICS
+    else if ((strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
+             (strcmp(className, "RuntimeHelpers") == 0))
+    {
+        if (strcmp(methodName, "CreateSpan") == 0)
+        {
+            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+        }
+    }
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
     {
         // We go down this path even when FEATURE_HW_INTRINSICS isn't enabled

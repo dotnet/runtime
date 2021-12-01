@@ -362,6 +362,12 @@ extern void mono_wasm_add_dbg_command_received(mono_bool res_ok, int id, void* b
 EMSCRIPTEN_KEEPALIVE gboolean 
 mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue)
 {
+	if (!debugger_enabled) {
+		EM_ASM ({
+			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+		}, 0, id, 0, 0);
+		return TRUE;
+	}
 	MdbgProtBuffer bufWithParms;
 	buffer_init (&bufWithParms, 128);
 	m_dbgprot_buffer_add_data (&bufWithParms, data, size);
@@ -377,6 +383,12 @@ mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, i
 EMSCRIPTEN_KEEPALIVE gboolean 
 mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size)
 {
+	if (!debugger_enabled) {
+		EM_ASM ({
+			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+		}, 0, id, 0, 0);
+		return TRUE;
+	}
 	ss_calculate_framecount (NULL, NULL, TRUE, NULL, NULL);
 	MdbgProtBuffer buf;
 	buffer_init (&buf, 128);

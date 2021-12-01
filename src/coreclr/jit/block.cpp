@@ -842,14 +842,6 @@ Statement* BasicBlock::lastStmt() const
 }
 
 //------------------------------------------------------------------------
-// BasicBlock::firstNode: Returns the first node in the block.
-//
-GenTree* BasicBlock::firstNode() const
-{
-    return IsLIR() ? GetFirstLIRNode() : Compiler::fgGetFirstNode(firstStmt()->GetRootNode());
-}
-
-//------------------------------------------------------------------------
 // BasicBlock::lastNode: Returns the last node in the block.
 //
 GenTree* BasicBlock::lastNode() const
@@ -1678,6 +1670,6 @@ void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason
     {
         compiler->loopAlignCandidates--;
         bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.", bbNum, reason);
+        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.\n", bbNum, reason);
     }
 }

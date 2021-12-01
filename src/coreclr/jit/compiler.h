@@ -3628,7 +3628,7 @@ public:
     void gtDispBlockStmts(BasicBlock* block);
     void gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, char* bufp, unsigned bufLength);
     void gtGetLateArgMsg(GenTreeCall* call, GenTree* arg, int argNum, char* bufp, unsigned bufLength);
-    void gtDispArgList(GenTreeCall* call, IndentStack* indentStack);
+    void gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack);
     void gtDispFieldSeq(FieldSeqNode* pfsn);
 
     void gtDispRange(LIR::ReadOnlyRange const& range);
@@ -4483,6 +4483,7 @@ protected:
                                      bool                 readonlyCall,
                                      CorInfoIntrinsics    intrinsicID);
     GenTree* impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig);
+    GenTree* impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig);
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
@@ -11999,7 +12000,9 @@ const instruction INS_SQRT = INS_vsqrt;
 const instruction        INS_MULADD = INS_madd;
 inline const instruction INS_BREAKPOINT_osHelper()
 {
-    return TargetOS::IsUnix ? INS_brk : INS_bkpt;
+    // GDB needs the encoding of brk #0
+    // Windbg needs the encoding of brk #F000
+    return TargetOS::IsUnix ? INS_brk_unix : INS_brk_windows;
 }
 #define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
 
