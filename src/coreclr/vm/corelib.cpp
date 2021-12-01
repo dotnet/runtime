@@ -246,7 +246,7 @@ const CoreLibClassDescription c_rgCoreLibClassDescriptions[] =
     #define DEFINE_EXCEPTION(ns, reKind, bHRformessage, ...) { ns , # reKind },
     #include "rexcep.h"
 };
-const USHORT c_nCoreLibClassDescriptions = NumItems(c_rgCoreLibClassDescriptions);
+const USHORT c_nCoreLibClassDescriptions = ARRAY_SIZE(c_rgCoreLibClassDescriptions);
 
 #define gsig_NoSig (*(HardCodedMetaSig *)NULL)
 
@@ -255,14 +255,14 @@ const CoreLibMethodDescription c_rgCoreLibMethodDescriptions[] =
     #define DEFINE_METHOD(c,i,s,g)          { CLASS__ ## c , # s, & gsig_ ## g },
     #include "corelib.h"
 };
-const USHORT c_nCoreLibMethodDescriptions = NumItems(c_rgCoreLibMethodDescriptions) + 1;
+const USHORT c_nCoreLibMethodDescriptions = ARRAY_SIZE(c_rgCoreLibMethodDescriptions) + 1;
 
 const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[] =
 {
     #define DEFINE_FIELD(c,i,s)           { CLASS__ ## c , # s },
     #include "corelib.h"
 };
-const USHORT c_nCoreLibFieldDescriptions = NumItems(c_rgCoreLibFieldDescriptions) + 1;
+const USHORT c_nCoreLibFieldDescriptions = ARRAY_SIZE(c_rgCoreLibFieldDescriptions) + 1;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -311,4 +311,4 @@ const ECClass c_rgECClasses[] =
 #include "ecalllist.h"
 };  // c_rgECClasses[]
 
-const int c_nECClasses = NumItems(c_rgECClasses);
+const int c_nECClasses = ARRAY_SIZE(c_rgECClasses);

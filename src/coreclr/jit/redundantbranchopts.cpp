@@ -847,11 +847,11 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     //  * makes the current relop redundant;
     //  * can safely and profitably forward substituted to the jump.
     //
-    Statement*                      prevStmt        = stmt;
-    GenTree*                        candidateTree   = nullptr;
-    Statement*                      candidateStmt   = nullptr;
-    ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
-    bool                            sideEffect      = false;
+    Statement*                      prevStmt            = stmt;
+    GenTree*                        candidateTree       = nullptr;
+    Statement*                      candidateStmt       = nullptr;
+    ValueNumStore::VN_RELATION_KIND candidateVnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Same;
+    bool                            sideEffect          = false;
 
     const ValueNumStore::VN_RELATION_KIND vnRelations[] = {ValueNumStore::VN_RELATION_KIND::VRK_Same,
                                                            ValueNumStore::VN_RELATION_KIND::VRK_Reverse,
@@ -984,8 +984,9 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         // If the normal liberal VN of RHS is the normal liberal VN of the current tree, or is "related",
         // consider forward sub.
         //
-        const ValueNum domCmpVN = vnStore->VNNormalValue(prevTreeRHS->GetVN(VNK_Liberal));
-        bool           matched  = false;
+        const ValueNum                  domCmpVN        = vnStore->VNNormalValue(prevTreeRHS->GetVN(VNK_Liberal));
+        bool                            matched         = false;
+        ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
 
         for (auto vnRelation : vnRelations)
         {
@@ -1058,8 +1059,9 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         }
 
         JITDUMP(" -- prev tree is viable candidate for relop fwd sub!\n");
-        candidateTree = prevTreeRHS;
-        candidateStmt = prevStmt;
+        candidateTree       = prevTreeRHS;
+        candidateStmt       = prevStmt;
+        candidateVnRelation = vnRelationMatch;
     }
 
     if (candidateTree == nullptr)
@@ -1088,8 +1090,8 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     // If we need the reverse compare, make it so.
     // We also need to set a proper VN.
     //
-    if ((vnRelationMatch == ValueNumStore::VN_RELATION_KIND::VRK_Reverse) ||
-        (vnRelationMatch == ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse))
+    if ((candidateVnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Reverse) ||
+        (candidateVnRelation == ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse))
     {
         // Copy the vn info as it will be trashed when we change the oper.
         //

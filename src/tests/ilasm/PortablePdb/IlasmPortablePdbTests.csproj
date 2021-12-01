@@ -6,7 +6,6 @@
     <Compile Include="IlasmPortablePdbTester.cs" />
     <Compile Include="IlasmPortablePdbTesterCommon.cs" />
     <Compile Include="IlasmPortablePdbTesterTypes.cs" />
-    <Compile Include="..\..\Common\XunitBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Resources\**" />

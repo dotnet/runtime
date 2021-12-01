@@ -236,6 +236,7 @@
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- pass the non-embedded descriptors xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "$(ILLinkDescriptorsLibraryBuildXml)"</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C
@@ -254,6 +255,7 @@
       <!-- IL2067-IL2091: Unsatisfied DynamicallyAccessedMembers requirements -->
       <LinkerNoWarn>$(LinkerNoWarn);IL2067;IL2068;IL2069;IL2070;IL2071;IL2072;IL2073;IL2074;IL2075;IL2076;IL2077;IL2078;IL2079;IL2080;IL2081;IL2082;IL2083;IL2084;IL2085;IL2086;IL2087;IL2088;IL2089;IL2090;IL2091</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkDisableIPConstProp)' == 'true'">$(ILLinkArgs) --disable-opt ipconstprop</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />

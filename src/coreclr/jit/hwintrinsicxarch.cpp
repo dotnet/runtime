@@ -491,6 +491,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     {
         case InstructionSet_Vector256:
         case InstructionSet_Vector128:
+        case InstructionSet_X86Base:
             return impBaseIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig);
@@ -548,8 +549,13 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-    assert(varTypeIsArithmetic(simdBaseType));
+    var_types simdBaseType = TYP_UNKNOWN;
+
+    if (intrinsic != NI_X86Base_Pause)
+    {
+        simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        assert(varTypeIsArithmetic(simdBaseType));
+    }
 
     switch (intrinsic)
     {
@@ -858,31 +864,14 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_X86
 
-            if (sig->numArgs == 1)
-            {
-                op1     = impPopStack().val;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            }
-            else if (sig->numArgs == 2)
-            {
-                op2     = impPopStack().val;
-                op1     = impPopStack().val;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-            }
-            else
-            {
-                assert(sig->numArgs >= 3);
+            IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
 
-                GenTreeArgList* tmp = nullptr;
-
-                for (unsigned i = 0; i < sig->numArgs; i++)
-                {
-                    tmp = gtNewListNode(impPopStack().val, tmp);
-                }
-
-                op1     = tmp;
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            for (int i = sig->numArgs - 1; i >= 0; i--)
+            {
+                nodeBuilder.AddOperand(i, impPopStack().val);
             }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1532,6 +1521,16 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_X86Base_Pause:
+        {
+            assert(sig->numArgs == 0);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            assert(simdSize == 0);
+
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+        }
+
         default:
         {
             return nullptr;
@@ -1604,7 +1603,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
         case NI_SSE_StoreFence:
             assert(sig->numArgs == 0);
             assert(JITtype2varType(sig->retType) == TYP_VOID);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, CORINFO_TYPE_VOID, 0);
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
             break;
 
         default:
@@ -1667,7 +1666,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             assert(JITtype2varType(sig->retType) == TYP_VOID);
             assert(simdSize == 0);
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, CORINFO_TYPE_VOID, simdSize);
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
             break;
         }
 
@@ -1751,9 +1750,11 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
             op1     = getArgForHWIntrinsic(argType, argClass);
             SetOpLclRelatedToSIMDIntrinsic(op1);
 
-            GenTree* opList = new (this, GT_LIST) GenTreeArgList(op1, gtNewArgList(op2, op3, op4, op5));
-            retNode         = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, opList, intrinsic, simdBaseJitType,
-                                                                    simdSize, /* isSimdAsHWIntrinsic */ false);
+            const bool isSimdAsHWIntrinsic = false;
+
+            retNode = new (this, GT_HWINTRINSIC)
+                GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic, simdBaseJitType, simdSize,
+                                   isSimdAsHWIntrinsic, op1, op2, op3, op4, op5);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(indexBaseJitType);
             break;
         }

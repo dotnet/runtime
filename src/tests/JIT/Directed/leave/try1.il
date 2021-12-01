@@ -4,6 +4,7 @@
 //different datatype in try block
 //
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -1124,6 +1125,9 @@
 
   .method public  static int32 Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       156 (0x9c)
     .maxstack  20

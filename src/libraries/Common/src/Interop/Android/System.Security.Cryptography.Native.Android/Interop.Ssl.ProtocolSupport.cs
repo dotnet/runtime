@@ -8,11 +8,11 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [DllImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLGetSupportedProtocols")]
-        internal static extern SslProtocols SSLGetSupportedProtocols();
+        [GeneratedDllImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLGetSupportedProtocols")]
+        internal static partial SslProtocols SSLGetSupportedProtocols();
 
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration")]
+        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration")]
         [return:MarshalAs(UnmanagedType.U1)]
-        internal static extern bool SSLSupportsApplicationProtocolsConfiguration();
+        internal static partial bool SSLSupportsApplicationProtocolsConfiguration();
     }
 }

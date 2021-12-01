@@ -12,6 +12,7 @@
 .assembly qsort
 {
 }
+.assembly extern xunit.core {}
 .module qsort.exe
 // MVID: {BEFEC472-D5C8-4747-807D-713417E95FBD}
 
@@ -35,6 +36,9 @@
     .method private hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       134 (0x86)
       .maxstack  4

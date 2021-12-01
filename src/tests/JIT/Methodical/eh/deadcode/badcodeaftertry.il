@@ -15,6 +15,7 @@
 {
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module badcodeaftertry.exe
 
 
@@ -51,6 +52,9 @@
 
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (object V_0,
 	  class [mscorlib]System.IO.StringWriter expectedOut,

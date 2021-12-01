@@ -16,8 +16,8 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxCreate")]
         internal static partial SafeSslContextHandle SslCtxCreate(IntPtr method);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxDestroy")]
-        internal static extern void SslCtxDestroy(IntPtr ctx);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxDestroy")]
+        internal static partial void SslCtxDestroy(IntPtr ctx);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAlpnSelectCb")]
         internal static unsafe partial void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, byte**, byte*, byte*, uint, IntPtr, int> callback, IntPtr arg);

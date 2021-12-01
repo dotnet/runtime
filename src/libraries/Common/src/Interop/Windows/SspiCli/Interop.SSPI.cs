@@ -344,10 +344,13 @@ internal static partial class Interop
             uint sequenceNumber,
             uint* qualityOfProtection);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         internal static extern int QuerySecurityContextToken(
             ref CredHandle phContext,
             out SecurityContextTokenHandle handle);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
         [GeneratedDllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
         internal static partial int FreeContextBuffer(
@@ -475,12 +478,14 @@ internal static partial class Interop
             string password,
             out SafeSspiAuthDataHandle authData);
 
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         internal static extern SECURITY_STATUS SetCredentialsAttributesW(
             in CredHandle handlePtr,
             long ulAttribute,
             in SecPkgCred_ClientCertPolicy pBuffer,
             long cbBuffer);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
     }
 }

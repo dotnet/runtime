@@ -53,6 +53,7 @@ internal static partial class Interop
             internal uint InstanceNameSize;
         }
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
         [DllImport(Libraries.Advapi32, ExactSpelling = true)]
         internal static extern uint PerfStartProvider(
@@ -69,6 +70,7 @@ internal static partial class Interop
             string szInstanceName,
             uint dwInstance
         );
+#pragma warning restore DLLIMPORTGENANALYZER015
 
         [GeneratedDllImport(Libraries.Advapi32, ExactSpelling = true)]
         internal static unsafe partial uint PerfSetCounterSetInfo(

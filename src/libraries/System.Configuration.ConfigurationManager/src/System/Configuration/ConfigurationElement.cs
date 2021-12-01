@@ -402,7 +402,7 @@ namespace System.Configuration
                     }
                     else
                     {
-                        // don't error when optional attibute are not defined yet
+                        // don't error when optional attribute are not defined yet
                         if (ElementInformation.Properties[propInfo.Name].ValueOrigin ==
                             PropertyValueOrigin.SetHere)
                         {

@@ -406,7 +406,7 @@ predef_cleanup (ImplVtable *vtable)
 {
 	PredefVtable *vt = (PredefVtable*)vtable;
 	/* ExternalSArea *data; */
-	
+
 	perfctr_lock ();
 	if (!pid_to_shared_area) {
 		perfctr_unlock ();
