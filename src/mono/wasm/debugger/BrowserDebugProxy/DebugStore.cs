@@ -683,41 +683,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public DebuggerBrowsableState? GetBrowsableAttributeState(string fieldname)
-        {
-            foreach (TypeDefinitionHandle type in asmMetadataReader.TypeDefinitions)
-            {
-                var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
-                foreach (FieldDefinitionHandle field in typeDefinition.GetFields())
-                {
-                    var fieldDefinition = asmMetadataReader.GetFieldDefinition(field);
-                    var name = asmMetadataReader.GetString(fieldDefinition.Name);
-                    if (fieldname == name)
-                    {
-                        foreach (var cattr in fieldDefinition.GetCustomAttributes())
-                        {
-                            var ctorHandle = asmMetadataReader.GetCustomAttribute(cattr).Constructor;
-                            if (ctorHandle.Kind == HandleKind.MemberReference)
-                            {
-                                var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
-                                var value = asmMetadataReader.GetBlobBytes(asmMetadataReader.GetCustomAttribute(cattr).Value);
-                                var attributeName = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                                if (attributeName == "DebuggerBrowsableAttribute")
-                                {
-                                    var state = (DebuggerBrowsableState)value[2];
-                                    if (Enum.IsDefined(typeof(DebuggerBrowsableState), state))
-                                    {
-                                        return state;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
         private void ProcessSourceLink()
         {
             var sourceLinkDebugInfo =

@@ -2340,50 +2340,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     className = await GetTypeName(typeId[i], token);
                     var fields = await GetTypeFields(typeId[i], token);
-                    var filteredFields = await FilterFieldsByDebuggerBrowsable(fields, typeId[i], token);
+                    var (regularFields, rootHiddenCollections, rootHiddenArrays) = await FilterFieldsByDebuggerBrowsable(fields, typeId[i], token);
 
-                    if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
-                        filteredFields = filteredFields.Where(field => field.IsPublic).ToList();
-                    JArray objectFields = new JArray();
+                    var regularObjects = await GetFieldsValue(regularFields, i == 0);
+                    var rootHiddenCollectionObjects = await GetFieldsValue(rootHiddenCollections, i == 0, true, false);
+                    var rootHiddenArrayObjects = await GetFieldsValue(rootHiddenArrays, i == 0, true, true);
 
-                    using var commandParamsWriter = new MonoBinaryWriter();
-                    commandParamsWriter.Write(objectId);
-                    commandParamsWriter.Write(filteredFields.Count);
-                    foreach (var field in filteredFields)
-                    {
-                        commandParamsWriter.Write(field.Id);
-                    }
-
-                    using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdObject.RefGetValues, commandParamsWriter, token);
-
-                    foreach (var field in filteredFields)
-                    {
-                        long initialPos = retDebuggerCmdReader.BaseStream.Position;
-                        int valtype = retDebuggerCmdReader.ReadByte();
-                        retDebuggerCmdReader.BaseStream.Position = initialPos;
-                        var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, i == 0, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
-                        if (ret.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any()) {
-                            continue;
-                        }
-                        if (getCommandType.HasFlag(GetObjectCommandOptions.WithSetter))
-                        {
-                            var command_params_writer_to_set = new MonoBinaryWriter();
-                            command_params_writer_to_set.Write(objectId);
-                            command_params_writer_to_set.Write(1);
-                            command_params_writer_to_set.Write(field.Id);
-                            var (data, length) = command_params_writer_to_set.ToBase64();
-
-                            fieldValue.Add("set", JObject.FromObject(new {
-                                        commandSet = CommandSet.ObjectRef,
-                                        command = CmdObject.RefSetValues,
-                                        buffer = data,
-                                        valtype,
-                                        length = length
-                                }));
-                        }
-                        objectFields.Add(fieldValue);
-                    }
-                    ret = new JArray(ret.Union(objectFields));
+                    ret = new JArray(ret.Union(regularObjects));
+                    ret = new JArray(ret.Union(rootHiddenCollectionObjects));
+                    ret = new JArray(ret.Union(rootHiddenArrayObjects));
                 }
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
                     return ret;
@@ -2408,8 +2373,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 for (int i = 0; i < typeId.Count; i++)
                 {
                     var fields = await GetTypeFields(typeId[i], token);
-                    var filteredFields = await FilterFieldsByDebuggerBrowsable(fields, typeId[i], token);
-                    allFields.Add(filteredFields);
+                    var (regularFields, _, _) = await FilterFieldsByDebuggerBrowsable(fields, typeId[i], token);
+                    allFields.Add(regularFields);
                 }
                 foreach (var item in ret)
                 {
@@ -2436,14 +2401,89 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return ret;
 
-            async Task<List<FieldTypeClass>> FilterFieldsByDebuggerBrowsable(List<FieldTypeClass> fields, int typeId, CancellationToken token)
+            async Task<JArray> GetFieldsValue(List<FieldTypeClass> fields, bool isFirstElement, bool isRootHidden = false, bool isArray = false)
+            {
+                if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
+                {
+                    fields = fields.Where(field => field.IsPublic).ToList();
+                }
+
+                using var commandParamsWriter = new MonoBinaryWriter();
+                commandParamsWriter.Write(objectId);
+                commandParamsWriter.Write(fields.Count);
+                foreach (var field in fields)
+                {
+                    commandParamsWriter.Write(field.Id);
+                }
+
+                var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdObject.RefGetValues, commandParamsWriter, token);
+
+                JArray objFields = new JArray();
+                foreach (var field in fields)
+                {
+                    long initialPos = retDebuggerCmdReader.BaseStream.Position;
+                    int valtype = retDebuggerCmdReader.ReadByte();
+                    retDebuggerCmdReader.BaseStream.Position = initialPos;
+                    var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, isFirstElement, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
+                    if (ret.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any())
+                    {
+                        return null;
+                    }
+                    if (getCommandType.HasFlag(GetObjectCommandOptions.WithSetter))
+                    {
+                        var command_params_writer_to_set = new MonoBinaryWriter();
+                        command_params_writer_to_set.Write(objectId);
+                        command_params_writer_to_set.Write(1);
+                        command_params_writer_to_set.Write(field.Id);
+                        var (data, length) = command_params_writer_to_set.ToBase64();
+
+                        fieldValue.Add("set", JObject.FromObject(new
+                        {
+                            commandSet = CommandSet.ObjectRef,
+                            command = CmdObject.RefSetValues,
+                            buffer = data,
+                            valtype,
+                            length = length
+                        }));
+                    }
+                    if (isRootHidden)
+                    {
+                        DotnetObjectId.TryParse(fieldValue?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                        if (int.TryParse(objectId.Value, out int objectIdToGetInfo))
+                        {
+                            var resultValue = new JArray();
+                            if (!isArray)
+                            {
+                                resultValue = await GetObjectValues(objectIdToGetInfo, getCommandType, token);
+                                DotnetObjectId.TryParse(resultValue[0]?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId2);
+                                int.TryParse(objectId2.Value, out objectIdToGetInfo);
+                            }
+                            resultValue = await GetArrayValues(objectIdToGetInfo, token);
+                            foreach (var item in resultValue)
+                            {
+                                item["name"] = string.Concat("[", item["name"], "]");
+                                objFields.Add(item);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        objFields.Add(fieldValue);
+                    }
+                }
+                return objFields;
+            }
+
+            async Task<(List<FieldTypeClass>, List<FieldTypeClass>, List<FieldTypeClass>)> FilterFieldsByDebuggerBrowsable(List<FieldTypeClass> fields, int typeId, CancellationToken token)
             {
                 var typeInfo = await GetTypeInfo(typeId, token);
                 var typeFieldsBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableFields;
                 if (typeFieldsBrowsableInfo == null)
-                    return fields;
+                    return (fields, new List<FieldTypeClass>(), new List<FieldTypeClass>());
 
-                var filteredFields = new List<FieldTypeClass>();
+                var regularFields = new List<FieldTypeClass>();
+                var rootHiddenCollections = new List<FieldTypeClass>();
+                var rootHiddenArrays = new List<FieldTypeClass>();
                 foreach (var field in fields)
                 {
                     typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
@@ -2452,14 +2492,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                         case DebuggerBrowsableState.Never:
                             break;
                         case DebuggerBrowsableState.RootHidden:
+                            var typeName = await GetTypeName(field.TypeId, token);
+                            if (typeName.StartsWith("System.Collections.Generic"))
+                            {
+                                rootHiddenCollections.Add(field);
+                                break;
+                            }
+                            if (typeName.EndsWith("[]"))
+                            {
+                                rootHiddenArrays.Add(field);
+                                break;
+                            }
                             break;
                         //null and DebuggerBrowsableState.Collapsed have the same result
                         default:
-                            filteredFields.Add(field);
+                            regularFields.Add(field);
                             break;
                     }
                 }
-                return filteredFields;
+                return (regularFields, rootHiddenCollections, rootHiddenArrays);
             }
         }
 
