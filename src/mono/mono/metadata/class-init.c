@@ -1878,13 +1878,15 @@ mono_class_is_gparam_with_nonblittable_parent (MonoClass *klass)
  * \return True if the layout of the struct is valid, otherwise false.
  */
 static gboolean
-validate_struct_fields_overlaps (guint8 *layout_check, MonoClass *klass, const int *field_offsets, const int field_count, int *invalid_field_offset)
+validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClass *klass, const int *field_offsets, const int field_count, int *invalid_field_offset)
 {
 	MonoClassField *field;
 	MonoType *ftype;
+	int field_offset;
 
 	for (int i = 0; i < field_count && !mono_class_has_failure (klass); i++) {
 		field = &klass->fields [i];
+		field_offset = field_offsets [i];
 
 		if (!field)
 			continue;
@@ -1899,22 +1901,21 @@ validate_struct_fields_overlaps (guint8 *layout_check, MonoClass *klass, const i
 		if (mono_type_is_struct (ftype)) {
 			// recursively check the layout of the embedded struct
 			MonoClass *embedded_class = mono_class_from_mono_type_internal (ftype);
-			g_assert (embedded_class);
 			g_assert (embedded_class->fields_inited);
 
 			const int embedded_fields_count = mono_class_get_field_count (embedded_class);
 			int *embedded_offsets = g_new0 (int, embedded_fields_count);
 			for (int j = 0; j < embedded_fields_count; ++j) {
-				embedded_offsets [j] = field_offsets[i] + embedded_class->fields [j].offset - MONO_ABI_SIZEOF (MonoObject);
+				embedded_offsets [j] = field_offset + embedded_class->fields [j].offset - MONO_ABI_SIZEOF (MonoObject);
 			}
 
-			gboolean is_valid = validate_struct_fields_overlaps (layout_check, embedded_class, embedded_offsets, embedded_fields_count, invalid_field_offset);
+			gboolean is_valid = validate_struct_fields_overlaps (layout_check, layout_size, embedded_class, embedded_offsets, embedded_fields_count, invalid_field_offset);
 			g_free (embedded_offsets);
 
 			if (!is_valid) {
 				// overwrite whatever was in the invalid_field_offset with the offset of the currently checked field
 				// we want to return the outer most invalid field
-				*invalid_field_offset = field_offsets[i];
+				*invalid_field_offset = field_offset;
 				return FALSE;
 			}
 		} else {
@@ -1925,9 +1926,11 @@ validate_struct_fields_overlaps (guint8 *layout_check, MonoClass *klass, const i
 			// Mark the bytes used by this fields type based on if it contains references or not.
 			// Make sure there are no overlaps between object and non-object fields.
 			for (int j = 0; j < size; j++) {
-				int checked_byte = field_offsets [i] + j;
+				int checked_byte = field_offset + j;
+				g_assert(checked_byte < layout_size);
+
 				if (layout_check [checked_byte] != 0 && layout_check [checked_byte] != type) {
-					*invalid_field_offset = field_offsets[i];
+					*invalid_field_offset = field_offset;
 					return FALSE;
 				}
 				layout_check [checked_byte] = type;
@@ -2232,7 +2235,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (has_references) {
 			layout_check = g_new0 (guint8, real_size);
 			int invalid_field_offset;
-			if (!validate_struct_fields_overlaps (layout_check, klass, field_offsets, top, &invalid_field_offset)) {
+			if (!validate_struct_fields_overlaps (layout_check, real_size, klass, field_offsets, top, &invalid_field_offset)) {
 				mono_class_set_type_load_failure (klass, "Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, invalid_field_offset);
 			}
 			g_free (layout_check);
