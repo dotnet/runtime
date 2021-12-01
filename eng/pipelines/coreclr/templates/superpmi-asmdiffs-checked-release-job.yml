@@ -25,7 +25,7 @@ jobs:
     helixQueues: ${{ parameters.helixQueues }}
     dependsOn:
      - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    # - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, 'release') }}
+     - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, 'release') }}
 
     variables:
     
