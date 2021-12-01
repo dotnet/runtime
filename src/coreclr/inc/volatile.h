@@ -73,7 +73,10 @@
 #endif
 
 #if defined(__GNUC__)
-#if defined(HOST_ARM) || defined(HOST_ARM64)
+#if defined(HOST_ARMV6)
+// DMB ISH not valid on ARMv6
+#define VOLATILE_MEMORY_BARRIER() asm volatile ("mcr p15, 0, r0, c7, c10, 5" : : : "memory")
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
 // This is functionally equivalent to the MemoryBarrier() macro used on ARM on Windows.
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb ish" : : : "memory")
 #else

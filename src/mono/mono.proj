@@ -238,8 +238,10 @@
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'armv6'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
-      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6" />
-      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6+fp" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfloat-abi=hard" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6+fp" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfloat-abi=hard" />
     </ItemGroup>
 
     <!-- x64 illumos cross build options -->
