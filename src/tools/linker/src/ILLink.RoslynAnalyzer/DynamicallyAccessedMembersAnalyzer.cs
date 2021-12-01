@@ -84,10 +84,7 @@ namespace ILLink.RoslynAnalyzer
 
 		static IEnumerable<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (ValueSet<SingleValue> source, ValueSet<SingleValue> target, Location location)
 		{
-			if (target.Values == null)
-				yield break;
-
-			foreach (var targetValue in target.Values) {
+			foreach (var targetValue in target) {
 				foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (source, targetValue, location))
 					yield return diagnostic;
 			}
@@ -95,10 +92,7 @@ namespace ILLink.RoslynAnalyzer
 
 		static IEnumerable<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (ValueSet<SingleValue> source, SingleValue target, Location location)
 		{
-			if (source.Values == null)
-				yield break;
-
-			foreach (var sourceValue in source.Values) {
+			foreach (var sourceValue in source) {
 				foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (sourceValue, target, location))
 					yield return diagnostic;
 			}
