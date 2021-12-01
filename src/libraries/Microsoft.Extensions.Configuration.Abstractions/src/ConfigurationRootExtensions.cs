@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns> The debug view. </returns>
         public static string GetDebugView(this IConfigurationRoot root)
         {
-            return GetDebugView(root, null);
+            return GetDebugView(root, processValue: null);
         }
 
         /// <summary>
