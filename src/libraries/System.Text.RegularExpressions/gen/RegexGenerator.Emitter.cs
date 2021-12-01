@@ -240,7 +240,7 @@ namespace System.Text.RegularExpressions.Generator
             bool hasTextInfo = false;
 
             // Emit locals initialization
-            writer.WriteLine("string runtext = base.runtext!;");
+            writer.WriteLine("global::System.ReadOnlySpan<char> runtextSpan = base.runtext!;");
             writer.WriteLine("int runtextpos = base.runtextpos;");
             writer.WriteLine("int runtextend = base.runtextend;");
             if (rtl)
@@ -387,7 +387,7 @@ namespace System.Text.RegularExpressions.Generator
                             else
                             {
                                 // TODO: This differs subtly between interpreted and compiled. Why?
-                                using (EmitBlock(writer, "if (runtextpos < runtextend - 1 || (runtextpos == runtextend - 1 && runtext[runtextpos] != '\\n'))"))
+                                using (EmitBlock(writer, "if (runtextpos < runtextend - 1 || (runtextpos == runtextend - 1 && runtextSpan[runtextpos] != '\\n'))"))
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
@@ -421,14 +421,14 @@ namespace System.Text.RegularExpressions.Generator
                             // to boost our position to the next line, and then continue normally with any searches.
                             Debug.Assert(!rtl, "RightToLeft isn't implemented and should have been filtered out previously");
                             writer.WriteLine("// Beginning-of-line anchor");
-                            using (EmitBlock(writer, "if (runtextpos > runtextbeg && runtext[runtextpos - 1] != '\\n')"))
+                            using (EmitBlock(writer, "if (runtextpos > runtextbeg && runtextSpan[runtextpos - 1] != '\\n')"))
                             {
-                                writer.WriteLine("int newlinePos = runtext.IndexOf('\\n', runtextpos);");
-                                using (EmitBlock(writer, "if (newlinePos == -1 || newlinePos + 1 > runtextend)"))
+                                writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(runtextSpan.Slice(runtextpos), '\\n');");
+                                using (EmitBlock(writer, "if (newlinePos == -1 || newlinePos + runtextpos + 1 > runtextend)"))
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
-                                writer.WriteLine("runtextpos = newlinePos + 1;");
+                                writer.WriteLine("runtextpos = newlinePos + runtextpos + 1;");
                             }
                             writer.WriteLine();
                             break;
@@ -441,7 +441,7 @@ namespace System.Text.RegularExpressions.Generator
             // Emits a case-sensitive left-to-right prefix search for a string at the beginning of the pattern.
             void EmitIndexOf_LeftToRight(string prefix)
             {
-                writer.WriteLine($"int i = global::System.MemoryExtensions.IndexOf(global::System.MemoryExtensions.AsSpan(runtext, runtextpos, runtextend - runtextpos), {Literal(prefix)});");
+                writer.WriteLine($"int i = global::System.MemoryExtensions.IndexOf(runtextSpan.Slice(runtextpos, runtextend - runtextpos), {Literal(prefix)});");
                 writer.WriteLine("if (i >= 0)");
                 writer.WriteLine("{");
                 writer.WriteLine("    base.runtextpos = runtextpos + i;");
@@ -452,7 +452,7 @@ namespace System.Text.RegularExpressions.Generator
             // Emits a case-sensitive right-to-left prefix search for a string at the beginning of the pattern.
             void EmitIndexOf_RightToLeft(string prefix)
             {
-                writer.WriteLine($"int i = global::System.MemoryExtensions.LastIndexOf(global::System.MemoryExtensions.AsSpan(runtext, runtextbeg, runtextpos - runtextbeg), {Literal(prefix)});");
+                writer.WriteLine($"int i = global::System.MemoryExtensions.LastIndexOf(runtextSpan.Slice(runtextbeg, runtextpos - runtextbeg), {Literal(prefix)});");
                 writer.WriteLine("if (i >= 0)");
                 writer.WriteLine("{");
                 writer.WriteLine($"    base.runtextpos = runtextbeg + i + {prefix.Length};");
@@ -469,7 +469,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (set.Chars is { Length: 1 } && !set.CaseInsensitive)
                 {
-                    writer.WriteLine($"int i = global::System.MemoryExtensions.LastIndexOf(global::System.MemoryExtensions.AsSpan(runtext, runtextbeg, runtextpos - runtextbeg), {Literal(set.Chars[0])});");
+                    writer.WriteLine($"int i = global::System.MemoryExtensions.LastIndexOf(runtextSpan.Slice(runtextbeg, runtextpos - runtextbeg), {Literal(set.Chars[0])});");
                     writer.WriteLine("if (i >= 0)");
                     writer.WriteLine("{");
                     writer.WriteLine("    base.runtextpos = runtextbeg + i + 1;");
@@ -480,7 +480,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, "for (int i = runtextpos - 1; i >= runtextbeg; i--)"))
                     {
-                        using (EmitBlock(writer, $"if ({MatchCharacterClass(hasTextInfo, options, "runtext[i]", set.Set, set.CaseInsensitive)})"))
+                        using (EmitBlock(writer, $"if ({MatchCharacterClass(hasTextInfo, options, "runtextSpan[i]", set.Set, set.CaseInsensitive)})"))
                         {
                             writer.WriteLine("base.runtextpos = i + 1;");
                             writer.WriteLine("return true;");
@@ -507,7 +507,7 @@ namespace System.Text.RegularExpressions.Generator
                 FinishEmitScope loopBlock = default;
                 if (needLoop)
                 {
-                    writer.WriteLine("global::System.ReadOnlySpan<char> span = global::System.MemoryExtensions.AsSpan(runtext, runtextpos, runtextend - runtextpos);");
+                    writer.WriteLine("global::System.ReadOnlySpan<char> span = runtextSpan.Slice(runtextpos, runtextend - runtextpos);");
                     string upperBound = "span.Length" + (setsToUse > 1 || primarySet.Distance != 0 ? $" - {minRequiredLength - 1}" : "");
                     loopBlock = EmitBlock(writer, $"for (int i = 0; i < {upperBound}; i++)");
                 }
@@ -516,7 +516,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     string span = needLoop ?
                         "span" :
-                        "global::System.MemoryExtensions.AsSpan(runtext, runtextpos, runtextend - runtextpos)";
+                        "runtextSpan.Slice(runtextpos, runtextend - runtextpos)";
 
                     span = (needLoop, primarySet.Distance) switch
                     {
