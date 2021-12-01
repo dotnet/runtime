@@ -2621,7 +2621,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
     unsigned lvl2   = 0;
 
 #if defined(FEATURE_HW_INTRINSICS)
-    if (multiOp->OperIs(GT_HWINTRINSIC)
+    if (multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hwTree = multiOp->AsHWIntrinsic();
 #if defined(TARGET_XARCH)
