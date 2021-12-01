@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Configuration
         public string Path { get; }
 
         /// <summary>
-        /// Key of the current item
+        /// Gets the key of the current item.
         /// </summary>
         public string Key { get; }
 
