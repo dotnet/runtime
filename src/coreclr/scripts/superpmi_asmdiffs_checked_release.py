@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-platform", help="OS platform")
-parser.add_argument("-diff_with_release", help="asmdiffs between JIT Checked binaries and Release binaries")
+parser.add_argument("--diff_with_release", action="store_true", help="asmdiffs between JIT Checked binaries and Release binaries")
 parser.add_argument("-base_jit_directory", help="path to the directory containing base clrjit binaries")
 parser.add_argument("-diff_jit_directory", help="path to the directory containing diff clrjit binaries")
 parser.add_argument("-log_directory", help="path to the directory containing superpmi log files")
@@ -123,6 +123,8 @@ def main(main_args):
 
     # Find out if it is asmdiffs between Checked binaries and Release binaries
     diff_with_release = coreclr_args.diff_with_release
+    if diff_with_release is not True:
+        return 1
 
     # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
     # We pass the full path of the JITs to use as arguments.
@@ -155,7 +157,7 @@ def main(main_args):
         python_path,
         os.path.join(script_dir, "superpmi.py"),
         "asmdiffs",
-        "-diff_with_release", diff_with_release,
+        "--diff_with_release",
         "--no_progress",
         "-core_root", core_root_dir,
         "-target_os", platform_name,
