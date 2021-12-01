@@ -53,10 +53,10 @@ stages:
       - job: Windows_NT
         pool:
           ${{ if eq(variables.officialBuild, 'false') }}:
-            name: Hosted VS2017
+            vmImage: windows-latest
           ${{ if eq(variables.officialBuild, 'true') }}:
             name: NetCore1ESPool-Internal
-            demands: ImageOverride -equals Build.Windows.10.Amd64.VS2017
+            demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019
         variables:
           - ${{ if eq(variables.officialBuild, 'false') }}:
             - _SignType: test
@@ -90,7 +90,7 @@ stages:
       - job: SourceBuild_Managed
         displayName: Source-Build (Managed)
         pool:
-          vmImage: ubuntu-20.04
+          vmImage: ubuntu-latest
         container: 'mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-3e800f1-20190501005343'
         workspace:
           clean: all
@@ -105,7 +105,7 @@ stages:
         - job: Linux
           condition: eq(variables.officialBuild, 'false')
           pool:
-            vmImage: ubuntu-20.04
+            vmImage: ubuntu-latest
           steps:
           - checkout: self
             submodules: true
@@ -121,7 +121,7 @@ stages:
       - ${{ if eq(variables.officialBuild, 'false') }}:
         - job: macOS
           pool:
-              name: Hosted MacOS
+              vmImage: macOS-latest
           steps:
           - checkout: self
             submodules: true
@@ -137,7 +137,7 @@ stages:
   - ${{ if eq(variables.officialBuild, 'false') }}:
     - job: Lint
       pool:
-        vmImage: ubuntu-20.04
+        vmImage: ubuntu-latest
       steps:
       - checkout: self
         submodules: true
