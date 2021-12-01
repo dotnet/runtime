@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Path of the current item
+        /// Gets the path of the current item.
         /// </summary>
         public string Path { get; }
 
