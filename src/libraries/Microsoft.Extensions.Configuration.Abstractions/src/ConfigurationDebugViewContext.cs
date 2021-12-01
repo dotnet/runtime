@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Configuration
         public string? Value { get; }
 
         /// <summary>
-        /// Provider used to get the value of the current item
+        /// Gets the <see cref="IConfigurationProvider" /> that was used to get the value of the current item.
         /// </summary>
         public IConfigurationProvider ConfigurationProvider { get; }
     }
