@@ -79,7 +79,6 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Get, "Get", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Address, "Address", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Set, "Set", null, null);
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray, "InitializeArray", "System.Runtime.CompilerServices", "RuntimeHelpers");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal, "GetValueInternal", "System", "RuntimeTypeHandle");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Object_GetType, "GetType", "System", "Object");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContext, "GetStubContext", "System.StubHelpers", "StubHelpers"); // interop-specific
@@ -136,9 +135,6 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal:
-#if !READYTORUN
-                case CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray:
-#endif
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value:
                     if (pMustExpand != null)

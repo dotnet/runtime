@@ -10290,9 +10290,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
             vnf = VNF_GetsharedNongcthreadstaticBaseDynamicclass;
             break;
-        case CORINFO_HELP_GETSTATICFIELDADDR_CONTEXT:
-            vnf = VNF_GetStaticAddrContext;
-            break;
         case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             vnf = VNF_GetStaticAddrTLS;
             break;

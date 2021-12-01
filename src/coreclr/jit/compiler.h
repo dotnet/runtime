@@ -10005,7 +10005,6 @@ public:
         bool compInitMem : 1;            // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback : 1;   // JIT inserted a profiler Enter callback
         bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an intrinsic
-        bool compRetBuffDefStack : 1;    // The ret buff argument definitely points into the stack.
         bool compHasNextCallRetAddr : 1; // The NextCallReturnAddress intrinsic is used.
 
         var_types compRetType;       // Return type of the method as declared in IL
