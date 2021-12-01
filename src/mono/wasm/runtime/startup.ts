@@ -166,6 +166,8 @@ export function finalize_startup(config: MonoConfig | MonoConfigError | undefine
         const moduleExt = Module as DotnetModule;
 
         try {
+            _apply_configuration_from_args(config);
+
             mono_wasm_globalization_init(config.globalization_mode!, config.diagnostic_tracing!);
             cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
         } catch (err: any) {
@@ -310,8 +312,6 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
             createPath: Module.FS_createPath,
             createDataFile: Module.FS_createDataFile
         };
-
-        _apply_configuration_from_args(config);
 
         // fetch_file_cb is legacy do we really want to support it ?
         if (!Module.imports!.fetch && typeof ((<any>config).fetch_file_cb) === "function") {
