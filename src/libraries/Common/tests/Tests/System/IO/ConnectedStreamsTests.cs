@@ -9,6 +9,7 @@ namespace System.IO.Tests
     {
         protected override int BufferedSize => StreamBuffer.DefaultMaxBufferSize;
         protected override bool FlushRequiredToWriteData => false;
+        protected override bool BlocksOnZeroByteReads => true;
 
         protected override Task<StreamPair> CreateConnectedStreamsAsync() =>
             Task.FromResult<StreamPair>(ConnectedStreams.CreateUnidirectional());
@@ -18,6 +19,7 @@ namespace System.IO.Tests
     {
         protected override int BufferedSize => StreamBuffer.DefaultMaxBufferSize;
         protected override bool FlushRequiredToWriteData => false;
+        protected override bool BlocksOnZeroByteReads => true;
 
         protected override Task<StreamPair> CreateConnectedStreamsAsync() =>
             Task.FromResult<StreamPair>(ConnectedStreams.CreateBidirectional());

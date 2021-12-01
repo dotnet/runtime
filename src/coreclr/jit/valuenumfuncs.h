@@ -128,7 +128,6 @@ ValueNumFuncDef(RuntimeHandleMethod, 2, false, true, false)
 ValueNumFuncDef(RuntimeHandleClass, 2, false, true, false)
 ValueNumFuncDef(ReadyToRunGenericHandle, 2, false, true, false)
 
-ValueNumFuncDef(GetStaticAddrContext, 1, false, true, false)
 ValueNumFuncDef(GetStaticAddrTLS, 1, false, true, false)
 
 ValueNumFuncDef(JitNew, 2, false, true, false)

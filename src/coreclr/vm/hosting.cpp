@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-
 #include "common.h"
 
 #include "mscoree.h"
 #include "corhost.h"
 #include "threads.h"
-
-
-#define countof(x) (sizeof(x) / sizeof(x[0]))
-
 
 #undef VirtualAlloc
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {

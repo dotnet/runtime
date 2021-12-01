@@ -250,6 +250,7 @@
     <Compile Include="System\Security\Cryptography\DSASignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\DSASignatureFormat.cs" />
     <Compile Include="System\Security\Cryptography\DSASignatureFormatter.cs" />
+    <Compile Include="System\Security\Cryptography\ECAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.ECCurveType.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.NamedCurves.cs" />

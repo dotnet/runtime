@@ -839,8 +839,9 @@ namespace System.Net.Http
                 }
 
                 int processLength = (int)Math.Min(headersLength, _recvBuffer.ActiveLength);
+                bool endHeaders = headersLength == processLength;
 
-                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(0, processLength), this);
+                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(0, processLength), endHeaders, this);
                 _recvBuffer.Discard(processLength);
                 headersLength -= processLength;
             }
@@ -1050,7 +1051,7 @@ namespace System.Net.Http
             {
                 int totalBytesRead = 0;
 
-                while (buffer.Length != 0)
+                do
                 {
                     // Sync over async here -- QUIC implementation does it per-I/O already; this is at least more coarse-grained.
                     if (_responseDataPayloadRemaining <= 0 && !ReadNextDataFrameAsync(response, CancellationToken.None).AsTask().GetAwaiter().GetResult())
@@ -1086,7 +1087,7 @@ namespace System.Net.Http
                         int copyLen = (int)Math.Min(buffer.Length, _responseDataPayloadRemaining);
                         int bytesRead = _stream.Read(buffer.Slice(0, copyLen));
 
-                        if (bytesRead == 0)
+                        if (bytesRead == 0 && buffer.Length != 0)
                         {
                             throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
                         }
@@ -1100,6 +1101,7 @@ namespace System.Net.Http
                         break;
                     }
                 }
+                while (buffer.Length != 0);
 
                 return totalBytesRead;
             }
@@ -1120,7 +1122,7 @@ namespace System.Net.Http
             {
                 int totalBytesRead = 0;
 
-                while (buffer.Length != 0)
+                do
                 {
                     if (_responseDataPayloadRemaining <= 0 && !await ReadNextDataFrameAsync(response, cancellationToken).ConfigureAwait(false))
                     {
@@ -1155,7 +1157,7 @@ namespace System.Net.Http
                         int copyLen = (int)Math.Min(buffer.Length, _responseDataPayloadRemaining);
                         int bytesRead = await _stream.ReadAsync(buffer.Slice(0, copyLen), cancellationToken).ConfigureAwait(false);
 
-                        if (bytesRead == 0)
+                        if (bytesRead == 0 && buffer.Length != 0)
                         {
                             throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
                         }
@@ -1169,6 +1171,7 @@ namespace System.Net.Http
                         break;
                     }
                 }
+                while (buffer.Length != 0);
 
                 return totalBytesRead;
             }

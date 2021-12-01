@@ -462,7 +462,7 @@ namespace System.Net.Http
         {
             try
             {
-                _cleaningTimer!.Change(timeout, timeout);
+                _cleaningTimer!.Change(timeout, Timeout.InfiniteTimeSpan);
                 _timerIsRunning = timeout != Timeout.InfiniteTimeSpan;
             }
             catch (ObjectDisposedException)
@@ -492,13 +492,10 @@ namespace System.Net.Http
                 }
             }
 
-            // Stop running the timer if we don't have any pools to clean up.
+            // Restart the timer if we have any pools to clean up.
             lock (SyncObj)
             {
-                if (_pools.IsEmpty)
-                {
-                    SetCleaningTimer(Timeout.InfiniteTimeSpan);
-                }
+                SetCleaningTimer(!_pools.IsEmpty ? _cleanPoolTimeout : Timeout.InfiniteTimeSpan);
             }
 
             // NOTE: There is a possible race condition with regards to a pool getting cleaned up at the same

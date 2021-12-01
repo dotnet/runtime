@@ -1130,9 +1130,9 @@ protected:
 
     void genConsumeRegs(GenTree* tree);
     void genConsumeOperands(GenTreeOp* tree);
-#ifdef FEATURE_HW_INTRINSICS
-    void genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* tree);
-#endif // FEATURE_HW_INTRINSICS
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
+#endif
     void genEmitGSCookieCheck(bool pushReg);
     void genCodeForShift(GenTree* tree);
 
@@ -1302,8 +1302,7 @@ protected:
         {
             return false;
         }
-        const LclVarDsc* varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
-        return (varDsc->lvIsRegCandidate());
+        return compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
@@ -1476,7 +1475,7 @@ public:
 
         static const GenConditionDesc& Get(GenCondition condition)
         {
-            assert(condition.GetCode() < _countof(map));
+            assert(condition.GetCode() < ArrLen(map));
             const GenConditionDesc& desc = map[condition.GetCode()];
             assert(desc.jumpKind1 != EJ_NONE);
             assert((desc.oper == GT_NONE) || (desc.oper == GT_AND) || (desc.oper == GT_OR));

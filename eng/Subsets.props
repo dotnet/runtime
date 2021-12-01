@@ -280,7 +280,7 @@
 
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)Native\build-native.proj" Category="libs" />
+    <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj" Category="libs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.ref+'))">

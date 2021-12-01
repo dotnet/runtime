@@ -988,11 +988,19 @@ protected:
 
         m_nativeHome.InitHome(ILStubMarshalHome::HomeType_ILByrefLocal, pcsSetup->NewLocal(nativeFieldTypeByRef), &nativeType, /* unalignedIndirectStore */ true);
 
+        // During the cleanup pass, the managed typed is explicitly passed as null - see DestroyStructure(). This works
+        // except if the type has nested non-blittable fields. Not checking for null will compute invalid offsets that
+        // can cause an access violation during the field clean-up.
+        ILCodeLabel *pSkipComputeOffsetLabel = pcsSetup->NewCodeLabel();
+
         pcsSetup->EmitNOP("// field setup {");
         pcsSetup->EmitNOP("// managed field setup {");
         pcsSetup->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
+        pcsSetup->EmitDUP();
+        pcsSetup->EmitBRFALSE(pSkipComputeOffsetLabel);
         pcsSetup->EmitLDC(managedOffset);
         pcsSetup->EmitADD();
+        pcsSetup->EmitLabel(pSkipComputeOffsetLabel);
         EmitStoreManagedHomeAddr(pcsSetup);
         pcsSetup->EmitNOP("// } managed field setup");
         pcsSetup->EmitNOP("// native field setup {");

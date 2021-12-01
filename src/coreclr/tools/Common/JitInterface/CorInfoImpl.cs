@@ -576,6 +576,8 @@ namespace Internal.JitInterface
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
 #endif
 
+            _instantiationToJitVisibleInstantiation = null;
+
             _pgoResults.Clear();
         }
 
@@ -662,6 +664,25 @@ namespace Internal.JitInterface
             return true;
         }
 
+        private Dictionary<Instantiation, IntPtr[]> _instantiationToJitVisibleInstantiation = null;
+        private CORINFO_CLASS_STRUCT_** GetJitInstantiation(Instantiation inst)
+        {
+            IntPtr [] jitVisibleInstantiation;
+            if (_instantiationToJitVisibleInstantiation == null)
+            {
+                _instantiationToJitVisibleInstantiation = new Dictionary<Instantiation, IntPtr[]>();
+            }
+
+            if (!_instantiationToJitVisibleInstantiation.TryGetValue(inst, out jitVisibleInstantiation))
+            {
+                jitVisibleInstantiation =  new IntPtr[inst.Length];
+                for (int i = 0; i < inst.Length; i++)
+                    jitVisibleInstantiation[i] = (IntPtr)ObjectToHandle(inst[i]);
+                _instantiationToJitVisibleInstantiation.Add(inst, jitVisibleInstantiation);
+            }
+            return (CORINFO_CLASS_STRUCT_**)GetPin(jitVisibleInstantiation);
+        }
+
         private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
@@ -684,12 +705,15 @@ namespace Internal.JitInterface
                 // JIT doesn't care what the instantiation is and this is expensive.
                 Instantiation owningTypeInst = method.OwningType.Instantiation;
                 sig->sigInst.classInstCount = (uint)owningTypeInst.Length;
-                if (owningTypeInst.Length > 0)
+                if (owningTypeInst.Length != 0)
                 {
-                    var classInst = new IntPtr[owningTypeInst.Length];
-                    for (int i = 0; i < owningTypeInst.Length; i++)
-                        classInst[i] = (IntPtr)ObjectToHandle(owningTypeInst[i]);
-                    sig->sigInst.classInst = (CORINFO_CLASS_STRUCT_**)GetPin(classInst);
+                    sig->sigInst.classInst = GetJitInstantiation(owningTypeInst);
+                }
+
+                sig->sigInst.methInstCount = (uint)method.Instantiation.Length;
+                if (method.Instantiation.Length != 0)
+                {
+                    sig->sigInst.methInst = GetJitInstantiation(method.Instantiation);
                 }
             }
 
@@ -1931,7 +1955,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_VALUECLASS;
 
                 if (metadataType.IsByRefLike)
-                    result |= CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR;
+                    result |= CorInfoFlag.CORINFO_FLG_BYREF_LIKE;
 
                 // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
                 if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))
@@ -1982,13 +2006,6 @@ namespace Internal.JitInterface
 #endif
 
             return (uint)result;
-        }
-
-        private bool isStructRequiringStackAllocRetBuf(CORINFO_CLASS_STRUCT_* cls)
-        {
-            // Disable this optimization. It has limited value (only kicks in on x86, and only for less common structs),
-            // causes bugs and introduces odd ABI differences not compatible with ReadyToRun.
-            return false;
         }
 
         private CORINFO_MODULE_STRUCT_* getClassModule(CORINFO_CLASS_STRUCT_* cls)

@@ -794,9 +794,7 @@ namespace System.Text.RegularExpressions.Tests
         // TODO: Figure out what to do with default timeouts for source generated regexes
         [Theory]
         [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.None | RegexHelpers.RegexOptionDebug)]
         [InlineData(RegexOptions.Compiled)]
-        [InlineData(RegexOptions.Compiled | RegexHelpers.RegexOptionDebug)]
         public void Match_CachedPattern_NewTimeoutApplies(RegexOptions options)
         {
             const string PatternLeadingToLotsOfBacktracking = @"^(\w+\s?)*$";

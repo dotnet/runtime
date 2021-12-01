@@ -221,10 +221,11 @@ class OffsetsTool:
 			args.mono_path,
 			args.mono_path + "/mono",
 			args.mono_path + "/mono/eglib",
+			args.mono_path + "/../native",
 			args.target_path,
 			args.target_path + "/mono/eglib"
 			]
-		
+
 		self.basic_types = ["gint8", "gint16", "gint32", "gint64", "float", "double", "gpointer"]
 		self.runtime_type_names = [
 			"MonoObject",
@@ -259,7 +260,7 @@ class OffsetsTool:
 			"MonoDelegateTrampInfo",
 			"GSharedVtCallInfo",
 			"SeqPointInfo",
-			"DynCallArgs", 
+			"DynCallArgs",
 			"MonoLMFTramp",
 			"CallContext",
 			"MonoFtnDesc"
@@ -268,7 +269,7 @@ class OffsetsTool:
 			self.runtime_types [name] = TypeInfo (name, False)
 		for name in self.jit_type_names:
 			self.runtime_types [name] = TypeInfo (name, True)
-		
+
 		self.basic_type_size = {}
 		self.basic_type_align = {}
 
@@ -285,9 +286,9 @@ class OffsetsTool:
 			clang_args.append (include)
 		for define in self.target.get_clang_args ():
 			clang_args.append ("-D" + define)
-		
+
 		clang.cindex.Config.set_library_file (args.libclang)
-		
+
 		for srcfile in srcfiles:
 			src = args.mono_path + "/" + srcfile
 			file_args = clang_args[:]
@@ -363,7 +364,7 @@ class OffsetsTool:
 			for field in type.fields:
 				f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
 		f.write ("#endif //disable metadata check\n")
-		
+
 		f.write ("#ifndef DISABLE_JIT_OFFSETS\n")
 		f.write ("#define USED_CROSS_COMPILER_OFFSETS\n")
 		for type_name in self.jit_type_names:
@@ -374,7 +375,7 @@ class OffsetsTool:
 			for field in type.fields:
 				f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
 		f.write ("#endif //disable jit check\n")
-					
+
 		f.write ("#endif //cross compiler checks\n")
 		f.write ("#endif //gc check\n")
 		if target.arch_define:

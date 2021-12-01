@@ -1,21 +1,65 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+
+using Internal.Runtime.InteropServices;
+using TestLibrary;
+using Xunit;
+
+namespace Internal.Runtime.InteropServices
+{
+    [ComImport]
+    [ComVisible(false)]
+    [Guid("00000001-0000-0000-C000-000000000046")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IClassFactory
+    {
+        void CreateInstance(
+            [MarshalAs(UnmanagedType.Interface)] object pUnkOuter,
+            ref Guid riid,
+            out IntPtr ppvObject);
+
+        void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock);
+    }
+}
+
+sealed class ClassFactoryWrapper
+{
+    private static readonly MethodInfo IClassFactory_Create = typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.IClassFactory").GetMethod("CreateInstance");
+    private readonly object _obj;
+
+    public ClassFactoryWrapper(object obj)
+    {
+        _obj = obj;
+    }
+
+    public void CreateInstance(
+            object pUnkOuter,
+            ref Guid riid,
+            out IntPtr ppvObject)
+    {
+        object[] args = new object[] { pUnkOuter, riid, null };
+        IClassFactory_Create.Invoke(_obj, BindingFlags.DoNotWrapExceptions, binder: null, args, culture: null);
+        riid = (Guid)args[1];
+        ppvObject = (IntPtr)args[2];
+    }
+}
 
 namespace Activator
 {
-    using Internal.Runtime.InteropServices;
-
-    using System;
-    using System.IO;
-    using System.Runtime.InteropServices;
-
-    using TestLibrary;
-    using Xunit;
-
-    using Console = Internal.Console;
-
-    class Program
+    unsafe class Program
     {
+        private static delegate*<ComActivationContext, object> GetClassFactoryForTypeMethod = (delegate*<ComActivationContext, object>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("GetClassFactoryForType", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
+        private static delegate*<ComActivationContext, bool, void> ClassRegistrationScenarioForType = (delegate*<ComActivationContext, bool, void>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("ClassRegistrationScenarioForType", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
+
+        private static ClassFactoryWrapper GetClassFactoryForType(ComActivationContext context)
+        {
+            return new ClassFactoryWrapper(GetClassFactoryForTypeMethod(context));
+        }
+
         static void InvalidInterfaceRequest()
         {
             Console.WriteLine($"Running {nameof(InvalidInterfaceRequest)}...");
@@ -28,7 +72,7 @@ namespace Activator
                     {
                         InterfaceId = notIClassFactory
                     };
-                    ComActivator.GetClassFactoryForType(cxt);
+                    GetClassFactoryForType(cxt);
                 });
         }
 
@@ -43,7 +87,7 @@ namespace Activator
                         InterfaceId = typeof(IClassFactory).GUID,
                         AssemblyPath = "foo.dll"
                     };
-                    ComActivator.GetClassFactoryForType(cxt);
+                    GetClassFactoryForType(cxt);
                 };
 
             if (!builtInComDisabled)
@@ -69,7 +113,7 @@ namespace Activator
                         InterfaceId = typeof(IClassFactory).GUID,
                         AssemblyPath = @"C:\foo.dll"
                     };
-                    ComActivator.GetClassFactoryForType(cxt);
+                    GetClassFactoryForType(cxt);
                 };
 
             if (!builtInComDisabled)
@@ -119,11 +163,11 @@ namespace Activator
                 if (builtInComDisabled)
                 {
                     Assert.Throws<NotSupportedException>(
-                        () => ComActivator.GetClassFactoryForType(cxt));
+                        () => GetClassFactoryForType(cxt));
                     return;
                 }
 
-                var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+                var factory = GetClassFactoryForType(cxt);
 
                 IntPtr svrRaw;
                 factory.CreateInstance(null, ref iid, out svrRaw);
@@ -147,7 +191,7 @@ namespace Activator
                     TypeName = "ClassFromB"
                 };
 
-                var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+                var factory = GetClassFactoryForType(cxt);
 
                 IntPtr svrRaw;
                 factory.CreateInstance(null, ref iid, out svrRaw);
@@ -200,7 +244,7 @@ namespace Activator
                         TypeName = typeName
                     };
 
-                    var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+                    var factory = GetClassFactoryForType(cxt);
 
                     IntPtr svrRaw;
                     factory.CreateInstance(null, ref iid, out svrRaw);
@@ -212,8 +256,8 @@ namespace Activator
                     Assert.False(inst.DidUnregister());
 
                     cxt.InterfaceId = Guid.Empty;
-                    ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
-                    ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
+                    ClassRegistrationScenarioForType(cxt, true);
+                    ClassRegistrationScenarioForType(cxt, false);
 
                     Assert.True(inst.DidRegister(), $"User-defined register function should have been called.");
                     Assert.True(inst.DidUnregister(), $"User-defined unregister function should have been called.");
@@ -239,7 +283,7 @@ namespace Activator
                         TypeName = typename
                     };
 
-                    var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+                    var factory = GetClassFactoryForType(cxt);
 
                     IntPtr svrRaw;
                     factory.CreateInstance(null, ref iid, out svrRaw);
@@ -251,7 +295,7 @@ namespace Activator
                     bool exceptionThrown = false;
                     try
                     {
-                        ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
+                        ClassRegistrationScenarioForType(cxt, true);
                     }
                     catch
                     {
@@ -263,7 +307,7 @@ namespace Activator
                     exceptionThrown = false;
                     try
                     {
-                        ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
+                        ClassRegistrationScenarioForType(cxt, false);
                     }
                     catch
                     {

@@ -23,7 +23,7 @@ inline void DoVoidTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr)
     if (ret != 0)
     {
         Fail("ERROR: Expected sscanf to return 0, got %d.\n"
-            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr), 
+            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr),
             convertC(formatstr));
     }
 
@@ -32,7 +32,7 @@ inline void DoVoidTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr)
         if (buf[i] != 0)
         {
             Fail("ERROR: Parameter unexpectedly modified scanning \"%s\" "
-                "using \"%s\".\n", convertC(inputstr), 
+                "using \"%s\".\n", convertC(inputstr),
                 convertC(formatstr));
         }
     }
@@ -49,15 +49,15 @@ inline void DoStrTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, const cha
     if (ret != 1)
     {
         Fail("ERROR: Expected swscanf to return 1, got %d.\n"
-            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr), 
+            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr),
             convertC(formatstr));
     }
 
     if (memcmp(checkstr, buf, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: scanned string incorrectly from \"%s\" using \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", convertC(inputstr), 
-            convertC(formatstr), checkstr, 
+            "Expected \"%s\", got \"%s\".\n", convertC(inputstr),
+            convertC(formatstr), checkstr,
             buf);
     }
 
@@ -80,8 +80,8 @@ inline void DoWStrTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, const WC
     if (memcmp(checkstr, buf, wcslen(checkstr)*2 + 2) != 0)
     {
         Fail("ERROR: scanned wide string incorrectly from \"%s\" using \"%s\".\n"
-            "Expected \"%s\", got \"%s\".\n", convertC(inputstr), 
-            convertC(formatstr), convertC(checkstr), 
+            "Expected \"%s\", got \"%s\".\n", convertC(inputstr),
+            convertC(formatstr), convertC(checkstr),
             convertC(buf));
     }
 
@@ -97,14 +97,14 @@ inline void DoNumTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, int check
     if (ret != 1)
     {
         Fail("ERROR: Expected swscanf to return 1, got %d.\n"
-            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr), 
+            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr),
             convertC(formatstr));
     }
 
     if (checknum != num)
     {
         Fail("ERROR: scanned number incorrectly from \"%s\" using \"%s\".\n"
-            "Expected %d, got %d.\n", convertC(inputstr), 
+            "Expected %d, got %d.\n", convertC(inputstr),
             convertC(formatstr), checknum, num);
     }
 }
@@ -119,14 +119,14 @@ inline void DoShortNumTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, shor
     if (ret != 1)
     {
         Fail("ERROR: Expected swscanf to return 1, got %d.\n"
-            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr), 
+            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr),
             convertC(formatstr));
     }
 
     if (checknum != num)
     {
         Fail("ERROR: scanned number incorrectly from \"%s\" using \"%s\".\n"
-            "Expected %hd, got %hd.\n", convertC(inputstr), 
+            "Expected %hd, got %hd.\n", convertC(inputstr),
             convertC(formatstr), checknum, num);
     }
 }
@@ -143,16 +143,16 @@ inline void DoI64NumTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, INT64 
     if (ret != 1)
     {
         Fail("ERROR: Expected swscanf to return 1, got %d.\n"
-            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr), 
+            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr),
             convertC(formatstr));
     }
 
     if (checknum != num)
     {
-        sprintf_s(buf, _countof(buf), "%I64d", num);
-        sprintf_s(check, _countof(check), "%I64d", checknum);
+        sprintf_s(buf, ARRAY_SIZE(buf), "%I64d", num);
+        sprintf_s(check, ARRAY_SIZE(check), "%I64d", checknum);
         Fail("ERROR: scanned I64 number incorrectly from \"%s\" using \"%s\".\n"
-            "Expected %s, got %s.\n", convertC(inputstr), 
+            "Expected %s, got %s.\n", convertC(inputstr),
             convertC(formatstr), check, buf);
     }
 }
@@ -171,7 +171,7 @@ inline void DoCharTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, char* ch
     if (ret != 1)
     {
         Fail("ERROR: Expected swscanf to return 1, got %d.\n"
-            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr), 
+            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr),
             convertC(formatstr));
     }
 
@@ -180,14 +180,14 @@ inline void DoCharTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, char* ch
         buf[numchars] = 0;
 
         Fail("ERROR: scanned character(s) incorrectly from \"%s\" using \"%s\".\n"
-            "Expected %s, got %s.\n", convertC(inputstr), 
+            "Expected %s, got %s.\n", convertC(inputstr),
             convertC(formatstr), checkchars, buf);
     }
 
     if (buf[numchars] != (char)-1)
     {
         Fail("ERROR: overflow occurred in scanning character(s) from \"%s\" "
-            "using \"%s\".\nExpected %d character(s)\n", 
+            "using \"%s\".\nExpected %d character(s)\n",
             convertC(inputstr), convertC(formatstr), numchars);
     }
 }
@@ -206,7 +206,7 @@ inline void DoWCharTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, const W
     if (ret != 1)
     {
         Fail("ERROR: Expected swscanf to return 1, got %d.\n"
-            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr), 
+            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr),
             convertC(formatstr));
     }
 
@@ -215,15 +215,15 @@ inline void DoWCharTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, const W
         buf[numchars] = 0;
 
         Fail("ERROR: scanned wide character(s) incorrectly from \"%s\" using \"%s\".\n"
-            "Expected %s, got %s.\n", convertC(inputstr), 
-            convertC(formatstr), convertC(checkchars), 
+            "Expected %s, got %s.\n", convertC(inputstr),
+            convertC(formatstr), convertC(checkchars),
             convertC(buf));
     }
 
     if (buf[numchars] != (WCHAR)-1)
     {
         Fail("ERROR: overflow occurred in scanning wide character(s) from \"%s\" "
-            "using \"%s\".\nExpected %d character(s)\n", 
+            "using \"%s\".\nExpected %d character(s)\n",
             convertC(inputstr), convertC(formatstr), numchars);
     }
 }
@@ -245,14 +245,14 @@ inline void DoFloatTest_swscanf(WCHAR *inputstr, const WCHAR *formatstr, float c
     if (ret != 1)
     {
         Fail("ERROR: Expected swscanf to return 1, got %d.\n"
-            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr), 
+            "Using \"%s\" in \"%s\".\n", ret, convertC(inputstr),
             convertC(formatstr));
     }
 
     if (val != checkval)
     {
         Fail("ERROR: scanned float incorrectly from \"%s\" using \"%s\".\n"
-            "Expected \"%f\", got \"%f\".\n", convertC(inputstr), 
+            "Expected \"%f\", got \"%f\".\n", convertC(inputstr),
             convertC(formatstr), checkval, val);
     }
 

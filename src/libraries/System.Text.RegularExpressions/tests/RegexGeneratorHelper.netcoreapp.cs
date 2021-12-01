@@ -111,8 +111,8 @@ namespace System.Text.RegularExpressions.Tests
             if (generatorResults.Diagnostics.Length != 0)
             {
                 throw new ArgumentException(
-                    string.Join(Environment.NewLine, generatorResults.Diagnostics) + Environment.NewLine +
-                    string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))));
+                    string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
+                    string.Join(Environment.NewLine, generatorResults.Diagnostics));
             }
 
             // Compile the assembly to a stream
@@ -122,8 +122,8 @@ namespace System.Text.RegularExpressions.Tests
             if (!results.Success || results.Diagnostics.Length != 0)
             {
                 throw new ArgumentException(
-                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)) + Environment.NewLine +
-                    string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))));
+                    string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
+                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)));
             }
             dll.Position = 0;
 
