@@ -4898,10 +4898,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
+        // Scale block weights and mark run rarely blocks.
+        //
+        DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+
         // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels.
         //
-        DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
+        DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
         // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
@@ -5444,20 +5448,16 @@ void Compiler::ResetOptAnnotations()
 //    The intent of this method is to update loop structure annotations, and those
 //    they depend on; these annotations may have become stale during optimization,
 //    and need to be up-to-date before running another iteration of optimizations.
-
+//
 void Compiler::RecomputeLoopInfo()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     // Recompute reachability sets, dominators, and loops.
-    optLoopCount   = 0;
+    optResetLoopInfo();
     fgDomsComputed = false;
-    for (BasicBlock* const block : Blocks())
-    {
-        block->bbFlags &= ~BBF_LOOP_FLAGS;
-        block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
-    }
     fgComputeReachability();
+    optSetBlockWeights();
     // Rebuild the loop tree annotations themselves
     optFindLoops();
 }
