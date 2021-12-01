@@ -18,7 +18,7 @@ In `src\mono\wasm\runtime\CMakeLists.txt` which links only in-tree, we use same 
 # dotnet.cjs.pre.js
 - Executed second (2)
 - Applied only when linking CommonJS
-- Will try to see if it was executed with `globalThis.Module` and if so, it would use it's instance as `Module`. It would preserve emscriptens `Module.ready`
+- Will try to see if it was executed with `globalThis.Module` and if so, it would use it's instance as `Module`. It would preserve emscripten's `Module.ready`
 - Otherwise it would load it would assume it was called via `createDotnetRuntime` export same as described for `dotnet.es6.pre.js` below.
 
 # dotnet.es6.pre.js
