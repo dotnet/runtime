@@ -1475,6 +1475,12 @@
         "unix-armel"
       ]
     },
+    "linux-armv6": {
+      "#import": [
+        "linux",
+        "unix-armv6"
+      ]
+    },
     "linux-mips64": {
       "#import": [
         "linux",
@@ -3395,6 +3401,11 @@
       ]
     },
     "unix-armel": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-armv6": {
       "#import": [
         "unix"
       ]
