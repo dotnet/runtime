@@ -265,4 +265,4 @@ FAIL:
 	ret
 }
 }
-.assembly rem_u8.exe{}
+.assembly rem_u8{}

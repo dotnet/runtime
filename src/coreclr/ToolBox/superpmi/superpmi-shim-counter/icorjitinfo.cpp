@@ -378,13 +378,6 @@ uint32_t interceptor_ICJI::getClassAttribs(
     return original_ICorJitInfo->getClassAttribs(cls);
 }
 
-bool interceptor_ICJI::isStructRequiringStackAllocRetBuf(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("isStructRequiringStackAllocRetBuf");
-    return original_ICorJitInfo->isStructRequiringStackAllocRetBuf(cls);
-}
-
 CORINFO_MODULE_HANDLE interceptor_ICJI::getClassModule(
           CORINFO_CLASS_HANDLE cls)
 {

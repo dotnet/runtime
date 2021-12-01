@@ -182,12 +182,12 @@ namespace System.Data.Odbc
                 parts[3] = command.CommandText;
             }
             // note: native odbc appears to ignore all but the procedure name
-            ODBC32.RetCode retcode = hstmt.ProcedureColumns(parts[1], parts[2], parts[3], null);
+            ODBC32.SQLRETURN retcode = hstmt.ProcedureColumns(parts[1], parts[2], parts[3], null);
 
             // Note: the driver does not return an error if the given stored procedure does not exist
             // therefore we cannot handle that case and just return not parameters.
 
-            if (ODBC32.RetCode.SUCCESS != retcode)
+            if (ODBC32.SQLRETURN.SUCCESS != retcode)
             {
                 connection.HandleError(hstmt, retcode);
             }

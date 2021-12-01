@@ -1005,7 +1005,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             CfgGrammar.CfgSerializedHeader header = new();
-            uint ulOffset = (uint)Marshal.SizeOf(typeof(CfgGrammar.CfgSerializedHeader));
+            uint ulOffset = (uint)Marshal.SizeOf<CfgGrammar.CfgSerializedHeader>();
 
             header.FormatId = CfgGrammar._SPGDF_ContextFree;
             _guid = Guid.NewGuid();
@@ -1032,16 +1032,16 @@ namespace System.Speech.Internal.SrgsCompiler
             ulOffset += (uint)_symbols.SerializeSize() * Helpers._sizeOfChar;
             header.cRules = _rules.Count;
             header.pRules = ulOffset;
-            ulOffset += (uint)(_rules.Count * Marshal.SizeOf(typeof(CfgRule)));
+            ulOffset += (uint)(_rules.Count * Marshal.SizeOf<CfgRule>());
             header.cBasePath = cBasePath > 0 ? ulOffset : 0; //If there is no base path offset is set to zero
             ulOffset += (uint)((cBasePath * Helpers._sizeOfChar + 3) & ~3);
             header.cArcs = cArcs;
             header.pArcs = ulOffset;
-            ulOffset += (uint)(cArcs * Marshal.SizeOf(typeof(CfgArc)));
+            ulOffset += (uint)(cArcs * Marshal.SizeOf<CfgArc>());
             if (_fNeedWeightTable)
             {
                 header.pWeights = ulOffset;
-                ulOffset += (uint)(cArcs * Marshal.SizeOf(typeof(float)));
+                ulOffset += (uint)(cArcs * sizeof(float));
                 pWeights = new float[cArcs];
                 pWeights[0] = 0.0f;
             }
@@ -1067,16 +1067,16 @@ namespace System.Speech.Internal.SrgsCompiler
             header.GrammarMode = (uint)_grammarMode;
             header.cTags = cSemanticTags;
             header.tags = ulOffset;
-            ulOffset += (uint)(cSemanticTags * Marshal.SizeOf(typeof(CfgSemanticTag)));
+            ulOffset += (uint)(cSemanticTags * Marshal.SizeOf<CfgSemanticTag>());
             header.cScripts = _scriptRefs.Count;
             header.pScripts = header.cScripts > 0 ? ulOffset : 0;
-            ulOffset += (uint)(_scriptRefs.Count * Marshal.SizeOf(typeof(CfgScriptRef)));
+            ulOffset += (uint)(_scriptRefs.Count * Marshal.SizeOf<CfgScriptRef>());
             header.cIL = 0;
             header.pIL = 0;
-            ulOffset += (uint)(header.cIL * Marshal.SizeOf(typeof(byte)));
+            ulOffset += (uint)(header.cIL * sizeof(byte));
             header.cPDB = 0;
             header.pPDB = 0;
-            ulOffset += (uint)(header.cPDB * Marshal.SizeOf(typeof(byte)));
+            ulOffset += (uint)(header.cPDB * sizeof(byte));
             header.ulTotalSerializedSize = ulOffset;
             return header;
         }

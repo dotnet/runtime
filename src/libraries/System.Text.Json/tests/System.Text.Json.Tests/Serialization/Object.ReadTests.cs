@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -654,6 +655,22 @@ namespace System.Text.Json.Serialization.Tests
             catch (JsonException) { }
 
             Assert.Equal(0, reader.BytesConsumed);
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/61995
+        [Theory]
+        [InlineData(JsonUnknownTypeHandling.JsonElement, typeof(JsonElement))]
+        [InlineData(JsonUnknownTypeHandling.JsonNode, typeof(JsonNode))]
+        public static void ReadObjectWithNumberHandling(JsonUnknownTypeHandling unknownTypeHandling, Type expectedType)
+        {
+            var options = new JsonSerializerOptions
+            {
+                NumberHandling = JsonNumberHandling.AllowReadingFromString,
+                UnknownTypeHandling = unknownTypeHandling
+            };
+
+            object result = JsonSerializer.Deserialize<object>(@"{ ""key"" : ""42"" }", options);
+            Assert.IsAssignableFrom(expectedType, result);
         }
     }
 }

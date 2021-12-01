@@ -24,6 +24,15 @@ namespace System.IO.Tests
         protected abstract T GetExistingItem();
         protected abstract T GetMissingItem();
 
+        protected abstract T CreateSymlink(string path, string pathToTarget);
+
+        protected T CreateSymlinkToItem(T item)
+        {
+            // Creates a Symlink to 'item' (target may or may not exist)
+            string itemPath = GetItemPath(item);
+            return CreateSymlink(path: itemPath + ".link", pathToTarget: itemPath);
+        }
+
         protected abstract string GetItemPath(T item);
 
         public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false);
@@ -43,11 +52,8 @@ namespace System.IO.Tests
             public DateTimeKind Kind => Item3;
         }
 
-        [Fact]
-        public void SettingUpdatesProperties()
+        private void SettingUpdatesPropertiesCore(T item)
         {
-            T item = GetExistingItem();
-
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
@@ -69,6 +75,56 @@ namespace System.IO.Tests
                     Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
                 }
             });
+        }
+
+        [Fact]
+        public void SettingUpdatesProperties()
+        {
+            T item = GetExistingItem();
+            SettingUpdatesPropertiesCore(item);
+        }
+
+        [Theory]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as it doesn't support symlinks
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SettingUpdatesPropertiesOnSymlink(bool targetExists)
+        {
+            // This test is in this class since it needs all of the time functions.
+            // This test makes sure that the times are set on the symlink itself.
+            // It is needed as on OSX for example, the default for most APIs is
+            // to follow the symlink to completion and set the time on that entry
+            // instead (eg. the setattrlist will do this without the flag set).
+            // It is also the same case on unix, with the utimensat function.
+            // It is a theory since we test both the target existing and missing.
+
+            T target = targetExists ? GetExistingItem() : GetMissingItem();
+
+            // When the target exists, we want to verify that its times don't change.
+
+            T link = CreateSymlinkToItem(target);
+            if (!targetExists)
+            {
+                SettingUpdatesPropertiesCore(link);
+            }
+            else
+            {
+                // Get the target's initial times
+                IEnumerable<TimeFunction> timeFunctions = TimeFunctions(requiresRoundtripping: true);
+                DateTime[] initialTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
+
+                SettingUpdatesPropertiesCore(link);
+
+                // Ensure that we have the latest times.
+                if (target is FileSystemInfo fsi)
+                {
+                    fsi.Refresh();
+                }
+
+                // Ensure the target's times haven't changed.
+                DateTime[] updatedTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
+                Assert.Equal(initialTimes, updatedTimes);
+            }
         }
 
         [Fact]

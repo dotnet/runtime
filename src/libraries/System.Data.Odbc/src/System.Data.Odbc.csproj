@@ -3,6 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-FreeBSD;$(NetCoreAppMinimum)-Linux;$(NetCoreAppMinimum)-OSX;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA2249;CA1838</NoWarn>
+    <!-- Suppress CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring' to avoid ifdefs. -->
+    <NoWarn>$(NoWarn);CA1845</NoWarn>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes used to access an ODBC data source in the managed space
@@ -145,6 +147,7 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <None Include="DatabaseSetupInstructions.md" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -158,6 +161,7 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Globalization" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

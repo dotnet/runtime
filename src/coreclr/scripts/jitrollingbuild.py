@@ -750,7 +750,6 @@ def main(args):
         return 1
 
     coreclr_args = setup_args(args)
-    success = True
 
     if coreclr_args.mode == "upload":
         upload_command(coreclr_args)
@@ -764,7 +763,8 @@ def main(args):
     else:
         raise NotImplementedError(coreclr_args.mode)
 
-    return 0 if success else 1
+    # Note that if there is any failure, an exception is raised and the process exit code is then `1`
+    return 0
 
 ################################################################################
 # __main__

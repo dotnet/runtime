@@ -31,7 +31,7 @@ namespace Microsoft.Interop
                     bool fieldBlittable = field switch
                     {
                         { Type: { IsReferenceType: true } } => false,
-                        { Type: IPointerTypeSymbol ptr } => IsConsideredBlittable(ptr.PointedAtType),
+                        { Type: IPointerTypeSymbol ptr } => true,
                         { Type: IFunctionPointerTypeSymbol } => true,
                         not { Type: { SpecialType: SpecialType.None } } => IsSpecialTypeBlittable(field.Type.SpecialType),
                         // Assume that type parameters that can be blittable are blittable.

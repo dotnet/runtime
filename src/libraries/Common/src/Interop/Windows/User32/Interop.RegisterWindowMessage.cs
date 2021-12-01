@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public static extern int RegisterWindowMessageW(string msg);
+        [GeneratedDllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        public static partial int RegisterWindowMessageW(string msg);
     }
 }

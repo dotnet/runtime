@@ -75,7 +75,7 @@ mono_components_init (void)
 {
 #ifdef STATIC_COMPONENTS
 	/* directly call each components init function */
-	/* TODO: support disabled components. 
+	/* TODO: support disabled components.
 	 *
 	 * The issue here is that we need to do static linking, so if we don't
 	 * directly reference mono_component_<component_name>_init anywhere (ie
@@ -94,7 +94,7 @@ mono_components_init (void)
 
 	/* call get_component for each component and init it or its stubs and add it to loaded_components */
 	MonoComponentLibrary *component_lib = NULL;
-	
+
 	for (int i = 0; i < G_N_ELEMENTS (components); ++i) {
 		*components [i].component = get_component (&components [i], &component_lib);
 		components [i].lib = component_lib;

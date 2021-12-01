@@ -293,4 +293,4 @@ FAIL:
 	ret
 }
 }
-.assembly cgt_i8.exe{}
+.assembly cgt_i8{}

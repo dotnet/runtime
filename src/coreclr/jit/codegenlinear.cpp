@@ -174,6 +174,7 @@ void CodeGen::genCodeForBBlist()
 
     for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
+
 #ifdef DEBUG
         if (compiler->verbose)
         {
@@ -423,6 +424,9 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
+
+        bool addPreciseMappings =
+            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
 
         DebugInfo currentDI;
@@ -432,11 +436,21 @@ void CodeGen::genCodeForBBlist()
             if (node->OperGet() == GT_IL_OFFSET)
             {
                 GenTreeILOffset* ilOffset = node->AsILOffset();
-                genEnsureCodeEmitted(currentDI);
-                currentDI = ilOffset->gtStmtDI;
-                genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
-                firstMapping = false;
+                DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
+                if (rootDI.IsValid())
+                {
+                    genEnsureCodeEmitted(currentDI);
+                    currentDI = rootDI;
+                    genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
+                    firstMapping = false;
+                }
+
 #ifdef DEBUG
+                if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
+                {
+                    genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
+                }
+
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
@@ -778,21 +792,29 @@ void CodeGen::genCodeForBBlist()
         }
 
 #if FEATURE_LOOP_ALIGN
+        if (block->hasAlign())
+        {
+            // If this block has 'align' instruction in the end (identified by BBF_HAS_ALIGN),
+            // then need to add align instruction in the current "block".
+            //
+            // For non-adaptive alignment, add alignment instruction of size depending on the
+            // compJitAlignLoopBoundary.
+            // For adaptive alignment, alignment instruction will always be of 15 bytes for xarch
+            // and 16 bytes for arm64.
+            assert(ShouldAlignLoops());
 
-        // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
-        // then need to add align instruction in current "block". Also mark the
-        // corresponding IG with IGF_LOOP_ALIGN to know that there will be align
-        // instructions at the end of that IG.
-        //
-        // For non-adaptive alignment, add alignment instruction of size depending on the
-        // compJitAlignLoopBoundary.
-        // For adaptive alignment, alignment instruction will always be of 15 bytes.
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->bbJumpKind == BBJ_ALWAYS));
+        }
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
         {
-            assert(ShouldAlignLoops());
-
-            GetEmitter()->emitLoopAlignment();
+            if (compiler->opts.compJitHideAlignBehindJmp)
+            {
+                // The current IG is the one that is just before the IG having loop start.
+                // Establish a connection of recent align instruction emitted to the loop
+                // it actually is aligning using 'idaLoopHeadPredIG'.
+                GetEmitter()->emitConnectAlignInstrWithCurIG();
+            }
         }
 #endif
 
@@ -855,7 +877,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void CodeGen::genSpillVar(GenTree* tree)
 {
     unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
-    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
     assert(varDsc->lvIsRegCandidate());
 
@@ -1184,7 +1206,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
             GenTreeLclVar* lcl       = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc    = compiler->lvaGetDesc(lcl->GetLclNum());
+            LclVarDsc*     varDsc    = compiler->lvaGetDesc(lcl);
             var_types      spillType = varDsc->GetRegisterType(lcl);
             assert(spillType != TYP_UNDEF);
 
@@ -1223,7 +1245,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(tree == unspillTree);
 
             GenTreeLclVar* lclNode  = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc   = compiler->lvaGetDesc(lclNode->GetLclNum());
+            LclVarDsc*     varDsc   = compiler->lvaGetDesc(lclNode);
             unsigned       regCount = varDsc->lvFieldCnt;
 
             for (unsigned i = 0; i < regCount; ++i)
@@ -1453,7 +1475,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     if (genIsRegCandidateLocal(tree))
     {
         GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
-        LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
+        LclVarDsc*           varDsc = compiler->lvaGetDesc(lcl);
         if (varDsc->GetRegNum() != REG_STK)
         {
             var_types regType = varDsc->GetRegisterType(lcl);
@@ -1476,7 +1498,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         assert(tree->gtHasReg());
 
         GenTreeLclVarCommon* lcl    = tree->AsLclVar();
-        LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
+        LclVarDsc*           varDsc = compiler->lvaGetDesc(lcl);
         assert(varDsc->lvLRACandidate);
 
         if (varDsc->GetRegNum() == REG_STK)
@@ -1497,7 +1519,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         unsigned       firstFieldVarNum = varDsc->lvFieldLclStart;
         for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
         {
-            LclVarDsc* fldVarDsc = &(compiler->lvaTable[firstFieldVarNum + i]);
+            LclVarDsc* fldVarDsc = compiler->lvaGetDesc(firstFieldVarNum + i);
             assert(fldVarDsc->lvLRACandidate);
             regNumber reg;
             if (tree->OperIs(GT_COPY, GT_RELOAD) && (tree->AsCopyOrReload()->GetRegByIndex(i) != REG_NA))
@@ -1588,7 +1610,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
             // register candidate.
             unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = compiler->lvaTable + varNum;
+            LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
             noway_assert(varDsc->GetRegNum() == REG_STK);
             noway_assert(tree->IsRegOptional() || !varDsc->lvLRACandidate);
@@ -1601,14 +1623,18 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         else if (tree->OperIs(GT_HWINTRINSIC))
         {
             // Only load/store HW intrinsics can be contained (and the address may also be contained).
-            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(tree->AsHWIntrinsic()->gtHWIntrinsicId);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(tree->AsHWIntrinsic()->GetHWIntrinsicId());
             assert((category == HW_Category_MemoryLoad) || (category == HW_Category_MemoryStore));
-            int numArgs = HWIntrinsicInfo::lookupNumArgs(tree->AsHWIntrinsic());
-            genConsumeAddress(tree->gtGetOp1());
+            size_t numArgs = tree->AsHWIntrinsic()->GetOperandCount();
+            genConsumeAddress(tree->AsHWIntrinsic()->Op(1));
             if (category == HW_Category_MemoryStore)
             {
-                assert((numArgs == 2) && !tree->gtGetOp2()->isContained());
-                genConsumeReg(tree->gtGetOp2());
+                assert(numArgs == 2);
+
+                GenTree* op2 = tree->AsHWIntrinsic()->Op(2);
+                assert(op2->isContained());
+
+                genConsumeReg(op2);
             }
             else
             {
@@ -1652,7 +1678,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 // Return Value:
 //    None.
 //
-
 void CodeGen::genConsumeOperands(GenTreeOp* tree)
 {
     GenTree* firstOp  = tree->gtOp1;
@@ -1668,54 +1693,25 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
     }
 }
 
-#ifdef FEATURE_HW_INTRINSICS
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// genConsumeHWIntrinsicOperands: Do liveness update for the operands of a GT_HWINTRINSIC node
+// genConsumeOperands: Do liveness update for the operands of a multi-operand node,
+//                     currently GT_SIMD or GT_HWINTRINSIC
 //
 // Arguments:
-//    node - the GenTreeHWIntrinsic node whose operands will have their liveness updated.
+//    tree - the GenTreeMultiOp whose operands will have their liveness updated.
 //
 // Return Value:
 //    None.
 //
-
-void CodeGen::genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* node)
+void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 {
-    int      numArgs = HWIntrinsicInfo::lookupNumArgs(node);
-    GenTree* op1     = node->gtGetOp1();
-    if (op1 == nullptr)
+    for (GenTree* operand : tree->Operands())
     {
-        assert((numArgs == 0) && (node->gtGetOp2() == nullptr));
-        return;
-    }
-    if (op1->OperIs(GT_LIST))
-    {
-        int foundArgs = 0;
-        assert(node->gtGetOp2() == nullptr);
-        for (GenTreeArgList* list = op1->AsArgList(); list != nullptr; list = list->Rest())
-        {
-            GenTree* operand = list->Current();
-            genConsumeRegs(operand);
-            foundArgs++;
-        }
-        assert(foundArgs == numArgs);
-    }
-    else
-    {
-        genConsumeRegs(op1);
-        GenTree* op2 = node->gtGetOp2();
-        if (op2 != nullptr)
-        {
-            genConsumeRegs(op2);
-            assert(numArgs == 2);
-        }
-        else
-        {
-            assert(numArgs == 1);
-        }
+        genConsumeRegs(operand);
     }
 }
-#endif // FEATURE_HW_INTRINSICS
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
 #if FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
@@ -2255,7 +2251,7 @@ void CodeGen::genProduceReg(GenTree* tree)
             {
                 assert(compiler->lvaEnregMultiRegVars);
                 GenTreeLclVar* lclNode  = tree->AsLclVar();
-                LclVarDsc*     varDsc   = compiler->lvaGetDesc(lclNode->GetLclNum());
+                LclVarDsc*     varDsc   = compiler->lvaGetDesc(lclNode);
                 unsigned       regCount = varDsc->lvFieldCnt;
                 for (unsigned i = 0; i < regCount; i++)
                 {
@@ -2562,7 +2558,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 
     GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
     unsigned             lclNum  = lclNode->GetLclNum();
-    LclVarDsc*           varDsc  = &(compiler->lvaTable[lclNum]);
+    LclVarDsc*           varDsc  = compiler->lvaGetDesc(lclNum);
     assert(varDsc->TypeGet() == TYP_LONG);
     assert(!varDsc->lvPromoted);
     GenTree* op1 = treeNode->AsOp()->gtOp1;
@@ -2627,6 +2623,16 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 
         condition = GenCondition(GenCondition::P);
     }
+
+    if (relop->MarkedForSignJumpOpt())
+    {
+        // If relop was previously marked for a signed jump check optimization because of SF flag
+        // reuse, replace jge/jl with jns/js.
+
+        assert(relop->OperGet() == GT_LT || relop->OperGet() == GT_GE);
+        condition = (relop->OperGet() == GT_LT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
+    }
+
 #endif
 
     inst_JCC(condition, compiler->compCurBB->bbJumpDest);

@@ -600,4 +600,4 @@ FAIL:
 	ret
 }
 }
-.assembly div_r4.exe{}
+.assembly div_r4{}

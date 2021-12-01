@@ -44,4 +44,4 @@ FAIL:
 	ret
 }
 }
-.assembly cgt_u.exe{}
+.assembly cgt_u{}
