@@ -98,18 +98,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     return;
                 }
 
-                bool referenceCoreLib = configOptions.GlobalOptions.ReferenceSystemPrivateCoreLib();
-
                 bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
 
                 // TODO: add error (maybe in MSBuild that referencing CoreLib directly from a merged test runner is not supported)
-                if (isMergedTestRunnerAssembly && !referenceCoreLib)
+                if (isMergedTestRunnerAssembly)
                 {
                     context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
                 }
                 else
                 {
-                    string consoleType = referenceCoreLib ? "Internal.Console" : "System.Console";
+                    string consoleType = "System.Console";
                     context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap, consoleType));
                 }
             });
@@ -144,7 +142,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
         builder.AppendLine("try {");
         builder.AppendLine(string.Join("\n", testInfos.Select(m => m.GenerateTestExecution(reporter))));
-        builder.AppendLine($"}} catch(System.Exception ex) {{ {consoleType}.WriteLine(ex.ToString()); return 101; }}");
+        builder.AppendLine("} catch(System.Exception ex) { System.Console.WriteLine(ex.ToString()); return 101; }");
         builder.AppendLine("return 100;");
         return builder.ToString();
     }

@@ -82,15 +82,7 @@ namespace System
         private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
         private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly()
         {
-            Type type = typeof(LambdaExpression);
-            if (type != null)
-            {
-                // The "Accept" method is under FEATURE_COMPILE conditional so it should not exist
-                MethodInfo methodInfo = type.GetMethod("Accept", BindingFlags.NonPublic | BindingFlags.Static);
-                return methodInfo == null;
-            }
-
-            return false;
+            return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
         // Please make sure that you have the libgdiplus dependency installed.

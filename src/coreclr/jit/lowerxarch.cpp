@@ -129,36 +129,6 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
             return;
         }
     }
-    else if (node->Data()->IsCnsFltOrDbl())
-    {
-        // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
-        GenTree*  data   = node->Data();
-        double    dblCns = data->AsDblCon()->gtDconVal;
-        ssize_t   intCns = 0;
-        var_types type   = TYP_UNKNOWN;
-
-        if (node->TypeIs(TYP_FLOAT))
-        {
-            float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
-            intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
-            type         = TYP_INT;
-        }
-#ifdef TARGET_AMD64
-        else
-        {
-            assert(node->TypeIs(TYP_DOUBLE));
-            intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
-            type   = TYP_LONG;
-        }
-#endif
-
-        if (type != TYP_UNKNOWN)
-        {
-            data->SetContained();
-            data->BashToConst(intCns, type);
-            node->ChangeType(type);
-        }
-    }
 
     // Optimization: do not unnecessarily zero-extend the result of setcc.
     if (varTypeIsByte(node) && (node->Data()->OperIsCompare() || node->Data()->OperIs(GT_SETCC)))
@@ -6030,39 +6000,52 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     if ((intrinsicId >= NI_FMA_MultiplyAdd) && (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar))
                     {
-                        bool supportsRegOptional = false;
+                        bool     supportsOp1RegOptional = false;
+                        bool     supportsOp2RegOptional = false;
+                        bool     supportsOp3RegOptional = false;
+                        unsigned resultOpNum            = 0;
+                        LIR::Use use;
+                        GenTree* user = nullptr;
 
-                        if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                        if (BlockRange().TryGetUse(node, &use))
                         {
-                            // 213 form: op1 = (op2 * op1) + [op3]
+                            user = use.User();
+                        }
+                        resultOpNum = node->GetResultOpNumForFMA(user, op1, op2, op3);
+
+                        // Prioritize Containable op. Check if any one of the op is containable first.
+                        // Set op regOptional only if none of them is containable.
+
+                        // Prefer to make op3 contained,
+                        if (resultOpNum != 3 && IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
+                        {
+                            // result = (op1 * op2) + [op3]
                             MakeSrcContained(node, op3);
                         }
-                        else if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                        else if (resultOpNum != 2 && IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                         {
-                            // 132 form: op1 = (op1 * op3) + [op2]
+                            // result = (op1 * [op2]) + op3
                             MakeSrcContained(node, op2);
                         }
-                        else if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                        else if (resultOpNum != 1 && !HWIntrinsicInfo::CopiesUpperBits(intrinsicId) &&
+                                 IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                         {
-                            // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
-
-                            if (!HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
-                            {
-                                // 231 form: op3 = (op2 * op3) + [op1]
-                                MakeSrcContained(node, op1);
-                            }
+                            // result = ([op1] * op2) + op3
+                            MakeSrcContained(node, op1);
                         }
-                        else
+                        else if (supportsOp3RegOptional)
                         {
-                            assert(supportsRegOptional);
-
-                            // TODO-XArch-CQ: Technically any one of the three operands can
-                            //                be reg-optional. With a limitation on op1 where
-                            //                it can only be so if CopyUpperBits is off.
-                            //                https://github.com/dotnet/runtime/issues/6358
-
-                            // 213 form: op1 = (op2 * op1) + op3
+                            assert(resultOpNum != 3);
                             op3->SetRegOptional();
+                        }
+                        else if (supportsOp2RegOptional)
+                        {
+                            assert(resultOpNum != 2);
+                            op2->SetRegOptional();
+                        }
+                        else if (supportsOp1RegOptional)
+                        {
+                            op1->SetRegOptional();
                         }
                     }
                     else

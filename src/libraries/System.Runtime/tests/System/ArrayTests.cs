@@ -4736,7 +4736,7 @@ namespace System.Tests
         public enum Int64Enum : long { }
     }
 
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public class DangerousArrayTests
     {
         [OuterLoop] // Allocates large array
