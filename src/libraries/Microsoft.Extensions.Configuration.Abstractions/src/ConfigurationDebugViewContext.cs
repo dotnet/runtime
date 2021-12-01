@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Configuration debug view context provides the data about current item of the configuration
+    /// Provides the data about current item of the configuration.
     /// </summary>
     public readonly struct ConfigurationDebugViewContext
     {
