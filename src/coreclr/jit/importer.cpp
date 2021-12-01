@@ -9634,34 +9634,49 @@ DONE:
     }
 
     // A tail recursive call is a potential loop from the current block to the start of the method.
-    if ((tailCallFlags != 0) && canTailCall && gtIsRecursiveCall(methHnd))
+    if ((tailCallFlags != 0) && canTailCall)
     {
-        assert(verCurrentState.esStackDepth == 0);
-        BasicBlock* loopHead = nullptr;
-        if (opts.IsOSR())
+        // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
+        // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
+        // instrumentation.
+        //
+        if (!compIsForInlining() && (compCurBB->bbJumpKind != BBJ_RETURN))
         {
-            // We might not have been planning on importing the method
-            // entry block, but now we must.
-
-            // We should have remembered the real method entry block.
-            assert(fgEntryBB != nullptr);
-
-            JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
-                    fgEntryBB->bbNum);
-            impImportBlockPending(fgEntryBB);
-            loopHead = fgEntryBB;
-        }
-        else
-        {
-            // For normal jitting we'll branch back to the firstBB; this
-            // should already be imported.
-            loopHead = fgFirstBB;
+            BasicBlock* const successor = compCurBB->GetUniqueSucc();
+            assert(successor->bbJumpKind == BBJ_RETURN);
+            successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
+            optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
         }
 
-        JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
-                " as having a backward branch.\n",
-                loopHead->bbNum, compCurBB->bbNum);
-        fgMarkBackwardJump(loopHead, compCurBB);
+        if (gtIsRecursiveCall(methHnd))
+        {
+            assert(verCurrentState.esStackDepth == 0);
+            BasicBlock* loopHead = nullptr;
+            if (opts.IsOSR())
+            {
+                // We might not have been planning on importing the method
+                // entry block, but now we must.
+
+                // We should have remembered the real method entry block.
+                assert(fgEntryBB != nullptr);
+
+                JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
+                        fgEntryBB->bbNum);
+                impImportBlockPending(fgEntryBB);
+                loopHead = fgEntryBB;
+            }
+            else
+            {
+                // For normal jitting we'll branch back to the firstBB; this
+                // should already be imported.
+                loopHead = fgFirstBB;
+            }
+
+            JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
+                    " as having a backward branch.\n",
+                    loopHead->bbNum, compCurBB->bbNum);
+            fgMarkBackwardJump(loopHead, compCurBB);
+        }
     }
 
     // Note: we assume that small return types are already normalized by the managed callee

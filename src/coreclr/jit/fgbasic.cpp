@@ -579,7 +579,6 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 if (jumpTab[i] == oldTarget)
                 {
                     jumpTab[i] = newTarget;
-                    break;
                 }
             }
             break;
