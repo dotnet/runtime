@@ -84,7 +84,7 @@ if (isDebug) {
     // so that we could notice that the API changed and review it
     typesConfig.output.push({
         format: "es",
-        file: "./dist-types/dotnet.d.ts",
+        file: "./dotnet.d.ts",
         banner: banner_generated,
         plugins: [writeOnChangePlugin()],
     });

@@ -44,10 +44,11 @@ declare interface EmscriptenModule {
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
     ready: Promise<unknown>;
-    preInit?: (() => Promise<void>)[];
-    preRun?: (() => Promise<void>)[];
-    postRun?: (() => Promise<void>)[];
+    preInit?: (() => void | Promise<void>)[];
+    preRun?: (() => void | Promise<void>)[];
+    postRun?: (() => void | Promise<void>)[];
     onRuntimeInitialized?: () => void;
+    instantiateWasm: (imports: any, successCallback: Function) => any;
 }
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
