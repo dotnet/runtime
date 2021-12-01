@@ -3,9 +3,9 @@
 
 import corebindings from "./corebindings";
 import { GCHandle, JSHandle, JSHandleDisposed, JSHandleNull, MonoObject, MonoObjectNull } from "./types";
+import { create_weak_ref } from "./weak-ref";
 
 export const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
-export const _use_weak_ref = typeof globalThis.WeakRef === "function";
 export let _js_owned_object_registry: FinalizationRegistry<any>;
 
 // this is array, not map. We maintain list of gaps in _js_handle_free_list so that it could be as compact as possible
@@ -78,18 +78,7 @@ export function _lookup_js_owned_object(gc_handle: GCHandle): any {
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _register_js_owned_object(gc_handle: GCHandle, js_obj: any): void {
-    let wr;
-    if (_use_weak_ref) {
-        wr = new WeakRef(js_obj);
-    }
-    else {
-        // this is trivial WeakRef replacement, which holds strong refrence, instead of weak one, when the browser doesn't support it
-        wr = {
-            deref: () => {
-                return js_obj;
-            }
-        };
-    }
+    const wr = create_weak_ref(js_obj);
     _js_owned_object_table.set(gc_handle, wr);
 }
 

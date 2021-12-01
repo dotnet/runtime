@@ -1386,7 +1386,7 @@ const BYTE          emitter::emitInsModeFmtTab[] =
 // clang-format on
 
 #ifdef DEBUG
-unsigned const emitter::emitInsModeFmtCnt = _countof(emitInsModeFmtTab);
+unsigned const emitter::emitInsModeFmtCnt = ArrLen(emitInsModeFmtTab);
 #endif
 
 /*****************************************************************************
@@ -1480,7 +1480,7 @@ inline size_t insCode(instruction ins)
     };
     // clang-format on
 
-    assert((unsigned)ins < _countof(insCodes));
+    assert((unsigned)ins < ArrLen(insCodes));
     assert((insCodes[ins] != BAD_CODE));
 
     return insCodes[ins];
@@ -1513,7 +1513,7 @@ inline size_t insCodeACC(instruction ins)
     };
     // clang-format on
 
-    assert((unsigned)ins < _countof(insCodesACC));
+    assert((unsigned)ins < ArrLen(insCodesACC));
     assert((insCodesACC[ins] != BAD_CODE));
 
     return insCodesACC[ins];
@@ -1546,7 +1546,7 @@ inline size_t insCodeRR(instruction ins)
     };
     // clang-format on
 
-    assert((unsigned)ins < _countof(insCodesRR));
+    assert((unsigned)ins < ArrLen(insCodesRR));
     assert((insCodesRR[ins] != BAD_CODE));
 
     return insCodesRR[ins];
@@ -1575,7 +1575,7 @@ size_t          insCodesRM[] =
 // Returns true iff the give CPU instruction has an RM encoding.
 inline bool hasCodeRM(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesRM));
+    assert((unsigned)ins < ArrLen(insCodesRM));
     return ((insCodesRM[ins] != BAD_CODE));
 }
 
@@ -1586,7 +1586,7 @@ inline bool hasCodeRM(instruction ins)
 
 inline size_t insCodeRM(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesRM));
+    assert((unsigned)ins < ArrLen(insCodesRM));
     assert((insCodesRM[ins] != BAD_CODE));
 
     return insCodesRM[ins];
@@ -1615,7 +1615,7 @@ size_t          insCodesMI[] =
 // Returns true iff the give CPU instruction has an MI encoding.
 inline bool hasCodeMI(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesMI));
+    assert((unsigned)ins < ArrLen(insCodesMI));
     return ((insCodesMI[ins] != BAD_CODE));
 }
 
@@ -1626,7 +1626,7 @@ inline bool hasCodeMI(instruction ins)
 
 inline size_t insCodeMI(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesMI));
+    assert((unsigned)ins < ArrLen(insCodesMI));
     assert((insCodesMI[ins] != BAD_CODE));
 
     return insCodesMI[ins];
@@ -1655,7 +1655,7 @@ size_t          insCodesMR[] =
 // Returns true iff the give CPU instruction has an MR encoding.
 inline bool hasCodeMR(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesMR));
+    assert((unsigned)ins < ArrLen(insCodesMR));
     return ((insCodesMR[ins] != BAD_CODE));
 }
 
@@ -1666,7 +1666,7 @@ inline bool hasCodeMR(instruction ins)
 
 inline size_t insCodeMR(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesMR));
+    assert((unsigned)ins < ArrLen(insCodesMR));
     assert((insCodesMR[ins] != BAD_CODE));
 
     return insCodesMR[ins];
@@ -2270,8 +2270,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_AMD64_ABI
-                    LclVarDsc* varDsc         = emitComp->lvaTable + var;
-                    bool       isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
+                    const LclVarDsc* varDsc         = emitComp->lvaGetDesc(var);
+                    bool             isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
                     // Register passed args could have a stack offset of 0.
                     noway_assert((int)offs < 0 || isRegPassedArg || emitComp->opts.IsOSR());
 #else  // !UNIX_AMD64_ABI
@@ -8210,7 +8210,7 @@ const char* emitter::emitXMMregName(unsigned reg)
     };
 
     assert(reg < REG_COUNT);
-    assert(reg < _countof(regNames));
+    assert(reg < ArrLen(regNames));
 
     return regNames[reg];
 }
@@ -8228,7 +8228,7 @@ const char* emitter::emitYMMregName(unsigned reg)
     };
 
     assert(reg < REG_COUNT);
-    assert(reg < _countof(regNames));
+    assert(reg < ArrLen(regNames));
 
     return regNames[reg];
 }
@@ -8397,12 +8397,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     if (varx >= 0 && emitComp->opts.varNames)
     {
-        LclVarDsc*  varDsc;
-        const char* varName;
-
-        assert((unsigned)varx < emitComp->lvaCount);
-        varDsc  = emitComp->lvaTable + varx;
-        varName = emitComp->compLocalVarName(varx, offs);
+        const char* varName = emitComp->compLocalVarName(varx, offs);
 
         if (varName)
         {
@@ -8722,11 +8717,22 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
-/*****************************************************************************
- *
- *  Display the given instruction.
- */
-
+//--------------------------------------------------------------------
+// emitDispIns: Dump the given instruction to jitstdout.
+//
+// Arguments:
+//   id - The instruction
+//   isNew - Whether the instruction is newly generated (before encoding).
+//   doffs - If true, always display the passed-in offset.
+//   asmfm - Whether the instruction should be displayed in assembly format.
+//           If false some additional information may be printed for the instruction.
+//   offset - The offset of the instruction. Only displayed if doffs is true or if
+//            !isNew && !asmfm.
+//   code - Pointer to the actual code, used for displaying the address and encoded bytes
+//          if turned on.
+//   sz - The size of the instruction, used to display the encoded bytes.
+//   ig - The instruction group containing the instruction. Not used on xarch.
+//
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* code, size_t sz, insGroup* ig)
 {
@@ -10031,7 +10037,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     // For cases where 'align' was placed behing a 'jmp' in an IG that does not
     // immediately preced the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
-    bool validatePadding = alignInstr->idaIG == alignInstr->idaLoopHeadPredIG;
+    bool validatePadding = !alignInstr->isPlacedAfterJmp;
 #endif
 
     // Candidate for loop alignment
@@ -10070,7 +10076,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     // then add "int3" instruction. Since int3 takes 1 byte, we would only add
     // it if paddingToAdd >= 1 byte.
 
-    if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && !validatePadding && paddingToAdd >= 1)
+    if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp && paddingToAdd >= 1)
     {
         size_t int3Code = insCodeMR(INS_BREAKPOINT);
         // There is no good way to squeeze in "int3" as well as display it

@@ -115,7 +115,7 @@ const char* emitter::emitIfName(unsigned f)
 
     static char errBuff[32];
 
-    if (f < _countof(ifNames))
+    if (f < ArrLen(ifNames))
     {
         return ifNames[f];
     }
@@ -3356,7 +3356,7 @@ const BYTE emitter::emitFmtToOps[] = {
 };
 
 #ifdef DEBUG
-const unsigned emitter::emitFmtCount = _countof(emitFmtToOps);
+const unsigned emitter::emitFmtCount = ArrLen(emitFmtToOps);
 #endif
 
 //------------------------------------------------------------------------
@@ -3381,6 +3381,15 @@ const size_t hexEncodingSize = 11;
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
+// emitDispInsIndent: Print indentation corresponding to an instruction's
+// indentation.
+//
+void emitter::emitDispInsIndent()
+{
+    size_t indent = emitComp->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
+    printf("%.*s", indent, "                             ");
+}
+//------------------------------------------------------------------------
 // emitDispGCDeltaTitle: Print an appropriately indented title for a GC info delta
 //
 // Arguments:
@@ -3388,8 +3397,8 @@ const size_t hexEncodingSize = 11;
 //
 void emitter::emitDispGCDeltaTitle(const char* title)
 {
-    size_t indent = emitComp->opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
-    printf("%.*s; %s", indent, "                             ", title);
+    emitDispInsIndent();
+    printf("; %s", title);
 }
 
 //------------------------------------------------------------------------
@@ -6064,7 +6073,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     if (emitComp->lvaKeepAliveAndReportThis())
     {
         assert(emitComp->lvaIsOriginalThisArg(0));
-        LclVarDsc* thisDsc = &emitComp->lvaTable[0];
+        LclVarDsc* thisDsc = emitComp->lvaGetDesc(0U);
 
         /* If "this" (which is passed in as a register argument in REG_ARG_0)
            is enregistered, we normally spot the "mov REG_ARG_0 -> thisReg"
@@ -6233,7 +6242,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
 #ifdef DEBUG
-    *instrCount = 0;
+    *instrCount                                          = 0;
+    jitstd::list<PreciseIPMapping>::iterator nextMapping = emitComp->genPreciseIPmappings.begin();
 #endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
@@ -6402,6 +6412,34 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
             size_t     curInstrAddr = (size_t)cp;
             instrDesc* curInstrDesc = id;
+
+            if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
+                (id->idCodeSize() > 0))
+            {
+                UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
+                while (nextMapping != emitComp->genPreciseIPmappings.end())
+                {
+                    UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
+
+                    if (mappingOffs > curCodeOffs)
+                    {
+                        // Still haven't reached instruction that next mapping belongs to.
+                        break;
+                    }
+
+                    // We reached the mapping or went past it.
+                    if (mappingOffs == curCodeOffs)
+                    {
+                        emitDispInsIndent();
+                        printf("; ");
+                        nextMapping->debugInfo.Dump(true);
+                        printf("\n");
+                    }
+
+                    ++nextMapping;
+                }
+            }
+
 #endif
 
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
@@ -7315,7 +7353,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
     {
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, _countof(label), "RWD%02u", offset);
+        sprintf_s(label, ArrLen(label), "RWD%02u", offset);
         printf(labelFormat, label);
         offset += data->dsSize;
 
@@ -8333,8 +8371,8 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr D
                 if (varNum >= 0)
                 {
                     // This is NOT a spill temp
-                    LclVarDsc* varDsc = &emitComp->lvaTable[varNum];
-                    isTracked         = emitComp->lvaIsGCTracked(varDsc);
+                    const LclVarDsc* varDsc = emitComp->lvaGetDesc(varNum);
+                    isTracked               = emitComp->lvaIsGCTracked(varDsc);
                 }
 
                 if (!isTracked)

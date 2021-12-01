@@ -9,6 +9,7 @@
     <UseCustomDirectoryHarvesting>true</UseCustomDirectoryHarvesting>
     <WixIncludeRegistryKeys>true</WixIncludeRegistryKeys>
     <RegKeyProductName>sharedhost</RegKeyProductName>
+    <!-- Contributes to DependencyKey which ensures stable provider key - do not change -->
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
     <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
     <MajorUpgradeSchedule>afterInstallExecute</MajorUpgradeSchedule>
@@ -21,12 +22,16 @@
     <RpmScriptsDirectory>$(MSBuildThisFileDirectory)rpm_scripts/host</RpmScriptsDirectory>
     <RpmAfterInstallScript>$(RpmScriptsDirectory)/after_install.sh</RpmAfterInstallScript>
     <RpmAfterRemoveScript>$(RpmScriptsDirectory)/after_remove.sh</RpmAfterRemoveScript>
+    <!-- Enables stable upgrade code - do not change -->
+    <MsiUpgradeCodeSeed>dotnet-host $(MajorVersion).$(MinorVersion) $(Platform)</MsiUpgradeCodeSeed>
   </PropertyGroup>
 
   <ItemGroup>
     <WixSrcFile Include="host.wxs" />
     <WixExtraComponentGroupRefId Include="InstallSharedHostandDetectionKeys" />
     <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
+    <!-- Enables stable provider key - do not change -->
+    <CandleVariables Include="DependencyKey" Value="$(WixDependencyKeyName)_$(MajorVersion).$(MinorVersion)_$(TargetArchitecture)" />
   </ItemGroup>
 
   <ItemGroup>

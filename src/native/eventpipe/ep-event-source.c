@@ -100,7 +100,7 @@ ep_event_source_init (EventPipeEventSource *event_source)
 	// Generate metadata.
 	EventPipeParameterDesc params [3];
 	uint32_t params_len;
-	params_len = (uint32_t)EP_ARRAY_SIZE (params);
+	params_len = (uint32_t)ARRAY_SIZE (params);
 
 	command_line_arg_utf16 = ep_rt_utf8_to_utf16_string ("CommandLine", -1);
 	ep_raise_error_if_nok (command_line_arg_utf16 != NULL);
@@ -221,7 +221,7 @@ ep_event_source_send_process_info (
 	if (arch_info_utf16)
 		ep_event_data_init (&data[2], (uint64_t)arch_info_utf16, (uint32_t)((ep_rt_utf16_string_len (arch_info_utf16) + 1) * sizeof (ep_char16_t)), 0);
 
-	ep_write_event_2 (event_source->process_info_event, data, (uint32_t)EP_ARRAY_SIZE (data), NULL, NULL);
+	ep_write_event_2 (event_source->process_info_event, data, (uint32_t)ARRAY_SIZE (data), NULL, NULL);
 
 	ep_rt_utf16_string_free (arch_info_utf16);
 	ep_rt_utf16_string_free (os_info_utf16);

@@ -16,7 +16,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/DllImportGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\TestAssets\NativeExports\NativeExports.csproj" />
   </ItemGroup>

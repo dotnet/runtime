@@ -720,8 +720,8 @@ const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */)
     static int  nextBufferIndex = 0;
 
     auto& buffer    = buffers[nextBufferIndex];
-    nextBufferIndex = (nextBufferIndex + 1) % _countof(buffers);
-    _snprintf_s(buffer, _countof(buffer), _countof(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding, "", bbID);
+    nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
+    _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding, "", bbID);
     return buffer;
 }
 
@@ -774,7 +774,7 @@ bool BasicBlock::CloneBlockState(
 
     for (Statement* const fromStmt : from->Statements())
     {
-        auto newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
+        GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
         if (!newExpr)
         {
             // gtCloneExpr doesn't handle all opcodes, so may fail to clone a statement.
@@ -782,7 +782,7 @@ bool BasicBlock::CloneBlockState(
             // return `false` to the caller to indicate that cloning was unsuccessful.
             return false;
         }
-        compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr));
+        compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr, fromStmt->GetDebugInfo()));
     }
     return true;
 }
@@ -839,14 +839,6 @@ Statement* BasicBlock::lastStmt() const
     Statement* result = bbStmtList->GetPrevStmt();
     assert(result != nullptr && result->GetNextStmt() == nullptr);
     return result;
-}
-
-//------------------------------------------------------------------------
-// BasicBlock::firstNode: Returns the first node in the block.
-//
-GenTree* BasicBlock::firstNode() const
-{
-    return IsLIR() ? GetFirstLIRNode() : Compiler::fgGetFirstNode(firstStmt()->GetRootNode());
 }
 
 //------------------------------------------------------------------------
@@ -1678,6 +1670,6 @@ void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason
     {
         compiler->loopAlignCandidates--;
         bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.", bbNum, reason);
+        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.\n", bbNum, reason);
     }
 }

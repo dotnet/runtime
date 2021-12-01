@@ -97,6 +97,7 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.cs" Link="Common\System\IO\PathInternal.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs" Link="Common\System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\VirtualDriveHelper.Windows.cs" Link="Common\System\IO\VirtualDriveHelper.Windows.cs" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj" />
   </ItemGroup>
@@ -216,6 +217,7 @@
     <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
     <Content Include="DirectoryInfo\test-dir\dummy.txt" Link="test-dir\dummy.txt" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
