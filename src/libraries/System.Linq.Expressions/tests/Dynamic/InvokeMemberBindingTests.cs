@@ -231,8 +231,7 @@ namespace System.Dynamic.Tests
             return Activator.CreateInstance(typeBuild.CreateType());
         }
 
-        // We're not testing compilation, but we do need Reflection.Emit for the test
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NonIndexerParameterizedDirectAccess()
         {
             // If a parameterized property isn't the type's indexer, we should be allowed to use the
@@ -243,8 +242,7 @@ namespace System.Dynamic.Tests
             Assert.Equal(19, value);
         }
 
-        // We're not testing compilation, but we do need Reflection.Emit for the test
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NonIndexerParameterizedGetterAndSetterIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, true);
@@ -254,8 +252,7 @@ namespace System.Dynamic.Tests
             Assert.Contains("set_ItemProp", ex.Message);
         }
 
-        // We're not testing compilation, but we do need Reflection.Emit for the test
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NonIndexerParameterizedGetterOnlyIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, false);
@@ -265,8 +262,7 @@ namespace System.Dynamic.Tests
             Assert.Contains("get_ItemProp", ex.Message);
         }
 
-        // We're not testing compilation, but we do need Reflection.Emit for the test
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NonIndexerParameterizedSetterOnlyIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(false, true);
@@ -335,8 +331,7 @@ namespace System.Dynamic.Tests
                 int arg10) => 11;
         }
 
-        // We're not testing compilation, but we do need Reflection.Emit for the test
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [Fact]
         public void ManyArities()
         {
             dynamic d = new ManyOverloads();
@@ -380,8 +375,7 @@ namespace System.Dynamic.Tests
             return testObjects.SelectMany(i => testObjects.Select(j => new[] { i, j }));
         }
 
-        // We're not testing compilation, but we do need Reflection.Emit for the test
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [Theory]
         [MemberData(nameof(SameNameObjectPairs))]
         public void OperationOnTwoObjectsDifferentTypesOfSameName(object x, object y)
         {
