@@ -84,7 +84,11 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Equal(1, cache.Count);
             Assert.Equal("value4", cache.Get("key4"));
         }
+    }
 
+    [Collection(nameof(DisableParallelization))]
+    public class CompactTestsDisableParallelization
+    {
         /// <summary>
         /// Tests a race condition in Compact where CacheEntry.LastAccessed is getting updated
         /// by a different thread than what is doing the Compact, leading to sorting failing.
