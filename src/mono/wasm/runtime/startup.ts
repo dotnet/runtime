@@ -536,10 +536,10 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
     const main_argc = allRuntimeArguments.length + 1;
     const main_argv = <any>Module._malloc(main_argc * 4);
     let aindex = 0;
-    Module.setValue(main_argv + (aindex * 4), INTERNAL.mono_wasm_strdup(name), "i32");
+    Module.setValue(main_argv + (aindex * 4), cwraps.mono_wasm_strdup(name), "i32");
     aindex += 1;
     for (let i = 0; i < allRuntimeArguments.length; ++i) {
-        Module.setValue(main_argv + (aindex * 4), INTERNAL.mono_wasm_strdup(allRuntimeArguments[i]), "i32");
+        Module.setValue(main_argv + (aindex * 4), cwraps.mono_wasm_strdup(allRuntimeArguments[i]), "i32");
         aindex += 1;
     }
     cwraps.mono_wasm_set_main_args(main_argc, main_argv);

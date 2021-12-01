@@ -63,6 +63,7 @@
     <PackageToInclude Include="Microsoft.CodeAnalysis.CSharp"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.VisualBasic"/>
     <PackageToInclude Include="CommandLineParser"/>
+    <PackageToInclude Include="Microsoft.DotNet.XUnitExtensions" />
 
     <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="1.1.1" />
     <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
@@ -71,6 +72,7 @@
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
     <PackageReference Include="xunit" Version="$(XUnitVersion)" />
     <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" GeneratePathProperty="True" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.runner.utility" Version="$(XUnitVersion)" />
   </ItemGroup>
 

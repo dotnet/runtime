@@ -370,6 +370,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?i:abcde)|(?i:abcdf)", "(?i:abcd[ef])")]
         [InlineData("xyz(?:(?i:abcde)|(?i:abcdf))", "xyz(?i:abcd[ef])")]
         [InlineData("bonjour|hej|ciao|shalom|zdravo|pozdrav|hallo|hola|hello|hey|witam|tere|bonjou|salam|helo|sawubona", "(?>bonjou(?>r|)|h(?>e(?>j|(?>l(?>lo|o)|y))|allo|ola)|ciao|s(?>halom|a(?>lam|wubona))|zdravo|pozdrav|witam|tere)")]
+        [InlineData("\\w\\d123|\\w\\dabc", "\\w\\d(?:123|abc)")]
         // Auto-atomicity
         [InlineData("a*b", "(?>a*)b")]
         [InlineData("a*b+", "(?>a*)b+")]
@@ -391,6 +392,16 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:w*)+\\.", "(?>w*)+\\.")]
         [InlineData("(a[bcd]e*)*fg", "(a[bcd](?>e*))*fg")]
         [InlineData("(\\w[bcd]\\s*)*fg", "(\\w[bcd](?>\\s*))*fg")]
+        // IgnoreCase set creation
+        [InlineData("(?i)abcd", "[Aa][Bb][Cc][Dd]")]
+        [InlineData("(?i)abcd|efgh", "[Aa][Bb][Cc][Dd]|[Ee][Ff][Gg][Hh]")]
+        [InlineData("(?i)a|b", "[AaBb]")]
+        [InlineData("(?i)[abcd]", "[AaBbCcDd]")]
+        [InlineData("(?i)[acexyz]", "[AaCcEeXxYyZz]")]
+        [InlineData("(?i)\\w", "\\w")]
+        [InlineData("(?i)\\d", "\\d")]
+        [InlineData("(?i).", ".")]
+        [InlineData("(?i)\\$", "\\$")]
         public void PatternsReduceIdentically(string pattern1, string pattern2)
         {
             string result1 = GetRegexCodes(new Regex(pattern1));
@@ -398,12 +409,6 @@ namespace System.Text.RegularExpressions.Tests
             if (result1 != result2)
             {
                 throw new Xunit.Sdk.EqualException(result2, result1);
-            }
-
-            Assert.NotEqual(GetRegexCodes(new Regex(pattern1, RegexOptions.RightToLeft)), GetRegexCodes(new Regex(pattern2)));
-            if (!pattern1.Contains("?i:") && !pattern2.Contains("?i:"))
-            {
-                Assert.NotEqual(GetRegexCodes(new Regex(pattern1, RegexOptions.IgnoreCase)), GetRegexCodes(new Regex(pattern2)));
             }
         }
 
@@ -450,7 +455,6 @@ namespace System.Text.RegularExpressions.Tests
         // Not reducing branches of alternations with different casing
         [InlineData("(?i:abcd)|abcd", "abcd|abcd")]
         [InlineData("abcd|(?i:abcd)", "abcd|abcd")]
-        [InlineData("abc(?:(?i:e)|f)", "abc[ef]")]
         // Not applying auto-atomicity
         [InlineData("a*b*", "(?>a*)b*")]
         [InlineData("[ab]*[^a]", "(?>[ab]*)[^a]")]
@@ -470,9 +474,12 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:ab|cd|ae)f", "(?>ab|cd|ae)f")]
         public void PatternsReduceDifferently(string pattern1, string pattern2)
         {
-            var r1 = new Regex(pattern1);
-            var r2 = new Regex(pattern2);
-            Assert.NotEqual(GetRegexCodes(r1), GetRegexCodes(r2));
+            string result1 = GetRegexCodes(new Regex(pattern1));
+            string result2 = GetRegexCodes(new Regex(pattern2));
+            if (result1 == result2)
+            {
+                throw new Xunit.Sdk.EqualException(result2, result1);
+            }
         }
 
         [Theory]

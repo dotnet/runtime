@@ -122,9 +122,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     compiler->compVSQuirkStackPaddingNeeded = 0;
 #endif // TARGET_AMD64
 
-    //  Initialize the IP-mapping logic.
-    compiler->genIPmappingList         = nullptr;
-    compiler->genIPmappingLast         = nullptr;
     compiler->genCallSite2DebugInfoMap = nullptr;
 
     /* Assume that we not fully interruptible */
@@ -503,15 +500,16 @@ regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
     assert(tree->gtOper == GT_LCL_VAR);
 
     regMaskTP        regMask = RBM_NONE;
-    const LclVarDsc* varDsc  = compiler->lvaTable + tree->AsLclVarCommon()->GetLclNum();
+    const LclVarDsc* varDsc  = compiler->lvaGetDesc(tree->AsLclVarCommon());
     if (varDsc->lvPromoted)
     {
         for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
         {
-            noway_assert(compiler->lvaTable[i].lvIsStructField);
-            if (compiler->lvaTable[i].lvIsInReg())
+            const LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(i);
+            noway_assert(fieldVarDsc->lvIsStructField);
+            if (fieldVarDsc->lvIsInReg())
             {
-                regMask |= genGetRegMask(&compiler->lvaTable[i]);
+                regMask |= genGetRegMask(fieldVarDsc);
             }
         }
     }
@@ -533,7 +531,8 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 #ifdef DEBUG
     if (compiler->verbose)
     {
-        printf("\t\t\t\t\t\t\tV%02u in reg ", (varDsc - compiler->lvaTable));
+        printf("\t\t\t\t\t\t\tV%02u in reg ", compiler->lvaGetLclNum(varDsc));
+
         varDsc->PrintVarReg();
         printf(" is becoming %s  ", (isDying) ? "dead" : "live");
         Compiler::printTreeID(tree);
@@ -1199,8 +1198,7 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
     }
     else if (op->gtOper == GT_LCL_VAR)
     {
-        unsigned   varNum = op->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* varDsc = compiler->lvaTable + varNum;
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(op->AsLclVarCommon());
         assert(varDsc->lvType == TYP_STRUCT);
         opSize = varDsc->lvSize();
 #ifndef TARGET_64BIT
@@ -1211,43 +1209,6 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
         else
 #endif // !TARGET_64BIT
         {
-            alignment = TARGET_POINTER_SIZE;
-        }
-    }
-    else if (op->OperIsCopyBlkOp())
-    {
-        GenTree* op2 = op->AsOp()->gtOp2;
-
-        if (op2->OperGet() == GT_CNS_INT)
-        {
-            if (op2->IsIconHandle(GTF_ICON_CLASS_HDL))
-            {
-                CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtIconVal;
-                opSize = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-                alignment =
-                    roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                opSize       = (unsigned)op2->AsIntCon()->gtIconVal;
-                GenTree* op1 = op->AsOp()->gtOp1;
-                assert(op1->OperGet() == GT_LIST);
-                GenTree* dstAddr = op1->AsOp()->gtOp1;
-                if (dstAddr->OperGet() == GT_ADDR)
-                {
-                    InferStructOpSizeAlign(dstAddr->AsOp()->gtOp1, &alignment);
-                }
-                else
-                {
-                    assert(!"Unhandle dstAddr node");
-                    alignment = TARGET_POINTER_SIZE;
-                }
-            }
-        }
-        else
-        {
-            noway_assert(!"Variable sized COPYBLK register arg!");
-            opSize    = 0;
             alignment = TARGET_POINTER_SIZE;
         }
     }
@@ -2446,6 +2407,8 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     genIPmappingGen();
 
+    INDEBUG(genDumpPreciseDebugInfo());
+
     /* Finalize the Local Var info in terms of generated code */
 
     genSetScopeInfo();
@@ -3193,7 +3156,7 @@ void CodeGen::genGCWriteBarrier(GenTree* tgt, GCInfo::WriteBarrierForm wbf)
             }
             else
             {
-                LclVarDsc* varDsc = &compiler->lvaTable[lclNum];
+                const LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
                 if (varDsc->lvIsParam && varDsc->lvType == TYP_BYREF)
                 {
                     wbKind = CWBKind_ByRefArg; // Out (or in/out) arg
@@ -3365,16 +3328,16 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // In other cases, we simply use the type of the lclVar to determine the type of the register.
         var_types getRegType(Compiler* compiler)
         {
-            const LclVarDsc& varDsc = compiler->lvaTable[varNum];
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
             // Check if this is an HFA register arg and return the HFA type
-            if (varDsc.lvIsHfaRegArg())
+            if (varDsc->lvIsHfaRegArg())
             {
                 // Cannot have hfa types on windows arm targets
                 // in vararg methods.
                 assert(!TargetOS::IsWindows || !compiler->info.compIsVarArgs);
-                return varDsc.GetHfaType();
+                return varDsc->GetHfaType();
             }
-            return compiler->mangleVarArgsType(varDsc.lvType);
+            return compiler->mangleVarArgsType(varDsc->lvType);
         }
 
 #endif // !UNIX_AMD64_ABI
@@ -3385,7 +3348,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
     for (varNum = 0; varNum < compiler->lvaCount; ++varNum)
     {
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
 
         // Is this variable a register arg?
         if (!varDsc->lvIsParam)
@@ -3409,7 +3372,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             if (varDsc->lvIsStructField)
             {
                 assert(!varDsc->lvPromoted);
-                parentVarDsc = &compiler->lvaTable[varDsc->lvParentLcl];
+                parentVarDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
             }
 
             Compiler::lvaPromotionType promotionType = compiler->lvaGetPromotionType(parentVarDsc);
@@ -3756,9 +3719,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     continue;
                 }
 
-                varNum = regArgTab[argNum].varNum;
-                noway_assert(varNum < compiler->lvaCount);
-                varDsc                     = compiler->lvaTable + varNum;
+                varNum                     = regArgTab[argNum].varNum;
+                varDsc                     = compiler->lvaGetDesc(varNum);
                 const var_types varRegType = varDsc->GetRegisterType();
                 noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 
@@ -3896,8 +3858,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         }
 
         varNum = regArgTab[argNum].varNum;
-        noway_assert(varNum < compiler->lvaCount);
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
 
 #ifndef TARGET_64BIT
         // If this arg is never on the stack, go to the next one.
@@ -4094,14 +4055,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             srcReg           = regArgTab[argNum].trashBy;
 
             varNumDest = regArgTab[destReg].varNum;
-            noway_assert(varNumDest < compiler->lvaCount);
-            varDscDest = compiler->lvaTable + varNumDest;
+            varDscDest = compiler->lvaGetDesc(varNumDest);
             noway_assert(varDscDest->lvIsParam && varDscDest->lvIsRegArg);
 
             noway_assert(srcReg < argMax);
             varNumSrc = regArgTab[srcReg].varNum;
-            noway_assert(varNumSrc < compiler->lvaCount);
-            varDscSrc = compiler->lvaTable + varNumSrc;
+            varDscSrc = compiler->lvaGetDesc(varNumSrc);
             noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
 
             emitAttr size = EA_PTRSIZE;
@@ -4117,8 +4076,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 /* only 2 registers form the circular dependency - use "xchg" */
 
                 varNum = regArgTab[argNum].varNum;
-                noway_assert(varNum < compiler->lvaCount);
-                varDsc = compiler->lvaTable + varNum;
+                varDsc = compiler->lvaGetDesc(varNum);
                 noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 
                 noway_assert(genTypeSize(genActualType(varDscSrc->TypeGet())) <= REGSIZE_BYTES);
@@ -4163,7 +4121,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 unsigned iter = begReg;
                 do
                 {
-                    if (compiler->lvaTable[regArgTab[iter].varNum].TypeGet() != TYP_DOUBLE)
+                    if (compiler->lvaGetDesc(regArgTab[iter].varNum)->TypeGet() != TYP_DOUBLE)
                     {
                         cycleAllDouble = false;
                         break;
@@ -4250,8 +4208,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     }
 #endif
                     varNumSrc = regArgTab[srcReg].varNum;
-                    noway_assert(varNumSrc < compiler->lvaCount);
-                    varDscSrc = compiler->lvaTable + varNumSrc;
+                    varDscSrc = compiler->lvaGetDesc(varNumSrc);
                     noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
 
                     if (destMemType == TYP_REF)
@@ -4312,9 +4269,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 continue;
             }
 
-            varNum = regArgTab[argNum].varNum;
-            noway_assert(varNum < compiler->lvaCount);
-            varDsc                     = compiler->lvaTable + varNum;
+            varNum                     = regArgTab[argNum].varNum;
+            varDsc                     = compiler->lvaGetDesc(varNum);
             const var_types regType    = regArgTab[argNum].getRegType(compiler);
             const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType);
             const var_types varRegType = varDsc->GetRegisterType();
@@ -6394,7 +6350,7 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
     unsigned contextArg = reportArg ? compiler->info.compTypeCtxtArg : compiler->info.compThisArg;
 
     noway_assert(contextArg != BAD_VAR_NUM);
-    LclVarDsc* varDsc = &compiler->lvaTable[contextArg];
+    LclVarDsc* varDsc = compiler->lvaGetDesc(contextArg);
 
     // We are still in the prolog and compiler->info.compTypeCtxtArg has not been
     // moved to its final home location. So we need to use it from the
@@ -7029,7 +6985,7 @@ void CodeGen::genFnProlog()
     // as it will overwrite the real value
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
-        LclVarDsc* varDsc = &compiler->lvaTable[compiler->lvaPSPSym];
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->lvaPSPSym);
         assert(!varDsc->lvMustInit);
     }
 
@@ -7260,13 +7216,11 @@ void CodeGen::genFnProlog()
         assert((!compiler->opts.ShouldUsePInvokeHelpers()) || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!compiler->opts.ShouldUsePInvokeHelpers())
         {
-            noway_assert(compiler->info.compLvFrameListRoot < compiler->lvaCount);
-
             excludeMask |= (RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);
 
             // We also must exclude the register used by compLvFrameListRoot when it is enregistered
             //
-            LclVarDsc* varDsc = &compiler->lvaTable[compiler->info.compLvFrameListRoot];
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->info.compLvFrameListRoot);
             if (varDsc->lvRegister)
             {
                 excludeMask |= genRegMask(varDsc->GetRegNum());
@@ -7679,9 +7633,9 @@ void CodeGen::genFnProlog()
     // (our argument pointer register has a refcount > 0).
     unsigned argsStartVar = compiler->lvaVarargsBaseOfStkArgs;
 
-    if (compiler->info.compIsVarArgs && compiler->lvaTable[argsStartVar].lvRefCnt() > 0)
+    if (compiler->info.compIsVarArgs && compiler->lvaGetDesc(argsStartVar)->lvRefCnt() > 0)
     {
-        varDsc = &compiler->lvaTable[argsStartVar];
+        varDsc = compiler->lvaGetDesc(argsStartVar);
 
         noway_assert(compiler->info.compArgsCount > 0);
 
@@ -7695,7 +7649,7 @@ void CodeGen::genFnProlog()
         // EDX might actually be holding something here.  So make sure to only use EAX for this code
         // sequence.
 
-        LclVarDsc* lastArg = &compiler->lvaTable[compiler->info.compArgsCount - 1];
+        const LclVarDsc* lastArg = compiler->lvaGetDesc(compiler->info.compArgsCount - 1);
         noway_assert(!lastArg->lvRegister);
         signed offset = lastArg->GetStackOffset();
         assert(offset != BAD_STK_OFFS);
@@ -7721,8 +7675,8 @@ void CodeGen::genFnProlog()
     if (compiler->opts.compStackCheckOnRet)
     {
         noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvDoNotEnregister &&
-                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvOnFrame);
+                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister &&
+                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
@@ -9816,7 +9770,7 @@ unsigned CodeGen::getFirstArgWithStackSlot()
     LclVarDsc* varDsc = nullptr;
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
     {
-        varDsc = &(compiler->lvaTable[i]);
+        varDsc = compiler->lvaGetDesc(i);
 
         // We should have found a stack parameter (and broken out of this loop) before
         // we find any non-parameters.
@@ -10267,7 +10221,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
     // Is this a varargs function?
     if (compiler->info.compIsVarArgs && varNum != compiler->lvaVarargsHandleArg &&
-        varNum < compiler->info.compArgsCount && !compiler->lvaTable[varNum].lvIsRegArg)
+        varNum < compiler->info.compArgsCount && !compiler->lvaGetDesc(varNum)->lvIsRegArg)
     {
         noway_assert(varLoc->vlType == VLT_STK || varLoc->vlType == VLT_STK2);
 
@@ -10276,7 +10230,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
         // and just find its position relative to the varargs handle
 
         PREFIX_ASSUME(compiler->lvaVarargsHandleArg < compiler->info.compArgsCount);
-        if (!compiler->lvaTable[compiler->lvaVarargsHandleArg].lvOnFrame)
+        if (!compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->lvOnFrame)
         {
             noway_assert(!compiler->opts.compDbgCode);
             return;
@@ -10284,9 +10238,9 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
         // Can't check compiler->lvaTable[varNum].lvOnFrame as we don't set it for
         // arguments of vararg functions to avoid reporting them to GC.
-        noway_assert(!compiler->lvaTable[varNum].lvRegister);
-        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].GetStackOffset();
-        unsigned varOffset    = compiler->lvaTable[varNum].GetStackOffset();
+        noway_assert(!compiler->lvaGetDesc(varNum)->lvRegister);
+        unsigned cookieOffset = compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->GetStackOffset();
+        unsigned varOffset    = compiler->lvaGetDesc(varNum)->GetStackOffset();
 
         noway_assert(cookieOffset < varOffset);
         unsigned offset     = varOffset - cookieOffset;
@@ -10451,12 +10405,11 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
 
 void CodeGen::genIPmappingListDisp()
 {
-    unsigned      mappingNum = 0;
-    IPmappingDsc* ipMapping;
+    unsigned mappingNum = 0;
 
-    for (ipMapping = compiler->genIPmappingList; ipMapping != nullptr; ipMapping = ipMapping->ipmdNext)
+    for (IPmappingDsc& dsc : compiler->genIPmappings)
     {
-        genIPmappingDisp(mappingNum, ipMapping);
+        genIPmappingDisp(mappingNum, &dsc);
         ++mappingNum;
     }
 }
@@ -10495,8 +10448,8 @@ void CodeGen::genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool i
             // Ignore this one if it's the same IL location as the last one we saw.
             // Note that we'll let through two identical IL offsets if the flag bits
             // differ, or two identical "special" mappings (e.g., PROLOG).
-            if ((compiler->genIPmappingLast != nullptr) && (kind == compiler->genIPmappingLast->ipmdKind) &&
-                (di.GetLocation() == compiler->genIPmappingLast->ipmdLoc))
+            if ((compiler->genIPmappings.size() > 0) && (kind == compiler->genIPmappings.back().ipmdKind) &&
+                (di.GetLocation() == compiler->genIPmappings.back().ipmdLoc))
             {
                 JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x\n", di.GetLocation().GetOffset());
                 return;
@@ -10504,36 +10457,20 @@ void CodeGen::genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool i
             break;
     }
 
-    /* Create a mapping entry and append it to the list */
+    IPmappingDsc addMapping;
+    addMapping.ipmdNativeLoc.CaptureLocation(GetEmitter());
+    addMapping.ipmdKind    = kind;
+    addMapping.ipmdLoc     = di.GetLocation();
+    addMapping.ipmdIsLabel = isLabel;
 
-    IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<IPmappingDsc>(1);
-    addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdKind    = kind;
-    addMapping->ipmdLoc     = di.GetLocation();
-    addMapping->ipmdIsLabel = isLabel;
-    addMapping->ipmdNext    = nullptr;
-
-    assert((kind == IPmappingDscKind::Normal) == addMapping->ipmdLoc.IsValid());
-
-    if (compiler->genIPmappingList != nullptr)
-    {
-        assert(compiler->genIPmappingLast != nullptr);
-        assert(compiler->genIPmappingLast->ipmdNext == nullptr);
-        compiler->genIPmappingLast->ipmdNext = addMapping;
-    }
-    else
-    {
-        assert(compiler->genIPmappingLast == nullptr);
-        compiler->genIPmappingList = addMapping;
-    }
-
-    compiler->genIPmappingLast = addMapping;
+    assert((kind == IPmappingDscKind::Normal) == addMapping.ipmdLoc.IsValid());
+    compiler->genIPmappings.push_back(addMapping);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Added IP mapping: ");
-        genIPmappingDisp(unsigned(-1), addMapping);
+        genIPmappingDisp(unsigned(-1), &addMapping);
     }
 #endif // DEBUG
 }
@@ -10555,25 +10492,18 @@ void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di,
 
     /* Create a mapping entry and prepend it to the list */
 
-    IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<IPmappingDsc>(1);
-    addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdKind    = kind;
-    addMapping->ipmdLoc     = di.GetLocation();
-    addMapping->ipmdIsLabel = isLabel;
-
-    addMapping->ipmdNext       = compiler->genIPmappingList;
-    compiler->genIPmappingList = addMapping;
-
-    if (compiler->genIPmappingLast == nullptr)
-    {
-        compiler->genIPmappingLast = addMapping;
-    }
+    IPmappingDsc addMapping;
+    addMapping.ipmdNativeLoc.CaptureLocation(GetEmitter());
+    addMapping.ipmdKind    = kind;
+    addMapping.ipmdLoc     = di.GetLocation();
+    addMapping.ipmdIsLabel = isLabel;
+    compiler->genIPmappings.push_front(addMapping);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Added IP mapping to front: ");
-        genIPmappingDisp(unsigned(-1), addMapping);
+        genIPmappingDisp(unsigned(-1), &addMapping);
     }
 #endif // DEBUG
 }
@@ -10592,31 +10522,30 @@ void CodeGen::genEnsureCodeEmitted(const DebugInfo& di)
         return;
     }
 
-    /* If other IL were offsets reported, skip */
+    // If other IL were offsets reported, skip
 
-    if (compiler->genIPmappingLast == nullptr)
+    if (compiler->genIPmappings.size() <= 0)
     {
         return;
     }
 
-    if (compiler->genIPmappingLast->ipmdLoc != di.GetLocation())
+    const IPmappingDsc& prev = compiler->genIPmappings.back();
+    if (prev.ipmdLoc != di.GetLocation())
     {
         return;
     }
 
-    /* offsx was the last reported offset. Make sure that we generated native code */
+    // di represents the last reported offset. Make sure that we generated native code
 
-    if (compiler->genIPmappingLast->ipmdNativeLoc.IsCurrentLocation(GetEmitter()))
+    if (prev.ipmdNativeLoc.IsCurrentLocation(GetEmitter()))
     {
         instGen(INS_nop);
     }
 }
 
-/*****************************************************************************
- *
- *  Shut down the IP-mapping logic, report the info to the EE.
- */
-
+//------------------------------------------------------------------------
+// genIPmappingGen: Shut down the IP-mapping logic, report the info to the EE.
+//
 void CodeGen::genIPmappingGen()
 {
     if (!compiler->opts.compDbgInfo)
@@ -10631,133 +10560,99 @@ void CodeGen::genIPmappingGen()
     }
 #endif
 
-    if (compiler->genIPmappingList == nullptr)
+    if (compiler->genIPmappings.size() <= 0)
     {
         compiler->eeSetLIcount(0);
         compiler->eeSetLIdone();
         return;
     }
 
-    IPmappingDsc*  tmpMapping;
-    IPmappingDsc*  prevMapping;
-    unsigned       mappingCnt;
-    UNATIVE_OFFSET lastNativeOfs;
-
-    /* First count the number of distinct mapping records */
-
-    mappingCnt    = 0;
-    lastNativeOfs = UNATIVE_OFFSET(~0);
-
-    for (prevMapping = nullptr, tmpMapping = compiler->genIPmappingList; tmpMapping != nullptr;
-         tmpMapping = tmpMapping->ipmdNext)
+    UNATIVE_OFFSET prevNativeOfs = UNATIVE_OFFSET(~0);
+    for (jitstd::list<IPmappingDsc>::iterator it = compiler->genIPmappings.begin();
+         it != compiler->genIPmappings.end();)
     {
-        // Managed RetVal - since new sequence points are emitted to identify IL calls,
-        // make sure that those are not filtered and do not interfere with filtering of
-        // other sequence points.
-        if (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.IsCall())
+        UNATIVE_OFFSET dscNativeOfs = it->ipmdNativeLoc.CodeOffset(GetEmitter());
+        if (dscNativeOfs != prevNativeOfs)
         {
-            mappingCnt++;
+            prevNativeOfs = dscNativeOfs;
+            ++it;
             continue;
         }
 
-        UNATIVE_OFFSET nextNativeOfs = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
+        // If we have a previous offset we should have a previous mapping.
+        assert(it != compiler->genIPmappings.begin());
+        jitstd::list<IPmappingDsc>::iterator prev = it;
+        --prev;
 
-        if (nextNativeOfs != lastNativeOfs)
+        // Prev and current mappings have same native offset.
+        // If one does not map to IL then remove that one.
+        if (prev->ipmdKind == IPmappingDscKind::NoMapping)
         {
-            mappingCnt++;
-            lastNativeOfs = nextNativeOfs;
-            prevMapping   = tmpMapping;
+            compiler->genIPmappings.erase(prev);
+            ++it;
             continue;
         }
 
-        /* If there are mappings with the same native offset, then:
-           o If one of them is NO_MAPPING, ignore it
-           o If one of them is a label, report that and ignore the other one
-           o Else report the higher IL offset
-         */
+        if (it->ipmdKind == IPmappingDscKind::NoMapping)
+        {
+            it = compiler->genIPmappings.erase(it);
+            continue;
+        }
 
-        PREFIX_ASSUME(prevMapping != nullptr); // We would exit before if this was true
-        if (prevMapping->ipmdKind == IPmappingDscKind::NoMapping)
+        // Both have mappings.
+        // If previous is the prolog, keep both if this one is at IL offset 0.
+        // (TODO: Why? Debugger has no problem breaking on the prolog mapping
+        // it seems.)
+        if ((prev->ipmdKind == IPmappingDscKind::Prolog) && (it->ipmdKind == IPmappingDscKind::Normal) &&
+            (it->ipmdLoc.GetOffset() == 0))
         {
-            // If the previous entry was NO_MAPPING, ignore it
-            prevMapping->ipmdNativeLoc.Init();
-            prevMapping = tmpMapping;
+            ++it;
+            continue;
         }
-        else if (tmpMapping->ipmdKind == IPmappingDscKind::NoMapping)
+
+        // For the special case of an IL instruction with no body followed by
+        // the epilog (say ret void immediately preceding the method end), we
+        // leave both entries in, so that we'll stop at the (empty) ret
+        // statement if the user tries to put a breakpoint there, and then have
+        // the option of seeing the epilog or not based on SetUnmappedStopMask
+        // for the stepper.
+        if (it->ipmdKind == IPmappingDscKind::Epilog)
         {
-            // If the current entry is NO_MAPPING, ignore it
-            // Leave prevMapping unchanged as tmpMapping is no longer valid
-            tmpMapping->ipmdNativeLoc.Init();
+            ++it;
+            continue;
         }
-        else if ((tmpMapping->ipmdKind == IPmappingDscKind::Epilog) ||
-                 (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
+
+        // For managed return values we store all calls. Keep both in this case
+        // too.
+        if (((prev->ipmdKind == IPmappingDscKind::Normal) && (prev->ipmdLoc.IsCall())) ||
+            ((it->ipmdKind == IPmappingDscKind::Normal) && (it->ipmdLoc.IsCall())))
         {
-            // counting for special cases: see below
-            mappingCnt++;
-            prevMapping = tmpMapping;
+            ++it;
+            continue;
+        }
+
+        // Otherwise report the higher offset unless the previous mapping is a
+        // label.
+        if (prev->ipmdIsLabel)
+        {
+            it = compiler->genIPmappings.erase(it);
         }
         else
         {
-            noway_assert(prevMapping != nullptr);
-            noway_assert(!prevMapping->ipmdNativeLoc.Valid() ||
-                         lastNativeOfs == prevMapping->ipmdNativeLoc.CodeOffset(GetEmitter()));
-
-            /* The previous block had the same native offset. We have to
-               discard one of the mappings. Simply reinitialize ipmdNativeLoc
-               and prevMapping will be ignored later. */
-
-            if (prevMapping->ipmdIsLabel)
-            {
-                // Leave prevMapping unchanged as tmpMapping is no longer valid
-                tmpMapping->ipmdNativeLoc.Init();
-            }
-            else
-            {
-                prevMapping->ipmdNativeLoc.Init();
-                prevMapping = tmpMapping;
-            }
+            compiler->genIPmappings.erase(prev);
+            ++it;
         }
     }
 
-    /* Tell them how many mapping records we've got */
+    // Tell them how many mapping records we've got
 
-    compiler->eeSetLIcount(mappingCnt);
+    compiler->eeSetLIcount(static_cast<unsigned int>(compiler->genIPmappings.size()));
 
-    /* Now tell them about the mappings */
-
-    mappingCnt    = 0;
-    lastNativeOfs = UNATIVE_OFFSET(~0);
-
-    for (tmpMapping = compiler->genIPmappingList; tmpMapping != nullptr; tmpMapping = tmpMapping->ipmdNext)
+    // Now tell them about the mappings
+    unsigned int mappingIdx = 0;
+    for (const IPmappingDsc& dsc : compiler->genIPmappings)
     {
-        // Do we have to skip this record ?
-        if (!tmpMapping->ipmdNativeLoc.Valid())
-        {
-            continue;
-        }
-
-        UNATIVE_OFFSET nextNativeOfs = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
-
-        if (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.IsCall())
-        {
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, IPmappingDscKind::Normal, tmpMapping->ipmdLoc);
-        }
-        else if (nextNativeOfs != lastNativeOfs)
-        {
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, tmpMapping->ipmdKind, tmpMapping->ipmdLoc);
-            lastNativeOfs = nextNativeOfs;
-        }
-        else if (tmpMapping->ipmdKind == IPmappingDscKind::Epilog ||
-                 (tmpMapping->ipmdKind == IPmappingDscKind::Normal && tmpMapping->ipmdLoc.GetOffset() == 0))
-        {
-            // For the special case of an IL instruction with no body
-            // followed by the epilog (say ret void immediately preceding
-            // the method end), we put two entries in, so that we'll stop
-            // at the (empty) ret statement if the user tries to put a
-            // breakpoint there, and then have the option of seeing the
-            // epilog or not based on SetUnmappedStopMask for the stepper.
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, tmpMapping->ipmdKind, tmpMapping->ipmdLoc);
-        }
+        compiler->eeSetLIinfo(mappingIdx++, dsc.ipmdNativeLoc.CodeOffset(GetEmitter()), dsc.ipmdKind, dsc.ipmdLoc);
     }
 
 #if 0
@@ -10800,6 +10695,87 @@ void CodeGen::genIPmappingGen()
 
     compiler->eeSetLIdone();
 }
+
+#ifdef DEBUG
+void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first)
+{
+    if (context->GetSibling() != nullptr)
+    {
+        genDumpPreciseDebugInfoInlineTree(file, context->GetSibling(), first);
+    }
+
+    if (context->IsSuccess())
+    {
+        if (!*first)
+        {
+            fprintf(file, ",");
+        }
+
+        *first = false;
+
+        fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
+        fprintf(file, "\"MethodID\":%lld,", (INT64)context->GetCallee());
+        const char* className;
+        const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
+        fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        fprintf(file, "\"Inlinees\":[");
+        if (context->GetChild() != nullptr)
+        {
+            bool childFirst = true;
+            genDumpPreciseDebugInfoInlineTree(file, context->GetChild(), &childFirst);
+        }
+        fprintf(file, "]}");
+    }
+}
+
+void CodeGen::genDumpPreciseDebugInfo()
+{
+    if (JitConfig.JitDumpPreciseDebugInfoFile() == nullptr)
+        return;
+
+    static CritSecObject s_critSect;
+    CritSecHolder        holder(s_critSect);
+
+    FILE* file = _wfopen(JitConfig.JitDumpPreciseDebugInfoFile(), W("a"));
+    if (file == nullptr)
+        return;
+
+    // MethodID in ETW events are the method handles.
+    fprintf(file, "{\"MethodID\":%lld,", (INT64)compiler->info.compMethodHnd);
+    // Print inline tree.
+    fprintf(file, "\"InlineTree\":");
+
+    bool first = true;
+    genDumpPreciseDebugInfoInlineTree(file, compiler->compInlineContext, &first);
+    fprintf(file, ",\"Mappings\":[");
+    first = true;
+    for (PreciseIPMapping& mapping : compiler->genPreciseIPmappings)
+    {
+        if (!first)
+        {
+            fprintf(file, ",");
+        }
+
+        first = false;
+
+        fprintf(file, "{\"NativeOffset\":%u,\"InlineContext\":%u,\"ILOffset\":%u}",
+                mapping.nativeLoc.CodeOffset(GetEmitter()), mapping.debugInfo.GetInlineContext()->GetOrdinal(),
+                mapping.debugInfo.GetLocation().GetOffset());
+    }
+
+    fprintf(file, "]}\n");
+
+    fclose(file);
+}
+
+void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
+{
+    PreciseIPMapping mapping;
+    mapping.nativeLoc.CaptureLocation(GetEmitter());
+    mapping.debugInfo = di;
+    compiler->genPreciseIPmappings.push_back(mapping);
+}
+#endif
 
 /*============================================================================
  *
@@ -11143,7 +11119,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     LclVarDsc*     varDsc = nullptr;
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
-        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
+        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar());
         retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(), compiler->info.compCallConv);
         assert(varDsc->lvIsMultiRegRet);
     }
@@ -11172,7 +11148,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     else if (actualOp1->OperIs(GT_LCL_VAR) && !actualOp1->AsLclVar()->IsMultiReg())
     {
         GenTreeLclVar* lclNode = actualOp1->AsLclVar();
-        LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode->GetLclNum());
+        LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
@@ -11554,7 +11530,7 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
         var_types type;
         if (op1->IsMultiRegLclVar())
         {
-            LclVarDsc* parentVarDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
+            LclVarDsc* parentVarDsc = compiler->lvaGetDesc(op1->AsLclVar());
             unsigned   fieldVarNum  = parentVarDsc->lvFieldLclStart + multiRegIndex;
             LclVarDsc* fieldVarDsc  = compiler->lvaGetDesc(fieldVarNum);
             type                    = fieldVarDsc->TypeGet();
@@ -11609,8 +11585,8 @@ void CodeGen::genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPo
 {
     if (doStackPointerCheck)
     {
-        noway_assert(lvaStackPointerVar != 0xCCCCCCCC && compiler->lvaTable[lvaStackPointerVar].lvDoNotEnregister &&
-                     compiler->lvaTable[lvaStackPointerVar].lvOnFrame);
+        noway_assert(lvaStackPointerVar != 0xCCCCCCCC && compiler->lvaGetDesc(lvaStackPointerVar)->lvDoNotEnregister &&
+                     compiler->lvaGetDesc(lvaStackPointerVar)->lvOnFrame);
         GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
 
         BasicBlock* sp_check = genCreateTempLabel();

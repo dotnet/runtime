@@ -2527,11 +2527,16 @@ enum class IPmappingDscKind
 
 struct IPmappingDsc
 {
-    IPmappingDsc*    ipmdNext;      // next line# record
     emitLocation     ipmdNativeLoc; // the emitter location of the native code corresponding to the IL offset
     IPmappingDscKind ipmdKind;      // The kind of mapping
     ILLocation       ipmdLoc;       // The location for normal mappings
     bool             ipmdIsLabel;   // Can this code be a branch label?
+};
+
+struct PreciseIPMapping
+{
+    emitLocation nativeLoc;
+    DebugInfo    debugInfo;
 };
 
 /*
@@ -2978,6 +2983,8 @@ public:
     bool fgNormalizeEHCase2();
     bool fgNormalizeEHCase3();
 
+    void fgCheckForLoopsInHandlers();
+
 #ifdef DEBUG
     void dispIncomingEHClause(unsigned num, const CORINFO_EH_CLAUSE& clause);
     void dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& clause);
@@ -3078,8 +3085,6 @@ public:
 
     GenTree* gtNewCpObjNode(GenTree* dst, GenTree* src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile);
 
-    GenTreeArgList* gtNewListNode(GenTree* op1, GenTreeArgList* op2);
-
     GenTreeCall::Use* gtNewCallArgs(GenTree* node);
     GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2);
     GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2, GenTree* node3);
@@ -3161,6 +3166,19 @@ public:
                                                  CorInfoType    simdBaseJitType,
                                                  unsigned       simdSize,
                                                  bool           isSimdAsHWIntrinsic = false);
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
+                                                 GenTree**      operands,
+                                                 size_t         operandCount,
+                                                 NamedIntrinsic hwIntrinsicID,
+                                                 CorInfoType    simdBaseJitType,
+                                                 unsigned       simdSize,
+                                                 bool           isSimdAsHWIntrinsic = false);
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types              type,
+                                                 IntrinsicNodeBuilder&& nodeBuilder,
+                                                 NamedIntrinsic         hwIntrinsicID,
+                                                 CorInfoType            simdBaseJitType,
+                                                 unsigned               simdSize,
+                                                 bool                   isSimdAsHWIntrinsic = false);
 
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
                                                    NamedIntrinsic hwIntrinsicID,
@@ -3350,11 +3368,6 @@ public:
 
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
 
-    GenTreeArgList* gtNewArgList(GenTree* op);
-    GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2);
-    GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3);
-    GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3, GenTree* op4);
-
     static fgArgTabEntry* gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum);
     static fgArgTabEntry* gtArgEntryByNode(GenTreeCall* call, GenTree* node);
     fgArgTabEntry* gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx);
@@ -3433,8 +3446,6 @@ public:
     // Create copy of an inline or guarded devirtualization candidate tree.
     GenTreeCall* gtCloneCandidateCall(GenTreeCall* call);
 
-    GenTree* gtReplaceTree(Statement* stmt, GenTree* tree, GenTree* replacementTree);
-
     void gtUpdateSideEffects(Statement* stmt, GenTree* tree);
 
     void gtUpdateTreeAncestorsSideEffects(GenTree* tree);
@@ -3459,8 +3470,8 @@ public:
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
 
-    unsigned gtSetListOrder(GenTree* list, bool regs, bool isListCallArgs);
     unsigned gtSetCallArgsOrder(const GenTreeCall::UseList& args, bool lateArgs, int* callCostEx, int* callCostSz);
+    unsigned gtSetMultiOpOrder(GenTreeMultiOp* multiOp);
 
     void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* base, bool constOnly);
 
@@ -3617,7 +3628,7 @@ public:
     void gtDispBlockStmts(BasicBlock* block);
     void gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, char* bufp, unsigned bufLength);
     void gtGetLateArgMsg(GenTreeCall* call, GenTree* arg, int argNum, char* bufp, unsigned bufLength);
-    void gtDispArgList(GenTreeCall* call, IndentStack* indentStack);
+    void gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack);
     void gtDispFieldSeq(FieldSeqNode* pfsn);
 
     void gtDispRange(LIR::ReadOnlyRange const& range);
@@ -3666,6 +3677,7 @@ public:
 #endif
 
     BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
+    void placeLoopAlignInstructions();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3720,7 +3732,6 @@ public:
     unsigned lvaCount;        // total number of locals, which includes function arguments,
                               // special arguments, IL local variables, and JIT temporary variables
 
-    unsigned   lvaRefCount; // total number of references to locals
     LclVarDsc* lvaTable;    // variable descriptor table
     unsigned   lvaTableCnt; // lvaTable size (>= lvaCount)
 
@@ -3942,10 +3953,15 @@ public:
         return &lvaTable[lclNum];
     }
 
+    LclVarDsc* lvaGetDesc(unsigned lclNum) const
+    {
+        assert(lclNum < lvaCount);
+        return &lvaTable[lclNum];
+    }
+
     LclVarDsc* lvaGetDesc(const GenTreeLclVarCommon* lclVar)
     {
-        assert(lclVar->GetLclNum() < lvaCount);
-        return &lvaTable[lclVar->GetLclNum()];
+        return lvaGetDesc(lclVar->GetLclNum());
     }
 
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
@@ -3959,6 +3975,16 @@ public:
     LclVarDsc* lvaGetDescByTrackedIndex(unsigned trackedIndex)
     {
         return lvaGetDesc(lvaTrackedIndexToLclNum(trackedIndex));
+    }
+
+    unsigned lvaGetLclNum(const LclVarDsc* varDsc)
+    {
+        assert((lvaTable <= varDsc) && (varDsc < lvaTable + lvaCount)); // varDsc must point within the table
+        assert(((char*)varDsc - (char*)lvaTable) % sizeof(LclVarDsc) ==
+               0); // varDsc better not point in the middle of a variable
+        unsigned varNum = (unsigned)(varDsc - lvaTable);
+        assert(varDsc == &lvaTable[varNum]);
+        return varNum;
     }
 
     unsigned lvaLclSize(unsigned varNum);
@@ -4457,6 +4483,7 @@ protected:
                                      bool                 readonlyCall,
                                      CorInfoIntrinsics    intrinsicID);
     GenTree* impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig);
+    GenTree* impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig);
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
@@ -4482,10 +4509,10 @@ public:
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
     void impAppendStmtCheck(Statement* stmt, unsigned chkLevel);
-    void impAppendStmt(Statement* stmt, unsigned chkLevel);
+    void impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsumedDebugInfo = true);
     void impAppendStmt(Statement* stmt);
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
-    Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di);
+    Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
     void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
     void impAssignTempGen(unsigned         tmp,
                           GenTree*         val,
@@ -4790,7 +4817,7 @@ private:
     void impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal);
     void impLoadVar(unsigned lclNum, IL_OFFSET offset)
     {
-        impLoadVar(lclNum, offset, lvaTable[lclNum].lvVerTypeInfo);
+        impLoadVar(lclNum, offset, lvaGetDesc(lclNum)->lvVerTypeInfo);
     }
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
@@ -5465,6 +5492,8 @@ public:
     // For a store to an address-exposed local at curTree, record the new curMemoryVN and update curTree's MemorySsaMap.
     void recordAddressExposedLocalStore(GenTree* curTree, ValueNum memoryVN DEBUGARG(const char* msg));
 
+    void fgSetCurrentMemoryVN(MemoryKind memoryKind, ValueNum newMemoryVN);
+
     // Tree caused an update in the current memory VN.  If "tree" has an associated heap SSA #, record that
     // value in that SSA #.
     void fgValueNumberRecordMemorySsa(MemoryKind memoryKind, GenTree* tree);
@@ -5497,12 +5526,12 @@ public:
 
 #ifdef FEATURE_SIMD
     // Does value-numbering for a GT_SIMD tree
-    void fgValueNumberSimd(GenTree* tree);
+    void fgValueNumberSimd(GenTreeSIMD* tree);
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
     // Does value-numbering for a GT_HWINTRINSIC tree
-    void fgValueNumberHWIntrinsic(GenTree* tree);
+    void fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree);
 #endif // FEATURE_HW_INTRINSICS
 
     // Does value-numbering for a call.  We interpret some helper calls.
@@ -6058,7 +6087,7 @@ protected:
     BasicBlock* fgLookupBB(unsigned addr);
 
     bool fgCanSwitchToOptimized();
-    void fgSwitchToOptimized();
+    void fgSwitchToOptimized(const char* reason);
 
     bool fgMayExplicitTailCall();
 
@@ -6307,7 +6336,6 @@ private:
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     void fgInitArgInfo(GenTreeCall* call);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
-    GenTreeArgList* fgMorphArgList(GenTreeArgList* args, MorphAddrContext* mac);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, GenTreeCall::Use* args, CORINFO_CLASS_HANDLE copyBlkClass);
 
@@ -6380,6 +6408,7 @@ private:
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
+    GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
 
     bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
@@ -6871,13 +6900,13 @@ protected:
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
-    LoopDsc*      optLoopTable; // loop descriptor table
-    unsigned char optLoopCount; // number of tracked loops
+    LoopDsc*      optLoopTable;        // loop descriptor table
+    unsigned char optLoopCount;        // number of tracked loops
+    unsigned char loopAlignCandidates; // number of loops identified for alignment
 
 #ifdef DEBUG
-    unsigned char loopAlignCandidates; // number of loops identified for alignment
-    unsigned char loopsAligned;        // number of loops actually aligned
-#endif                                 // DEBUG
+    unsigned char loopsAligned; // number of loops actually aligned
+#endif                          // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   top,
@@ -7254,7 +7283,7 @@ protected:
     //
     bool lclNumIsCSE(unsigned lclNum) const
     {
-        return lvaTable[lclNum].lvIsCSE;
+        return lvaGetDesc(lclNum)->lvIsCSE;
     }
 
 #ifdef DEBUG
@@ -7953,7 +7982,7 @@ private:
     {
 #ifdef TARGET_X86
 
-        LclVarDsc* varDsc = &lvaTable[lclNum];
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
         assert(varDsc->lvIsParam);
 
@@ -8265,8 +8294,11 @@ public:
 
     // Record the instr offset mapping to the generated code
 
-    IPmappingDsc* genIPmappingList;
-    IPmappingDsc* genIPmappingLast;
+    jitstd::list<IPmappingDsc> genIPmappings;
+
+#ifdef DEBUG
+    jitstd::list<PreciseIPMapping> genPreciseIPmappings;
+#endif
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points
@@ -8855,7 +8887,7 @@ private:
     // type of an arg node is TYP_BYREF and a local node is TYP_SIMD or TYP_STRUCT.
     bool isSIMDTypeLocal(GenTree* tree)
     {
-        return tree->OperIsLocal() && lvaTable[tree->AsLclVarCommon()->GetLclNum()].lvSIMDType;
+        return tree->OperIsLocal() && lvaGetDesc(tree->AsLclVarCommon())->lvSIMDType;
     }
 
     // Returns true if the lclVar is an opaque SIMD type.
@@ -8879,7 +8911,7 @@ private:
     {
         if (isSIMDTypeLocal(tree))
         {
-            return lvaTable[tree->AsLclVarCommon()->GetLclNum()].GetSimdBaseJitType();
+            return lvaGetDesc(tree->AsLclVarCommon())->GetSimdBaseJitType();
         }
 
         return CORINFO_TYPE_UNDEF;
@@ -9032,7 +9064,7 @@ private:
         else
         {
             // Verify and record that AVX2 isn't supported
-            compVerifyInstructionSetUnuseable(InstructionSet_AVX2);
+            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return TYP_SIMD16;
         }
@@ -9075,7 +9107,7 @@ private:
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
 
             // Verify and record that AVX2 isn't supported
-            compVerifyInstructionSetUnuseable(InstructionSet_AVX2);
+            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -9212,8 +9244,7 @@ private:
     // Is this var is of type simd struct?
     bool lclVarIsSIMDType(unsigned varNum)
     {
-        LclVarDsc* varDsc = lvaTable + varNum;
-        return varDsc->lvIsSIMDType();
+        return lvaGetDesc(varNum)->lvIsSIMDType();
     }
 
     // Is this Local node a SIMD local?
@@ -9310,15 +9341,15 @@ private:
 #endif
     }
 
-    // Ensure that code will not execute if an instruction set is useable. Call only
-    // if the instruction set has previously reported as unuseable, but when
+    // Ensure that code will not execute if an instruction set is usable. Call only
+    // if the instruction set has previously reported as unusable, but when
     // that that status has not yet been recorded to the AOT compiler
-    void compVerifyInstructionSetUnuseable(CORINFO_InstructionSet isa)
+    void compVerifyInstructionSetUnusable(CORINFO_InstructionSet isa)
     {
         // use compExactlyDependsOn to capture are record the use of the isa
-        bool isaUseable = compExactlyDependsOn(isa);
-        // Assert that the is unuseable. If true, this function should never be called.
-        assert(!isaUseable);
+        bool isaUsable = compExactlyDependsOn(isa);
+        // Assert that the is unusable. If true, this function should never be called.
+        assert(!isaUsable);
     }
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
@@ -9372,21 +9403,23 @@ public:
 
     InlineResult* compInlineResult; // The result of importing the inlinee method.
 
-    bool compDoAggressiveInlining; // If true, mark every method as CORINFO_FLG_FORCEINLINE
-    bool compJmpOpUsed;            // Does the method do a JMP
-    bool compLongUsed;             // Does the method use TYP_LONG
-    bool compFloatingPointUsed;    // Does the method use TYP_FLOAT or TYP_DOUBLE
-    bool compTailCallUsed;         // Does the method do a tailcall
-    bool compLocallocSeen;         // Does the method IL have localloc opcode
-    bool compLocallocUsed;         // Does the method use localloc.
-    bool compLocallocOptimized;    // Does the method have an optimized localloc
-    bool compQmarkUsed;            // Does the method use GT_QMARK/GT_COLON
-    bool compQmarkRationalized;    // Is it allowed to use a GT_QMARK/GT_COLON node.
-    bool compUnsafeCastUsed;       // Does the method use LDIND/STIND to cast between scalar/refernce types
-    bool compHasBackwardJump;      // Does the method (or some inlinee) have a lexically backwards jump?
-    bool compSwitchedToOptimized;  // Codegen initially was Tier0 but jit switched to FullOpts
-    bool compSwitchedToMinOpts;    // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
-    bool compSuppressedZeroInit;   // There are vars with lvSuppressedZeroInit set
+    bool compDoAggressiveInlining;     // If true, mark every method as CORINFO_FLG_FORCEINLINE
+    bool compJmpOpUsed;                // Does the method do a JMP
+    bool compLongUsed;                 // Does the method use TYP_LONG
+    bool compFloatingPointUsed;        // Does the method use TYP_FLOAT or TYP_DOUBLE
+    bool compTailCallUsed;             // Does the method do a tailcall
+    bool compTailPrefixSeen;           // Does the method IL have tail. prefix
+    bool compLocallocSeen;             // Does the method IL have localloc opcode
+    bool compLocallocUsed;             // Does the method use localloc.
+    bool compLocallocOptimized;        // Does the method have an optimized localloc
+    bool compQmarkUsed;                // Does the method use GT_QMARK/GT_COLON
+    bool compQmarkRationalized;        // Is it allowed to use a GT_QMARK/GT_COLON node.
+    bool compUnsafeCastUsed;           // Does the method use LDIND/STIND to cast between scalar/refernce types
+    bool compHasBackwardJump;          // Does the method (or some inlinee) have a lexically backwards jump?
+    bool compHasBackwardJumpInHandler; // Does the method have a lexically backwards jump in a handler?
+    bool compSwitchedToOptimized;      // Codegen initially was Tier0 but jit switched to FullOpts
+    bool compSwitchedToMinOpts;        // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
+    bool compSuppressedZeroInit;       // There are vars with lvSuppressedZeroInit set
 
 // NOTE: These values are only reliable after
 //       the importing is completely finished.
@@ -9688,6 +9721,9 @@ public:
         // If set, perform adaptive loop alignment that limits number of padding based on loop size.
         bool compJitAlignLoopAdaptive;
 
+        // If set, tries to hide alignment instructions behind unconditional jumps.
+        bool compJitHideAlignBehindJmp;
+
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler
 #endif                     // LATE_DISASM
@@ -9969,7 +10005,6 @@ public:
         bool compInitMem : 1;            // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback : 1;   // JIT inserted a profiler Enter callback
         bool compPublishStubParam : 1;   // EAX captured in prolog will be available through an intrinsic
-        bool compRetBuffDefStack : 1;    // The ret buff argument definitely points into the stack.
         bool compHasNextCallRetAddr : 1; // The NextCallReturnAddress intrinsic is used.
 
         var_types compRetType;       // Return type of the method as declared in IL
@@ -11506,6 +11541,42 @@ public:
                 break;
             }
 
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+            case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+            case GT_HWINTRINSIC:
+#endif
+                if (TVisitor::UseExecutionOrder && node->IsReverseOp())
+                {
+                    assert(node->AsMultiOp()->GetOperandCount() == 2);
+
+                    result = WalkTree(&node->AsMultiOp()->Op(2), node);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                    result = WalkTree(&node->AsMultiOp()->Op(1), node);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                else
+                {
+                    for (GenTree** use : node->AsMultiOp()->UseEdges())
+                    {
+                        result = WalkTree(use, node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+                }
+                break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
             // Binary nodes
             default:
             {
@@ -11930,7 +12001,9 @@ const instruction INS_SQRT = INS_vsqrt;
 const instruction        INS_MULADD = INS_madd;
 inline const instruction INS_BREAKPOINT_osHelper()
 {
-    return TargetOS::IsUnix ? INS_brk : INS_bkpt;
+    // GDB needs the encoding of brk #0
+    // Windbg needs the encoding of brk #F000
+    return TargetOS::IsUnix ? INS_brk_unix : INS_brk_windows;
 }
 #define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
 

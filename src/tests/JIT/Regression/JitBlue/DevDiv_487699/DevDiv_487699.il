@@ -3,13 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly a {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module a.exe
 
 // This test originally triggered an error, that we do not reload shift index, if it was spilled to rcx.

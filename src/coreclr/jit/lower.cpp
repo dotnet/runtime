@@ -1331,9 +1331,8 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
     {
         if ((arg->OperGet() == GT_LCL_VAR) || (arg->OperGet() == GT_STORE_LCL_VAR))
         {
-            unsigned   varNum = arg->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = &comp->lvaTable[varNum];
-            type              = varDsc->lvType;
+            const LclVarDsc* varDsc = comp->lvaGetDesc(arg->AsLclVarCommon());
+            type                    = varDsc->lvType;
         }
         else if (arg->OperIs(GT_SIMD, GT_HWINTRINSIC))
         {
@@ -3034,7 +3033,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
         {
             ReturnTypeDesc retTypeDesc;
             LclVarDsc*     varDsc = nullptr;
-            varDsc                = comp->lvaGetDesc(retVal->AsLclVar()->GetLclNum());
+            varDsc                = comp->lvaGetDesc(retVal->AsLclVar());
             retTypeDesc.InitializeStructReturnType(comp, varDsc->GetStructHnd(), comp->info.compCallConv);
             if (retTypeDesc.GetReturnRegCount() > 1)
             {
@@ -3373,9 +3372,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         case GT_LCL_FLD:
         {
 #ifdef DEBUG
-            GenTreeLclFld* lclFld = retVal->AsLclFld();
-            unsigned       lclNum = lclFld->GetLclNum();
-            LclVarDsc*     varDsc = comp->lvaGetDesc(lclNum);
+            LclVarDsc* varDsc = comp->lvaGetDesc(retVal->AsLclFld());
             assert(varDsc->lvDoNotEnregister);
 #endif
             retVal->ChangeType(nativeReturnType);
@@ -5887,8 +5884,7 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
         // as a return buffer pointer. The callee doesn't write the high 4 bytes, and we don't need to clear
         // it either.
 
-        unsigned   varNum = node->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* varDsc = &comp->lvaTable[varNum];
+        LclVarDsc* varDsc = comp->lvaGetDesc(node->AsLclVarCommon());
 
         if (comp->lvaMapSimd12ToSimd16(varDsc))
         {
@@ -6220,9 +6216,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         case GT_LCL_VAR:
         case GT_STORE_LCL_VAR:
         {
-            GenTreeLclVar*   lclVar = node->AsLclVar();
-            const unsigned   lclNum = lclVar->GetLclNum();
-            const LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVar());
 #if defined(FEATURE_SIMD) && defined(TARGET_64BIT)
             if (node->TypeIs(TYP_SIMD12))
             {
@@ -6266,9 +6260,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         case GT_LCL_FLD:
         case GT_STORE_LCL_FLD:
         {
-            GenTreeLclFld*   lclFld = node->AsLclFld();
-            const unsigned   lclNum = lclFld->GetLclNum();
-            const LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclFld());
             assert(varDsc->lvDoNotEnregister);
         }
         break;
@@ -6711,8 +6703,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
         // op1 must be either a lclvar or a multi-reg returning call
         if (op1->OperGet() == GT_LCL_VAR)
         {
-            GenTreeLclVarCommon* lclVarCommon = op1->AsLclVarCommon();
-            LclVarDsc*           varDsc       = &(comp->lvaTable[lclVarCommon->GetLclNum()]);
+            const LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVarCommon());
             // This must be a multi-reg return or an HFA of a single element.
             assert(varDsc->lvIsMultiRegRet || (varDsc->lvIsHfa() && varTypeIsValidHfaType(varDsc->lvType)));
 
@@ -6792,6 +6783,51 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
+        if (varTypeIsFloating(ind) && ind->Data()->IsCnsFltOrDbl())
+        {
+            // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
+            GenTree*  data   = ind->Data();
+            double    dblCns = data->AsDblCon()->gtDconVal;
+            ssize_t   intCns = 0;
+            var_types type   = TYP_UNKNOWN;
+            // XARCH: we can always contain the immediates.
+            // ARM64: zero can always be contained, other cases will use immediates from the data
+            //        section and it is not a clear win to switch them to inline integers.
+            // ARM:   FP constants are assembled from integral ones, so it is always profitable
+            //        to directly use the integers as it avoids the int -> float conversion.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM)
+            bool shouldSwitchToInteger = true;
+#else // TARGET_ARM64
+            bool shouldSwitchToInteger = !data->IsCnsNonZeroFltOrDbl();
+#endif
+
+            if (shouldSwitchToInteger)
+            {
+                if (ind->TypeIs(TYP_FLOAT))
+                {
+                    float fltCns = static_cast<float>(dblCns); // should be a safe round-trip
+                    intCns       = static_cast<ssize_t>(*reinterpret_cast<INT32*>(&fltCns));
+                    type         = TYP_INT;
+                }
+#ifdef TARGET_64BIT
+                else
+                {
+                    assert(ind->TypeIs(TYP_DOUBLE));
+                    intCns = static_cast<ssize_t>(*reinterpret_cast<INT64*>(&dblCns));
+                    type   = TYP_LONG;
+                }
+#endif
+            }
+
+            if (type != TYP_UNKNOWN)
+            {
+                data->BashToConst(intCns, type);
+                ind->ChangeType(type);
+            }
+        }
+
         LowerStoreIndir(ind);
     }
 }
@@ -6861,7 +6897,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 #ifdef TARGET_ARM64
     bool useNullCheck = true;
 #elif TARGET_ARM
-    bool useNullCheck = false;
+    bool         useNullCheck          = false;
 #else  // TARGET_XARCH
     bool useNullCheck = !ind->Addr()->isContained();
 #endif // !TARGET_XARCH

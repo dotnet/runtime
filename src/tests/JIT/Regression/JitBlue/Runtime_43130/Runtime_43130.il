@@ -14,13 +14,7 @@
 .assembly Runtime_43130
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module Runtime_43130.dll
 
 .class private auto ansi beforefieldinit Runtime_43130

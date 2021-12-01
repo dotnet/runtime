@@ -399,7 +399,8 @@ namespace System.Text.Json.SourceGeneration.Tests
                 EndDate = DateTime.UtcNow.AddYears(1),
                 Name = "Just a name",
                 ImageUrl = "https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png",
-                StartDate = DateTime.UtcNow
+                StartDate = DateTime.UtcNow,
+                Offset = TimeSpan.FromHours(2)
             };
         }
 
@@ -863,6 +864,23 @@ namespace System.Text.Json.SourceGeneration.Tests
             MyTypeWithPropertyOrdering obj = new();
             string json = JsonSerializer.Serialize(obj, DefaultContext.MyTypeWithPropertyOrdering);
             Assert.Equal("{\"C\":0,\"B\":0,\"A\":0}", json);
+        }
+
+        [Fact]
+        public virtual void NullableStruct()
+        {
+            PersonStruct? person = new()
+            {
+                FirstName = "Jane",
+                LastName = "Doe"
+            };
+
+            string json = JsonSerializer.Serialize(person, DefaultContext.NullablePersonStruct);
+            JsonTestHelper.AssertJsonEqual(@"{""FirstName"":""Jane"",""LastName"":""Doe""}", json);
+
+            person = JsonSerializer.Deserialize(json, DefaultContext.NullablePersonStruct);
+            Assert.Equal("Jane", person.Value.FirstName);
+            Assert.Equal("Doe", person.Value.LastName);
         }
     }
 }

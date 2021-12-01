@@ -318,6 +318,7 @@ asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option t
 asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
+asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -1362,7 +1363,8 @@ class SuperPMIReplayAsmDiffs:
         if self.coreclr_args.debuginfo:
             asm_complus_vars.update({
                 "COMPlus_JitDebugDump": "*",
-                "COMPlus_NgenDebugDump": "*" })
+                "COMPlus_NgenDebugDump": "*",
+                "COMPlus_JitDisasmWithDebugInfo": "1" })
 
         jit_dump_complus_vars = asm_complus_vars.copy()
         jit_dump_complus_vars.update({
@@ -1628,6 +1630,8 @@ class SuperPMIReplayAsmDiffs:
                                 summary_file_info = ( mch_file, md_summary_file )
                                 all_md_summary_files.append(summary_file_info)
                                 command = [ jit_analyze_path, "--md", md_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
+                                if self.coreclr_args.retainOnlyTopFiles:
+                                    command += [ "--retainOnlyTopFiles" ]
                                 if self.coreclr_args.metrics:
                                     command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
                                 elif base_bytes is not None and diff_bytes is not None:
@@ -3260,6 +3264,11 @@ def setup_args(args):
                             "metrics",
                             lambda unused: True,
                             "Unable to set metrics.")
+
+        coreclr_args.verify(args,
+                            "retainOnlyTopFiles",
+                            lambda unused: True,
+                            "Unable to set retainOnlyTopFiles.")
 
         process_base_jit_path_arg(coreclr_args)
 

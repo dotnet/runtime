@@ -11,15 +11,8 @@ using System.Threading;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Represents a regex matching engine that performs regex matching using symbolic derivatives.</summary>
-    internal abstract class SymbolicRegexMatcher
+    internal interface ISymbolicRegexMatcher
     {
-        /// <summary>Returns the next match index and length in the input string.</summary>
-        /// <param name="isMatch">Whether to return once we know there's a match without determining where exactly it matched.</param>
-        /// <param name="input">The input string.</param>
-        /// <param name="startat">The start position in the input.</param>
-        /// <param name="endat">The end position in the input.</param>
-        public abstract SymbolicMatch FindMatch(bool isMatch, string input, int startat, int endat);
-
 #if DEBUG
         /// <summary>Unwind the regex of the matcher and save the resulting state graph in DGML</summary>
         /// <param name="bound">roughly the maximum number of states, 0 means no bound</param>
@@ -30,8 +23,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="writer">dgml output is written here</param>
         /// <param name="maxLabelLength">maximum length of labels in nodes anything over that length is indicated with .. </param>
         /// <param name="asNFA">if true creates NFA instead of DFA</param>
-        public abstract void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA);
-
+        void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA);
 
         /// <summary>
         /// Generates up to k random strings matched by the regex
@@ -40,13 +32,13 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="randomseed">random seed for the generator, 0 means no random seed</param>
         /// <param name="negative">if true then generate inputs that do not match</param>
         /// <returns></returns>
-        public abstract IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative);
+        IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative);
 #endif
     }
 
     /// <summary>Represents a regex matching engine that performs regex matching using symbolic derivatives.</summary>
     /// <typeparam name="TSetType">Character set type.</typeparam>
-    internal sealed class SymbolicRegexMatcher<TSetType> : SymbolicRegexMatcher where TSetType : notnull
+    internal sealed class SymbolicRegexMatcher<TSetType> : ISymbolicRegexMatcher where TSetType : notnull
     {
         /// <summary>Maximum number of states before switching over to Antimirov mode.</summary>
         /// <remarks>
@@ -127,54 +119,24 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Timeout in milliseconds. This is only used if <see cref="_checkTimeout"/> is true.</summary>
         private readonly int _timeout;
 
-        /// <summary>Classifier used to say whether a particular character can start a match for <see cref="_pattern"/>.</summary>
-        internal readonly BooleanClassifier _startSetClassifier;
+        /// <summary>Data and routines for skipping ahead to the next place a match could potentially start.</summary>
+        private readonly RegexFindOptimizations? _findOpts;
 
-        /// <summary>Predicate over characters that make some progress</summary>
-        private readonly TSetType _startSet;
+        /// <summary>The initial states for the original pattern, keyed off of the previous character kind.</summary>
+        /// <remarks>If the pattern doesn't contain any anchors, there will only be a single initial state.</remarks>
+        private readonly DfaMatchingState<TSetType>[] _initialStates;
 
-        /// <summary>Maximum allowed size of <see cref="_startSetArray"/>.</summary>
-        private const int StartSetArrayMaxSize = 5;
+        /// <summary>The initial states for the dot-star pattern, keyed off of the previous character kind.</summary>
+        /// <remarks>If the pattern doesn't contain any anchors, there will only be a single initial state.</remarks>
+        private readonly DfaMatchingState<TSetType>[] _dotstarredInitialStates;
 
-        /// <summary>String of at most <see cref="StartSetArrayMaxSize"/> many characters</summary>
-        private readonly char[] _startSetArray;
+        /// <summary>The initial states for the reverse pattern, keyed off of the previous character kind.</summary>
+        /// <remarks>If the pattern doesn't contain any anchors, there will only be a single initial state.</remarks>
+        private readonly DfaMatchingState<TSetType>[] _reverseInitialStates;
 
-        /// <summary>Number of elements in <see cref="_startSetClassifier"/></summary>
-        private readonly int _startSetSize;
-
-        /// <summary>If nonempty then <see cref="_pattern"/> has that fixed prefix</summary>
-        private readonly string _prefix;
-
-        /// <summary>Non-null when <see cref="_prefix"/> is nonempty</summary>
-        private readonly RegexBoyerMoore? _prefixBoyerMoore;
-
-        /// <summary>If true then the fixed prefix of <see cref="_pattern"/> is idependent of case</summary>
-        private readonly bool _isPrefixCaseInsensitive;
-
-        /// <summary>Cached skip states from the initial state of <see cref="_dotStarredPattern"/> for the 5 possible previous character kinds.</summary>
-        private readonly DfaMatchingState<TSetType>?[] _prefixSkipStates = new DfaMatchingState<TSetType>[CharKind.CharKindCount];
-        /// <summary>Cached skip states from the initial state of Ar for the 5 possible previous character kinds.</summary>
-        private readonly DfaMatchingState<TSetType>?[] _reversePrefixSkipStates = new DfaMatchingState<TSetType>[CharKind.CharKindCount];
-
-        private readonly string _reversePrefix;
-
-        private readonly DfaMatchingState<TSetType>[] _initialStates = new DfaMatchingState<TSetType>[CharKind.CharKindCount];
-        private readonly DfaMatchingState<TSetType>[] _dotstarredInitialStates = new DfaMatchingState<TSetType>[CharKind.CharKindCount];
-        private readonly DfaMatchingState<TSetType>[] _reverseInitialStates = new DfaMatchingState<TSetType>[CharKind.CharKindCount];
-
-        private readonly uint[] _asciiCharKinds = new uint[128];
-
-        internal readonly CultureInfo _culture;
-
-        private DfaMatchingState<TSetType> GetSkipState(uint prevCharKind) =>
-            Volatile.Read(ref _prefixSkipStates[prevCharKind]) ??
-            Interlocked.CompareExchange(ref _prefixSkipStates[prevCharKind], DeltaPlus<BrzozowskiTransition>(_prefix, _dotstarredInitialStates[prevCharKind]), null) ??
-            _prefixSkipStates[prevCharKind]!;
-
-        private DfaMatchingState<TSetType> GetReverseSkipState(uint prevCharKind) =>
-            Volatile.Read(ref _reversePrefixSkipStates[prevCharKind]) ??
-            Interlocked.CompareExchange(ref _reversePrefixSkipStates[prevCharKind], DeltaPlus<BrzozowskiTransition>(_reversePrefix, _reverseInitialStates[prevCharKind]), null) ??
-            _reversePrefixSkipStates[prevCharKind]!;
+        /// <summary>Lookup table to quickly determine the character kind for ASCII characters.</summary>
+        /// <remarks>Non-null iff the pattern contains anchors; otherwise, it's unused.</remarks>
+        private readonly uint[]? _asciiCharKinds;
 
         /// <summary>Get the minterm of <paramref name="c"/>.</summary>
         /// <param name="c">character code</param>
@@ -186,16 +148,14 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, CharSetSolver css, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture)
+        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, CharSetSolver css, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture)
         {
+            Debug.Assert(sr._builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
+
             _pattern = sr;
             _builder = sr._builder;
-
             _checkTimeout = Regex.InfiniteMatchTimeout != matchTimeout;
             _timeout = (int)(matchTimeout.TotalMilliseconds + 0.5); // Round up, so it will be at least 1ms
-            _culture = culture;
-
-            Debug.Assert(_builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {_builder._solver}");
             _partitions = _builder._solver switch
             {
                 BV64Algebra bv64 => bv64._classifier,
@@ -203,44 +163,57 @@ namespace System.Text.RegularExpressions.Symbolic
                 _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
             };
 
-            _dotStarredPattern = _builder.MkConcat(_builder._anyStar, _pattern);
-            _reversePattern = _pattern.Reverse();
-            ConfigureRegexes();
-
-            _startSet = _pattern.GetStartSet();
-            if (!_builder._solver.IsSatisfiable(_startSet) || _pattern.CanBeNullable)
+            if (code.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
+                code.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
             {
-                // If the startset is empty make it full instead by including all characters
-                // this is to ensure that startset is nonempty -- as an invariant assumed by operations using it
-                //
-                // Also, if A can be nullable then effectively disable use of startset by making it true
-                // because it may force search of next character in startset and fail to recognize an empty match
-                // because (by definition) an empty match has no start character.
-                //
-                // For example (this is also a unit test):
-                // for pattern "\B\W*?" or "\B\W*" or "\B\W?" and input "e.g:abc" there is an empty match in position 5
-                // but startset \W will force search beyond position 5 and fails to find that match
-                _startSet = _builder._solver.True;
+                _findOpts = code.FindOptimizations;
             }
 
-            _startSetSize = (int)_builder._solver.ComputeDomainSize(_startSet);
+            // Determine the number of initial states. If there's no anchor, only the default previous
+            // character kind 0 is ever going to be used for all initial states.
+            int statesCount = _pattern._info.ContainsSomeAnchor ? CharKind.CharKindCount : 1;
 
-            BDD startbdd = _builder._solver.ConvertToCharSet(css, _startSet);
-            _startSetClassifier = new BooleanClassifier(css, startbdd);
+            // Create the initial states for the original pattern.
+            var initialStates = new DfaMatchingState<TSetType>[statesCount];
+            for (uint i = 0; i < initialStates.Length; i++)
+            {
+                initialStates[i] = _builder.MkState(_pattern, i);
+            }
+            _initialStates = initialStates;
 
-            //store the start characters in the A_startset_array if there are not too many characters
-            _startSetArray = _startSetSize <= StartSetArrayMaxSize ?
-                new List<char>(css.GenerateAllCharacters(startbdd)).ToArray() :
-                Array.Empty<char>();
+            // Create the dot-star pattern (a concatenation of any* with the original pattern)
+            // and all of its initial states.
+            _dotStarredPattern = _builder.MkConcat(_builder._anyStar, _pattern);
+            var dotstarredInitialStates = new DfaMatchingState<TSetType>[statesCount];
+            for (uint i = 0; i < dotstarredInitialStates.Length; i++)
+            {
+                // Used to detect if initial state was reentered,
+                // but observe that the behavior from the state may ultimately depend on the previous
+                // input char e.g. possibly causing nullability of \b or \B or of a start-of-line anchor,
+                // in that sense there can be several "versions" (not more than StateCount) of the initial state.
+                DfaMatchingState<TSetType> state = _builder.MkState(_dotStarredPattern, i);
+                state.IsInitialState = true;
+                dotstarredInitialStates[i] = state;
+            }
+            _dotstarredInitialStates = dotstarredInitialStates;
 
-            _prefix = _pattern.GetFixedPrefix(css, culture.Name, out _isPrefixCaseInsensitive);
-            _reversePrefix = _reversePattern.GetFixedPrefix(css, culture.Name, out _);
+            // Create the reverse pattern (the original pattern in reverse order) and all of its
+            // initial states.
+            _reversePattern = _pattern.Reverse();
+            var reverseInitialStates = new DfaMatchingState<TSetType>[statesCount];
+            for (uint i = 0; i < reverseInitialStates.Length; i++)
+            {
+                reverseInitialStates[i] = _builder.MkState(_reversePattern, i);
+            }
+            _reverseInitialStates = reverseInitialStates;
 
-            _prefixBoyerMoore = InitializePrefixBoyerMoore();
-
+            // Initialize our fast-lookup for determining the character kind of ASCII characters.
+            // This is only required when the pattern contains anchors, as otherwise there's only
+            // ever a single kind used.
             if (_pattern._info.ContainsSomeAnchor)
             {
-                for (int i = 0; i < 128; i++)
+                var asciiCharKinds = new uint[128];
+                for (int i = 0; i < asciiCharKinds.Length; i++)
                 {
                     TSetType predicate2;
                     uint charKind;
@@ -256,66 +229,10 @@ namespace System.Text.RegularExpressions.Symbolic
                         charKind = CharKind.WordLetter;
                     }
 
-                    _asciiCharKinds[i] = _builder._solver.And(GetMinterm(i), predicate2).Equals(_builder._solver.False) ? 0 : charKind;
+                    asciiCharKinds[i] = _builder._solver.And(GetMinterm(i), predicate2).Equals(_builder._solver.False) ? 0 : charKind;
                 }
+                _asciiCharKinds = asciiCharKinds;
             }
-        }
-
-        private RegexBoyerMoore? InitializePrefixBoyerMoore()
-        {
-            if (_prefix != string.Empty && _prefix.Length <= RegexBoyerMoore.MaxLimit && _prefix.Length > 1)
-            {
-                // RegexBoyerMoore expects the prefix to be lower case when case is ignored.
-                // Use the culture of the matcher.
-                string prefix = _isPrefixCaseInsensitive ? _prefix.ToLower(_culture) : _prefix;
-                return new RegexBoyerMoore(prefix, _isPrefixCaseInsensitive, rightToLeft: false, _culture);
-            }
-
-            return null;
-        }
-
-        private void ConfigureRegexes()
-        {
-            void Configure(uint i)
-            {
-                _initialStates[i] = _builder.MkState(_pattern, i);
-
-                // Used to detect if initial state was reentered, then startset can be triggered
-                // but observe that the behavior from the state may ultimately depend on the previous
-                // input char e.g. possibly causing nullability of \b or \B or of a start-of-line anchor,
-                // in that sense there can be several "versions" (not more than StateCount) of the initial state.
-                _dotstarredInitialStates[i] = _builder.MkState(_dotStarredPattern, i);
-                _dotstarredInitialStates[i].IsInitialState = true;
-
-                _reverseInitialStates[i] = _builder.MkState(_reversePattern, i);
-            }
-
-            // Create initial states for A, A1 and Ar.
-            if (!_pattern._info.ContainsSomeAnchor)
-            {
-                // Only the default previous character kind 0 is ever going to be used for all initial states.
-                // _A1q0[0] is recognized as special initial state.
-                // This information is used for search optimization based on start set and prefix of A.
-                Configure(0);
-            }
-            else
-            {
-                for (uint i = 0; i < CharKind.CharKindCount; i++)
-                {
-                    Configure(i);
-                }
-            }
-        }
-
-        /// <summary>Return the state after the given <paramref name="pattern"/> string from the given state <paramref name="state"/>.</summary>
-        private DfaMatchingState<TSetType> DeltaPlus<TTransition>(string pattern, DfaMatchingState<TSetType> state) where TTransition : struct, ITransition
-        {
-            for (int i = 0; i < pattern.Length; i++)
-            {
-                state = Delta<TTransition>(pattern, i, state);
-            }
-
-            return state;
         }
 
         /// <summary>Interface for transitions used by the <see cref="Delta"/> method.</summary>
@@ -341,7 +258,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 minterms.Length : // mintermId = minterms.Length represents \Z (last \n)
                 _partitions.GetMintermID(c);
 
-            TSetType minterm = (uint)mintermId < minterms.Length ?
+            TSetType minterm = (uint)mintermId < (uint)minterms.Length ?
                 minterms[mintermId] :
                 _builder._solver.False; // minterm=False represents \Z
 
@@ -428,30 +345,21 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private void DoCheckTimeout(int timeoutOccursAt)
         {
-            // This code is identical to RegexRunner.DoCheckTimeout(),
-            // with the exception of check skipping. RegexRunner calls
-            // DoCheckTimeout potentially on every iteration of a loop,
-            // whereas this calls it only once per transition.
-
+            // This logic is identical to RegexRunner.DoCheckTimeout, with the exception of check skipping. RegexRunner calls
+            // DoCheckTimeout potentially on every iteration of a loop, whereas this calls it only once per transition.
             int currentMillis = Environment.TickCount;
-
-            if (currentMillis < timeoutOccursAt)
-                return;
-
-            if (0 > timeoutOccursAt && 0 < currentMillis)
-                return;
-
-            //regex pattern is in general not available in srm and
-            //the input is not available here but could be passed as argument to DoCheckTimeout
-            throw new RegexMatchTimeoutException(string.Empty, string.Empty, TimeSpan.FromMilliseconds(_timeout));
+            if (currentMillis >= timeoutOccursAt && (0 <= timeoutOccursAt || 0 >= currentMillis))
+            {
+                throw new RegexMatchTimeoutException(string.Empty, string.Empty, TimeSpan.FromMilliseconds(_timeout));
+            }
         }
 
         /// <summary>Find a match.</summary>
         /// <param name="isMatch">Whether to return once we know there's a match without determining where exactly it matched.</param>
-        /// <param name="input">input string</param>
-        /// <param name="startat">the position to start search in the input string</param>
-        /// <param name="k">the next position after the end position in the input</param>
-        public override SymbolicMatch FindMatch(bool isMatch, string input, int startat, int k)
+        /// <param name="input">The input string</param>
+        /// <param name="startat">The position to start search in the input string.</param>
+        /// <param name="end">The non-inclusive position to end the search in the input string.</param>
+        public SymbolicMatch FindMatch(bool isMatch, string input, int startat, int end)
         {
             int timeoutOccursAt = 0;
             if (_checkTimeout)
@@ -460,18 +368,16 @@ namespace System.Text.RegularExpressions.Symbolic
                 timeoutOccursAt = Environment.TickCount + (int)(_timeout + 0.5);
             }
 
-            if (startat == k)
+            if (startat == end)
             {
-                //covers the special case when the remaining input suffix
-                //where a match is sought is empty (for example when the input is empty)
-                //in this case the only possible match is an empty match
+                // Covers the special-case of an empty match at the end of the input.
                 uint prevKind = GetCharKind(input, startat - 1);
                 uint nextKind = GetCharKind(input, startat);
 
                 bool emptyMatchExists = _pattern.IsNullableFor(CharKind.Context(prevKind, nextKind));
-                return
-                    !emptyMatchExists ? SymbolicMatch.NoMatch :
-                    new SymbolicMatch(startat, 0);
+                return emptyMatchExists ?
+                    new SymbolicMatch(startat, 0) :
+                    SymbolicMatch.NoMatch;
             }
 
             // Find the first accepting state. Initial start position in the input is i == 0.
@@ -479,7 +385,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // May return -1 as a legitimate value when the initial state is nullable and startat == 0.
             // Returns NoMatchExists when there is no match.
-            i = FindFinalStatePosition(input, k, i, timeoutOccursAt, out int i_q0_A1, out int watchdog);
+            i = FindFinalStatePosition(input, end, i, timeoutOccursAt, out int i_q0_A1, out int watchdog);
 
             if (i == NoMatchExists)
             {
@@ -502,24 +408,17 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             else
             {
-                if (i < startat)
-                {
-                    Debug.Assert(i == startat - 1);
-                    i_start = startat;
-                }
-                else
-                {
-                    // Walk in reverse to locate the start position of the match
-                    i_start = FindStartPosition(input, i, i_q0_A1);
-                }
-
-                i_end = FindEndPosition(input, k, i_start);
+                Debug.Assert(i >= startat - 1);
+                i_start = i < startat ?
+                    startat :
+                    FindStartPosition(input, i, i_q0_A1); // Walk in reverse to locate the start position of the match
+                i_end = FindEndPosition(input, end, i_start);
             }
 
             return new SymbolicMatch(i_start, i_end + 1 - i_start);
         }
 
-        /// <summary>Find match end position using A, end position is known to exist.</summary>
+        /// <summary>Find match end position using the original pattern, end position is known to exist.</summary>
         /// <param name="input">input array</param>
         /// <param name="i">inclusive start position</param>
         /// <param name="exclusiveEnd">exclusive end position</param>
@@ -561,7 +460,7 @@ namespace System.Text.RegularExpressions.Symbolic
             return i_end;
         }
 
-        // Inner loop for FindEndPosition parameterized by an ITransition type.
+        /// <summary>Inner loop for FindEndPosition parameterized by an ITransition type.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool FindEndPositionDeltas<TTransition>(string input, ref int i, int j, ref DfaMatchingState<TSetType> q, ref int i_end) where TTransition : struct, ITransition
         {
@@ -582,7 +481,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
                 else if (q.IsDeadend)
                 {
-                    // Nonaccepting sink state (deadend) has been reached in A.
+                    // Non-accepting sink state (deadend) has been reached in the original pattern.
                     // So the match ended when the last i_end was updated.
                     return true;
                 }
@@ -594,25 +493,17 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
         }
 
-        /// <summary>Walk back in reverse using Ar to find the start position of match, start position is known to exist.</summary>
+        /// <summary>Walk back in reverse using the reverse pattern to find the start position of match, start position is known to exist.</summary>
         /// <param name="input">the input string</param>
         /// <param name="i">position to start walking back from, i points at the last character of the match</param>
         /// <param name="match_start_boundary">do not pass this boundary when walking back</param>
         /// <returns></returns>
         private int FindStartPosition(string input, int i, int match_start_boundary)
         {
-            // Fetch the correct start state for Ar.
+            // Fetch the correct start state for the reverse pattern.
             // This depends on previous character --- which, because going backwards, is character number i+1.
             uint prevKind = GetCharKind(input, i + 1);
             DfaMatchingState<TSetType> q = _reverseInitialStates[prevKind];
-
-            // Ar may have a fixed prefix sequence
-            if (_reversePrefix.Length > 0)
-            {
-                //skip past the prefix portion of Ar
-                q = GetReverseSkipState(prevKind);
-                i -= _reversePrefix.Length;
-            }
 
             if (i == -1)
             {
@@ -623,12 +514,12 @@ namespace System.Text.RegularExpressions.Symbolic
             int last_start = -1;
             if (q.IsNullable(GetCharKind(input, i)))
             {
-                // The whole prefix of Ar was in reverse a prefix of A,
-                // for example when the pattern of A is concrete word such as "abc"
+                // The whole prefix of the reverse pattern was in reverse a prefix of the original pattern,
+                // for example when the original pattern is concrete word such as "abc"
                 last_start = i + 1;
             }
 
-            //walk back to the accepting state of Ar
+            // Walk back to the accepting state of the reverse pattern
             while (i >= match_start_boundary)
             {
                 int j = Math.Max(match_start_boundary, i - AntimirovThresholdLeeway);
@@ -663,7 +554,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (q.IsNullable(GetCharKind(input, i - 1)))
                 {
                     // Earliest start point so far. This must happen at some point
-                    // or else A1 would not have reached a final state after match_start_boundary.
+                    // or else the dot-star pattern would not have reached a final state after match_start_boundary.
                     last_start = i;
                 }
 
@@ -683,7 +574,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="watchdog">length of match when positive</param>
         private int FindFinalStatePosition(string input, int k, int i, int timeoutOccursAt, out int initialStateIndex, out int watchdog)
         {
-            // Get the correct start state of A1, which in general depends on the previous character kind in the input.
+            // Get the correct start state of the dot-star pattern, which in general depends on the previous character kind in the input.
             uint prevCharKindId = GetCharKind(input, i - 1);
             DfaMatchingState<TSetType> q = _dotstarredInitialStates[prevCharKindId];
             initialStateIndex = i;
@@ -712,53 +603,13 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 if (q.IsInitialState)
                 {
-                    // i_q0_A1 is the most recent position in the input when A1 is in the initial state
+                    // i_q0_A1 is the most recent position in the input when the dot-star pattern is in the initial state
                     initialStateIndex = i;
 
-                    if (_prefixBoyerMoore != null)
+                    if (_findOpts is RegexFindOptimizations findOpts)
                     {
-                        // Stay in the initial state if the prefix does not match.
-                        // Thus advance the current position to the first position where the prefix does match.
-                        i = _prefixBoyerMoore.Scan(input, i, 0, input.Length);
-
-                        if (i == -1) // Scan returns -1 when a matching position does not exist
-                        {
-                            watchdog = -1;
-                            return -2;
-                        }
-
-                        // Compute the end state for the A prefix.
-                        // Skip directly to the resulting state
-                        //  --- i.e. do the loop ---
-                        // for (int j = 0; j < prefix.Length; j++)
-                        //     q = Delta(prefix[j], q, out regex);
-                        //  ---
-                        q = GetSkipState(q.PrevCharKind);
-
-                        // skip the prefix
-                        i += _prefix.Length;
-
-                        // here i points at the next character (the character immediately following the prefix)
-                        if (q.IsNullable(GetCharKind(input, i)))
-                        {
-                            // Return the last position of the match
-                            watchdog = q.WatchDog;
-                            return i - 1;
-                        }
-
-                        if (i == k)
-                        {
-                            // no match was found
-                            return -2;
-                        }
-                    }
-                    else
-                    {
-                        // we are still in the initial state, when the prefix is empty
-                        // find the first position i that matches with some character in the start set
-                        i = IndexOfStartSet(input, i);
-
-                        if (i == -1)
+                        // Find the first position i that matches with some likely character.
+                        if (!findOpts.TryFindNextStartingPosition(input, ref i, 0, 0, k))
                         {
                             // no match was found
                             return NoMatchExists;
@@ -833,68 +684,45 @@ namespace System.Text.RegularExpressions.Symbolic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private uint GetCharKind(string input, int i)
         {
-            if (!_pattern._info.ContainsSomeAnchor)
-            {
-                // The previous character kind is irrelevant when anchors are not used.
-                return CharKind.General;
-            }
+            return !_pattern._info.ContainsSomeAnchor ?
+                CharKind.General : // The previous character kind is irrelevant when anchors are not used.
+                GetCharKindWithAnchor(input, i);
 
-            if (i == -1 || i == input.Length)
+            uint GetCharKindWithAnchor(string input, int i)
             {
-                return CharKind.StartStop;
-            }
+                Debug.Assert(_asciiCharKinds is not null);
 
-            char nextChar = input[i];
-            if (nextChar == '\n')
-            {
-                return
-                    _builder._newLinePredicate.Equals(_builder._solver.False) ? 0 : // ignore \n
-                    i == 0 || i == input.Length - 1 ? CharKind.NewLineS : // very first or very last \n. Detection of very first \n is needed for rev(\Z).
-                    CharKind.Newline;
-            }
-
-            uint[] asciiCharKinds = _asciiCharKinds;
-            return
-                nextChar < asciiCharKinds.Length ? asciiCharKinds[nextChar] :
-                _builder._solver.And(GetMinterm(nextChar), _builder._wordLetterPredicateForAnchors).Equals(_builder._solver.False) ? 0 : //apply the wordletter predicate to compute the kind of the next character
-                CharKind.WordLetter;
-        }
-
-        /// <summary>
-        /// Find first occurrence of startset element in input starting from index i.
-        /// Startset here is assumed to consist of a few characters.
-        /// </summary>
-        /// <param name="input">input string to search in</param>
-        /// <param name="i">the start index in input to search from</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int IndexOfStartSet(string input, int i)
-        {
-            if (_startSetSize <= StartSetArrayMaxSize)
-            {
-                return input.IndexOfAny(_startSetArray, i);
-            }
-
-            for (int j = i; j < input.Length; j++)
-            {
-                if (_startSetClassifier.IsTrue(input[j]))
+                if ((uint)i >= (uint)input.Length)
                 {
-                    return j;
+                    return CharKind.StartStop;
                 }
-            }
 
-            return -1;
+                char nextChar = input[i];
+                if (nextChar == '\n')
+                {
+                    return
+                        _builder._newLinePredicate.Equals(_builder._solver.False) ? 0 : // ignore \n
+                        i == 0 || i == input.Length - 1 ? CharKind.NewLineS : // very first or very last \n. Detection of very first \n is needed for rev(\Z).
+                        CharKind.Newline;
+                }
+
+                uint[] asciiCharKinds = _asciiCharKinds;
+                return
+                    nextChar < (uint)asciiCharKinds.Length ? asciiCharKinds[nextChar] :
+                    _builder._solver.And(GetMinterm(nextChar), _builder._wordLetterPredicateForAnchors).Equals(_builder._solver.False) ? 0 : //apply the wordletter predicate to compute the kind of the next character
+                    CharKind.WordLetter;
+            }
         }
 
 #if DEBUG
-        public override void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA)
+        public void SaveDGML(TextWriter writer, int bound, bool hideStateInfo, bool addDotStar, bool inReverse, bool onlyDFAinfo, int maxLabelLength, bool asNFA)
         {
             var graph = new DGML.RegexAutomaton<TSetType>(this, bound, addDotStar, inReverse, asNFA);
             var dgml = new DGML.DgmlWriter(writer, hideStateInfo, maxLabelLength, onlyDFAinfo);
             dgml.Write(graph);
         }
 
-        public override IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative) =>
+        public IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative) =>
             new SymbolicRegexSampler<TSetType>(_pattern, randomseed, negative).GenerateRandomMembers(k);
 #endif
     }

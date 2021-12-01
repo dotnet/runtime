@@ -269,7 +269,7 @@ const SMState g_SMStates[] =
 };
 // clang-format on
 
-static_assert_no_msg(NUM_SM_STATES == _countof(g_SMStates));
+static_assert_no_msg(NUM_SM_STATES == ArrLen(g_SMStates));
 
 const SMState* gp_SMStates = g_SMStates;
 

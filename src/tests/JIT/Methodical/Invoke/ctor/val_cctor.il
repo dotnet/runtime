@@ -19,13 +19,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'val_cctor.exe'
 // MVID: {1C70E5EE-C023-4741-BFC0-A85E3927FB65}
 .namespace JitTest

@@ -16,13 +16,7 @@
 .assembly 'avg'// as "avg"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module 'avg.exe'
 // MVID: {BCA6096F-DF11-4FA3-BF16-EEDA01729535}
 .namespace AvgTest
