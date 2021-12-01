@@ -242,14 +242,11 @@
   <Target Name="PreparePayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectories;PrepareLegacyPayloadDirectories" />
 
   <Target Name="PrepareLegacyPayloadDirectories" DependsOnTargets="PrepareLegacyPayloadDirectory">
-    <PropertyGroup>
-      <_LegacyPayloadGroups>@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())</_LegacyPayloadGroups>
-    </PropertyGroup>
-
     <ItemGroup>
+      <_LegacyPayloadGroups Include="@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())" />
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=$(_LegacyPayloadGroups);IsMergedTestWrapper=false</AdditionalProperties>
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_LegacyPayloadGroups);IsMergedTestWrapper=false</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -257,11 +254,8 @@
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
-    <PropertyGroup>
-      <_MergedPayloadGroups>@(_MergedWrapperName)</_MergedPayloadGroups>
-    </PropertyGroup>
-
     <ItemGroup>
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
         <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups);IsMergedTestWrapper=true</AdditionalProperties>
@@ -284,7 +278,7 @@
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperRunScript.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
-      <_MergedWrapperRunScriptRelative>$([System.IO.Path]::GetRelativePath($(TestBinDir), %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath($(TestBinDir), %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
     </PropertyGroup>
 
     <ItemGroup>
