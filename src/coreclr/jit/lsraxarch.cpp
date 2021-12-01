@@ -2272,48 +2272,93 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
-                // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
-                assert(!copiesUpperBits || !op1->isContained());
+                unsigned resultOpNum = 0;
+                LIR::Use use;
+                GenTree* user = nullptr;
 
-                if (op2->isContained())
+                if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
                 {
-                    // 132 form: op1 = (op1 * op3) + [op2]
-
-                    tgtPrefUse = BuildUse(op1);
-
-                    srcCount += 1;
-                    srcCount += BuildOperandUses(op2);
-                    srcCount += BuildDelayFreeUses(op3, op1);
+                    user = use.User();
                 }
-                else if (op1->isContained())
+                resultOpNum = intrinsicTree->GetResultOpNumForFMA(user, op1, op2, op3);
+
+                unsigned containedOpNum = 0;
+
+                // containedOpNum remains 0 when no operand is contained or regOptional
+                if (op1->isContained() || op1->IsRegOptional())
                 {
-                    // 231 form: op3 = (op2 * op3) + [op1]
+                    containedOpNum = 1;
+                }
+                else if (op2->isContained() || op2->IsRegOptional())
+                {
+                    containedOpNum = 2;
+                }
+                else if (op3->isContained() || op3->IsRegOptional())
+                {
+                    containedOpNum = 3;
+                }
 
-                    tgtPrefUse = BuildUse(op3);
+                GenTree* emitOp1 = op1;
+                GenTree* emitOp2 = op2;
+                GenTree* emitOp3 = op3;
 
-                    srcCount += BuildOperandUses(op1);
-                    srcCount += BuildDelayFreeUses(op2, op1);
-                    srcCount += 1;
+                // Intrinsics with CopyUpperBits semantics must have op1 as target
+                assert(containedOpNum != 1 || !copiesUpperBits);
+
+                if (containedOpNum == 1)
+                {
+                    // https://github.com/dotnet/runtime/issues/62215
+                    // resultOpNum might change between lowering and lsra, comment out assertion for now.
+                    // assert(containedOpNum != resultOpNum);
+                    // resultOpNum is 3 or 0: op3/? = ([op1] * op2) + op3
+                    std::swap(emitOp1, emitOp3);
+
+                    if (resultOpNum == 2)
+                    {
+                        // op2 = ([op1] * op2) + op3
+                        std::swap(emitOp2, emitOp3);
+                    }
+                }
+                else if (containedOpNum == 3)
+                {
+                    // assert(containedOpNum != resultOpNum);
+                    if (resultOpNum == 2 && !copiesUpperBits)
+                    {
+                        // op2 = (op1 * op2) + [op3]
+                        std::swap(emitOp1, emitOp2);
+                    }
+                    // else: op1/? = (op1 * op2) + [op3]
+                }
+                else if (containedOpNum == 2)
+                {
+                    // assert(containedOpNum != resultOpNum);
+
+                    // op1/? = (op1 * [op2]) + op3
+                    std::swap(emitOp2, emitOp3);
+                    if (resultOpNum == 3 && !copiesUpperBits)
+                    {
+                        // op3 = (op1 * [op2]) + op3
+                        std::swap(emitOp1, emitOp2);
+                    }
                 }
                 else
                 {
-                    // 213 form: op1 = (op2 * op1) + [op3]
-
-                    tgtPrefUse = BuildUse(op1);
-                    srcCount += 1;
-
-                    if (copiesUpperBits)
+                    // containedOpNum == 0
+                    // no extra work when resultOpNum is 0 or 1
+                    if (resultOpNum == 2)
                     {
-                        srcCount += BuildDelayFreeUses(op2, op1);
+                        std::swap(emitOp1, emitOp2);
                     }
-                    else
+                    else if (resultOpNum == 3)
                     {
-                        tgtPrefUse2 = BuildUse(op2);
-                        srcCount += 1;
+                        std::swap(emitOp1, emitOp3);
                     }
-
-                    srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
                 }
+                tgtPrefUse = BuildUse(emitOp1);
+
+                srcCount += 1;
+                srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
+                srcCount += emitOp3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
 
                 buildUses = false;
                 break;
