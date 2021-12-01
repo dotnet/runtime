@@ -140,6 +140,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         public async Task CanZipNamedPipe()
         {
             string destPath = Path.Combine(TestDirectory, "dest.zip");
@@ -194,7 +195,6 @@ namespace System.IO.Compression.Tests
 
             return expectedPermissions;
         }
-
 
         [DllImport("libc", SetLastError = true)]
         private static extern int mkfifo(string path, int mode);
