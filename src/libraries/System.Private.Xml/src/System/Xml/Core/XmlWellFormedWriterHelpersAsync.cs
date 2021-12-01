@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Text;
 using System.Diagnostics;
@@ -11,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class XmlWellFormedWriter : XmlWriter
+    internal sealed partial class XmlWellFormedWriter : XmlWriter
     {
         private partial struct ElementScope
         {
@@ -51,7 +50,7 @@ namespace System.Xml
             }
         }
 
-        private partial class AttributeValueCache
+        private sealed partial class AttributeValueCache
         {
             internal async Task ReplayAsync(XmlWriter writer)
             {

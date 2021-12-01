@@ -3,13 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Fakes;
+using Microsoft.Extensions.Hosting.Tests;
 using Microsoft.Extensions.Hosting.Tests.Fakes;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -654,6 +658,101 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         [Fact]
+        public async Task HostPropagatesExceptionsThrownWithBackgroundServiceExceptionBehaviorOfStopHost()
+        {
+            using IHost host = CreateBuilder()
+                .ConfigureServices(
+                    services =>
+                    {
+                        services.AddHostedService(_ => new AsyncThrowingService(Task.CompletedTask));
+                        services.Configure<HostOptions>(
+                            options =>
+                            options.BackgroundServiceExceptionBehavior =
+                                BackgroundServiceExceptionBehavior.StopHost);
+                    })
+                .Build();
+
+            await Assert.ThrowsAsync<Exception>(() => host.StartAsync());
+        }
+
+        [Fact]
+        public async Task HostStopsApplicationWithOneBackgroundServiceErrorAndOthersWithoutError()
+        {
+            var wasOtherServiceStarted = false;
+
+            TaskCompletionSource<bool> throwingTcs = new();
+            TaskCompletionSource<bool> otherTcs = new();
+
+            using IHost host = CreateBuilder()
+                .ConfigureServices(
+                    services =>
+                    {
+                        services.AddHostedService(_ => new AsyncThrowingService(throwingTcs.Task));
+                        services.AddHostedService(
+                            _ => new TestBackgroundService(otherTcs.Task,
+                            () =>
+                            {
+                                wasOtherServiceStarted = true;
+                                throwingTcs.SetResult(true);
+                            }));
+                        services.Configure<HostOptions>(
+                            options =>
+                            options.BackgroundServiceExceptionBehavior =
+                                BackgroundServiceExceptionBehavior.StopHost);
+                    })
+                .Build();
+
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+
+            var wasStartedCalled = false;
+            lifetime.ApplicationStarted.Register(() => wasStartedCalled = true);
+
+            var wasStoppingCalled = false;
+            lifetime.ApplicationStopping.Register(() =>
+            {
+                wasStoppingCalled = true;
+                otherTcs.SetResult(true);
+            });
+
+            // Ensure all completions have been signaled before continuing
+            await Task.WhenAll(host.StartAsync(), throwingTcs.Task, otherTcs.Task);
+
+            Assert.True(wasStartedCalled);
+            Assert.True(wasStoppingCalled);
+            Assert.True(wasOtherServiceStarted);
+        }
+
+        [Fact]
+        public void HostHandlesExceptionsThrownWithBackgroundServiceExceptionBehaviorOfIgnore()
+        {
+            var backgroundDelayTaskSource = new TaskCompletionSource<bool>();
+
+            using IHost host = CreateBuilder()
+                .ConfigureServices(
+                    services =>
+                    {
+                        services.AddHostedService(
+                            _ => new AsyncThrowingService(backgroundDelayTaskSource.Task));
+
+                        services.PostConfigure<HostOptions>(
+                          options =>
+                            options.BackgroundServiceExceptionBehavior =
+                                BackgroundServiceExceptionBehavior.Ignore);
+                    })
+                .Build();
+
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var wasStoppingCalled = false;
+            lifetime.ApplicationStopping.Register(() => wasStoppingCalled = true);
+
+            host.Start();
+
+            backgroundDelayTaskSource.SetResult(true);
+
+            Assert.False(wasStoppingCalled);
+        }
+
+        [Fact]
         public void HostApplicationLifetimeEventsOrderedCorrectlyDuringShutdown()
         {
             using (var host = CreateBuilder()
@@ -836,6 +935,78 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 await host.StopAsync();
                 Assert.True(svc.StopCalled);
+            }
+        }
+
+        [Fact]
+        public async Task HostShutdownFiresApplicationLifetimeStoppedBeforeHostLifetimeStopped()
+        {
+            var stoppingCalls = 0;
+            var startedCalls = 0;
+            var disposingCalls = 0;
+
+            FakeHostLifetime fakeHostLifetime = null;
+            ApplicationLifetime applicationLifetime = null;
+
+            using (var host = CreateBuilder()
+                .ConfigureServices((services) =>
+                {
+                    Action started = () =>
+                    {
+                        startedCalls++;
+                    };
+
+                    Action stopping = () =>
+                    {
+                        stoppingCalls++;
+                    };
+
+                    Action disposing = () =>
+                    {
+                        disposingCalls++;
+                    };
+
+                    services.AddSingleton<IHostedService>(_ => new DelegateHostedService(started, stopping, disposing));
+
+                    services.AddSingleton<IHostLifetime>(_ =>
+                    {
+                        fakeHostLifetime = new FakeHostLifetime();
+
+                        fakeHostLifetime.StopAction = () =>
+                        {
+                            Assert.Equal(1, startedCalls);
+                            Assert.Equal(1, stoppingCalls);
+                            Assert.True(applicationLifetime.ApplicationStopped.IsCancellationRequested);
+                        };
+                        return fakeHostLifetime;
+                    }
+                    );
+
+                })
+                .Build())
+            {
+                var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+                var hostLifetime = host.Services.GetRequiredService<IHostLifetime>();
+                applicationLifetime = lifetime as ApplicationLifetime;
+                Assert.NotNull(applicationLifetime);
+
+                Assert.Equal(0, startedCalls);
+
+                await host.StartAsync();
+                Assert.Equal(1, startedCalls);
+                Assert.Equal(0, stoppingCalls);
+                Assert.Equal(0, disposingCalls);
+
+                Assert.True(lifetime.ApplicationStarted.IsCancellationRequested);
+                Assert.False(lifetime.ApplicationStopping.IsCancellationRequested);
+                Assert.False(lifetime.ApplicationStopped.IsCancellationRequested);
+
+                await host.StopAsync();
+
+                Assert.True(lifetime.ApplicationStopping.IsCancellationRequested);
+                Assert.True(lifetime.ApplicationStopped.IsCancellationRequested);
+                Assert.Equal(1, startedCalls);
+                Assert.Equal(1, stoppingCalls);
             }
         }
 
@@ -1143,6 +1314,116 @@ namespace Microsoft.Extensions.Hosting.Internal
             });
         }
 
+        /// <summary>
+        /// Tests when a BackgroundService throws an exception asynchronously
+        /// (after an await), the exception gets logged correctly.
+        /// </summary>
+        [Theory]
+        [InlineData(BackgroundServiceExceptionBehavior.Ignore, "BackgroundService failed")]
+        [InlineData(BackgroundServiceExceptionBehavior.StopHost, "BackgroundService failed", "The HostOptions.BackgroundServiceExceptionBehavior is configured to StopHost")]
+        public async Task BackgroundServiceAsyncExceptionGetsLogged(
+            BackgroundServiceExceptionBehavior testBehavior,
+            params string[] expectedExceptionMessages)
+        {
+            TestLoggerProvider logger = new TestLoggerProvider();
+            var backgroundDelayTaskSource = new TaskCompletionSource<bool>();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(logger);
+                })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.Configure<HostOptions>(
+                        options =>
+                        options.BackgroundServiceExceptionBehavior = testBehavior);
+                    services.AddHostedService(sp => new AsyncThrowingService(backgroundDelayTaskSource.Task));
+                })
+                .Start();
+
+            backgroundDelayTaskSource.SetResult(true);
+
+            // give the background service 1 minute to log the failure
+            var timeout = TimeSpan.FromMinutes(1);
+            Stopwatch sw = Stopwatch.StartNew();
+
+            while (true)
+            {
+                LogEvent[] events = logger.GetEvents();
+                if (expectedExceptionMessages.All(
+                        expectedMessage => events.Any(
+                            e => e.Message.Contains(expectedMessage))))
+                {
+                    break;
+                }
+
+                Assert.InRange(sw.Elapsed, TimeSpan.Zero, timeout);
+                await Task.Delay(TimeSpan.FromMilliseconds(30));
+            }
+        }
+
+        /// <summary>
+        /// Tests that when a BackgroundService is canceled when stopping the host,
+        /// no error is logged.
+        /// </summary>
+        [Fact]
+        public async Task HostNoErrorWhenServiceIsCanceledAsPartOfStop()
+        {
+            TestLoggerProvider logger = new TestLoggerProvider();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(logger);
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHostedService<WorkerTemplateService>();
+                })
+                .Build();
+
+            host.Start();
+            await host.StopAsync();
+
+            foreach (LogEvent logEvent in logger.GetEvents())
+            {
+                Assert.True(logEvent.LogLevel < LogLevel.Error);
+
+                Assert.NotEqual("BackgroundServiceFaulted", logEvent.EventId.Name);
+            }
+        }
+
+        /// <summary>
+        /// Tests that when a BackgroundService does not call base, the Host still starts and stops successfully.
+        /// </summary>
+        [Fact]
+        public async Task StartOnBackgroundServiceThatDoesNotCallBase()
+        {
+            TestLoggerProvider logger = new TestLoggerProvider();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(logger);
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHostedService<BackgroundServiceDoesNotCallBase>();
+                })
+                .Build();
+
+            host.Start();
+            await host.StopAsync();
+
+            foreach (LogEvent logEvent in logger.GetEvents())
+            {
+                Assert.True(logEvent.LogLevel <= LogLevel.Information, "All logged events should be less than or equal to Information. No Warnings or Errors.");
+
+                Assert.NotEqual("BackgroundServiceFaulted", logEvent.EventId.Name);
+            }
+        }
+
         private IHostBuilder CreateBuilder(IConfiguration config = null)
         {
             return new HostBuilder().ConfigureHostConfiguration(builder => builder.AddConfiguration(config ?? new ConfigurationBuilder().Build()));
@@ -1251,6 +1532,74 @@ namespace Microsoft.Extensions.Hosting.Internal
                 DisposeAsyncCalled = true;
                 return default;
             }
+        }
+
+        private class TestBackgroundService : IHostedService
+        {
+            private readonly Action _onStart;
+            private readonly Task _emulateWorkTask;
+
+            public TestBackgroundService(Task emulateWorkTask, Action onStart)
+            {
+                _emulateWorkTask = emulateWorkTask;
+                _onStart = onStart;
+            }
+
+            public async Task StartAsync(CancellationToken stoppingToken)
+            {
+                _onStart();
+                await _emulateWorkTask;
+            }
+
+            public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        }
+
+        private class AsyncThrowingService : BackgroundService
+        {
+            private readonly Task _executeDelayTask;
+
+            public AsyncThrowingService(Task executeDelayTask)
+            {
+                _executeDelayTask = executeDelayTask;
+            }
+
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                await _executeDelayTask;
+
+                throw new Exception("Background Exception");
+            }
+        }
+
+        /// <summary>
+        /// A copy of the default "Worker" template.
+        /// </summary>
+        private class WorkerTemplateService : BackgroundService
+        {
+            private readonly ILogger<WorkerTemplateService> _logger;
+
+            public WorkerTemplateService(ILogger<WorkerTemplateService> logger)
+            {
+                _logger = logger;
+            }
+
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                    await Task.Delay(1000, stoppingToken);
+                }
+            }
+        }
+
+        private class BackgroundServiceDoesNotCallBase : BackgroundService
+        {
+            public override Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+            protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
+
+            public override Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         }
     }
 }

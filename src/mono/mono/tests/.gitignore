@@ -1,5 +1,3 @@
-/Makefile.in
-/Makefile
 /*.stdout
 /*.stderr
 /*.aotlog
@@ -19,7 +17,7 @@
 /*.pdb
 /*.o
 /*.lo
-/*.so
+**.so
 **.dylib
 **.dylib.dSYM
 /*.netmodule

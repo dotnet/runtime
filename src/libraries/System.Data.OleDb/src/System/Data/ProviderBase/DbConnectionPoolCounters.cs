@@ -236,7 +236,6 @@ namespace System.Data.ProviderBase
         }
 
         // SxS: this method uses GetCurrentProcessId to construct the instance name.
-        // TODO: remove the Resource* attributes if you do not use GetCurrentProcessId after the fix
         private string GetInstanceName()
         {
             string? result = null;
@@ -252,14 +251,13 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            // TODO: If you do not use GetCurrentProcessId after fixing VSDD 534795, please remove Resource* attributes from this method
-            int pid = SafeNativeMethods.GetCurrentProcessId();
+            uint pid = Interop.Kernel32.GetCurrentProcessId();
 
             // there are several characters which have special meaning
             // to PERFMON.  They recommend that we translate them as shown below, to
             // prevent problems.
 
-            result = string.Format(null, "{0}[{1}]", instanceName, pid);
+            result = $"{instanceName}[{pid}]";
             result = result.Replace('(', '[').Replace(')', ']').Replace('#', '_').Replace('/', '_').Replace('\\', '_');
 
             // counter instance name cannot be greater than 127
@@ -272,13 +270,10 @@ namespace System.Data.ProviderBase
                 const string insertString = "[...]";
                 int firstPartLength = (CounterInstanceNameMaxLength - insertString.Length) / 2;
                 int lastPartLength = CounterInstanceNameMaxLength - firstPartLength - insertString.Length;
-                result = string.Format(null, "{0}{1}{2}",
-                    result.Substring(0, firstPartLength),
-                    insertString,
-                    result.Substring(result.Length - lastPartLength, lastPartLength));
+                result = $"{result.Substring(0, firstPartLength)}{insertString}{result.Substring(result.Length - lastPartLength, lastPartLength)}";
 
                 Debug.Assert(result.Length == CounterInstanceNameMaxLength,
-                    string.Format(null, "wrong calculation of the instance name: expected {0}, actual: {1}", CounterInstanceNameMaxLength, result.Length));
+                    $"wrong calculation of the instance name: expected {CounterInstanceNameMaxLength}, actual: {result.Length}");
             }
 
             return result;

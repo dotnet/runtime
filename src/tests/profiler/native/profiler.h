@@ -3,116 +3,110 @@
 
 #pragma once
 
+#define NOMINMAX
+
 #include <atomic>
 #include <cstdio>
+#include <thread>
+#include <chrono>
 #include "cor.h"
 #include "corprof.h"
+#include "holder.h"
 #include "profilerstring.h"
+#include "event.h"
+
+#if WIN32
+#define EXPORT
+#else // WIN32
+#define EXPORT __attribute__ ((visibility ("default")))
+#endif // WIN32
 
 #define SHORT_LENGTH    32
 #define STRING_LENGTH  256
 #define LONG_LENGTH   1024
 
-template <class MetaInterface>
-class COMPtrHolder
+typedef void (*ProfilerCallback) (void);
+
+class ShutdownGuard
 {
-public:
-    COMPtrHolder()
-    {
-        m_ptr = NULL;
-    }
 
-    COMPtrHolder(MetaInterface* ptr)
-    {
-        if (ptr != NULL)
-        {
-            ptr->AddRef();
-        }
-        m_ptr = ptr;
-    }
-
-    ~COMPtrHolder()
-    {
-        if (m_ptr != NULL)
-        {
-            m_ptr->Release();
-            m_ptr = NULL;
-        }
-    }
-    MetaInterface* operator->()
-    {
-        return m_ptr;
-    }
-
-    MetaInterface** operator&()
-    {
-       // _ASSERT(m_ptr == NULL);
-        return &m_ptr;
-    }
-
-    operator MetaInterface*()
-    {
-        return m_ptr;
-    }
 private:
-    MetaInterface* m_ptr;
+    static std::atomic<bool> s_preventHooks;
+    static std::atomic<int> s_hooksInProgress;
+
+public:
+    ShutdownGuard()
+    {
+        ++s_hooksInProgress;
+    }
+
+    ~ShutdownGuard()
+    {
+        --s_hooksInProgress;
+    }
+
+    static void Initialize()
+    {
+        s_preventHooks = false;
+        s_hooksInProgress = 0;
+    }
+
+    static bool HasShutdownStarted()
+    {
+        return s_preventHooks.load();
+    }
+
+    static void WaitForInProgressHooks()
+    {
+        s_preventHooks = true;
+
+        while (s_hooksInProgress.load() > 0)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
 };
 
-template <class T>
-class NewArrayHolder
-{
-public:
-    NewArrayHolder()
-    {
-        m_pArray = NULL;
+// Managed code can keep running after Shutdown() is called, and things like
+// ELT hooks will continue to be called. We would AV if we tried to call
+// in to freed resources.
+#define SHUTDOWNGUARD()                         \
+    ShutdownGuard shutdownGuard;                \
+    if (ShutdownGuard::HasShutdownStarted())    \
+    {                                           \
+        return S_OK;                            \
     }
 
-    NewArrayHolder(T* pArray)
-    {
-        m_pArray = pArray;
+#define SHUTDOWNGUARD_RETVOID()                 \
+    ShutdownGuard shutdownGuard;                \
+    if (ShutdownGuard::HasShutdownStarted())    \
+    {                                           \
+        return;                                 \
     }
 
-    NewArrayHolder<T>& operator=(T* other)
-    {
-        delete[] m_pArray;
-        m_pArray = other;
-        return *this;
-    }
-
-    operator T*()
-    {
-        return m_pArray;
-    }
-
-    ~NewArrayHolder()
-    {
-        delete[] m_pArray;
-    }
-private:
-    NewArrayHolder(const NewArrayHolder& other)
-    {
-        assert(!"Unreachable");
-    }
-
-    T* m_pArray;
-};
-
-class Profiler : public ICorProfilerCallback10
+class Profiler : public ICorProfilerCallback11
 {
 private:
     std::atomic<int> refCount;
+    static ProfilerCallback s_callback;
+    static ManualEvent s_callbackSet;
+    
 
 protected:
+    static void NotifyManagedCodeViaCallback(ICorProfilerInfo11 *pCorProfilerInfo);
+
     String GetClassIDName(ClassID classId);
     String GetFunctionIDName(FunctionID funcId);
     String GetModuleIDName(ModuleID modId);
 
 public:
-    ICorProfilerInfo9* pCorProfilerInfo;
+    static Profiler *Instance;
+    static void SetCallback(ProfilerCallback callback);
+
+    ICorProfilerInfo11* pCorProfilerInfo;
 
     Profiler();
     virtual ~Profiler();
-	virtual GUID GetClsid() = 0;
     HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk) override;
     HRESULT STDMETHODCALLTYPE Shutdown() override;
     HRESULT STDMETHODCALLTYPE AppDomainCreationStarted(AppDomainID appDomainId) override;
@@ -219,6 +213,7 @@ public:
         ULONG numStackFrames,
         UINT_PTR stackFrames[]) override;
     HRESULT STDMETHODCALLTYPE EventPipeProviderCreated(EVENTPIPE_PROVIDER provider) override;
+    HRESULT STDMETHODCALLTYPE LoadAsNotificationOnly(BOOL *pbNotificationOnly) override;
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject) override;
     ULONG STDMETHODCALLTYPE AddRef(void) override;

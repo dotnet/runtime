@@ -480,7 +480,6 @@ namespace System.Xml.Tests
         public void SetPartiaValidationAndCallValidate_Text_WhiteSpace_Valid(string typeToValidate)
         {
             XmlSchemaValidator val;
-            XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = new XmlSchemaSet();
 
             schemas.Add("", Path.Combine(TestData, XSDFILE_PARTIAL_VALIDATION));

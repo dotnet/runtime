@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -52,6 +53,72 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             runtimeLibraries ?? new RuntimeLibrary[0],
                             runtimeGraph ?? new RuntimeFallbacks[0]
                             );
+        }
+
+        [Fact]
+        public void DuplicateEntriesThrowArgumentException()
+        {
+            var context = Create(
+                            "Target",
+                            "Target/runtime",
+                            true,
+                            null,
+                            runtimeLibraries: new[]
+                            {
+                                new RuntimeLibrary(
+                                        "package",
+                                        "DuplicatePackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "Banana.dll"),
+                                            new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll")
+                                        },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "runtimes\\linux\\native\\native.so"),
+                                            new RuntimeAssetGroup("win7-x64", "native\\Banana.Win7-x64.so")
+                                        },
+                                        new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true,
+                                        "PackagePath",
+                                        "PackageHashPath",
+                                        "placeHolderManifest.xml"
+                                    ),
+
+                                new RuntimeLibrary(
+                                        "package",
+                                        "DuplicatePackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "Banana.dll"),
+                                            new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll")
+                                        },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "runtimes\\linux\\native\\native.so"),
+                                            new RuntimeAssetGroup("win7-x64", "native\\Banana.Win7-x64.so")
+                                        },
+                                        new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true,
+                                        "PackagePath",
+                                        "PackageHashPath",
+                                        "placeHolderManifest.xml"
+                                    ),
+                            },
+                            runtimeGraph: new[]
+                            {
+                                new RuntimeFallbacks("win7-x64", new [] { "win6", "win5"}),
+                                new RuntimeFallbacks("win8-x64", new [] { "win7-x64"}),
+                            });
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => Save(context));
+            Assert.Contains("DuplicatePackageName", ex.Message);
         }
 
         [Fact]
@@ -707,6 +774,40 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             options.Should().HavePropertyValue("keyFile", "Key.snk");
             options.Should().HaveProperty("defines")
                 .Subject.Values<string>().Should().BeEquivalentTo(new[] { "MY", "DEFINES" });
+        }
+
+        [Fact]
+        public void WriteDoesNotDisposeStream()
+        {
+            DependencyContext context = Create(
+                "Target",
+                "Target/runtime",
+                runtimeGraph: new[]
+                {
+                    new RuntimeFallbacks("win7-x64", new [] { "win6", "win5"}),
+                    new RuntimeFallbacks("win8-x64", new [] { "win7-x64"}),
+                });
+
+            DisposeAwareMemoryStream stream = new DisposeAwareMemoryStream();
+            using (stream)
+            {
+                new DependencyContextWriter().Write(context, stream);
+                Assert.False(stream.IsDisposed);
+            }
+
+            Assert.True(stream.IsDisposed);
+        }
+
+        private class DisposeAwareMemoryStream : MemoryStream
+        {
+            public bool IsDisposed { get; set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                IsDisposed = true;
+
+                base.Dispose(disposing);
+            }
         }
     }
 }

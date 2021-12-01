@@ -5,7 +5,7 @@ namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     /// FileType: Identifies the type of file embedded into the bundle.
-    /// 
+    ///
     /// The bundler differentiates a few kinds of files via the manifest,
     /// with respect to the way in which they'll be used by the runtime.
     /// </summary>
@@ -19,4 +19,3 @@ namespace Microsoft.NET.HostModel.Bundle
         Symbols            // PDB Files
     };
 }
-

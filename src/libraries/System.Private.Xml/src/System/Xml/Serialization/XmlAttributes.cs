@@ -1,16 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System.ComponentModel;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Reflection;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Linq;
-    using System.Collections.Generic;
-    using System.Xml.Serialization;
-
     internal enum XmlAttributeFlags
     {
         Enum = 0x1,
@@ -35,18 +30,17 @@ namespace System.Xml.Serialization
         private readonly XmlElementAttributes _xmlElements = new XmlElementAttributes();
         private readonly XmlArrayItemAttributes _xmlArrayItems = new XmlArrayItemAttributes();
         private readonly XmlAnyElementAttributes _xmlAnyElements = new XmlAnyElementAttributes();
-        private XmlArrayAttribute _xmlArray;
-        private XmlAttributeAttribute _xmlAttribute;
-        private XmlTextAttribute _xmlText;
-        private XmlEnumAttribute _xmlEnum;
+        private XmlArrayAttribute? _xmlArray;
+        private XmlAttributeAttribute? _xmlAttribute;
+        private XmlTextAttribute? _xmlText;
+        private XmlEnumAttribute? _xmlEnum;
         private bool _xmlIgnore;
         private bool _xmlns;
-        private object _xmlDefaultValue;
-        private XmlRootAttribute _xmlRoot;
-        private XmlTypeAttribute _xmlType;
-        private XmlAnyAttributeAttribute _xmlAnyAttribute;
-        private readonly XmlChoiceIdentifierAttribute _xmlChoiceIdentifier;
-        private static volatile Type s_ignoreAttributeType;
+        private object? _xmlDefaultValue;
+        private XmlRootAttribute? _xmlRoot;
+        private XmlTypeAttribute? _xmlType;
+        private XmlAnyAttributeAttribute? _xmlAnyAttribute;
+        private readonly XmlChoiceIdentifierAttribute? _xmlChoiceIdentifier;
 
 
         /// <devdoc>
@@ -77,22 +71,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static Type IgnoreAttribute
-        {
-            get
-            {
-                if (s_ignoreAttributeType == null)
-                {
-                    s_ignoreAttributeType = typeof(object).Assembly.GetType("System.XmlIgnoreMemberAttribute");
-                    if (s_ignoreAttributeType == null)
-                    {
-                        s_ignoreAttributeType = typeof(XmlIgnoreAttribute);
-                    }
-                }
-                return s_ignoreAttributeType;
-            }
-        }
-
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -101,10 +79,10 @@ namespace System.Xml.Serialization
             object[] attrs = provider.GetCustomAttributes(false);
 
             // most generic <any/> matches everything
-            XmlAnyElementAttribute wildcard = null;
+            XmlAnyElementAttribute? wildcard = null;
             for (int i = 0; i < attrs.Length; i++)
             {
-                if (attrs[i] is XmlIgnoreAttribute || attrs[i] is ObsoleteAttribute || attrs[i].GetType() == IgnoreAttribute)
+                if (attrs[i] is XmlIgnoreAttribute || attrs[i] is ObsoleteAttribute)
                 {
                     _xmlIgnore = true;
                     break;
@@ -195,7 +173,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal static object GetAttr(MemberInfo memberInfo, Type attrType)
+        internal static object? GetAttr(MemberInfo memberInfo, Type attrType)
         {
             object[] attrs = memberInfo.GetCustomAttributes(attrType, false);
             if (attrs.Length == 0) return null;
@@ -213,7 +191,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAttributeAttribute XmlAttribute
+        public XmlAttributeAttribute? XmlAttribute
         {
             get { return _xmlAttribute; }
             set { _xmlAttribute = value; }
@@ -222,7 +200,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlEnumAttribute XmlEnum
+        public XmlEnumAttribute? XmlEnum
         {
             get { return _xmlEnum; }
             set { _xmlEnum = value; }
@@ -231,7 +209,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlTextAttribute XmlText
+        public XmlTextAttribute? XmlText
         {
             get { return _xmlText; }
             set { _xmlText = value; }
@@ -240,7 +218,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlArrayAttribute XmlArray
+        public XmlArrayAttribute? XmlArray
         {
             get { return _xmlArray; }
             set { _xmlArray = value; }
@@ -257,7 +235,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public object XmlDefaultValue
+        public object? XmlDefaultValue
         {
             get { return _xmlDefaultValue; }
             set { _xmlDefaultValue = value; }
@@ -275,7 +253,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlTypeAttribute XmlType
+        public XmlTypeAttribute? XmlType
         {
             get { return _xmlType; }
             set { _xmlType = value; }
@@ -284,7 +262,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlRootAttribute XmlRoot
+        public XmlRootAttribute? XmlRoot
         {
             get { return _xmlRoot; }
             set { _xmlRoot = value; }
@@ -301,13 +279,13 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAnyAttributeAttribute XmlAnyAttribute
+        public XmlAnyAttributeAttribute? XmlAnyAttribute
         {
             get { return _xmlAnyAttribute; }
             set { _xmlAnyAttribute = value; }
         }
 
-        public XmlChoiceIdentifierAttribute XmlChoiceIdentifier
+        public XmlChoiceIdentifierAttribute? XmlChoiceIdentifier
         {
             get { return _xmlChoiceIdentifier; }
         }

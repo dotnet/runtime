@@ -3,8 +3,10 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -493,11 +495,18 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = type.GetTypeInfo();
             Type[] implementedInterfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
 
-            Array.Sort(implementedInterfaces, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
-            Array.Sort(expected, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
+            Array.Sort(implementedInterfaces, TypeSortComparer);
+            Array.Sort(expected, TypeSortComparer);
 
             Assert.Equal(expected, implementedInterfaces);
             Assert.All(expected, ti => Assert.True(ti.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())));
+            Assert.All(expected, ti => Assert.True(type.GetTypeInfo().IsAssignableTo(ti.GetTypeInfo())));
+
+            static int TypeSortComparer(Type a, Type b)
+            {
+                // produces a stable (within this process) ordering of two Type objects
+                return a.TypeHandle.Value.CompareTo(b.TypeHandle.Value);
+            }
         }
 
         public static IEnumerable<object[]> IsInstanceOfType_TestData()
@@ -568,10 +577,13 @@ namespace System.Reflection.Tests
         [InlineData(typeof(uint[]), typeof(int[]), true)]
         [InlineData(typeof(IList<int>), typeof(int[]), true)]
         [InlineData(typeof(IList<uint>), typeof(int[]), true)]
-        public void IsAssignableFrom(Type type, Type c, bool expected)
+        public void IsAssignable(Type type, Type c, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c));
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c?.GetTypeInfo()));
+
+            Assert.Equal(expected, c?.IsAssignableTo(type) ?? false);
+            Assert.Equal(expected, c?.GetTypeInfo().IsAssignableTo(type.GetTypeInfo()) ?? false);
         }
 
         class G<T, U> where T : U
@@ -581,7 +593,7 @@ namespace System.Reflection.Tests
         static volatile object s_boxedInt32;
 
         [Fact]
-        public void IsAssignableFromNullable()
+        public void IsAssignableNullable()
         {
             Type nubInt = typeof(Nullable<int>);
             Type intType = typeof(int);
@@ -592,6 +604,8 @@ namespace System.Reflection.Tests
             // Nullable<T>  is assignable from  int
             Assert.True(nubInt.IsAssignableFrom(intType));
             Assert.False(intType.IsAssignableFrom(nubInt));
+            Assert.False(nubInt.IsAssignableTo(intType));
+            Assert.True(intType.IsAssignableTo(nubInt));
 
             Type nubOfT = nubInt.GetGenericTypeDefinition();
             Type T = nubOfT.GetTypeInfo().GenericTypeParameters[0];
@@ -601,15 +615,22 @@ namespace System.Reflection.Tests
             Assert.True(objType.IsAssignableFrom(T));
             Assert.True(valTypeType.IsAssignableFrom(T));
 
+            Assert.True(T.IsAssignableTo(T));
+            Assert.True(T.IsAssignableTo(objType));
+            Assert.True(T.IsAssignableTo(valTypeType));
+
             // should be false
             // Nullable<T> is not assignable from T
             Assert.False(nubOfT.IsAssignableFrom(T));
             Assert.False(T.IsAssignableFrom(nubOfT));
 
+            Assert.False(nubOfT.IsAssignableTo(T));
+            Assert.False(T.IsAssignableTo(nubOfT));
+
             // illegal type construction due to T->T?
             Assert.Throws<ArgumentException>(() => typeof(G<,>).MakeGenericType(typeof(int), typeof(int?)));
 
-            // Test trivial object casts 
+            // Test trivial object casts
             s_boxedInt32 = (object)1234;
             Assert.True((s_boxedInt32 is int?) && (int?)s_boxedInt32 == 1234);
 
@@ -625,7 +646,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    IFace[] arr2 = default(T[]);
             //    IEnumerable<IFace> ie = default(T[]);
             //}
@@ -635,7 +656,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    U[] arr2 = default(T[]);
             //    IEnumerable<U> ie = default(T[]);
             //}
@@ -648,12 +669,17 @@ namespace System.Reflection.Tests
             Assert.True(typeof(IFace[]).IsAssignableFrom(a));
             Assert.True(typeof(IEnumerable<IFace>).IsAssignableFrom(a));
 
+            Assert.True(a.IsAssignableTo(typeof(IFace[])));
+            Assert.True(a.IsAssignableTo(typeof(IEnumerable<IFace>)));
+
             Type a1 = typeof(GG<,>).GetGenericArguments()[0].MakeArrayType();
             Type a2 = typeof(GG<,>).GetGenericArguments()[1].MakeArrayType();
             Assert.True(a2.IsAssignableFrom(a1));
+            Assert.True(a1.IsAssignableTo(a2));
 
             Type ie = typeof(IEnumerable<>).MakeGenericType(typeof(GG<,>).GetGenericArguments()[1]);
             Assert.True(ie.IsAssignableFrom(a1));
+            Assert.True(a1.IsAssignableTo(ie));
         }
 
         public static IEnumerable<object[]> IsEquivilentTo_TestData()
@@ -709,7 +735,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         public static void FindMembers()
         {
             MemberInfo[] members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.All, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => true, "notused");
@@ -793,7 +818,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         public void GetMethod()
         {
             MethodInfo[] methods = typeof(MembersClass).GetTypeInfo().GetMethods();
@@ -812,7 +836,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         [InlineData(BindingFlags.Default, 9)]
         [InlineData(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, 16)]
         public void GetMethods(BindingFlags bindingAttributes, int length)
@@ -879,7 +902,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         [InlineData(BindingFlags.Default, 15)]
         [InlineData(BindingFlags.NonPublic | BindingFlags.Instance, 13)]
         [InlineData(BindingFlags.Public | BindingFlags.Instance, 15)]
@@ -1383,6 +1405,9 @@ namespace System.Reflection.Tests
         [InlineData(typeof(PublicEnum), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1), "System.Reflection.Tests")]
         [InlineData(typeof(int), "System")]
+        [InlineData(typeof(TI_BaseClass[]), "System.Reflection.Tests")]
+        [InlineData(typeof(TI_BaseClass.PublicNestedClass1[]), "System.Reflection.Tests")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42633", TestRuntimes.Mono)]
         public void Namespace(Type type, string expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().Namespace);
@@ -1540,6 +1565,70 @@ namespace System.Reflection.Tests
         public void IsSZArray(Type type, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
+        }
+
+        public static IEnumerable<object[]> GetMemberWithSameMetadataDefinitionAsData()
+        {
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<int>), true };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>), true};
+
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembers<int>), false };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembers<ClassWithMultipleConstructors>), false };
+
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembersClosed), false };
+
+            static TypeInfo GetTypeDelegator(Type t) => new TypeDelegator(t);
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>), true };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)), true };
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)), true };
+
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                (Type generatedType1, Type generatedType2) = CreateGeneratedTypes();
+
+                yield return new object[] { generatedType1, generatedType2, true };
+                yield return new object[] { generatedType2, generatedType1, true };
+            }
+        }
+
+        private static (Type, Type) CreateGeneratedTypes()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("GetMemberWithSameMetadataDefinitionAsGeneratedAssembly"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("GetMemberWithSameMetadataDefinitionAsGeneratedModule");
+            TypeBuilder genericType = module.DefineType("GenericGeneratedType");
+            genericType.DefineGenericParameters("T0");
+            genericType.DefineField("_int", typeof(int), FieldAttributes.Private);
+            genericType.DefineProperty("Prop", PropertyAttributes.None, typeof(string), null);
+
+            Type builtGenericType = genericType.CreateType();
+            Type closedType = builtGenericType.MakeGenericType(typeof(int));
+
+            return (genericType, closedType);
+        }
+
+        [Theory, MemberData(nameof(GetMemberWithSameMetadataDefinitionAsData))]
+        public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType, bool checkDeclaringType)
+        {
+            BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            foreach (MemberInfo openGenericMember in openGenericType.GetMembers(all))
+            {
+                MemberInfo closedGenericMember = closedGenericType.GetMemberWithSameMetadataDefinitionAs(openGenericMember);
+                Assert.True(closedGenericMember != null, $"'{openGenericMember.Name}' was not found");
+                Assert.True(closedGenericMember.HasSameMetadataDefinitionAs(openGenericMember));
+                Assert.Equal(closedGenericMember.Name, openGenericMember.Name);
+                if (checkDeclaringType && openGenericMember is not Type)
+                {
+                    Assert.True(closedGenericMember.DeclaringType.Equals(closedGenericType), $"'{closedGenericMember.Name}' doesn't have the right DeclaringType");
+                }
+            }
+
+            MemberInfo toString = closedGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(object).GetMethod("ToString"));
+            Assert.NotNull(toString);
+            Assert.IsAssignableFrom<MethodInfo>(toString);
+            Assert.Equal("ToString", toString.Name);
+
+            Assert.Throws<ArgumentNullException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(null));
+            Assert.Throws<ArgumentException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(string).GetMethod("get_Length")));
         }
 
 #pragma warning disable 0067, 0169
@@ -1792,6 +1881,54 @@ namespace System.Reflection.Tests
         public abstract class AbstractSubClass : AbstractBaseClass { }
         public class AbstractSubSubClass : AbstractSubClass { }
     }
+
+    public class TI_GenericTypeWithAllMembers<T>
+    {
+        private static event EventHandler<T> PrivateStaticEvent;
+        private static T PrivateStaticField;
+        private static T PrivateStaticProperty { get; set; }
+        private static T PrivateStaticMethod(T t) => default;
+        private static T PrivateStaticMethod(T t, T t2) => default;
+
+        public static event EventHandler<T> PublicStaticEvent;
+        public static T PublicStaticField;
+        public static T PublicStaticProperty { get; set; }
+        public static T PublicStaticMethod(T t) => default;
+        public static T PublicStaticMethod(T t, T t2) => default;
+
+        static TI_GenericTypeWithAllMembers() { }
+
+        public TI_GenericTypeWithAllMembers(T t) { }
+        private TI_GenericTypeWithAllMembers() { }
+
+        public event EventHandler<T> PublicInstanceEvent;
+        public T PublicInstanceField;
+        public T PublicInstanceProperty { get; set; }
+        public T PublicInstanceMethod(T t) => default;
+        public T PublicInstanceMethod(T t, T t2) => default;
+
+        private event EventHandler<T> PrivateInstanceEvent;
+        private T PrivateInstanceField;
+        private T PrivateInstanceProperty { get; set; }
+        private T PrivateInstanceMethod(T t) => default;
+        private T PrivateInstanceMethod(T t1, T t2) => default;
+
+        public class Nested
+        {
+            public T NestedField;
+        }
+    }
+
+    public class TI_TypeDerivedFromGenericTypeWithAllMembers<T> : TI_GenericTypeWithAllMembers<T>
+    {
+        public TI_TypeDerivedFromGenericTypeWithAllMembers(T t) : base(t) { }
+    }
+
+    public class TI_TypeDerivedFromGenericTypeWithAllMembersClosed : TI_TypeDerivedFromGenericTypeWithAllMembers<int>
+    {
+        public TI_TypeDerivedFromGenericTypeWithAllMembersClosed(int t) : base(t) { }
+    }
+
 #pragma warning restore 0067, 0169
 
     public class OutsideTypeInfoTests

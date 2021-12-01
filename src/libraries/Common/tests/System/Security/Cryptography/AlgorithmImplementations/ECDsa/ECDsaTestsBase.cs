@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     /// <summary>
     /// Input and helper methods for ECDsa
     /// </summary>
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class ECDsaTestsBase : EccTestBase
     {
 #if NETCOREAPP

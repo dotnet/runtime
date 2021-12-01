@@ -552,7 +552,7 @@ namespace System.Diagnostics
             }, cancellationToken);
         }
 
-        private bool TryReapChild()
+        private bool TryReapChild(bool configureConsole)
         {
             lock (_gate)
             {
@@ -572,7 +572,7 @@ namespace System.Diagnostics
                     if (_usesTerminal)
                     {
                         // Update terminal settings before calling SetExited.
-                        Process.ConfigureTerminalForChildProcesses(-1);
+                        Process.ConfigureTerminalForChildProcesses(-1, configureConsole);
                     }
 
                     SetExited();
@@ -593,7 +593,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal static void CheckChildren(bool reapAll)
+        internal static void CheckChildren(bool reapAll, bool configureConsole)
         {
             // This is called on SIGCHLD from a native thread.
             // A lock in Process ensures no new processes are spawned while we are checking.
@@ -612,7 +612,7 @@ namespace System.Diagnostics
                         if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
                         {
                             // Known Process.
-                            if (pws.TryReapChild())
+                            if (pws.TryReapChild(configureConsole))
                             {
                                 pws.ReleaseRef();
                             }
@@ -645,7 +645,7 @@ namespace System.Diagnostics
                     foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)
                     {
                         ProcessWaitState pws = kv.Value;
-                        if (pws.TryReapChild())
+                        if (pws.TryReapChild(configureConsole))
                         {
                             if (firstToRemove == null)
                             {

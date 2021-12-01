@@ -46,7 +46,7 @@ namespace System.Xml.Xsl.XsltOld
                     case BeginEvent:
                         Debug.Assert(frame.State == BeginEvent);
 
-                        if (SendBeginEvent(processor, frame.Node) == false)
+                        if (SendBeginEvent(processor, frame.Node!) == false)
                         {
                             // This one wasn't output
                             break;
@@ -56,7 +56,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     case Contents:
                         Debug.Assert(frame.State == Contents);
-                        XPathNodeType nodeType = frame.Node.NodeType;
+                        XPathNodeType nodeType = frame.Node!.NodeType;
 
                         if (nodeType == XPathNodeType.Element || nodeType == XPathNodeType.Root)
                         {
@@ -79,7 +79,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;
 
                     case Attributes:
-                        if (frame.Node.HasChildren)
+                        if (frame.Node!.HasChildren)
                         {
                             processor.PushActionFrame(GetAction(), frame.Node.SelectChildren(XPathNodeType.All));
                             frame.State = Subtree;
@@ -96,7 +96,7 @@ namespace System.Xml.Xsl.XsltOld
                     case EndEvent:
                         Debug.Assert(frame.State == EndEvent);
 
-                        if (SendEndEvent(processor, frame.Node) == false)
+                        if (SendEndEvent(processor, frame.Node!) == false)
                         {
                             // This one wasn't output
                             break;

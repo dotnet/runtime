@@ -20,6 +20,7 @@ namespace System
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
         public static bool IsDebian8 => IsDistroAndVersion("debian", 8);
+        public static bool IsDebian9 => IsDistroAndVersion("debian", 9);
         public static bool IsDebian10 => IsDistroAndVersion("debian", 10);
         public static bool IsUbuntu1604 => IsDistroAndVersion("ubuntu", 16, 4);
         public static bool IsUbuntu1704 => IsDistroAndVersion("ubuntu", 17, 4);
@@ -27,18 +28,19 @@ namespace System
         public static bool IsUbuntu1710OrHigher => IsDistroAndVersionOrHigher("ubuntu", 17, 10);
         public static bool IsUbuntu1804 => IsDistroAndVersion("ubuntu", 18, 04);
         public static bool IsUbuntu1810OrHigher => IsDistroAndVersionOrHigher("ubuntu", 18, 10);
+        public static bool IsMariner => IsDistroAndVersion("mariner");
+        public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
 
         // OSX family
-        public static bool IsOSXLike =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) ||
-            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
-            RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
+        public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
         public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
         public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
+        public static bool IsMacOsAppleSilicon => IsOSX && IsArm64Process;
+        public static bool IsNotMacOsAppleSilicon => !IsMacOsAppleSilicon;
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
@@ -47,11 +49,9 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        public static bool IsSuperUser => IsBrowser ? false : (!IsWindows ?
-            libc.geteuid() == 0 :
-            throw new PlatformNotSupportedException());
+        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
 
-        public static Version OpenSslVersion => !IsOSXLike && !IsWindows ?
+        public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
 
@@ -100,6 +100,19 @@ namespace System
                 {
                     return "glibc_not_found";
                 }
+            }
+        }
+
+        public static bool OpenSslPresentOnSystem
+        {
+            get
+            {
+                if (IsAndroid || UsesMobileAppleCrypto || IsBrowser)
+                {
+                    return false;
+                }
+
+                return Interop.OpenSslNoInit.OpenSslIsAvailable;
             }
         }
 
@@ -163,7 +176,7 @@ namespace System
                 // What we want is major release as minor releases should be compatible.
                 result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split()[1].Split('.')[0]);
             }
-            else if (IsIllumos)
+            else if (Isillumos)
             {
                 // examples:
                 //   on OmniOS
@@ -194,7 +207,8 @@ namespace System
                 // example:
                 //   SunOS 5.11 11.3
                 result.Id = "Solaris";
-                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split(' ')[2]); // e.g. 11.3
+                // we only need the major version; 11
+                result.VersionId = ToVersion(RuntimeInformation.OSDescription.Split(' ')[2].Split('.')[0]); // e.g. 11
             }
             else if (File.Exists("/etc/os-release"))
             {

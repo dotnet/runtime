@@ -1,22 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.IO;
 using System.Text;
-using System.Security;
 using System.Diagnostics;
-using System.Collections;
 using System.Globalization;
 using System.Xml.Schema;
-using System.Runtime.Versioning;
-
 using System.Threading.Tasks;
 
 namespace System.Xml
 {
     // Represents a reader that provides fast, non-cached forward only stream access to XML data.
-    [DebuggerDisplay("{debuggerDisplayProxy}")]
+    [DebuggerDisplay($"{{{nameof(DebuggerDisplayProxy)}}}")]
     public abstract partial class XmlReader : IDisposable
     {
         public virtual Task<string> GetValueAsync()
@@ -48,7 +43,7 @@ namespace System.Xml
 
         // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to the requested type. Stops at start tags and end tags.
-        public virtual async Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public virtual async Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             if (!CanReadContentAs())
             {
@@ -60,20 +55,18 @@ namespace System.Xml
             {
                 return strContentValue;
             }
-            else
+
+            try
             {
-                try
-                {
-                    return XmlUntypedConverter.Untyped.ChangeType(strContentValue, returnType, (namespaceResolver == null ? this as IXmlNamespaceResolver : namespaceResolver));
-                }
-                catch (FormatException e)
-                {
-                    throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
-                }
-                catch (InvalidCastException e)
-                {
-                    throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
-                }
+                return XmlUntypedConverter.Untyped.ChangeType(strContentValue, returnType, namespaceResolver ?? this as IXmlNamespaceResolver);
+            }
+            catch (FormatException e)
+            {
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+            }
+            catch (InvalidCastException e)
+            {
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
             }
         }
 
@@ -110,7 +103,7 @@ namespace System.Xml
                 await FinishReadElementContentAsXxxAsync().ConfigureAwait(false);
                 return value;
             }
-            return (returnType == typeof(string)) ? string.Empty : XmlUntypedConverter.Untyped.ChangeType(string.Empty, returnType, namespaceResolver);
+            return returnType == typeof(string) ? string.Empty : XmlUntypedConverter.Untyped.ChangeType(string.Empty, returnType, namespaceResolver);
         }
 
         // Moving through the Stream
@@ -124,11 +117,7 @@ namespace System.Xml
         // Skips to the end tag of the current element.
         public virtual Task SkipAsync()
         {
-            if (ReadState != ReadState.Interactive)
-            {
-                return Task.CompletedTask;
-            }
-            return SkipSubtreeAsync();
+            return ReadState != ReadState.Interactive ? Task.CompletedTask : SkipSubtreeAsync();
         }
 
         // Returns decoded bytes of the current base64 text content. Call this methods until it returns 0 to get all the data.
@@ -143,13 +132,13 @@ namespace System.Xml
             throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBase64"));
         }
 
-        // Returns decoded bytes of the current binhex text content. Call this methods until it returns 0 to get all the data.
+        // Returns decoded bytes of the current bin hex text content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
             throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBinHex"));
         }
 
-        // Returns decoded bytes of the current binhex element content. Call this methods until it returns 0 to get all the data.
+        // Returns decoded bytes of the current bin hex element content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
             throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBinHex"));
@@ -169,21 +158,21 @@ namespace System.Xml
         {
             do
             {
-                switch (this.NodeType)
+                switch (NodeType)
                 {
                     case XmlNodeType.Attribute:
                         MoveToElement();
-                        goto case XmlNodeType.Element;
+                        return NodeType;
                     case XmlNodeType.Element:
                     case XmlNodeType.EndElement:
                     case XmlNodeType.CDATA:
                     case XmlNodeType.Text:
                     case XmlNodeType.EntityReference:
                     case XmlNodeType.EndEntity:
-                        return this.NodeType;
+                        return NodeType;
                 }
             } while (await ReadAsync().ConfigureAwait(false));
-            return this.NodeType;
+            return NodeType;
         }
 
         // Returns the inner content (including markup) of an element or attribute as a string.
@@ -193,81 +182,77 @@ namespace System.Xml
             {
                 return string.Empty;
             }
-            if ((this.NodeType != XmlNodeType.Attribute) && (this.NodeType != XmlNodeType.Element))
+            if (NodeType != XmlNodeType.Attribute && NodeType != XmlNodeType.Element)
             {
                 await ReadAsync().ConfigureAwait(false);
                 return string.Empty;
             }
 
-            StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
-            XmlWriter xtw = CreateWriterForInnerOuterXml(sw);
+            StringWriter sw = new(CultureInfo.InvariantCulture);
 
-            try
+            using (XmlTextWriter xtw = CreateWriterForInnerOuterXml(sw))
             {
-                if (this.NodeType == XmlNodeType.Attribute)
+                if (NodeType == XmlNodeType.Attribute)
                 {
-                    ((XmlTextWriter)xtw).QuoteChar = this.QuoteChar;
+                    xtw.QuoteChar = QuoteChar;
                     WriteAttributeValue(xtw);
                 }
-                if (this.NodeType == XmlNodeType.Element)
+
+                if (NodeType == XmlNodeType.Element)
                 {
-                    await this.WriteNodeAsync(xtw, false).ConfigureAwait(false);
+                    await WriteNodeAsync(xtw, false).ConfigureAwait(false);
                 }
             }
-            finally
-            {
-                xtw.Close();
-            }
+
             return sw.ToString();
         }
 
-        // Writes the content (inner XML) of the current node into the provided XmlWriter.
-        private async Task WriteNodeAsync(XmlWriter xtw, bool defattr)
+        // Writes the content (inner XML) of the current node into the provided XmlTextWriter.
+        private async Task WriteNodeAsync(XmlTextWriter xtw, bool defattr)
         {
-            Debug.Assert(xtw is XmlTextWriter);
-            int d = this.NodeType == XmlNodeType.None ? -1 : this.Depth;
-            while (await this.ReadAsync().ConfigureAwait(false) && (d < this.Depth))
+            int d = NodeType == XmlNodeType.None ? -1 : Depth;
+            while (await ReadAsync().ConfigureAwait(false) && d < Depth)
             {
-                switch (this.NodeType)
+                switch (NodeType)
                 {
                     case XmlNodeType.Element:
-                        xtw.WriteStartElement(this.Prefix, this.LocalName, this.NamespaceURI);
-                        ((XmlTextWriter)xtw).QuoteChar = this.QuoteChar;
+                        xtw.WriteStartElement(Prefix, LocalName, NamespaceURI);
+                        xtw.QuoteChar = QuoteChar;
                         xtw.WriteAttributes(this, defattr);
-                        if (this.IsEmptyElement)
+                        if (IsEmptyElement)
                         {
                             xtw.WriteEndElement();
                         }
                         break;
                     case XmlNodeType.Text:
-                        xtw.WriteString(await this.GetValueAsync().ConfigureAwait(false));
+                        xtw.WriteString(await GetValueAsync().ConfigureAwait(false));
                         break;
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        xtw.WriteWhitespace(await this.GetValueAsync().ConfigureAwait(false));
+                        xtw.WriteWhitespace(await GetValueAsync().ConfigureAwait(false));
                         break;
                     case XmlNodeType.CDATA:
-                        xtw.WriteCData(this.Value);
+                        xtw.WriteCData(Value);
                         break;
                     case XmlNodeType.EntityReference:
-                        xtw.WriteEntityRef(this.Name);
+                        xtw.WriteEntityRef(Name);
                         break;
                     case XmlNodeType.XmlDeclaration:
                     case XmlNodeType.ProcessingInstruction:
-                        xtw.WriteProcessingInstruction(this.Name, this.Value);
+                        xtw.WriteProcessingInstruction(Name, Value);
                         break;
                     case XmlNodeType.DocumentType:
-                        xtw.WriteDocType(this.Name, this.GetAttribute("PUBLIC"), this.GetAttribute("SYSTEM"), this.Value);
+                        xtw.WriteDocType(Name, GetAttribute("PUBLIC"), GetAttribute("SYSTEM"), Value);
                         break;
                     case XmlNodeType.Comment:
-                        xtw.WriteComment(this.Value);
+                        xtw.WriteComment(Value);
                         break;
                     case XmlNodeType.EndElement:
                         xtw.WriteFullEndElement();
                         break;
                 }
             }
-            if (d == this.Depth && this.NodeType == XmlNodeType.EndElement)
+            if (d == Depth && NodeType == XmlNodeType.EndElement)
             {
                 await ReadAsync().ConfigureAwait(false);
             }
@@ -280,20 +265,19 @@ namespace System.Xml
             {
                 return string.Empty;
             }
-            if ((this.NodeType != XmlNodeType.Attribute) && (this.NodeType != XmlNodeType.Element))
+            if (NodeType != XmlNodeType.Attribute && NodeType != XmlNodeType.Element)
             {
                 await ReadAsync().ConfigureAwait(false);
                 return string.Empty;
             }
 
-            StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
-            XmlWriter xtw = CreateWriterForInnerOuterXml(sw);
+            StringWriter sw = new(CultureInfo.InvariantCulture);
 
-            try
+            using (XmlTextWriter xtw = CreateWriterForInnerOuterXml(sw))
             {
-                if (this.NodeType == XmlNodeType.Attribute)
+                if (NodeType == XmlNodeType.Attribute)
                 {
-                    xtw.WriteStartAttribute(this.Prefix, this.LocalName, this.NamespaceURI);
+                    xtw.WriteStartAttribute(Prefix, LocalName, NamespaceURI);
                     WriteAttributeValue(xtw);
                     xtw.WriteEndAttribute();
                 }
@@ -302,10 +286,7 @@ namespace System.Xml
                     xtw.WriteNode(this, false);
                 }
             }
-            finally
-            {
-                xtw.Close();
-            }
+
             return sw.ToString();
         }
 
@@ -343,10 +324,10 @@ namespace System.Xml
             StringBuilder? sb = null;
             do
             {
-                switch (this.NodeType)
+                switch (NodeType)
                 {
                     case XmlNodeType.Attribute:
-                        return this.Value;
+                        return Value;
                     case XmlNodeType.Text:
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
@@ -354,7 +335,7 @@ namespace System.Xml
                         // merge text content
                         if (value.Length == 0)
                         {
-                            value = await this.GetValueAsync().ConfigureAwait(false);
+                            value = await GetValueAsync().ConfigureAwait(false);
                         }
                         else
                         {
@@ -363,7 +344,7 @@ namespace System.Xml
                                 sb = new StringBuilder();
                                 sb.Append(value);
                             }
-                            sb.Append(await this.GetValueAsync().ConfigureAwait(false));
+                            sb.Append(await GetValueAsync().ConfigureAwait(false));
                         }
                         break;
                     case XmlNodeType.ProcessingInstruction:
@@ -372,46 +353,46 @@ namespace System.Xml
                         // skip comments, pis and end entity nodes
                         break;
                     case XmlNodeType.EntityReference:
-                        if (this.CanResolveEntity)
+                        if (CanResolveEntity)
                         {
-                            this.ResolveEntity();
+                            ResolveEntity();
                             break;
                         }
-                        goto default;
-                    case XmlNodeType.EndElement:
+                        goto ReturnContent;
                     default:
                         goto ReturnContent;
                 }
-            } while ((this.AttributeCount != 0) ? this.ReadAttributeValue() : await this.ReadAsync().ConfigureAwait(false));
+            } while (AttributeCount != 0 ? ReadAttributeValue() : await ReadAsync().ConfigureAwait(false));
 
         ReturnContent:
-            return (sb == null) ? value : sb.ToString();
+            return sb == null ? value : sb.ToString();
         }
 
         private async Task<bool> SetupReadElementContentAsXxxAsync(string methodName)
         {
-            if (this.NodeType != XmlNodeType.Element)
+            if (NodeType != XmlNodeType.Element)
             {
                 throw CreateReadElementContentAsException(methodName);
             }
 
-            bool isEmptyElement = this.IsEmptyElement;
+            bool isEmptyElement = IsEmptyElement;
 
             // move to content or beyond the empty element
-            await this.ReadAsync().ConfigureAwait(false);
+            await ReadAsync().ConfigureAwait(false);
 
             if (isEmptyElement)
             {
                 return false;
             }
 
-            XmlNodeType nodeType = this.NodeType;
+            XmlNodeType nodeType = NodeType;
             if (nodeType == XmlNodeType.EndElement)
             {
-                await this.ReadAsync().ConfigureAwait(false);
+                await ReadAsync().ConfigureAwait(false);
                 return false;
             }
-            else if (nodeType == XmlNodeType.Element)
+
+            if (nodeType == XmlNodeType.Element)
             {
                 throw new XmlException(SR.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
             }
@@ -420,11 +401,11 @@ namespace System.Xml
 
         private Task FinishReadElementContentAsXxxAsync()
         {
-            if (this.NodeType != XmlNodeType.EndElement)
+            if (NodeType != XmlNodeType.EndElement)
             {
-                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString());
+                throw new XmlException(SR.Xml_InvalidNodeType, NodeType.ToString());
             }
-            return this.ReadAsync();
+            return ReadAsync();
         }
     }
 }

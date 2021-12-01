@@ -1,0 +1,18 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>Internal package for sharing wasm App Builder.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_wasmSampleFiles Include="$(WasmAppBuilderTasksAssemblyPath)" />
+    <PackageFile Include="@(_wasmSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

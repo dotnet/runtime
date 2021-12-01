@@ -3,11 +3,11 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "VerLanguageNameW")]
-        internal static extern unsafe int VerLanguageName(uint wLang, char* szLang, uint cchLang);
+        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "VerLanguageNameW")]
+        internal static unsafe partial int VerLanguageName(uint wLang, char* szLang, uint cchLang);
     }
 }

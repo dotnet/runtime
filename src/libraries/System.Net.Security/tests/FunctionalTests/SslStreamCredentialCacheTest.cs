@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -18,27 +19,22 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_SameCertUsedForClientAndServer_Ok()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream, true, AllowAnyCertificate))
-            using (var server = new SslStream(serverStream, true, AllowAnyCertificate))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, true, AllowAnyCertificate))
+            using (var server = new SslStream(stream2, true, AllowAnyCertificate))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
                 // Using the same certificate for server and client auth.
                 X509Certificate2Collection clientCertificateCollection =
                     new X509Certificate2Collection(certificate);
 
-                var tasks = new Task[2];
-
-                tasks[0] = server.AuthenticateAsServerAsync(certificate, true, false);
-                tasks[1] = client.AuthenticateAsClientAsync(
+                Task t1 = server.AuthenticateAsServerAsync(certificate, true, false);
+                Task t2 = client.AuthenticateAsClientAsync(
                                             certificate.GetNameInfo(X509NameType.SimpleName, false),
                                             clientCertificateCollection, false);
 
 
-                await Task.WhenAll(tasks).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
                 if (!PlatformDetection.IsWindows7 ||
                     Capability.IsTrustedRootCertificateInstalled())

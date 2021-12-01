@@ -120,4 +120,4 @@ FAIL:
 	ret
 }
 }
-.assembly bgt_u8.exe{}
+.assembly bgt_u8{}

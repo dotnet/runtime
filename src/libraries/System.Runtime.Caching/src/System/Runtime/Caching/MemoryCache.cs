@@ -13,6 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Threading;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
@@ -33,16 +34,23 @@ namespace System.Runtime.Caching
         private int _disposed;
         private MemoryCacheStatistics _stats;
         private readonly string _name;
-        private PerfCounters _perfCounters;
+        private Counters _perfCounters;
         private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
+        private bool _throwOnDisposed;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
+#if NET5_0_OR_GREATER
+        [UnsupportedOSPlatformGuard("browser")]
+        private static bool _countersSupported => !OperatingSystem.IsBrowser();
+#else
+        private static bool _countersSupported => true;
+#endif
 
         private bool IsDisposed { get { return (_disposed == 1); } }
         internal bool ConfigLess { get { return _configLess; } }
 
-        private class SentinelEntry
+        private sealed class SentinelEntry
         {
             private readonly string _key;
             private readonly ChangeMonitor _expensiveObjectDependency;
@@ -196,7 +204,10 @@ namespace System.Runtime.Caching
             {
                 try
                 {
-                    _perfCounters = new PerfCounters(_name);
+                    if (_countersSupported)
+                    {
+                        _perfCounters = new Counters(_name);
+                    }
                 }
                 catch
                 {
@@ -383,6 +394,7 @@ namespace System.Runtime.Caching
             if (config != null)
             {
                 _useMemoryCacheManager = ConfigUtil.GetBooleanValue(config, ConfigUtil.UseMemoryCacheManager, true);
+                _throwOnDisposed = ConfigUtil.GetBooleanValue(config, ConfigUtil.ThrowOnDisposed, false);
             }
             InitDisposableMembers(config);
         }
@@ -423,6 +435,9 @@ namespace System.Runtime.Caching
                         }
                     }
                 }
+
+                IsDisposedOrThrow();
+
                 return null;
             }
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
@@ -481,7 +496,10 @@ namespace System.Runtime.Caching
                 }
                 if (_perfCounters != null)
                 {
-                    _perfCounters.Dispose();
+                    if (_countersSupported)
+                    {
+                        _perfCounters.Dispose();
+                    }
                 }
                 GC.SuppressFinalize(this);
             }
@@ -516,7 +534,7 @@ namespace System.Runtime.Caching
 
         internal MemoryCacheEntry GetEntry(string key)
         {
-            if (IsDisposed)
+            if (IsDisposedOrThrow())
             {
                 return null;
             }
@@ -528,7 +546,8 @@ namespace System.Runtime.Caching
         IEnumerator IEnumerable.GetEnumerator()
         {
             Hashtable h = new Hashtable();
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -541,7 +560,8 @@ namespace System.Runtime.Caching
         protected override IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
             Dictionary<string, object> h = new Dictionary<string, object>();
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -560,12 +580,13 @@ namespace System.Runtime.Caching
 
         public long Trim(int percent)
         {
+            long trimmed = 0;
             if (percent > 100)
             {
                 percent = 100;
             }
-            long trimmed = 0;
-            if (_disposed == 0)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -701,6 +722,9 @@ namespace System.Runtime.Caching
                         }
                     }
                 }
+
+                IsDisposedOrThrow();
+
                 return;
             }
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
@@ -741,6 +765,9 @@ namespace System.Runtime.Caching
                         }
                     }
                 }
+
+                IsDisposedOrThrow();
+
                 return;
             }
             // Insert updatable cache entry
@@ -795,7 +822,7 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            if (IsDisposed)
+            if (IsDisposedOrThrow())
             {
                 return null;
             }
@@ -809,8 +836,10 @@ namespace System.Runtime.Caching
             {
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
+
             long count = 0;
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -840,8 +869,10 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(keys));
             }
+
             Dictionary<string, object> values = null;
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (string key in keys)
                 {
@@ -876,6 +907,20 @@ namespace System.Runtime.Caching
             {
                 _stats.UpdateConfig(config);
             }
+        }
+
+        private bool IsDisposedOrThrow()
+        {
+            if (!IsDisposed)
+                return false;
+
+            if (_throwOnDisposed)
+            {
+                string cacheName = $"{this.GetType().FullName}({_name})";
+                throw new ObjectDisposedException(cacheName);
+            }
+
+            return true;
         }
     }
 }

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- https://github.com/dotnet/coreclr/issues/23624 -->
+    <!-- https://github.com/dotnet/runtime/issues/12392 -->
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <PropertyGroup>

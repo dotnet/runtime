@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -20,7 +19,7 @@ namespace System.Xml.Schema
     /// The Validate method then uses this internal representation for
     /// efficient runtime validation of any given subtree.
     /// </summary>
-    [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+    [Obsolete("XmlSchemaCollection has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
     public sealed class XmlSchemaCollection : ICollection
     {
         private readonly Hashtable _collection;

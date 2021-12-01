@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <assemblyIdentity
+    type="win32"
+    name="NetPrimitivesClient"
+    version="1.0.0.0" />
+
+  <dependency>
+    <dependentAssembly>
+      <!-- RegFree COM -->
+      <assemblyIdentity
+          type="win32"
+          name="COMNativeServer.X"
+          version="1.0.0.0"/>
+    </dependentAssembly>
+  </dependency>
+
+</assembly>

@@ -15,7 +15,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
     /// Modifies activators of parts that have <see cref="OnImportsSatisfiedAttribute"/> so that
     /// their [OnImportsSatisfied] method is correctly called.
     /// </summary>
-    internal class OnImportsSatisfiedFeature : ActivationFeature
+    internal sealed class OnImportsSatisfiedFeature : ActivationFeature
     {
         private readonly AttributedModelProvider _attributeContext;
 

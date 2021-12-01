@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Net.Http">
+    <type fullname="System.Net.Http.HttpClientHandler">
+      <method signature="System.Boolean get_IsNativeHandlerEnabled()" body="stub" value="false" feature="System.Net.Http.UseNativeHttpHandler" featurevalue="false" />
+    </type>
+  </assembly>
+</linker>

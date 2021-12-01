@@ -8,4 +8,4 @@ using Xunit;
 // create unique identities for every test to allow every test to have
 // it's own store.
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true)]
-[assembly: SkipOnMono("System.IO.IsolatedStorage is not supported on Browser", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.IO.IsolatedStorage is not supported on Browser")]

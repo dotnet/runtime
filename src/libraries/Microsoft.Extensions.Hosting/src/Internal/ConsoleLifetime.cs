@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -13,9 +14,12 @@ namespace Microsoft.Extensions.Hosting.Internal
     /// <summary>
     /// Listens for Ctrl+C or SIGTERM and initiates shutdown.
     /// </summary>
-    public class ConsoleLifetime : IHostLifetime, IDisposable
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    public partial class ConsoleLifetime : IHostLifetime, IDisposable
     {
-        private readonly ManualResetEvent _shutdownBlock = new ManualResetEvent(false);
         private CancellationTokenRegistration _applicationStartedRegistration;
         private CancellationTokenRegistration _applicationStoppingRegistration;
 
@@ -57,12 +61,13 @@ namespace Microsoft.Extensions.Hosting.Internal
                 this);
             }
 
-            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
-            Console.CancelKeyPress += OnCancelKeyPress;
+            RegisterShutdownHandlers();
 
             // Console applications start immediately.
             return Task.CompletedTask;
         }
+
+        private partial void RegisterShutdownHandlers();
 
         private void OnApplicationStarted()
         {
@@ -76,25 +81,6 @@ namespace Microsoft.Extensions.Hosting.Internal
             Logger.LogInformation("Application is shutting down...");
         }
 
-        private void OnProcessExit(object sender, EventArgs e)
-        {
-            ApplicationLifetime.StopApplication();
-            if (!_shutdownBlock.WaitOne(HostOptions.ShutdownTimeout))
-            {
-                Logger.LogInformation("Waiting for the host to be disposed. Ensure all 'IHost' instances are wrapped in 'using' blocks.");
-            }
-            _shutdownBlock.WaitOne();
-            // On Linux if the shutdown is triggered by SIGTERM then that's signaled with the 143 exit code.
-            // Suppress that since we shut down gracefully. https://github.com/dotnet/aspnetcore/issues/6526
-            System.Environment.ExitCode = 0;
-        }
-
-        private void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
-        {
-            e.Cancel = true;
-            ApplicationLifetime.StopApplication();
-        }
-
         public Task StopAsync(CancellationToken cancellationToken)
         {
             // There's nothing to do here
@@ -103,13 +89,12 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public void Dispose()
         {
-            _shutdownBlock.Set();
-
-            AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
-            Console.CancelKeyPress -= OnCancelKeyPress;
+            UnregisterShutdownHandlers();
 
             _applicationStartedRegistration.Dispose();
             _applicationStoppingRegistration.Dispose();
         }
+
+        private partial void UnregisterShutdownHandlers();
     }
 }

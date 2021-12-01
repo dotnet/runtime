@@ -15,10 +15,15 @@ namespace System.Buffers
 #endif
     sealed class ArrayBufferWriter<T> : IBufferWriter<T>
     {
+        // Copy of Array.MaxLength.
+        // Used by projects targeting .NET Framework.
+        private const int ArrayMaxLength = 0x7FFFFFC7;
+
+        private const int DefaultInitialBufferSize = 256;
+
         private T[] _buffer;
         private int _index;
 
-        private const int DefaultInitialBufferSize = 256;
 
         /// <summary>
         /// Creates an instance of an <see cref="ArrayBufferWriter{T}"/>, in which data can be written to,
@@ -167,6 +172,8 @@ namespace System.Buffers
             if (sizeHint > FreeCapacity)
             {
                 int currentLength = _buffer.Length;
+
+                // Attempt to grow by the larger of the sizeHint and double the current size.
                 int growBy = Math.Max(sizeHint, currentLength);
 
                 if (currentLength == 0)
@@ -178,11 +185,16 @@ namespace System.Buffers
 
                 if ((uint)newSize > int.MaxValue)
                 {
-                    newSize = currentLength + sizeHint;
-                    if ((uint)newSize > int.MaxValue)
+                    // Attempt to grow to ArrayMaxLength.
+                    uint needed = (uint)(currentLength - FreeCapacity + sizeHint);
+                    Debug.Assert(needed > currentLength);
+
+                    if (needed > ArrayMaxLength)
                     {
-                        ThrowOutOfMemoryException((uint)newSize);
+                        ThrowOutOfMemoryException(needed);
                     }
+
+                    newSize = ArrayMaxLength;
                 }
 
                 Array.Resize(ref _buffer, newSize);

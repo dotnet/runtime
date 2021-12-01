@@ -12,20 +12,34 @@ namespace System.Security.Cryptography
     public sealed class DSACryptoServiceProvider : DSA, ICspAsymmetricAlgorithm
     {
         private const int SHA1_HASHSIZE = 20;
+        private const int DefaultKeySize = 1024;
 
         private readonly DSA _impl;
         private bool _publicOnly;
 
-        private static KeySizes[] s_legalKeySizes =
+        private static readonly KeySizes[] s_legalKeySizesWindowsCsp =
         {
             new KeySizes(512, 1024, 64)  // Use the same values as Csp Windows because the _impl has different values (512, 3072, 64)
         };
 
-        public DSACryptoServiceProvider() : base()
+        private static readonly KeySizes[] s_legalKeySizesAndroid =
         {
-            // This class wraps DSA
-            _impl = DSA.Create();
-            KeySize = 1024;
+            new KeySizes(1024, 1024, 0)  // Intersection of legal sizes on Android and Windows provider
+        };
+
+        // Depending on the platform, _impl's legal key sizes may be more restrictive than Windows provider.
+        //   DSAAndroid : (1024, 3072, 1024)
+        //   DSAOpenSsl : (512, 3072, 64)
+        //   DSASecurityTransforms : (512, 1024, 64)
+        //   Windows CSP : (512, 1024, 64)
+        // Use the most restrictive legal key sizes
+        private static readonly KeySizes[] s_legalKeySizes = OperatingSystem.IsAndroid()
+            ? s_legalKeySizesAndroid
+            : s_legalKeySizesWindowsCsp;
+
+        public DSACryptoServiceProvider()
+            : this(DefaultKeySize)
+        {
         }
 
         public DSACryptoServiceProvider(int dwKeySize) : base()
@@ -38,13 +52,13 @@ namespace System.Security.Cryptography
             KeySize = dwKeySize;
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public DSACryptoServiceProvider(int dwKeySize, CspParameters parameters)
         {
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspParameters)));
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public DSACryptoServiceProvider(CspParameters parameters)
         {
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspParameters)));
@@ -56,7 +70,7 @@ namespace System.Security.Cryptography
         public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten) =>
             _impl.TryCreateSignature(hash, destination, out bytesWritten);
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public CspKeyContainerInfo CspKeyContainerInfo
         {
             get { throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspKeyContainerInfo))); }

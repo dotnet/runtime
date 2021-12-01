@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIpInterfaceStatistics : IPInterfaceStatistics
+    internal sealed class BsdIpInterfaceStatistics : IPInterfaceStatistics
     {
         private readonly long _outputQueueLength;
         private readonly long _inPackets;
@@ -52,6 +54,10 @@ namespace System.Net.NetworkInformation
 
         public override long NonUnicastPacketsSent { get { return _outNonUnicastPackets; } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long OutgoingPacketsDiscarded { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long OutgoingPacketsWithErrors { get { return _outErrors; } }

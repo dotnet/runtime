@@ -32,7 +32,7 @@ namespace System.Linq.Parallel
         internal abstract TInputOutput[] Sort();
     }
 
-    internal class SortHelper<TInputOutput, TKey> : SortHelper<TInputOutput>, IDisposable
+    internal sealed class SortHelper<TInputOutput, TKey> : SortHelper<TInputOutput>, IDisposable
     {
         private readonly QueryOperatorEnumerator<TInputOutput, TKey> _source; // The data source from which to pull data.
         private readonly int _partitionCount; // The partition count.
@@ -204,6 +204,7 @@ namespace System.Linq.Parallel
             // Step 3. Enter into the merging phases, each separated by several barriers.
             if (_partitionCount > 1)
             {
+                Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                 // We only need to merge if there is more than 1 partition.
                 MergeSortCooperatively();
             }
@@ -357,6 +358,7 @@ namespace System.Linq.Parallel
         // negatively impact speedups.
         //
 
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         private void MergeSortCooperatively()
         {
             CancellationToken cancelToken = _groupState.CancellationState.MergedCancellationToken;

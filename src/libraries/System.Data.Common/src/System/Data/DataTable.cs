@@ -26,9 +26,12 @@ namespace System.Data
     [DesignTimeVisible(false)]
     [DefaultProperty(nameof(TableName))]
     [DefaultEvent(nameof(RowChanging))]
+    [Editor("Microsoft.VSDesigner.Data.Design.DataTableEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [XmlSchemaProvider(nameof(GetDataTableSchema))]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
     public class DataTable : MarshalByValueComponent, IListSource, ISupportInitializeNotification, ISerializable, IXmlSerializable
     {
         private DataSet? _dataSet;
@@ -189,6 +192,9 @@ namespace System.Data
         }
 
         // Deserialize the table from binary/xml stream.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "CreateInstance's use of GetType uses only the parameterless constructor. Warnings are about serialization related constructors.")]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected DataTable(SerializationInfo info, StreamingContext context) : this()
         {
             bool isSingleTable = context.Context != null ? Convert.ToBoolean(context.Context, CultureInfo.InvariantCulture) : true;
@@ -207,6 +213,8 @@ namespace System.Data
             DeserializeDataTable(info, context, isSingleTable, remotingFormat);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Binary serialization is unsafe in general and is planned to be obsoleted. We do not want to mark interface or ctors of this class as unsafe as that would show many unnecessary warnings elsewhere.")]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             SerializationFormat remotingFormat = RemotingFormat;
@@ -215,6 +223,7 @@ namespace System.Data
         }
 
         // Serialize the table schema and data.
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void SerializeDataTable(SerializationInfo info, StreamingContext context, bool isSingleTable, SerializationFormat remotingFormat)
         {
             info.AddValue("DataTable.RemotingVersion", new Version(2, 0));
@@ -278,6 +287,7 @@ namespace System.Data
         }
 
         // Deserialize the table schema and data.
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void DeserializeDataTable(SerializationInfo info, StreamingContext context, bool isSingleTable, SerializationFormat remotingFormat)
         {
             if (remotingFormat != SerializationFormat.Xml)
@@ -319,6 +329,7 @@ namespace System.Data
         }
 
         // Serialize the columns
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SerializeTableSchema(SerializationInfo info, StreamingContext context, bool isSingleTable)
         {
             //DataTable basic  properties
@@ -395,6 +406,7 @@ namespace System.Data
         }
 
         // Deserialize all the Columns
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void DeserializeTableSchema(SerializationInfo info, StreamingContext context, bool isSingleTable)
         {
             //DataTable basic properties
@@ -643,6 +655,7 @@ namespace System.Data
         }
 
         // Deserialize the expressions on the table - Marked internal so that DataSet deserializer can call into this
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void DeserializeExpressionColumns(SerializationInfo info, StreamingContext context, int serIndex)
         {
             int colCount = Columns.Count;
@@ -657,6 +670,7 @@ namespace System.Data
         }
 
         // Serialize all the Rows.
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SerializeTableData(SerializationInfo info, StreamingContext context, int serIndex)
         {
             //Cache all the column count, row count
@@ -742,6 +756,7 @@ namespace System.Data
         }
 
         // Deserialize all the Rows.
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void DeserializeTableData(SerializationInfo info, StreamingContext context, int serIndex)
         {
             bool enforceConstraintsOrg = _enforceConstraints;
@@ -894,6 +909,7 @@ namespace System.Data
         }
 
         // Set the row and columns in error..
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ConvertToRowError(int rowIndex, Hashtable rowErrors, Hashtable colErrors)
         {
             Debug.Assert(Rows.Count > rowIndex);
@@ -1240,6 +1256,7 @@ namespace System.Data
         public string DisplayExpression
         {
             get { return DisplayExpressionInternal; }
+            [RequiresUnreferencedCode("Members from types used in the expressions may be trimmed if not referenced directly.")]
             set
             {
                 _displayExpression = !string.IsNullOrEmpty(value) ?
@@ -1586,6 +1603,8 @@ namespace System.Data
         /// <summary>
         /// Gets or sets an array of columns that function as primary keys for the data table.
         /// </summary>
+        [Editor("Microsoft.VSDesigner.Data.Design.PrimaryKeyEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [TypeConverter(typeof(PrimaryKeyTypeConverter))]
         [AllowNull]
         public DataColumn[] PrimaryKey
@@ -2001,7 +2020,7 @@ namespace System.Data
                 {
                     if (dc.Computed)
                     {
-                        dc.Expression = dc.Expression;
+                        dc.CopyExpressionFrom(dc);
                     }
                 }
             }
@@ -2312,7 +2331,6 @@ namespace System.Data
             }
         }
 
-
         private DataTable IncrementalCloneTo(DataTable sourceTable, DataTable targetTable)
         {
             foreach (DataColumn dc in sourceTable.Columns)
@@ -2405,7 +2423,7 @@ namespace System.Data
             {
                 for (int i = 0; i < clmns.Count; i++)
                 {
-                    clone.Columns[clmns[i].ColumnName]!.Expression = clmns[i].Expression;
+                    clone.Columns[clmns[i].ColumnName]!.CopyExpressionFrom(clmns[i]);
                 }
             }
 
@@ -2464,7 +2482,7 @@ namespace System.Data
                         if (foreign.Table == foreign.RelatedTable &&
                             foreign.Clone(clone) is ForeignKeyConstraint newforeign)
                         {
-                            // we cant make sure that we recieve a cloned FKC,since it depends if table and relatedtable be the same
+                            // we cant make sure that we receive a cloned FKC,since it depends if table and relatedtable be the same
                             clone.Constraints.Add(newforeign);
                         }
                     }
@@ -2667,18 +2685,16 @@ namespace System.Data
             }
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public override ISite Site
+        public override ISite? Site
         {
             get { return base.Site; }
             set
             {
-                ISite oldSite = Site;
+                ISite? oldSite = Site;
                 if (value == null && oldSite != null)
                 {
-                    IContainer cont = oldSite.Container;
+                    IContainer? cont = oldSite.Container;
 
                     if (cont != null)
                     {
@@ -2694,7 +2710,6 @@ namespace System.Data
                 base.Site = value;
             }
         }
-#nullable enable
 
         internal DataRow AddRecords(int oldRecord, int newRecord)
         {
@@ -2807,7 +2822,6 @@ namespace System.Data
         /// <summary>
         /// Clears the table of all data.
         /// </summary>
-
         public void Clear() => Clear(true);
 
         internal void Clear(bool clearAll)
@@ -2942,6 +2956,7 @@ namespace System.Data
         /// <summary>
         /// Computes the given expression on the current rows that pass the filter criteria.
         /// </summary>
+        [RequiresUnreferencedCode("Members of types used in the filter or expression might be trimmed.")]
         public object Compute(string? expression, string? filter)
         {
             DataRow[] rows = Select(filter, "", DataViewRowState.CurrentRows);
@@ -3181,12 +3196,9 @@ namespace System.Data
             return ndx;
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         IList IListSource.GetList() => DefaultView;
 
         internal List<DataViewListener> GetListeners() => _dataViewListeners;
-#nullable enable
 
         // We need a HashCodeProvider for Case, Kana and Width insensitive
         internal int GetSpecialHashCode(string name)
@@ -4190,6 +4202,8 @@ namespace System.Data
         /// <summary>
         /// Returns an array of all <see cref='System.Data.DataRow'/> objects.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Filter expression is empty therefore this is safe.")]
         public DataRow[] Select()
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.Select|API> {0}", ObjectID);
@@ -4200,6 +4214,7 @@ namespace System.Data
         /// Returns an array of all <see cref='System.Data.DataRow'/> objects that match the filter criteria in order of
         /// primary key (or lacking one, order of addition.)
         /// </summary>
+        [RequiresUnreferencedCode(Data.Select.RequiresUnreferencedCodeMessage)]
         public DataRow[] Select(string? filterExpression)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.Select|API> {0}, filterExpression='{1}'", ObjectID, filterExpression);
@@ -4210,6 +4225,7 @@ namespace System.Data
         /// Returns an array of all <see cref='System.Data.DataRow'/> objects that match the filter criteria, in the
         /// specified sort order.
         /// </summary>
+        [RequiresUnreferencedCode(Data.Select.RequiresUnreferencedCodeMessage)]
         public DataRow[] Select(string? filterExpression, string? sort)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.Select|API> {0}, filterExpression='{1}', sort='{2}'", ObjectID, filterExpression, sort);
@@ -4220,6 +4236,7 @@ namespace System.Data
         /// Returns an array of all <see cref='System.Data.DataRow'/> objects that match the filter in the order of the
         /// sort, that match the specified state.
         /// </summary>
+        [RequiresUnreferencedCode(Data.Select.RequiresUnreferencedCodeMessage)]
         public DataRow[] Select(string? filterExpression, string? sort, DataViewRowState recordStates)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTable.Select|API> {0}, filterExpression='{1}', sort='{2}', recordStates={3}", ObjectID, filterExpression, sort, recordStates);
@@ -4817,6 +4834,8 @@ namespace System.Data
                    action == DataRowAction.ChangeCurrentAndOriginal);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "DataColumn with null expression and int data type is safe.")]
         internal DataColumn AddUniqueKey(int position)
         {
             if (_colUnique != null)
@@ -4864,6 +4883,8 @@ namespace System.Data
 
         internal DataColumn AddUniqueKey() => AddUniqueKey(-1);
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Expression is null and potential problem with data type has already been reported when constructing parentKey")]
         internal DataColumn AddForeignKey(DataColumn parentKey)
         {
             Debug.Assert(parentKey != null, "AddForeignKey: Invalid paramter.. related primary key is null");
@@ -4950,10 +4971,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode("Members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader) => Load(reader, LoadOption.PreserveChanges, null);
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader, LoadOption loadOption) => Load(reader, loadOption, null);
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Load|API> {0}, loadOption={1}", ObjectID, loadOption);
@@ -5294,24 +5318,34 @@ namespace System.Data
 
         public DataTableReader CreateDataReader() => new DataTableReader(this);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(Stream? stream) => WriteXml(stream, XmlWriteMode.IgnoreSchema, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(Stream? stream, bool writeHierarchy) => WriteXml(stream, XmlWriteMode.IgnoreSchema, writeHierarchy);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(TextWriter? writer) => WriteXml(writer, XmlWriteMode.IgnoreSchema, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(TextWriter? writer, bool writeHierarchy) => WriteXml(writer, XmlWriteMode.IgnoreSchema, writeHierarchy);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(XmlWriter? writer) => WriteXml(writer, XmlWriteMode.IgnoreSchema, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(XmlWriter? writer, bool writeHierarchy) => WriteXml(writer, XmlWriteMode.IgnoreSchema, writeHierarchy);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(string fileName) => WriteXml(fileName, XmlWriteMode.IgnoreSchema, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(string fileName, bool writeHierarchy) => WriteXml(fileName, XmlWriteMode.IgnoreSchema, writeHierarchy);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(Stream? stream, XmlWriteMode mode) => WriteXml(stream, mode, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(Stream? stream, XmlWriteMode mode, bool writeHierarchy)
         {
             if (stream != null)
@@ -5323,11 +5357,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(TextWriter? writer, XmlWriteMode mode)
         {
             WriteXml(writer, mode, false);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(TextWriter? writer, XmlWriteMode mode, bool writeHierarchy)
         {
             if (writer != null)
@@ -5339,10 +5375,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(XmlWriter? writer, XmlWriteMode mode)
         {
             WriteXml(writer, mode, false);
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(XmlWriter? writer, XmlWriteMode mode, bool writeHierarchy)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.WriteXml|API> {0}, mode={1}", ObjectID, mode);
@@ -5410,8 +5449,10 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(string fileName, XmlWriteMode mode) => WriteXml(fileName, mode, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXml(string fileName, XmlWriteMode mode, bool writeHierarchy)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.WriteXml|API> {0}, fileName='{1}', mode={2}", ObjectID, fileName, mode);
@@ -5433,8 +5474,10 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(Stream? stream) => WriteXmlSchema(stream, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(Stream? stream, bool writeHierarchy)
         {
             if (stream == null)
@@ -5448,8 +5491,10 @@ namespace System.Data
             WriteXmlSchema(w, writeHierarchy);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(TextWriter? writer) => WriteXmlSchema(writer, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(TextWriter? writer, bool writeHierarchy)
         {
             if (writer == null)
@@ -5498,8 +5543,10 @@ namespace System.Data
             return true;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(XmlWriter? writer) => WriteXmlSchema(writer, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(XmlWriter? writer, bool writeHierarchy)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.WriteXmlSchema|API> {0}", ObjectID);
@@ -5553,8 +5600,10 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(string fileName) => WriteXmlSchema(fileName, false);
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void WriteXmlSchema(string fileName, bool writeHierarchy)
         {
             XmlTextWriter xw = new XmlTextWriter(fileName, null);
@@ -5571,6 +5620,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(Stream? stream)
         {
             if (stream == null)
@@ -5586,6 +5636,7 @@ namespace System.Data
             return ReadXml(xr, false);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(TextReader? reader)
         {
             if (reader == null)
@@ -5601,6 +5652,7 @@ namespace System.Data
             return ReadXml(xr, false);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(string fileName)
         {
             XmlTextReader xr = new XmlTextReader(fileName);
@@ -5618,6 +5670,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public XmlReadMode ReadXml(XmlReader? reader) => ReadXml(reader, false);
 
         private void RestoreConstraint(bool originalEnforceConstraint)
@@ -5655,6 +5708,7 @@ namespace System.Data
             return false;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlReadMode ReadXml(XmlReader? reader, bool denyResolving)
         {
             IDisposable? restrictedScope = null;
@@ -5847,7 +5901,7 @@ namespace System.Data
 
                                 if (!fSchemaFound && Columns.Count == 0)
                                 {
-                                    XmlNode node = xdoc.ReadNode(reader);
+                                    XmlNode node = xdoc.ReadNode(reader)!;
                                     topNode.AppendChild(node);
                                 }
                                 else
@@ -5901,6 +5955,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlReadMode ReadXml(XmlReader? reader, XmlReadMode mode, bool denyResolving)
         {
             IDisposable? restrictedScope = null;
@@ -5962,7 +6017,7 @@ namespace System.Data
                     if (mode == XmlReadMode.Fragment)
                     {
                         xdoc.AppendChild(xdoc.CreateElement("ds_sqlXmlWraPPeR"));
-                        topNode = xdoc.DocumentElement;
+                        topNode = xdoc.DocumentElement!;
                     }
                     else
                     {
@@ -6143,7 +6198,7 @@ namespace System.Data
                         if (mode == XmlReadMode.InferSchema)
                         {
                             //save the node in DOM until the end;
-                            XmlNode node = xdoc.ReadNode(reader);
+                            XmlNode node = xdoc.ReadNode(reader)!;
                             topNode.AppendChild(node);
                         }
                         else
@@ -6229,6 +6284,8 @@ namespace System.Data
             }
             return (reader.NodeType == XmlNodeType.Element);
         }
+
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void ReadXmlDiffgram(XmlReader reader)
         {
             // fill correctly
@@ -6338,12 +6395,13 @@ namespace System.Data
             EnforceConstraints = fEnforce;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ReadXSDSchema(XmlReader reader, bool denyResolving)
         {
             XmlSchemaSet sSet = new XmlSchemaSet();
             while (reader.LocalName == Keywords.XSD_SCHEMA && reader.NamespaceURI == Keywords.XSDNS)
             {
-                XmlSchema s = XmlSchema.Read(reader, null);
+                XmlSchema s = XmlSchema.Read(reader, null)!;
                 sSet.Add(s);
                 //read the end tag
                 ReadEndElement(reader);
@@ -6354,6 +6412,7 @@ namespace System.Data
             schema.LoadSchema(sSet, this);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void ReadXmlSchema(Stream? stream)
         {
             if (stream == null)
@@ -6364,6 +6423,7 @@ namespace System.Data
             ReadXmlSchema(new XmlTextReader(stream), false);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void ReadXmlSchema(TextReader? reader)
         {
             if (reader == null)
@@ -6374,6 +6434,7 @@ namespace System.Data
             ReadXmlSchema(new XmlTextReader(reader), false);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void ReadXmlSchema(string fileName)
         {
             XmlTextReader xr = new XmlTextReader(fileName);
@@ -6387,11 +6448,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public void ReadXmlSchema(XmlReader? reader)
         {
             ReadXmlSchema(reader, false);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void ReadXmlSchema(XmlReader? reader, bool denyResolving)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.ReadXmlSchema|INFO> {0}, denyResolving={1}", ObjectID, denyResolving);
@@ -6623,8 +6686,11 @@ namespace System.Data
             return type;
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() => GetSchema();
+        XmlSchema? IXmlSerializable.GetSchema() => GetXmlSchema();
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2046:UnrecognizedReflectionPattern",
+            Justification = "https://github.com/mono/linker/issues/1187 Trimmer thinks this implements IXmlSerializable.GetSchema() and warns about not matching attributes.")]
         protected virtual XmlSchema? GetSchema()
         {
             if (GetType() == typeof(DataTable))
@@ -6642,9 +6708,12 @@ namespace System.Data
             return XmlSchema.Read(new XmlTextReader(stream), null);
         }
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
-#pragma warning disable 8632
+        [RequiresUnreferencedCode("DataTable.GetSchema uses TypeDescriptor and XmlSerialization underneath which are not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
+        private XmlSchema? GetXmlSchema()
+        {
+            return GetSchema();
+        }
+
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             IXmlTextParser? textReader = reader as IXmlTextParser;
@@ -6654,7 +6723,7 @@ namespace System.Data
                 fNormalization = textReader.Normalized;
                 textReader.Normalized = false;
             }
-            ReadXmlSerializable(reader);
+            ReadXmlSerializableInternal(reader);
 
             if (textReader != null)
             {
@@ -6662,14 +6731,25 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode("DataTable.ReadXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
+        private void ReadXmlSerializableInternal(XmlReader reader)
+        {
+            ReadXmlSerializable(reader);
+        }
+
         void IXmlSerializable.WriteXml(XmlWriter writer)
+        {
+            WriteXmlInternal(writer);
+        }
+
+        [RequiresUnreferencedCode("DataTable.WriteXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]
+        private void WriteXmlInternal(XmlWriter writer)
         {
             WriteXmlSchema(writer, false);
             WriteXml(writer, XmlWriteMode.DiffGram, false);
         }
-#pragma warning restore 8632
-#nullable enable
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected virtual void ReadXmlSerializable(XmlReader? reader) => ReadXml(reader, XmlReadMode.DiffGram, true);
 
         // RowDiffIdUsageSection & DSRowDiffIdUsageSection Usage:
@@ -6876,6 +6956,8 @@ namespace System.Data
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This is unsafe only when columns have associated expression. All ways to add such expression are marked unsafe.")]
         internal void EvaluateExpressions(DataRow row, DataRowAction action, List<DataRow>? cachedRows)
         {
             // evaluate all expressions for specified row

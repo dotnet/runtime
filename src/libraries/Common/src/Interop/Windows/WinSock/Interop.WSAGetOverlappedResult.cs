@@ -9,12 +9,12 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern unsafe bool WSAGetOverlappedResult(
-            [In] SafeSocketHandle socketHandle,
-            [In] NativeOverlapped* overlapped,
-            [Out] out uint bytesTransferred,
-            [In] bool wait,
-            [Out] out SocketFlags socketFlags);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static unsafe partial bool WSAGetOverlappedResult(
+            SafeSocketHandle socketHandle,
+            NativeOverlapped* overlapped,
+            out uint bytesTransferred,
+            bool wait,
+            out SocketFlags socketFlags);
     }
 }

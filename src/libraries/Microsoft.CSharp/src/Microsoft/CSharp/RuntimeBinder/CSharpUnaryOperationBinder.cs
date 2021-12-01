@@ -31,9 +31,11 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public BindingFlag BindingFlags => 0;
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
             => runtimeBinder.BindUnaryOperation(this, arguments, locals);
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
             => SymbolTable.PopulateSymbolTableWithName(Operation.GetCLROperatorName(), null, arguments[0].Type);
 
@@ -56,6 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="isChecked">True if the operation is defined in a checked context; otherwise, false.</param>
         /// <param name="callingContext">The <see cref="Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpUnaryOperationBinder(
             ExpressionType operation,
             bool isChecked,
@@ -106,6 +109,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="target">The target of the dynamic unary operation.</param>
         /// <param name="errorSuggestion">The binding result in case the binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion)
         {
             BinderHelper.ValidateBindArgument(target, nameof(target));

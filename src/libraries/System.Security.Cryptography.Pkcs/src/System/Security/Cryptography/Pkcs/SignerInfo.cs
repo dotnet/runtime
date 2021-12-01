@@ -291,6 +291,9 @@ namespace System.Security.Cryptography.Pkcs
             return new SignerInfoCollection(signerInfos.ToArray());
         }
 
+#if NET6_0_OR_GREATER
+        [Obsolete(Obsoletions.SignerInfoCounterSigMessage, DiagnosticId = Obsoletions.SignerInfoCounterSigDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+ #endif
         public void ComputeCounterSignature()
         {
             throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoSignerCert);
@@ -687,7 +690,11 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             bool verifySignatureOnly)
         {
-            CmsSignature? signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(SignatureAlgorithm.Value!, key: null);
+            // SignatureAlgorithm always 'wins' so we don't need to pass in an rsaSignaturePadding
+            CmsSignature? signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(
+                SignatureAlgorithm.Value!,
+                key: null,
+                rsaSignaturePadding: null);
 
             if (signatureProcessor == null)
             {

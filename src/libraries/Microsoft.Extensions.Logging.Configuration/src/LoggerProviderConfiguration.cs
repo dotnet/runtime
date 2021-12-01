@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Logging.Configuration
 {
-    internal class LoggerProviderConfiguration<T> : ILoggerProviderConfiguration<T>
+    internal sealed class LoggerProviderConfiguration<T> : ILoggerProviderConfiguration<T>
     {
         public LoggerProviderConfiguration(ILoggerProviderConfigurationFactory providerConfigurationFactory)
         {

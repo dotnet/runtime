@@ -124,9 +124,9 @@ typedef void (*GcScanFunc) (gpointer*, gpointer);
 #endif
 
 #ifndef MONO_HANDLE_TRACK_OWNER
-MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info);
+MONO_COMPONENT_API MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info);
 #else
-MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info, const char* owner);
+MONO_COMPONENT_API MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info, const char* owner);
 #endif
 
 void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise, gboolean check);
@@ -134,7 +134,7 @@ gboolean mono_handle_stack_is_empty (HandleStack *stack);
 HandleStack* mono_handle_stack_alloc (void);
 void mono_handle_stack_free (HandleStack *handlestack);
 MonoRawHandle mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value);
-MonoThreadInfo* mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name);
+MONO_COMPONENT_API MonoThreadInfo* mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name);
 void mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain);
 
 #ifdef MONO_HANDLE_TRACK_SP
@@ -517,7 +517,10 @@ TYPED_HANDLE_DECL (MonoException);
 TYPED_HANDLE_DECL (MonoAppContext);
 
 /* Simpler version of MONO_HANDLE_NEW if the handle is not used */
-#define MONO_HANDLE_PIN(object) MONO_HANDLE_NEW (MonoObject, (object))
+#define MONO_HANDLE_PIN(object) do { \
+		if ((object) != NULL) \
+			MONO_HANDLE_NEW (MonoObject, (MonoObject*)(object)); \
+	} while (0)
 
 // Structs cannot be cast to structs.
 // As well, a function is needed because an anonymous struct cannot be initialized in C.
@@ -606,10 +609,10 @@ mono_handle_unsafe_field_addr (MonoObjectHandle h, MonoClassField *field)
 }
 
 //FIXME this should go somewhere else
-MonoStringHandle mono_string_new_handle (MonoDomain *domain, const char *data, MonoError *error);
-MonoArrayHandle mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
+MonoStringHandle mono_string_new_handle (const char *data, MonoError *error);
+MonoArrayHandle mono_array_new_handle (MonoClass *eclass, uintptr_t n, MonoError *error);
 MonoArrayHandle
-mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
+mono_array_new_full_handle (MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
 
 #define mono_array_handle_setref(array,index,value) MONO_HANDLE_ARRAY_SETREF ((array), (index), (value))
 
@@ -648,6 +651,10 @@ mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArr
 gpointer
 mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t index, MonoGCHandle *gchandle);
 
+// Returns a pointer to the element with the given index, but does not pin
+gpointer
+mono_array_handle_addr (MonoArrayHandle handle, int size, uintptr_t index);
+
 #define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) ((type*)mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out)))
 
 void
@@ -668,12 +675,6 @@ mono_handle_unbox_unsafe (MonoObjectHandle handle)
 
 void
 mono_error_set_exception_handle (MonoError *error, MonoExceptionHandle exc);
-
-MonoAppContextHandle
-mono_context_get_handle (void);
-
-void
-mono_context_set_handle (MonoAppContextHandle new_context);
 
 MonoGCHandle
 mono_gchandle_new_weakref_from_handle (MonoObjectHandle handle);

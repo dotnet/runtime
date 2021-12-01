@@ -7,6 +7,7 @@ namespace System.Xml.Serialization
     using System.Xml.Schema;
     using System.Collections;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Configuration;
     using System.Xml.Serialization.Configuration;
@@ -18,14 +19,15 @@ namespace System.Xml.Serialization
     public abstract class SchemaImporter
     {
         private XmlSchemas _schemas;
-        private StructMapping _root;
+        private StructMapping? _root;
         private readonly CodeGenerationOptions _options;
-        private TypeScope _scope;
+        private TypeScope? _scope;
         private ImportContext _context;
         private bool _rootImported;
-        private NameTable _typesInUse;
-        private NameTable _groupsInUse;
+        private NameTable? _typesInUse;
+        private NameTable? _groupsInUse;
 
+        [RequiresUnreferencedCode("calls SetCache")]
         internal SchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, ImportContext context)
         {
             if (!schemas.Contains(XmlSchema.Namespace))
@@ -114,7 +116,8 @@ namespace System.Xml.Serialization
             get { return _options; }
         }
 
-        internal void MakeDerived(StructMapping structMapping, Type baseType, bool baseTypeCanBeIndirect)
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
+        internal void MakeDerived(StructMapping structMapping, Type? baseType, bool baseTypeCanBeIndirect)
         {
             structMapping.ReferencedByTopLevelElement = true;
             TypeDesc baseTypeDesc;
@@ -123,7 +126,7 @@ namespace System.Xml.Serialization
                 baseTypeDesc = Scope.GetTypeDesc(baseType);
                 if (baseTypeDesc != null)
                 {
-                    TypeDesc typeDescToChange = structMapping.TypeDesc;
+                    TypeDesc typeDescToChange = structMapping.TypeDesc!;
                     if (baseTypeCanBeIndirect)
                     {
                         // if baseTypeCanBeIndirect is true, we apply the supplied baseType to the top of the
@@ -132,7 +135,7 @@ namespace System.Xml.Serialization
                             typeDescToChange = typeDescToChange.BaseTypeDesc;
                     }
                     if (typeDescToChange.BaseTypeDesc != null && typeDescToChange.BaseTypeDesc != baseTypeDesc)
-                        throw new InvalidOperationException(SR.Format(SR.XmlInvalidBaseType, structMapping.TypeDesc.FullName, baseType.FullName, typeDescToChange.BaseTypeDesc.FullName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlInvalidBaseType, structMapping.TypeDesc!.FullName, baseType.FullName, typeDescToChange.BaseTypeDesc.FullName));
                     typeDescToChange.BaseTypeDesc = baseTypeDesc;
                 }
             }
@@ -144,6 +147,7 @@ namespace System.Xml.Serialization
             return TypeIdentifiers.AddUnique(typeName, typeName);
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private StructMapping CreateRootMapping()
         {
             TypeDesc typeDesc = Scope.GetTypeDesc(typeof(object));
@@ -157,6 +161,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
+        [RequiresUnreferencedCode("calls CreateRootMapping")]
         internal StructMapping GetRootMapping()
         {
             if (_root == null)
@@ -164,6 +169,7 @@ namespace System.Xml.Serialization
             return _root;
         }
 
+        [RequiresUnreferencedCode("calls GetRootMapping")]
         internal StructMapping ImportRootMapping()
         {
             if (!_rootImported)
@@ -174,6 +180,7 @@ namespace System.Xml.Serialization
             return GetRootMapping();
         }
 
+        [RequiresUnreferencedCode("calls ImportType")]
         internal abstract void ImportDerivedTypes(XmlQualifiedName baseName);
 
         internal void AddReference(XmlQualifiedName name, NameTable references, string error)

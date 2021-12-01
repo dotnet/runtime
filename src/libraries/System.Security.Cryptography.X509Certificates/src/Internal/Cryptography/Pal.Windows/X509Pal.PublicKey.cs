@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography.Pal.Native;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -24,13 +25,33 @@ namespace Internal.Cryptography.Pal
         private const string BCRYPT_ECC_CURVE_NAME_PROPERTY = "ECCCurveName";
         private const string BCRYPT_ECC_PARAMETERS_PROPERTY = "ECCParameters";
 
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
+        public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
         {
-            if (oid.Value == Oids.EcPublicKey && certificatePal != null)
+            if (certificatePal is CertificatePal pal)
             {
-                return DecodeECDsaPublicKey((CertificatePal)certificatePal);
+                return DecodeECPublicKey(
+                    pal,
+                    factory: cngKey => new ECDsaCng(cngKey));
             }
 
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+        }
+
+        public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
+        {
+            if (certificatePal is CertificatePal pal)
+            {
+                return DecodeECPublicKey(
+                    pal,
+                    factory: cngKey => new ECDiffieHellmanCng(cngKey),
+                    importFlags: CryptImportPublicKeyInfoFlags.CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG);
+            }
+
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+        }
+
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
+        {
             int algId = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid.Value!, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
             switch (algId)
             {
@@ -53,10 +74,15 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static ECDsa DecodeECDsaPublicKey(CertificatePal certificatePal)
+        private static TAlgorithm DecodeECPublicKey<TAlgorithm>(
+            CertificatePal certificatePal,
+            Func<CngKey, TAlgorithm> factory,
+            CryptImportPublicKeyInfoFlags importFlags = CryptImportPublicKeyInfoFlags.NONE)
+                where TAlgorithm : ECAlgorithm, new()
         {
-            ECDsa ecdsa;
-            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext))
+            TAlgorithm key;
+
+            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext, importFlags))
             {
                 CngKeyBlobFormat blobFormat;
                 byte[] keyBlob;
@@ -76,7 +102,7 @@ namespace Internal.Cryptography.Pal
                     keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
                     using (CngKey cngKey = CngKey.Import(keyBlob, blobFormat))
                     {
-                        ecdsa = new ECDsaCng(cngKey);
+                        key = factory(cngKey);
                     }
                 }
                 else
@@ -86,15 +112,15 @@ namespace Internal.Cryptography.Pal
                     ECParameters ecparams = default;
                     ExportNamedCurveParameters(ref ecparams, keyBlob, false);
                     ecparams.Curve = ECCurve.CreateFromFriendlyName(curveName);
-                    ecdsa = new ECDsaCng();
-                    ecdsa.ImportParameters(ecparams);
+                    key = new TAlgorithm();
+                    key.ImportParameters(ecparams);
                 }
             }
 
-            return ecdsa;
+            return key;
         }
 
-        private static SafeBCryptKeyHandle ImportPublicKeyInfo(SafeCertContextHandle certContext)
+        private static SafeBCryptKeyHandle ImportPublicKeyInfo(SafeCertContextHandle certContext, CryptImportPublicKeyInfoFlags importFlags)
         {
             unsafe
             {
@@ -105,7 +131,7 @@ namespace Internal.Cryptography.Pal
                 {
                     unsafe
                     {
-                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), 0, null, out bCryptKeyHandle);
+                        bool success = Interop.Crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
                         if (!success)
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         return bCryptKeyHandle;
@@ -255,46 +281,32 @@ namespace Internal.Cryptography.Pal
         {
             unsafe
             {
-                byte[]? decodedKeyValue = null;
-
-                encodedKeyValue.DecodeObject(
+                return encodedKeyValue.DecodeObject(
                     CryptDecodeObjectStructType.X509_DSS_PUBLICKEY,
-                    delegate (void* pvDecoded, int cbDecoded)
+                    static delegate (void* pvDecoded, int cbDecoded)
                     {
-                        Debug.Assert(cbDecoded >= sizeof(CRYPTOAPI_BLOB));
-                        CRYPTOAPI_BLOB* pBlob = (CRYPTOAPI_BLOB*)pvDecoded;
-                        decodedKeyValue = pBlob->ToByteArray();
-                    }
-                );
-
-                return decodedKeyValue;
+                        Debug.Assert(cbDecoded >= sizeof(DATA_BLOB));
+                        DATA_BLOB* pBlob = (DATA_BLOB*)pvDecoded;
+                        return pBlob->ToByteArray();
+                    });
             }
         }
 
         private static void DecodeDssParameters(byte[] encodedParameters, out byte[] p, out byte[] q, out byte[] g)
         {
-            byte[] pLocal = null!;
-            byte[] qLocal = null!;
-            byte[] gLocal = null!;
-
             unsafe
             {
-                encodedParameters.DecodeObject(
+                (p, q, g) = encodedParameters.DecodeObject(
                     CryptDecodeObjectStructType.X509_DSS_PARAMETERS,
                     delegate (void* pvDecoded, int cbDecoded)
                     {
                         Debug.Assert(cbDecoded >= sizeof(CERT_DSS_PARAMETERS));
                         CERT_DSS_PARAMETERS* pCertDssParameters = (CERT_DSS_PARAMETERS*)pvDecoded;
-                        pLocal = pCertDssParameters->p.ToByteArray();
-                        qLocal = pCertDssParameters->q.ToByteArray();
-                        gLocal = pCertDssParameters->g.ToByteArray();
-                    }
-                );
+                        return (pCertDssParameters->p.ToByteArray(),
+                                pCertDssParameters->q.ToByteArray(),
+                                pCertDssParameters->g.ToByteArray());
+                    });
             }
-
-            p = pLocal;
-            q = qLocal;
-            g = gLocal;
         }
 
         private static bool HasExplicitParameters(SafeBCryptKeyHandle bcryptHandle)

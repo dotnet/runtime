@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
@@ -10,11 +9,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     internal static partial class FileSystem
     {

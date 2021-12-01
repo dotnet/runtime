@@ -17,11 +17,11 @@ namespace System.DirectoryServices.Protocols
             // User wants to setup a connectionless session with server.
             if (directoryIdentifier.Connectionless)
             {
-                _ldapHandle = new ConnectionHandle(Interop.cldap_open(hostname, directoryIdentifier.PortNumber), _needDispose);
+                _ldapHandle = new ConnectionHandle(Interop.Ldap.cldap_open(hostname, directoryIdentifier.PortNumber), _needDispose);
             }
             else
             {
-                _ldapHandle = new ConnectionHandle(Interop.ldap_init(hostname, directoryIdentifier.PortNumber), _needDispose);
+                _ldapHandle = new ConnectionHandle(Interop.Ldap.ldap_init(hostname, directoryIdentifier.PortNumber), _needDispose);
             }
         }
 
@@ -33,10 +33,10 @@ namespace System.DirectoryServices.Protocols
                 tv_sec = (int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond)
             };
             Debug.Assert(!_ldapHandle.IsInvalid);
-            return Interop.ldap_connect(_ldapHandle, timeout);
+            return Interop.Ldap.ldap_connect(_ldapHandle, timeout);
         }
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
-            => tempCredential == null && AuthType == AuthType.External ? Interop.ldap_bind_s(_ldapHandle, null, null, method) : Interop.ldap_bind_s(_ldapHandle, null, cred, method);
+            => tempCredential == null && AuthType == AuthType.External ? Interop.Ldap.ldap_bind_s(_ldapHandle, null, null, method) : Interop.Ldap.ldap_bind_s(_ldapHandle, null, cred, method);
     }
 }

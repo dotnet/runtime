@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Context.Delegation;
 
 namespace System.Reflection.Context.Virtual
 {
     // Represents a inherited method which is identical to the base method except for its ReflectedType.
-    internal partial class InheritedMethodInfo : DelegatingMethodInfo
+    internal sealed partial class InheritedMethodInfo : DelegatingMethodInfo
     {
         private readonly Type _reflectedType;
 
@@ -15,11 +16,11 @@ namespace System.Reflection.Context.Virtual
             : base(baseMethod)
         {
             Debug.Assert(reflectedType != null);
-            Debug.Assert(reflectedType.IsSubclassOf(baseMethod.DeclaringType));
+            Debug.Assert(reflectedType.IsSubclassOf(baseMethod.DeclaringType!));
             Debug.Assert(baseMethod is VirtualMethodBase);
 
             // Should we require that baseMethod is a declared method?
-            Debug.Assert(baseMethod.ReflectedType.Equals(baseMethod.DeclaringType));
+            Debug.Assert(baseMethod.ReflectedType!.Equals(baseMethod.DeclaringType));
 
             _reflectedType = reflectedType;
         }
@@ -32,11 +33,9 @@ namespace System.Reflection.Context.Virtual
             }
         }
 
-        public override bool Equals(object o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
-            var other = o as InheritedMethodInfo;
-
-            return other != null &&
+            return o is InheritedMethodInfo other &&
                    UnderlyingMethod.Equals(other.UnderlyingMethod) &&
                    ReflectedType.Equals(other.ReflectedType);
         }

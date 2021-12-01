@@ -327,7 +327,6 @@ namespace System.Collections.Immutable
                 return this.RemoveRecursive(key, keyComparer, out mutated);
             }
 
-#if !NETSTANDARD1_0
             /// <summary>
             /// Returns a read-only reference to the value associated with the provided key.
             /// </summary>
@@ -345,7 +344,6 @@ namespace System.Collections.Immutable
 
                 return ref match._value;
             }
-#endif
 
             /// <summary>
             /// Tries to get the value.
@@ -362,7 +360,7 @@ namespace System.Collections.Immutable
                 var match = this.Search(key, keyComparer);
                 if (match.IsEmpty)
                 {
-                    value = default(TValue)!;
+                    value = default;
                     return false;
                 }
                 else

@@ -27,11 +27,12 @@ namespace System.Net
         public WebProxy(System.Uri? Address, bool BypassOnLocal, string[]? BypassList, System.Net.ICredentials? Credentials) { }
         public System.Uri? Address { get { throw null; } set { } }
         public System.Collections.ArrayList BypassArrayList { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string[] BypassList { get { throw null; } set { } }
         public bool BypassProxyOnLocal { get { throw null; } set { } }
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public bool UseDefaultCredentials { get { throw null; } set { } }
-        [System.ObsoleteAttribute("This method has been deprecated. Please use the proxy selected for you by default. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("WebProxy.GetDefaultProxy has been deprecated. Use the proxy selected for you by default.")]
         public static System.Net.WebProxy GetDefaultProxy() { throw null; }
         protected virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public System.Uri? GetProxy(System.Uri destination) { throw null; }

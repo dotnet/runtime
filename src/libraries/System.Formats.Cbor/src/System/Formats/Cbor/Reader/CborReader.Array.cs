@@ -5,20 +5,14 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
-        /// <summary>
-        ///   Reads the next data item as the start of an array (major type 4).
-        /// </summary>
-        /// <returns>
-        ///   The length of the definite-length array, or <see langword="null" /> if the array is indefinite-length.
-        /// </returns>
-        /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type.
-        /// </exception>
-        /// <exception cref="CborContentException">
-        ///   the next value has an invalid CBOR encoding. -or-
-        ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
-        /// </exception>
+        /// <summary>Reads the next data item as the start of an array (major type 4).</summary>
+        /// <returns>The length of the definite-length array, or <see langword="null" /> if the array is indefinite-length.</returns>
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
+        /// -or-
+        /// There was an unexpected end of CBOR encoding data.
+        /// -or-
+        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
         public int? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
@@ -45,17 +39,13 @@ namespace System.Formats.Cbor
             }
         }
 
-        /// <summary>
-        ///   Reads the end of an array (major type 4).
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        ///   the current context is not an array. -or-
-        ///   the reader is not at the end of the array.
-        /// </exception>
-        /// <exception cref="CborContentException">
-        ///   the next value has an invalid CBOR encoding. -or-
-        ///   there was an unexpected end of CBOR encoding data
-        /// </exception>
+        /// <summary>Reads the end of an array (major type 4).</summary>
+        /// <exception cref="InvalidOperationException">The current context is not an array.
+        /// -or-
+        /// The reader is not at the end of the array.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
+        /// -or-
+        /// There was an unexpected end of CBOR encoding data.</exception>
         public void ReadEndArray()
         {
             if (_definiteLength is null)

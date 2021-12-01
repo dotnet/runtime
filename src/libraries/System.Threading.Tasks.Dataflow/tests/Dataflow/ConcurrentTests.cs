@@ -14,7 +14,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         static readonly int s_dop = Environment.ProcessorCount * 2;
         const int IterationCount = 10000;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // should be a stress test that runs for a while, but needs cleanup
         public void RunConcurrentTests()
         {

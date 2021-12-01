@@ -95,12 +95,11 @@ coop_tls_pop (gpointer received_cookie)
 static void
 check_info (MonoThreadInfo *info, const gchar *action, const gchar *state, const char *func)
 {
-	if (!info)
-		g_error ("%s Cannot %s GC %s region if the thread is not attached", func, action, state);
-	if (!mono_thread_info_is_current (info))
-		g_error ("%s [%p] Cannot %s GC %s region on a different thread", func, mono_thread_info_get_tid (info), action, state);
-	if (!mono_thread_info_is_live (info))
-		g_error ("%s [%p] Cannot %s GC %s region if the thread is not live", func, mono_thread_info_get_tid (info), action, state);
+#ifdef ENABLE_CHECKED_BUILD
+	g_assertf (info, "%s Cannot %s GC %s region if the thread is not attached", func, action, state);
+	g_assertf (mono_thread_info_is_current (info), "%s [%p] Cannot %s GC %s region on a different thread", func, mono_thread_info_get_tid (info), action, state);
+	g_assertf (mono_thread_info_is_live (info), "%s [%p] Cannot %s GC %s region if the thread is not live", func, mono_thread_info_get_tid (info), action, state);
+#endif
 }
 
 static int coop_reset_blocking_count;
@@ -181,15 +180,13 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 
 	stackdata_size = (char*)mono_stackdata_get_stackpointer (stackdata_begin) - (char*)stackdata_end;
 
-	const char *function_name = mono_stackdata_get_function_name (stackdata_begin);
-
 	if (((gsize) stackdata_begin & (SIZEOF_VOID_P - 1)) != 0)
-		g_error ("%s stackdata_begin (%p) must be %d-byte aligned", function_name, stackdata_begin, SIZEOF_VOID_P);
+		g_error ("%s stackdata_begin (%p) must be %d-byte aligned", mono_stackdata_get_function_name (stackdata_begin), stackdata_begin, SIZEOF_VOID_P);
 	if (((gsize) stackdata_end & (SIZEOF_VOID_P - 1)) != 0)
-		g_error ("%s stackdata_end (%p) must be %d-byte aligned", function_name, stackdata_end, SIZEOF_VOID_P);
+		g_error ("%s stackdata_end (%p) must be %d-byte aligned", mono_stackdata_get_function_name (stackdata_begin), stackdata_end, SIZEOF_VOID_P);
 
 	if (stackdata_size <= 0)
-		g_error ("%s stackdata_size = %d, but must be > 0, stackdata_begin = %p, stackdata_end = %p", function_name, stackdata_size, stackdata_begin, stackdata_end);
+		g_error ("%s stackdata_size = %d, but must be > 0, stackdata_begin = %p, stackdata_end = %p", mono_stackdata_get_function_name (stackdata_begin), stackdata_size, stackdata_begin, stackdata_end);
 
 	g_byte_array_set_size (info->stackdata, stackdata_size);
 	state->gc_stackdata = info->stackdata->data;
@@ -201,7 +198,8 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 #ifdef _MSC_VER
 typedef void (*CopyStackDataFunc)(MonoThreadInfo *, MonoStackData *, gconstpointer, gconstpointer);
 
-#ifdef TARGET_AMD64
+#ifdef HOST_AMD64
+#include <emmintrin.h>
 // Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
 typedef struct {
 	__m128d fregs [10];

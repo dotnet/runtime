@@ -23,16 +23,16 @@ namespace System.DirectoryServices
         /// <devdoc>
         ///  Gets or sets the object at the given index.
         ///  </devdoc>
-        public string this[int index]
+        public string? this[int index]
         {
             get
             {
-                object[] values = GetValue();
-                return (string)values[index];
+                object?[] values = GetValue();
+                return (string?)values[index];
             }
             set
             {
-                object[] values = GetValue();
+                object?[] values = GetValue();
                 values[index] = value;
                 _propSetter(values);
             }
@@ -45,7 +45,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                object[] values = GetValue();
+                object?[] values = GetValue();
                 return values.Length;
             }
         }
@@ -53,10 +53,10 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Appends the value to the collection.
         /// </devdoc>
-        public int Add(string value)
+        public int Add(string? value)
         {
-            object[] oldValues = GetValue();
-            object[] newValues = new object[oldValues.Length + 1];
+            object?[] oldValues = GetValue();
+            object?[] newValues = new object[oldValues.Length + 1];
             for (int i = 0; i < oldValues.Length; i++)
                 newValues[i] = oldValues[i];
             newValues[newValues.Length - 1] = value;
@@ -67,14 +67,14 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Appends the values to the collection.
         /// </devdoc>
-        public void AddRange(string[] value)
+        public void AddRange(string?[] value)
         {
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            object[] oldValues = GetValue();
-            object[] newValues = new object[oldValues.Length + value.Length];
+            object?[] oldValues = GetValue();
+            object?[] newValues = new object[oldValues.Length + value.Length];
             for (int i = 0; i < oldValues.Length; i++)
                 newValues[i] = oldValues[i];
             for (int i = oldValues.Length; i < newValues.Length; i++)
@@ -88,8 +88,8 @@ namespace System.DirectoryServices
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            object[] oldValues = GetValue();
-            object[] newValues = new object[oldValues.Length + value.Count];
+            object?[] oldValues = GetValue();
+            object?[] newValues = new object?[oldValues.Length + value.Count];
             for (int i = 0; i < oldValues.Length; i++)
                 newValues[i] = oldValues[i];
             for (int i = oldValues.Length; i < newValues.Length; i++)
@@ -108,38 +108,38 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Determines if the collection contains a specific value.
         /// </devdoc>
-        public bool Contains(string value) => IndexOf(value) != -1;
+        public bool Contains(string? value) => IndexOf(value) != -1;
 
-        public void CopyTo(string[] stringArray, int index)
+        public void CopyTo(string?[] stringArray, int index)
         {
-            object[] values = GetValue();
+            object?[] values = GetValue();
             values.CopyTo(stringArray, index);
         }
 
         public IEnumerator GetEnumerator()
         {
-            object[] values = GetValue();
+            object?[] values = GetValue();
             return values.GetEnumerator();
         }
 
-        private object[] GetValue()
+        private object?[] GetValue()
         {
-            object value = _propGetter();
+            object? value = _propGetter();
             if (value == null)
                 return Array.Empty<object>();
             else
-                return (object[])value;
+                return (object?[])value;
         }
 
         /// <devdoc>
         /// Determines the index of a specific item in the collection.
         /// </devdoc>
-        public int IndexOf(string value)
+        public int IndexOf(string? value)
         {
-            object[] values = GetValue();
+            object?[] values = GetValue();
             for (int i = 0; i < values.Length; i++)
             {
-                if (value == (string)values[i])
+                if (value == (string?)values[i])
                     return i;
             }
             return -1;
@@ -148,7 +148,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Inserts an item at the specified position in the collection.
         /// </devdoc>
-        public void Insert(int index, string value)
+        public void Insert(int index, string? value)
         {
             ArrayList tmpList = new ArrayList((ICollection)GetValue());
             tmpList.Insert(index, value);
@@ -158,7 +158,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Removes an item from the collection.
         /// </devdoc>
-        public void Remove(string value)
+        public void Remove(string? value)
         {
             // this does take two scans of the array, but value isn't guaranteed to be there.
             int index = IndexOf(value);
@@ -170,11 +170,11 @@ namespace System.DirectoryServices
         /// </devdoc>
         public void RemoveAt(int index)
         {
-            object[] oldValues = GetValue();
+            object?[] oldValues = GetValue();
             if (index >= oldValues.Length || index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            object[] newValues = new object[oldValues.Length - 1];
+            object?[] newValues = new object[oldValues.Length - 1];
             for (int i = 0; i < index; i++)
                 newValues[i] = oldValues[i];
             for (int i = index + 1; i < oldValues.Length; i++)
@@ -188,7 +188,7 @@ namespace System.DirectoryServices
 
         void ICollection.CopyTo(Array array, int index)
         {
-            object[] values = GetValue();
+            object?[] values = GetValue();
             values.CopyTo(array, index);
         }
 
@@ -196,29 +196,29 @@ namespace System.DirectoryServices
 
         object ICollection.SyncRoot => this;
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get => this[index];
-            set => this[index] = (string)value;
+            set => this[index] = (string?)value;
         }
 
-        int IList.Add(object value) => Add((string)value);
+        int IList.Add(object? value) => Add((string?)value);
 
-        bool IList.Contains(object value) => Contains((string)value);
+        bool IList.Contains(object? value) => Contains((string?)value);
 
-        int IList.IndexOf(object value) => IndexOf((string)value);
+        int IList.IndexOf(object? value) => IndexOf((string?)value);
 
-        void IList.Insert(int index, object value) => Insert(index, (string)value);
+        void IList.Insert(int index, object? value) => Insert(index, (string?)value);
 
-        void IList.Remove(object value) => Remove((string)value);
+        void IList.Remove(object? value) => Remove((string?)value);
 
-        internal delegate object VariantPropGetter();
-        internal delegate void VariantPropSetter(object value);
+        internal delegate object? VariantPropGetter();
+        internal delegate void VariantPropSetter(object? value);
 
         // this class and HintsDelegateWrapper exist only because you can't create
         // a delegate to a property's accessors. You have to supply methods. So these
         // classes wrap an object and supply properties as methods.
-        internal class FilterDelegateWrapper
+        internal sealed class FilterDelegateWrapper
         {
             private readonly UnsafeNativeMethods.IAdsContainer _obj;
             internal FilterDelegateWrapper(UnsafeNativeMethods.IAdsContainer wrapped)
@@ -230,9 +230,9 @@ namespace System.DirectoryServices
 
             public VariantPropSetter Setter => new VariantPropSetter(SetFilter);
 
-            private object GetFilter() => _obj.Filter;
+            private object? GetFilter() => _obj.Filter;
 
-            private void SetFilter(object value) => _obj.Filter = value;
+            private void SetFilter(object? value) => _obj.Filter = value;
         }
     }
 }

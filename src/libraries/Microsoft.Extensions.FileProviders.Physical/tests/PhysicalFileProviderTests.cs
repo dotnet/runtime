@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.FileProviders.Internal;
 using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Primitives;
@@ -14,9 +15,10 @@ using Xunit;
 
 namespace Microsoft.Extensions.FileProviders
 {
-    public class PhysicalFileProviderTests
+    public partial class PhysicalFileProviderTests : FileCleanupTestBase
     {
         private const int WaitTimeForTokenToFire = 500;
+        private const int WaitTimeForTokenCallback = 10000;
 
         [Fact]
         public void GetFileInfoReturnsNotFoundFileInfoForNullPath()
@@ -88,6 +90,54 @@ namespace Microsoft.Extensions.FileProviders
             GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(path);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void PollingFileProviderShouldntConsumeINotifyInstances()
+        {
+            List<IDisposable> disposables = new List<IDisposable>();
+            using (var root = new TempDirectory(GetTestFilePath()))
+            {
+                string maxInstancesFile = "/proc/sys/fs/inotify/max_user_instances";
+                Assert.True(File.Exists(maxInstancesFile));
+                int maxInstances = int.Parse(File.ReadAllText(maxInstancesFile));
+
+                // choose an arbitrary number that exceeds max
+                int instances = maxInstances + 16;
+
+                AutoResetEvent are = new AutoResetEvent(false);
+
+                var oldPollingInterval = PhysicalFilesWatcher.DefaultPollingInterval;
+                try
+                {
+                    PhysicalFilesWatcher.DefaultPollingInterval = TimeSpan.FromMilliseconds(WaitTimeForTokenToFire);
+                    for (int i = 0; i < instances; i++)
+                    {
+                        PhysicalFileProvider pfp = new PhysicalFileProvider(root.Path)
+                        {
+                            UsePollingFileWatcher = true,
+                            UseActivePolling = true
+                        };
+                        disposables.Add(pfp);
+                        disposables.Add(pfp.Watch("*").RegisterChangeCallback(_ => are.Set(), null));
+                    }
+
+                    // trigger an event
+                    root.CreateFile("test.txt");
+
+                    // wait for at least one event.
+                    Assert.True(are.WaitOne(WaitTimeForTokenCallback));
+                }
+                finally
+                {
+                    PhysicalFilesWatcher.DefaultPollingInterval = oldPollingInterval;
+                    foreach (var disposable in disposables)
+                    {
+                        disposable.Dispose();
+                    }
+                }
+            }
+        }
+
         private void GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(string path)
         {
             using (var provider = new PhysicalFileProvider(Path.GetTempPath()))
@@ -148,13 +198,13 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void GetFileInfoReturnsNotFoundFileInfoForRelativePathThatNavigatesAboveRoot()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                File.Create(Path.Combine(root.RootPath, "b"));
+                File.Create(Path.Combine(root.Path, "b"));
 
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
-                    var info = provider.GetFileInfo(Path.Combine("a", "..", "..", root.DirectoryInfo.Name, "b"));
+                    var info = provider.GetFileInfo(Path.Combine("a", "..", "..", root.GetName(), "b"));
                     Assert.IsType<NotFoundFileInfo>(info);
                 }
             }
@@ -163,28 +213,28 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void GetFileInfoReturnsNotFoundFileInfoForRelativePathWithEmptySegmentsThatNavigates()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                File.Create(Path.Combine(root.RootPath, "b"));
+                File.Create(Path.Combine(root.Path, "b"));
 
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
-                    var info = provider.GetFileInfo("a///../../" + root.DirectoryInfo.Name + "/b");
+                    var info = provider.GetFileInfo("a///../../" + root.GetName() + "/b");
                     Assert.IsType<NotFoundFileInfo>(info);
                 }
             }
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateReadStreamSucceedsOnEmptyFile()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var fileName = Guid.NewGuid().ToString();
-                    var filePath = Path.Combine(root.RootPath, fileName);
+                    var filePath = Path.Combine(root.Path, fileName);
                     File.WriteAllBytes(filePath, new byte[0]);
                     var info = provider.GetFileInfo(fileName);
                     using (var stream = info.CreateReadStream())
@@ -200,12 +250,12 @@ namespace Microsoft.Extensions.FileProviders
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetFileInfoReturnsNotFoundFileInfoForHiddenFile()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var fileName = Guid.NewGuid().ToString();
-                    var filePath = Path.Combine(root.RootPath, fileName);
+                    var filePath = Path.Combine(root.Path, fileName);
                     File.Create(filePath);
                     var fileInfo = new FileInfo(filePath);
                     File.SetAttributes(filePath, fileInfo.Attributes | FileAttributes.Hidden);
@@ -222,12 +272,12 @@ namespace Microsoft.Extensions.FileProviders
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetFileInfoReturnsNotFoundFileInfoForSystemFile()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var fileName = Guid.NewGuid().ToString();
-                    var filePath = Path.Combine(root.RootPath, fileName);
+                    var filePath = Path.Combine(root.Path, fileName);
                     File.Create(filePath);
                     var fileInfo = new FileInfo(filePath);
                     File.SetAttributes(filePath, fileInfo.Attributes | FileAttributes.System);
@@ -242,12 +292,12 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void GetFileInfoReturnsNotFoundFileInfoForFileNameStartingWithPeriod()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var fileName = "." + Guid.NewGuid().ToString();
-                    var filePath = Path.Combine(root.RootPath, fileName);
+                    var filePath = Path.Combine(root.Path, fileName);
 
                     var info = provider.GetFileInfo(fileName);
 
@@ -259,12 +309,12 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void GetFileInfoReturnsFileInfoWhenExclusionDisabled()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath, ExclusionFilters.None))
+                using (var provider = new PhysicalFileProvider(root.Path, ExclusionFilters.None))
                 {
                     var fileName = "." + Guid.NewGuid().ToString();
-                    var filePath = Path.Combine(root.RootPath, fileName);
+                    var filePath = Path.Combine(root.Path, fileName);
 
                     var info = provider.GetFileInfo(fileName);
 
@@ -274,15 +324,16 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokenIsSameForSamePath()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var fileName = Guid.NewGuid().ToString();
-                var fileLocation = Path.Combine(root.RootPath, fileName);
+                var fileLocation = Path.Combine(root.Path, fileName);
 
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var fileInfo = provider.GetFileInfo(fileName);
 
@@ -297,26 +348,27 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredOnFileChange()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var fileName = Guid.NewGuid().ToString();
-                var fileLocation = Path.Combine(root.RootPath, fileName);
+                var fileLocation = Path.Combine(root.Path, fileName);
 
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var token = provider.Watch(fileName);
                             Assert.NotNull(token);
                             Assert.False(token.HasChanged);
                             Assert.True(token.ActiveChangeCallbacks);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
@@ -327,19 +379,20 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenCallbackInvokedOnFileChange()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var fileName = Guid.NewGuid().ToString();
-                var fileLocation = Path.Combine(root.RootPath, fileName);
+                var fileLocation = Path.Combine(root.Path, fileName);
 
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var token = provider.Watch(fileName);
                             Assert.NotNull(token);
@@ -352,7 +405,7 @@ namespace Microsoft.Extensions.FileProviders
                                 callbackInvoked = true;
                             }, state: null);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(callbackInvoked, "Callback should have been invoked");
@@ -363,24 +416,25 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task WatcherWithPolling_ReturnsTrueForFileChangedWhenFileSystemWatcherDoesNotRaiseEvents()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var fileName = Path.GetRandomFileName();
-                var fileLocation = Path.Combine(root.RootPath, fileName);
+                var fileLocation = Path.Combine(root.Path, fileName);
                 PollingFileChangeToken.PollingInterval = TimeSpan.FromMilliseconds(10);
 
                 // emptyRoot is not used for creating and modifying files,
                 // but is passed into the MockFileSystemWatcher so FileSystemWatcher events aren't triggered
                 // during file changes in the test
-                using (var emptyRoot = new DisposableFileSystem())
-                using (var fileSystemWatcher = new MockFileSystemWatcher(emptyRoot.RootPath))
+                using (var emptyRoot = new TempDirectory(GetTestFilePath()))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(emptyRoot.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var token = provider.Watch(fileName);
                             File.WriteAllText(fileLocation, "some-content");
@@ -393,24 +447,25 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task WatcherWithPolling_ReturnsTrueForFileRemovedWhenFileSystemWatcherDoesNotRaiseEvents()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var fileName = Path.GetRandomFileName();
-                var fileLocation = Path.Combine(root.RootPath, fileName);
+                var fileLocation = Path.Combine(root.Path, fileName);
                 PollingFileChangeToken.PollingInterval = TimeSpan.FromMilliseconds(10);
 
                 // emptyRoot is not used for creating and modifying files,
                 // but is passed into the MockFileSystemWatcher so FileSystemWatcher events aren't triggered
                 // during file changes in the test
-                using (var emptyRoot = new DisposableFileSystem())
-                using (var fileSystemWatcher = new MockFileSystemWatcher(emptyRoot.RootPath))
+                using (var emptyRoot = new TempDirectory(GetTestFilePath()))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(emptyRoot.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             root.CreateFile(fileName);
                             var token = provider.Watch(fileName);
@@ -425,26 +480,27 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredOnFileDeleted()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var fileName = Guid.NewGuid().ToString();
-                var fileLocation = Path.Combine(root.RootPath, fileName);
+                var fileLocation = Path.Combine(root.Path, fileName);
 
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var token = provider.Watch(fileName);
                             Assert.NotNull(token);
                             Assert.False(token.HasChanged);
                             Assert.True(token.ActiveChangeCallbacks);
 
-                            fileSystemWatcher.CallOnDeleted(new FileSystemEventArgs(WatcherChangeTypes.Deleted, root.RootPath, fileName));
+                            fileSystemWatcher.CallOnDeleted(new FileSystemEventArgs(WatcherChangeTypes.Deleted, root.Path, fileName));
                             await Task.Delay(WaitTimeForTokenToFire).ConfigureAwait(false);
 
                             Assert.True(token.HasChanged);
@@ -611,12 +667,12 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void GetDirectoryContentsReturnsRootDirectoryContentsForEmptyPath()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                File.Create(Path.Combine(root.RootPath, "File" + Guid.NewGuid().ToString()));
-                Directory.CreateDirectory(Path.Combine(root.RootPath, "Dir" + Guid.NewGuid().ToString()));
+                File.Create(Path.Combine(root.Path, "File" + Guid.NewGuid().ToString()));
+                Directory.CreateDirectory(Path.Combine(root.Path, "Dir" + Guid.NewGuid().ToString()));
 
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var contents = provider.GetDirectoryContents(string.Empty);
                     Assert.Collection(contents.OrderBy(c => c.Name),
@@ -629,13 +685,13 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void GetDirectoryContentsReturnsNotFoundDirectoryContentsForPathThatNavigatesAboveRoot()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                Directory.CreateDirectory(Path.Combine(root.RootPath, "b"));
+                Directory.CreateDirectory(Path.Combine(root.Path, "b"));
 
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
-                    var contents = provider.GetDirectoryContents(Path.Combine("a", "..", "..", root.DirectoryInfo.Name, "b"));
+                    var contents = provider.GetDirectoryContents(Path.Combine("a", "..", "..", root.GetName(), "b"));
                     Assert.IsType<NotFoundDirectoryContents>(contents);
                 }
             }
@@ -646,10 +702,10 @@ namespace Microsoft.Extensions.FileProviders
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetDirectoryContentsDoesNotReturnFileInfoForHiddenFile()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var directoryName = Guid.NewGuid().ToString();
-                var directoryPath = Path.Combine(root.RootPath, directoryName);
+                var directoryPath = Path.Combine(root.Path, directoryName);
                 Directory.CreateDirectory(directoryPath);
 
                 var fileName = Guid.NewGuid().ToString();
@@ -658,7 +714,7 @@ namespace Microsoft.Extensions.FileProviders
                 var fileInfo = new FileInfo(filePath);
                 File.SetAttributes(filePath, fileInfo.Attributes | FileAttributes.Hidden);
 
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var contents = provider.GetDirectoryContents(directoryName);
                     Assert.Empty(contents);
@@ -671,10 +727,10 @@ namespace Microsoft.Extensions.FileProviders
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetDirectoryContentsDoesNotReturnFileInfoForSystemFile()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var directoryName = Guid.NewGuid().ToString();
-                var directoryPath = Path.Combine(root.RootPath, directoryName);
+                var directoryPath = Path.Combine(root.Path, directoryName);
                 Directory.CreateDirectory(directoryPath);
 
                 var fileName = Guid.NewGuid().ToString();
@@ -683,7 +739,7 @@ namespace Microsoft.Extensions.FileProviders
                 var fileInfo = new FileInfo(filePath);
                 File.SetAttributes(filePath, fileInfo.Attributes | FileAttributes.System);
 
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var contents = provider.GetDirectoryContents(directoryName);
                     Assert.Empty(contents);
@@ -694,17 +750,17 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void GetDirectoryContentsDoesNotReturnFileInfoForFileNameStartingWithPeriodByDefault()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var directoryName = Guid.NewGuid().ToString();
-                var directoryPath = Path.Combine(root.RootPath, directoryName);
+                var directoryPath = Path.Combine(root.Path, directoryName);
                 Directory.CreateDirectory(directoryPath);
 
                 var fileName = "." + Guid.NewGuid().ToString();
                 var filePath = Path.Combine(directoryPath, fileName);
                 File.Create(filePath);
 
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var contents = provider.GetDirectoryContents(directoryName);
                     Assert.Empty(contents);
@@ -717,17 +773,17 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void GetDirectoryContentsReturnsFilesWhenExclusionDisabled()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var directoryName = Guid.NewGuid().ToString();
-                var directoryPath = Path.Combine(root.RootPath, directoryName);
+                var directoryPath = Path.Combine(root.Path, directoryName);
                 Directory.CreateDirectory(directoryPath);
 
                 var fileName = "." + Guid.NewGuid().ToString();
                 var filePath = Path.Combine(directoryPath, fileName);
                 File.Create(filePath);
 
-                using (var provider = new PhysicalFileProvider(root.RootPath, ExclusionFilters.None))
+                using (var provider = new PhysicalFileProvider(root.Path, ExclusionFilters.None))
                 {
                     var contents = provider.GetDirectoryContents(directoryName);
                     Assert.NotEmpty(contents);
@@ -736,16 +792,17 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task FileChangeTokenNotNotifiedAfterExpiry()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = Guid.NewGuid().ToString();
                             var changeToken = provider.Watch(fileName);
@@ -753,11 +810,11 @@ namespace Microsoft.Extensions.FileProviders
                             changeToken.RegisterChangeCallback(_ => { invocationCount++; }, null);
 
                             // Callback expected.
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             // Callback not expected.
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.Equal(1, invocationCount);
@@ -768,12 +825,13 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokenIsSameForSamePathCaseInsensitive()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var fileName = Guid.NewGuid().ToString();
                     var token = provider.Watch(fileName);
@@ -784,29 +842,30 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task CorrectTokensFiredForMultipleFiles()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName1 = Guid.NewGuid().ToString();
                             var token1 = provider.Watch(fileName1);
                             var fileName2 = Guid.NewGuid().ToString();
                             var token2 = provider.Watch(fileName2);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName1));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName1));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(token1.HasChanged);
                             Assert.False(token2.HasChanged);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName2));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName2));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(token2.HasChanged);
@@ -817,16 +876,17 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenNotAffectedByExceptions()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = Guid.NewGuid().ToString();
                             var token = provider.Watch(fileName);
@@ -836,7 +896,7 @@ namespace Microsoft.Extensions.FileProviders
                                 throw new Exception();
                             }, null);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
@@ -849,9 +909,9 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void NoopChangeTokenForNullFilter()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var token = provider.Watch(null);
 
@@ -863,11 +923,11 @@ namespace Microsoft.Extensions.FileProviders
         [Fact]
         public void NoopChangeTokenForFilterThatNavigatesAboveRoot()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
-                    var token = provider.Watch(Path.Combine("a", "..", "..", root.DirectoryInfo.Name, "b"));
+                    var token = provider.Watch(Path.Combine("a", "..", "..", root.GetName(), "b"));
 
                     Assert.Same(NullChangeToken.Singleton, token);
                 }
@@ -875,12 +935,13 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58584", TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
         public void TokenForEmptyFilter()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var token = provider.Watch(string.Empty);
 
@@ -891,12 +952,12 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void TokenForWhitespaceFilters()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var token = provider.Watch("  ");
 
@@ -911,11 +972,11 @@ namespace Microsoft.Extensions.FileProviders
         [PlatformSpecific(TestPlatforms.Windows)]
         public void NoopChangeTokenForAbsolutePathFilters()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
-                    var path = Path.Combine(root.RootPath, Guid.NewGuid().ToString());
+                    var path = Path.Combine(root.Path, Guid.NewGuid().ToString());
                     var token = provider.Watch(path);
 
                     Assert.Same(NullChangeToken.Singleton, token);
@@ -924,21 +985,22 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenFiredOnCreation()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var name = Guid.NewGuid().ToString();
                             var token = provider.Watch(name);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Created, root.RootPath, name));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Created, root.Path, name));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
@@ -949,21 +1011,22 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenFiredOnDeletion()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var name = Guid.NewGuid().ToString();
                             var token = provider.Watch(name);
 
-                            fileSystemWatcher.CallOnDeleted(new FileSystemEventArgs(WatcherChangeTypes.Deleted, root.RootPath, name));
+                            fileSystemWatcher.CallOnDeleted(new FileSystemEventArgs(WatcherChangeTypes.Deleted, root.Path, name));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
@@ -974,31 +1037,32 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenFiredForFilesUnderPathEndingWithSlash()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var directoryName = Guid.NewGuid().ToString();
-                            root.CreateFolder(directoryName)
-                                .CreateFile(Path.Combine(directoryName, "some-file"));
-                            var newDirectory = Path.GetRandomFileName();
+                            root.CreateFolder(directoryName);
+                            root.CreateFile(Path.Combine(directoryName, "some-file"));
+                            var newDirectory = GetTestFileName();
 
                             var token = provider.Watch(directoryName + Path.DirectorySeparatorChar);
 
                             Directory.Move(
-                                Path.Combine(root.RootPath, directoryName),
-                                Path.Combine(root.RootPath, newDirectory));
+                                Path.Combine(root.Path, directoryName),
+                                Path.Combine(root.Path, newDirectory));
 
                             fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(
                                 WatcherChangeTypes.Renamed,
-                                root.RootPath,
+                                root.Path,
                                 newDirectory,
                                 directoryName));
 
@@ -1012,7 +1076,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData("/")]
         [InlineData("///")]
         [InlineData("/\\/")]
@@ -1029,6 +1093,7 @@ namespace Microsoft.Extensions.FileProviders
         [InlineData("///")]
         // Testing Unix specific behaviour on leading slashes.
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenFiredForRelativePathStartingWithSlash_Unix(string slashes)
         {
             await TokenFiredForRelativePathStartingWithSlash(slashes);
@@ -1036,18 +1101,18 @@ namespace Microsoft.Extensions.FileProviders
 
         private async Task TokenFiredForRelativePathStartingWithSlash(string slashes)
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = Guid.NewGuid().ToString();
                             var token = provider.Watch(slashes + fileName);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
@@ -1071,6 +1136,7 @@ namespace Microsoft.Extensions.FileProviders
         [InlineData("/\0/")]
         // Testing Unix specific behaviour on leading slashes.
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenNotFiredForInvalidPathStartingWithSlash_Unix(string slashes)
         {
             await TokenNotFiredForInvalidPathStartingWithSlash(slashes);
@@ -1078,18 +1144,18 @@ namespace Microsoft.Extensions.FileProviders
 
         private async Task TokenNotFiredForInvalidPathStartingWithSlash(string slashes)
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = Guid.NewGuid().ToString();
                             var token = provider.Watch(slashes + fileName);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.IsType<NullChangeToken>(token);
@@ -1101,29 +1167,30 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenFiredForGlobbingPatternsPointingToSubDirectory()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var subDirectoryName = Guid.NewGuid().ToString();
                             var subSubDirectoryName = Guid.NewGuid().ToString();
                             var fileName = Guid.NewGuid().ToString() + ".cshtml";
 
-                            root.CreateFolder(subDirectoryName)
-                                .CreateFolder(Path.Combine(subDirectoryName, subSubDirectoryName))
-                                .CreateFile(Path.Combine(subDirectoryName, subSubDirectoryName, fileName));
+                            root.CreateFolder(subDirectoryName);
+                            root.CreateFolder(Path.Combine(subDirectoryName, subSubDirectoryName));
+                            root.CreateFile(Path.Combine(subDirectoryName, subSubDirectoryName, fileName));
 
                             var pattern = string.Format(Path.Combine(subDirectoryName, "**", "*.cshtml"));
                             var token = provider.Watch(pattern);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, Path.Combine(root.RootPath, subDirectoryName, subSubDirectoryName), fileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, Path.Combine(root.Path, subDirectoryName, subSubDirectoryName), fileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(token.HasChanged);
@@ -1134,12 +1201,13 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokensWithForwardAndBackwardSlashesAreSame()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     var token1 = provider.Watch(@"a/b\c");
                     var token2 = provider.Watch(@"a\b/c");
@@ -1150,16 +1218,17 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredForOldAndNewNamesOnRename()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var oldFileName = Guid.NewGuid().ToString();
                             var oldToken = provider.Watch(oldFileName);
@@ -1167,7 +1236,7 @@ namespace Microsoft.Extensions.FileProviders
                             var newFileName = Guid.NewGuid().ToString();
                             var newToken = provider.Watch(newFileName);
 
-                            fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.RootPath, newFileName, oldFileName));
+                            fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.Path, newFileName, oldFileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.True(oldToken.HasChanged);
@@ -1179,7 +1248,8 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredForNewDirectoryContentsOnRename()
         {
             var tcsShouldNotFire = new TaskCompletionSource<object>();
@@ -1188,10 +1258,10 @@ namespace Microsoft.Extensions.FileProviders
                 tcsShouldNotFire.TrySetException(new InvalidOperationException("This token should not have fired"));
             }
 
-            using (var root = new DisposableFileSystem())
-            using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
-            using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+            using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
             {
                 var oldDirectoryName = Guid.NewGuid().ToString();
                 var oldSubDirectoryName = Guid.NewGuid().ToString();
@@ -1205,9 +1275,9 @@ namespace Microsoft.Extensions.FileProviders
                 var newFileName = Guid.NewGuid().ToString();
                 var newFilePath = Path.Combine(newDirectoryName, newSubDirectoryName, newFileName);
 
-                Directory.CreateDirectory(Path.Combine(root.RootPath, newDirectoryName));
-                Directory.CreateDirectory(Path.Combine(root.RootPath, newDirectoryName, newSubDirectoryName));
-                File.Create(Path.Combine(root.RootPath, newDirectoryName, newSubDirectoryName, newFileName));
+                Directory.CreateDirectory(Path.Combine(root.Path, newDirectoryName));
+                Directory.CreateDirectory(Path.Combine(root.Path, newDirectoryName, newSubDirectoryName));
+                File.Create(Path.Combine(root.Path, newDirectoryName, newSubDirectoryName, newFileName));
 
                 var oldDirectoryToken = provider.Watch(oldDirectoryName);
                 var oldDirectoryTcs = new TaskCompletionSource<object>();
@@ -1234,9 +1304,9 @@ namespace Microsoft.Extensions.FileProviders
                 Assert.False(newSubDirectoryToken.HasChanged, "New subdirectory token should not have changed");
                 Assert.False(newFileToken.HasChanged, "New file token should not have changed");
 
-                fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.RootPath, newDirectoryName, oldDirectoryName));
+                fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.Path, newDirectoryName, oldDirectoryName));
 
-                await Task.WhenAll(oldDirectoryTcs.Task, newDirectoryTcs.Task, newSubDirectoryTcs.Task, newFileTcs.Task).TimeoutAfter(TimeSpan.FromSeconds(30));
+                await Task.WhenAll(oldDirectoryTcs.Task, newDirectoryTcs.Task, newSubDirectoryTcs.Task, newFileTcs.Task).WaitAsync(TimeSpan.FromSeconds(30));
 
                 Assert.False(oldSubDirectoryToken.HasChanged, "Old subdirectory token should not have changed");
                 Assert.False(oldFileToken.HasChanged, "Old file token should not have changed");
@@ -1252,21 +1322,22 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenNotFiredForFileNameStartingWithPeriod()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var fileName = "." + Guid.NewGuid().ToString();
                             var token = provider.Watch(Path.GetFileName(fileName));
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, fileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, fileName));
                             await Task.Delay(WaitTimeForTokenToFire);
 
                             Assert.False(token.HasChanged);
@@ -1277,39 +1348,39 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         // Hidden and system files only make sense on Windows.
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task TokensNotFiredForHiddenAndSystemFiles()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
                 var hiddenFileName = Guid.NewGuid().ToString();
-                var hiddenFilePath = Path.Combine(root.RootPath, hiddenFileName);
+                var hiddenFilePath = Path.Combine(root.Path, hiddenFileName);
                 File.Create(hiddenFilePath);
                 var fileInfo = new FileInfo(hiddenFilePath);
                 File.SetAttributes(hiddenFilePath, fileInfo.Attributes | FileAttributes.Hidden);
 
                 var systemFileName = Guid.NewGuid().ToString();
-                var systemFilePath = Path.Combine(root.RootPath, systemFileName);
+                var systemFilePath = Path.Combine(root.Path, systemFileName);
                 File.Create(systemFilePath);
                 fileInfo = new FileInfo(systemFilePath);
                 File.SetAttributes(systemFilePath, fileInfo.Attributes | FileAttributes.System);
 
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var hiddenFiletoken = provider.Watch(Path.GetFileName(hiddenFileName));
                             var systemFiletoken = provider.Watch(Path.GetFileName(systemFileName));
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, hiddenFileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, hiddenFileName));
                             await Task.Delay(WaitTimeForTokenToFire);
                             Assert.False(hiddenFiletoken.HasChanged);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.RootPath, systemFileName));
+                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, systemFileName));
                             await Task.Delay(WaitTimeForTokenToFire);
                             Assert.False(systemFiletoken.HasChanged);
                         }
@@ -1319,16 +1390,17 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredForAllEntriesOnError()
         {
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             var token1 = provider.Watch(Guid.NewGuid().ToString());
                             var token2 = provider.Watch(Guid.NewGuid().ToString());
@@ -1347,21 +1419,22 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task WildCardToken_RaisesEventsForNewFilesAdded()
         {
             // Arrange
-            using (var root = new DisposableFileSystem())
-            using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
             using (var physicalFilesWatcher = new PhysicalFilesWatcher(
-                root.RootPath + Path.DirectorySeparatorChar,
+                root.Path + Path.DirectorySeparatorChar,
                 fileSystemWatcher,
                 pollForChanges: false))
 
-            using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+            using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
             {
                 var token = provider.Watch("**/*.txt");
-                var directory = Path.Combine(root.RootPath, "subdir1", "subdir2");
+                var directory = Path.Combine(root.Path, "subdir1", "subdir2");
 
                 // Act
                 fileSystemWatcher.CallOnCreated(new FileSystemEventArgs(WatcherChangeTypes.Created, directory, "a.txt"));
@@ -1373,20 +1446,21 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task WildCardToken_RaisesEventsWhenFileSystemWatcherDoesNotFire()
         {
             // Arrange
-            using (var root = new DisposableFileSystem())
-            using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
             using (var physicalFilesWatcher = new PhysicalFilesWatcher(
-                root.RootPath + Path.DirectorySeparatorChar,
+                root.Path + Path.DirectorySeparatorChar,
                 fileSystemWatcher,
                 pollForChanges: true))
 
-            using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+            using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
             {
-                var filePath = Path.Combine(root.RootPath, "subdir1", "subdir2", "file.txt");
+                var filePath = Path.Combine(root.Path, "subdir1", "subdir2", "file.txt");
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath));
                 File.WriteAllText(filePath, "some-content");
                 var token = provider.Watch("**/*.txt");
@@ -1409,9 +1483,9 @@ namespace Microsoft.Extensions.FileProviders
         public void UsePollingFileWatcher_FileWatcherNull_SetsSuccessfully()
         {
             // Arrange
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var provider = new PhysicalFileProvider(root.RootPath))
+                using (var provider = new PhysicalFileProvider(root.Path))
                 {
                     Assert.False(provider.UsePollingFileWatcher);
 
@@ -1423,16 +1497,17 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void UsePollingFileWatcher_FileWatcherNotNull_SetterThrows()
         {
             // Arrange
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             // Act / Assert
                             Assert.Throws<InvalidOperationException>(() => { provider.UsePollingFileWatcher = true; });
@@ -1443,16 +1518,17 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void UsePollingFileWatcher_FileWatcherNotNull_ReturnsFalse()
         {
             // Arrange
-            using (var root = new DisposableFileSystem())
+            using (var root = new TempDirectory(GetTestFilePath()))
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.RootPath))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.RootPath + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
                     {
-                        using (var provider = new PhysicalFileProvider(root.RootPath) { FileWatcher = physicalFilesWatcher })
+                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                         {
                             // Act / Assert
                             Assert.False(provider.UsePollingFileWatcher);
@@ -1462,12 +1538,70 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged(bool useWildcard)
+        {
+            // Arrange
+            using var root = new TempDirectory(GetTestFilePath());
+            string fileName = GetTestFileName();
+            string filePath = Path.Combine(root.Path, fileName);
+            File.WriteAllText(filePath, "v1.1");
+
+            using var provider = new PhysicalFileProvider(root.Path) { UsePollingFileWatcher = true, UseActivePolling = true };
+            IChangeToken changeToken = provider.Watch(useWildcard ? "*" : fileName);
+
+            var tcs = new TaskCompletionSource<bool>();
+            changeToken.RegisterChangeCallback(_ => { tcs.TrySetResult(true); }, null);
+
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            cts.Token.Register(() => tcs.TrySetCanceled());
+
+            // Act
+            await Task.Delay(1000); // Wait a second before writing again, see https://github.com/dotnet/runtime/issues/55951.
+            File.WriteAllText(filePath, "v1.2");
+
+            // Assert
+            Assert.True(await tcs.Task,
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath):O}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard)
+        {
+            // Arrange
+            using var root = new TempDirectory(GetTestFilePath());
+            string fileName = GetTestFileName();
+            string filePath = Path.Combine(root.Path, fileName);
+            File.WriteAllText(filePath, "v1.1");
+
+            string filter = useWildcard ? "*" : fileName;
+            using var provider = new PhysicalFileProvider(root.Path) { UsePollingFileWatcher = true, UseActivePolling = true };
+            IChangeToken changeToken = provider.Watch(filter);
+
+            var tcs = new TaskCompletionSource<bool>();
+            changeToken.RegisterChangeCallback(_ => { tcs.TrySetResult(true); }, null);
+
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            cts.Token.Register(() => tcs.TrySetCanceled());
+
+            // Act
+            File.Delete(filePath);
+
+            // Assert
+            Assert.True(await tcs.Task,
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file Exists: {File.Exists(filePath)}.");
+        }
+
         [Fact]
         public void CreateFileWatcher_CreatesWatcherWithPollingAndActiveFlags()
         {
             // Arrange
-            using (var root = new DisposableFileSystem())
-            using (var provider = new PhysicalFileProvider(root.RootPath))
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var provider = new PhysicalFileProvider(root.Path))
             {
                 provider.UsePollingFileWatcher = true;
                 provider.UseActivePolling = true;
@@ -1480,5 +1614,47 @@ namespace Microsoft.Extensions.FileProviders
                 Assert.True(fileWatcher.UseActivePolling);
             }
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task CanDeleteWatchedDirectory(bool useActivePolling)
+        {
+            using (var root = new TempDirectory(GetTestFilePath()))
+            using (var provider = new PhysicalFileProvider(root.Path))
+            {
+                var fileName = GetTestFileName();
+                PollingFileChangeToken.PollingInterval = TimeSpan.FromMilliseconds(10);
+
+                provider.UsePollingFileWatcher = true;  // We must use polling due to https://github.com/dotnet/runtime/issues/44484
+                provider.UseActivePolling = useActivePolling;
+
+                root.CreateFile(fileName);
+                var token = provider.Watch(fileName);
+                Directory.Delete(root.Path, true);
+
+                await Task.Delay(WaitTimeForTokenToFire).ConfigureAwait(false);
+
+                Assert.True(token.HasChanged);
+            }
+        }
+    }
+
+    internal static class TempDirectoryExtensions
+    {
+        internal static void CreateFolder(this TempDirectory root, string path)
+        {
+            Directory.CreateDirectory(Path.Combine(root.Path, path));
+        }
+
+        internal static void CreateFile(this TempDirectory root, string path)
+        {
+            File.WriteAllText(Path.Combine(root.Path, path), "temp");
+        }
+
+        internal static string GetName(this TempDirectory root)
+            => Path.GetFileName(root.Path);
     }
 }

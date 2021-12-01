@@ -600,7 +600,7 @@ namespace System.Management
 
     }
 
-    internal class SinkForEventQuery : IWmiEventSource
+    internal sealed class SinkForEventQuery : IWmiEventSource
     {
         private readonly ManagementEventWatcher eventWatcher;
         private readonly object context;
@@ -622,8 +622,8 @@ namespace System.Management
             this.isLocal = false;
 
             // determine if the server is local, and if so don't create a real stub using unsecap
-            if ((0 == string.Compare(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                (0 == string.Compare(eventWatcher.Scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+            if ((string.Equals(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
+                (string.Equals(eventWatcher.Scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
             {
                 this.isLocal = true;
             }
@@ -701,7 +701,7 @@ namespace System.Management
             //
             // Try catch the call to cancel. In this case the cancel is being done without the client
             // knowing about it so catching all exceptions is not a bad thing to do. If a client calls
-            // Stop (which calls Cancel), they will still recieve any exceptions that may have occured.
+            // Stop (which calls Cancel), they will still receive any exceptions that may have occured.
             //
             try
             {

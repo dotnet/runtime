@@ -17,7 +17,7 @@ using System.Threading;
 
 namespace System.Net.Mail
 {
-    internal partial class SmtpConnection
+    internal sealed partial class SmtpConnection
     {
         private static readonly ContextCallback s_AuthenticateCallback = new ContextCallback(AuthenticateCallback);
 
@@ -160,7 +160,7 @@ namespace System.Net.Mail
                         }
                         catch (ObjectDisposedException)
                         {
-                            // See https://github.com/dotnet/corefx/issues/40711, and potentially
+                            // See https://github.com/dotnet/runtime/issues/30732, and potentially
                             // catch additional exception types here if need demonstrates.
                         }
                     }
@@ -299,12 +299,8 @@ namespace System.Net.Mail
             if (ReferenceEquals(credential, CredentialCache.DefaultNetworkCredentials))
             {
 #if DEBUG
-                if (context != null && !context.IdentityRequested)
-                {
-                    NetEventSource.Fail(this, "Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)");
-                }
+                Debug.Assert(context == null || context.IdentityRequested, "Authentication required when it wasn't expected.  (Maybe Credentials was changed on another thread?)");
 #endif
-
                 try
                 {
                     ExecutionContext? x = context == null ? null : context.ContextCopy;
@@ -337,7 +333,7 @@ namespace System.Net.Mail
             context._result = context._module.Authenticate(null, context._credential, context._thisPtr, context._spn, context._token);
         }
 
-        private class AuthenticateCallbackContext
+        private sealed class AuthenticateCallbackContext
         {
             internal AuthenticateCallbackContext(SmtpConnection thisPtr, ISmtpAuthenticationModule module, NetworkCredential credential, string? spn, ChannelBinding? Token)
             {
@@ -378,7 +374,7 @@ namespace System.Net.Mail
             DataStopCommand.Send(this);
         }
 
-        private class ConnectAndHandshakeAsyncResult : LazyAsyncResult
+        private sealed class ConnectAndHandshakeAsyncResult : LazyAsyncResult
         {
             private string? _authResponse;
             private readonly SmtpConnection _connection;

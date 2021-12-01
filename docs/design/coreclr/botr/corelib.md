@@ -36,7 +36,7 @@ To implement these, we need a way for the CLR to specify and optionally verify t
 
 The managed mechanism for calling into native code must also support the special managed calling convention used by `String`'s constructors, where the constructor allocates the memory used by the object (instead of the typical convention where the constructor is called after the GC allocates memory).
 
-The CLR provides a [`mscorlib` binder](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/binder.cpp) internally, providing a mapping between unmanaged types and fields to managed types and fields. The binder will look up and load classes and allows the calling of managed methods. It also performs simple verification to ensure the correctness of any layout information specified in both managed and native code. The binder ensures that the managed class attempting to load exists in mscorlib, has been loaded, and the field offsets are correct. It also needs the ability to differentiate between method overloads with different signatures.
+The CLR provides a [`mscorlib` binder](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/binder.cpp) internally, providing a mapping between unmanaged types and fields to managed types and fields. The binder will look up and load classes and allows the calling of managed methods. It also performs simple verification to ensure the correctness of any layout information specified in both managed and native code. The binder ensures that the managed class attempting to load exists in mscorlib, has been loaded, and the field offsets are correct. It also needs the ability to differentiate between method overloads with different signatures.
 
 # Calling from managed to native code
 
@@ -70,9 +70,11 @@ The preferred types for QCall arguments are primitive types that are efficiently
 
 The pointers to common unmanaged EE structures should be wrapped into handle types. This is to make the managed implementation type safe and avoid falling into unsafe C# everywhere. See AssemblyHandle in [vm\qcall.h][qcall] for an example.
 
-[qcall]: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/qcall.h
+[qcall]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/qcall.h
 
 Passing object references in and out of QCalls is done by wrapping a pointer to a local variable in a handle. It is intentionally cumbersome and should be avoided if reasonably possible. See the `StringHandleOnStack` in the example below. Returning objects, especially strings, from QCalls is the only common pattern where passing the raw objects is widely acceptable. (For reasoning on why this set of restrictions helps make QCalls less prone to GC holes, read the ["GC Holes, FCall, and QCall"](#gcholes) section below.)
+
+QCalls should be implemented with a C-style method signature. This makes it easier for AOT tooling in the future to connect a QCall on the managed side to the implementation on the native side.
 
 ### QCall example - managed
 
@@ -82,7 +84,7 @@ Do not replicate the comments into your actual QCall implementation. This is for
 class Foo
 {
     // All QCalls should have the following DllImport attribute
-    [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+    [DllImport(RuntimeHelpers.QCall, EntryPoint = "Foo_BarInternal", CharSet = CharSet.Unicode)]
 
     // QCalls should always be static extern.
     private static extern bool BarInternal(int flags, string inString, StringHandleOnStack retString);
@@ -110,20 +112,13 @@ class Foo
 
 Do not replicate the comments into your actual QCall implementation.
 
-The QCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllist] using `QCFuncEntry` macro. See ["Registering your QCall or FCall Method"](#register) below.
+The QCall entrypoint has to be registered in tables in [vm\qcallentrypoints.cpp][qcall-entrypoints] using the `DllImportEntry` macro. See ["Registering your QCall or FCall Method"](#register) below.
 
-[ecalllist]: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/ecalllist.h
+[qcall-entrypoints]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/qcallentrypoints.cpp
 
 ```C++
-class FooNative
-{
-public:
-    // All QCalls should be static and tagged with QCALLTYPE
-    static
-    BOOL QCALLTYPE BarInternal(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString);
-};
-
-BOOL QCALLTYPE FooNative::BarInternal(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
+// All QCalls should be free functions and tagged with QCALLTYPE and extern "C"
+extern "C" BOOL QCALLTYPE Foo_BarInternal(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
 {
     // All QCalls should have QCALL_CONTRACT.
     // It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
@@ -173,7 +168,7 @@ FCalls allow more flexibility in terms of passing object references around, but 
 
 FCalls require a lot of boilerplate code, too much to describe here. Refer to [fcall.h][fcall] for details.
 
-[fcall]: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/fcall.h
+[fcall]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/fcall.h
 
 ### <a name="gcholes"></a> GC holes, FCall, and QCall
 
@@ -193,7 +188,7 @@ The managed stack walker needs to be able to find its way from FCalls. It is rel
 
 Complex constructs like stack allocated objects with destructors or exception handling in the FCall implementation may confuse the epilog walker. This can lead to GC holes or crashes during stack walking. There is no comprehensive list of what constructs should be avoided to prevent this class of bugs. An FCall implementation that is fine one day may break with the next C++ compiler update. We depend on stress runs and code coverage to find bugs in this area.
 
-Setting a breakpoint inside an FCall implementation may confuse the epilog walker. It leads to an "Invalid breakpoint in a helpermethod frame epilog" assert inside [vm\i386\gmsx86.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/i386/gmsx86.cpp).
+Setting a breakpoint inside an FCall implementation may confuse the epilog walker. It leads to an "Invalid breakpoint in a helpermethod frame epilog" assert inside [vm\i386\gmsx86.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/i386/gmsx86.cpp).
 
 ### FCall example – managed
 
@@ -201,7 +196,7 @@ Here's a real-world example from the `String` class:
 
 ```CSharp
 public partial sealed class String
-{        
+{
     [MethodImpl(MethodImplOptions.InternalCall)]
     private extern string? IsInterned();
 
@@ -220,6 +215,8 @@ public partial sealed class String
 ### FCall example – unmanaged
 
 The FCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllist] using `FCFuncEntry` macro. See ["Registering your QCall or FCall Method"](#register).
+
+[ecalllist]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/ecalllist.h
 
 This method is an instance method in managed code, with the "this" parameter passed as the first argument. We use `StringObject*` as the argument type, then copy it into a `STRINGREF` so we get some error checking when we use it.
 
@@ -250,7 +247,7 @@ FCIMPLEND
 
 ## <a name="register"></a> Registering your QCall or FCall method
 
-The CLR must know the name of your QCall and FCall methods, both in terms of the managed class and method names, as well as which native methods to call. That is done in [ecalllist.h][ecalllist], with two arrays. The first array maps namespace and class names to an array of function elements. That array of function elements then maps individual method names and signatures to function pointers.
+The CLR must know the name of your QCall and FCall methods, both in terms of the managed class and method names, as well as which native methods to call. For FCalls, registration is done in [ecalllist.h][ecalllist], with two arrays. The first array maps namespace and class names to an array of function elements. That array of function elements then maps individual method names and signatures to function pointers.
 
 Say we defined an FCall method for `String.IsInterned()`, in the example above. First, we need to ensure that we have an array of function elements for the String class.
 
@@ -271,7 +268,16 @@ FCFuncStart(gStringFuncs)
 FCFuncEnd()
 ```
 
-There is a parallel `QCFuncElement` macro.
+QCalls are registered in [qcallentrypoints.cpp][qcall-entrypoints] in the `s_QCall` array with the `DllImportEntry` macro as follows:
+
+```C++
+static const Entry s_QCall[] =
+{
+    ...
+    DllImportEntry(MyQCall),
+    ...
+};
+```
 
 ## Naming convention
 
@@ -285,9 +291,9 @@ Certain managed types must have a representation available in both managed and n
 
 The CLR provides a binder for this purpose. After you define your managed and native classes, you should provide some clues to the binder to help ensure that the field offsets remain the same to quickly spot when someone accidentally adds a field to only one definition of a type.
 
-In [mscorlib.h][mscorlib.h], use macros ending in "_U" to describe a type, the name of fields in managed code, and the name of fields in a corresponding native data structure. Additionally, you can specify a list of methods, and reference them by name when you attempt to call them later.
+In [corelib.h][corelib.h], use macros ending in "_U" to describe a type, the name of fields in managed code, and the name of fields in a corresponding native data structure. Additionally, you can specify a list of methods, and reference them by name when you attempt to call them later.
 
-[mscorlib.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/mscorlib.h
+[corelib.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/corelib.h
 
 ``` C++
 DEFINE_CLASS_U(SAFE_HANDLE,         Interop,                SafeHandle,         SafeHandle)
@@ -345,8 +351,8 @@ When the CLR starts up, CoreLib is loaded by a method called `SystemDomain::Load
 
 For FCalls, look in [fcall.h][fcall] for infrastructure, and [ecalllist.h][ecalllist] to properly inform the runtime about your FCall method.
 
-For QCalls, look in [qcall.h][qcall] for associated infrastructure, and [ecalllist.h][ecalllist] to properly inform the runtime about your QCall method.
+For QCalls, look in [qcall.h][qcall] for associated infrastructure, and [qcallentrypoints.cpp][qcall-entrypoints] to properly inform the runtime about your QCall method.
 
 More general infrastructure and some native type definitions can be found in [object.h][object.h]. The binder uses `mscorlib.h` to associate managed and native classes.
 
-[object.h]: https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/object.h
+[object.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/object.h

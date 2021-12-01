@@ -16,7 +16,6 @@
 #include <glib.h>
 
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/ppc/ppc-codegen.h>
@@ -82,18 +81,16 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	guint8 *code, *start;
 	int this_pos = 3;
 	guint32 short_branch;
-	MonoDomain *domain = mono_domain_get ();
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
 	int size = MONO_PPC_32_64_CASE (20, 32) + PPC_FTNPTR_SIZE;
 
 	addr = mono_get_addr_from_ftnptr (addr);
 
-	mono_domain_lock (domain);
-	start = code = mono_domain_code_reserve (domain, size);
+	start = code = mono_mem_manager_code_reserve (mem_manager, size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
 	short_branch = branch_for_target_reachable (code + 4, (guint8*)addr);
 	if (short_branch)
-		mono_domain_code_commit (domain, code, size, 8);
-	mono_domain_unlock (domain);
+		mono_mem_manager_code_commit (mem_manager, code, size, 8);
 
 	if (short_branch) {
 		ppc_addi (code, this_pos, this_pos, MONO_ABI_SIZEOF (MonoObject));
@@ -110,7 +107,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
 	g_print ("unbox code is at %p for method at %p\n", start, addr);*/
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), mem_manager);
 
 	return start;
 }
@@ -121,12 +118,11 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
  *   Create a trampoline which sets RGCTX_REG to ARG, then jumps to ADDR.
  */
 gpointer
-mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr)
 {
 	guint8 *code, *start, *p;
 	guint8 imm_buf [128];
 	guint32 short_branch;
-	MonoDomain *domain = mono_domain_get ();
 	int imm_size;
 	int size = MONO_PPC_32_64_CASE (24, (PPC_LOAD_SEQUENCE_LENGTH * 2) + 8) + PPC_FTNPTR_SIZE;
 
@@ -137,13 +133,11 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 	ppc_load_ptr (p, MONO_ARCH_RGCTX_REG, arg);
 	imm_size = p - imm_buf;
 
-	mono_domain_lock (domain);
-	start = code = mono_domain_code_reserve (domain, size);
+	start = code = mono_mem_manager_code_reserve (mem_manager, size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
 	short_branch = branch_for_target_reachable (code + imm_size, (guint8*)addr);
 	if (short_branch)
-		mono_domain_code_commit (domain, code, size, imm_size + 4);
-	mono_domain_unlock (domain);
+		mono_mem_manager_code_commit (mem_manager, code, size, imm_size + 4);
 
 	if (short_branch) {
 		ppc_load_ptr (code, MONO_ARCH_RGCTX_REG, arg);
@@ -158,7 +152,7 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 	g_assert ((code - start) <= size);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), mem_manager);
 
 	return start;
 }
@@ -493,23 +487,21 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 #define TRAMPOLINE_SIZE (MONO_PPC_32_64_CASE (24, (5+5+1+1)*4))
 gpointer
-mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len)
 {
 	guint8 *code, *buf, *tramp;
 	guint32 short_branch;
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	mono_domain_lock (domain);
-	code = buf = mono_domain_code_reserve_align (domain, TRAMPOLINE_SIZE, 4);
+	code = buf = (guint8 *)mono_mem_manager_code_reserve_align (mem_manager, TRAMPOLINE_SIZE, 4);
 	short_branch = branch_for_target_reachable (code + MONO_PPC_32_64_CASE (8, 5*4), tramp);
 #ifdef __mono_ppc64__
 	/* FIXME: make shorter if possible */
 #else
 	if (short_branch)
-		mono_domain_code_commit (domain, code, TRAMPOLINE_SIZE, 12);
+		mono_mem_manager_code_commit (mem_manager, code, TRAMPOLINE_SIZE, 12);
 #endif
-	mono_domain_unlock (domain);
 
 	if (short_branch) {
 		ppc_load_sequence (code, ppc_r0, (target_mgreg_t)(gsize) arg1);
@@ -646,8 +638,9 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		ppc_mtctr (code, ppc_r12);
 		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 	} else {
+		MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
-			MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+			MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mem_manager, NULL);
 
 		/* jump to the actual trampoline */
 		code = emit_trampoline_jump (code, tramp);

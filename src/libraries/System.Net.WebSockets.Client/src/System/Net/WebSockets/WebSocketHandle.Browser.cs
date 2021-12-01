@@ -8,7 +8,6 @@ namespace System.Net.WebSockets
 {
     internal sealed class WebSocketHandle
     {
-        private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
         private WebSocketState _state = WebSocketState.Connecting;
 
         public WebSocket? WebSocket { get; private set; }
@@ -24,49 +23,17 @@ namespace System.Net.WebSockets
 
         public void Abort()
         {
+            _state = WebSocketState.Aborted;
             WebSocket?.Abort();
         }
 
-        public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        public Task ConnectAsync(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
-            try
-            {
-                CancellationTokenSource? linkedCancellation;
-                CancellationTokenSource externalAndAbortCancellation;
-                if (cancellationToken.CanBeCanceled) // avoid allocating linked source if external token is not cancelable
-                {
-                    linkedCancellation =
-                        externalAndAbortCancellation =
-                        CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _abortSource.Token);
-                }
-                else
-                {
-                    linkedCancellation = null;
-                    externalAndAbortCancellation = _abortSource;
-                }
+            cancellationToken.ThrowIfCancellationRequested();
 
-                using (linkedCancellation)
-                {
-                    WebSocket = new BrowserWebSocket();
-                    await ((BrowserWebSocket)WebSocket).ConnectAsyncJavaScript(uri, externalAndAbortCancellation.Token, options.RequestedSubProtocols).ConfigureAwait(continueOnCapturedContext: true);
-                    externalAndAbortCancellation.Token.ThrowIfCancellationRequested();
-                }
-            }
-            catch (Exception exc)
-            {
-                if (_state < WebSocketState.Closed)
-                {
-                    _state = WebSocketState.Closed;
-                }
-
-                Abort();
-
-                if (exc is WebSocketException)
-                {
-                    throw;
-                }
-                throw new WebSocketException(SR.net_webstatus_ConnectFailure, exc);
-            }
+            var ws = new BrowserWebSocket();
+            WebSocket = ws;
+            return ws.ConnectAsync(uri, options.RequestedSubProtocols, cancellationToken);
         }
     }
 }

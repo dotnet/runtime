@@ -92,12 +92,15 @@ namespace System.Net.Test.Common
 
             ulong extra = 0;
             int length = 1;
-            byte b;
+            ulong b;
 
             do
             {
-                b = headerBlock[length++];
-                extra = checked(extra << 7) | b;
+                // https://http2.github.io/http2-spec/compression.html#integer.representation
+                // HPack encodes integers from the least significant byte to the most.
+                // Every 7-bits of the next byte is shifted by (7 * index) and added to the result.
+                b = (ulong)headerBlock[length++];
+                extra = checked(b << (7 * (length - 2))) | extra;
             }
             while ((b & 0b10000000) != 0);
 

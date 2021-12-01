@@ -137,7 +137,7 @@ namespace System.Text.Json.Serialization
 
         protected JsonNamingPolicy() { }
         public abstract string ConvertName(string name);
-    }    
+    }
 }
 ```
 
@@ -163,7 +163,7 @@ The `JsonSerializerOptions.PropertyNameCaseInsensitive` property specifies that 
 Note that Json.NET is case-insensitive by default.
 
 ## Date Support
-Dates are not part of JSON, so an internal converter is supplied. Dates are typically JSON strings. Currently there is an internal `DateTime` and `DateTimeOffset` converter that currently supports ISO 8601 formats. See https://github.com/dotnet/corefx/issues/34690 for more information.
+Dates are not part of JSON, so an internal converter is supplied. Dates are typically JSON strings. Currently there is an internal `DateTime` and `DateTimeOffset` converter that currently supports ISO 8601 formats. See https://github.com/dotnet/runtime/issues/28459 for more information.
 
 If the internal converter is not sufficient, such as when the format has a custom format or is not ISO 8601 compatible, then a developer will be able to add a new value converter.
 

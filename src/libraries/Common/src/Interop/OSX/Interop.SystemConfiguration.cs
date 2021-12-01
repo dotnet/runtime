@@ -18,16 +18,11 @@ internal static partial class Interop
         internal struct SCDynamicStoreContext
         {
             public CFIndex version;
-            public IntPtr Info;
-            public IntPtr RetainFunc;
-            public IntPtr ReleaseFunc;
-            public CFStringRef CopyDescriptionFunc;
+            public IntPtr info;
+            public IntPtr retain;
+            public IntPtr release;
+            public IntPtr copyDescription;
         }
-
-        internal delegate void SCDynamicStoreCallBack(
-            SCDynamicStoreRef store,
-            CFArrayRef changedKeys,
-            IntPtr info);
 
         /// <summary>
         /// Creates a new session used to interact with the dynamic store maintained by the System Configuration server.
@@ -39,11 +34,11 @@ internal static partial class Interop
         /// Pass null if no callouts are desired.</param>
         /// <param name="context">The context associated with the callout.</param>
         /// <returns>A reference to the new dynamic store session.</returns>
-        [DllImport(Libraries.SystemConfigurationLibrary)]
-        private static extern unsafe SafeCreateHandle SCDynamicStoreCreate(
+        [GeneratedDllImport(Libraries.SystemConfigurationLibrary)]
+        private static unsafe partial SafeCreateHandle SCDynamicStoreCreate(
             IntPtr allocator,
             CFStringRef name,
-            SCDynamicStoreCallBack callout,
+            delegate* unmanaged<SCDynamicStoreRef, CFArrayRef, IntPtr, void> callout,
             SCDynamicStoreContext* context);
 
         /// <summary>
@@ -55,7 +50,10 @@ internal static partial class Interop
         /// Pass null if no callouts are desired.</param>
         /// <param name="context">The context associated with the callout.</param>
         /// <returns>A reference to the new dynamic store session.</returns>
-        internal static unsafe SafeCreateHandle SCDynamicStoreCreate(CFStringRef name, SCDynamicStoreCallBack callout, SCDynamicStoreContext* context)
+        internal static unsafe SafeCreateHandle SCDynamicStoreCreate(
+            CFStringRef name,
+            delegate* unmanaged<SCDynamicStoreRef, CFArrayRef, IntPtr, void> callout,
+            SCDynamicStoreContext* context)
         {
             return SCDynamicStoreCreate(IntPtr.Zero, name, callout, context);
         }
@@ -69,8 +67,8 @@ internal static partial class Interop
         /// <param name="serviceID">The service ID or a regular expression pattern.</param>
         /// <param name="entity">The specific global entity, such as IPv4 or DNS.</param>
         /// <returns>A string containing the formatted key.</returns>
-        [DllImport(Libraries.SystemConfigurationLibrary)]
-        private static extern SafeCreateHandle SCDynamicStoreKeyCreateNetworkServiceEntity(
+        [GeneratedDllImport(Libraries.SystemConfigurationLibrary)]
+        private static partial SafeCreateHandle SCDynamicStoreKeyCreateNetworkServiceEntity(
             IntPtr allocator,
             CFStringRef domain,
             CFStringRef serviceID,
@@ -101,8 +99,8 @@ internal static partial class Interop
         /// <param name="order">The order in which the sources that are ready to be processed are handled,
         /// on platforms that support it and for source versions that support it.</param>
         /// <returns>The new run loop source object.</returns>
-        [DllImport(Libraries.SystemConfigurationLibrary)]
-        private static extern SafeCreateHandle SCDynamicStoreCreateRunLoopSource(
+        [GeneratedDllImport(Libraries.SystemConfigurationLibrary)]
+        private static partial SafeCreateHandle SCDynamicStoreCreateRunLoopSource(
             IntPtr allocator,
             SCDynamicStoreRef store,
             CFIndex order);
@@ -127,8 +125,8 @@ internal static partial class Interop
         /// <param name="keys">An array of keys to be monitored or IntPtr.Zero if no specific keys are to be monitored.</param>
         /// <param name="patterns">An array of POSIX regex pattern strings used to match keys to be monitored,
         /// or IntPtr.Zero if no key patterns are to be monitored.</param>
-        /// <returns>True if the set of notification keys and patterns was successfully updated; false otherwise.</returns>
-        [DllImport(Libraries.SystemConfigurationLibrary)]
-        internal static extern bool SCDynamicStoreSetNotificationKeys(SCDynamicStoreRef store, CFArrayRef keys, CFArrayRef patterns);
+        /// <returns>Non-zero if the set of notification keys and patterns was successfully updated; zero otherwise.</returns>
+        [GeneratedDllImport(Libraries.SystemConfigurationLibrary)]
+        internal static partial bool SCDynamicStoreSetNotificationKeys(SCDynamicStoreRef store, CFArrayRef keys, CFArrayRef patterns);
     }
 }

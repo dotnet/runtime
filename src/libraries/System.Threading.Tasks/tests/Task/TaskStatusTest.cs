@@ -430,7 +430,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskStatus2()
         {
@@ -442,7 +442,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskStatus3()
         {
@@ -503,7 +503,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskStatus8()
         {
@@ -515,7 +515,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskStatus9()
         {
@@ -555,7 +555,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskStatus12()
         {
@@ -570,7 +570,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskStatus13()
         {
@@ -611,7 +611,7 @@ namespace System.Threading.Tasks.Tests.Status
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskStatus16()
         {

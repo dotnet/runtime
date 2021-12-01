@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -208,6 +209,7 @@ namespace System.Linq.Expressions
         /// <param name="propertyName">The name of the indexer.</param>
         /// <param name="arguments">An array of <see cref="Expression"/> objects that are used to index the property.</param>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static IndexExpression Property(Expression instance, string propertyName, params Expression[]? arguments)
         {
             ExpressionUtils.RequiresCanRead(instance, nameof(instance));
@@ -222,7 +224,10 @@ namespace System.Linq.Expressions
         /// The method finds the instance property with the specified name in a type. The property's type signature needs to be compatible with
         /// the arguments if it is a indexer. If the arguments is null or empty, we get a normal property.
         /// </summary>
-        private static PropertyInfo FindInstanceProperty(Type type, string propertyName, Expression[]? arguments)
+        private static PropertyInfo FindInstanceProperty(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] Type type,
+            string propertyName,
+            Expression[]? arguments)
         {
             // bind to public names first
             BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy;
@@ -262,7 +267,11 @@ namespace System.Linq.Expressions
             return argTypesStr.ToString();
         }
 
-        private static PropertyInfo? FindProperty(Type type, string propertyName, Expression[]? arguments, BindingFlags flags)
+        private static PropertyInfo? FindProperty(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] Type type,
+            string propertyName,
+            Expression[]? arguments,
+            BindingFlags flags)
         {
             PropertyInfo? property = null;
 

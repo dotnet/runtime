@@ -729,7 +729,7 @@ namespace System.Diagnostics
                 s_coreHeadersAccessor == null)
             {
                 // If anything went wrong here, just return false. There is nothing we can do.
-                throw new InvalidOperationException("Unable to initialize all required reflection objects");
+                throw new InvalidOperationException(SR.UnableToInitialize);
             }
         }
 
@@ -739,7 +739,7 @@ namespace System.Diagnostics
             if (servicePointTableField == null)
             {
                 // If anything went wrong here, just return false. There is nothing we can do.
-                throw new InvalidOperationException("Unable to access the ServicePointTable field");
+                throw new InvalidOperationException(SR.UnableAccessServicePointTable);
             }
 
             Hashtable originalTable = servicePointTableField.GetValue(null) as Hashtable;

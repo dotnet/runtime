@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeBCryptAlgorithmHandle : SafeBCryptHandle
     {
-        private SafeBCryptAlgorithmHandle()
+        public SafeBCryptAlgorithmHandle()
             : base()
         {
         }

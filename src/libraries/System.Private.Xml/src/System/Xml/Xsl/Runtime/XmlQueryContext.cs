@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,6 +12,8 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml.Xsl.Xslt;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -221,6 +224,8 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the extension object that is mapped to the specified namespace, or null if no object is mapped.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = XsltArgumentList.ExtensionObjectSuppresion)]
         public object GetLateBoundObject(string namespaceUri)
         {
             return (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
@@ -229,6 +234,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return true if the late bound object identified by "namespaceUri" contains a method that matches "name".
         /// </summary>
+        [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         public bool LateBoundFunctionExists(string name, string namespaceUri)
         {
             object instance;
@@ -247,6 +253,7 @@ namespace System.Xml.Xsl.Runtime
         /// Get a late-bound extension object from the external argument list.  Bind to a method on the object and invoke it,
         /// passing "args" as arguments.
         /// </summary>
+        [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         public IList<XPathItem> InvokeXsltLateBoundFunction(string name, string namespaceUri, IList<XPathItem>[] args)
         {
             object instance;
@@ -294,7 +301,7 @@ namespace System.Xml.Xsl.Runtime
                         objActualArgs[i] = args[i];
                         break;
                     default:
-                        Debug.Fail("This XmlTypeCode should never be inferred from a Clr type: " + xmlTypeFormalArg.TypeCode);
+                        Debug.Fail($"This XmlTypeCode should never be inferred from a Clr type: {xmlTypeFormalArg.TypeCode}");
                         break;
                 }
 
@@ -334,7 +341,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Simple implementation of XsltMessageEncounteredEventArgs.
     /// </summary>
-    internal class XmlILQueryEventArgs : XsltMessageEncounteredEventArgs
+    internal sealed class XmlILQueryEventArgs : XsltMessageEncounteredEventArgs
     {
         private readonly string _message;
 

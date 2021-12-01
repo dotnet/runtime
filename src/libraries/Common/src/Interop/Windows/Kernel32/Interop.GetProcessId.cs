@@ -4,11 +4,11 @@
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32)]
-        public static extern int GetProcessId(SafeProcessHandle nativeHandle);
+        [GeneratedDllImport(Libraries.Kernel32)]
+        public static partial int GetProcessId(SafeProcessHandle nativeHandle);
     }
 }

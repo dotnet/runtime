@@ -582,9 +582,9 @@ namespace System.Threading
 
         #region Debugger proxy class
         /// <summary>
-        /// Internal class used by debug type proxy attribute to display the owner thread ID
+        /// internal class used by debug type proxy attribute to display the owner thread ID
         /// </summary>
-        internal class SystemThreading_SpinLockDebugView
+        internal sealed class SystemThreading_SpinLockDebugView
         {
             // SpinLock object
             private SpinLock _spinLock;

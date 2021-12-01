@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
 namespace System.Data.OleDb
 {
     public sealed class OleDbTransaction : DbTransaction
@@ -137,7 +139,7 @@ namespace System.Data.OleDb
             _isolationLevel = isolevel;
         }
 
-        public new OleDbConnection Connection
+        public new OleDbConnection? Connection
         {
             get
             {
@@ -145,7 +147,7 @@ namespace System.Data.OleDb
             }
         }
 
-        protected override DbConnection DbConnection
+        protected override DbConnection? DbConnection
         {
             get
             {
@@ -181,7 +183,7 @@ namespace System.Data.OleDb
             }
             else if ((null != _nestedTransaction) && _nestedTransaction.IsAlive)
             {
-                throw ADP.ParallelTransactionsNotSupported(Connection);
+                throw ADP.ParallelTransactionsNotSupported(Connection!);
             }
             // either the connection will be open or this will be a zombie
 

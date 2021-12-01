@@ -23,6 +23,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
@@ -34,6 +35,7 @@ namespace System.Data.Tests
     public class XmlDataReaderTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51369", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void XmlLoadTest()
         {
             var ds = new DataSet();

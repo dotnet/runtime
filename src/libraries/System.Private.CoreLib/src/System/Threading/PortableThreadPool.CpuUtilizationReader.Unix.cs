@@ -3,7 +3,7 @@
 
 namespace System.Threading
 {
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         private struct CpuUtilizationReader
         {

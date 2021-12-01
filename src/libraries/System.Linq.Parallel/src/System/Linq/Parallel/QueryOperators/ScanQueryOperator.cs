@@ -114,7 +114,7 @@ namespace System.Linq.Parallel
             get { return false; }
         }
 
-        private class ScanEnumerableQueryOperatorResults : QueryResults<TElement>
+        private sealed class ScanEnumerableQueryOperatorResults : QueryResults<TElement>
         {
             private readonly IEnumerable<TElement> _data; // The data source for the query
 

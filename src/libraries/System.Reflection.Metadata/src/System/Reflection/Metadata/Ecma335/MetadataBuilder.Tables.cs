@@ -1217,7 +1217,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="language">
         /// GUID of the language.
         /// </param>
-        /// See https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md
+        /// See https://github.com/dotnet/runtime/blob/main/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md
         public DocumentHandle AddDocument(BlobHandle name, GuidHandle hashAlgorithm, BlobHandle hash, GuidHandle language)
         {
             _documentTable.Add(new DocumentRow
@@ -1239,7 +1239,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </param>
         /// <param name="sequencePoints">
         /// Sequence Points blob, or nil if the method doesn't have sequence points.
-        /// See https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#sequence-points-blob.
+        /// See https://github.com/dotnet/runtime/blob/main/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#sequence-points-blob.
         /// </param>
         public MethodDebugInformationHandle AddMethodDebugInformation(DocumentHandle document, BlobHandle sequencePoints)
         {
@@ -1315,7 +1315,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="name">Name of the variable.</param>
         /// <param name="signature">
-        /// LocalConstantSig blob, see https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localconstantsig-blob.
+        /// LocalConstantSig blob, see https://github.com/dotnet/runtime/blob/main/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localconstantsig-blob.
         /// </param>
         public LocalConstantHandle AddLocalConstant(StringHandle name, BlobHandle signature)
         {
@@ -1333,7 +1333,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="parentScope">Parent scope handle.</param>
         /// <param name="imports">
-        /// Imports blob, see https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#imports-blob.
+        /// Imports blob, see https://github.com/dotnet/runtime/blob/main/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#imports-blob.
         /// </param>
         public ImportScopeHandle AddImportScope(ImportScopeHandle parentScope, BlobHandle imports)
         {
@@ -1434,7 +1434,7 @@ namespace System.Reflection.Metadata.Ecma335
             // GenericParam             Owner, Number                       No**
             // GenericParamConstraint   Owner                               No**
             // ImplMap                  MemberForwarded                     No*
-            // InterfaceImpl            Class, Interface                    No**
+            // InterfaceImpl            Class                               No**
             // MethodImpl               Class                               No*
             // MethodSemantics          Association                         Yes
             // NestedClass              NestedClass                         No*
@@ -1551,27 +1551,12 @@ namespace System.Reflection.Metadata.Ecma335
 
         private void ValidateInterfaceImplTable()
         {
-            if (_interfaceImplTable.Count == 0)
+            for (int i = 1; i < _interfaceImplTable.Count; i++)
             {
-                return;
-            }
-
-            InterfaceImplRow current, previous = _interfaceImplTable[0];
-            for (int i = 1; i < _interfaceImplTable.Count; i++, previous = current)
-            {
-                current = _interfaceImplTable[i];
-
-                if (current.Class > previous.Class)
+                if (_interfaceImplTable[i - 1].Class > _interfaceImplTable[i].Class)
                 {
-                    continue;
+                    Throw.InvalidOperation_TableNotSorted(TableIndex.InterfaceImpl);
                 }
-
-                if (previous.Class == current.Class && current.Interface > previous.Interface)
-                {
-                    continue;
-                }
-
-                Throw.InvalidOperation_TableNotSorted(TableIndex.InterfaceImpl);
             }
         }
 

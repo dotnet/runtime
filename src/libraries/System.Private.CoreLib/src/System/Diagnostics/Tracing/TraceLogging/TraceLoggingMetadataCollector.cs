@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
 using System;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
-#endif
 using System.Collections.Generic;
 
 #if ES_BUILD_STANDALONE
@@ -17,7 +14,7 @@ namespace System.Diagnostics.Tracing
     /// TraceLogging: used when implementing a custom TraceLoggingTypeInfo.
     /// An instance of this type is provided to the TypeInfo.WriteMetadata method.
     /// </summary>
-    internal class TraceLoggingMetadataCollector
+    internal sealed class TraceLoggingMetadataCollector
     {
         private readonly Impl impl;
         private readonly FieldMetadata? currentGroup;
@@ -316,7 +313,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private class Impl
+        private sealed class Impl
         {
             internal readonly List<FieldMetadata> fields = new List<FieldMetadata>();
             internal short scratchSize;

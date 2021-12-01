@@ -20,7 +20,7 @@ namespace System.Security.Claims
         protected virtual byte[]? CustomSerializationData { get { throw null; } }
         public string Issuer { get { throw null; } }
         public string OriginalIssuer { get { throw null; } }
-        public System.Collections.Generic.IDictionary<string, string?> Properties { get { throw null; } }
+        public System.Collections.Generic.IDictionary<string, string> Properties { get { throw null; } }
         public System.Security.Claims.ClaimsIdentity? Subject { get { throw null; } }
         public string Type { get { throw null; } }
         public string Value { get { throw null; } }
@@ -210,6 +210,6 @@ namespace System.Security.Principal
     {
         public GenericPrincipal(System.Security.Principal.IIdentity identity, string[]? roles) { }
         public override System.Security.Principal.IIdentity Identity { get { throw null; } }
-        public override bool IsInRole(string? role) { throw null; }
+        public override bool IsInRole([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? role) { throw null; }
     }
 }

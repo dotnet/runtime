@@ -213,7 +213,7 @@ namespace BasicEventSourceTests
                         ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
 
                         // We shoudl always get the unconditional callback at the start and end of the trace.
-                        Assert.True(4 <= evts.Count, $"FAILURE EventCounter Multi-event: 4 <= {evts.Count} ticks: {num100msecTimerTicks} thread: {Thread.CurrentThread.ManagedThreadId}");
+                        Assert.True(4 <= evts.Count, $"FAILURE EventCounter Multi-event: 4 <= {evts.Count} ticks: {num100msecTimerTicks} thread: {Environment.CurrentManagedThreadId}");
                         // We expect the timer to have gone off at least twice, plus the explicit poll at the beginning and end.
                         // Each one fires two events (one for requests, one for errors). so that is (2 + 2)*2 = 8
                         // We expect about 7 timer requests, but we don't get picky about the exact count

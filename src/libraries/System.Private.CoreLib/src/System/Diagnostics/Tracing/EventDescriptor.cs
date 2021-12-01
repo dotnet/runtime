@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
 using System;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
-#endif
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 #if ES_BUILD_STANDALONE
@@ -106,7 +104,7 @@ namespace System.Diagnostics.Tracing
 
         internal int TraceLoggingId => m_traceloggingId;
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is EventDescriptor ed && Equals(ed);
 
         public override int GetHashCode() =>

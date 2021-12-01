@@ -10,14 +10,14 @@ namespace System.Diagnostics.Tests
 {
     public static class CounterCreationDataCollectionTests
     {
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationDataCollection_CreateCounterCreationDataCollection_Empty()
         {
             CounterCreationDataCollection ccdc = new CounterCreationDataCollection();
             Assert.Equal(0, ccdc.Count);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationDataCollection_CreateCounterCreationDataCollection_CCDC()
         {
             CounterCreationData[] ccds = { new CounterCreationData("Simple1", "Simple Help", PerformanceCounterType.RawBase), new CounterCreationData("Simple2", "Simple Help", PerformanceCounterType.RawBase) };
@@ -27,7 +27,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(2, ccdc2.Count);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationDataCollection_CreateCounterCreationDataCollection_Array()
         {
             CounterCreationData[] ccds = { new CounterCreationData("Simple1", "Simple Help", PerformanceCounterType.RawBase), new CounterCreationData("Simple2", "Simple Help", PerformanceCounterType.RawBase) };
@@ -37,7 +37,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(0, ccdc.IndexOf(ccds[0]));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationDataCollection_CreateCounterCreationDataCollection_Invalid()
         {
             CounterCreationData[] ccds = null;
@@ -46,7 +46,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentNullException>(() => new CounterCreationDataCollection(ccdc));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationDataCollection_SetIndex2()
         {
             CounterCreationData[] ccds = { new CounterCreationData("Simple1", "Simple Help", PerformanceCounterType.RawBase), new CounterCreationData("Simple2", "Simple Help", PerformanceCounterType.RawBase) };
@@ -59,7 +59,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ccd, ccdc[1]);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationDataCollection_Remove()
         {
             CounterCreationData[] ccds = { new CounterCreationData("Simple1", "Simple Help", PerformanceCounterType.RawBase), new CounterCreationData("Simple2", "Simple Help", PerformanceCounterType.RawBase) };
@@ -69,7 +69,7 @@ namespace System.Diagnostics.Tests
             Assert.False(ccdc.Contains(ccds[0]));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationDataCollection_Insert()
         {
             CounterCreationData[] ccds = { new CounterCreationData("Simple1", "Simple Help", PerformanceCounterType.RawBase), new CounterCreationData("Simple2", "Simple Help", PerformanceCounterType.RawBase) };
@@ -82,7 +82,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, ccdc.IndexOf(ccd));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterCreationDataCollection_CopyTo()
         {
             CounterCreationData[] ccds = { new CounterCreationData("Simple1", "Simple Help", PerformanceCounterType.RawBase), new CounterCreationData("Simple2", "Simple Help", PerformanceCounterType.RawBase) };

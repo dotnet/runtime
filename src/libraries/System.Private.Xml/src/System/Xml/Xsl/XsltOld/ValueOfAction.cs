@@ -61,7 +61,7 @@ namespace System.Xml.Xsl.XsltOld
                     Debug.Assert(frame != null);
                     Debug.Assert(frame.NodeSet != null);
 
-                    string value = processor.ValueOf(frame, _selectKey);
+                    string? value = processor.ValueOf(frame, _selectKey);
 
                     if (processor.TextEvent(value, _disableOutputEscaping))
                     {
@@ -87,7 +87,7 @@ namespace System.Xml.Xsl.XsltOld
         }
     }
 
-    internal class BuiltInRuleTextAction : Action
+    internal sealed class BuiltInRuleTextAction : Action
     {
         private const int ResultStored = 2;
         internal override void Execute(Processor processor, ActionFrame frame)
@@ -100,7 +100,7 @@ namespace System.Xml.Xsl.XsltOld
                     Debug.Assert(frame != null);
                     Debug.Assert(frame.NodeSet != null);
 
-                    string value = processor.ValueOf(frame.NodeSet.Current);
+                    string value = processor.ValueOf(frame.NodeSet.Current!);
 
                     if (processor.TextEvent(value, /*disableOutputEscaping:*/false))
                     {

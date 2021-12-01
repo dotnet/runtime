@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.Composition.Hosting.Core
 {
-    internal class ExportDescriptorRegistryUpdate : DependencyAccessor
+    internal sealed class ExportDescriptorRegistryUpdate : DependencyAccessor
     {
         private readonly IDictionary<CompositionContract, ExportDescriptor[]> _partDefinitions;
         private readonly ExportDescriptorProvider[] _exportDescriptorProviders;

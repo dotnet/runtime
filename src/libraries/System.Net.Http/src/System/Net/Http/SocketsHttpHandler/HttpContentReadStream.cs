@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection
+    internal sealed partial class HttpConnection
     {
         internal abstract class HttpContentReadStream : HttpContentStream
         {
@@ -17,7 +17,7 @@ namespace System.Net.Http
             {
             }
 
-            public sealed override bool CanRead => true;
+            public sealed override bool CanRead => _disposed == 0;
             public sealed override bool CanWrite => false;
 
             public sealed override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
@@ -27,6 +27,17 @@ namespace System.Net.Http
             public virtual bool NeedsDrain => false;
 
             protected bool IsDisposed => _disposed == 1;
+
+            protected bool CanReadFromConnection
+            {
+                get
+                {
+                    // _connection == null typically means that we have finished reading the response.
+                    // Cancellation may lead to a state where a disposed _connection is not null.
+                    HttpConnection? connection = _connection;
+                    return connection != null && connection._disposed != Status_Disposed;
+                }
+            }
 
             public virtual ValueTask<bool> DrainAsync(int maxDrainBytes)
             {
@@ -70,7 +81,7 @@ namespace System.Net.Http
                     {
                         connection.Trace(drained ?
                             "Connection drain succeeded" :
-                            $"Connection drain failed because MaxResponseDrainSize of {connection._pool.Settings._maxResponseDrainSize} bytes was exceeded");
+                            $"Connection drain failed when MaxResponseDrainSize={connection._pool.Settings._maxResponseDrainSize} bytes or MaxResponseDrainTime=={connection._pool.Settings._maxResponseDrainTime} exceeded");
                     }
                 }
                 catch (Exception e)

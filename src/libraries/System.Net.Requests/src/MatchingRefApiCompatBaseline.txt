@@ -1,3 +1,0 @@
-Compat issues with assembly System.Net.Requests:
-MembersMustExist : Member 'public void System.Net.HttpWebRequest..ctor()' does not exist in the reference but it does exist in the implementation.
-Total Issues: 1

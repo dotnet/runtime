@@ -26,6 +26,7 @@
 #define PROFILING_FLAG 0x2
 
 #define MINT_VT_ALIGNMENT 8
+#define MINT_STACK_SLOT_SIZE (sizeof (stackval))
 
 #define INTERP_STACK_SIZE (1024*1024)
 
@@ -51,49 +52,9 @@ typedef gint64  mono_i;
 #define MINT_TYPE_I MINT_TYPE_I8
 #endif
 
-
-/*
- * GC SAFETY:
- *
- *  The interpreter executes in gc unsafe (non-preempt) mode. On wasm, the C stack is
- * scannable but the wasm stack is not, so to make the code GC safe, the following rules
- * should be followed:
- * - every objref handled by the code needs to either be stored volatile or stored
- *   into a volatile; volatile stores are stack packable, volatile values are not.
- *   Use either OBJREF or stackval->data.o.
- *   This will ensure the objects are pinned. A volatile local
- *   is on the stack and not in registers. Volatile stores ditto.
- * - minimize the number of MonoObject* locals/arguments (or make them volatile).
- *
- * Volatile on a type/local forces all reads and writes to go to memory/stack,
- *   and each such local to have a unique address.
- *
- * Volatile absence on a type/local allows multiple locals to share storage,
- *   if their lifetimes do not overlap. This is called "stack packing".
- *
- * Volatile absence on a type/local allows the variable to live in
- * both stack and register, for fast reads and "write through".
- */
 #ifdef TARGET_WASM
-
-#define WASM_VOLATILE volatile
-
-static inline MonoObject * WASM_VOLATILE *
-mono_interp_objref (MonoObject **o)
-{
-	return o;
-}
-
-#define OBJREF(x) (*mono_interp_objref (&x))
-
-#else
-
-#define WASM_VOLATILE /* nothing */
-
-#define OBJREF(x) x
-
+#define INTERP_NO_STACK_SCAN 1
 #endif
-
 
 /*
  * Value types are represented on the eval stack as pointers to the
@@ -109,7 +70,12 @@ typedef struct {
 		} pair;
 		float f_r4;
 		double f;
-		MonoObject * WASM_VOLATILE o;
+#ifdef INTERP_NO_STACK_SCAN
+		/* Ensure objref is always flushed to interp stack */
+		MonoObject * volatile o;
+#else
+		MonoObject *o;
+#endif
 		/* native size integer and pointer types */
 		gpointer p;
 		mono_u nati;
@@ -131,9 +97,12 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
+#define INTERP_IMETHOD_TAG_UNBOX(im) ((gpointer)((mono_u)(im) | 1))
+#define INTERP_IMETHOD_IS_TAGGED_UNBOX(im) ((mono_u)(im) & 1)
+#define INTERP_IMETHOD_UNTAG_UNBOX(im) ((InterpMethod*)((mono_u)(im) & ~1))
+
 /* 
  * Structure representing a method transformed for the interpreter 
- * This is domain specific
  */
 typedef struct InterpMethod InterpMethod;
 struct InterpMethod {
@@ -151,18 +120,19 @@ struct InterpMethod {
 	MonoExceptionClause *clauses; // num_clauses
 	void **data_items;
 	guint32 *local_offsets;
-	guint32 *exvar_offsets;
+	guint32 *arg_offsets;
+	guint32 *clause_data_offsets;
 	gpointer jit_call_info;
 	gpointer jit_entry;
 	gpointer llvmonly_unbox_entry;
 	MonoType *rtype;
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
-	MonoDomain *domain;
+	MonoFtnDesc *ftndesc;
+	MonoFtnDesc *ftndesc_unbox;
+	MonoDelegateTrampInfo *del_info;
 
-	guint32 total_locals_size;
-	guint32 stack_size;
-	guint32 vt_stack_size;
+	guint32 locals_size;
 	guint32 alloca_size;
 	int num_clauses; // clauses
 	int transformed; // boolean
@@ -219,10 +189,7 @@ typedef struct FrameClauseArgs FrameClauseArgs;
 
 /* State of the interpreter main loop */
 typedef struct {
-	stackval *sp;
-	unsigned char *vt_sp;
 	const unsigned short  *ip;
-	GSList *finally_ips;
 } InterpState;
 
 struct InterpFrame {
@@ -260,6 +227,11 @@ typedef struct {
 	guchar *stack_pointer;
 	/* Used for allocation of localloc regions */
 	FrameDataAllocator data_stack;
+	/* Used when a thread self-suspends at a safepoint in the interpreter, points to the
+	 * currently executing frame. (If a thread self-suspends somewhere else in the runtime, this
+	 * is NULL - the LMF will point to the InterpFrame before the thread exited the interpreter)
+	 */
+	InterpFrame *safepoint_frame;
 } ThreadContext;
 
 typedef struct {
@@ -293,7 +265,7 @@ void
 mono_interp_transform_init (void);
 
 InterpMethod *
-mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error);
+mono_interp_get_imethod (MonoMethod *method, MonoError *error);
 
 void
 mono_interp_print_code (InterpMethod *imethod);
@@ -301,11 +273,14 @@ mono_interp_print_code (InterpMethod *imethod);
 gboolean
 mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 
+void
+mono_interp_error_cleanup (MonoError *error);
+
 static inline int
 mint_type(MonoType *type_)
 {
 	MonoType *type = mini_native_type_replace_type (type_);
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return MINT_TYPE_I;
 enum_type:
 	switch (type->type) {

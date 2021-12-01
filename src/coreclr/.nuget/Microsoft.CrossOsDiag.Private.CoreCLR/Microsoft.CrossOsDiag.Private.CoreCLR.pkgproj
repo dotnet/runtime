@@ -1,0 +1,22 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <PropertyGroup>
+    <IsShipping>false</IsShipping>
+    <CreatePackedPackage>false</CreatePackedPackage>
+    <PackageDescription>Private transport package for .NET Core cross OS diagnostic tooling.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Intentional rather than globbing here, even if very manual, to make sure we publish the Cross OS Dac -->
+    <NativeBinary Include="$(CrossDacBinRoot)/mscordaccore.dll" />
+    <NativeBinary Include="$(CrossDacBinRoot)/mscordbi.dll" />
+    <!-- The infrastructure, and this package is only for indexing. Avoid creating a transport package and just let this one have the symbols itself -->
+    <File Include="@(NativeBinary -> '%(RootDir)%(Directory)/%(Filename).pdb')">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+
+    <NativeBinary Include="$(CrossDacBinRoot)/libcoreclr.so" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

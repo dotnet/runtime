@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\..\..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ShortClassNameAttribute.cs"
-             Link="Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ShortClassNameAttribute.cs" />
     <Compile Include="..\src\LogLevelAttribute.cs"
              Link="tests\DI.Common\Common\src\LogLevelAttribute.cs" />
     <Compile Include="..\src\LogValuesAssert.cs"

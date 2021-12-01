@@ -8,7 +8,7 @@ namespace System.Xml.Serialization
     /// <summary>
     /// This class will write to a stream and manage indentation.
     /// </summary>
-    internal class IndentedWriter
+    internal sealed class IndentedWriter
     {
         private readonly TextWriter _writer;
         private bool _needIndent;
@@ -33,7 +33,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal void Write(string s)
+        internal void Write(string? s)
         {
             if (_needIndent) WriteIndent();
             _writer.Write(s);
@@ -45,7 +45,7 @@ namespace System.Xml.Serialization
             _writer.Write(c);
         }
 
-        internal void WriteLine(string s)
+        internal void WriteLine(string? s)
         {
             if (_needIndent) WriteIndent();
             _writer.WriteLine(s);

@@ -36,6 +36,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     Assert.Equal(Architecture.Wasm, processArch);
                     break;
 
+                case Architecture.S390x:
+                    Assert.Equal(Architecture.S390x, processArch);
+                    break;
+
                 default:
                     Assert.False(true, "Unexpected Architecture.");
                     break;
@@ -43,6 +47,14 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             Assert.Equal(osArch, RuntimeInformation.OSArchitecture);
             Assert.Equal(processArch, RuntimeInformation.ProcessArchitecture);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public void VerifyBrowserArchitecture()
+        {
+            Assert.Equal(Architecture.Wasm, RuntimeInformation.OSArchitecture);
+            Assert.Equal(Architecture.Wasm, RuntimeInformation.ProcessArchitecture);
         }
     }
 }

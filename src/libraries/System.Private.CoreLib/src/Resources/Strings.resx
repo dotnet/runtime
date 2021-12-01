@@ -259,9 +259,6 @@
   <data name="Arg_DataMisalignedException" xml:space="preserve">
     <value>A datatype misalignment was detected in a load or store instruction.</value>
   </data>
-  <data name="Arg_DateTimeRange" xml:space="preserve">
-    <value>Combination of arguments to the DateTime constructor is out of the legal range.</value>
-  </data>
   <data name="Arg_DecBitCtor" xml:space="preserve">
     <value>Decimal constructor requires an array or span of four valid decimal bytes.</value>
   </data>
@@ -294,9 +291,6 @@
   </data>
   <data name="Arg_EmptyArray" xml:space="preserve">
     <value>Array may not be empty.</value>
-  </data>
-  <data name="Arg_EmptyOrNullString" xml:space="preserve">
-    <value>String may not be empty or null.</value>
   </data>
   <data name="Arg_EndOfStreamException" xml:space="preserve">
     <value>Attempted to read past the end of the stream.</value>
@@ -362,7 +356,7 @@
     <value>Property Get method was not found.</value>
   </data>
   <data name="Arg_GuidArrayCtor" xml:space="preserve">
-    <value>Byte array for GUID must be exactly {0} bytes long.</value>
+    <value>Byte array for Guid must be exactly {0} bytes long.</value>
   </data>
   <data name="Arg_HandleNotAsync" xml:space="preserve">
     <value>Handle does not support asynchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened synchronously (that is, it was not opened for overlapped I/O).</value>
@@ -460,9 +454,6 @@
   <data name="Arg_MethodAccessException" xml:space="preserve">
     <value>Attempt to access the method failed.</value>
   </data>
-  <data name="Arg_MethodAccessException_WithMethodName" xml:space="preserve">
-    <value>Attempt to access the method "{0}" on type "{1}" failed.</value>
-  </data>
   <data name="Arg_MissingFieldException" xml:space="preserve">
     <value>Attempted to access a non-existing field.</value>
   </data>
@@ -486,6 +477,14 @@
   </data>
   <data name="Arg_MustBeChar" xml:space="preserve">
     <value>Object must be of type Char.</value>
+  </data>
+  <data name="Arg_MustBeDateOnly" xml:space="preserve">
+    <value>Object must be of type DateOnly.</value>
+    <comment>{Locked="DateOnly"}</comment>
+  </data>
+  <data name="Arg_MustBeTimeOnly" xml:space="preserve">
+    <value>Object must be of type TimeOnly.</value>
+    <comment>{Locked="TimeOnly"}</comment>
   </data>
   <data name="Arg_MustBeDateTime" xml:space="preserve">
     <value>Object must be of type DateTime.</value>
@@ -601,14 +600,11 @@
   <data name="Arg_NoAccessSpec" xml:space="preserve">
     <value>Must specify binding flags describing the invoke operation required (BindingFlags.InvokeMethod CreateInstance GetField SetField GetProperty SetProperty).</value>
   </data>
+  <data name="Arg_NoDefCTorWithoutTypeName" xml:space="preserve">
+    <value>No parameterless constructor defined.</value>
+  </data>
   <data name="Arg_NoDefCTor" xml:space="preserve">
     <value>No parameterless constructor defined for type '{0}'.</value>
-  </data>
-  <data name="Arg_NoITypeInfo" xml:space="preserve">
-    <value>Specified TypeInfo was invalid because it did not support the ITypeInfo interface.</value>
-  </data>
-  <data name="Arg_NoITypeLib" xml:space="preserve">
-    <value>Specified TypeLib was invalid because it did not support the ITypeLib interface.</value>
   </data>
   <data name="Arg_NonZeroLowerBound" xml:space="preserve">
     <value>The lower bound of target array must be zero.</value>
@@ -796,9 +792,6 @@
   <data name="Arg_VersionString" xml:space="preserve">
     <value>Version string portion was too short or too long.</value>
   </data>
-  <data name="Arg_WrongAsyncResult" xml:space="preserve">
-    <value>IAsyncResult object did not come from the corresponding async method on this type.</value>
-  </data>
   <data name="Arg_WrongType" xml:space="preserve">
     <value>The value "{0}" is not of type "{1}" and cannot be used in this generic collection.</value>
   </data>
@@ -820,6 +813,9 @@
   <data name="Argument_AdjustmentRulesOutOfOrder" xml:space="preserve">
     <value>The elements of the AdjustmentRule array must be in chronological order and must not overlap.</value>
   </data>
+  <data name="Argument_AlignmentMustBePow2" xml:space="preserve">
+    <value>The alignment must be a power of two.</value>
+  </data>
   <data name="Argument_AlreadyACCW" xml:space="preserve">
     <value>The object already has a CCW associated with it.</value>
   </data>
@@ -834,9 +830,6 @@
   </data>
   <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
     <value>Attribute names must be unique.</value>
-  </data>
-  <data name="Argument_BadAttributeOnInterfaceMethod" xml:space="preserve">
-    <value>Interface method must be abstract and virtual.</value>
   </data>
   <data name="Argument_BadConstantValue" xml:space="preserve">
     <value>Bad default value.</value>
@@ -964,6 +957,9 @@
   <data name="Argument_CultureNotSupported" xml:space="preserve">
     <value>Culture is not supported.</value>
   </data>
+  <data name="Argument_CultureNotSupportedInInvariantMode" xml:space="preserve">
+    <value>Only the invariant culture is supported in globalization-invariant mode. See https://aka.ms/GlobalizationInvariantMode for more information.</value>
+  </data>
   <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
     <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
   </data>
@@ -1090,14 +1086,17 @@
   <data name="Argument_IndexOutOfArrayBounds" xml:space="preserve">
     <value>The specified index is out of bounds of the specified array.</value>
   </data>
-  <data name="Argument_InsufficientSpaceToCopyCollection" xml:space="preserve">
-    <value>The specified space is not sufficient to copy the elements from this Collection.</value>
-  </data>
   <data name="Argument_InterfaceMap" xml:space="preserve">
     <value>'this' type cannot be an interface itself.</value>
   </data>
   <data name="Argument_InvalidAppendMode" xml:space="preserve">
     <value>Append access can be requested only in write-only mode.</value>
+  </data>
+  <data name="Argument_InvalidPreallocateAccess" xml:space="preserve">
+    <value>Preallocation size can be requested only in write mode.</value>
+  </data>
+  <data name="Argument_InvalidPreallocateMode" xml:space="preserve">
+    <value>Preallocation size can be requested only for new files.</value>
   </data>
   <data name="Argument_InvalidArgumentForComparison" xml:space="preserve">
     <value>Type of argument is not compatible with the generic comparer.</value>
@@ -1143,6 +1142,10 @@
   </data>
   <data name="Argument_InvalidDateTimeStyles" xml:space="preserve">
     <value>An undefined DateTimeStyles value is being used.</value>
+  </data>
+  <data name="Argument_InvalidDateStyles" xml:space="preserve">
+    <value>The only allowed values for the styles are AllowWhiteSpaces, AllowTrailingWhite, AllowLeadingWhite, and AllowInnerWhite.</value>
+    <comment>{Locked="AllowWhiteSpaces, AllowTrailingWhite, AllowLeadingWhite, and AllowInnerWhite"}</comment>
   </data>
   <data name="Argument_InvalidDigitSubstitution" xml:space="preserve">
     <value>The DigitSubstitution property must be of a valid member of the DigitShapes enumeration. Valid entries include Context, NativeNational or None.</value>
@@ -1384,9 +1387,6 @@
   <data name="Argument_NoUninitializedStrings" xml:space="preserve">
     <value>Uninitialized Strings cannot be created.</value>
   </data>
-  <data name="Argument_ObjIsWinRTObject" xml:space="preserve">
-    <value>The object's type must not be a Windows Runtime type.</value>
-  </data>
   <data name="Argument_ObjNotComObject" xml:space="preserve">
     <value>The object's type must be __ComObject or derived from __ComObject.</value>
   </data>
@@ -1507,9 +1507,6 @@
   <data name="Argument_TypedReferenceInvalidField" xml:space="preserve">
     <value>Field '{0}' in TypedReferences cannot be static.</value>
   </data>
-  <data name="Argument_TypeIsWinRTType" xml:space="preserve">
-    <value>The type must not be a Windows Runtime type.</value>
-  </data>
   <data name="Argument_TypeMustBeVisibleFromCom" xml:space="preserve">
     <value>The specified type must be visible from COM.</value>
   </data>
@@ -1519,9 +1516,6 @@
   <data name="Argument_TypeNameTooLong" xml:space="preserve">
     <value>Type name was too long. The fully qualified type name must be less than 1,024 characters.</value>
   </data>
-  <data name="Argument_TypeNotActivatableViaWindowsRuntime" xml:space="preserve">
-    <value>Type '{0}' does not have an activation factory because it is not activatable by Windows Runtime.</value>
-  </data>
   <data name="Argument_TypeNotComObject" xml:space="preserve">
     <value>The type must be __ComObject or be derived from __ComObject.</value>
   </data>
@@ -1530,9 +1524,6 @@
   </data>
   <data name="Argument_UnclosedExceptionBlock" xml:space="preserve">
     <value>The IL Generator cannot be used while there are unclosed exceptions.</value>
-  </data>
-  <data name="Argument_Unexpected_TypeSource" xml:space="preserve">
-    <value>Unexpected TypeKind when marshaling Windows.Foundation.TypeName.</value>
   </data>
   <data name="Argument_UnknownUnmanagedCallConv" xml:space="preserve">
     <value>Unknown unmanaged calling convention for function signature.</value>
@@ -1551,9 +1542,6 @@
   </data>
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
     <value>The length of the name exceeds the maximum limit.</value>
-  </data>
-  <data name="Argument_WinRTSystemRuntimeType" xml:space="preserve">
-    <value>Cannot marshal type '{0}' to Windows Runtime. Only 'System.RuntimeType' is supported.</value>
   </data>
   <data name="ArgumentException_BadMethodImplBody" xml:space="preserve">
     <value>MethodOverride's body must be from this type.</value>
@@ -1614,9 +1602,6 @@
   </data>
   <data name="ArgumentNull_Generic" xml:space="preserve">
     <value>Value cannot be null.</value>
-  </data>
-  <data name="ArgumentNull_GUID" xml:space="preserve">
-    <value>GUID cannot be null.</value>
   </data>
   <data name="ArgumentNull_Key" xml:space="preserve">
     <value>Key cannot be null.</value>
@@ -1690,6 +1675,9 @@
   <data name="ArgumentOutOfRange_DateTimeBadTicks" xml:space="preserve">
     <value>Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
   </data>
+  <data name="ArgumentOutOfRange_TimeOnlyBadTicks" xml:space="preserve">
+    <value>Ticks must be between 0 and and TimeOnly.MaxValue.Ticks.</value>
+  </data>
   <data name="ArgumentOutOfRange_DateTimeBadYears" xml:space="preserve">
     <value>Years value must be between +/-10000.</value>
   </data>
@@ -1747,9 +1735,6 @@
   <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
     <value>Index and count must refer to a location within the buffer.</value>
   </data>
-  <data name="ArgumentOutOfRange_IndexLargerThanMaxValue" xml:space="preserve">
-    <value>This collection cannot work with indices larger than Int32.MaxValue - 1 (0x7FFFFFFF - 1).</value>
-  </data>
   <data name="ArgumentOutOfRange_IndexLength" xml:space="preserve">
     <value>Index and length must refer to a location within the string.</value>
   </data>
@@ -1788,6 +1773,10 @@
   </data>
   <data name="ArgumentOutOfRange_Month" xml:space="preserve">
     <value>Month must be between one and twelve.</value>
+  </data>
+  <data name="ArgumentOutOfRange_DayNumber" xml:space="preserve">
+    <value>Day number must be between 0 and DateOnly.MaxValue.DayNumber.</value>
+    <comment>{Locked="DateOnly.MaxValue.DayNumber"}</comment>
   </data>
   <data name="ArgumentOutOfRange_MonthParam" xml:space="preserve">
     <value>The Month parameter must be in the range 1 through 12.</value>
@@ -1846,6 +1835,9 @@
   <data name="ArgumentOutOfRange_RoundingDigits" xml:space="preserve">
     <value>Rounding digits must be between 0 and 15, inclusive.</value>
   </data>
+  <data name="ArgumentOutOfRange_RoundingDigits_MathF" xml:space="preserve">
+    <value>Rounding digits must be between 0 and 6, inclusive.</value>
+  </data>
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
   </data>
@@ -1857,9 +1849,6 @@
   </data>
   <data name="ArgumentOutOfRange_StartIndexLargerThanLength" xml:space="preserve">
     <value>startIndex cannot be larger than length of string.</value>
-  </data>
-  <data name="ArgumentOutOfRange_StartIndexLessThanLength" xml:space="preserve">
-    <value>startIndex must be less than length of string.</value>
   </data>
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
     <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
@@ -2215,6 +2204,17 @@
   <data name="Format_BadDateTime" xml:space="preserve">
     <value>String '{0}' was not recognized as a valid DateTime.</value>
   </data>
+  <data name="Format_BadDateOnly" xml:space="preserve">
+    <value>String '{0}' was not recognized as a valid DateOnly.</value>
+    <comment>{Locked="DateOnly"}</comment>
+  </data>
+  <data name="Format_BadTimeOnly" xml:space="preserve">
+    <value>String '{0}' was not recognized as a valid TimeOnly.</value>
+    <comment>{Locked="TimeOnly"}</comment>
+  </data>
+  <data name="Format_DateTimeOnlyContainsNoneDateParts" xml:space="preserve">
+    <value>String '{0}' contains parts which are not specific to the {1}.</value>
+  </data>
   <data name="Format_BadDateTimeCalendar" xml:space="preserve">
     <value>The DateTime represented by the string '{0}' is not supported in calendar '{1}'.</value>
   </data>
@@ -2395,15 +2395,6 @@
   <data name="InvalidCast_StoreArrayElement" xml:space="preserve">
     <value>Object cannot be stored in an array of this type.</value>
   </data>
-  <data name="InvalidCast_WinRTIPropertyValueArrayCoersion" xml:space="preserve">
-    <value>Object in an IPropertyValue is of type '{0}' which cannot be convereted to a '{1}' due to array element '{2}': {3}.</value>
-  </data>
-  <data name="InvalidCast_WinRTIPropertyValueCoersion" xml:space="preserve">
-    <value>Object in an IPropertyValue is of type '{0}' with value '{1}', which cannot be converted to a '{2}'.</value>
-  </data>
-  <data name="InvalidCast_WinRTIPropertyValueElement" xml:space="preserve">
-    <value>Object in an IPropertyValue is of type '{0}', which cannot be converted to a '{1}'.</value>
-  </data>
   <data name="InvalidOperation_AsyncFlowCtrlCtxMismatch" xml:space="preserve">
     <value>AsyncFlowControl objects can be used to restore flow only on a Context that had its flow suppressed.</value>
   </data>
@@ -2437,9 +2428,6 @@
   <data name="InvalidOperation_CannotRegisterSecondResolver" xml:space="preserve">
     <value>A resolver is already set for the assembly.</value>
   </data>
-  <data name="InvalidOperation_CannotRemoveLastFromEmptyCollection" xml:space="preserve">
-    <value>Cannot remove the last element from an empty collection.</value>
-  </data>
   <data name="InvalidOperation_CannotRestoreUnsupressedFlow" xml:space="preserve">
     <value>Cannot restore context flow when it is not suppressed.</value>
   </data>
@@ -2457,12 +2445,6 @@
   </data>
   <data name="InvalidOperation_CantInstantiateFunctionPointer" xml:space="preserve">
     <value>Instances of function pointers cannot be created.</value>
-  </data>
-  <data name="InvalidOperation_CollectionBackingDictionaryTooLarge" xml:space="preserve">
-    <value>The collection backing this Dictionary contains too many elements.</value>
-  </data>
-  <data name="InvalidOperation_CollectionBackingListTooLarge" xml:space="preserve">
-    <value>The collection backing this List contains too many elements.</value>
   </data>
   <data name="InvalidOperation_CollectionCorrupted" xml:space="preserve">
     <value>A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.</value>
@@ -2482,12 +2464,6 @@
   <data name="InvalidOperation_DefaultConstructorILGen" xml:space="preserve">
     <value>Unable to access ILGenerator on a constructor created with DefineDefaultConstructor.</value>
   </data>
-  <data name="InvalidOperation_EndReadCalledMultiple" xml:space="preserve">
-    <value>EndRead can only be called once for each asynchronous operation.</value>
-  </data>
-  <data name="InvalidOperation_EndWriteCalledMultiple" xml:space="preserve">
-    <value>EndWrite can only be called once for each asynchronous operation.</value>
-  </data>
   <data name="InvalidOperation_EnumEnded" xml:space="preserve">
     <value>Enumeration already finished.</value>
   </data>
@@ -2502,9 +2478,6 @@
   </data>
   <data name="InvalidOperation_EventInfoNotAvailable" xml:space="preserve">
     <value>This API does not support EventInfo tokens.</value>
-  </data>
-  <data name="InvalidOperation_EventTokenTableRequiresDelegate" xml:space="preserve">
-    <value>Type '{0}' is not a delegate type.  EventTokenTable may only be used with delegate types.</value>
   </data>
   <data name="InvalidOperation_GenericParametersAlreadySet" xml:space="preserve">
     <value>The generic parameters are already defined on this MethodBuilder.</value>
@@ -2562,9 +2535,6 @@
   </data>
   <data name="InvalidOperation_NotGenericType" xml:space="preserve">
     <value>This operation is only valid on generic types.</value>
-  </data>
-  <data name="InvalidOperation_NotSupportedOnWinRTEvent" xml:space="preserve">
-    <value>Adding or removing event handlers dynamically is not supported on WinRT events.</value>
   </data>
   <data name="InvalidOperation_NotWithConcurrentGC" xml:space="preserve">
     <value>This API is not available when the concurrent GC is enabled.</value>
@@ -2638,17 +2608,8 @@
   <data name="InvalidOperation_UnknownEnumType" xml:space="preserve">
     <value>Unknown enum type.</value>
   </data>
-  <data name="InvalidOperation_WriteOnce" xml:space="preserve">
-    <value>This property has already been set and cannot be modified.</value>
-  </data>
   <data name="InvalidOperation_WrongAsyncResultOrEndCalledMultiple" xml:space="preserve">
     <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or the End method was called multiple times with the same IAsyncResult.</value>
-  </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndRead was called multiple times with the same IAsyncResult.</value>
-  </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
   </data>
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
@@ -2674,6 +2635,9 @@
   <data name="InvariantFailed_Cnd" xml:space="preserve">
     <value>Invariant failed: {0}</value>
   </data>
+  <data name="IO_NoFileTableInInMemoryAssemblies" xml:space="preserve">
+    <value>This assembly does not have a file table because it was loaded from memory.</value>
+  </data>
   <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
     <value>Unable to read beyond the end of the stream.</value>
   </data>
@@ -2692,6 +2656,12 @@
   <data name="IO_AlreadyExists_Name" xml:space="preserve">
     <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
   </data>
+  <data name="IO_DiskFull_Path_AllocationSize" xml:space="preserve">
+    <value>Failed to create '{0}' with allocation size '{1}' because the disk was full.</value>
+  </data>
+  <data name="IO_FileTooLarge_Path_AllocationSize" xml:space="preserve">
+    <value>Failed to create '{0}' with allocation size '{1}' because the file was too large.</value>
+  </data>
   <data name="IO_BindHandleFailed" xml:space="preserve">
     <value>BindHandle for ThreadPool failed on this handle.</value>
   </data>
@@ -2703,6 +2673,9 @@
   </data>
   <data name="IO_FileTooLong2GB" xml:space="preserve">
     <value>The file is too long. This operation is currently limited to supporting files less than 2 gigabytes in size.</value>
+  </data>
+  <data name="IO_FileTooLong" xml:space="preserve">
+    <value>IO operation will not work. Most likely the file will become too long.</value>
   </data>
   <data name="IO_FileTooLongOrHandleNotSync" xml:space="preserve">
     <value>IO operation will not work. Most likely the file will become too long or the handle was not opened to support synchronous IO operations.</value>
@@ -2742,6 +2715,9 @@
   </data>
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_TooManySymbolicLinkLevels" xml:space="preserve">
+    <value>Too many levels of symbolic links in '{0}'.</value>
   </data>
   <data name="IO_UnknownFileName" xml:space="preserve">
     <value>[Unknown]</value>
@@ -2791,12 +2767,6 @@
   <data name="MissingManifestResource_NoNeutralDisk" xml:space="preserve">
     <value>Could not find any resources appropriate for the specified culture (or the neutral culture) on disk.</value>
   </data>
-  <data name="MissingManifestResource_NoPRIresources" xml:space="preserve">
-    <value>Unable to open Package Resource Index.</value>
-  </data>
-  <data name="MissingManifestResource_ResWFileNotLoaded" xml:space="preserve">
-    <value>Unable to load resources for resource file "{0}" in package "{1}".</value>
-  </data>
   <data name="MissingMember" xml:space="preserve">
     <value>Member not found.</value>
   </data>
@@ -2822,16 +2792,13 @@
     <value>Delegates that are not of type MulticastDelegate may not be combined.</value>
   </data>
   <data name="MustUseCCRewrite" xml:space="preserve">
-    <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from http://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
+    <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from https://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
   </data>
   <data name="NotSupported_AbstractNonCLS" xml:space="preserve">
     <value>This non-CLS method is not implemented.</value>
   </data>
   <data name="NotSupported_ActivAttr" xml:space="preserve">
     <value>Activation Attributes are not supported.</value>
-  </data>
-  <data name="NotSupported_AppX" xml:space="preserve">
-    <value>{0} is not supported in AppX.</value>
   </data>
   <data name="NotSupported_AssemblyLoadFromHash" xml:space="preserve">
     <value>Assembly.LoadFrom with hashValue is not supported.</value>
@@ -2866,9 +2833,6 @@
   <data name="NotSupported_CollectibleBoundNonCollectible" xml:space="preserve">
     <value>A non-collectible assembly may not reference a collectible assembly.</value>
   </data>
-  <data name="NotSupported_CollectibleWinRT" xml:space="preserve">
-    <value>WinRT Interop is not supported for collectible types.</value>
-  </data>
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
   </data>
@@ -2883,9 +2847,6 @@
   </data>
   <data name="NotSupported_DynamicModule" xml:space="preserve">
     <value>The invoked member is not supported in a dynamic module.</value>
-  </data>
-  <data name="NotSupported_FileStreamOnNonFiles" xml:space="preserve">
-    <value>FileStream was asked to open a device that was not a file. For support for devices like 'com1:' or 'lpt1:', call CreateFile, then use the FileStream constructors that take an OS handle as an IntPtr.</value>
   </data>
   <data name="NotSupported_FixedSizeCollection" xml:space="preserve">
     <value>Collection was of a fixed size.</value>
@@ -2958,9 +2919,6 @@
   </data>
   <data name="NotSupported_OutputStreamUsingTypeBuilder" xml:space="preserve">
     <value>Output streams do not support TypeBuilders.</value>
-  </data>
-  <data name="NotSupported_PIAInAppxProcess" xml:space="preserve">
-    <value>A Primary Interop Assembly is not supported in AppX.</value>
   </data>
   <data name="NotSupported_RangeCollection" xml:space="preserve">
     <value>The specified operation is not supported on Ranges.</value>
@@ -3088,6 +3046,9 @@
   <data name="Overflow_Int64" xml:space="preserve">
     <value>Value was either too large or too small for an Int64.</value>
   </data>
+  <data name="Overflow_MutexReacquireCount" xml:space="preserve">
+    <value>The current thread attempted to reacquire a mutex that has reached its maximum acquire count.</value>
+  </data>
   <data name="Overflow_NegateTwosCompNum" xml:space="preserve">
     <value>Negating the minimum value of a twos complement number is invalid.</value>
   </data>
@@ -3138,9 +3099,6 @@
   </data>
   <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
     <value>Strong-name signing is not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_WinRT" xml:space="preserve">
-    <value>Windows Runtime is not supported on this operating system.</value>
   </data>
   <data name="PlatformNotSupported_OverlappedIO" xml:space="preserve">
     <value>This API is specific to the way in which Windows handles asynchronous I/O, and is not supported on this platform.</value>
@@ -3346,6 +3304,9 @@
   <data name="SpinWait_SpinUntil_TimeoutWrong" xml:space="preserve">
     <value>The timeout must represent a value between -1 and Int32.MaxValue, inclusive.</value>
   </data>
+  <data name="StackTrace_InFileILOffset" xml:space="preserve">
+    <value>in {0}:token 0x{1:x}+0x{2:x}</value>
+  </data>
   <data name="StackTrace_InFileLineNumber" xml:space="preserve">
     <value>in {0}:line {1}</value>
   </data>
@@ -3355,8 +3316,8 @@
   <data name="Task_ContinueWith_NotOnAnything" xml:space="preserve">
     <value>The specified TaskContinuationOptions excluded all continuation kinds.</value>
   </data>
-  <data name="Task_Delay_InvalidDelay" xml:space="preserve">
-    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0 or a positive integer less than or equal to Int32.MaxValue.</value>
+  <data name="Task_InvalidTimerTimeSpan" xml:space="preserve">
+    <value>The value needs to translate in milliseconds to -1 (signifying an infinite timeout), 0, or a positive integer less than or equal to the maximum allowed timer duration.</value>
   </data>
   <data name="Task_Delay_InvalidMillisecondsDelay" xml:space="preserve">
     <value>The value needs to be either -1 (signifying an infinite timeout), 0 or a positive integer.</value>
@@ -3443,7 +3404,7 @@
     <value>An attempt was made to transition a task to a final state when it had already completed.</value>
   </data>
   <data name="Thread_ApartmentState_ChangeFailed" xml:space="preserve">
-    <value>Failed to set the specified COM apartment state.</value>
+    <value>Failed to set the specified COM apartment state. Current apartment state '{0}'.</value>
   </data>
   <data name="Thread_GetSetCompressedStack_NotSupported" xml:space="preserve">
     <value>Use CompressedStack.(Capture/Run) instead.</value>
@@ -3637,6 +3598,9 @@
   <data name="InvalidOp_InvalidNewEnumVariant" xml:space="preserve">
     <value>The returned enumerator does not implement IEnumVARIANT.</value>
   </data>
+  <data name="InvalidSysctl" xml:space="preserve">
+    <value>sysctl {0} failed with {1} error.</value>
+  </data>
   <data name="Argument_StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>
   </data>
@@ -3667,6 +3631,9 @@
   <data name="InvalidOperation_InvalidComUnRegFunctionSig" xml:space="preserve">
     <value>COM unregister function must have a System.Type parameter and a void return type.</value>
   </data>
+  <data name="InvalidOperation_InvalidHandle" xml:space="preserve">
+    <value>The handle is invalid.</value>
+  </data>
   <data name="InvalidOperation_MultipleComRegFunctions" xml:space="preserve">
     <value>Type '{0}' has more than one COM registration function.</value>
   </data>
@@ -3676,29 +3643,20 @@
   <data name="InvalidOperation_ResetGlobalComWrappersInstance" xml:space="preserve">
     <value>Attempt to update previously set global instance.</value>
   </data>
-  <data name="Utf8String_CallbackProvidedMalformedData" xml:space="preserve">
-    <value>The callback populated its buffer with ill-formed UTF-8 data. Callbacks are required to populate the buffer only with well-formed UTF-8 data.</value>
+  <data name="InvalidOperation_ResetGlobalObjectiveCMsgSend" xml:space="preserve">
+    <value>Attempt to update previously set Objective-C msgSend API overrides.</value>
   </data>
-  <data name="Utf8String_InputContainedMalformedUtf16" xml:space="preserve">
-    <value>The input buffer contained ill-formed UTF-16 data.</value>
+  <data name="InvalidOperation_ObjectiveCMarshalNotInitialized" xml:space="preserve">
+    <value>Attempt to track an Objective-C Type without initializing.</value>
   </data>
-  <data name="Utf8String_InputContainedMalformedUtf8" xml:space="preserve">
-    <value>The input buffer contained ill-formed UTF-8 data.</value>
+  <data name="InvalidOperation_ReinitializeObjectiveCMarshal" xml:space="preserve">
+    <value>Attempt to reinitialize ObjectiveCMarshal.</value>
   </data>
-  <data name="Utf8String_CannotSplitMultibyteSubsequence" xml:space="preserve">
-    <value>Cannot create the desired substring because it would split a multi-byte UTF-8 subsequence.</value>
+  <data name="InvalidOperation_ObjectiveCTypeNoFinalizer" xml:space="preserve">
+    <value>Attempt to track an Objective-C Type without a finalizer.</value>
   </data>
-  <data name="Utf8Span_CannotCallEqualsObject" xml:space="preserve">
-    <value>Cannot call Utf8Span.Equals(object). Use Equals(Utf8Span) or operator == instead.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Utf16SurrogatesDisallowed" xml:space="preserve">
-    <value>UTF-16 surrogate code points (U+D800..U+DFFF) are disallowed.</value>
-  </data>
-  <data name="Argument_CannotBeEmptySpan" xml:space="preserve">
-    <value>Argument cannot be an empty span.</value>
-  </data>
-  <data name="Argument_CannotBeNullOrEmpty" xml:space="preserve">
-    <value>Argument cannot be null or empty.</value>
+  <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
+    <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
     <value>Length of items must be same as length of keys.</value>
@@ -3771,5 +3729,95 @@
   </data>
   <data name="BinaryFormatter_SerializationDisallowed" xml:space="preserve">
     <value>BinaryFormatter serialization and deserialization are disabled within this application. See https://aka.ms/binaryformatter for more information.</value>
+  </data>
+  <data name="NotSupported_CodeBase" xml:space="preserve">
+    <value>CodeBase is not supported on assemblies loaded from a single-file bundle.</value>
+  </data>
+  <data name="Activator_CannotCreateInstance" xml:space="preserve">
+    <value>Cannot dynamically create an instance of type '{0}'. Reason: {1}</value>
+  </data>
+  <data name="Argv_IncludeDoubleQuote" xml:space="preserve">
+    <value>The argv[0] argument cannot include a double quote.</value>
+  </data>
+  <data name="ResourceManager_ReflectionNotAllowed" xml:space="preserve">
+    <value>Use of ResourceManager for custom types is disabled. Set the MSBuild Property CustomResourceTypesSupport to true in order to enable it.</value>
+  </data>
+  <data name="InvalidOperation_AssemblyNotEditable" xml:space="preserve">
+    <value>The assembly can not be edited or changed.</value>
+  </data>
+  <data name="InvalidOperation_EditFailed" xml:space="preserve">
+    <value>The assembly update failed.</value>
+  </data>
+  <data name="NotSupported_DebuggerAttached" xml:space="preserve">
+    <value>Assembly updates cannot be applied while a debugger is attached.</value>
+  </data>
+  <data name="NotSupported_MethodBodyReplacement" xml:space="preserve">
+    <value>Method body replacement not supported in this runtime.</value>
+  </data>
+  <data name="NotSupported_COM" xml:space="preserve">
+    <value>Built-in COM has been disabled via a feature switch. See https://aka.ms/dotnet-illink/com for more information.</value>
+  </data>
+  <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
+    <value>Queue empty.</value>
+  </data>
+  <data name="Arg_FileIsDirectory_Name" xml:space="preserve">
+    <value>The target file '{0}' is a directory, not a file.</value>
+  </data>
+  <data name="Arg_InvalidFileAttrs" xml:space="preserve">
+    <value>Invalid File or Directory attributes value.</value>
+  </data>
+  <data name="Arg_Path2IsRooted" xml:space="preserve">
+    <value>Second path fragment must not be a drive or UNC name.</value>
+  </data>
+  <data name="Arg_PathIsVolume" xml:space="preserve">
+    <value>Path must not be a drive.</value>
+  </data>
+  <data name="Argument_FileNotResized" xml:space="preserve">
+    <value>The stream's length cannot be changed.</value>
+  </data>
+  <data name="Argument_InvalidSubPath" xml:space="preserve">
+    <value>The directory specified, '{0}', is not a subdirectory of '{1}'.</value>
+  </data>
+  <data name="IO_CannotCreateDirectory" xml:space="preserve">
+    <value>The specified directory '{0}' cannot be created.</value>
+  </data>
+  <data name="IO_CannotReplaceSameFile" xml:space="preserve">
+    <value>The source '{0}' and destination '{1}' are the same file.</value>
+  </data>
+  <data name="IO_NotAFile" xml:space="preserve">
+    <value>The specified path '{0}' is not a file.</value>
+  </data>
+  <data name="IO_SourceDestMustBeDifferent" xml:space="preserve">
+    <value>Source and destination path must be different.</value>
+  </data>
+  <data name="IO_SourceDestMustHaveSameRoot" xml:space="preserve">
+    <value>Source and destination path must have identical roots. Move will not work across volumes.</value>
+  </data>
+  <data name="IO_SyncOpOnUIThread" xml:space="preserve">
+    <value>Synchronous operations should not be performed on the UI thread.  Consider wrapping this method in Task.Run.</value>
+  </data>
+  <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
+    <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
+  </data>
+  <data name="PlatformNotSupported_FileEncryption" xml:space="preserve">
+    <value>File encryption is not supported on this platform.</value>
+  </data>
+  <data name="Arg_MemberInfoNotFound" xml:space="preserve">
+    <value>A MemberInfo that matches '{0}' could not be found.</value>
+  </data>
+  <data name="InvalidOperation_BadTZHeader" xml:space="preserve">
+    <value>Bad magic in '{0}': Header starts with '{1}' instead of 'tzdata'</value>
+  </data>
+  <data name="InvalidOperation_ReadTZError" xml:space="preserve">
+    <value>Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.</value>
+  </data>
+  <data name="InvalidOperation_BadIndexLength" xml:space="preserve">
+    <value>Length in index file less than AndroidTzDataHeader</value>
+  </data>
+  <data name="TimeZoneNotFound_ValidTimeZoneFileMissing" xml:space="preserve">
+    <value>Unable to properly load any time zone data files.</value>
+  </data>
+  <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
+    <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
   </data>
 </root>

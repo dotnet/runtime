@@ -55,7 +55,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(null != rowbinding, "null rowbinding");
             Debug.Assert(null != bindings, "null bindings");
-            Debug.Assert(ODB.SizeOf_tagDBBINDING <= offset, "invalid offset" + offset);
+            Debug.Assert(ODB.SizeOf_tagDBBINDING <= offset, $"invalid offset {offset}");
 
             _dataReader = dataReader;
             _rowbinding = rowbinding;
@@ -948,8 +948,7 @@ namespace System.Data.OleDb
             Debug.Assert(NativeDBType.HCHAPTER == DbType, "Value_HCHAPTER");
             Debug.Assert(DBStatus.S_OK == StatusValue(), "Value_HCHAPTER");
 
-            // TODO-NULLABLE: This shouldn't return null
-            return DataReader().ResetChapter(IndexForAccessor, IndexWithinAccessor, RowBinding, ValueOffset)!;
+            return DataReader().ResetChapter(IndexForAccessor, IndexWithinAccessor, RowBinding, ValueOffset);
         }
 
         private sbyte Value_I1()

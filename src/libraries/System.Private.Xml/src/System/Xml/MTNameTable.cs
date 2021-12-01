@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 #if MTNAMETABLE
 using System;
 using System.IO;
@@ -220,7 +219,7 @@ namespace System.Xml {
 #else
 
     // XmlNameTable implemented as a multi-threaded splay tree.
-    [Obsolete("This class is going away")]
+    [Obsolete("MTNameTable has been deprecated and is not supported.")]
     public class MTNameTable : XmlNameTable {
         internal MTNameTableNode rootNode;
         internal ReaderWriterLock rwLock;
@@ -600,7 +599,7 @@ namespace System.Xml {
 
 
     // A MTNameTable node.
-    internal class MTNameTableNode {
+    internal sealed class MTNameTableNode {
         internal String value;
         internal Int64 hash;
         internal Int64 counter;
@@ -677,7 +676,7 @@ namespace System.Xml {
 
 
     // Enumerates all the names (strings) of a MTNameTable
-    internal class MTNameTableEnumerator: IEnumerator {
+    internal sealed class MTNameTableEnumerator: IEnumerator {
         private ArrayList names;
         private int iName;
 

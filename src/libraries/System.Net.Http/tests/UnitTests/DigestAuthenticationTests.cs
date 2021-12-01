@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Net.Http.Tests
 {
-    [SkipOnMono("System.Security.Cryptography is not supported on Browser, see https://github.com/dotnet/runtime/pull/38379", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography is not supported on Browser, see https://github.com/dotnet/runtime/pull/38379")]
     public class DigestAuthenticationTests
     {
         private static readonly List<string> s_keyListWithCountTwo = new List<string> { "key1", "key2" };

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -14,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class XsdCachingReader : XmlReader, IXmlLineInfo
+    internal sealed partial class XsdCachingReader : XmlReader, IXmlLineInfo
     {
         // Gets the text value of the current node.
         public override Task<string> GetValueAsync()

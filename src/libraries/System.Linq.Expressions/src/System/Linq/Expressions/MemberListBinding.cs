@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -95,6 +96,7 @@ namespace System.Linq.Expressions
         /// <paramref name="propertyAccessor"/> is null. -or-One or more elements of <paramref name="initializers"/> is null.</exception>
         /// <exception cref="ArgumentException">
         /// <paramref name="propertyAccessor"/> does not represent a property accessor method.-or-The <see cref="PropertyInfo.PropertyType"/> of the property that the method represented by <paramref name="propertyAccessor"/> accesses does not implement <see cref="IEnumerable"/>.</exception>
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberListBinding ListBind(MethodInfo propertyAccessor, params ElementInit[] initializers)
         {
             return ListBind(propertyAccessor, (IEnumerable<ElementInit>)initializers);
@@ -108,6 +110,7 @@ namespace System.Linq.Expressions
         /// <paramref name="propertyAccessor"/> is null. -or-One or more elements of <paramref name="initializers"/> are null.</exception>
         /// <exception cref="ArgumentException">
         /// <paramref name="propertyAccessor"/> does not represent a property accessor method.-or-The <see cref="PropertyInfo.PropertyType"/> of the property that the method represented by <paramref name="propertyAccessor"/> accesses does not implement <see cref="IEnumerable"/>.</exception>
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberListBinding ListBind(MethodInfo propertyAccessor, IEnumerable<ElementInit> initializers)
         {
             ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));

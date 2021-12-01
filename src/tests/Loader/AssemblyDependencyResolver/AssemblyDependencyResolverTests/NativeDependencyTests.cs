@@ -7,8 +7,6 @@ using System.Runtime.Loader;
 using TestLibrary;
 using Xunit;
 
-using Assert = Xunit.Assert;
-
 namespace AssemblyDependencyResolverTests
 {
     class NativeDependencyTests : TestBase
@@ -270,7 +268,7 @@ namespace AssemblyDependencyResolverTests
                     Path.Combine(TestBasePath, _componentAssemblyPath));
 
                 string result = resolver.ResolveUnmanagedDllToPath(lookupName);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     if (resolvesOnOSes.HasFlag(OS.Windows))
                     {
@@ -281,7 +279,7 @@ namespace AssemblyDependencyResolverTests
                         Assert.Null(result);
                     }
                 }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                else if (OperatingSystem.IsMacOS())
                 {
                     if (resolvesOnOSes.HasFlag(OS.OSX))
                     {

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.PageSettings.cs
 //
@@ -254,9 +255,7 @@ namespace System.Drawing.Printing
             throw new NotImplementedException();
         }
 
-        public override string ToString()
-        {
-            return $"[{nameof(PageSettings)}: {nameof(Color)}={color}, {nameof(Landscape)}={landscape}, {nameof(Margins)}={margins}, {nameof(PaperSize)}={paperSize}, {nameof(PaperSource)}={paperSource}, {nameof(PrinterResolution)}={printerResolution}]";
-        }
+        public override string ToString() =>
+            $"[{nameof(PageSettings)}: {nameof(Color)}={color}, {nameof(Landscape)}={landscape}, {nameof(Margins)}={margins}, {nameof(PaperSize)}={paperSize}, {nameof(PaperSource)}={paperSource}, {nameof(PrinterResolution)}={printerResolution}]";
     }
 }

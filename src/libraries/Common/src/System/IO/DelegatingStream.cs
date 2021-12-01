@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http
+namespace System.IO
 {
     // Forwards all calls to an inner stream except where overridden in a derived class.
     internal abstract class DelegatingStream : Stream

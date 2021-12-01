@@ -252,7 +252,7 @@ namespace System.Text.Json
             Debug.Assert(backslash != -1);
 
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
-            Span<byte> sourceUnescaped = stackalloc byte[source.Length];
+            Span<byte> sourceUnescaped = stackalloc byte[JsonConstants.MaximumEscapedDateTimeOffsetParseLength];
 
             Unescape(source, sourceUnescaped, backslash, out int written);
             Debug.Assert(written > 0);
@@ -277,7 +277,7 @@ namespace System.Text.Json
             Debug.Assert(backslash != -1);
 
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
-            Span<byte> sourceUnescaped = stackalloc byte[source.Length];
+            Span<byte> sourceUnescaped = stackalloc byte[JsonConstants.MaximumEscapedDateTimeOffsetParseLength];
 
             Unescape(source, sourceUnescaped, backslash, out int written);
             Debug.Assert(written > 0);
@@ -303,7 +303,7 @@ namespace System.Text.Json
             int idx = source.IndexOf(JsonConstants.BackSlash);
             Debug.Assert(idx != -1);
 
-            Span<byte> utf8Unescaped = stackalloc byte[source.Length];
+            Span<byte> utf8Unescaped = stackalloc byte[JsonConstants.MaximumEscapedGuidLength];
 
             Unescape(source, utf8Unescaped, idx, out int written);
             Debug.Assert(written > 0);
@@ -320,21 +320,6 @@ namespace System.Text.Json
 
             value = default;
             return false;
-        }
-
-        public static char GetFloatingPointStandardParseFormat(ReadOnlySpan<byte> span)
-        {
-            // Assume that 'e/E' is closer to the end.
-            int startIndex = span.Length - 1;
-            for (int i = startIndex; i >= 0; i--)
-            {
-                byte token = span[i];
-                if (token == 'E' || token == 'e')
-                {
-                    return JsonConstants.ScientificNotationFormat;
-                }
-            }
-            return default;
         }
 
         public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out float value)

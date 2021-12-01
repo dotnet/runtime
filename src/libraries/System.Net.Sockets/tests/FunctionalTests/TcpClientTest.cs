@@ -4,6 +4,7 @@
 using Xunit;
 using Xunit.Abstractions;
 
+using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
@@ -119,6 +120,11 @@ namespace System.Net.Sockets.Tests
         [InlineData(3)]
         [InlineData(4)]
         [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
         public async Task ConnectAsync_DnsEndPoint_Success(int mode)
         {
             using (var client = new DerivedTcpClient())
@@ -154,6 +160,26 @@ namespace System.Net.Sockets.Tests
                     case 5:
                         addresses = await Dns.GetHostAddressesAsync(host);
                         await Task.Factory.FromAsync(client.BeginConnect, client.EndConnect, addresses, port, null);
+                        break;
+
+                    case 6:
+                        await client.ConnectAsync(host, port, CancellationToken.None);
+                        break;
+                    case 7:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses[0], port, CancellationToken.None);
+                        break;
+                    case 8:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(new IPEndPoint(addresses[0], port));
+                        break;
+                    case 9:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(new IPEndPoint(addresses[0], port), CancellationToken.None);
+                        break;
+                    case 10:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses, port, CancellationToken.None);
                         break;
                 }
 
@@ -257,7 +283,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_True()
         {
             using (TcpClient client = new TcpClient())
@@ -267,7 +293,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_False()
         {
             using (TcpClient client = new TcpClient())
@@ -463,6 +489,34 @@ namespace System.Net.Sockets.Tests
                     {
                         client.Connect(endpoint);
                     }
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false, "::ffff:127.0.0.1")]
+        [InlineData(false, "127.0.0.1")]
+        [InlineData(false, "localhost")]
+        [InlineData(true, "::1")]
+        public void CtorConnect_Success(bool useIPv6, string connectString)
+        {
+            if (!Socket.OSSupportsIPv6)
+            {
+                return;
+            }
+
+            IPAddress serverAddress = useIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
+
+            using (var server = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+            {
+                // Set up a server socket to which to connect
+                server.Bind(new IPEndPoint(serverAddress, 0));
+                server.Listen(1);
+                var endpoint = (IPEndPoint)server.LocalEndPoint;
+
+                using (TcpClient client = new TcpClient(connectString, endpoint.Port))
+                {
+                    Assert.True(client.Connected);
                 }
             }
         }

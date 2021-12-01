@@ -54,15 +54,14 @@ namespace System.Net.Security.Tests
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 
-                // Issue request that triggers regotiation from server.
+                // Issue request that triggers renegotiation from server.
                 byte[] message = Encoding.UTF8.GetBytes("GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n");
                 await ssl.WriteAsync(message, 0, message.Length);
 
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
                 int bytesRead = await ssl.ReadAsync(message, 0, message.Length);
 
-                // Renegotiation will trigger another validation callback/
-                Assert.InRange(validationCount, 2, int.MaxValue);
+                Assert.Equal(1, validationCount);
                 Assert.InRange(bytesRead, 1, message.Length);
                 Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
             }

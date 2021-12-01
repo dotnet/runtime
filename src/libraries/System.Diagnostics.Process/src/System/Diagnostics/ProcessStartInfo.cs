@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Diagnostics
@@ -57,26 +58,21 @@ namespace System.Diagnostics
         /// <devdoc>
         ///     Specifies the set of command line arguments to use when starting the application.
         /// </devdoc>
+        [AllowNull]
         public string Arguments
         {
             get => _arguments ?? string.Empty;
             set => _arguments = value;
         }
 
-        public Collection<string> ArgumentList
-        {
-            get
-            {
-                if (_argumentList == null)
-                {
-                    _argumentList = new Collection<string>();
-                }
-                return _argumentList;
-            }
-        }
+        public Collection<string> ArgumentList => _argumentList ??= new Collection<string>();
+
+        internal bool HasArgumentList => _argumentList is not null && _argumentList.Count != 0;
 
         public bool CreateNoWindow { get; set; }
 
+        [Editor("System.Diagnostics.Design.StringDictionaryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public StringDictionary EnvironmentVariables => new StringDictionaryWrapper((Environment as DictionaryWrapper)!);
 
         public IDictionary<string, string?> Environment
@@ -87,11 +83,9 @@ namespace System.Diagnostics
                 {
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
-#pragma warning disable 0429 // CaseSensitiveEnvironmentVaribles is constant but varies depending on if we build for Unix or Windows
                     _environmentVariables = new DictionaryWrapper(new Dictionary<string, string?>(
                         envVars.Count,
-                        CaseSensitiveEnvironmentVariables ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase));
-#pragma warning restore 0429
+                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal));
 
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                     IDictionaryEnumerator e = envVars.GetEnumerator();
@@ -121,6 +115,9 @@ namespace System.Diagnostics
         ///       Returns or sets the application, document, or URL that is to be launched.
         ///    </para>
         /// </devdoc>
+        [Editor("System.Diagnostics.Design.StartFileNameEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        [AllowNull]
         public string FileName
         {
             get => _fileName ?? string.Empty;
@@ -131,6 +128,9 @@ namespace System.Diagnostics
         ///     Returns or sets the initial directory for the process that is started.
         ///     Specify "" to if the default is desired.
         /// </devdoc>
+        [Editor("System.Diagnostics.Design.WorkingDirectoryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        [AllowNull]
         public string WorkingDirectory
         {
             get => _directory ?? string.Empty;
@@ -140,6 +140,7 @@ namespace System.Diagnostics
         public bool ErrorDialog { get; set; }
         public IntPtr ErrorDialogParentHandle { get; set; }
 
+        [AllowNull]
         public string UserName
         {
             get => _userName ?? string.Empty;
@@ -147,6 +148,7 @@ namespace System.Diagnostics
         }
 
         [DefaultValue("")]
+        [AllowNull]
         public string Verb
         {
             get => _verb ?? string.Empty;
@@ -170,25 +172,23 @@ namespace System.Diagnostics
 
         internal string BuildArguments()
         {
-            if (_argumentList == null || _argumentList.Count == 0)
+            if (HasArgumentList)
             {
-                return Arguments;
+                var arguments = new ValueStringBuilder(stackalloc char[256]);
+                AppendArgumentsTo(ref arguments);
+                return arguments.ToString();
             }
-            else
-            {
-                var stringBuilder = new StringBuilder();
-                AppendArgumentsTo(stringBuilder);
-                return stringBuilder.ToString();
-            }
+
+            return Arguments;
         }
 
-        internal void AppendArgumentsTo(StringBuilder stringBuilder)
+        internal void AppendArgumentsTo(ref ValueStringBuilder stringBuilder)
         {
             if (_argumentList != null && _argumentList.Count > 0)
             {
                 foreach (string argument in _argumentList)
                 {
-                    PasteArguments.AppendArgument(stringBuilder, argument);
+                    PasteArguments.AppendArgument(ref stringBuilder, argument);
                 }
             }
             else if (!string.IsNullOrEmpty(Arguments))

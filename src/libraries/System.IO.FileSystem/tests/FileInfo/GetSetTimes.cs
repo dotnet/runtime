@@ -17,6 +17,8 @@ namespace System.IO.Tests
             return new FileInfo(path);
         }
 
+        protected override FileInfo CreateSymlink(string path, string pathToTarget) => (FileInfo)File.CreateSymbolicLink(path, pathToTarget);
+
         private static bool HasNonZeroNanoseconds(DateTime dt) => dt.Ticks % 10 != 0;
 
         public FileInfo GetNonZeroMilliseconds()
@@ -103,7 +105,7 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        [ConditionalFact(nameof(isNotHFS))]
+        [ConditionalFact(nameof(HighTemporalResolution))]
         public void CopyToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -117,7 +119,7 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isNotHFS))]
+        [ConditionalFact(nameof(HighTemporalResolution))]
         public void CopyToNanosecondsPresent()
         {
             FileInfo input = GetNonZeroNanoseconds();
@@ -133,8 +135,8 @@ namespace System.IO.Tests
             Assert.True(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void CopyToNanosecondsPresent_HFS()
+        [ConditionalFact(nameof(LowTemporalResolution))]
+        public void CopyToNanosecondsPresent_LowTempRes()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
@@ -147,8 +149,8 @@ namespace System.IO.Tests
             Assert.False(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void MoveToMillisecondPresent_HFS()
+        [ConditionalFact(nameof(LowTemporalResolution))]
+        public void MoveToMillisecondPresent_LowTempRes()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();
@@ -159,7 +161,7 @@ namespace System.IO.Tests
             Assert.Equal(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isNotHFS))]
+        [ConditionalFact(nameof(HighTemporalResolution))]
         public void MoveToMillisecondPresent()
         {
             FileInfo input = GetNonZeroMilliseconds();
@@ -170,8 +172,8 @@ namespace System.IO.Tests
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
         }
 
-        [ConditionalFact(nameof(isHFS))]
-        public void CopyToMillisecondPresent_HFS()
+        [ConditionalFact(nameof(LowTemporalResolution))]
+        public void CopyToMillisecondPresent_LowTempRes()
         {
             FileInfo input = new FileInfo(GetTestFilePath());
             input.Create().Dispose();

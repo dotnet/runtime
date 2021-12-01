@@ -176,12 +176,12 @@ struct sigcontext {
 
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
-/* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
+/* fixme: align to 16byte instead of 32byte (we align to 32byte to get
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 struct MonoLMF {
-	/* 
+	/*
 	 * The rsp field points to the stack location where the caller ip is saved.
 	 * If the second lowest bit is set, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
@@ -364,7 +364,7 @@ typedef struct {
 
 #else
 
-/* 
+/*
  * __builtin_frame_address () is broken on some older gcc versions in the presence of
  * frame pointer elimination, see bug #82095.
  */
@@ -457,7 +457,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_OP_TAILCALL_MEMBASE 1
 #define MONO_ARCH_HAVE_OP_TAILCALL_REG 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
-#define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
 #define MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE 1
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
@@ -474,9 +473,14 @@ typedef struct {
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 
 
-#if defined(HOST_TVOS)
-/* No signals */
+#if defined(HOST_TVOS) || defined(HOST_WATCHOS)
+/* Neither tvOS nor watchOS give signal handlers access to a ucontext_t, so we
+ * can't use signals to translate SIGFPE into a .NET-level exception. */
 #define MONO_ARCH_NEED_DIV_CHECK 1
+#endif
+
+#if defined(TARGET_TVOS) || defined(TARGET_WATCHOS)
+#define MONO_ARCH_EXPLICIT_NULL_CHECKS 1
 #endif
 
 /* Used for optimization, not complete */
@@ -496,7 +500,7 @@ typedef struct {
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
-void 
+void
 mono_amd64_patch (unsigned char* code, gpointer target);
 
 void
@@ -640,5 +644,5 @@ mono_arch_unwindinfo_validate_size (GSList *unwind_ops, guint max_size)
 
 CallInfo* mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig);
 
-#endif /* __MONO_MINI_AMD64_H__ */  
+#endif /* __MONO_MINI_AMD64_H__ */
 

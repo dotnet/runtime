@@ -33,8 +33,10 @@ namespace System.ComponentModel.Tests
                 yield return ConvertTest.Valid("nl-B", new CultureInfo("nl--B"), CultureInfo.InvariantCulture);
                 yield return ConvertTest.Valid("nl-B", new CultureInfo("nl--B"), new CultureInfo("en-US"));
             }
-
-            yield return ConvertTest.Valid("Afrikaans", new CultureInfo("af"));
+            if (PlatformDetection.IsNotBrowser)
+            {
+                yield return ConvertTest.Valid("Afrikaans", new CultureInfo("af"));
+            }
 
             yield return ConvertTest.CantConvertFrom(CultureInfo.CurrentCulture);
             yield return ConvertTest.CantConvertFrom(1);

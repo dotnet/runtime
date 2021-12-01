@@ -26,11 +26,8 @@
 #include <limits.h>
 #include <stdint.h>
 #include <inttypes.h>
-#ifdef _MSC_VER
-#include <eglib-config.hw>
-#else
 #include <eglib-config.h>
-#endif
+#include <minipal/utils.h>
 
 // - Pointers should only be converted to or from pointer-sized integers.
 // - Any size integer can be converted to any other size integer.
@@ -210,10 +207,7 @@ typedef guint32 gunichar;
 /*
  * Macros
  */
-#define G_N_ELEMENTS(s)      (sizeof(s) / sizeof ((s) [0]))
-
-// e.g. strncmp (foo, G_STRING_CONSTANT_AND_LENGTH ("version"))
-#define G_STRING_CONSTANT_AND_LENGTH(x) (x), G_N_ELEMENTS (x) - 1
+#define G_N_ELEMENTS(s)      ARRAY_SIZE(s)
 
 #define FALSE                0
 #define TRUE                 1
@@ -238,7 +232,7 @@ typedef guint32 gunichar;
 
 #define G_LITTLE_ENDIAN 1234
 #define G_BIG_ENDIAN    4321
-#define G_STMT_START    do 
+#define G_STMT_START    do
 #define G_STMT_END      while (0)
 
 #define G_USEC_PER_SEC  1000000
@@ -726,6 +720,7 @@ void       g_ptr_array_set_size           (GPtrArray *array, gint length);
 gpointer  *g_ptr_array_free               (GPtrArray *array, gboolean free_seg);
 void       g_ptr_array_foreach            (GPtrArray *array, GFunc func, gpointer user_data);
 guint      g_ptr_array_capacity           (GPtrArray *array);
+gboolean   g_ptr_array_find               (GPtrArray *array, gconstpointer needle, guint *index);
 #define    g_ptr_array_index(array,index) (array)->pdata[(index)]
 //FIXME previous missing parens
 
@@ -758,14 +753,14 @@ void     g_queue_foreach   (GQueue   *queue, GFunc func, gpointer user_data);
 typedef enum {
 	G_LOG_FLAG_RECURSION          = 1 << 0,
 	G_LOG_FLAG_FATAL              = 1 << 1,
-	
+
 	G_LOG_LEVEL_ERROR             = 1 << 2,
 	G_LOG_LEVEL_CRITICAL          = 1 << 3,
 	G_LOG_LEVEL_WARNING           = 1 << 4,
 	G_LOG_LEVEL_MESSAGE           = 1 << 5,
 	G_LOG_LEVEL_INFO              = 1 << 6,
 	G_LOG_LEVEL_DEBUG             = 1 << 7,
-	
+
 	G_LOG_LEVEL_MASK              = ~(G_LOG_FLAG_RECURSION | G_LOG_FLAG_FATAL)
 } GLogLevelFlags;
 
@@ -788,20 +783,12 @@ void           mono_assertion_message_unreachable (const char *file, int line) G
 const char *   g_get_assertion_message (void);
 
 #ifndef DISABLE_ASSERT_MESSAGES
-#ifdef HAVE_C99_SUPPORT
 /* The for (;;) tells gc thats g_error () doesn't return, avoiding warnings */
-#define g_error(format, ...)    do { g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, __VA_ARGS__); for (;;); } while (0)
-#define g_critical(format, ...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, format, __VA_ARGS__)
-#define g_warning(format, ...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, format, __VA_ARGS__)
-#define g_message(format, ...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format, __VA_ARGS__)
-#define g_debug(format, ...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, format, __VA_ARGS__)
-#else   /* HAVE_C99_SUPPORT */
-#define g_error(...)    do { g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __VA_ARGS__); for (;;); } while (0)
+#define g_error(...) do { g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __VA_ARGS__); for (;;); } while (0)
 #define g_critical(...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, __VA_ARGS__)
 #define g_warning(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define g_message(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
 #define g_debug(...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __VA_ARGS__)
-#endif  /* ndef HAVE_C99_SUPPORT */
 #else
 #define g_error(...)    do { g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __FILE__, __LINE__); for (;;); } while (0)
 #define g_critical(...) g_log_disabled (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, __FILE__, __LINE__)
@@ -958,28 +945,20 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 
 #define  g_assert_not_reached() G_STMT_START { mono_assertion_message_unreachable (__FILE__, __LINE__); eg_unreachable(); } G_STMT_END
 
-#if ENABLE_NETCORE
-#define g_assert_netcore()     /* nothing */
-#define g_assert_not_netcore() g_assert (!"This function should only be called on mono-notnetcore.")
-#else
-#define g_assert_netcore()     g_assert (!"This function should only be called on mono-netcore.")
-#define g_assert_not_netcore() /* nothing */
-#endif
-
 /* f is format -- like printf and scanf
  * Where you might have said:
  * 	if (!(expr))
  * 		g_error("%s invalid bar:%d", __func__, bar)
- * 
+ *
  * You can say:
  * 	g_assertf(expr, "bar:%d", bar);
- * 
+ *
  * The usual assertion text of file/line/expr/newline are builtin, and __func__.
- * 
+ *
  * g_assertf is a boolean expression -- the precise value is not preserved, just true or false.
- * 
+ *
  * Other than expr, the parameters are not evaluated unless expr is false.
- * 
+ *
  * format must be a string literal, in order to be concatenated.
  * If this is too restrictive, g_error remains.
  */
@@ -1003,7 +982,8 @@ typedef enum {
 	G_CONVERT_ERROR_FAILED,
 	G_CONVERT_ERROR_PARTIAL_INPUT,
 	G_CONVERT_ERROR_BAD_URI,
-	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH
+	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH,
+	G_CONVERT_ERROR_NO_MEMORY
 } GConvertError;
 
 gchar     *g_utf8_strup (const gchar *str, gssize len);
@@ -1029,6 +1009,20 @@ size_t     g_utf16_len     (const gunichar2 *);
 #else
 #define u16to8(str) g_utf16_to_utf8(str, (glong)strlen(str), NULL, NULL, NULL)
 #endif
+
+typedef gpointer (*GCustomAllocator) (gsize req_size, gpointer custom_alloc_data);
+
+typedef struct {
+	gpointer buffer;
+	gsize buffer_size;
+	gsize req_buffer_size;
+} GFixedBufferCustomAllocatorData;
+
+gpointer
+g_fixed_buffer_custom_allocator (gsize req_size, gpointer custom_alloc_data);
+
+gunichar2 *g_utf8_to_utf16_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
+gchar *g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err);
 
 /*
  * Path
@@ -1226,7 +1220,7 @@ g_async_safe_fgets (char *str, int num, int handle, gboolean *newline)
 			str [i] = '\0';
 			*newline = TRUE;
 		}
-		
+
 		if (!isprint (str [i]))
 			str [i] = '\0';
 
@@ -1321,16 +1315,16 @@ typedef struct {
 				const gchar         *element_name,
 				gpointer             user_data,
 				GError             **gerror);
-	
+
 	void (*text)           (GMarkupParseContext *context,
 				const gchar         *text,
-				gsize                text_len,  
+				gsize                text_len,
 				gpointer             user_data,
 				GError             **gerror);
-	
+
 	void (*passthrough)    (GMarkupParseContext *context,
 				const gchar         *passthrough_text,
-				gsize                text_len,  
+				gsize                text_len,
 				gpointer             user_data,
 				GError             **gerror);
 	void (*error)          (GMarkupParseContext *context,
@@ -1397,12 +1391,12 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 				 ((((guint32) (x)) & 0xff0000) >> 8) | \
 		                 ((((guint32) (x)) & 0xff00) << 8) | \
 			         (((guint32) (x)) >> 24)) )
- 
+
 #define GUINT64_SWAP_LE_BE(x) ((guint64) (((guint64)(GUINT32_SWAP_LE_BE(((guint64)x) & 0xffffffff))) << 32) | \
 	      	               GUINT32_SWAP_LE_BE(((guint64)x) >> 32))
 
-				  
- 
+
+
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #   define GUINT64_FROM_BE(x) GUINT64_SWAP_LE_BE(x)
 #   define GUINT32_FROM_BE(x) GUINT32_SWAP_LE_BE(x)
@@ -1449,12 +1443,12 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 #define _EGLIB_MAJOR  2
 #define _EGLIB_MIDDLE 4
 #define _EGLIB_MINOR  0
- 
+
 #define GLIB_CHECK_VERSION(a,b,c) ((a < _EGLIB_MAJOR) || (a == _EGLIB_MAJOR && (b < _EGLIB_MIDDLE || (b == _EGLIB_MIDDLE && c <= _EGLIB_MINOR))))
 
 #define G_HAVE_API_SUPPORT(x) (x)
 #define G_UNSUPPORTED_API "%s:%d: '%s' not supported.", __FILE__, __LINE__
-#define g_unsupported_api(name) G_STMT_START { g_warning (G_UNSUPPORTED_API, name); } G_STMT_END
+#define g_unsupported_api(name) G_STMT_START { g_debug (G_UNSUPPORTED_API, name); } G_STMT_END
 
 #if _WIN32
 // g_free the result

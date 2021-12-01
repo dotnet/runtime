@@ -12,7 +12,7 @@ namespace System.Net.Http.Headers
     public class RangeHeaderValue : ICloneable
     {
         private string _unit;
-        private ObjectCollection<RangeItemHeaderValue>? _ranges;
+        private UnvalidatedObjectCollection<RangeItemHeaderValue>? _ranges;
 
         public string Unit
         {
@@ -24,7 +24,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<RangeItemHeaderValue> Ranges => _ranges ??= new ObjectCollection<RangeItemHeaderValue>();
+        public ICollection<RangeItemHeaderValue> Ranges => _ranges ??= new UnvalidatedObjectCollection<RangeItemHeaderValue>();
 
         public RangeHeaderValue()
         {
@@ -47,7 +47,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (RangeItemHeaderValue range in source._ranges)
                 {
-                    this.Ranges.Add((RangeItemHeaderValue)((ICloneable)range).Clone());
+                    this.Ranges.Add(new RangeItemHeaderValue(range));
                 }
             }
         }
@@ -81,7 +81,7 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             RangeHeaderValue? other = obj as RangeHeaderValue;
 

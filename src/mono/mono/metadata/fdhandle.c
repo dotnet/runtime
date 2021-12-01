@@ -8,6 +8,7 @@ static MonoCoopMutex fds_mutex;
 static MonoFDHandleCallback fds_callback[MONO_FDTYPE_COUNT];
 static mono_lazy_init_t fds_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 
+#ifndef DISABLE_ASSERT_MESSAGES
 static const gchar *types_str[] = {
 	"File",
 	"Console",
@@ -15,6 +16,7 @@ static const gchar *types_str[] = {
 	"Socket",
 	NULL
 };
+#endif
 
 static void
 fds_remove (gpointer data)

@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,8 +33,8 @@ namespace System.Net.Http
             _disposeHandler = disposeHandler;
         }
 
-        public virtual HttpResponseMessage Send(HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        [UnsupportedOSPlatformAttribute("browser")]
+        public virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request == null)
             {
@@ -41,11 +42,31 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            return _handler.Send(request, cancellationToken);
+            if (ShouldSendWithTelemetry(request))
+            {
+                HttpTelemetry.Log.RequestStart(request);
+
+                try
+                {
+                    return _handler.Send(request, cancellationToken);
+                }
+                catch when (LogRequestFailed(telemetryStarted: true))
+                {
+                    // Unreachable as LogRequestFailed will return false
+                    throw;
+                }
+                finally
+                {
+                    HttpTelemetry.Log.RequestStop();
+                }
+            }
+            else
+            {
+                return _handler.Send(request, cancellationToken);
+            }
         }
 
-        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request == null)
             {
@@ -53,7 +74,46 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
+            if (ShouldSendWithTelemetry(request))
+            {
+                return SendAsyncWithTelemetry(_handler, request, cancellationToken);
+            }
+
             return _handler.SendAsync(request, cancellationToken);
+
+            static async Task<HttpResponseMessage> SendAsyncWithTelemetry(HttpMessageHandler handler, HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                HttpTelemetry.Log.RequestStart(request);
+
+                try
+                {
+                    return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                }
+                catch when (LogRequestFailed(telemetryStarted: true))
+                {
+                    // Unreachable as LogRequestFailed will return false
+                    throw;
+                }
+                finally
+                {
+                    HttpTelemetry.Log.RequestStop();
+                }
+            }
+        }
+
+        private static bool ShouldSendWithTelemetry(HttpRequestMessage request) =>
+            HttpTelemetry.Log.IsEnabled() &&
+            !request.WasSentByHttpClient() &&
+            request.RequestUri is Uri requestUri &&
+            requestUri.IsAbsoluteUri;
+
+        internal static bool LogRequestFailed(bool telemetryStarted)
+        {
+            if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
+            {
+                HttpTelemetry.Log.RequestFailed();
+            }
+            return false;
         }
 
         public void Dispose()

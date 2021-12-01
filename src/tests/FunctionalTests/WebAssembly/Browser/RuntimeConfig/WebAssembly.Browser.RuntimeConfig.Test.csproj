@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestRuntime>true</TestRuntime>
+    <Scenario>WasmTestOnBrowser</Scenario>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
+</Project>

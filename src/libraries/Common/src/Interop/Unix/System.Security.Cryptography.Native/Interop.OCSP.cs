@@ -12,17 +12,17 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspRequestDestroy")]
-        internal static extern void OcspRequestDestroy(IntPtr ocspReq);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspRequestDestroy")]
+        internal static partial void OcspRequestDestroy(IntPtr ocspReq);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOcspRequestDerSize")]
-        internal static extern int GetOcspRequestDerSize(SafeOcspRequestHandle req);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOcspRequestDerSize")]
+        internal static partial int GetOcspRequestDerSize(SafeOcspRequestHandle req);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeOcspRequest")]
-        internal static extern int EncodeOcspRequest(SafeOcspRequestHandle req, byte[] buf);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeOcspRequest")]
+        internal static partial int EncodeOcspRequest(SafeOcspRequestHandle req, byte[] buf);
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern SafeOcspResponseHandle CryptoNative_DecodeOcspResponse(ref byte buf, int len);
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial SafeOcspResponseHandle CryptoNative_DecodeOcspResponse(ref byte buf, int len);
 
         internal static SafeOcspResponseHandle DecodeOcspResponse(ReadOnlySpan<byte> buf)
         {
@@ -31,20 +31,20 @@ internal static partial class Interop
                 buf.Length);
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspResponseDestroy")]
-        internal static extern void OcspResponseDestroy(IntPtr ocspReq);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspResponseDestroy")]
+        internal static partial void OcspResponseDestroy(IntPtr ocspReq);
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(
+        [GeneratedDllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
+        private static partial int CryptoNative_X509ChainGetCachedOcspStatus(
             SafeX509StoreCtxHandle ctx,
             string cachePath,
             int chainDepth);
 
         internal static X509VerifyStatusCode X509ChainGetCachedOcspStatus(SafeX509StoreCtxHandle ctx, string cachePath, int chainDepth)
         {
-            X509VerifyStatusCode response = CryptoNative_X509ChainGetCachedOcspStatus(ctx, cachePath, chainDepth);
+            X509VerifyStatusCode response = (X509VerifyStatusCode)CryptoNative_X509ChainGetCachedOcspStatus(ctx, cachePath, chainDepth);
 
-            if (response < 0)
+            if (response.Code < 0)
             {
                 Debug.Fail($"Unexpected response from X509ChainGetCachedOcspSuccess: {response}");
                 throw new CryptographicException();
@@ -53,8 +53,8 @@ internal static partial class Interop
             return response;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern X509VerifyStatusCode CryptoNative_X509ChainVerifyOcsp(
+        [GeneratedDllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
+        private static partial int CryptoNative_X509ChainVerifyOcsp(
             SafeX509StoreCtxHandle ctx,
             SafeOcspRequestHandle req,
             SafeOcspResponseHandle resp,
@@ -68,9 +68,9 @@ internal static partial class Interop
             string cachePath,
             int chainDepth)
         {
-            X509VerifyStatusCode response = CryptoNative_X509ChainVerifyOcsp(ctx, req, resp, cachePath, chainDepth);
+            X509VerifyStatusCode response = (X509VerifyStatusCode)CryptoNative_X509ChainVerifyOcsp(ctx, req, resp, cachePath, chainDepth);
 
-            if (response < 0)
+            if (response.Code < 0)
             {
                 Debug.Fail($"Unexpected response from X509ChainGetCachedOcspSuccess: {response}");
                 throw new CryptographicException();
@@ -79,8 +79,8 @@ internal static partial class Interop
             return response;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern SafeOcspRequestHandle CryptoNative_X509ChainBuildOcspRequest(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial SafeOcspRequestHandle CryptoNative_X509ChainBuildOcspRequest(
             SafeX509StoreCtxHandle storeCtx,
             int chainDepth);
 
@@ -101,7 +101,7 @@ internal static partial class Interop
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal class SafeOcspRequestHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class SafeOcspRequestHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeOcspRequestHandle()
             : base(true)
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
     }
 
-    internal class SafeOcspResponseHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class SafeOcspResponseHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeOcspResponseHandle()
             : base(true)

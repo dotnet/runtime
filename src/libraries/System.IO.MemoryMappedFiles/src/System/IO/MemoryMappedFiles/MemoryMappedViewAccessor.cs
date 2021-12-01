@@ -64,10 +64,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ObjectDisposedException(nameof(MemoryMappedViewAccessor), SR.ObjectDisposed_ViewAccessorClosed);
             }
 
-            unsafe
-            {
-                _view.Flush((UIntPtr)Capacity);
-            }
+            _view.Flush((UIntPtr)Capacity);
         }
     }
 }

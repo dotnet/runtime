@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Net.NetworkInformation;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 
 namespace System.Net
 {
-    public class WebProxy : IWebProxy, ISerializable
+    public partial class WebProxy : IWebProxy, ISerializable
     {
         private ArrayList? _bypassList;
         private Regex[]? _regexBypassList;
@@ -35,7 +35,7 @@ namespace System.Net
         }
 
         public WebProxy(string Host, int Port)
-            : this(new Uri("http://" + Host + ":" + Port.ToString(CultureInfo.InvariantCulture)), false, null, null)
+            : this(new Uri(string.Create(CultureInfo.InvariantCulture, $"http://{Host}:{Port}")), false, null, null)
         {
         }
 
@@ -63,12 +63,21 @@ namespace System.Net
 
         public bool BypassProxyOnLocal { get; set; }
 
+        [AllowNull]
         public string[] BypassList
         {
-            get { return _bypassList != null ? (string[])_bypassList.ToArray(typeof(string)) : Array.Empty<string>(); }
+            get
+            {
+                if (_bypassList == null)
+                    return Array.Empty<string>();
+
+                var bypassList = new string[_bypassList.Count];
+                _bypassList.CopyTo(bypassList);
+                return bypassList;
+            }
             set
             {
-                _bypassList = new ArrayList(value);
+                _bypassList = value != null ? new ArrayList(value) : null;
                 UpdateRegexList(true);
             }
         }
@@ -79,8 +88,8 @@ namespace System.Net
 
         public bool UseDefaultCredentials
         {
-            get { return Credentials == CredentialCache.DefaultCredentials; }
-            set { Credentials = value ? CredentialCache.DefaultCredentials : null; }
+            get => Credentials == CredentialCache.DefaultCredentials;
+            set => Credentials = value ? CredentialCache.DefaultCredentials : null;
         }
 
         public Uri? GetProxy(Uri destination)
@@ -129,13 +138,14 @@ namespace System.Net
 
         private bool IsMatchInBypassList(Uri input)
         {
-            UpdateRegexList(false);
+            UpdateRegexList(canThrow: false);
 
             if (_regexBypassList != null)
             {
+                Span<char> stackBuffer = stackalloc char[128];
                 string matchUriString = input.IsDefaultPort ?
-                    input.Scheme + "://" + input.Host :
-                    input.Scheme + "://" + input.Host + ":" + input.Port.ToString();
+                    string.Create(null, stackBuffer, $"{input.Scheme}://{input.Host}") :
+                    string.Create(null, stackBuffer, $"{input.Scheme}://{input.Host}:{(uint)input.Port}");
 
                 foreach (Regex r in _regexBypassList)
                 {
@@ -143,51 +153,6 @@ namespace System.Net
                     {
                         return true;
                     }
-                }
-            }
-
-            return false;
-        }
-
-        private bool IsLocal(Uri host)
-        {
-            if (host.IsLoopback)
-            {
-                return true;
-            }
-
-            string hostString = host.Host;
-
-            if (IPAddress.TryParse(hostString, out IPAddress? hostAddress))
-            {
-                return IPAddress.IsLoopback(hostAddress) || IsAddressLocal(hostAddress);
-            }
-
-            // No dot?  Local.
-            int dot = hostString.IndexOf('.');
-            if (dot == -1)
-            {
-                return true;
-            }
-
-            // If it matches the primary domain, it's local.  (Whether or not the hostname matches.)
-            string local = "." + IPGlobalProperties.GetIPGlobalProperties().DomainName;
-            return
-                local.Length == (hostString.Length - dot) &&
-                string.Compare(local, 0, hostString, dot, local.Length, StringComparison.OrdinalIgnoreCase) == 0;
-        }
-
-        private static bool IsAddressLocal(IPAddress ipAddress)
-        {
-            // Perf note: The .NET Framework caches this and then uses network change notifications to track
-            // whether the set should be recomputed.  We could consider doing the same if this is observed as
-            // a bottleneck, but that tracking has its own costs.
-            IPAddress[] localAddresses = Dns.GetHostEntry(Dns.GetHostName()).AddressList;
-            for (int i = 0; i < localAddresses.Length; i++)
-            {
-                if (ipAddress.Equals(localAddresses[i]))
-                {
-                    return true;
                 }
             }
 
@@ -207,27 +172,19 @@ namespace System.Net
                 IsMatchInBypassList(host);
         }
 
-        protected WebProxy(SerializationInfo serializationInfo, StreamingContext streamingContext)
-        {
+        protected WebProxy(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
-        }
 
-        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
-        {
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
-        }
 
-        protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
-        {
+        protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
-        }
 
-        [Obsolete("This method has been deprecated. Please use the proxy selected for you by default. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static WebProxy GetDefaultProxy()
-        {
+        [Obsolete("WebProxy.GetDefaultProxy has been deprecated. Use the proxy selected for you by default.")]
+        public static WebProxy GetDefaultProxy() =>
             // The .NET Framework here returns a proxy that fetches IE settings and
             // executes JavaScript to determine the correct proxy.
             throw new PlatformNotSupportedException();
-        }
     }
 }

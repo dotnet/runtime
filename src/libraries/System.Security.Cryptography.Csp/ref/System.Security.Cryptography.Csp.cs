@@ -6,6 +6,7 @@
 
 namespace System.Security.Cryptography
 {
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class AesCryptoServiceProvider : System.Security.Cryptography.Aes
     {
@@ -27,7 +28,7 @@ namespace System.Security.Cryptography
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
-    [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public sealed partial class CspKeyContainerInfo
     {
         public CspKeyContainerInfo(System.Security.Cryptography.CspParameters parameters) { }
@@ -44,6 +45,7 @@ namespace System.Security.Cryptography
         public bool Removable { get { throw null; } }
         public string UniqueKeyContainerName { get { throw null; } }
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public sealed partial class CspParameters
     {
         public string? KeyContainerName;
@@ -72,6 +74,7 @@ namespace System.Security.Cryptography
         NoPrompt = 64,
         CreateEphemeralKey = 128,
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DESCryptoServiceProvider : System.Security.Cryptography.DES
     {
@@ -87,11 +90,11 @@ namespace System.Security.Cryptography
     {
         public DSACryptoServiceProvider() { }
         public DSACryptoServiceProvider(int dwKeySize) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public DSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters? parameters) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public DSACryptoServiceProvider(System.Security.Cryptography.CspParameters? parameters) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
         public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }
@@ -127,6 +130,7 @@ namespace System.Security.Cryptography
         Exchange = 1,
         Signature = 2,
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class MD5CryptoServiceProvider : System.Security.Cryptography.MD5
     {
@@ -143,39 +147,45 @@ namespace System.Security.Cryptography
     {
         public PasswordDeriveBytes(byte[] password, byte[]? salt) { }
         public PasswordDeriveBytes(byte[] password, byte[]? salt, System.Security.Cryptography.CspParameters? cspParams) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
         public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
         public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations, System.Security.Cryptography.CspParameters? cspParams) { }
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt) { }
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, System.Security.Cryptography.CspParameters? cspParams) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations, System.Security.Cryptography.CspParameters? cspParams) { }
-        public string HashName { get { throw null; } set { } }
+        public string HashName { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")] set { } }
         public int IterationCount { get { throw null; } set { } }
         public byte[]? Salt { get { throw null; } set { } }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         [System.ObsoleteAttribute("Rfc2898DeriveBytes replaces PasswordDeriveBytes for deriving key material from a password and is preferred in new applications.")]
         public override byte[] GetBytes(int cb) { throw null; }
         public override void Reset() { }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RC2CryptoServiceProvider : System.Security.Cryptography.RC2
     {
         public RC2CryptoServiceProvider() { }
         public override int EffectiveKeySize { get { throw null; } set { } }
-        public bool UseSalt { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public bool UseSalt { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
+    [System.ObsoleteAttribute("RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead.", DiagnosticId = "SYSLIB0023", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RNGCryptoServiceProvider : System.Security.Cryptography.RandomNumberGenerator
     {
         public RNGCryptoServiceProvider() { }
         public RNGCryptoServiceProvider(byte[] rgb) { }
-        public RNGCryptoServiceProvider(System.Security.Cryptography.CspParameters cspParams) { }
+        public RNGCryptoServiceProvider(System.Security.Cryptography.CspParameters? cspParams) { }
         public RNGCryptoServiceProvider(string str) { }
         protected override void Dispose(bool disposing) { }
         public override void GetBytes(byte[] data) { }
@@ -188,11 +198,11 @@ namespace System.Security.Cryptography
     {
         public RSACryptoServiceProvider() { }
         public RSACryptoServiceProvider(int dwKeySize) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public RSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters? parameters) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public RSACryptoServiceProvider(System.Security.Cryptography.CspParameters? parameters) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
         public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }
@@ -223,6 +233,7 @@ namespace System.Security.Cryptography
         public override bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA1CryptoServiceProvider : System.Security.Cryptography.SHA1
     {
@@ -234,6 +245,7 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA256CryptoServiceProvider : System.Security.Cryptography.SHA256
     {
@@ -245,6 +257,7 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA384CryptoServiceProvider : System.Security.Cryptography.SHA384
     {
@@ -256,6 +269,7 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA512CryptoServiceProvider : System.Security.Cryptography.SHA512
     {
@@ -267,6 +281,7 @@ namespace System.Security.Cryptography
         public override void Initialize() { }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class TripleDESCryptoServiceProvider : System.Security.Cryptography.TripleDES
     {

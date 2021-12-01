@@ -5,12 +5,12 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool DisconnectNamedPipe(SafePipeHandle hNamedPipe);
+        internal static partial bool DisconnectNamedPipe(SafePipeHandle hNamedPipe);
     }
 }

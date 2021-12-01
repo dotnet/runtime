@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Net.Security;
-using System.Net.Test.Common;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -18,7 +17,9 @@ namespace System.Net.Http.Functional.Tests
 {
     public static class TestHelper
     {
+        public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
         public static int PassingTestTimeoutMilliseconds => 60 * 1000;
+
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {
             // Deal with JSON encoding of '\' and '"' in value
@@ -40,9 +41,13 @@ namespace System.Net.Http.Functional.Tests
             bool chunkedUpload,
             string requestBody)
         {
-            // Verify that response body from the server was corrected received by comparing MD5 hash.
-            byte[] actualMD5Hash = ComputeMD5Hash(responseContent);
-            Assert.Equal(expectedMD5Hash, actualMD5Hash);
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+            if (!PlatformDetection.IsBrowser)
+            {
+                // Verify that response body from the server was corrected received by comparing MD5 hash.
+                byte[] actualMD5Hash = ComputeMD5Hash(responseContent);
+                Assert.Equal(expectedMD5Hash, actualMD5Hash);
+            }
 
             // Verify upload semantics: 'Content-Length' vs. 'Transfer-Encoding: chunked'.
             if (requestBody != null)
@@ -112,59 +117,51 @@ namespace System.Net.Http.Functional.Tests
                 .Where(a => a.IsIPv6LinkLocal)
                 .FirstOrDefault();
 
-        public static void EnableUnencryptedHttp2IfNecessary(HttpClientHandler handler)
-        {
-            if (PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback())
-            {
-                return;
-            }
-
-            FieldInfo socketsHttpHandlerField = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (socketsHttpHandlerField == null)
-            {
-                // Not using .NET Core implementation, i.e. could be .NET Framework.
-                return;
-            }
-
-            object socketsHttpHandler = socketsHttpHandlerField.GetValue(handler);
-            Assert.NotNull(socketsHttpHandler);
-
-            EnableUncryptedHttp2(socketsHttpHandler);
-        }
-
-#if !NETFRAMEWORK
-        public static void EnableUnencryptedHttp2IfNecessary(SocketsHttpHandler socketsHttpHandler)
-        {
-            if (PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback())
-            {
-                return;
-            }
-
-            EnableUncryptedHttp2(socketsHttpHandler);
-        }
-#endif
-
-        private static void EnableUncryptedHttp2(object socketsHttpHandler)
-        {
-            // Get HttpConnectionSettings object from SocketsHttpHandler.
-            Type socketsHttpHandlerType = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.SocketsHttpHandler");
-            FieldInfo settingsField = socketsHttpHandlerType.GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(settingsField);
-            object settings = settingsField.GetValue(socketsHttpHandler);
-            Assert.NotNull(settings);
-
-            // Allow HTTP/2.0 via unencrypted socket if ALPN is not supported on platform.
-            Type httpConnectionSettingsType = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.HttpConnectionSettings");
-            FieldInfo allowUnencryptedHttp2Field = httpConnectionSettingsType.GetField("_allowUnencryptedHttp2", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(allowUnencryptedHttp2Field);
-            allowUnencryptedHttp2Field.SetValue(settings, true);
-        }
-
         public static byte[] GenerateRandomContent(int size)
         {
             byte[] data = new byte[size];
             new Random(42).NextBytes(data);
             return data;
+        }
+
+        public static X509Certificate2 CreateServerSelfSignedCertificate(string name = "localhost")
+        {
+            using (RSA root = RSA.Create())
+            {
+                CertificateRequest req = new CertificateRequest(
+                    $"CN={name}",
+                    root,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                req.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
+                req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+                req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment, false));
+                req.CertificateExtensions.Add(
+                    new X509EnhancedKeyUsageExtension(
+                            new OidCollection()
+                                {
+                                    new Oid("1.3.6.1.5.5.7.3.1", null),
+                                }, false));
+
+
+                SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+                builder.AddDnsName(name);
+                builder.AddIpAddress(IPAddress.Loopback);
+                builder.AddIpAddress(IPAddress.IPv6Loopback);
+                req.CertificateExtensions.Add(builder.Build());
+
+                DateTimeOffset start = DateTimeOffset.UtcNow.AddMinutes(-5);
+                DateTimeOffset end = start.AddMonths(1);
+
+                X509Certificate2 cert = req.CreateSelfSigned(start, end);
+                if (PlatformDetection.IsWindows)
+                {
+                    cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
+                }
+
+                return cert;
+            }
         }
     }
 }

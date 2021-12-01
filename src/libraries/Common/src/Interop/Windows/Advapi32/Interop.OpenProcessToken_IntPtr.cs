@@ -6,14 +6,14 @@ using System.Runtime.InteropServices;
 using System;
 using System.Security.Principal;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool OpenProcessToken(
-        IntPtr ProcessToken,
-        TokenAccessLevels DesiredAccess,
-        out SafeTokenHandle TokenHandle);
+        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        internal static partial bool OpenProcessToken(
+            IntPtr ProcessToken,
+            TokenAccessLevels DesiredAccess,
+            out SafeTokenHandle TokenHandle);
     }
 }

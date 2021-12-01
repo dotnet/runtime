@@ -25,7 +25,6 @@ namespace System.Xml.Tests
         public void CallAtRootLevel_Without_With_PartialValidationSet(bool partialValidation)
         {
             XmlSchemaValidator val;
-            XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = CreateSchemaSet("", "<?xml version=\"1.0\"?>\n" +
                                                        "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n" +
                                                        "    <xs:attribute name=\"attr1\" />\n" +

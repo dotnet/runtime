@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Xml;
 using System.Xml.XPath;
@@ -123,7 +122,7 @@ namespace MS.Internal.Xml.XPath
             return value.ToString()!;
         }
 
-        protected string QName { get { return prefix.Length != 0 ? prefix + ":" + name : name; } }
+        protected string QName { get { return prefix.Length != 0 ? $"{prefix}:{name}" : name; } }
 
         public override int Count { get { return _queryIterator == null ? 1 : _queryIterator.Count; } }
         public override XPathResultType StaticType { get { return XPathResultType.Any; } }

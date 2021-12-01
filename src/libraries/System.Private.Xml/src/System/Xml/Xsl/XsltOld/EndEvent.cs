@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class EndEvent : Event
+    internal sealed class EndEvent : Event
     {
         private readonly XPathNodeType _nodeType;
 

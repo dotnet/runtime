@@ -6,15 +6,18 @@ namespace System.Runtime.Serialization
     using System;
     using System.Security;
     using System.Runtime.CompilerServices;
+    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     internal sealed class SurrogateDataContract : DataContract
     {
         private readonly SurrogateDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal SurrogateDataContract(Type type, ISerializationSurrogate serializationSurrogate)
             : base(new SurrogateDataContractCriticalHelper(type, serializationSurrogate))
         {
-            _helper = base.Helper as SurrogateDataContractCriticalHelper;
+            _helper = (base.Helper as SurrogateDataContractCriticalHelper)!;
         }
 
         internal ISerializationSurrogate SerializationSurrogate
@@ -22,21 +25,24 @@ namespace System.Runtime.Serialization
             get { return _helper.SerializationSurrogate; }
         }
 
-        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
+            Debug.Assert(context != null);
+
             SerializationInfo serInfo = new SerializationInfo(UnderlyingType, XmlObjectSerializer.FormatterConverter, !context.UnsafeTypeForwardingEnabled);
             SerializationSurrogateGetObjectData(obj, serInfo, context.GetStreamingContext());
             context.WriteSerializationInfo(xmlWriter, UnderlyingType, serInfo);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private object SerializationSurrogateSetObjectData(object obj, SerializationInfo serInfo, StreamingContext context)
+        private object? SerializationSurrogateSetObjectData(object obj, SerializationInfo serInfo, StreamingContext context)
         {
             return SerializationSurrogate.SetObjectData(obj, serInfo, context, null);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static object GetRealObject(IObjectReference obj, StreamingContext context)
+        internal static object? GetRealObject(IObjectReference obj, StreamingContext context)
         {
             return obj.GetRealObject(context);
         }
@@ -44,7 +50,7 @@ namespace System.Runtime.Serialization
         [MethodImpl(MethodImplOptions.NoInlining)]
         private object GetUninitializedObject(Type objType)
         {
-            return FormatterServices.GetUninitializedObject(objType);
+            return RuntimeHelpers.GetUninitializedObject(objType);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -53,15 +59,18 @@ namespace System.Runtime.Serialization
             SerializationSurrogate.GetObjectData(obj, serInfo, context);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
+            Debug.Assert(context != null);
+
             xmlReader.Read();
             Type objType = UnderlyingType;
-            object obj = objType.IsArray ? Array.CreateInstance(objType.GetElementType(), 0) : GetUninitializedObject(objType);
+            object obj = objType.IsArray ? Array.CreateInstance(objType.GetElementType()!, 0) : GetUninitializedObject(objType);
             context.AddNewObject(obj);
             string objectId = context.GetObjectId();
             SerializationInfo serInfo = context.ReadSerializationInfo(xmlReader, objType);
-            object newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext());
+            object? newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext());
             if (newObj == null)
                 newObj = obj;
             if (newObj is IDeserializationCallback)
@@ -73,11 +82,15 @@ namespace System.Runtime.Serialization
             return newObj;
         }
 
-        private class SurrogateDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class SurrogateDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private readonly ISerializationSurrogate serializationSurrogate;
 
-            internal SurrogateDataContractCriticalHelper(Type type, ISerializationSurrogate serializationSurrogate)
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            internal SurrogateDataContractCriticalHelper(
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
+                Type type,
+                ISerializationSurrogate serializationSurrogate)
                 : base(type)
             {
                 this.serializationSurrogate = serializationSurrogate;

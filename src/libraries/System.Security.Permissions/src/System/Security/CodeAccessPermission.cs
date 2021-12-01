@@ -3,7 +3,7 @@
 
 namespace System.Security
 {
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public abstract partial class CodeAccessPermission : IPermission, ISecurityEncodable, IStackWalk

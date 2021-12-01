@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.ComponentModel;
 using System.IO;
 using System.Collections;
@@ -1117,7 +1116,7 @@ namespace System.Xml.XPath
             return XmlReader.Create(reader, readerSettings);
         }
 
-        private class CheckValidityHelper
+        private sealed class CheckValidityHelper
         {
             private bool _isValid;
             private readonly ValidationEventHandler _nextEventHandler;
@@ -1186,7 +1185,7 @@ namespace System.Xml.XPath
             return this.Select(XPathExpression.Compile(xpath));
         }
 
-        public virtual XPathNodeIterator Select(string xpath, IXmlNamespaceResolver resolver)
+        public virtual XPathNodeIterator Select(string xpath, IXmlNamespaceResolver? resolver)
         {
             return this.Select(XPathExpression.Compile(xpath, resolver));
         }
@@ -1206,7 +1205,7 @@ namespace System.Xml.XPath
             return Evaluate(XPathExpression.Compile(xpath), null);
         }
 
-        public virtual object Evaluate(string xpath, IXmlNamespaceResolver resolver)
+        public virtual object Evaluate(string xpath, IXmlNamespaceResolver? resolver)
         {
             return this.Evaluate(XPathExpression.Compile(xpath, resolver));
         }
@@ -1382,14 +1381,14 @@ namespace System.Xml.XPath
                 // Attributes and namespaces are not allowed at the top-level by the well-formed writer
                 if (NodeType == XPathNodeType.Attribute)
                 {
-                    return string.Concat(Name, "=\"", Value, "\"");
+                    return $"{Name}=\"{Value}\"";
                 }
                 else if (NodeType == XPathNodeType.Namespace)
                 {
                     if (LocalName.Length == 0)
-                        return string.Concat("xmlns=\"", Value, "\"");
+                        return $"xmlns=\"{Value}\"";
                     else
-                        return string.Concat("xmlns:", LocalName, "=\"", Value, "\"");
+                        return $"xmlns:{LocalName}=\"{Value}\"";
                 }
 
                 stringWriter = new StringWriter(CultureInfo.InvariantCulture);
@@ -2229,19 +2228,19 @@ namespace System.Xml.XPath
                 switch (_nav.NodeType)
                 {
                     case XPathNodeType.Element:
-                        result += ", Name=\"" + _nav.Name + '"';
+                        result += $", Name=\"{_nav.Name}\"";
                         break;
                     case XPathNodeType.Attribute:
                     case XPathNodeType.Namespace:
                     case XPathNodeType.ProcessingInstruction:
-                        result += ", Name=\"" + _nav.Name + '"';
-                        result += ", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_nav.Value) + '"';
+                        result += $", Name=\"{_nav.Name}\"";
+                        result += $", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_nav.Value)}\"";
                         break;
                     case XPathNodeType.Text:
                     case XPathNodeType.Whitespace:
                     case XPathNodeType.SignificantWhitespace:
                     case XPathNodeType.Comment:
-                        result += ", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_nav.Value) + '"';
+                        result += $", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_nav.Value)}\"";
                         break;
                 }
                 return result;

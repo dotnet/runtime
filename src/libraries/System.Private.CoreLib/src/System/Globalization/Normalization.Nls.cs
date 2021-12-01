@@ -25,7 +25,7 @@ namespace System.Globalization
                 result = Interop.Normaliz.IsNormalizedString(normalizationForm, pInput, strInput.Length);
             }
 
-            int lastError = Marshal.GetLastWin32Error();
+            int lastError = Marshal.GetLastPInvokeError();
             switch (lastError)
             {
                 case Interop.Errors.ERROR_SUCCESS:
@@ -84,7 +84,7 @@ namespace System.Globalization
                     {
                         realLength = Interop.Normaliz.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
                     }
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
 
                     switch (lastError)
                     {

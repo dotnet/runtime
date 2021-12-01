@@ -56,8 +56,8 @@ namespace System.Threading.Tasks
     [StructLayout(LayoutKind.Auto)]
     public readonly struct ValueTask : IEquatable<ValueTask>
     {
-        /// <summary>A task canceled using `new CancellationToken(true)`.</summary>
-        private static readonly Task s_canceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
+        /// <summary>A task canceled using `new CancellationToken(true)`. Lazily created only when first needed.</summary>
+        private static volatile Task? s_canceledTask;
 
         /// <summary>null if representing a successful synchronous completion, otherwise a <see cref="Task"/> or a <see cref="IValueTaskSource"/>.</summary>
         internal readonly object? _obj;
@@ -148,7 +148,7 @@ namespace System.Threading.Tasks
         public override int GetHashCode() => _obj?.GetHashCode() ?? 0;
 
         /// <summary>Returns a value indicating whether this value is equal to a specified <see cref="object"/>.</summary>
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is ValueTask &&
             Equals((ValueTask)obj);
 
@@ -216,7 +216,8 @@ namespace System.Threading.Tasks
                             return task;
                         }
 
-                        return s_canceledTask;
+                        // Benign race condition to initialize cached task, as identity doesn't matter.
+                        return s_canceledTask ??= Task.FromCanceled(new CancellationToken(canceled: true));
                     }
                     else
                     {
@@ -441,11 +442,11 @@ namespace System.Threading.Tasks
     public readonly struct ValueTask<TResult> : IEquatable<ValueTask<TResult>>
     {
         /// <summary>A task canceled using `new CancellationToken(true)`. Lazily created only when first needed.</summary>
-        private static Task<TResult>? s_canceledTask;
+        private static volatile Task<TResult>? s_canceledTask;
         /// <summary>null if <see cref="_result"/> has the result, otherwise a <see cref="Task{TResult}"/> or a <see cref="IValueTaskSource{TResult}"/>.</summary>
         internal readonly object? _obj;
         /// <summary>The result to be used if the operation completed successfully synchronously.</summary>
-        [AllowNull] internal readonly TResult _result;
+        internal readonly TResult? _result;
         /// <summary>Opaque value passed through to the <see cref="IValueTaskSource{TResult}"/>.</summary>
         internal readonly short _token;
         /// <summary>true to continue on the captured context; otherwise, false.</summary>
@@ -508,7 +509,7 @@ namespace System.Threading.Tasks
         /// <param name="token">The token.</param>
         /// <param name="continueOnCapturedContext">true to continue on captured context; otherwise, false.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ValueTask(object? obj, TResult result, short token, bool continueOnCapturedContext)
+        private ValueTask(object? obj, TResult? result, short token, bool continueOnCapturedContext)
         {
             _obj = obj;
             _result = result;
@@ -524,7 +525,7 @@ namespace System.Threading.Tasks
             0;
 
         /// <summary>Returns a value indicating whether this value is equal to a specified <see cref="object"/>.</summary>
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is ValueTask<TResult> &&
             Equals((ValueTask<TResult>)obj);
 
@@ -556,7 +557,7 @@ namespace System.Threading.Tasks
 
             if (obj == null)
             {
-                return AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
+                return Task.FromResult(_result!);
             }
 
             if (obj is Task<TResult> t)
@@ -584,7 +585,7 @@ namespace System.Threading.Tasks
                 {
                     // Get the result of the operation and return a task for it.
                     // If any exception occurred, propagate it
-                    return AsyncTaskMethodBuilder<TResult>.GetTaskForResult(t.GetResult(_token));
+                    return Task.FromResult(t.GetResult(_token));
 
                     // If status is Faulted or Canceled, GetResult should throw.  But
                     // we can't guarantee every implementation will do the "right thing".
@@ -602,13 +603,8 @@ namespace System.Threading.Tasks
                             return task;
                         }
 
-                        Task<TResult>? canceledTask = s_canceledTask;
-                        if (canceledTask == null)
-                        {
-                            // Benign race condition to initialize cached task, as identity doesn't matter.
-                            s_canceledTask = canceledTask = Task.FromCanceled<TResult>(new CancellationToken(true));
-                        }
-                        return canceledTask;
+                        // Benign race condition to initialize cached task, as identity doesn't matter.
+                        return s_canceledTask ??= Task.FromCanceled<TResult>(new CancellationToken(true));
                     }
                     else
                     {
@@ -781,7 +777,7 @@ namespace System.Threading.Tasks
 
                 if (obj == null)
                 {
-                    return _result;
+                    return _result!;
                 }
 
                 if (obj is Task<TResult> t)

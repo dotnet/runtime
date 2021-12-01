@@ -587,7 +587,6 @@ namespace System.Security.AccessControl
 
         public void RemoveAce(int index)
         {
-            GenericAce ace = _aces[index];
             _aces.RemoveAt(index);
         }
 

@@ -175,8 +175,8 @@ namespace System.Data.Odbc
                 if (null == _dataCache)
                 {
                     short cColsAffected;
-                    ODBC32.RetCode retcode = this.FieldCountNoThrow(out cColsAffected);
-                    if (retcode != ODBC32.RetCode.SUCCESS)
+                    ODBC32.SQLRETURN retcode = this.FieldCountNoThrow(out cColsAffected);
+                    if (retcode != ODBC32.SQLRETURN.SUCCESS)
                     {
                         Connection!.HandleError(StatementHandle, retcode);
                     }
@@ -208,16 +208,16 @@ namespace System.Data.Odbc
             }
         }
 
-        internal ODBC32.RetCode FieldCountNoThrow(out short cColsAffected)
+        internal ODBC32.SQLRETURN FieldCountNoThrow(out short cColsAffected)
         {
             if (IsCancelingCommand)
             {
                 cColsAffected = 0;
-                return ODBC32.RetCode.ERROR;
+                return ODBC32.SQLRETURN.ERROR;
             }
 
-            ODBC32.RetCode retcode = StatementHandle.NumberOfResultColumns(out cColsAffected);
-            if (retcode == ODBC32.RetCode.SUCCESS)
+            ODBC32.SQLRETURN retcode = StatementHandle.NumberOfResultColumns(out cColsAffected);
+            if (retcode == ODBC32.SQLRETURN.SUCCESS)
             {
                 _hiddenColumns = 0;
                 if (IsCommandBehavior(CommandBehavior.KeyInfo))
@@ -260,8 +260,8 @@ namespace System.Data.Odbc
             if (!IsClosed)
             {
                 SQLLEN cRowsAffected;
-                ODBC32.RetCode retcode = StatementHandle.RowCount(out cRowsAffected);
-                if (ODBC32.RetCode.SUCCESS == retcode || ODBC32.RetCode.SUCCESS_WITH_INFO == retcode)
+                ODBC32.SQLRETURN retcode = StatementHandle.RowCount(out cRowsAffected);
+                if (ODBC32.SQLRETURN.SUCCESS == retcode || ODBC32.SQLRETURN.SUCCESS_WITH_INFO == retcode)
                 {
                     return cRowsAffected;
                 }
@@ -405,12 +405,9 @@ namespace System.Data.Odbc
                 DbSchemaInfo info = _dataCache.GetSchema(i);
                 if (info._typename == null)
                 {
-                    info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW);
+                    info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
                 }
-// TODO-NULLABLE: Behavior change probably needed here - when there's no data type, we mostly probably need to throw instead of returning null.
-#nullable disable
                 return info._typename;
-#nullable enable
             }
             throw ADP.DataReaderNoData();
         }
@@ -1555,7 +1552,7 @@ namespace System.Data.Odbc
         {
             short cchNameLength = 0;
             SQLLEN numericAttribute;
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             // protect against dead connection, dead or canceling command.
             if ((Connection == null) || _cmdWrapper!.Canceling)
@@ -1577,9 +1574,9 @@ namespace System.Data.Odbc
             {
                 return 0;
             }
-            if (retcode != ODBC32.RetCode.SUCCESS)
+            if (retcode != ODBC32.SQLRETURN.SUCCESS)
             {
-                if (retcode == ODBC32.RetCode.ERROR)
+                if (retcode == ODBC32.SQLRETURN.ERROR)
                 {
                     if ("HY091" == Command!.GetDiagSqlState())
                     {
@@ -1606,7 +1603,7 @@ namespace System.Data.Odbc
         //
         private string? GetColAttributeStr(int i, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
         {
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             short cchNameLength = 0;
             SQLLEN numericAttribute;
             CNativeBuffer buffer = Buffer;
@@ -1632,9 +1629,9 @@ namespace System.Data.Odbc
             {
                 return null;
             }
-            if ((retcode != ODBC32.RetCode.SUCCESS) || (cchNameLength == 0))
+            if ((retcode != ODBC32.SQLRETURN.SUCCESS) || (cchNameLength == 0))
             {
-                if (retcode == ODBC32.RetCode.ERROR)
+                if (retcode == ODBC32.SQLRETURN.ERROR)
                 {
                     if ("HY091" == Command!.GetDiagSqlState())
                     {
@@ -1671,7 +1668,7 @@ namespace System.Data.Odbc
                 return null;
             }
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             CNativeBuffer buffer = Buffer;
 
             // Need to set the APP_PARAM_DESC values here
@@ -1683,9 +1680,9 @@ namespace System.Data.Odbc
                 //Since there are many attributes (column, statement, etc), that may or may not be
                 //supported, we don't want to throw (which obtains all errorinfo, marshals strings,
                 //builds exceptions, etc), in common cases, unless we absolutely need this info...
-                if ((retcode != ODBC32.RetCode.SUCCESS) || (numericAttribute == 0))
+                if ((retcode != ODBC32.SQLRETURN.SUCCESS) || (numericAttribute == 0))
                 {
-                    if (retcode == ODBC32.RetCode.ERROR)
+                    if (retcode == ODBC32.SQLRETURN.ERROR)
                     {
                         if ("HY091" == Command!.GetDiagSqlState())
                         {
@@ -1760,7 +1757,7 @@ namespace System.Data.Odbc
 
             // SQLGetData
             CNativeBuffer buffer = Buffer;
-            ODBC32.RetCode retcode = StatementHandle.GetData(
+            ODBC32.SQLRETURN retcode = StatementHandle.GetData(
                (i + 1),    // Column ordinals start at 1 in odbc
                sqlctype,
                buffer,
@@ -1769,9 +1766,9 @@ namespace System.Data.Odbc
 
             switch (retcode)
             {
-                case ODBC32.RetCode.SUCCESS:
+                case ODBC32.SQLRETURN.SUCCESS:
                     break;
-                case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     if ((int)cbActual == ODBC32.SQL_NO_TOTAL)
                     {
                         break;
@@ -1779,7 +1776,7 @@ namespace System.Data.Odbc
                     // devnote: don't we want to fire an event?
                     break;
 
-                case ODBC32.RetCode.NO_DATA:
+                case ODBC32.SQLRETURN.NO_DATA:
                     // SQLBU 266054: System.Data.Odbc: Fails with truncated error when we pass BufferLength  as 0
                     // NO_DATA return value is success value - it means that the driver has fully consumed the current column value
                     // but did not move to the next column yet.
@@ -1855,7 +1852,7 @@ namespace System.Data.Odbc
                 return false;
             }
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             //SQLFetch is only valid to call for row returning queries
             //We get: [24000]Invalid cursor state.  So we could either check the count
@@ -1866,16 +1863,16 @@ namespace System.Data.Odbc
 
             switch (retcode)
             {
-                case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     Connection!.HandleErrorNoThrow(StatementHandle, retcode);
                     _hasRows = HasRowsStatus.HasRows;
                     _isRead = true;
                     break;
-                case ODBC32.RetCode.SUCCESS:
+                case ODBC32.SQLRETURN.SUCCESS:
                     _hasRows = HasRowsStatus.HasRows;
                     _isRead = true;
                     break;
-                case ODBC32.RetCode.NO_DATA:
+                case ODBC32.SQLRETURN.NO_DATA:
                     _isRead = false;
                     if (_hasRows == HasRowsStatus.DontKnow)
                     {
@@ -1913,8 +1910,8 @@ namespace System.Data.Odbc
             cRowsAffected = GetRowCount();              // get rowcount of the current resultset (if any)
             CalculateRecordsAffected(cRowsAffected);    // update recordsaffected
 
-            ODBC32.RetCode retcode = FieldCountNoThrow(out cCols);
-            if ((retcode == ODBC32.RetCode.SUCCESS) && (cCols == 0))
+            ODBC32.SQLRETURN retcode = FieldCountNoThrow(out cCols);
+            if ((retcode == ODBC32.SQLRETURN.SUCCESS) && (cCols == 0))
             {
                 NextResult();
             }
@@ -1939,7 +1936,7 @@ namespace System.Data.Odbc
 
             SQLLEN cRowsAffected;
             short cColsAffected;
-            ODBC32.RetCode retcode, firstRetCode = ODBC32.RetCode.SUCCESS;
+            ODBC32.SQLRETURN retcode, firstRetCode = ODBC32.SQLRETURN.SUCCESS;
             bool hasMoreResults;
             bool hasColumns = false;
             bool singleResult = IsCommandBehavior(CommandBehavior.SingleResult);
@@ -1969,14 +1966,14 @@ namespace System.Data.Odbc
             {
                 _isValidResult = false;
                 retcode = StatementHandle.MoreResults();
-                hasMoreResults = ((retcode == ODBC32.RetCode.SUCCESS)
-                                || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO));
+                hasMoreResults = ((retcode == ODBC32.SQLRETURN.SUCCESS)
+                                || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO));
 
-                if (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO)
+                if (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO)
                 {
                     Connection!.HandleErrorNoThrow(StatementHandle, retcode);
                 }
-                else if (!disposing && (retcode != ODBC32.RetCode.NO_DATA) && (ODBC32.RetCode.SUCCESS != retcode))
+                else if (!disposing && (retcode != ODBC32.SQLRETURN.NO_DATA) && (ODBC32.SQLRETURN.SUCCESS != retcode))
                 {
                     // allow for building comulative error messages.
                     if (null == errors)
@@ -2002,10 +1999,10 @@ namespace System.Data.Odbc
                     }
                 }
             } while ((!singleResult && hasMoreResults && !hasColumns)  // repeat for results with no columns
-                     || ((ODBC32.RetCode.NO_DATA != retcode) && allresults && (loop < MaxConsecutiveFailure)) // or process all results until done
+                     || ((ODBC32.SQLRETURN.NO_DATA != retcode) && allresults && (loop < MaxConsecutiveFailure)) // or process all results until done
                      || (singleResult && hasMoreResults));           // or for any result in singelResult mode
 
-            if (retcode == ODBC32.RetCode.NO_DATA)
+            if (retcode == ODBC32.SQLRETURN.NO_DATA)
             {
                 _dataCache = null;
                 _noMoreResults = true;
@@ -2245,7 +2242,7 @@ namespace System.Data.Odbc
         // The default values are already defined in DbSchemaRows (see DbSchemaRows.cs) so there is no need to set any default value
         //
 
-        public override DataTable GetSchemaTable()
+        public override DataTable? GetSchemaTable()
         {
             if (IsClosed)
             { // MDAC 68331
@@ -2253,10 +2250,7 @@ namespace System.Data.Odbc
             }
             if (_noMoreResults)
             {
-// TODO-NULLABLE: Behavior change (https://github.com/dotnet/runtime/issues/509)
-#nullable disable
                 return null;                                            // no more results
-#nullable enable
             }
             if (null != _schemaTable)
             {
@@ -2336,7 +2330,7 @@ namespace System.Data.Odbc
         {
             Debug.Assert(_metadata != null);
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             string columnname;
             int ordinal;
             int keyColumns = 0;
@@ -2366,7 +2360,7 @@ namespace System.Data.Odbc
                                     qualifiedTableName.Schema,
                                     qualifiedTableName.GetTable(quoted)!);
 
-                        if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+                        if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
                         {
                             bool noUniqueKey = false;
 
@@ -2378,7 +2372,7 @@ namespace System.Data.Odbc
                                            buffer.PtrOffset(0, 256),
                                            (IntPtr)256,
                                            buffer.PtrOffset(256, IntPtr.Size).Handle);
-                            while (ODBC32.RetCode.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
+                            while (ODBC32.SQLRETURN.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
                             {
                                 cbActual = buffer.ReadIntPtr(256);
                                 columnname = buffer.PtrToStringUni(0, (int)cbActual / 2/*cch*/);
@@ -2446,7 +2440,7 @@ namespace System.Data.Odbc
                 // Get the special columns for version
                 retcode = KeyInfoStatementHandle.SpecialColumns(qualifiedTableName.GetTable(quoted)!);
 
-                if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+                if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
                 {
                     // We are only interested in column name
                     cbActual = IntPtr.Zero;
@@ -2458,7 +2452,7 @@ namespace System.Data.Odbc
                                    (IntPtr)256,
                                    buffer.PtrOffset(256, IntPtr.Size).Handle);
 
-                    while (ODBC32.RetCode.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
+                    while (ODBC32.SQLRETURN.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
                     {
                         cbActual = buffer.ReadIntPtr(256);
                         columnname = buffer.PtrToStringUni(0, (int)cbActual / 2/*cch*/);
@@ -2506,7 +2500,7 @@ namespace System.Data.Odbc
         {
             Debug.Assert(_metadata != null);
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             string columnname = string.Empty;
             string indexname = string.Empty;
             string currentindexname = string.Empty;
@@ -2529,7 +2523,7 @@ namespace System.Data.Odbc
             // Select only unique indexes
             retcode = KeyInfoStatementHandle.Statistics(tablename1);
 
-            if (retcode != ODBC32.RetCode.SUCCESS)
+            if (retcode != ODBC32.SQLRETURN.SUCCESS)
             {
                 // We give up at this point
                 return 0;
@@ -2580,7 +2574,7 @@ namespace System.Data.Odbc
                             colnameActual);
                 // Find the best unique index on the table, use the ones whose columns are
                 // completely covered by the query.
-                while (ODBC32.RetCode.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
+                while (ODBC32.SQLRETURN.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
                 {
                     cbColnameLen = buffer.ReadIntPtr(colnameActualOffset);
                     cbIndexLen = buffer.ReadIntPtr(indexActualOffset);

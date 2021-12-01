@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Xml.XPath;
 
@@ -53,7 +52,7 @@ namespace MS.Internal.Xml.Cache
     /// <summary>
     /// Iterate over all element children with a particular QName.
     /// </summary>
-    internal class XPathDocumentElementChildIterator : XPathDocumentBaseIterator
+    internal sealed class XPathDocumentElementChildIterator : XPathDocumentBaseIterator
     {
         private readonly string? _localName;
         private readonly string _namespaceUri;
@@ -111,7 +110,7 @@ namespace MS.Internal.Xml.Cache
     /// <summary>
     /// Iterate over all content children with a particular XPathNodeType.
     /// </summary>
-    internal class XPathDocumentKindChildIterator : XPathDocumentBaseIterator
+    internal sealed class XPathDocumentKindChildIterator : XPathDocumentBaseIterator
     {
         private readonly XPathNodeType _typ;
 
@@ -164,7 +163,7 @@ namespace MS.Internal.Xml.Cache
     /// <summary>
     /// Iterate over all element descendants with a particular QName.
     /// </summary>
-    internal class XPathDocumentElementDescendantIterator : XPathDocumentBaseIterator
+    internal sealed class XPathDocumentElementDescendantIterator : XPathDocumentBaseIterator
     {
         private readonly XPathDocumentNavigator? _end;
         private readonly string? _localName;
@@ -237,7 +236,7 @@ namespace MS.Internal.Xml.Cache
     /// <summary>
     /// Iterate over all content descendants with a particular XPathNodeType.
     /// </summary>
-    internal class XPathDocumentKindDescendantIterator : XPathDocumentBaseIterator
+    internal sealed class XPathDocumentKindDescendantIterator : XPathDocumentBaseIterator
     {
         private readonly XPathDocumentNavigator? _end;
         private readonly XPathNodeType _typ;

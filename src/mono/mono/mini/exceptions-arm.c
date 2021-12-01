@@ -27,12 +27,12 @@
 #include <mono/arch/arm/arm-codegen.h>
 #include <mono/arch/arm/arm-vfp-codegen.h>
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/tokentype.h>
 
 #include "mini.h"
 #include "mini-arm.h"
@@ -457,11 +457,11 @@ mono_arch_exceptions_init (void)
  * See exceptions-amd64.c for docs;
  */
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf,
-							 host_mgreg_t **save_locations,
-							 StackFrameInfo *frame)
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
+						MonoJitInfo *ji, MonoContext *ctx,
+						MonoContext *new_ctx, MonoLMF **lmf,
+						host_mgreg_t **save_locations,
+						StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 
@@ -526,7 +526,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 		
-		if ((ji = mini_jit_info_table_find (domain, (gpointer)(gsize)(*lmf)->ip, NULL))) {
+		if ((ji = mini_jit_info_table_find ((gpointer)(gsize)(*lmf)->ip))) {
 			frame->ji = ji;
 		} else {
 			if (!(*lmf)->method)

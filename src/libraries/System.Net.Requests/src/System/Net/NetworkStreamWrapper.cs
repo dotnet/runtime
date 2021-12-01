@@ -189,6 +189,11 @@ namespace System.Net
             return _networkStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return _networkStream.ReadAsync(buffer, cancellationToken);
+        }
+
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             return _networkStream.BeginWrite(buffer, offset, size, callback, state);
@@ -202,6 +207,11 @@ namespace System.Net
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _networkStream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            return _networkStream.WriteAsync(buffer, cancellationToken);
         }
 
         public override void Flush()

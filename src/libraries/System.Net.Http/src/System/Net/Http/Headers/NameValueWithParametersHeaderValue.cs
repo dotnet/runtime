@@ -15,9 +15,10 @@ namespace System.Net.Http.Headers
     {
         private static readonly Func<NameValueHeaderValue> s_nameValueCreator = CreateNameValue;
 
-        private ObjectCollection<NameValueHeaderValue>? _parameters;
+        private UnvalidatedObjectCollection<NameValueHeaderValue>? _parameters;
 
-        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
+        public ICollection<NameValueHeaderValue> Parameters =>
+            _parameters ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
         public NameValueWithParametersHeaderValue(string name)
             : base(name)
@@ -36,16 +37,10 @@ namespace System.Net.Http.Headers
         protected NameValueWithParametersHeaderValue(NameValueWithParametersHeaderValue source)
             : base(source)
         {
-            if (source._parameters != null)
-            {
-                foreach (var parameter in source._parameters)
-                {
-                    this.Parameters.Add((NameValueHeaderValue)((ICloneable)parameter).Clone());
-                }
-            }
+            _parameters = source._parameters.Clone();
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             bool result = base.Equals(obj);
 
@@ -130,7 +125,7 @@ namespace System.Net.Http.Headers
             {
                 current++; // skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    (ObjectCollection<NameValueHeaderValue>)nameValueWithParameters.Parameters);
+                    (UnvalidatedObjectCollection<NameValueHeaderValue>)nameValueWithParameters.Parameters);
 
                 if (parameterLength == 0)
                 {

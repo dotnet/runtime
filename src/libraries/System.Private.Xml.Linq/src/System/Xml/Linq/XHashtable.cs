@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Debug = System.Diagnostics.Debug;
 using Interlocked = System.Threading.Interlocked;
@@ -66,7 +67,7 @@ namespace System.Xml.Linq
         /// Prototype of function which is called to extract a string key value from a hashed value.
         /// Returns null if the hashed value is invalid (e.g. value has been released due to a WeakReference TValue being cleaned up).
         /// </summary>
-        public delegate string ExtractKeyDelegate(TValue value);
+        public delegate string? ExtractKeyDelegate(TValue value);
 
         /// <summary>
         /// Construct a new XHashtable with the specified starting capacity.
@@ -79,7 +80,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Get an existing value from the hash table.  Return false if no such value exists.
         /// </summary>
-        public bool TryGetValue(string key, int index, int count, out TValue value)
+        public bool TryGetValue(string key, int index, int count, [MaybeNullWhen(false)] out TValue value)
         {
             return _state.TryGetValue(key, index, count, out value);
         }
@@ -238,7 +239,7 @@ namespace System.Xml.Linq
             /// Attempt to find "key" in the table.  If the key exists, return the associated value in "value" and
             /// return true.  Otherwise return false.
             /// </summary>
-            public bool TryGetValue(string key, int index, int count, out TValue value)
+            public bool TryGetValue(string key, int index, int count, [MaybeNullWhen(false)] out TValue value)
             {
                 int hashCode = ComputeHashCode(key, index, count);
                 int entryIndex = 0;
@@ -264,7 +265,7 @@ namespace System.Xml.Linq
             public bool TryAdd(TValue value, out TValue newValue)
             {
                 int newEntry, entryIndex;
-                string key;
+                string? key;
                 int hashCode;
 
                 // Assume "value" will be added and returned as "newValue"
@@ -345,7 +346,7 @@ namespace System.Xml.Linq
                     // Check for matching hash code, then matching key
                     if (_entries[currentIndex].HashCode == hashCode)
                     {
-                        string keyCompare = _extractKey(_entries[currentIndex].Value);
+                        string? keyCompare = _extractKey(_entries[currentIndex].Value);
 
                         // If the key is invalid, then attempt to remove the current entry from the linked list.
                         // This is thread-safe in the case where the Next field points to another entry, since once a Next field points
@@ -356,7 +357,7 @@ namespace System.Xml.Linq
                             {
                                 // PUBLISH (buckets slot or entries slot)
                                 // Entry is invalid, so modify previous entry to point to its next entry
-                                _entries[currentIndex].Value = default(TValue);
+                                _entries[currentIndex].Value = default(TValue)!;
                                 currentIndex = _entries[currentIndex].Next;
 
                                 if (previousIndex == 0)

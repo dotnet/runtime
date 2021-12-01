@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
@@ -123,6 +124,38 @@ namespace System.Net.Primitives.Functional.Tests
             uri = new Uri(SchemePrefix + "z.y.x.www." + OriginalDomain);
             cookies = container.GetCookies(uri);
             Assert.Equal(0, cookies.Count);
+        }
+
+        [Fact]
+        public void GetAllCookies_Empty_ReturnsEmptyCollection()
+        {
+            var container = new CookieContainer();
+            Assert.NotNull(container.GetAllCookies());
+            Assert.NotSame(container.GetAllCookies(), container.GetAllCookies());
+            Assert.Empty(container.GetAllCookies());
+        }
+
+        [Fact]
+        public void GetAllCookies_NonEmpty_AllCookiesReturned()
+        {
+            var container = new CookieContainer();
+            container.PerDomainCapacity = 100;
+            container.Capacity = 100;
+
+            Cookie[] cookies = Enumerable.Range(0, 100).Select(i => new Cookie($"name{i}", $"value{i}")).ToArray();
+
+            Uri[] uris = new[] { new Uri("https://dot.net"), new Uri("https://source.dot.net"), new Uri("https://microsoft.com") };
+            for (int i = 0; i < cookies.Length; i++)
+            {
+                container.Add(uris[i % uris.Length], cookies[i]);
+            }
+
+            CookieCollection actual = container.GetAllCookies();
+            Assert.Equal(cookies.Length, actual.Count);
+
+            Assert.Equal(
+                cookies.Select(c => c.Name + "=" + c.Value).ToHashSet(),
+                actual.Select(c => c.Name + "=" + c.Value).ToHashSet());
         }
     }
 }

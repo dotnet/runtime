@@ -377,7 +377,7 @@ namespace PartialCompactionTest
                 return 0;
             }
             else
-                o.visited = true; ;
+                o.visited = true;
             int count = 1;
 
             if (o.ref1 != null)

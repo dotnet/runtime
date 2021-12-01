@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// The test came from https://github.com/dotnet/corefx/issues/20085.
+// The test came from https://github.com/dotnet/runtime/issues/21860.
 // It tries to access field from a promoted struct with an offset that 
 // is not valid for the promoted struct type.
 

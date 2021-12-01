@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxTcpStatistics : TcpStatistics
+    internal sealed class LinuxTcpStatistics : TcpStatistics
     {
         private readonly TcpGlobalStatisticsTable _table;
         private readonly int _currentConnections;
@@ -18,10 +19,13 @@ namespace System.Net.NetworkInformation
             _currentConnections = StringParsingHelpers.ParseNumSocketConnections(sockstatFile, protoName);
         }
 
+        [UnsupportedOSPlatform("linux")]
         public override long ConnectionsAccepted { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long ConnectionsInitiated { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long CumulativeConnections { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long CurrentConnections { get { return _currentConnections; } }
@@ -32,12 +36,15 @@ namespace System.Net.NetworkInformation
 
         public override long MaximumConnections { get { return _table.MaxConn; } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long MaximumTransmissionTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long MinimumTransmissionTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long ResetConnections { get { return _table.EstabResets; } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long ResetsSent { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long SegmentsReceived { get { return _table.InSegs; } }

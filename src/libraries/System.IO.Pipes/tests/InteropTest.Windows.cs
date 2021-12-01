@@ -27,7 +27,7 @@ namespace System.IO.Pipes.Tests
                 return true;
             }
 
-            return TryHandleGetImpersonationUserNameError(handle, Marshal.GetLastWin32Error(), UserNameMaxLength, userName, out impersonationUserName);
+            return TryHandleGetImpersonationUserNameError(handle, Marshal.GetLastPInvokeError(), UserNameMaxLength, userName, out impersonationUserName);
         }
 
         internal static unsafe bool TryGetNumberOfServerInstances(SafePipeHandle handle, out uint numberOfServerInstances)
@@ -47,5 +47,22 @@ namespace System.IO.Pipes.Tests
         // @todo: These are called by some Unix-specific tests. Those tests should really be split out into
         // partial classes and included only in Unix builds.
         internal static bool TryGetHostName(out string hostName) { throw new Exception("Should not call on Windows."); }
+
+        private static unsafe bool TryHandleGetImpersonationUserNameError(SafePipeHandle handle, int error, uint userNameMaxLength, char* userName, out string impersonationUserName)
+        {
+            if ((error == Interop.Errors.ERROR_SUCCESS || error == Interop.Errors.ERROR_CANNOT_IMPERSONATE) && Environment.Is64BitProcess)
+            {
+                Interop.Kernel32.LoadLibraryEx("sspicli.dll", IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+                if (Interop.Kernel32.GetNamedPipeHandleStateW(handle, null, null, null, null, userName, userNameMaxLength))
+                {
+                    impersonationUserName = new string(userName);
+                    return true;
+                }
+            }
+
+            impersonationUserName = string.Empty;
+            return false;
+        }
     }
 }

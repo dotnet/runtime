@@ -58,6 +58,8 @@ namespace System.Linq.Parallel
             PartitionedStream<TSource, TKey> inputStream, IPartitionedStreamRecipient<TSource> recipient, bool preferStriping, QuerySettings settings)
         {
             int partitionCount = inputStream.PartitionCount;
+            if (ParallelEnumerable.SinglePartitionMode)
+                Debug.Assert(partitionCount == 1);
 
             // Generate the shared data.
             Shared<int> sharedEmptyCount = new Shared<int>(0);
@@ -98,7 +100,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the default-if-empty operation.
         //
 
-        private class DefaultIfEmptyQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, TKey>
+        private sealed class DefaultIfEmptyQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, TKey>
         {
             private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
             private bool _lookedForEmpty; // Whether this partition has looked for empty yet.
@@ -139,7 +141,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, [AllowNull] ref TKey currentKey)
             {
                 Debug.Assert(_source != null);
 
@@ -153,7 +155,13 @@ namespace System.Linq.Parallel
 
                     if (!moveNextResult)
                     {
-                        if (_partitionIndex == 0)
+                        if (ParallelEnumerable.SinglePartitionMode)
+                        {
+                            currentElement = _defaultValue;
+                            currentKey = default(TKey)!;
+                            return true;
+                        }
+                        else if (_partitionIndex == 0)
                         {
                             // If this is the 0th partition, we must wait for all others.  Note: we could
                             // actually do a wait-any here: if at least one other partition finds an element,

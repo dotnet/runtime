@@ -10,7 +10,7 @@ namespace System.Net.Mime
     /// <summary>
     /// Summary description for HeaderCollection.
     /// </summary>
-    internal class HeaderCollection : NameValueCollection
+    internal sealed class HeaderCollection : NameValueCollection
     {
         // default constructor
         // intentionally override the default comparer in the derived base class

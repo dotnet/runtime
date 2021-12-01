@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Windows.Markup
@@ -15,14 +16,16 @@ namespace System.Windows.Markup
     [TypeForwardedFrom("WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public sealed class ValueSerializerAttribute : Attribute
     {
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private Type? _valueSerializerType;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private readonly string? _valueSerializerTypeName;
 
         /// <summary>
         /// Constructor for the ValueSerializerAttribute
         /// </summary>
         /// <param name="valueSerializerType">Type of the value serializer being associated with a type or property</param>
-        public ValueSerializerAttribute(Type valueSerializerType)
+        public ValueSerializerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type valueSerializerType)
         {
             _valueSerializerType = valueSerializerType;
         }
@@ -31,7 +34,7 @@ namespace System.Windows.Markup
         /// Constructor for the ValueSerializerAttribute
         /// </summary>
         /// <param name="valueSerializerTypeName">Fully qualified type name of the value serializer being associated with a type or property</param>
-        public ValueSerializerAttribute(string valueSerializerTypeName)
+        public ValueSerializerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string valueSerializerTypeName)
         {
             _valueSerializerTypeName = valueSerializerTypeName;
         }
@@ -39,6 +42,7 @@ namespace System.Windows.Markup
         /// <summary>
         /// The type of the value serializer to create for this type or property.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public Type ValueSerializerType
         {
             get
@@ -55,6 +59,7 @@ namespace System.Windows.Markup
         /// <summary>
         /// The assembly qualified name of the value serializer type for this type or property.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ValueSerializerTypeName
         {
             get

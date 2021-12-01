@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 
 namespace System.Net.Test.Common
@@ -49,7 +51,7 @@ namespace System.Net.Test.Common
             return EncodeInteger(buffer, nameValueIdx, prefix, prefixMask);
         }
 
-        public static int EncodeHeader(Span<byte> buffer, int nameIdx, string value, QPackFlags flags = QPackFlags.StaticIndex)
+        public static int EncodeHeader(Span<byte> buffer, int nameIdx, string value, Encoding valueEncoding, QPackFlags flags = QPackFlags.StaticIndex)
         {
             byte prefix, prefixMask;
 
@@ -76,12 +78,12 @@ namespace System.Net.Test.Common
             }
 
             int nameLen = EncodeInteger(buffer, nameIdx, prefix, prefixMask);
-            int valueLen = EncodeString(buffer.Slice(nameLen), value, flags.HasFlag(QPackFlags.HuffmanEncodeValue));
+            int valueLen = EncodeString(buffer.Slice(nameLen), value, valueEncoding, flags.HasFlag(QPackFlags.HuffmanEncodeValue));
 
             return nameLen + valueLen;
         }
 
-        public static int EncodeHeader(Span<byte> buffer, string name, string value, QPackFlags flags = QPackFlags.None)
+        public static int EncodeHeader(Span<byte> buffer, string name, string value, Encoding valueEncoding, QPackFlags flags = QPackFlags.None)
         {
             byte[] data = Encoding.ASCII.GetBytes(name);
             byte prefix;
@@ -116,19 +118,52 @@ namespace System.Net.Test.Common
             bytesGenerated += data.Length;
 
             // write value string.
-            bytesGenerated += EncodeString(buffer.Slice(bytesGenerated), value, flags.HasFlag(QPackFlags.HuffmanEncodeValue));
+            bytesGenerated += EncodeString(buffer.Slice(bytesGenerated), value, valueEncoding, flags.HasFlag(QPackFlags.HuffmanEncodeValue));
 
             return bytesGenerated;
         }
 
-        public static int EncodeString(Span<byte> buffer, string value, bool huffmanCoded = false)
+        public static int EncodeString(Span<byte> buffer, string value, Encoding valueEncoding, bool huffmanCoded = false)
         {
-            return HPackEncoder.EncodeString(value, buffer, huffmanCoded);
+            return HPackEncoder.EncodeString(value, valueEncoding, buffer, huffmanCoded);
         }
 
         public static int EncodeInteger(Span<byte> buffer, int value, byte prefix, byte prefixMask)
         {
             return HPackEncoder.EncodeInteger(value, prefix, prefixMask, buffer);
+        }
+
+        // from System.Net.Http.QPack.H3StaticTable
+        private static readonly Dictionary<int, int> s_statusIndex = new Dictionary<int, int>
+        {
+            [103] = 24,
+            [200] = 25,
+            [304] = 26,
+            [404] = 27,
+            [503] = 28,
+            [100] = 63,
+            [204] = 64,
+            [206] = 65,
+            [302] = 66,
+            [400] = 67,
+            [403] = 68,
+            [421] = 69,
+            [425] = 70,
+            [500] = 71,
+        };
+
+        public static int EncodeStatusCode(int statusCode, Span<byte> buffer)
+        {
+            if (s_statusIndex.TryGetValue(statusCode, out var statusIdx))
+            {
+                // Indexed Header Field
+                return EncodeHeader(buffer, statusIdx);
+            }
+            else
+            {
+                // Literal Header Field With Name Reference -- Index of any status present in the table can be used for reference
+                return EncodeHeader(buffer, s_statusIndex[100], statusCode.ToString(CultureInfo.InvariantCulture), valueEncoding: null);
+            }
         }
     }
 

@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Id number to use for the next compiled regex.</summary>
         private static int s_regexCount;
 
-        public RegexLWCGCompiler() : base(persistsAssembly: false)
+        public RegexLWCGCompiler()
         {
         }
 
@@ -39,15 +39,12 @@ namespace System.Text.RegularExpressions
             _code = code;
             _codes = code.Codes;
             _strings = code.Strings;
-            _leadingCharClasses = code.LeadingCharClasses;
-            _boyerMoorePrefix = code.BoyerMoorePrefix;
-            _leadingAnchor = code.LeadingAnchor;
             _trackcount = code.TrackCount;
             _options = options;
             _hasTimeout = hasTimeout;
 
             // Pick a unique number for the methods we generate.
-            object regexNum = (uint)Interlocked.Increment(ref s_regexCount); // object to box once instead of twice below
+            uint regexNum = (uint)Interlocked.Increment(ref s_regexCount);
 
             // Get a description of the regex to use in the name.  This is helpful when profiling, and is opt-in.
             string description = string.Empty;

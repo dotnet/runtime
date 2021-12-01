@@ -5,7 +5,7 @@ using System.Collections.Specialized;
 
 namespace System.Configuration
 {
-    internal class KeyValueInternalCollection : NameValueCollection
+    internal sealed class KeyValueInternalCollection : NameValueCollection
     {
         private readonly AppSettingsSection _root;
 

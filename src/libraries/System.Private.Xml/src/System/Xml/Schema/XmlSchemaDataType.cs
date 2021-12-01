@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections;
 using System.Diagnostics;
 using System.ComponentModel;
@@ -107,7 +106,7 @@ namespace System.Xml.Schema
                         }
                         else
                         {
-                            typeCodeString = "List of " + TypeCodeToString(typeCode);
+                            typeCodeString = $"List of {TypeCodeToString(typeCode)}";
                         }
                         break;
 

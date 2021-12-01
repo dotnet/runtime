@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel
@@ -14,7 +15,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string) && value is Array)
             {
@@ -27,7 +28,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of properties for the type of array specified by the value parameter.
         /// </summary>
-        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [return: NotNullIfNotNull("value")]
+        public override PropertyDescriptorCollection? GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes)
         {
             if (value == null)
             {
@@ -42,7 +45,7 @@ namespace System.ComponentModel
             PropertyDescriptor[] props = new PropertyDescriptor[length];
 
             Type arrayType = value.GetType();
-            Type elementType = arrayType.GetElementType();
+            Type elementType = arrayType.GetElementType()!;
 
             for (int i = 0; i < length; i++)
             {
@@ -55,9 +58,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a value indicating whether this object supports properties.
         /// </summary>
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
-        private class ArrayPropertyDescriptor : SimplePropertyDescriptor
+        private sealed class ArrayPropertyDescriptor : SimplePropertyDescriptor
         {
             private readonly int _index;
 
@@ -67,7 +70,7 @@ namespace System.ComponentModel
                 _index = index;
             }
 
-            public override object GetValue(object instance)
+            public override object? GetValue(object? instance)
             {
                 if (instance is Array array && array.GetLength(0) > _index)
                 {
@@ -77,7 +80,7 @@ namespace System.ComponentModel
                 return null;
             }
 
-            public override void SetValue(object instance, object value)
+            public override void SetValue(object? instance, object? value)
             {
                 if (instance is Array array)
                 {

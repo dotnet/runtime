@@ -12,6 +12,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
+        Justification = "The use of GetType preserves ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
+            + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {
         // keyword->value currently listed in the connection string
@@ -241,7 +245,7 @@ namespace System.Data.Common
                 {
                     keylist.MoveNext();
                     values[i] = this[keylist.Current];
-                    Debug.Assert(null != values[i], "null value " + keylist.Current);
+                    Debug.Assert(null != values[i], $"null value {keylist.Current}");
                 }
                 return new ReadOnlyCollection<object>(values);
             }
@@ -387,6 +391,10 @@ namespace System.Data.Common
             return attributes;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
+                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         private PropertyDescriptorCollection GetProperties()
         {
             PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
@@ -412,11 +420,19 @@ namespace System.Data.Common
             return propertyDescriptors;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
+                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         protected virtual void GetProperties(Hashtable propertyDescriptors)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|API> {0}", ObjectID);
             try
             {
+                // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
+                // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+                Type thisType = GetType();
+
                 // show all strongly typed properties (not already added)
                 // except ConnectionString iff BrowsableConnectionString
                 Attribute[]? attributes;
@@ -514,6 +530,10 @@ namespace System.Data.Common
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
+                + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             PropertyDescriptorCollection propertyDescriptors = GetProperties();
@@ -538,7 +558,7 @@ namespace System.Data.Common
                 bool match = true;
                 foreach (Attribute attribute in attributes)
                 {
-                    Attribute attr = property.Attributes[attribute.GetType()];
+                    Attribute? attr = property.Attributes[attribute.GetType()];
                     if ((attr == null && !attribute.IsDefaultAttribute()) || attr?.Match(attribute) == false)
                     {
                         match = false;
@@ -561,56 +581,77 @@ namespace System.Data.Common
             return new PropertyDescriptorCollection(filteredPropertiesArray);
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
-        string ICustomTypeDescriptor.GetClassName()
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The component type's class name is preserved because this class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
+        string? ICustomTypeDescriptor.GetClassName()
         {
+            // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
+            // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            Type thisType = GetType();
             return TypeDescriptor.GetClassName(this, true);
         }
-        string ICustomTypeDescriptor.GetComponentName()
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The component type's component name is preserved because this class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
+        string? ICustomTypeDescriptor.GetComponentName()
         {
+            // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
+            // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            Type thisType = GetType();
             return TypeDescriptor.GetComponentName(this, true);
         }
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The component type's attributes are preserved because this class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
         AttributeCollection ICustomTypeDescriptor.GetAttributes()
         {
             return TypeDescriptor.GetAttributes(this, true);
         }
-        object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
             return TypeDescriptor.GetEditor(this, editorBaseType, true);
         }
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter()
         {
             return TypeDescriptor.GetConverter(this, true);
         }
-        PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
         {
             return TypeDescriptor.GetDefaultProperty(this, true);
         }
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
         {
             return GetProperties();
         }
-        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
         {
             return GetProperties(attributes);
         }
-        EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
+        EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
         {
             return TypeDescriptor.GetDefaultEvent(this, true);
         }
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The component type's events are preserved because this class is marked with [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
+            // Below call is necessary to tell the trimmer that it should mark derived types appropriately.
+            // We cannot use overload which takes type because the result might differ if derived class implements ICustomTypeDescriptor.
+            Type thisType = GetType();
             return TypeDescriptor.GetEvents(this, true);
         }
-        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
         {
             return TypeDescriptor.GetEvents(this, attributes, true);
         }
-        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
         {
             return this;
         }
-#nullable enable
     }
 }

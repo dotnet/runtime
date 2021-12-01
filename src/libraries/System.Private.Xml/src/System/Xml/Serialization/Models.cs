@@ -8,13 +8,14 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.Diagnostics;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     // These classes define the abstract serialization model, e.g. the rules for WHAT is serialized.
     // The answer of HOW the values are serialized is answered by a particular reflection importer
     // by looking for a particular set of custom attributes specific to the serialization format
     // and building an appropriate set of accessors/mappings.
 
-    internal class ModelScope
+    internal sealed class ModelScope
     {
         private readonly TypeScope _typeScope;
         private readonly Dictionary<Type, TypeModel> _models = new Dictionary<Type, TypeModel>();
@@ -30,14 +31,16 @@ namespace System.Xml.Serialization
             get { return _typeScope; }
         }
 
+        [RequiresUnreferencedCode("calls GetTypeModel")]
         internal TypeModel GetTypeModel(Type type)
         {
             return GetTypeModel(type, true);
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         internal TypeModel GetTypeModel(Type type, bool directReference)
         {
-            TypeModel model;
+            TypeModel? model;
             if (_models.TryGetValue(type, out model))
                 return model;
             TypeDesc typeDesc = _typeScope.GetTypeDesc(type, null, directReference);
@@ -70,9 +73,10 @@ namespace System.Xml.Serialization
             return model;
         }
 
+        [RequiresUnreferencedCode("calls GetArrayTypeDesc")]
         internal ArrayModel GetArrayModel(Type type)
         {
-            TypeModel model;
+            TypeModel? model;
             if (!_arrayModels.TryGetValue(type, out model))
             {
                 model = GetTypeModel(type);
@@ -90,16 +94,21 @@ namespace System.Xml.Serialization
     internal abstract class TypeModel
     {
         private readonly TypeDesc _typeDesc;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type _type;
         private readonly ModelScope _scope;
 
-        protected TypeModel(Type type, TypeDesc typeDesc, ModelScope scope)
+        protected TypeModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            TypeDesc typeDesc,
+            ModelScope scope)
         {
             _scope = scope;
             _type = type;
             _typeDesc = typeDesc;
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         internal Type Type
         {
             get { return _type; }
@@ -116,29 +125,36 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ArrayModel : TypeModel
+    internal sealed class ArrayModel : TypeModel
     {
-        internal ArrayModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal ArrayModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
 
         internal TypeModel Element
         {
-            get { return ModelScope.GetTypeModel(TypeScope.GetArrayElementType(Type, null)); }
+            [RequiresUnreferencedCode("Calls GetTypeModel")]
+            get { return ModelScope.GetTypeModel(TypeScope.GetArrayElementType(Type, null)!); }
         }
     }
 
-    internal class PrimitiveModel : TypeModel
+    internal sealed class PrimitiveModel : TypeModel
     {
-        internal PrimitiveModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal PrimitiveModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
     }
 
-    internal class SpecialModel : TypeModel
+    internal sealed class SpecialModel : TypeModel
     {
-        internal SpecialModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal SpecialModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
     }
 
-    internal class StructModel : TypeModel
+    internal sealed class StructModel : TypeModel
     {
-        internal StructModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal StructModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
 
         internal MemberInfo[] GetMemberInfos()
         {
@@ -168,9 +184,10 @@ namespace System.Xml.Serialization
             return fieldsAndProps;
         }
 
-        internal FieldModel GetFieldModel(MemberInfo memberInfo)
+        [RequiresUnreferencedCode("calls GetFieldModel")]
+        internal FieldModel? GetFieldModel(MemberInfo memberInfo)
         {
-            FieldModel model = null;
+            FieldModel? model = null;
             if (memberInfo is FieldInfo)
                 model = GetFieldModel((FieldInfo)memberInfo);
             else if (memberInfo is PropertyInfo)
@@ -183,7 +200,7 @@ namespace System.Xml.Serialization
             return model;
         }
 
-        private void CheckSupportedMember(TypeDesc typeDesc, MemberInfo member, Type type)
+        private void CheckSupportedMember(TypeDesc? typeDesc, MemberInfo member, Type type)
         {
             if (typeDesc == null)
                 return;
@@ -193,13 +210,14 @@ namespace System.Xml.Serialization
                 {
                     typeDesc.Exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, typeDesc.FullName));
                 }
-                throw new InvalidOperationException(SR.Format(SR.XmlSerializerUnsupportedMember, member.DeclaringType.FullName + "." + member.Name, type.FullName), typeDesc.Exception);
+                throw new InvalidOperationException(SR.Format(SR.XmlSerializerUnsupportedMember, $"{member.DeclaringType!.FullName}.{member.Name}", type.FullName), typeDesc.Exception);
             }
             CheckSupportedMember(typeDesc.BaseTypeDesc, member, type);
             CheckSupportedMember(typeDesc.ArrayElementTypeDesc, member, type);
         }
 
-        private FieldModel GetFieldModel(FieldInfo fieldInfo)
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
+        private FieldModel? GetFieldModel(FieldInfo fieldInfo)
         {
             if (fieldInfo.IsStatic) return null;
             if (fieldInfo.DeclaringType != Type) return null;
@@ -212,7 +230,8 @@ namespace System.Xml.Serialization
             return new FieldModel(fieldInfo, fieldInfo.FieldType, typeDesc);
         }
 
-        private FieldModel GetPropertyModel(PropertyInfo propertyInfo)
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
+        private FieldModel? GetPropertyModel(PropertyInfo propertyInfo)
         {
             if (propertyInfo.DeclaringType != Type) return null;
             if (CheckPropertyRead(propertyInfo))
@@ -232,7 +251,7 @@ namespace System.Xml.Serialization
         {
             if (!propertyInfo.CanRead) return false;
 
-            MethodInfo getMethod = propertyInfo.GetMethod;
+            MethodInfo getMethod = propertyInfo.GetMethod!;
             if (getMethod.IsStatic) return false;
             ParameterInfo[] parameters = getMethod.GetParameters();
             if (parameters.Length > 0) return false;
@@ -247,12 +266,12 @@ namespace System.Xml.Serialization
         ReadWrite,
     }
 
-    internal class FieldModel
+    internal sealed class FieldModel
     {
         private readonly SpecifiedAccessor _checkSpecified = SpecifiedAccessor.None;
-        private readonly MemberInfo _memberInfo;
-        private readonly MemberInfo _checkSpecifiedMemberInfo;
-        private readonly MethodInfo _checkShouldPersistMethodInfo;
+        private readonly MemberInfo? _memberInfo;
+        private readonly MemberInfo? _checkSpecifiedMemberInfo;
+        private readonly MethodInfo? _checkShouldPersistMethodInfo;
         private readonly bool _checkShouldPersist;
         private readonly bool _readOnly;
         private readonly bool _isProperty;
@@ -274,16 +293,17 @@ namespace System.Xml.Serialization
             _readOnly = readOnly;
         }
 
+        [RequiresUnreferencedCode("Calls GetField on MemberInfo type")]
         internal FieldModel(MemberInfo memberInfo, Type fieldType, TypeDesc fieldTypeDesc)
         {
             _name = memberInfo.Name;
             _fieldType = fieldType;
             _fieldTypeDesc = fieldTypeDesc;
             _memberInfo = memberInfo;
-            _checkShouldPersistMethodInfo = memberInfo.DeclaringType.GetMethod("ShouldSerialize" + memberInfo.Name, Array.Empty<Type>());
+            _checkShouldPersistMethodInfo = memberInfo.DeclaringType!.GetMethod($"ShouldSerialize{memberInfo.Name}", Type.EmptyTypes);
             _checkShouldPersist = _checkShouldPersistMethodInfo != null;
 
-            FieldInfo specifiedField = memberInfo.DeclaringType.GetField(memberInfo.Name + "Specified");
+            FieldInfo? specifiedField = memberInfo.DeclaringType.GetField($"{memberInfo.Name}Specified");
             if (specifiedField != null)
             {
                 if (specifiedField.FieldType != typeof(bool))
@@ -295,7 +315,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                PropertyInfo specifiedProperty = memberInfo.DeclaringType.GetProperty(memberInfo.Name + "Specified");
+                PropertyInfo? specifiedProperty = memberInfo.DeclaringType.GetProperty($"{memberInfo.Name}Specified");
                 if (specifiedProperty != null)
                 {
                     if (StructModel.CheckPropertyRead(specifiedProperty))
@@ -345,15 +365,15 @@ namespace System.Xml.Serialization
             get { return _checkSpecified; }
         }
 
-        internal MemberInfo MemberInfo
+        internal MemberInfo? MemberInfo
         {
             get { return _memberInfo; }
         }
-        internal MemberInfo CheckSpecifiedMemberInfo
+        internal MemberInfo? CheckSpecifiedMemberInfo
         {
             get { return _checkSpecifiedMemberInfo; }
         }
-        internal MethodInfo CheckShouldPersistMethodInfo
+        internal MethodInfo? CheckShouldPersistMethodInfo
         {
             get { return _checkShouldPersistMethodInfo; }
         }
@@ -369,7 +389,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class ConstantModel
+    internal sealed class ConstantModel
     {
         private readonly FieldInfo _fieldInfo;
         private readonly long _value;
@@ -396,11 +416,13 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal class EnumModel : TypeModel
+    internal sealed class EnumModel : TypeModel
     {
-        private ConstantModel[] _constants;
+        private ConstantModel[]? _constants;
 
-        internal EnumModel(Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
+        internal EnumModel(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            Type type, TypeDesc typeDesc, ModelScope scope) : base(type, typeDesc, scope) { }
 
         internal ConstantModel[] Constants
         {
@@ -413,7 +435,7 @@ namespace System.Xml.Serialization
                     for (int i = 0; i < fields.Length; i++)
                     {
                         FieldInfo field = fields[i];
-                        ConstantModel constant = GetConstantModel(field);
+                        ConstantModel? constant = GetConstantModel(field);
                         if (constant != null) list.Add(constant);
                     }
                     _constants = list.ToArray();
@@ -422,10 +444,10 @@ namespace System.Xml.Serialization
             }
         }
 
-        private ConstantModel GetConstantModel(FieldInfo fieldInfo)
+        private ConstantModel? GetConstantModel(FieldInfo fieldInfo)
         {
             if (fieldInfo.IsSpecialName) return null;
-            return new ConstantModel(fieldInfo, ((IConvertible)fieldInfo.GetValue(null)).ToInt64(null));
+            return new ConstantModel(fieldInfo, ((IConvertible)fieldInfo.GetValue(null)!).ToInt64(null));
         }
     }
 }

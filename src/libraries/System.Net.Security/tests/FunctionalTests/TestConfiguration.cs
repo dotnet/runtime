@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -15,6 +14,7 @@ namespace System.Net.Security.Tests
     internal static class TestConfiguration
     {
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
+        public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
 
         public const string Realm = "TEST.COREFX.NET";
         public const string KerberosUser = "krb_user";
@@ -27,10 +27,8 @@ namespace System.Net.Security.Tests
         public const string NtlmUserFilePath = "/var/tmp/ntlm_user_file";
 
         public static bool SupportsNullEncryption { get { return s_supportsNullEncryption.Value; } }
-
-        public static bool SupportsHandshakeAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.Windows); } }
-
-        public static bool SupportsAlpnAlerts { get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion.CompareTo(new Version(1,0,2)) >= 0); } }
+        public static bool SupportsHandshakeAlerts { get { return OperatingSystem.IsLinux() || OperatingSystem.IsWindows(); } }
+        public static bool SupportsRenegotiation { get { return (OperatingSystem.IsWindows() && !PlatformDetection.IsWindows7) || ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD()) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1)); } }
 
         public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks)
             => tasks.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
@@ -38,13 +36,13 @@ namespace System.Net.Security.Tests
         private static Lazy<bool> s_supportsNullEncryption = new Lazy<bool>(() =>
         {
             // On Windows, null ciphers (no encryption) are supported.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return true;
             }
 
-            // On macOS, the null cipher (no encryption) is not supported.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            // On macOS and Android, the null cipher (no encryption) is not supported.
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsAndroid())
             {
                 return false;
             }

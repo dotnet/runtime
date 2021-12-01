@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Globalization;
 using System.IO;
 using System.Text.Unicode;
@@ -19,11 +18,11 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData("&#x1F602;x&#x1F602;y", "\U0001F602x\U0001F602y")]
         public void TestSurrogate(string expected, string actual)
         {
-            Assert.Equal(expected, System.Text.Encodings.Web.HtmlEncoder.Default.Encode(actual));
+            Assert.Equal(expected, HtmlEncoder.Default.Encode(actual));
 
             using (var writer = new StringWriter())
             {
-                System.Text.Encodings.Web.HtmlEncoder.Default.Encode(writer, actual);
+                HtmlEncoder.Default.Encode(writer, actual);
                 Assert.Equal(expected, writer.GetStringBuilder().ToString());
             }
         }
@@ -35,47 +34,47 @@ namespace System.Text.Encodings.Web.Tests
             var filter = new TextEncoderSettings();
             filter.AllowCharacters('a', 'b');
             filter.AllowCharacters('\0', '&', '\uFFFF', 'd');
-            HtmlEncoder encoder = new HtmlEncoder(filter);
+            HtmlEncoder encoder = HtmlEncoder.Create(filter);
 
             // Act & assert
-            Assert.Equal("a", encoder.HtmlEncode("a"));
-            Assert.Equal("b", encoder.HtmlEncode("b"));
-            Assert.Equal("&#x63;", encoder.HtmlEncode("c"));
-            Assert.Equal("d", encoder.HtmlEncode("d"));
-            Assert.Equal("&#x0;", encoder.HtmlEncode("\0")); // we still always encode control chars
-            Assert.Equal("&amp;", encoder.HtmlEncode("&")); // we still always encode HTML-special chars
-            Assert.Equal("&#xFFFF;", encoder.HtmlEncode("\uFFFF")); // we still always encode non-chars and other forbidden chars
+            Assert.Equal("a", encoder.Encode("a"));
+            Assert.Equal("b", encoder.Encode("b"));
+            Assert.Equal("&#x63;", encoder.Encode("c"));
+            Assert.Equal("d", encoder.Encode("d"));
+            Assert.Equal("&#x0;", encoder.Encode("\0")); // we still always encode control chars
+            Assert.Equal("&amp;", encoder.Encode("&")); // we still always encode HTML-special chars
+            Assert.Equal("&#xFFFF;", encoder.Encode("\uFFFF")); // we still always encode non-chars and other forbidden chars
         }
 
         [Fact]
         public void Ctor_WithUnicodeRanges()
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder(UnicodeRanges.Latin1Supplement, UnicodeRanges.MiscellaneousSymbols);
+            HtmlEncoder encoder = HtmlEncoder.Create(UnicodeRanges.Latin1Supplement, UnicodeRanges.MiscellaneousSymbols);
 
             // Act & assert
-            Assert.Equal("&#x61;", encoder.HtmlEncode("a"));
-            Assert.Equal("\u00E9", encoder.HtmlEncode("\u00E9" /* LATIN SMALL LETTER E WITH ACUTE */));
-            Assert.Equal("\u2601", encoder.HtmlEncode("\u2601" /* CLOUD */));
+            Assert.Equal("&#x61;", encoder.Encode("a"));
+            Assert.Equal("\u00E9", encoder.Encode("\u00E9" /* LATIN SMALL LETTER E WITH ACUTE */));
+            Assert.Equal("\u2601", encoder.Encode("\u2601" /* CLOUD */));
         }
 
         [Fact]
-        public void Ctor_WithNoParameters_DefaultsToBasicLatin()
+        public void DefaultFactory_IsBasicLatin()
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder();
+            HtmlEncoder encoder = HtmlEncoder.Default;
 
             // Act & assert
-            Assert.Equal("a", encoder.HtmlEncode("a"));
-            Assert.Equal("&#xE9;", encoder.HtmlEncode("\u00E9" /* LATIN SMALL LETTER E WITH ACUTE */));
-            Assert.Equal("&#x2601;", encoder.HtmlEncode("\u2601" /* CLOUD */));
+            Assert.Equal("a", encoder.Encode("a"));
+            Assert.Equal("&#xE9;", encoder.Encode("\u00E9" /* LATIN SMALL LETTER E WITH ACUTE */));
+            Assert.Equal("&#x2601;", encoder.Encode("\u2601" /* CLOUD */));
         }
 
         [Fact]
         public void Default_EquivalentToBasicLatin()
         {
             // Arrange
-            HtmlEncoder controlEncoder = new HtmlEncoder(UnicodeRanges.BasicLatin);
+            HtmlEncoder controlEncoder = HtmlEncoder.Create(UnicodeRanges.BasicLatin);
             HtmlEncoder testEncoder = HtmlEncoder.Default;
 
             // Act & assert
@@ -84,7 +83,7 @@ namespace System.Text.Encodings.Web.Tests
                 if (!IsSurrogateCodePoint(i))
                 {
                     string input = new string((char)i, 1);
-                    Assert.Equal(controlEncoder.HtmlEncode(input), testEncoder.HtmlEncode(input));
+                    Assert.Equal(controlEncoder.Encode(input), testEncoder.Encode(input));
                 }
             }
         }
@@ -99,10 +98,10 @@ namespace System.Text.Encodings.Web.Tests
         public void HtmlEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple(string input, string expected)
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder(UnicodeRanges.All);
+            HtmlEncoder encoder = HtmlEncoder.Create(UnicodeRanges.All);
 
             // Act
-            string retVal = encoder.HtmlEncode(input);
+            string retVal = encoder.Encode(input);
 
             // Assert
             Assert.Equal(expected, retVal);
@@ -112,7 +111,7 @@ namespace System.Text.Encodings.Web.Tests
         public void HtmlEncode_AllRangesAllowed_StillEncodesForbiddenChars_Extended()
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder(UnicodeRanges.All);
+            HtmlEncoder encoder = HtmlEncoder.Create(UnicodeRanges.All);
 
             // Act & assert - BMP chars
             for (int i = 0; i <= 0xFFFF; i++)
@@ -121,7 +120,7 @@ namespace System.Text.Encodings.Web.Tests
                 string expected;
                 if (IsSurrogateCodePoint(i))
                 {
-                    expected = "\uFFFD"; // unpaired surrogate -> Unicode replacement char
+                    expected = "&#xFFFD;"; // unpaired surrogate -> Unicode replacement char (escaped)
                 }
                 else
                 {
@@ -140,7 +139,7 @@ namespace System.Text.Encodings.Web.Tests
                         {
                             mustEncode = true; // control char
                         }
-                        else if (!UnicodeHelpers.IsCharacterDefined((char)i))
+                        else if (!UnicodeTestHelpers.IsCharacterDefined((char)i))
                         {
                             mustEncode = true; // undefined (or otherwise disallowed) char
                         }
@@ -156,7 +155,7 @@ namespace System.Text.Encodings.Web.Tests
                     }
                 }
 
-                string retVal = encoder.HtmlEncode(input);
+                string retVal = encoder.Encode(input);
                 Assert.Equal(expected, retVal);
             }
 
@@ -165,7 +164,7 @@ namespace System.Text.Encodings.Web.Tests
             {
                 string input = char.ConvertFromUtf32(i);
                 string expected = string.Format(CultureInfo.InvariantCulture, "&#x{0:X};", i);
-                string retVal = encoder.HtmlEncode(input);
+                string retVal = encoder.Encode(input);
                 Assert.Equal(expected, retVal);
             }
         }
@@ -174,14 +173,14 @@ namespace System.Text.Encodings.Web.Tests
         public void HtmlEncode_BadSurrogates_ReturnsUnicodeReplacementChar()
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder(UnicodeRanges.All); // allow all codepoints
+            HtmlEncoder encoder = HtmlEncoder.Create(UnicodeRanges.All); // allow all codepoints
 
             // "a<unpaired leading>b<unpaired trailing>c<trailing before leading>d<unpaired trailing><valid>e<high at end of string>"
             const string input = "a\uD800b\uDFFFc\uDFFF\uD800d\uDFFF\uD800\uDFFFe\uD800";
-            const string expected = "a\uFFFDb\uFFFDc\uFFFD\uFFFDd\uFFFD&#x103FF;e\uFFFD";
+            const string expected = "a&#xFFFD;b&#xFFFD;c&#xFFFD;&#xFFFD;d&#xFFFD;&#x103FF;e&#xFFFD;";
 
             // Act
-            string retVal = encoder.HtmlEncode(input);
+            string retVal = encoder.Encode(input);
 
             // Assert
             Assert.Equal(expected, retVal);
@@ -191,64 +190,64 @@ namespace System.Text.Encodings.Web.Tests
         public void HtmlEncode_EmptyStringInput_ReturnsEmptyString()
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder();
+            HtmlEncoder encoder = HtmlEncoder.Default;
 
             // Act & assert
-            Assert.Equal("", encoder.HtmlEncode(""));
+            Assert.Equal("", encoder.Encode(""));
         }
 
         [Fact]
         public void HtmlEncode_InputDoesNotRequireEncoding_ReturnsOriginalStringInstance()
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder();
+            HtmlEncoder encoder = HtmlEncoder.Default;
             string input = "Hello, there!";
 
             // Act & assert
-            Assert.Same(input, encoder.HtmlEncode(input));
+            Assert.Same(input, encoder.Encode(input));
         }
 
         [Fact]
         public void HtmlEncode_NullInput_Throws()
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder();
-            Assert.Throws<ArgumentNullException>(() => { encoder.HtmlEncode(null); });
+            HtmlEncoder encoder = HtmlEncoder.Default;
+            Assert.Throws<ArgumentNullException>(() => { encoder.Encode(null); });
         }
 
         [Fact]
         public void HtmlEncode_WithCharsRequiringEncodingAtBeginning()
         {
-            Assert.Equal("&amp;Hello, there!", new HtmlEncoder().HtmlEncode("&Hello, there!"));
+            Assert.Equal("&amp;Hello, there!", HtmlEncoder.Default.Encode("&Hello, there!"));
         }
 
         [Fact]
         public void HtmlEncode_WithCharsRequiringEncodingAtEnd()
         {
-            Assert.Equal("Hello, there!&amp;", new HtmlEncoder().HtmlEncode("Hello, there!&"));
+            Assert.Equal("Hello, there!&amp;", HtmlEncoder.Default.Encode("Hello, there!&"));
         }
 
         [Fact]
         public void HtmlEncode_WithCharsRequiringEncodingInMiddle()
         {
-            Assert.Equal("Hello, &amp;there!", new HtmlEncoder().HtmlEncode("Hello, &there!"));
+            Assert.Equal("Hello, &amp;there!", HtmlEncoder.Default.Encode("Hello, &there!"));
         }
 
         [Fact]
         public void HtmlEncode_WithCharsRequiringEncodingInterspersed()
         {
-            Assert.Equal("Hello, &lt;there&gt;!", new HtmlEncoder().HtmlEncode("Hello, <there>!"));
+            Assert.Equal("Hello, &lt;there&gt;!", HtmlEncoder.Default.Encode("Hello, <there>!"));
         }
 
         [Fact]
         public void HtmlEncode_CharArray()
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder();
+            HtmlEncoder encoder = HtmlEncoder.Default;
             var output = new StringWriter();
 
             // Act
-            encoder.HtmlEncode("Hello+world!".ToCharArray(), 3, 5, output);
+            encoder.Encode(output, "Hello+world!".ToCharArray(), 3, 5);
 
             // Assert
             Assert.Equal("lo&#x2B;wo", output.ToString());
@@ -258,11 +257,11 @@ namespace System.Text.Encodings.Web.Tests
         public void HtmlEncode_StringSubstring()
         {
             // Arrange
-            HtmlEncoder encoder = new HtmlEncoder();
+            HtmlEncoder encoder = HtmlEncoder.Default;
             var output = new StringWriter();
 
             // Act
-            encoder.HtmlEncode("Hello+world!", 3, 5, output);
+            encoder.Encode(output, "Hello+world!", 3, 5);
 
             // Assert
             Assert.Equal("lo&#x2B;wo", output.ToString());
@@ -276,9 +275,9 @@ namespace System.Text.Encodings.Web.Tests
             using (StreamWriter sw = new StreamWriter(ms))
             {
                 string input = "\U0010FFFF";
-                System.Text.Encodings.Web.HtmlEncoder.Default.Encode(sw, input);
+                HtmlEncoder.Default.Encode(sw, input);
             }
-            Assert.Equal("&#x10FFFF;", System.Text.Encoding.UTF8.GetString(buffer));
+            Assert.Equal("&#x10FFFF;", Encoding.UTF8.GetString(buffer));
         }
 
         private static bool IsSurrogateCodePoint(int codePoint)

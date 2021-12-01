@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -145,7 +144,7 @@ namespace System.Xml
         private static char[] CreateDefaultIndentChars()
         {
             var result = new char[IndentArrayLength];
-            result.AsSpan().Fill(DefaultIndentChar);
+            Array.Fill(result, DefaultIndentChar);
             return result;
         }
 
@@ -174,9 +173,6 @@ namespace System.Xml
         private int _nsTop;
         private Dictionary<string, int>? _nsHashtable;
         private bool _useNsHashtable;
-
-        // char types
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         //
         // Constants and constant tables
@@ -454,15 +450,15 @@ namespace System.Xml
                 _textWriter.Write(name);
                 if (pubid != null)
                 {
-                    _textWriter.Write(" PUBLIC " + _quoteChar);
+                    _textWriter.Write($" PUBLIC {_quoteChar}");
                     _textWriter.Write(pubid);
-                    _textWriter.Write(_quoteChar + " " + _quoteChar);
+                    _textWriter.Write($"{_quoteChar} {_quoteChar}");
                     _textWriter.Write(sysid);
                     _textWriter.Write(_quoteChar);
                 }
                 else if (sysid != null)
                 {
-                    _textWriter.Write(" SYSTEM " + _quoteChar);
+                    _textWriter.Write($" SYSTEM {_quoteChar}");
                     _textWriter.Write(sysid);
                     _textWriter.Write(_quoteChar);
                 }
@@ -796,7 +792,7 @@ namespace System.Xml
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
 
-                if (0 == string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
+                if (string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
                 {
                     throw new ArgumentException(SR.Xml_DupXmlDecl);
                 }
@@ -852,7 +848,7 @@ namespace System.Xml
                     ws = string.Empty;
                 }
 
-                if (!_xmlCharType.IsOnlyWhitespace(ws))
+                if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }
@@ -1190,7 +1186,7 @@ namespace System.Xml
                 _currentState = State.Prolog;
 
                 StringBuilder bufBld = new StringBuilder(128);
-                bufBld.Append("version=" + _quoteChar + "1.0" + _quoteChar);
+                bufBld.Append($"version={_quoteChar}1.0{_quoteChar}");
                 if (_encoding != null)
                 {
                     bufBld.Append(" encoding=");
@@ -1596,8 +1592,7 @@ namespace System.Xml
         private string GeneratePrefix()
         {
             int temp = _stack[_top].prefixCount++ + 1;
-            return "d" + _top.ToString("d", CultureInfo.InvariantCulture)
-                + "p" + temp.ToString("d", CultureInfo.InvariantCulture);
+            return string.Create(CultureInfo.InvariantCulture, $"d{_top:d}p{temp:d}");
         }
 
         private void InternalWriteProcessingInstruction(string name, string? text)

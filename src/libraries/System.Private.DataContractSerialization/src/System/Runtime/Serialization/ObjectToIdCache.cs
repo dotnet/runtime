@@ -7,11 +7,11 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
-    internal class ObjectToIdCache
+    internal sealed class ObjectToIdCache
     {
         internal int m_currentCount;
         internal int[] m_ids;
-        internal object[] m_objs;
+        internal object?[] m_objs;
         internal bool[] m_isWrapped;
 
         public ObjectToIdCache()
@@ -131,7 +131,7 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.ObjectTableOverflow));
         }
 
-        private int ComputeStartPosition(object o)
+        private int ComputeStartPosition(object? o)
         {
             return (RuntimeHelpers.GetHashCode(o) & 0x7FFFFFFF) % m_objs.Length;
         }
@@ -140,14 +140,14 @@ namespace System.Runtime.Serialization
         {
             int size = GetPrime(m_objs.Length + 1); // The lookup does an inherent doubling
             int[] oldIds = m_ids;
-            object[] oldObjs = m_objs;
+            object?[] oldObjs = m_objs;
             m_ids = new int[size];
             m_objs = new object[size];
             m_isWrapped = new bool[size];
 
             for (int j = 0; j < oldObjs.Length; j++)
             {
-                object obj = oldObjs[j];
+                object? obj = oldObjs[j];
                 if (obj != null)
                 {
                     bool found, isWrapped;
@@ -175,8 +175,10 @@ namespace System.Runtime.Serialization
             3, 7, 17, 37, 89, 197, 431, 919, 1931, 4049, 8419, 17519, 36353,
             75431, 156437, 324449, 672827, 1395263, 2893249, 5999471,
             11998949, 23997907, 47995853, 95991737, 191983481, 383966977, 767933981, 1535867969,
-            2146435069, 0X7FEFFFFF
-            // 0X7FEFFFFF is not prime, but it is the largest possible array size. There's nowhere to go from here.
+            2146435069, 0x7FFFFFC7
+            // 0x7FFFFFC7 == Array.MaxLength is not prime, but it is the largest possible array size.
+            // There's nowhere to go from here. Using a const rather than the MaxLength property
+            // so that the array contains only const values.
         };
     }
 }

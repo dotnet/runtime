@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             using (var portableTestAppFixture = new TestProjectFixture("PortableTestApp", RepoDirectories))
             {
                 portableTestAppFixture
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .BuildProject();
 
                 ActivateDotnetTestXunitOnTestProject(RepoDirectories, portableTestAppFixture);
@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             using (var standaloneTestAppFixture = new TestProjectFixture("StandaloneTestApp", RepoDirectories))
             {
                 standaloneTestAppFixture
-                    .EnsureRestoredForRid(standaloneTestAppFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(standaloneTestAppFixture.CurrentRid)
                     .BuildProject(runtime: standaloneTestAppFixture.CurrentRid);
 
                 ActivateDotnetTestXunitOnTestProject(RepoDirectories, standaloneTestAppFixture);

@@ -5,7 +5,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization
 {
-    internal class Attributes
+    internal sealed class Attributes
     {
         private static readonly XmlDictionaryString[] s_serializationLocalNames = new XmlDictionaryString[]
         {
@@ -23,18 +23,18 @@ namespace System.Runtime.Serialization
             DictionaryGlobals.XsiTypeLocalName
         };
 
-        internal string Id;
-        internal string Ref;
-        internal string XsiTypeName;
-        internal string XsiTypeNamespace;
-        internal string XsiTypePrefix;
+        internal string Id = null!; // initialized in Reset
+        internal string Ref = null!; // initialized in Reset
+        internal string? XsiTypeName;
+        internal string? XsiTypeNamespace;
+        internal string? XsiTypePrefix;
         internal bool XsiNil;
-        internal string ClrAssembly;
-        internal string ClrType;
+        internal string? ClrAssembly;
+        internal string? ClrType;
         internal int ArraySZSize;
-        internal string FactoryTypeName;
-        internal string FactoryTypeNamespace;
-        internal string FactoryTypePrefix;
+        internal string? FactoryTypeName;
+        internal string? FactoryTypeNamespace;
+        internal string? FactoryTypePrefix;
         internal bool UnrecognizedAttributesFound;
 
         internal void Read(XmlReaderDelegator reader)

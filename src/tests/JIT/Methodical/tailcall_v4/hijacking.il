@@ -33,6 +33,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module hijacking.exe
 // MVID: {7A6D7819-76F7-4311-967C-7CC804775914}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
@@ -219,6 +220,8 @@
     IL_000f:  conv.i8
     IL_0010:  add
     IL_0011:  stfld      int64 Repro::gc
+              ldc.i4.1
+              call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
     IL_0016:  ldarg.0
     IL_0017:  volatile.
     IL_0019:  ldfld      bool modreq([System.Runtime]System.Runtime.CompilerServices.IsVolatile) Repro::stop
@@ -230,6 +233,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       300 (0x12c)
     .maxstack  5

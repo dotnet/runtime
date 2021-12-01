@@ -164,7 +164,7 @@ namespace System.Linq.Parallel
         // This enumerator performs the search for the element at the specified index.
         //
 
-        private class ElementAtQueryOperatorEnumerator : QueryOperatorEnumerator<TSource, int>
+        private sealed class ElementAtQueryOperatorEnumerator : QueryOperatorEnumerator<TSource, int>
         {
             private readonly QueryOperatorEnumerator<TSource, int> _source; // The source data.
             private readonly int _index; // The index of the element to seek.
@@ -201,7 +201,7 @@ namespace System.Linq.Parallel
                 while (_source.MoveNext(ref currentElement!, ref currentKey))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     if (_resultFoundFlag.Value)
                     {

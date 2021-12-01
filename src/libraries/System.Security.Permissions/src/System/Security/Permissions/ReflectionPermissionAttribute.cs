@@ -3,7 +3,7 @@
 
 namespace System.Security.Permissions
 {
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
@@ -12,10 +12,10 @@ namespace System.Security.Permissions
         public ReflectionPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public ReflectionPermissionFlag Flags { get; set; }
         public bool MemberAccess { get; set; }
-        [Obsolete("This permission is no longer used by the CLR.")]
+        [Obsolete("ReflectionPermissionAttribute.ReflectionEmit has been deprecated and is not supported.")]
         public bool ReflectionEmit { get; set; }
         public bool RestrictedMemberAccess { get; set; }
-        [Obsolete("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("ReflectionPermissionAttribute.TypeInformation has been deprecated and is not supported.")]
         public bool TypeInformation { get; set; }
         public override IPermission CreatePermission() { return default(IPermission); }
     }

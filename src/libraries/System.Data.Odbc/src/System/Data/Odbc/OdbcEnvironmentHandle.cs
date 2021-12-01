@@ -8,9 +8,9 @@ namespace System.Data.Odbc
 {
     internal sealed class OdbcEnvironmentHandle : OdbcHandle
     {
-        internal OdbcEnvironmentHandle() : base(ODBC32.SQL_HANDLE.ENV, null)
+        public OdbcEnvironmentHandle() : base(ODBC32.SQL_HANDLE.ENV, null)
         {
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             //Set the expected driver manager version
             //
@@ -34,8 +34,8 @@ namespace System.Data.Odbc
 
             switch (retcode)
             {
-                case ODBC32.RetCode.SUCCESS:
-                case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                case ODBC32.SQLRETURN.SUCCESS:
+                case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     break;
                 default:
                     Dispose();

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http;
@@ -198,7 +199,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient>(this IServiceCollection services)
+        public static IHttpClientBuilder AddHttpClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>(
+            this IServiceCollection services)
             where TClient : class
         {
             if (services == null)
@@ -240,7 +242,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services)
+        public static IHttpClientBuilder AddHttpClient<TClient, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+            this IServiceCollection services)
             where TClient : class
             where TImplementation : class, TClient
         {
@@ -282,7 +285,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient>(this IServiceCollection services, string name)
+        public static IHttpClientBuilder AddHttpClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>(
+            this IServiceCollection services, string name)
             where TClient : class
         {
             if (services == null)
@@ -332,7 +336,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, string name)
+        public static IHttpClientBuilder AddHttpClient<TClient, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+            this IServiceCollection services, string name)
             where TClient : class
             where TImplementation : class, TClient
         {
@@ -376,7 +381,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient>(this IServiceCollection services, Action<HttpClient> configureClient)
+        public static IHttpClientBuilder AddHttpClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>(
+            this IServiceCollection services, Action<HttpClient> configureClient)
             where TClient : class
         {
             if (services == null)
@@ -421,7 +427,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient>(this IServiceCollection services, Action<IServiceProvider, HttpClient> configureClient)
+        public static IHttpClientBuilder AddHttpClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>(
+            this IServiceCollection services, Action<IServiceProvider, HttpClient> configureClient)
             where TClient : class
         {
             if (services == null)
@@ -470,7 +477,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, Action<HttpClient> configureClient)
+        public static IHttpClientBuilder AddHttpClient<TClient, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+            this IServiceCollection services, Action<HttpClient> configureClient)
             where TClient : class
             where TImplementation : class, TClient
         {
@@ -520,7 +528,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparamref name="TClient"/> as the service type.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, Action<IServiceProvider, HttpClient> configureClient)
+        public static IHttpClientBuilder AddHttpClient<TClient, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+            this IServiceCollection services, Action<IServiceProvider, HttpClient> configureClient)
             where TClient : class
             where TImplementation : class, TClient
         {
@@ -569,7 +578,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient>(this IServiceCollection services, string name, Action<HttpClient> configureClient)
+        public static IHttpClientBuilder AddHttpClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>(
+            this IServiceCollection services, string name, Action<HttpClient> configureClient)
             where TClient : class
         {
             if (services == null)
@@ -621,7 +631,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient>(this IServiceCollection services, string name, Action<IServiceProvider, HttpClient> configureClient)
+        public static IHttpClientBuilder AddHttpClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>(
+            this IServiceCollection services, string name, Action<IServiceProvider, HttpClient> configureClient)
             where TClient : class
         {
             if (services == null)
@@ -677,7 +688,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, string name, Action<HttpClient> configureClient)
+        public static IHttpClientBuilder AddHttpClient<TClient, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+            this IServiceCollection services, string name, Action<HttpClient> configureClient)
             where TClient : class
             where TImplementation : class, TClient
         {
@@ -734,7 +746,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Use <see cref="Options.Options.DefaultName"/> as the name to configure the default client.
         /// </para>
         /// </remarks>
-        public static IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this IServiceCollection services, string name, Action<IServiceProvider, HttpClient> configureClient)
+        public static IHttpClientBuilder AddHttpClient<TClient, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+            this IServiceCollection services, string name, Action<IServiceProvider, HttpClient> configureClient)
             where TClient : class
             where TImplementation : class, TClient
         {

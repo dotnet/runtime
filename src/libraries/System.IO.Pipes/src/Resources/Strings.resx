@@ -123,9 +123,6 @@
   <data name="ArgumentOutOfRange_NeedValidPipeAccessRights" xml:space="preserve">
     <value>Invalid PipeAccessRights value.</value>
   </data>
-  <data name="Argument_InvalidOffLen" xml:space="preserve">
-    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
-  </data>
   <data name="Argument_NeedNonemptyPipeName" xml:space="preserve">
     <value>pipeName cannot be an empty string.</value>
   </data>

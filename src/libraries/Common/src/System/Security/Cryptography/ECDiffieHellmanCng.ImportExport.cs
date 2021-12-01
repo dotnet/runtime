@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
@@ -81,7 +80,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(blob, 0, blob.Length);
+                    Array.Clear(blob);
                 }
             }
 
@@ -112,7 +111,7 @@ namespace System.Security.Cryptography
                 {
                     if (blob != null)
                     {
-                        Array.Clear(blob, 0, blob.Length);
+                        Array.Clear(blob);
                     }
                 }
             }

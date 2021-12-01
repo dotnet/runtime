@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Text;
-using System.Collections;
-using System.IO;
-using System.Globalization;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
 
 namespace System.Xml.Serialization
 {
@@ -37,8 +33,11 @@ namespace System.Xml.Serialization
             }
             else if (char.IsLower(identifier[0]))
             {
-                char upper = char.ToUpperInvariant(identifier[0]);
-                return string.Concat(MemoryMarshal.CreateReadOnlySpan(ref upper, 1), identifier.AsSpan(1));
+                return string.Create(identifier.Length, identifier, static (buffer, identifier) =>
+                {
+                    identifier.CopyTo(buffer);
+                    buffer[0] = char.ToUpperInvariant(buffer[0]); // convert only first char to uppercase; leave all else as-is
+                });
             }
             else
             {
@@ -58,8 +57,11 @@ namespace System.Xml.Serialization
             }
             else if (char.IsUpper(identifier[0]))
             {
-                char lower = char.ToLowerInvariant(identifier[0]);
-                return string.Concat(MemoryMarshal.CreateReadOnlySpan(ref lower, 1), identifier.AsSpan(1));
+                return string.Create(identifier.Length, identifier, static (buffer, identifier) =>
+                {
+                    identifier.CopyTo(buffer);
+                    buffer[0] = char.ToLowerInvariant(buffer[0]); // convert only first char to lowercase; leave all else as-is
+                });
             }
             else
             {
@@ -162,10 +164,12 @@ namespace System.Xml.Serialization
             return true;
         }
 
-        internal static void CheckValidIdentifier(string ident)
+        internal static void CheckValidIdentifier([NotNull] string? ident)
         {
             if (!CSharpHelpers.IsValidLanguageIndependentIdentifier(ident))
                 throw new ArgumentException(SR.Format(SR.XmlInvalidIdentifier, ident), nameof(ident));
+
+            Debug.Assert(ident != null);
         }
 
         internal static string GetCSharpName(string name)
@@ -213,12 +217,13 @@ namespace System.Xml.Serialization
             int rank = 0;
             while (t.IsArray)
             {
-                t = t.GetElementType();
+                t = t.GetElementType()!;
                 rank++;
             }
+
             StringBuilder sb = new StringBuilder();
             sb.Append("global::");
-            string ns = t.Namespace;
+            string? ns = t.Namespace;
             if (ns != null && ns.Length > 0)
             {
                 string[] parts = ns.Split('.');
@@ -229,7 +234,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            Type[] arguments = t.IsGenericType || t.ContainsGenericParameters ? t.GetGenericArguments() : Array.Empty<Type>();
+            Type[] arguments = t.IsGenericType || t.ContainsGenericParameters ? t.GetGenericArguments() : Type.EmptyTypes;
             GetCSharpName(t, arguments, 0, sb);
             for (int i = 0; i < rank; i++)
             {
@@ -266,7 +271,8 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static string EscapeKeywords(string identifier)
+        [return: NotNullIfNotNull("identifier")]
+        private static string? EscapeKeywords(string? identifier)
         {
             if (identifier == null || identifier.Length == 0) return identifier;
             string originalIdentifier = identifier;
@@ -277,7 +283,7 @@ namespace System.Xml.Serialization
             {
                 if (separator >= 0)
                 {
-                    sb.Append(originalIdentifier.Substring(separator, 1));
+                    sb.Append(originalIdentifier[separator]);
                 }
                 separator++;
                 separator += names[i].Length;

@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata
     /// Scope of local variables and constants. Stored in debug metadata.
     /// </summary>
     /// <remarks>
-    /// See https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localscope-table-0x32.
+    /// See https://github.com/dotnet/runtime/blob/main/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#localscope-table-0x32.
     /// </remarks>
     public readonly struct LocalScope
     {

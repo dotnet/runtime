@@ -10,6 +10,7 @@ Imports System.Security
 Imports Microsoft.VisualBasic.CompilerServices.LateBinding
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -1933,6 +1934,7 @@ NextMethod8:
         Friend Function InvokeMember(ByVal name As String,
             ByVal invokeAttr As BindingFlags,
             ByVal objType As System.Type,
+            <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
             ByVal objIReflect As IReflect,
             ByVal target As Object,
             ByVal args As Object(),
@@ -1963,7 +1965,9 @@ NextMethod8:
                 For i As Integer = 0 To namedParameters.GetUpperBound(0)
                     If (namedParameters(i) Is Nothing) Then
                         Diagnostics.Debug.Assert(False, "Should never be reached")
+#Disable Warning CA2208 ' Instantiate argument exceptions correctly
                         Throw New ArgumentException
+#Enable Warning CA2208 ' Instantiate argument exceptions correctly
                     End If
                 Next i
             End If
@@ -1991,7 +1995,7 @@ NextMethod8:
 
             p = GetMethodsByName(objType, objIReflect, name, invokeAttr)
             If (args Is Nothing) Then
-                args = New Object() {}
+                args = Array.Empty(Of Object)()
             End If
 
             Dim binderState As Object = Nothing
@@ -2045,7 +2049,12 @@ NextMethod8:
 
         End Function
 
-        Private Function GetMethodsByName(ByVal objType As System.Type, ByVal objIReflect As IReflect, ByVal name As String, ByVal invokeAttr As BindingFlags) As MethodBase()
+        Private Function GetMethodsByName(
+                ByVal objType As System.Type,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objIReflect As IReflect,
+                ByVal name As String,
+                ByVal invokeAttr As BindingFlags) As MethodBase()
 
             Dim mi As MemberInfo()
             Dim mb As MethodBase()

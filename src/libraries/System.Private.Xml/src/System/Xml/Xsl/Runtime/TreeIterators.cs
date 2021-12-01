@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Xml.XPath;
@@ -927,7 +928,7 @@ namespace System.Xml.Xsl.Runtime
                     return true;
             }
 
-            Debug.Assert(_state == IteratorState.NoNext, "Illegal state: " + _state);
+            Debug.Assert(_state == IteratorState.NoNext, $"Illegal state: {_state}");
             return false;
         }
 

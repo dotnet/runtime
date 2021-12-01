@@ -21,6 +21,7 @@
   
   
 }
+.assembly extern xunit.core {}
 .module 'selfref.exe'
 // MVID: {57800D71-6F51-4ACF-BC86-8F3D2FBAC8E1}
 .namespace GCTest
@@ -31,6 +32,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       157 (0x9d)
       .maxstack  3

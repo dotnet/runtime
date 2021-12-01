@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.Cache;
-using System.Net.Http;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -53,6 +52,7 @@ namespace System.Net
         private SendOrPostCallback? _reportDownloadProgressChanged;
         private SendOrPostCallback? _reportUploadProgressChanged;
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public WebClient()
         {
             // We don't know if derived types need finalizing, but WebClient doesn't.
@@ -143,7 +143,7 @@ namespace System.Net
             get { return _encoding; }
             set
             {
-                ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _encoding = value;
             }
         }
@@ -212,11 +212,14 @@ namespace System.Net
 
         public RequestCachePolicy? CachePolicy { get; set; }
 
-        public bool IsBusy => _asyncOp != null;
+        public bool IsBusy => Volatile.Read(ref _callNesting) > 0;
 
         protected virtual WebRequest GetWebRequest(Uri address)
         {
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
             WebRequest request = WebRequest.Create(address);
+#pragma warning restore SYSLIB0014
+
             CopyHeadersTo(request);
 
             if (Credentials != null)
@@ -277,7 +280,7 @@ namespace System.Net
 
         public byte[] DownloadData(Uri address)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
 
             StartOperation();
             try
@@ -317,8 +320,8 @@ namespace System.Net
 
         public void DownloadFile(Uri address, string fileName)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(fileName, nameof(fileName));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(fileName);
 
             WebRequest? request = null;
             FileStream? fs = null;
@@ -356,7 +359,7 @@ namespace System.Net
 
         public Stream OpenRead(Uri address)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
 
             WebRequest? request = null;
             StartOperation();
@@ -389,7 +392,7 @@ namespace System.Net
 
         public Stream OpenWrite(Uri address, string? method)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -429,8 +432,8 @@ namespace System.Net
 
         public byte[] UploadData(Uri address, string? method, byte[] data)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(data, nameof(data));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -498,7 +501,7 @@ namespace System.Net
             {
                 if (needsHeaderAndBoundary)
                 {
-                    string boundary = "---------------------" + DateTime.Now.Ticks.ToString("x", NumberFormatInfo.InvariantInfo);
+                    string boundary = $"---------------------{DateTime.Now.Ticks:x}";
 
                     headers[HttpKnownHeaderNames.ContentType] = UploadFileContentType + "; boundary=" + boundary;
 
@@ -550,8 +553,8 @@ namespace System.Net
 
         public byte[] UploadFile(Uri address, string? method, string fileName)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(fileName, nameof(fileName));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(fileName);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -623,8 +626,8 @@ namespace System.Net
 
         public byte[] UploadValues(Uri address, string? method, NameValueCollection data)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(data, nameof(data));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -662,8 +665,8 @@ namespace System.Net
 
         public string UploadString(Uri address, string? method, string data)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(data, nameof(data));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -688,7 +691,7 @@ namespace System.Net
 
         public string DownloadString(Uri address)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
 
             StartOperation();
             try
@@ -778,7 +781,7 @@ namespace System.Net
 
         private Uri GetUri(string address)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
 
             Uri? uri;
             if (_baseAddress != null)
@@ -798,7 +801,7 @@ namespace System.Net
 
         private Uri GetUri(Uri address)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
 
             Uri? uri = address;
 
@@ -1294,7 +1297,7 @@ namespace System.Net
 
         public void OpenReadAsync(Uri address, object? userToken)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1332,7 +1335,7 @@ namespace System.Net
 
         public void OpenWriteAsync(Uri address, string? method, object? userToken)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -1393,7 +1396,7 @@ namespace System.Net
 
         public void DownloadStringAsync(Uri address, object? userToken)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1419,7 +1422,7 @@ namespace System.Net
 
         public void DownloadDataAsync(Uri address, object? userToken)
         {
-            ThrowIfNull(address, nameof(address));
+            ArgumentNullException.ThrowIfNull(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1445,8 +1448,8 @@ namespace System.Net
 
         public void DownloadFileAsync(Uri address, string fileName, object? userToken)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(fileName, nameof(fileName));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(fileName);
 
             FileStream? fs = null;
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
@@ -1471,8 +1474,8 @@ namespace System.Net
 
         public void UploadStringAsync(Uri address, string? method, string data, object? userToken)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(data, nameof(data));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -1522,8 +1525,8 @@ namespace System.Net
 
         public void UploadDataAsync(Uri address, string? method, byte[] data, object? userToken)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(data, nameof(data));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -1563,8 +1566,8 @@ namespace System.Net
 
         public void UploadFileAsync(Uri address, string? method, string fileName, object? userToken)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(fileName, nameof(fileName));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(fileName);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -1602,8 +1605,8 @@ namespace System.Net
 
         public void UploadValuesAsync(Uri address, string? method, NameValueCollection data, object? userToken)
         {
-            ThrowIfNull(address, nameof(address));
-            ThrowIfNull(data, nameof(data));
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
             if (method == null)
             {
                 method = MapToDefaultMethod(address);
@@ -1937,14 +1940,6 @@ namespace System.Net
             }
         }
 
-        private static void ThrowIfNull(object argument, string parameterName)
-        {
-            if (argument == null)
-            {
-                throw new ArgumentNullException(parameterName);
-            }
-        }
-
         #region Supporting Types
         private sealed class ProgressData
         {
@@ -2005,7 +2000,7 @@ namespace System.Net
 
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public event WriteStreamClosedEventHandler WriteStreamClosed { add { } remove { } }
+        public event WriteStreamClosedEventHandler? WriteStreamClosed { add { } remove { } }
 
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]

@@ -33,6 +33,7 @@
 #else
 #include <mono/utils/mono-os-wait.h>
 #endif
+#include <mono/utils/w32subset.h>
 
 #define MONO_HAS_SEMAPHORES 1
 
@@ -284,18 +285,27 @@ mono_os_sem_post (MonoSemType *sem)
 
 typedef HANDLE MonoSemType;
 
+#if HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE || HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE_EX
 static inline void
 mono_os_sem_init (MonoSemType *sem, int value)
 {
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-	*sem = CreateSemaphore (NULL, value, 0x7FFFFFFF, NULL);
-#else
-	*sem = CreateSemaphoreEx (NULL, value, 0x7FFFFFFF, NULL, 0, SEMAPHORE_ALL_ACCESS);
+#if HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE
+	*sem = CreateSemaphoreW (NULL, value, 0x7FFFFFFF, NULL);
+#elif HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE_EX
+	*sem = CreateSemaphoreExW (NULL, value, 0x7FFFFFFF, NULL, 0, SEMAPHORE_ALL_ACCESS);
 #endif
-
 	if (G_UNLIKELY (*sem == NULL))
 		g_error ("%s: CreateSemaphore failed with error %d", __func__, GetLastError ());
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_CREATE_SEMAPHORE && !HAVE_EXTERN_DEFINED_WIN32_CREATE_SEMAPHORE_EX
+static inline void
+mono_os_sem_init (MonoSemType *sem, int value)
+{
+	*sem = NULL;
+	g_unsupported_api ("CreateSemaphore, CreateSemaphoreEx");
+	SetLastError (ERROR_NOT_SUPPORTED);
+}
+#endif /* HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE || HAVE_API_SUPPORT_WIN32_CREATE_SEMAPHORE_EX */
 
 static inline void
 mono_os_sem_destroy (MonoSemType *sem)

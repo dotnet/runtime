@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.IO;
 using System.Xml;
 using System.Net;
@@ -49,7 +48,7 @@ namespace System.Xml.Resolvers
         //
         // XmlKnownDtdData class
         //
-        private class XmlKnownDtdData : PreloadedData
+        private sealed class XmlKnownDtdData : PreloadedData
         {
             internal string publicId;
             internal string systemId;
@@ -69,7 +68,7 @@ namespace System.Xml.Resolvers
             }
         }
 
-        private class ByteArrayChunk : PreloadedData
+        private sealed class ByteArrayChunk : PreloadedData
         {
             private readonly byte[] _array;
             private readonly int _offset;
@@ -93,7 +92,7 @@ namespace System.Xml.Resolvers
             }
         }
 
-        private class StringData : PreloadedData
+        private sealed class StringData : PreloadedData
         {
             private readonly string _str;
 

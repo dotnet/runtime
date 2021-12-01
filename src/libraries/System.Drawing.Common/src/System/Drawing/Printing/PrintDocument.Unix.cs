@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.PrintDocument.cs
 //
@@ -186,10 +187,7 @@ namespace System.Drawing.Printing
             PrintController.OnEndPrint(this, printArgs);
         }
 
-        public override string ToString()
-        {
-            return "[PrintDocument " + this.DocumentName + "]";
-        }
+        public override string ToString() => $"[PrintDocument {this.DocumentName}]";
 
         // events
         protected virtual void OnBeginPrint(PrintEventArgs e)

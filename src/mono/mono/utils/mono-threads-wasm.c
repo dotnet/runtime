@@ -2,15 +2,19 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
-
+#include <mono/utils/mono-compiler.h>
 
 #if defined (USE_WASM_BACKEND)
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
 
-#include <emscripten.h>
 #include <glib.h>
+
+#ifdef HOST_BROWSER
+
+#include <emscripten.h>
+#include <emscripten/stack.h>
 
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
 
@@ -18,20 +22,33 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_base (void)
 {
-	// Return the bottom limit of the stack
-	return EM_ASM_INT ({
-		return STACK_MAX;
-	});
+	return emscripten_stack_get_end ();
 }
 
 EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_size (void)
 {
-	return EM_ASM_INT ({
-		return TOTAL_STACK;
-	});
+	return (guint8*)emscripten_stack_get_base () - (guint8*)emscripten_stack_get_end ();
 }
+
+#else /* WASI */
+
+static int
+wasm_get_stack_base (void)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+static int
+wasm_get_stack_size (void)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+#endif
 
 int
 mono_thread_info_get_system_max_stack_size (void)
@@ -281,6 +298,13 @@ mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 	return FALSE;
 }
 
+void
+mono_memory_barrier_process_wide (void)
+{
+}
+
+#ifdef HOST_BROWSER
+
 G_EXTERN_C
 extern void schedule_background_exec (void);
 
@@ -314,9 +338,10 @@ mono_background_exec (void)
 	g_slist_free (j);
 }
 
-void
-mono_memory_barrier_process_wide (void)
-{
-}
+#endif /* HOST_BROWSER */
+
+#else
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_wasm);
 
 #endif

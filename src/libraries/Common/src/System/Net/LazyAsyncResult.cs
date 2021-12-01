@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,7 +33,7 @@ namespace System.Net
             }
         }
 
-        private class ThreadContext
+        private sealed class ThreadContext
         {
             internal int _nestedIOCount;
         }
@@ -257,15 +256,9 @@ namespace System.Net
                 // then the "result" parameter passed to InvokeCallback() will be ignored.
 
                 // It's an error to call after the result has been completed or with DBNull.
-                if (value == DBNull.Value)
-                {
-                    NetEventSource.Fail(this, "Result can't be set to DBNull - it's a special internal value.");
-                }
+                Debug.Assert(value != DBNull.Value, "Result can't be set to DBNull - it's a special internal value.");
 
-                if (InternalPeekCompleted)
-                {
-                    NetEventSource.Fail(this, "Called on completed result.");
-                }
+                Debug.Assert(!InternalPeekCompleted, "Called on completed result.");
                 _result = value;
             }
         }

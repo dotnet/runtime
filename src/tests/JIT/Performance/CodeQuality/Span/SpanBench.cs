@@ -2,20 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Xunit;
-using Microsoft.Xunit.Performance;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Span
 {
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    class BenchmarkAttribute : Attribute
+    {
+        public BenchmarkAttribute()
+        {
+        }
+        private long _innerIterationsCount = 1;
+        public long InnerIterationCount
+        {
+            get { return _innerIterationsCount; }
+            set { _innerIterationsCount = value; }
+        }
+    }
+
+    // A simplified xunit InlineData attribute.
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    class InlineDataAttribute : Attribute
+    {
+        public InlineDataAttribute(int data)
+        {
+            _data = data;
+        }
+        int _data;
+        public int Data
+        {
+            get { return _data; }
+            set { _data = value; }
+        }
+    }
+
     public class SpanBench
     {
 
@@ -31,6 +55,15 @@ namespace Span
         const int FillAllIterations = 100000;
         const int BaseIterations = 10000000;
 #endif
+
+        // Seed for random set by environment variables
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
 
         // Default length for arrays of mock input data
         const int DefaultLength = 1024;
@@ -54,9 +87,7 @@ namespace Span
 
         // Use statics to smuggle some information from Main to Invoke when running tests
         // from the command line.
-        static bool IsXunitInvocation = true; // xunit-perf leaves this true; command line Main sets to false
         static int CommandLineInnerIterationCount = 0;   // used to communicate iteration count from BenchmarkAttribute
-                                                         // (xunit-perf exposes the same in static property Benchmark.InnerIterationCount)
         static bool DoWarmUp; // Main sets this when calling a new benchmark routine
 
 
@@ -65,40 +96,31 @@ namespace Span
         // of iterations that the inner loop should execute.
         static void Invoke(Action<int> innerLoop, string nameFormat, params object[] nameArgs)
         {
-            if (IsXunitInvocation)
+            if (DoWarmUp)
             {
-                foreach (var iteration in Benchmark.Iterations)
-                    using (iteration.StartMeasurement())
-                        innerLoop((int)Benchmark.InnerIterationCount);
-            }
-            else
-            {
-                if (DoWarmUp)
-                {
-                    // Run some warm-up iterations before measuring
-                    innerLoop(CommandLineInnerIterationCount);
-                    // Clear the flag since we're now warmed up (caller will
-                    // reset it before calling new code)
-                    DoWarmUp = false;
-                }
-
-                // Now do the timed run of the inner loop.
-                Stopwatch sw = Stopwatch.StartNew();
+                // Run some warm-up iterations before measuring
                 innerLoop(CommandLineInnerIterationCount);
-                sw.Stop();
-
-                // Print result.
-                string name = String.Format(nameFormat, nameArgs);
-                double timeInMs = sw.Elapsed.TotalMilliseconds;
-                Console.WriteLine("{0}: {1}ms", name, timeInMs);
+                // Clear the flag since we're now warmed up (caller will
+                // reset it before calling new code)
+                DoWarmUp = false;
             }
+
+            // Now do the timed run of the inner loop.
+            Stopwatch sw = Stopwatch.StartNew();
+            innerLoop(CommandLineInnerIterationCount);
+            sw.Stop();
+
+            // Print result.
+            string name = String.Format(nameFormat, nameArgs);
+            double timeInMs = sw.Elapsed.TotalMilliseconds;
+            Console.WriteLine("{0}: {1}ms", name, timeInMs);
         }
 
         // Helper for the sort tests to get some pseudo-random input
         static int[] GetUnsortedData(int length)
         {
             int[] unsortedData = new int[length];
-            Random r = new Random(42);
+            Random r = new Random(Seed);
             for (int i = 0; i < unsortedData.Length; ++i)
             {
                 unsortedData[i] = r.Next();
@@ -474,7 +496,7 @@ namespace Span
         }
         #endregion
 
-#if false // netcoreapp specific API https://github.com/dotnet/coreclr/issues/16126
+#if false // netcoreapp specific API https://github.com/dotnet/runtime/issues/9635
         #region TestSpanCreate<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
@@ -1019,7 +1041,7 @@ namespace Span
         public static void TestSpanAsSpanStringCharWrapper(int length)
         {
             StringBuilder sb = new StringBuilder();
-            Random rand = new Random(42);
+            Random rand = new Random(Seed);
             char[] c = new char[1];
             for (int i = 0; i < length; i++)
             {
@@ -1054,9 +1076,6 @@ namespace Span
 
         public static int Main(string[] args)
         {
-            // When we call into Invoke, it'll need to know this isn't xunit-perf running
-            IsXunitInvocation = false;
-
             // Now simulate xunit-perf's benchmark discovery so we know what tests to invoke
             TypeInfo t = typeof(SpanBench).GetTypeInfo();
             foreach(MethodInfo m in t.DeclaredMethods)
@@ -1079,11 +1098,8 @@ namespace Span
                     // what arguments they should be run.
                     foreach (InlineDataAttribute dataAttr in m.GetCustomAttributes<InlineDataAttribute>())
                     {
-                        foreach (object[] data in dataAttr.GetData(m))
-                        {
-                            // All the benchmark methods in this test take a single int parameter
-                            invokeMethod((int)data[0]);
-                        }
+                        int data = dataAttr.Data;
+                        invokeMethod(data);
                     }
                 }
             }

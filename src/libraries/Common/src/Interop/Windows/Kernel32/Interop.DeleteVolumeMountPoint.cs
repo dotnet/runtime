@@ -5,16 +5,15 @@ using Microsoft.Win32.SafeHandles;
 using System.IO;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use DeleteVolumeMountPoint.
         /// </summary>
-        [DllImport(Libraries.Kernel32, EntryPoint = "DeleteVolumeMountPointW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal static extern bool DeleteVolumeMountPointPrivate(string mountPoint);
-
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "DeleteVolumeMountPointW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial bool DeleteVolumeMountPointPrivate(string mountPoint);
 
         internal static bool DeleteVolumeMountPoint(string mountPoint)
         {

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
@@ -21,8 +21,6 @@
     <Compile Include="System\IO\Pipes\PipeState.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.cs" />
     <Compile Include="System\IO\Pipes\PipeTransmissionMode.cs" />
-    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
-             Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
@@ -50,13 +48,13 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs"
              Link="Common\Interop\Windows\Interop.FileOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs"
-             Link="Common\CoreLib\Interop\Windows\Interop.FileTypes.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs"
+             Link="Common\Interop\Windows\Interop.FileTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
              Link="Common\Interop\Windows\Interop.GetCurrentProcess.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_IntPtr.cs"
-             Link="Common\Interop\Windows\Interop.DuplicateHandle_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafePipeHandle.cs"
+             Link="Common\Interop\Windows\Interop.DuplicateHandle_SafePipeHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"
-             Link="Common\CoreLib\Interop\Windows\Interop.GetFileType.cs" />
+             Link="Common\Interop\Windows\Interop.GetFileType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreatePipe_SafePipeHandle.cs"
              Link="Common\Interop\Windows\Interop.CreatePipe_SafePipeHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConnectNamedPipe.cs"
@@ -96,18 +94,16 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Windows.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStreamAcl.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Windows.cs" />
-    <Compile Include="System\IO\Pipes\ConnectionCompletionSource.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStreamAcl.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\PipeAccessRights.cs" />
     <Compile Include="System\IO\Pipes\PipeAccessRule.cs" />
     <Compile Include="System\IO\Pipes\PipeAuditRule.cs" />
-    <Compile Include="System\IO\Pipes\PipeCompletionSource.cs" />
     <Compile Include="System\IO\Pipes\PipesAclExtensions.cs" />
     <Compile Include="System\IO\Pipes\PipeSecurity.cs" />
+    <Compile Include="System\IO\Pipes\PipeStream.ValueTaskSource.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Windows.cs" />
-    <Compile Include="System\IO\Pipes\ReadWriteCompletionSource.cs" />
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -123,8 +119,6 @@
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -143,8 +137,6 @@
              Link="Common\Interop\Unix\Interop.GetHostName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerUserName.cs"
              Link="Common\Interop\Unix\Interop.GetPeerUserName.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDir.cs"
-             Link="Common\Interop\Unix\Interop.MkDir.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
              Link="Common\Interop\Unix\Interop.Open.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
@@ -169,27 +161,27 @@
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetEUid.cs"
              Link="Common\Interop\Unix\Interop.SetEUid.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\ForceAsyncAwaiter.cs"
-             Link="Common\System\Threading\Tasks\ForceAsyncAwaiter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <!-- Include src projects during restore as TargetsWindows isn't set. -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(MSBuildRestoreSessionId)' != ''">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Security.Claims" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Net.Primitives" />

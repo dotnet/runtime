@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -49,11 +50,19 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         // (guarenteed less than 28, in practice 0-2)
         private static readonly List<Type> s_generatedTypes = new List<Type>(0);
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicFields, typeof(VariantArray1))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicFields, typeof(VariantArray2))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicFields, typeof(VariantArray4))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicFields, typeof(VariantArray8))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Types are either dynamically created or have dynamic dependency.")]
         internal static MemberExpression GetStructField(ParameterExpression variantArray, int field)
         {
             return Expression.Field(variantArray, "Element" + field);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "MakeGenericType is called on a dynamically created type that doesn't contain trimming annotations.")]
         internal static Type GetStructType(int args)
         {
             Debug.Assert(args >= 0);
@@ -73,7 +82,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 // See if we can find an existing type
                 foreach (Type t in s_generatedTypes)
                 {
-                    int arity = int.Parse(t.Name.Substring("VariantArray".Length), CultureInfo.InvariantCulture);
+                    int arity = int.Parse(t.Name.AsSpan("VariantArray".Length), provider: CultureInfo.InvariantCulture);
                     if (size == arity)
                     {
                         return t;

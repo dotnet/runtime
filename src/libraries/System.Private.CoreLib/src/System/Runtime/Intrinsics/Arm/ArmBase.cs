@@ -44,6 +44,16 @@ namespace System.Runtime.Intrinsics.Arm
             public static int LeadingZeroCount(ulong value) => LeadingZeroCount(value);
 
             /// <summary>
+            ///   A64: SMULH Xd, Xn, Xm
+            /// </summary>
+            public static long MultiplyHigh(long left, long right) => MultiplyHigh(left, right);
+
+            /// <summary>
+            ///   A64: UMULH Xd, Xn, Xm
+            /// </summary>
+            public static ulong MultiplyHigh(ulong left, ulong right) => MultiplyHigh(left, right);
+
+            /// <summary>
             ///   A64: RBIT Xd, Xn
             /// </summary>
             public static long ReverseElementBits(long value) => ReverseElementBits(value);
@@ -77,5 +87,11 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: RBIT Wd, Wn
         /// </summary>
         public static uint ReverseElementBits(uint value) => ReverseElementBits(value);
+
+        /// <summary>
+        ///   A32: YIELD
+        ///   A64: YIELD
+        /// </summary>
+        public static void Yield() => Yield();
     }
 }

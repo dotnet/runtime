@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
@@ -18,13 +19,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal sealed override ClassType ClassType
-        {
-            get
-            {
-                return ClassType.None;
-            }
-        }
+        internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.None;
 
         /// <summary>
         /// Create a converter for the provided <see cref="Type"/>.
@@ -51,6 +46,8 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
+        internal sealed override Type? KeyType => null;
+
         internal sealed override Type? ElementType => null;
 
         internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
@@ -58,9 +55,14 @@ namespace System.Text.Json.Serialization
             Debug.Assert(CanConvert(typeToConvert));
 
             JsonConverter? converter = CreateConverter(typeToConvert, options);
-            if (converter == null)
+            switch (converter)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(GetType());
+                case null:
+                    ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(GetType());
+                    break;
+                case JsonConverterFactory:
+                    ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactorty(GetType());
+                    break;
             }
 
             return converter!;
@@ -111,10 +113,10 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal sealed override void WriteWithQuotesAsObject(
+        internal sealed override void WriteAsPropertyNameCoreAsObject(
             Utf8JsonWriter writer, object value,
             JsonSerializerOptions options,
-            ref WriteStack state)
+            bool isWritingExtensionDataProperty)
         {
             Debug.Fail("We should never get here.");
 

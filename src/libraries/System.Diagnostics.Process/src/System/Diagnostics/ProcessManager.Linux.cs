@@ -4,18 +4,13 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
-        public static int[] GetProcessIds()
-        {
-            return EnumerateProcessIds().ToArray();
-        }
+        public static int[] GetProcessIds() => new List<int>(EnumerateProcessIds()).ToArray();
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="machineName">The target machine.</param>
@@ -23,14 +18,12 @@ namespace System.Diagnostics
         public static ProcessInfo[] GetProcessInfos(string machineName)
         {
             ThrowIfRemoteMachine(machineName);
-            int[] procIds = GetProcessIds(machineName);
 
             // Iterate through all process IDs to load information about each process
-            var reusableReader = new ReusableTextReader();
-            var processes = new List<ProcessInfo>(procIds.Length);
-            foreach (int pid in procIds)
+            var processes = new List<ProcessInfo>();
+            foreach (int pid in EnumerateProcessIds())
             {
-                ProcessInfo? pi = CreateProcessInfo(pid, reusableReader);
+                ProcessInfo? pi = CreateProcessInfo(pid);
                 if (pi != null)
                 {
                     processes.Add(pi);
@@ -45,40 +38,7 @@ namespace System.Diagnostics
         /// <returns>The array of modules.</returns>
         internal static ProcessModuleCollection GetModules(int processId)
         {
-            var modules = new ProcessModuleCollection(0);
-
-            // Process from the parsed maps file each entry representing a module
-            foreach (Interop.procfs.ParsedMapsModule entry in Interop.procfs.ParseMapsModules(processId))
-            {
-                int sizeOfImage = (int)(entry.AddressRange.Value - entry.AddressRange.Key);
-
-                // A single module may be split across multiple map entries; consolidate based on
-                // the name and address ranges of sequential entries.
-                if (modules.Count > 0)
-                {
-                    ProcessModule module = modules[modules.Count - 1];
-                    if (module.FileName == entry.FileName &&
-                        ((long)module.BaseAddress + module.ModuleMemorySize == entry.AddressRange.Key))
-                    {
-                        // Merge this entry with the previous one
-                        module.ModuleMemorySize += sizeOfImage;
-                        continue;
-                    }
-                }
-
-                // It's not a continuation of a previous entry but a new one: add it.
-                unsafe
-                {
-                    modules.Add(new ProcessModule()
-                    {
-                        FileName = entry.FileName,
-                        ModuleName = Path.GetFileName(entry.FileName),
-                        BaseAddress = new IntPtr(unchecked((void*)entry.AddressRange.Key)),
-                        ModuleMemorySize = sizeOfImage,
-                        EntryPointAddress = IntPtr.Zero // unknown
-                    });
-                }
-            }
+            ProcessModuleCollection modules = Interop.procfs.ParseMapsModules(processId) ?? new(capacity: 0);
 
             // Move the main executable module to be the first in the list if it's not already
             string? exePath = Process.GetExePath(processId);
@@ -103,13 +63,12 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
-        internal static ProcessInfo? CreateProcessInfo(int pid, ReusableTextReader? reusableReader = null)
+        internal static ProcessInfo? CreateProcessInfo(int pid)
         {
-            reusableReader ??= new ReusableTextReader();
-            if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat stat, reusableReader))
+            if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat stat))
             {
-                Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus status, reusableReader);
-                return CreateProcessInfo(ref stat, ref status, reusableReader);
+                Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus status);
+                return CreateProcessInfo(ref stat, ref status);
             }
             return null;
         }
@@ -117,7 +76,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, ReusableTextReader reusableReader, string? processName = null)
+        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, string? processName = null)
         {
             int pid = procFsStat.pid;
 
@@ -151,21 +110,18 @@ namespace System.Diagnostics
                     int tid;
                     Interop.procfs.ParsedStat stat;
                     if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid) &&
-                        Interop.procfs.TryReadStatFile(pid, tid, out stat, reusableReader))
+                        Interop.procfs.TryReadStatFile(pid, tid, out stat))
                     {
-                        unsafe
+                        pi._threadInfoList.Add(new ThreadInfo()
                         {
-                            pi._threadInfoList.Add(new ThreadInfo()
-                            {
-                                _processId = pid,
-                                _threadId = (ulong)tid,
-                                _basePriority = pi.BasePriority,
-                                _currentPriority = (int)stat.nice,
-                                _startAddress = IntPtr.Zero,
-                                _threadState = ProcFsStateToThreadState(stat.state),
-                                _threadWaitReason = ThreadWaitReason.Unknown
-                            });
-                        }
+                            _processId = pid,
+                            _threadId = (ulong)tid,
+                            _basePriority = pi.BasePriority,
+                            _currentPriority = (int)stat.nice,
+                            _startAddress = IntPtr.Zero,
+                            _threadState = ProcFsStateToThreadState(stat.state),
+                            _threadWaitReason = ThreadWaitReason.Unknown
+                        });
                     }
                 }
             }

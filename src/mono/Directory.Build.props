@@ -1,62 +1,25 @@
 <Project>
   <PropertyGroup>
-    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
+    <InferPlatformFromTargetArchitecture>true</InferPlatformFromTargetArchitecture>
   </PropertyGroup>
+
   <Import Project="..\..\Directory.Build.props" />
-  
-  <!-- Set default Platform -->
+
   <PropertyGroup>
-    <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(HostArch)</TargetArchitecture>
-    <Platform>$(TargetArchitecture)</Platform>
-
-    <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
-  </PropertyGroup>
-
-  <!-- Common properties -->
-  <PropertyGroup>
-    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
-    <SourceDir>$(ProjectDir)src\</SourceDir>
-    <BinDir>$(ArtifactsBinDir)mono\$(PlatformConfigPathPart)\</BinDir>
-
-    <BaseIntermediateOutputPath>$(ArtifactsObjDir)mono\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'mono', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(PlatformName)' == 'AnyCPU'">$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(PlatformName)' != 'AnyCPU'">$(BaseIntermediateOutputPath)$(PlatformName)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">5.0.0</PackageVersion>
-
-    <!-- Set the boolean below to true to generate packages with stabilized versions -->
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
-    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
-  </PropertyGroup>
-
-  <!-- Set up common target properties that we use to conditionally include sources -->
-  <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsIllumos Condition="'$(TargetOS)' == 'illumos'">true</TargetsIllumos>
-    <TargetsSolaris Condition="'$(TargetOS)' == 'Solaris'">true</TargetsSolaris>
-    <TargetsLinux Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Android'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsiOS Condition="'$(TargetOS)' == 'iOS'">true</TargetsiOS>
-    <TargetstvOS Condition="'$(TargetOS)' == 'tvOS'">true</TargetstvOS>
-    <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and ('$(Platform)' == 'x64' or '$(Platform)' == 'x86')">true</TargetsiOSSimulator>
-    <TargetstvOSSimulator Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetstvOSSimulator>
-    <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
-    <TargetsBrowser Condition="'$(TargetOS)' == 'Browser'">true</TargetsBrowser>
-    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsIllumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
-    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">7.0</iOSVersionMin>
-    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">8.0</iOSVersionMin>
-    <tvOSVersionMin>9.0</tvOSVersionMin>
+    <!-- Minimum target OS version, keep in sync with src/native/libs/build-native.sh -->
+    <iOSVersionMin>10.0</iOSVersionMin>
+    <tvOSVersionMin>10.0</tvOSVersionMin>
     <watchOSVersionMin>2.0</watchOSVersionMin>
     <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
     <macOSVersionMin>10.13</macOSVersionMin>
+    <!-- FIXME: when we're building ios or tvOS cross-compilers hosted on OSX/arm64 targeting ios/arm64 we should set the min macOS version to 11.0, also -->
+    <macOSVersionMin Condition="('$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'MacCatalyst') and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
 
     <!-- Version of the OS SDK we target -->
     <iOSVersion></iOSVersion>
@@ -65,13 +28,8 @@
     <watchOS64_32Version></watchOS64_32Version>
     <macOSVersion></macOSVersion>
 
-    <!-- Version of the Android SDK we target, keep in sync with src/libraries/Native/build-native.sh -->
+    <!-- Version of the Android SDK we target, keep in sync with eng/native/build-commons.sh -->
     <AndroidApiVersion>21</AndroidApiVersion>
-  </PropertyGroup>
-
-  <!-- Set the kind of PDB to Portable -->
-  <PropertyGroup>
-    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
   </PropertyGroup>
 
   <!-- Output paths -->
@@ -79,37 +37,44 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
-  <!-- Ensure our properties are set before Arcade defines defaults -->
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-
-  <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
-    <Copyright>$(CopyrightNetFoundation)</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  <!-- Directory to provision and use emscripten if EMSDK_PATH env variable is not set -->
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <ProvisionEmscriptenDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm', 'emsdk'))</ProvisionEmscriptenDir>
+    <ShouldProvisionEmscripten Condition="'$(OS)' == 'Windows_NT' and '$(TargetArchitecture)' == 'wasm' and '$(EMSDK_PATH)' == '' and !Exists('$(ProvisionEmscriptenDir)')">true</ShouldProvisionEmscripten>
+    <EMSDK_PATH Condition="Exists('$(ProvisionEmscriptenDir)') and '$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
   </PropertyGroup>
 
   <PropertyGroup>
-    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)'!='true'">false</SignAssembly>
+    <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
+    <RuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(TargetOS).$(Platform).$(Configuration)'))</RuntimeBinDir>
+    <MonoObjDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'mono', '$(PlatformConfigPathPart)'))</MonoObjDir>
+    <MonoAOTEnableLLVM Condition="'$(TargetsiOS)' == 'true'">true</MonoAOTEnableLLVM>
+    <MonoAOTEnableLLVM Condition="'$(TargetstvOS)' == 'true'">true</MonoAOTEnableLLVM>
+    <MonoAOTEnableLLVM Condition="'$(TargetsMacCatalyst)' == 'true'">true</MonoAOTEnableLLVM>
+    <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
+    <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
+    <_MonoUseLLVMPackage Condition="'$(MonoLLVMDir)' == '' and '$(MonoEnableLLVM)' == 'true'">true</_MonoUseLLVMPackage>
+    <_MonoUseAOTLLVMPackage Condition="'$(MonoAOTLLVMDir)' == '' and '$(MonoAOTEnableLLVM)' == 'true'">true</_MonoUseAOTLLVMPackage>
+    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == '' and '$(MonoEnableLLVM)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'llvm'))</MonoLLVMDir>
+    <MonoAOTLLVMDir Condition="'$(MonoAOTLLVMDir)' == '' and '$(MonoAOTEnableLLVM)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross', 'llvm'))</MonoAOTLLVMDir>
   </PropertyGroup>
 
   <PropertyGroup>
-    <CL_MPCount>$(NumberOfCores)</CL_MPCount>
+    <MonoAotCrossDir>$([MSBuild]::NormalizePath($(RuntimeBinDir), 'cross', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</MonoAotCrossDir>
+    <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
-  <PropertyGroup>
-    <!-- Enables Strict mode for Roslyn compiler -->
-    <Features>strict;nullablePublicOnly</Features>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
-    <MonoLLVMDir Condition="('$(MonoEnableLLVM)' == 'true' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'Browser') and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
-  </PropertyGroup>
+  <ItemGroup>
+    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+  </ItemGroup>
 
   <!-- Paths for Mobile App Projects  -->
   <PropertyGroup>
-    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
+    <AppleAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AppleAppBuilder'))</AppleAppBuilderProjDirectory>
     <AppleTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AppleTestRunner'))</AppleTestRunnerProjDirectory>
-    <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
+    <AndroidAppBuilderProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AndroidAppBuilder'))</AndroidAppBuilderProjDirectory>
     <AndroidTestRunnerProjDirectory>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', tests, 'AndroidTestRunner'))</AndroidTestRunnerProjDirectory>
-    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'mobile.tasks', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
+    <MonoAOTCompilerProjDirectory>$([MSBuild]::NormalizeDirectory('$(RepoTasksDir)', 'AotCompilerTask'))</MonoAOTCompilerProjDirectory>
   </PropertyGroup>
+
 </Project>

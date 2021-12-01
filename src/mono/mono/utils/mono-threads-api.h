@@ -27,7 +27,11 @@ typedef struct _MonoStackData {
 } MonoStackData;
 
 // FIXME an ifdef to change __func__ to empty or further minimization.
+#ifndef DISABLE_LOGGING
 #define MONO_STACKDATA(x) MonoStackData x = { &x, __func__ }
+#else
+#define MONO_STACKDATA(x) MonoStackData x = { &x, NULL }
+#endif
 
 static inline const char*
 mono_stackdata_get_function_name (const MonoStackData *stackdata)
@@ -44,7 +48,7 @@ mono_stackdata_get_stackpointer (const MonoStackData *stackdata)
 MONO_API MONO_RT_EXTERNAL_ONLY gpointer
 mono_threads_enter_gc_unsafe_region (gpointer* stackdata);
 
-gpointer
+MONO_COMPONENT_API gpointer
 mono_threads_enter_gc_unsafe_region_internal (MonoStackData *stackdata);
 
 MONO_API MONO_RT_EXTERNAL_ONLY void

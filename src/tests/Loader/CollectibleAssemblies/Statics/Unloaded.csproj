@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="Accessor.csproj" />
+    <Compile Include="Unloaded.cs" />
+  </ItemGroup>
+</Project>

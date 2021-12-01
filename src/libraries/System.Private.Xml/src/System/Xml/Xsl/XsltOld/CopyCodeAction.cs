@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Collections;
 
-    internal class CopyCodeAction : Action
+    internal sealed class CopyCodeAction : Action
     {
         // Execution states:
         private const int Outputting = 2;
@@ -37,7 +37,7 @@ namespace System.Xml.Xsl.XsltOld
             int count = _copyEvents.Count;
             for (int i = 0; i < count; i++)
             {
-                ((Event)_copyEvents[i]).ReplaceNamespaceAlias(compiler);
+                ((Event)_copyEvents[i]!).ReplaceNamespaceAlias(compiler);
             }
         }
 
@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.XsltOld
                     while (processor.CanContinue)
                     {
                         Debug.Assert(frame.Counter < _copyEvents.Count);
-                        Event copyEvent = (Event)_copyEvents[frame.Counter];
+                        Event copyEvent = (Event)_copyEvents[frame.Counter]!;
 
                         if (copyEvent.Output(processor, frame) == false)
                         {

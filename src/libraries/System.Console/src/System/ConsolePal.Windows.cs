@@ -11,6 +11,13 @@ namespace System
     // Provides Windows-based support for System.Console.
     internal static class ConsolePal
     {
+        /// <summary>Hardcoded Encoding.Unicode.CodePage to avoid accessing Encoding.Unicode and forcing it into existence unnecessarily.</summary>
+        private const int UnicodeCodePage = 1200;
+
+#if DEBUG
+        static ConsolePal() => Debug.Assert(UnicodeCodePage == Encoding.Unicode.CodePage);
+#endif
+
         private static IntPtr InvalidHandleValue => new IntPtr(-1);
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
@@ -29,19 +36,19 @@ namespace System
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE,
                 FileAccess.Read,
-                useFileAPIs: Console.InputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsInputRedirected);
+                useFileAPIs: Console.InputEncoding.CodePage != UnicodeCodePage || Console.IsInputRedirected);
 
         public static Stream OpenStandardOutput() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: Console.OutputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsOutputRedirected);
+                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsOutputRedirected);
 
         public static Stream OpenStandardError() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: Console.OutputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsErrorRedirected);
+                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsErrorRedirected);
 
         private static IntPtr InputHandle =>
             Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
@@ -99,10 +106,10 @@ namespace System
 
         public static void SetConsoleInputEncoding(Encoding enc)
         {
-            if (enc.CodePage != Encoding.Unicode.CodePage)
+            if (enc.CodePage != UnicodeCodePage)
             {
                 if (!Interop.Kernel32.SetConsoleCP(enc.CodePage))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -113,10 +120,10 @@ namespace System
 
         public static void SetConsoleOutputEncoding(Encoding enc)
         {
-            if (enc.CodePage != Encoding.Unicode.CodePage)
+            if (enc.CodePage != UnicodeCodePage)
             {
                 if (!Interop.Kernel32.SetConsoleOutputCP(enc.CodePage))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -273,7 +280,7 @@ namespace System
                     bool r = Interop.Kernel32.PeekConsoleInput(InputHandle, out ir, 1, out numEventsRead);
                     if (!r)
                     {
-                        int errorCode = Marshal.GetLastWin32Error();
+                        int errorCode = Marshal.GetLastPInvokeError();
                         if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                             throw new InvalidOperationException(SR.InvalidOperation_ConsoleKeyAvailableOnFile);
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode, "stdin");
@@ -288,7 +295,7 @@ namespace System
                         r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out numEventsRead);
 
                         if (!r)
-                            throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                            throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
                     }
                     else
                     {
@@ -406,7 +413,7 @@ namespace System
 
                 int mode = 0;
                 if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
                 return (mode & Interop.Kernel32.ENABLE_PROCESSED_INPUT) == 0;
             }
@@ -418,7 +425,7 @@ namespace System
 
                 int mode = 0;
                 if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
                 if (value)
                 {
@@ -430,7 +437,7 @@ namespace System
                 }
 
                 if (!Interop.Kernel32.SetConsoleMode(handle, mode))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -527,7 +534,7 @@ namespace System
             {
                 Interop.Kernel32.CONSOLE_CURSOR_INFO cci;
                 if (!Interop.Kernel32.GetConsoleCursorInfo(OutputHandle, out cci))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
                 return cci.dwSize;
             }
@@ -539,11 +546,11 @@ namespace System
 
                 Interop.Kernel32.CONSOLE_CURSOR_INFO cci;
                 if (!Interop.Kernel32.GetConsoleCursorInfo(OutputHandle, out cci))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
                 cci.dwSize = value;
                 if (!Interop.Kernel32.SetConsoleCursorInfo(OutputHandle, ref cci))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -553,19 +560,19 @@ namespace System
             {
                 Interop.Kernel32.CONSOLE_CURSOR_INFO cci;
                 if (!Interop.Kernel32.GetConsoleCursorInfo(OutputHandle, out cci))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
-                return cci.bVisible;
+                return cci.bVisible != Interop.BOOL.FALSE;
             }
             set
             {
                 Interop.Kernel32.CONSOLE_CURSOR_INFO cci;
                 if (!Interop.Kernel32.GetConsoleCursorInfo(OutputHandle, out cci))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
-                cci.bVisible = value;
+                cci.bVisible = value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
                 if (!Interop.Kernel32.SetConsoleCursorInfo(OutputHandle, ref cci))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -585,7 +592,7 @@ namespace System
                 {
                     uint result = Interop.Errors.ERROR_SUCCESS;
 
-                    fixed (char* c = &builder.GetPinnableReference())
+                    fixed (char* c = builder)
                     {
                         result = Interop.Kernel32.GetConsoleTitleW(c, (uint)builder.Capacity);
                     }
@@ -597,7 +604,7 @@ namespace System
 
                     if (result == 0)
                     {
-                        int error = Marshal.GetLastWin32Error();
+                        int error = Marshal.GetLastPInvokeError();
                         switch (error)
                         {
                             case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
@@ -632,7 +639,7 @@ namespace System
             set
             {
                 if (!Interop.Kernel32.SetConsoleTitle(value))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -708,7 +715,7 @@ namespace System
             fixed (Interop.Kernel32.CHAR_INFO* pCharInfo = data)
                 r = Interop.Kernel32.ReadConsoleOutput(OutputHandle, pCharInfo, bufferSize, bufferCoord, ref readRegion);
             if (!r)
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
             // Overwrite old section
             Interop.Kernel32.COORD writeCoord = default;
@@ -723,11 +730,11 @@ namespace System
                 r = Interop.Kernel32.FillConsoleOutputCharacter(OutputHandle, sourceChar, sourceWidth, writeCoord, out numWritten);
                 Debug.Assert(numWritten == sourceWidth, "FillConsoleOutputCharacter wrote the wrong number of chars!");
                 if (!r)
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
                 r = Interop.Kernel32.FillConsoleOutputAttribute(OutputHandle, attr, sourceWidth, writeCoord, out numWritten);
                 if (!r)
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
 
             // Write text to new location
@@ -764,7 +771,7 @@ namespace System
             success = Interop.Kernel32.FillConsoleOutputCharacter(hConsole, ' ',
                 conSize, coordScreen, out numCellsWritten);
             if (!success)
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
             // now set the buffer's attributes accordingly
 
@@ -772,13 +779,13 @@ namespace System
             success = Interop.Kernel32.FillConsoleOutputAttribute(hConsole, csbi.wAttributes,
                 conSize, coordScreen, out numCellsWritten);
             if (!success)
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
             // put the cursor at (0, 0)
 
             success = Interop.Kernel32.SetConsoleCursorPosition(hConsole, coordScreen);
             if (!success)
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
         }
 
         public static void SetCursorPosition(int left, int top)
@@ -790,7 +797,7 @@ namespace System
             if (!Interop.Kernel32.SetConsoleCursorPosition(hConsole, coords))
             {
                 // Give a nice error message for out of range sizes
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
                 if (left >= csbi.dwSize.X)
                     throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
@@ -842,7 +849,7 @@ namespace System
             size.Y = (short)height;
             if (!Interop.Kernel32.SetConsoleScreenBufferSize(OutputHandle, size))
             {
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -944,7 +951,7 @@ namespace System
 
             bool r = Interop.Kernel32.SetConsoleWindowInfo(OutputHandle, true, &srWindow);
             if (!r)
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
         }
 
         public static unsafe void SetWindowSize(int width, int height)
@@ -980,7 +987,7 @@ namespace System
             if (resizeBuffer)
             {
                 if (!Interop.Kernel32.SetConsoleScreenBufferSize(OutputHandle, size))
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
             }
 
             Interop.Kernel32.SMALL_RECT srWindow = csbi.srWindow;
@@ -990,7 +997,7 @@ namespace System
 
             if (!Interop.Kernel32.SetConsoleWindowInfo(OutputHandle, true, &srWindow))
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 // If we resized the buffer, un-resize it.
                 if (resizeBuffer)
@@ -1063,7 +1070,7 @@ namespace System
                 !Interop.Kernel32.GetConsoleScreenBufferInfo(ErrorHandle, out csbi) &&
                 !Interop.Kernel32.GetConsoleScreenBufferInfo(InputHandle, out csbi))
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE && !throwOnNoConsole)
                     return default;
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
@@ -1111,24 +1118,24 @@ namespace System
                 base.Dispose(disposing);
             }
 
-            public override int Read(byte[] buffer, int offset, int count)
+            public override int Read(Span<byte> buffer)
             {
-                ValidateRead(buffer, offset, count);
-
-                int bytesRead;
-                int errCode = ReadFileNative(_handle, buffer, offset, count, _isPipe, out bytesRead, _useFileAPIs);
+                int errCode = ReadFileNative(_handle, buffer, _isPipe, out int bytesRead, _useFileAPIs);
                 if (Interop.Errors.ERROR_SUCCESS != errCode)
+                {
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
+                }
+
                 return bytesRead;
             }
 
-            public override void Write(byte[] buffer, int offset, int count)
+            public override void Write(ReadOnlySpan<byte> buffer)
             {
-                ValidateWrite(buffer, offset, count);
-
-                int errCode = WriteFileNative(_handle, buffer, offset, count, _useFileAPIs);
+                int errCode = WriteFileNative(_handle, buffer, _useFileAPIs);
                 if (Interop.Errors.ERROR_SUCCESS != errCode)
+                {
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
+                }
             }
 
             public override void Flush()
@@ -1142,35 +1149,26 @@ namespace System
             // world working set and to avoid requiring a reference to the
             // System.IO.FileSystem contract.
 
-            private static unsafe int ReadFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool isPipe, out int bytesRead, bool useFileAPIs)
+            private static unsafe int ReadFileNative(IntPtr hFile, Span<byte> buffer, bool isPipe, out int bytesRead, bool useFileAPIs)
             {
-                Debug.Assert(offset >= 0, "offset >= 0");
-                Debug.Assert(count >= 0, "count >= 0");
-                Debug.Assert(bytes != null, "bytes != null");
-                // Don't corrupt memory when multiple threads are erroneously writing
-                // to this stream simultaneously.
-                if (bytes.Length - offset < count)
-                    throw new IndexOutOfRangeException(SR.IndexOutOfRange_IORaceCondition);
-
-                // You can't use the fixed statement on an array of length 0.
-                if (bytes.Length == 0)
+                if (buffer.IsEmpty)
                 {
                     bytesRead = 0;
                     return Interop.Errors.ERROR_SUCCESS;
                 }
 
                 bool readSuccess;
-                fixed (byte* p = &bytes[0])
+                fixed (byte* p = buffer)
                 {
                     if (useFileAPIs)
                     {
-                        readSuccess = (0 != Interop.Kernel32.ReadFile(hFile, p + offset, count, out bytesRead, IntPtr.Zero));
+                        readSuccess = (0 != Interop.Kernel32.ReadFile(hFile, p, buffer.Length, out bytesRead, IntPtr.Zero));
                     }
                     else
                     {
                         // If the code page could be Unicode, we should use ReadConsole instead, e.g.
                         int charsRead;
-                        readSuccess = Interop.Kernel32.ReadConsole(hFile, p + offset, count / BytesPerWChar, out charsRead, IntPtr.Zero);
+                        readSuccess = Interop.Kernel32.ReadConsole(hFile, p, buffer.Length / BytesPerWChar, out charsRead, IntPtr.Zero);
                         bytesRead = charsRead * BytesPerWChar;
                     }
                 }
@@ -1180,30 +1178,24 @@ namespace System
                 // For pipes that are closing or broken, just stop.
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
                 // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is not an error, but EOF.)
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 if (errorCode == Interop.Errors.ERROR_NO_DATA || errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                     return Interop.Errors.ERROR_SUCCESS;
                 return errorCode;
             }
 
-            private static unsafe int WriteFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool useFileAPIs)
+            private static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
             {
-                Debug.Assert(offset >= 0, "offset >= 0");
-                Debug.Assert(count >= 0, "count >= 0");
-                Debug.Assert(bytes != null, "bytes != null");
-                Debug.Assert(bytes.Length >= offset + count, "bytes.Length >= offset + count");
-
-                // You can't use the fixed statement on an array of length 0.
-                if (bytes.Length == 0)
+                if (bytes.IsEmpty)
                     return Interop.Errors.ERROR_SUCCESS;
 
                 bool writeSuccess;
-                fixed (byte* p = &bytes[0])
+                fixed (byte* p = bytes)
                 {
                     if (useFileAPIs)
                     {
                         int numBytesWritten;
-                        writeSuccess = (0 != Interop.Kernel32.WriteFile(hFile, p + offset, count, out numBytesWritten, IntPtr.Zero));
+                        writeSuccess = (0 != Interop.Kernel32.WriteFile(hFile, p, bytes.Length, out numBytesWritten, IntPtr.Zero));
                         // In some cases we have seen numBytesWritten returned that is twice count;
                         // so we aren't asserting the value of it. See https://github.com/dotnet/runtime/issues/23776
                     }
@@ -1216,8 +1208,8 @@ namespace System
                         // However, we do not need to worry about that because the StreamWriter in Console has
                         // a much shorter buffer size anyway.
                         int charsWritten;
-                        writeSuccess = Interop.Kernel32.WriteConsole(hFile, p + offset, count / BytesPerWChar, out charsWritten, IntPtr.Zero);
-                        Debug.Assert(!writeSuccess || count / BytesPerWChar == charsWritten);
+                        writeSuccess = Interop.Kernel32.WriteConsole(hFile, p, bytes.Length / BytesPerWChar, out charsWritten, IntPtr.Zero);
+                        Debug.Assert(!writeSuccess || bytes.Length / BytesPerWChar == charsWritten);
                     }
                 }
                 if (writeSuccess)
@@ -1226,57 +1218,10 @@ namespace System
                 // For pipes that are closing or broken, just stop.
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
                 // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is not an error, but EOF.)
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 if (errorCode == Interop.Errors.ERROR_NO_DATA || errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                     return Interop.Errors.ERROR_SUCCESS;
                 return errorCode;
-            }
-        }
-
-        internal sealed class ControlCHandlerRegistrar
-        {
-            private bool _handlerRegistered;
-            private readonly Interop.Kernel32.ConsoleCtrlHandlerRoutine _handler;
-
-            internal ControlCHandlerRegistrar()
-            {
-                _handler = new Interop.Kernel32.ConsoleCtrlHandlerRoutine(BreakEvent);
-            }
-
-            internal void Register()
-            {
-                Debug.Assert(!_handlerRegistered);
-
-                bool r = Interop.Kernel32.SetConsoleCtrlHandler(_handler, true);
-                if (!r)
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
-                }
-
-                _handlerRegistered = true;
-            }
-
-            internal void Unregister()
-            {
-                Debug.Assert(_handlerRegistered);
-
-                bool r = Interop.Kernel32.SetConsoleCtrlHandler(_handler, false);
-                if (!r)
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
-                }
-                _handlerRegistered = false;
-            }
-
-            private static bool BreakEvent(int controlType)
-            {
-                if (controlType != Interop.Kernel32.CTRL_C_EVENT &&
-                    controlType != Interop.Kernel32.CTRL_BREAK_EVENT)
-                {
-                    return false;
-                }
-
-                return Console.HandleBreakEvent(controlType == Interop.Kernel32.CTRL_C_EVENT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak);
             }
         }
     }

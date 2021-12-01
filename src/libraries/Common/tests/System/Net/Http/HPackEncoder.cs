@@ -51,7 +51,7 @@ namespace System.Net.Test.Common
         public static int EncodeHeader(int nameIdx, string value, HPackFlags flags, Span<byte> headerBlock)
         {
             Debug.Assert(nameIdx > 0);
-            return EncodeHeaderImpl(nameIdx, null, value, flags, headerBlock);
+            return EncodeHeaderImpl(nameIdx, null, value, valueEncoding: null, flags, headerBlock);
         }
 
         /// <summary>
@@ -63,10 +63,15 @@ namespace System.Net.Test.Common
         /// <returns>The number of bytes written to <paramref name="headerBlock"/>.</returns>
         public static int EncodeHeader(string name, string value, HPackFlags flags, Span<byte> headerBlock)
         {
-            return EncodeHeaderImpl(0, name, value, flags, headerBlock);
+            return EncodeHeader(name, value, valueEncoding: null, flags, headerBlock);
         }
 
-        private static int EncodeHeaderImpl(int nameIdx, string name, string value, HPackFlags flags, Span<byte> headerBlock)
+        public static int EncodeHeader(string name, string value, Encoding valueEncoding, HPackFlags flags, Span<byte> headerBlock)
+        {
+            return EncodeHeaderImpl(0, name, value, valueEncoding, flags, headerBlock);
+        }
+
+        private static int EncodeHeaderImpl(int nameIdx, string name, string value, Encoding valueEncoding, HPackFlags flags, Span<byte> headerBlock)
         {
             const HPackFlags IndexingMask = HPackFlags.NeverIndexed | HPackFlags.NewIndexed | HPackFlags.WithoutIndexing;
 
@@ -97,16 +102,16 @@ namespace System.Net.Test.Common
 
             if (name != null)
             {
-                bytesGenerated += EncodeString(name, headerBlock.Slice(bytesGenerated), (flags & HPackFlags.HuffmanEncodeName) != 0);
+                bytesGenerated += EncodeString(name, Encoding.ASCII, headerBlock.Slice(bytesGenerated), (flags & HPackFlags.HuffmanEncodeName) != 0);
             }
 
-            bytesGenerated += EncodeString(value, headerBlock.Slice(bytesGenerated), (flags & HPackFlags.HuffmanEncodeValue) != 0);
+            bytesGenerated += EncodeString(value, valueEncoding, headerBlock.Slice(bytesGenerated), (flags & HPackFlags.HuffmanEncodeValue) != 0);
             return bytesGenerated;
         }
 
-        public static int EncodeString(string value, Span<byte> headerBlock, bool huffmanEncode)
+        public static int EncodeString(string value, Encoding valueEncoding, Span<byte> headerBlock, bool huffmanEncode)
         {
-            byte[] data = Encoding.ASCII.GetBytes(value);
+            byte[] data = (valueEncoding ?? Encoding.ASCII).GetBytes(value);
             byte prefix;
 
             if (!huffmanEncode)

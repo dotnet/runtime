@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -15,7 +14,7 @@ namespace System.Xml
     //
     // XmlCharCheckingWriter
     //
-    internal partial class XmlCharCheckingWriter : XmlWrappingWriter
+    internal sealed partial class XmlCharCheckingWriter : XmlWrappingWriter
     {
         //
         // Fields
@@ -25,7 +24,6 @@ namespace System.Xml
         private readonly bool _replaceNewLines;
         private readonly string _newLineChars;
 
-        private XmlCharType _xmlCharType;
         //
         // Constructor
         //
@@ -38,10 +36,6 @@ namespace System.Xml
             _replaceNewLines = replaceNewLines;
             _newLineChars = newLineChars;
 
-            if (checkValues)
-            {
-                _xmlCharType = XmlCharType.Instance;
-            }
         }
 
         //
@@ -84,7 +78,7 @@ namespace System.Xml
                 if (pubid != null)
                 {
                     int i;
-                    if ((i = _xmlCharType.IsPublicId(pubid)) >= 0)
+                    if ((i = XmlCharType.IsPublicId(pubid)) >= 0)
                     {
                         throw XmlConvert.CreateInvalidCharException(pubid, i);
                     }
@@ -239,7 +233,7 @@ namespace System.Xml
             if (_checkNames)
             {
                 int i;
-                if ((i = _xmlCharType.IsOnlyWhitespaceWithPos(ws)) != -1)
+                if ((i = XmlCharType.IsOnlyWhitespaceWithPos(ws)) != -1)
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
                 }

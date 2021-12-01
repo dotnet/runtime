@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class StaticFilterOptionsMonitor : IOptionsMonitor<LoggerFilterOptions>
+    internal sealed class StaticFilterOptionsMonitor : IOptionsMonitor<LoggerFilterOptions>
     {
         public StaticFilterOptionsMonitor(LoggerFilterOptions currentValue)
         {

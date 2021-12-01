@@ -4,6 +4,7 @@
 using Debug = System.Diagnostics.Debug;
 using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 using Interlocked = System.Threading.Interlocked;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Linq
 {
@@ -15,10 +16,10 @@ namespace System.Xml.Linq
         internal const string xmlPrefixNamespace = "http://www.w3.org/XML/1998/namespace";
         internal const string xmlnsPrefixNamespace = "http://www.w3.org/2000/xmlns/";
 
-        private static XHashtable<WeakReference> s_namespaces;
-        private static WeakReference s_refNone;
-        private static WeakReference s_refXml;
-        private static WeakReference s_refXmlns;
+        private static XHashtable<WeakReference<XNamespace>>? s_namespaces;
+        private static WeakReference<XNamespace>? s_refNone;
+        private static WeakReference<XNamespace>? s_refXml;
+        private static WeakReference<XNamespace>? s_refXmlns;
 
         private readonly string _namespaceName;
         private readonly int _hashCode;
@@ -123,7 +124,8 @@ namespace System.Xml.Linq
         /// <param name="namespaceName">A string containing the namespace name.</param>
         /// <returns>An <see cref="XNamespace"/> constructed from the namespace name string.</returns>
         [CLSCompliant(false)]
-        public static implicit operator XNamespace(string namespaceName)
+        [return: NotNullIfNotNull("namespaceName")]
+        public static implicit operator XNamespace?(string? namespaceName)
         {
             return namespaceName != null ? Get(namespaceName) : null;
         }
@@ -151,7 +153,7 @@ namespace System.Xml.Linq
         /// For two <see cref="XNamespace"/> objects to be equal they must have the same
         /// namespace name.
         /// </remarks>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return (object)this == obj;
         }
@@ -182,9 +184,9 @@ namespace System.Xml.Linq
         /// This overload is included to enable the comparison between
         /// an instance of <see cref="XNamespace"/> and string.
         /// </remarks>
-        public static bool operator ==(XNamespace left, XNamespace right)
+        public static bool operator ==(XNamespace? left, XNamespace? right)
         {
-            return (object)left == (object)right;
+            return (object?)left == (object?)right;
         }
 
         /// <summary>
@@ -197,9 +199,9 @@ namespace System.Xml.Linq
         /// This overload is included to enable the comparison between
         /// an instance of <see cref="XNamespace"/> and string.
         /// </remarks>
-        public static bool operator !=(XNamespace left, XNamespace right)
+        public static bool operator !=(XNamespace? left, XNamespace? right)
         {
-            return (object)left != (object)right;
+            return (object?)left != (object?)right;
         }
 
         /// <summary>
@@ -213,7 +215,7 @@ namespace System.Xml.Linq
             Debug.Assert(count >= 0 && index + count <= localName.Length, "Caller should have checked that count was in bounds");
 
             // Attempt to get the local name from the hash table
-            XName name;
+            XName? name;
             if (_names.TryGetValue(localName, index, count, out name))
                 return name;
 
@@ -234,10 +236,10 @@ namespace System.Xml.Linq
 
             // Use CompareExchange to ensure that exactly one XHashtable<WeakReference> is used to store namespaces
             if (s_namespaces == null)
-                Interlocked.CompareExchange(ref s_namespaces, new XHashtable<WeakReference>(ExtractNamespace, NamespacesCapacity), null);
+                Interlocked.CompareExchange(ref s_namespaces, new XHashtable<WeakReference<XNamespace>>(ExtractNamespace, NamespacesCapacity), null);
 
-            WeakReference refNamespace;
-            XNamespace ns;
+            WeakReference<XNamespace>? refNamespace;
+            XNamespace? ns;
 
             // Keep looping until a non-null namespace has been retrieved
             do
@@ -250,10 +252,10 @@ namespace System.Xml.Linq
                     if (count == xmlnsPrefixNamespace.Length && string.CompareOrdinal(namespaceName, index, xmlnsPrefixNamespace, 0, count) == 0) return Xmlns;
 
                     // Go ahead and create the namespace and add it to the table
-                    refNamespace = s_namespaces.Add(new WeakReference(new XNamespace(namespaceName.Substring(index, count))));
+                    refNamespace = s_namespaces.Add(new WeakReference<XNamespace>(new XNamespace(namespaceName.Substring(index, count))));
                 }
 
-                ns = (refNamespace != null) ? (XNamespace)refNamespace.Target : null;
+                ns = refNamespace != null && refNamespace.TryGetTarget(out XNamespace? target) ? target : null;
             }
             while (ns == null);
 
@@ -271,18 +273,12 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// This function is used by the <see cref="XHashtable{WeakReference}"/> to extract the XNamespace that the WeakReference is
-        /// referencing.  In cases where the XNamespace has been cleaned up, this function returns null.
+        /// This function is used to extract the XNamespace that the WeakReference is referencing.
+        /// In cases where the XNamespace has been cleaned up, this function returns null.
         /// </summary>
-        private static string ExtractNamespace(WeakReference r)
-        {
-            XNamespace ns;
-
-            if (r == null || (ns = (XNamespace)r.Target) == null)
-                return null;
-
-            return ns.NamespaceName;
-        }
+        private static string? ExtractNamespace(WeakReference<XNamespace>? r) =>
+            r is not null &&
+            r.TryGetTarget(out XNamespace? target) ? target.NamespaceName : null;
 
         /// <summary>
         /// Ensure that an XNamespace object for 'namespaceName' has been atomically created.  In other words, all outstanding
@@ -290,9 +286,9 @@ namespace System.Xml.Linq
         /// since other threads can be concurrently calling this method, and the target of a WeakReference can be cleaned up
         /// at any time by the GC.
         /// </summary>
-        private static XNamespace EnsureNamespace(ref WeakReference refNmsp, string namespaceName)
+        private static XNamespace EnsureNamespace(ref WeakReference<XNamespace>? refNmsp, string namespaceName)
         {
-            WeakReference refOld;
+            WeakReference<XNamespace>? refOld;
 
             // Keep looping until a non-null namespace has been retrieved
             while (true)
@@ -300,16 +296,15 @@ namespace System.Xml.Linq
                 // Save refNmsp in local variable, so we can work on a value that will not be changed by another thread
                 refOld = refNmsp;
 
-                if (refOld != null)
+                if (refOld != null && refOld.TryGetTarget(out XNamespace? ns))
                 {
                     // If the target of the WeakReference is non-null, then we're done--just return the value
-                    XNamespace ns = (XNamespace)refOld.Target;
-                    if (ns != null) return ns;
+                    return ns;
                 }
 
                 // Either refNmsp is null, or its target is null, so update it
                 // Make sure to do this atomically, so that we can guarantee atomicity of XNamespace objects
-                Interlocked.CompareExchange(ref refNmsp, new WeakReference(new XNamespace(namespaceName)), refOld);
+                Interlocked.CompareExchange(ref refNmsp, new WeakReference<XNamespace>(new XNamespace(namespaceName)), refOld);
             }
         }
     }

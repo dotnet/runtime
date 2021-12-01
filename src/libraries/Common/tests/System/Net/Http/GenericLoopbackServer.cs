@@ -6,8 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.IO;
 using System.Net.Sockets;
+using System.Net.WebSockets;
+using System.Threading;
 
 namespace System.Net.Test.Common
 {
@@ -19,7 +22,7 @@ namespace System.Net.Test.Common
         public abstract GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null);
         public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
 
-        public abstract Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null);
+        public abstract Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null);
 
         public abstract Version Version { get; }
 
@@ -33,7 +36,7 @@ namespace System.Net.Test.Common
                 Task serverTask = serverFunc(server);
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
-            }, options: options).TimeoutAfter(millisecondsTimeout);
+            }, options: options).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
         }
     }
 
@@ -58,6 +61,56 @@ namespace System.Net.Test.Common
         }
     }
 
+    public sealed class SocketWrapper : IDisposable
+    {
+        private Socket _socket;
+        private WebSocket _websocket;
+
+        public SocketWrapper(Socket socket)
+        {
+            _socket = socket;
+        }
+        public SocketWrapper(WebSocket websocket)
+        {
+            _websocket = websocket;
+        }
+
+        public void Dispose()
+        {
+            _socket?.Dispose();
+            _websocket?.Dispose();
+        }
+        public void Close()
+        {
+            _socket?.Close();
+            CloseWebSocket();
+        }
+
+        public void Shutdown(SocketShutdown how)
+        {
+            _socket?.Shutdown(how);
+            CloseWebSocket();
+        }
+
+        private void CloseWebSocket()
+        {
+            if (_websocket == null) return;
+
+            var state = _websocket.State;
+            if (state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.CloseSent) return;
+
+            try
+            {
+                var task = _websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing remoteLoop", CancellationToken.None);
+                // Block and wait for the task to complete synchronously
+                Task.WaitAll(task);
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
     public abstract class GenericLoopbackConnection : IDisposable
     {
         public abstract void Dispose();
@@ -69,20 +122,26 @@ namespace System.Net.Test.Common
         /// <summary>Read complete request body if not done by ReadRequestData.</summary>
         public abstract Task<Byte[]> ReadRequestBodyAsync();
 
-        /// <summary>Sends Response back with provided statusCode, headers and content. Can be called multiple times on same response if isFinal was set to false before.</summary>
-        public abstract Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0);
+        /// <summary>Sends Response back with provided statusCode, headers and content.
+        /// If isFinal is false, the body is not completed and you can call SendResponseBodyAsync to send more.</summary>
+        public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true);
         /// <summary>Sends response headers.</summary>
-        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0);
+        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
+        /// <summary>Sends valid but incomplete headers. Once called, there is no way to continue the response past this point.</summary>
+        public abstract Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
         /// <summary>Sends Response body after SendResponse was called with isFinal: false.</summary>
-        public abstract Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0);
+        public abstract Task SendResponseBodyAsync(byte[] content, bool isFinal = true);
+
+        /// <summary>Reads Request, sends Response and closes connection.</summary>
+        public abstract Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "");
 
         /// <summary>Waits for the client to signal cancellation.</summary>
-        public abstract Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0);
+        public abstract Task WaitForCancellationAsync(bool ignoreIncomingData = true);
 
         /// <summary>Helper function to make it easier to convert old test with strings.</summary>
-        public async Task SendResponseBodyAsync(string content, bool isFinal = true, int requestId = 0)
+        public async Task SendResponseBodyAsync(string content, bool isFinal = true)
         {
-            await SendResponseBodyAsync(String.IsNullOrEmpty(content) ? new byte[0] : Encoding.ASCII.GetBytes(content), isFinal, requestId);
+            await SendResponseBodyAsync(String.IsNullOrEmpty(content) ? new byte[0] : Encoding.ASCII.GetBytes(content), isFinal);
         }
     }
 
@@ -90,11 +149,14 @@ namespace System.Net.Test.Common
     {
         public IPAddress Address { get; set; } = IPAddress.Loopback;
         public bool UseSsl { get; set; } = PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback();
+        public X509Certificate2 Certificate { get; set; }
         public SslProtocols SslProtocols { get; set; } =
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
                 SslProtocols.Tls13 |
 #endif
                 SslProtocols.Tls12;
+
+        public int ListenBacklog { get; set; } = 1;
     }
 
     public struct HttpHeaderData
@@ -106,13 +168,15 @@ namespace System.Net.Test.Common
         public string Value { get; }
         public bool HuffmanEncoded { get; }
         public byte[] Raw { get; }
+        public Encoding ValueEncoding { get; }
 
-        public HttpHeaderData(string name, string value, bool huffmanEncoded = false, byte[] raw = null)
+        public HttpHeaderData(string name, string value, bool huffmanEncoded = false, byte[] raw = null, Encoding valueEncoding = null)
         {
             Name = name;
             Value = value;
             HuffmanEncoded = huffmanEncoded;
             Raw = raw;
+            ValueEncoding = valueEncoding;
         }
 
         public override string ToString() => Name == null ? "<empty>" : (Name + ": " + (Value ?? string.Empty));
@@ -123,8 +187,9 @@ namespace System.Net.Test.Common
         public byte[] Body;
         public string Method;
         public string Path;
+        public Version Version;
         public List<HttpHeaderData> Headers { get; }
-        public int RequestId;       // Generic request ID. Currently only used for HTTP/2 to hold StreamId.
+        public int RequestId;       // HTTP/2 StreamId.
 
         public HttpRequestData()
         {
@@ -136,6 +201,7 @@ namespace System.Net.Test.Common
             var result = new HttpRequestData();
             result.Method = request.Method.ToString();
             result.Path = request.RequestUri?.AbsolutePath;
+            result.Version = request.Version;
 
             foreach (var header in request.Headers)
             {
@@ -185,5 +251,7 @@ namespace System.Net.Test.Common
         {
             return Headers.Where(h => h.Name.Equals(headerName, StringComparison.OrdinalIgnoreCase)).Count();
         }
+
+        public override string ToString() => $"{Method} {Path} HTTP/{Version}\r\n{string.Join("\r\n", Headers)}\r\n\r\n";
     }
 }

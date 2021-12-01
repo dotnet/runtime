@@ -1,9 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <OptimizeForSize Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</OptimizeForSize>
   </PropertyGroup>
-  <ItemGroup> <!-- Optimize for speed -->
+  <ItemGroup Condition="'$(OptimizeForSize)' == true">
+    <Compile Include="System\Linq\Enumerable.SizeOpt.cs" />
+    <Compile Include="System\Linq\Skip.SizeOpt.cs" />
+    <Compile Include="System\Linq\Take.SizeOpt.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs"
+             Link="System\Collections\Generic\LargeArrayBuilder.SizeOpt.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(OptimizeForSize)' != true">
     <Compile Include="System\Linq\AppendPrepend.SpeedOpt.cs" />
     <Compile Include="System\Linq\Concat.SpeedOpt.cs" />
     <Compile Include="System\Linq\DefaultIfEmpty.SpeedOpt.cs" />
@@ -42,6 +50,7 @@
     <Compile Include="System\Linq\Average.cs" />
     <Compile Include="System\Linq\Buffer.cs" />
     <Compile Include="System\Linq\Cast.cs" />
+    <Compile Include="System\Linq\Chunk.cs" />
     <Compile Include="System\Linq\Concat.cs" />
     <Compile Include="System\Linq\Contains.cs" />
     <Compile Include="System\Linq\Count.cs" />
@@ -71,7 +80,6 @@
     <Compile Include="System\Linq\Select.cs" />
     <Compile Include="System\Linq\SelectMany.cs" />
     <Compile Include="System\Linq\SequenceEqual.cs" />
-    <Compile Include="System\Linq\Set.cs" />
     <Compile Include="System\Linq\Single.cs" />
     <Compile Include="System\Linq\SingleLinkedNode.cs" />
     <Compile Include="System\Linq\Skip.cs" />

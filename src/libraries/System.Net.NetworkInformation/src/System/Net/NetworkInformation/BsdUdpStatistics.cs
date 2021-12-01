@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdUdpStatistics : UdpStatistics
+    internal sealed class BsdUdpStatistics : UdpStatistics
     {
         private readonly long _datagramsReceived;
         private readonly long _datagramsSent;
@@ -13,10 +13,10 @@ namespace System.Net.NetworkInformation
         private readonly long _incomingErrors;
         private readonly int _numListeners;
 
-        public BsdUdpStatistics()
+        public unsafe BsdUdpStatistics()
         {
             Interop.Sys.UdpGlobalStatistics statistics;
-            if (Interop.Sys.GetUdpGlobalStatistics(out statistics) == -1)
+            if (Interop.Sys.GetUdpGlobalStatistics(&statistics) == -1)
             {
                 throw new NetworkInformationException(SR.net_PInvokeError);
             }

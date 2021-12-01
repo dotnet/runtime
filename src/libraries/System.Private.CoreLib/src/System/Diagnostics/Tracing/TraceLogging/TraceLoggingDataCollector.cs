@@ -21,20 +21,13 @@ namespace System.Diagnostics.Tracing
     /// full-trust code, this abstraction is unnecessary (though it probably
     /// doesn't hurt anything).
     /// </summary>
-    internal unsafe class TraceLoggingDataCollector
+    internal static unsafe class TraceLoggingDataCollector
     {
-        internal static readonly TraceLoggingDataCollector Instance = new TraceLoggingDataCollector();
-
-        private TraceLoggingDataCollector()
-        {
-            return;
-        }
-
         /// <summary>
         /// Marks the start of a non-blittable array or enumerable.
         /// </summary>
         /// <returns>Bookmark to be passed to EndBufferedArray.</returns>
-        public int BeginBufferedArray()
+        public static int BeginBufferedArray()
         {
             return DataCollector.ThreadInstance.BeginBufferedArray();
         }
@@ -44,23 +37,12 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="bookmark">The value returned by BeginBufferedArray.</param>
         /// <param name="count">The number of items in the array.</param>
-        public void EndBufferedArray(int bookmark, int count)
+        public static void EndBufferedArray(int bookmark, int count)
         {
             DataCollector.ThreadInstance.EndBufferedArray(bookmark, count);
         }
 
-        /// <summary>
-        /// Adds the start of a group to the event.
-        /// This has no effect on the event payload, but is provided to allow
-        /// WriteMetadata and WriteData implementations to have similar
-        /// sequences of calls, allowing for easier verification of correctness.
-        /// </summary>
-        public TraceLoggingDataCollector AddGroup()
-        {
-            return this;
-        }
-
-        public void AddScalar(PropertyValue value)
+        public static void AddScalar(PropertyValue value)
         {
             PropertyValue.Scalar scalar = value.ScalarValue;
             DataCollector.ThreadInstance.AddScalar(&scalar, value.ScalarLength);
@@ -70,7 +52,7 @@ namespace System.Diagnostics.Tracing
         /// Adds an Int64 value to the event payload.
         /// </summary>
         /// <param name="value">Value to be added.</param>
-        public void AddScalar(long value)
+        public static void AddScalar(long value)
         {
             DataCollector.ThreadInstance.AddScalar(&value, sizeof(long));
         }
@@ -79,7 +61,7 @@ namespace System.Diagnostics.Tracing
         /// Adds a Double value to the event payload.
         /// </summary>
         /// <param name="value">Value to be added.</param>
-        public void AddScalar(double value)
+        public static void AddScalar(double value)
         {
             DataCollector.ThreadInstance.AddScalar(&value, sizeof(double));
         }
@@ -88,7 +70,7 @@ namespace System.Diagnostics.Tracing
         /// Adds a Boolean value to the event payload.
         /// </summary>
         /// <param name="value">Value to be added.</param>
-        public void AddScalar(bool value)
+        public static void AddScalar(bool value)
         {
             DataCollector.ThreadInstance.AddScalar(&value, sizeof(bool));
         }
@@ -99,7 +81,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="value">
         /// Value to be added. A null value is treated as a zero-length string.
         /// </param>
-        public void AddNullTerminatedString(string? value)
+        public static void AddNullTerminatedString(string? value)
         {
             DataCollector.ThreadInstance.AddNullTerminatedString(value);
         }
@@ -110,12 +92,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="value">
         /// Value to be added. A null value is treated as a zero-length string.
         /// </param>
-        public void AddBinary(string? value)
+        public static void AddBinary(string? value)
         {
             DataCollector.ThreadInstance.AddBinary(value, value == null ? 0 : value.Length * 2);
         }
 
-        public void AddArray(PropertyValue value, int elementSize)
+        public static void AddArray(PropertyValue value, int elementSize)
         {
             Array? array = (Array?)value.ReferenceValue;
             DataCollector.ThreadInstance.AddArray(array, array == null ? 0 : array.Length, elementSize);

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -32,7 +31,7 @@ namespace System.Net.Security
                 (isServer ? Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND : Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND));
         }
 
-        internal static unsafe SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, NetworkCredential credential)
+        internal static SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, NetworkCredential credential)
         {
             SafeSspiAuthDataHandle? authData = null;
             try
@@ -213,7 +212,7 @@ namespace System.Net.Security
             // throw if error
             if (errorCode != 0)
             {
-                NetEventSource.Info($"VerifySignature threw error: {errorCode.ToString("x", NumberFormatInfo.InvariantInfo)}");
+                NetEventSource.Info($"VerifySignature threw error: {errorCode:x}");
                 throw new Win32Exception(errorCode);
             }
 
@@ -257,7 +256,7 @@ namespace System.Net.Security
             // throw if error
             if (errorCode != 0)
             {
-                NetEventSource.Info($"MakeSignature threw error: {errorCode.ToString("x", NumberFormatInfo.InvariantInfo)}");
+                NetEventSource.Info($"MakeSignature threw error: {errorCode:x}");
                 throw new Win32Exception(errorCode);
             }
 

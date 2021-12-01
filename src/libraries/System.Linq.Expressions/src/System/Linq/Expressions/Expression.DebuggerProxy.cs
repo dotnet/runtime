@@ -9,7 +9,7 @@ namespace System.Linq.Expressions
 {
     public partial class Expression
     {
-        internal class BinaryExpressionProxy
+        internal sealed class BinaryExpressionProxy
         {
             private readonly BinaryExpression _node;
 
@@ -31,7 +31,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class BlockExpressionProxy
+        internal sealed class BlockExpressionProxy
         {
             private readonly BlockExpression _node;
 
@@ -50,7 +50,7 @@ namespace System.Linq.Expressions
             public ReadOnlyCollection<ParameterExpression> Variables => _node.Variables;
         }
 
-        internal class CatchBlockProxy
+        internal sealed class CatchBlockProxy
         {
             private readonly CatchBlock _node;
 
@@ -66,7 +66,7 @@ namespace System.Linq.Expressions
             public ParameterExpression? Variable => _node.Variable;
         }
 
-        internal class ConditionalExpressionProxy
+        internal sealed class ConditionalExpressionProxy
         {
             private readonly ConditionalExpression _node;
 
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class ConstantExpressionProxy
+        internal sealed class ConstantExpressionProxy
         {
             private readonly ConstantExpression _node;
 
@@ -102,7 +102,7 @@ namespace System.Linq.Expressions
             public object? Value => _node.Value;
         }
 
-        internal class DebugInfoExpressionProxy
+        internal sealed class DebugInfoExpressionProxy
         {
             private readonly DebugInfoExpression _node;
 
@@ -124,7 +124,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class DefaultExpressionProxy
+        internal sealed class DefaultExpressionProxy
         {
             private readonly DefaultExpression _node;
 
@@ -140,7 +140,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class GotoExpressionProxy
+        internal sealed class GotoExpressionProxy
         {
             private readonly GotoExpression _node;
 
@@ -159,7 +159,7 @@ namespace System.Linq.Expressions
             public Expression? Value => _node.Value;
         }
 
-        internal class IndexExpressionProxy
+        internal sealed class IndexExpressionProxy
         {
             private readonly IndexExpression _node;
 
@@ -178,7 +178,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class InvocationExpressionProxy
+        internal sealed class InvocationExpressionProxy
         {
             private readonly InvocationExpression _node;
 
@@ -196,7 +196,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class LabelExpressionProxy
+        internal sealed class LabelExpressionProxy
         {
             private readonly LabelExpression _node;
 
@@ -214,7 +214,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class LambdaExpressionProxy
+        internal sealed class LambdaExpressionProxy
         {
             private readonly LambdaExpression _node;
 
@@ -235,7 +235,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class ListInitExpressionProxy
+        internal sealed class ListInitExpressionProxy
         {
             private readonly ListInitExpression _node;
 
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class LoopExpressionProxy
+        internal sealed class LoopExpressionProxy
         {
             private readonly LoopExpression _node;
 
@@ -272,7 +272,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class MemberExpressionProxy
+        internal sealed class MemberExpressionProxy
         {
             private readonly MemberExpression _node;
 
@@ -290,7 +290,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class MemberInitExpressionProxy
+        internal sealed class MemberInitExpressionProxy
         {
             private readonly MemberInitExpression _node;
 
@@ -308,7 +308,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class MethodCallExpressionProxy
+        internal sealed class MethodCallExpressionProxy
         {
             private readonly MethodCallExpression _node;
 
@@ -327,7 +327,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class NewArrayExpressionProxy
+        internal sealed class NewArrayExpressionProxy
         {
             private readonly NewArrayExpression _node;
 
@@ -344,7 +344,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class NewExpressionProxy
+        internal sealed class NewExpressionProxy
         {
             private readonly NewExpression _node;
 
@@ -363,7 +363,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class ParameterExpressionProxy
+        internal sealed class ParameterExpressionProxy
         {
             private readonly ParameterExpression _node;
 
@@ -381,7 +381,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class RuntimeVariablesExpressionProxy
+        internal sealed class RuntimeVariablesExpressionProxy
         {
             private readonly RuntimeVariablesExpression _node;
 
@@ -398,7 +398,7 @@ namespace System.Linq.Expressions
             public ReadOnlyCollection<ParameterExpression> Variables => _node.Variables;
         }
 
-        internal class SwitchCaseProxy
+        internal sealed class SwitchCaseProxy
         {
             private readonly SwitchCase _node;
 
@@ -412,7 +412,7 @@ namespace System.Linq.Expressions
             public ReadOnlyCollection<Expression> TestValues => _node.TestValues;
         }
 
-        internal class SwitchExpressionProxy
+        internal sealed class SwitchExpressionProxy
         {
             private readonly SwitchExpression _node;
 
@@ -432,7 +432,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class TryExpressionProxy
+        internal sealed class TryExpressionProxy
         {
             private readonly TryExpression _node;
 
@@ -452,7 +452,7 @@ namespace System.Linq.Expressions
             public Type Type => _node.Type;
         }
 
-        internal class TypeBinaryExpressionProxy
+        internal sealed class TypeBinaryExpressionProxy
         {
             private readonly TypeBinaryExpression _node;
 
@@ -470,7 +470,7 @@ namespace System.Linq.Expressions
             public Type TypeOperand => _node.TypeOperand;
         }
 
-        internal class UnaryExpressionProxy
+        internal sealed class UnaryExpressionProxy
         {
             private readonly UnaryExpression _node;
 

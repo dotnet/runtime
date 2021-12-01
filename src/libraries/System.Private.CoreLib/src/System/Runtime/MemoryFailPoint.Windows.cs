@@ -9,7 +9,12 @@ namespace System.Runtime
     {
         private static ulong GetTopOfMemory()
         {
-            Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO info);
+            Interop.Kernel32.SYSTEM_INFO info;
+            unsafe
+            {
+                Interop.Kernel32.GetSystemInfo(&info);
+            }
+
             return (ulong)info.lpMaximumApplicationAddress;
         }
 
@@ -17,7 +22,7 @@ namespace System.Runtime
         {
             Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
             memoryStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
-            if (!Interop.Kernel32.GlobalMemoryStatusEx(ref memoryStatus))
+            if (Interop.Kernel32.GlobalMemoryStatusEx(&memoryStatus) == Interop.BOOL.FALSE)
             {
                 availPageFile = default;
                 totalAddressSpaceFree = default;

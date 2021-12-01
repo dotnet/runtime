@@ -8,22 +8,26 @@
 
 #if defined(TARGET_XARCH)
     #include <immintrin.h>
-
-    typedef __m256d Vector256D;
 #elif defined(TARGET_ARMARCH)
+    // Intentionally empty
+#else
+    #error Unsupported target architecture
+#endif
+
+#if defined(TARGET_XARCH)
+    typedef __m256 Vector256D;
+#else
     typedef struct {
         double e00;
         double e01;
         double e02;
         double e03;
     } Vector256D;
-#else
-    #error Unsupported target architecture
 #endif
 
 static Vector256D Vector256DValue = { };
 
-extern "C" DLL_EXPORT Vector256D STDMETHODCALLTYPE GetVector256D(double e00, double e01, double e02, double e03)
+extern "C" DLL_EXPORT Vector256D STDMETHODCALLTYPE ENABLE_AVX GetVector256D(double e00, double e01, double e02, double e03)
 {
     union {
         double value[4];
@@ -38,7 +42,7 @@ extern "C" DLL_EXPORT Vector256D STDMETHODCALLTYPE GetVector256D(double e00, dou
     return result;
 }
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector256DOut(double e00, double e01, double e02, double e03, Vector256D* pValue)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE ENABLE_AVX GetVector256DOut(double e00, double e01, double e02, double e03, Vector256D* pValue)
 {
     Vector256D value = GetVector256D(e00, e01, e02, e03);
 
@@ -50,18 +54,18 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector256DOut(double e00, double
 #endif
 }
 
-extern "C" DLL_EXPORT const Vector256D* STDMETHODCALLTYPE GetVector256DPtr(double e00, double e01, double e02, double e03)
+extern "C" DLL_EXPORT const Vector256D* STDMETHODCALLTYPE ENABLE_AVX GetVector256DPtr(double e00, double e01, double e02, double e03)
 {
     GetVector256DOut(e00, e01, e02, e03, &Vector256DValue);
     return &Vector256DValue;
 }
 
-extern "C" DLL_EXPORT Vector256D STDMETHODCALLTYPE AddVector256D(Vector256D lhs, Vector256D rhs)
+extern "C" DLL_EXPORT Vector256D STDMETHODCALLTYPE ENABLE_AVX AddVector256D(Vector256D lhs, Vector256D rhs)
 {
     throw "P/Invoke for Vector256<double> should be unsupported.";
 }
 
-extern "C" DLL_EXPORT Vector256D STDMETHODCALLTYPE AddVector256Ds(const Vector256D* pValues, uint32_t count)
+extern "C" DLL_EXPORT Vector256D STDMETHODCALLTYPE ENABLE_AVX AddVector256Ds(const Vector256D* pValues, uint32_t count)
 {
     throw "P/Invoke for Vector256<double> should be unsupported.";
 }

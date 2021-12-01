@@ -528,7 +528,7 @@ namespace System.DirectoryServices.AccountManagement
                         {
                             pSid = Utils.ConvertByteArrayToIntPtr(sidb);
 
-                            if (UnsafeNativeMethods.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
+                            if (Interop.Advapi32.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
                             {
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                                         "ADStoreCtx",
@@ -583,7 +583,7 @@ namespace System.DirectoryServices.AccountManagement
                             {
                                 pSid = Utils.ConvertByteArrayToIntPtr(sidb);
 
-                                if (UnsafeNativeMethods.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
+                                if (Interop.Advapi32.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
                                 {
                                     GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                                             "ADStoreCtx",
@@ -805,7 +805,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static Dictionary<int, Dictionary<Type, StringCollection>> TypeToLdapPropListMap;
 
-        private class PropertyMappingTableEntry
+        private sealed class PropertyMappingTableEntry
         {
             internal string propertyName;               // PAPI name
             internal string suggestedADPropertyName;    // LDAP attribute name
@@ -1723,5 +1723,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-// #endif   // PAPI_AD

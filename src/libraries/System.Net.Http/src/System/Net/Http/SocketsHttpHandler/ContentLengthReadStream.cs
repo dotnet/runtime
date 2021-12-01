@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : IDisposable
+    internal sealed partial class HttpConnection : IDisposable
     {
         private sealed class ContentLengthReadStream : HttpContentReadStream
         {
@@ -22,9 +22,9 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data.
+                    // Response body fully consumed
                     return 0;
                 }
 
@@ -35,7 +35,7 @@ namespace System.Net.Http
                 }
 
                 int bytesRead = _connection.Read(buffer);
-                if (bytesRead <= 0)
+                if (bytesRead <= 0 && buffer.Length != 0)
                 {
                     // Unexpected end of response stream.
                     throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
@@ -47,7 +47,6 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
-                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection.CompleteResponse();
                     _connection = null;
                 }
@@ -59,9 +58,9 @@ namespace System.Net.Http
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data
+                    // Response body fully consumed
                     return 0;
                 }
 
@@ -95,7 +94,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (bytesRead <= 0)
+                if (bytesRead == 0 && buffer.Length != 0)
                 {
                     // A cancellation request may have caused the EOF.
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
@@ -110,7 +109,6 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
-                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection.CompleteResponse();
                     _connection = null;
                 }
@@ -120,7 +118,7 @@ namespace System.Net.Http
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                ValidateCopyToArgs(this, destination, bufferSize);
+                ValidateCopyToArguments(destination, bufferSize);
 
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -165,7 +163,6 @@ namespace System.Net.Http
 
             private void Finish()
             {
-                if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                 _contentBytesRemaining = 0;
                 _connection!.CompleteResponse();
                 _connection = null;
@@ -193,7 +190,7 @@ namespace System.Net.Http
                 return connectionBuffer.Slice(0, bytesToConsume);
             }
 
-            public override bool NeedsDrain => (_connection != null);
+            public override bool NeedsDrain => CanReadFromConnection;
 
             public override async ValueTask<bool> DrainAsync(int maxDrainBytes)
             {
@@ -215,11 +212,18 @@ namespace System.Net.Http
                 CancellationTokenSource? cts = null;
                 CancellationTokenRegistration ctr = default;
                 TimeSpan drainTime = _connection._pool.Settings._maxResponseDrainTime;
+
+                if (drainTime == TimeSpan.Zero)
+                {
+                    return false;
+                }
+
                 if (drainTime != Timeout.InfiniteTimeSpan)
                 {
                     cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
                     ctr = cts.Token.Register(static s => ((HttpConnection)s!).Dispose(), _connection);
                 }
+
                 try
                 {
                     while (true)

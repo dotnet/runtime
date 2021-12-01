@@ -63,7 +63,22 @@ g_static_assert (TLS_KEY_DOMAIN == 0);
 #define mono_native_tls_free TlsFree
 #define mono_native_tls_set_value TlsSetValue
 
+#ifdef HAVE_WINTERNL_H
 #include <winternl.h>
+#else
+typedef struct _TEB {
+	PVOID Reserved1[12];
+	PVOID ProcessEnvironmentBlock;
+	PVOID Reserved2[399];
+	BYTE Reserved3[1952];
+	PVOID TlsSlots[64];
+	BYTE Reserved4[8];
+	PVOID Reserved5[26];
+	PVOID ReservedForOle;
+	PVOID Reserved6[4];
+	PVOID TlsExpansionSlots;
+} TEB, *PTEB;
+#endif
 
 // TlsGetValue always writes 0 to LastError. Which can cause problems. This never changes LastError.
 //
@@ -110,7 +125,6 @@ mono_native_tls_set_value (MonoNativeTlsKey key, gpointer value)
 
 void mono_tls_init_gc_keys (void);
 void mono_tls_init_runtime_keys (void);
-void mono_tls_free_keys (void);
 
 G_EXTERN_C MonoInternalThread *mono_tls_get_thread_extern (void);
 G_EXTERN_C MonoJitTlsData     *mono_tls_get_jit_tls_extern (void);

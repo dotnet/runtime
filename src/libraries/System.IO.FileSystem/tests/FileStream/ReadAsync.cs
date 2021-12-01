@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -10,160 +11,7 @@ namespace System.IO.Tests
 {
     public abstract class FileStream_AsyncReads : FileSystemTest
     {
-        protected virtual string BufferParamName => "buffer";
-        protected virtual string OffsetParamName => "offset";
-        protected virtual string CountParamName => "count";
-        protected abstract Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken);
-        private Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count) =>
-            ReadAsync(stream, buffer, offset, count, CancellationToken.None);
-
-        [Fact]
-        public void NullBufferThrows()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, null, 0, 1)));
-            }
-        }
-
-        [Fact]
-        public void NegativeOffsetThrows()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], -1, 1)));
-
-                // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, null, -1, 1)));
-            }
-        }
-
-        [Fact]
-        public void NegativeCountThrows()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(CountParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, -1)));
-
-                // offset is checked before count
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], -1, -1)));
-
-                // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, null, -1, -1)));
-            }
-        }
-
-        [Fact]
-        public void BufferOutOfBoundsThrows()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                // offset out of bounds
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 1, 1)));
-
-                // offset out of bounds for 0 count ReadAsync
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 2, 0)));
-
-                // offset out of bounds even for 0 length buffer
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[0], 1, 0)));
-
-                // combination offset and count out of bounds
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[2], 1, 2)));
-
-                // edges
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[0], int.MaxValue, 0)));
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[0], int.MaxValue, int.MaxValue)));
-            }
-        }
-
-        [Fact]
-        public void ReadAsyncDisposedThrows()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                fs.Dispose();
-                Assert.Throws<ObjectDisposedException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, 1)));
-                // even for noop ReadAsync
-                Assert.Throws<ObjectDisposedException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, 0)));
-
-                // out of bounds checking happens first
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[2], 1, 2)));
-
-                // count is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(CountParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, -1)));
-
-                // offset is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], -1, -1)));
-
-                // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, null, -1, -1)));
-            }
-        }
-
-        [Fact]
-        public void WriteOnlyThrows()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write))
-            {
-                Assert.Throws<NotSupportedException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, 1)));
-
-                fs.Dispose();
-                // Disposed checking happens first
-                Assert.Throws<ObjectDisposedException>(() =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, 1)));
-
-                // out of bounds checking happens first
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[2], 1, 2)));
-
-                // count is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(CountParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, -1)));
-
-                // offset is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], -1, -1)));
-
-                // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, null, -1, -1)));
-            }
-        }
-
-        [Fact]
-        public async Task NoopReadAsyncsSucceed()
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                // note that these do not succeed synchronously even though they do nothing.
-
-                Assert.Equal(0, await ReadAsync(fs, new byte[0], 0, 0));
-                Assert.Equal(0, await ReadAsync(fs, new byte[1], 0, 0));
-                // even though offset is out of bounds of buffer, this is still allowed
-                // for the last element
-                Assert.Equal(0, await ReadAsync(fs, new byte[1], 1, 0));
-                Assert.Equal(0, await ReadAsync(fs, new byte[2], 1, 0));
-            }
-        }
+        protected abstract Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
 
         [Fact]
         public async Task EmptyFileReadAsyncSucceedSynchronously()
@@ -209,7 +57,7 @@ namespace System.IO.Tests
                 Assert.Equal(TestBuffer.Length, await ReadAsync(fs, buffer, 0, buffer.Length));
                 Assert.Equal(TestBuffer, buffer);
 
-                Array.Clear(buffer, 0, buffer.Length);
+                Array.Clear(buffer);
 
                 // read should now complete synchronously since it is serviced by the read buffer filled in the first request
                 Assert.Equal(TestBuffer.Length, FSAssert.CompletesSynchronously(ReadAsync(fs, buffer, 0, buffer.Length)));
@@ -217,42 +65,12 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task ReadAsyncExistingFile()
-        {
-            string fileName = GetTestFilePath();
-            using (FileStream fs = new FileStream(fileName, FileMode.Create))
-            {
-                fs.Write(TestBuffer, 0, TestBuffer.Length);
-            }
-
-            using (FileStream fs = new FileStream(fileName, FileMode.Open))
-            {
-                byte[] buffer = new byte[TestBuffer.Length];
-                Assert.Equal(TestBuffer.Length, await ReadAsync(fs, buffer, 0, buffer.Length));
-                Assert.Equal(TestBuffer, buffer);
-
-                // ReadAsync with too large buffer at front of buffer
-                fs.Position = 0;
-                buffer = new byte[TestBuffer.Length * 2];
-                Assert.Equal(TestBuffer.Length, await ReadAsync(fs, buffer, 0, buffer.Length));
-                Assert.Equal(TestBuffer, buffer.Take(TestBuffer.Length));
-                // Remainder of buffer should be untouched.
-                Assert.Equal(new byte[buffer.Length - TestBuffer.Length], buffer.Skip(TestBuffer.Length));
-
-                // ReadAsync with too large buffer in middle of buffer
-                fs.Position = 0;
-                buffer = new byte[TestBuffer.Length * 2];
-                Assert.Equal(TestBuffer.Length, await ReadAsync(fs, buffer, 2, buffer.Length - 2));
-                Assert.Equal(TestBuffer, buffer.Skip(2).Take(TestBuffer.Length));
-                // Remainder of buffer should be untouched.
-                Assert.Equal(new byte[2], buffer.Take(2));
-                Assert.Equal(new byte[buffer.Length - TestBuffer.Length - 2], buffer.Skip(2 + TestBuffer.Length));
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task ReadAsyncCancelledFile()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(0, true)] // 0 == no buffering
+        [InlineData(4096, true)] // 4096 == default buffer size
+        [InlineData(0, false)]
+        [InlineData(4096, false)]
+        public async Task ReadAsyncCanceledFile(int bufferSize, bool isAsync)
         {
             string fileName = GetTestFilePath();
             using (FileStream fs = new FileStream(fileName, FileMode.Create))
@@ -261,7 +79,7 @@ namespace System.IO.Tests
                     fs.Write(TestBuffer, 0, TestBuffer.Length);
             }
 
-            using (FileStream fs = new FileStream(fileName, FileMode.Open))
+            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.None, bufferSize, isAsync))
             {
                 byte[] buffer = new byte[fs.Length];
                 CancellationTokenSource cts = new CancellationTokenSource();
@@ -277,133 +95,53 @@ namespace System.IO.Tests
                     // Ideally we'd be doing an Assert.Throws<OperationCanceledException>
                     // but since cancellation is a race condition we accept either outcome
                     Assert.Equal(cts.Token, oce.CancellationToken);
+
+                    Assert.Equal(0, fs.Position); // if read was cancelled, the Position should remain unchanged
                 }
             }
         }
 
-        [Fact, OuterLoop]
-        public async Task ReadAsyncMiniStress()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(FileShare.None, FileOptions.Asynchronous)] // FileShare.None: exclusive access
+        [InlineData(FileShare.ReadWrite, FileOptions.Asynchronous)] // FileShare.ReadWrite: others can write to the file, the length can't be cached
+        [InlineData(FileShare.None, FileOptions.None)]
+        [InlineData(FileShare.ReadWrite, FileOptions.None)]
+        public async Task IncompleteReadCantSetPositionBeyondEndOfFile(FileShare fileShare, FileOptions options)
         {
-            TimeSpan testRunTime = TimeSpan.FromSeconds(10);
-            const int MaximumReadSize = 16 * 1024;
-            const int NormalReadSize = 4 * 1024;
+            const int fileSize = 10_000;
+            string filePath = GetTestFilePath();
+            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
+            File.WriteAllBytes(filePath, content);
 
-            Random rand = new Random();
-            DateTime testStartTime = DateTime.UtcNow;
+            byte[][] buffers = Enumerable.Range(0, 10).Select(_ => new byte[fileSize * 2]).ToArray();
 
-            // Generate file data
-            byte[] readableFileContents = new byte[MaximumReadSize * 16];
-            rand.NextBytes(readableFileContents);
-
-            // Create and fill file
-            string readableFilePath = GetTestFilePath();
-            using (var stream = new FileStream(readableFilePath, FileMode.CreateNew, FileAccess.Write))
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, fileShare, bufferSize: 0, options))
             {
-                await stream.WriteAsync(readableFileContents, 0, readableFileContents.Length);
-            }
+                Task<int>[] reads = buffers.Select(buffer => fs.ReadAsync(buffer, 0, buffer.Length)).ToArray();
 
-            using (var stream = new FileStream(readableFilePath, FileMode.Open, FileAccess.Read))
-            {
-                // Create a new token that expires between 100-1000ms
-                CancellationTokenSource tokenSource = new CancellationTokenSource();
-                tokenSource.CancelAfter(rand.Next(100, 1000));
+                // the reads were not awaited, it's an anti-pattern and Position can be (0, buffersLength) now:
+                Assert.InRange(fs.Position, 0, buffers.Sum(buffer => buffer.Length));
 
-                int currentPosition = 0;
-                byte[] buffer = new byte[MaximumReadSize];
-                do
-                {
-                    try
-                    {
-                        // 20%: random read size
-                        int bytesToRead = (rand.NextDouble() < 0.2 ? rand.Next(16, MaximumReadSize) : NormalReadSize);
-
-                        int bytesRead;
-                        if (rand.NextDouble() < 0.1)
-                        {
-                            // 10%: Sync read
-                            bytesRead = stream.Read(buffer, 0, bytesToRead);
-                        }
-                        else
-                        {
-                            // 90%: Async read
-                            bytesRead = await ReadAsync(stream, buffer, 0, bytesToRead, tokenSource.Token);
-                        }
-
-                        // 10%: Verify data (burns a lot of CPU time)
-                        if (rand.NextDouble() < 0.1)
-                        {
-                            // Validate data read
-                            Assert.True(bytesRead + currentPosition <= readableFileContents.Length, "Too many bytes read");
-                            Assert.Equal(readableFileContents.Skip(currentPosition).Take(bytesRead), buffer.Take(bytesRead));
-                        }
-
-                        // Advance position and reset if we are at the end
-                        currentPosition += bytesRead;
-                        if (currentPosition >= readableFileContents.Length)
-                        {
-                            currentPosition = 0;
-                            stream.Seek(0, SeekOrigin.Begin);
-                        }
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        // Once the token has expired, generate a new one
-                        Assert.True(tokenSource.Token.IsCancellationRequested, "Received cancellation exception before token expired");
-                        tokenSource = new CancellationTokenSource();
-                        tokenSource.CancelAfter(rand.Next(100, 1000));
-                    }
-                } while (DateTime.UtcNow - testStartTime <= testRunTime);
+                await Task.WhenAll(reads);
+                // but when they are finished, the first buffer should contain valid data:
+                Assert.Equal(fileSize, reads.First().Result);
+                AssertExtensions.SequenceEqual(content, buffers.First().AsSpan(0, fileSize));
+                // and other reads should return 0:
+                Assert.All(reads.Skip(1), read => Assert.Equal(0, read.Result));
+                // and the Position must be correct:
+                Assert.Equal(fileSize, fs.Position);
             }
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_ReadAsync_AsyncReads : FileStream_AsyncReads
     {
         protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, offset, count, cancellationToken);
-
-        [Fact]
-        public void CancelledTokenFastPath()
-        {
-            var cts = new CancellationTokenSource();
-            cts.Cancel();
-            CancellationToken cancelledToken = cts.Token;
-
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
-            {
-                FSAssert.IsCancelled(ReadAsync(fs, new byte[1], 0, 1, cancelledToken), cancelledToken);
-            }
-
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write))
-            {
-                // before write only check
-                FSAssert.IsCancelled(ReadAsync(fs, new byte[1], 0, 1, cancelledToken), cancelledToken);
-
-                fs.Dispose();
-                // before disposed check
-                FSAssert.IsCancelled(ReadAsync(fs, new byte[1], 0, 1, cancelledToken), cancelledToken);
-
-                // out of bounds checking happens first
-                Assert.Throws<ArgumentException>(null, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[2], 1, 2, cancelledToken)));
-
-                // count is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(CountParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], 0, -1, cancelledToken)));
-
-                // offset is checked prior
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(OffsetParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, new byte[1], -1, -1, cancelledToken)));
-
-                // buffer is checked first
-                AssertExtensions.Throws<ArgumentNullException>(BufferParamName, () =>
-                    FSAssert.CompletesSynchronously(ReadAsync(fs, null, -1, -1, cancelledToken)));
-            }
-        }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_BeginEndRead_AsyncReads : FileStream_AsyncReads
     {
         protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
@@ -411,8 +149,5 @@ namespace System.IO.Tests
                 (callback, state) => stream.BeginRead(buffer, offset, count, callback, state),
                 iar => stream.EndRead(iar),
                 null);
-
-        protected override string BufferParamName => "array";
-        protected override string CountParamName => "numBytes";
     }
 }

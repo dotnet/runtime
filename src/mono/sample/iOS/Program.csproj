@@ -1,0 +1,131 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
+    <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
+    <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
+    <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
+    <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <AppName>HelloiOS</AppName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
+    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
+  </PropertyGroup>
+
+  <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
+  <UsingTask TaskName="AppleAppBuilderTask"
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+
+  <UsingTask TaskName="MonoAOTCompiler"
+             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+
+  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
+    <PropertyGroup>
+      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
+      <IosSimulator Condition="'$(TargetsiOSSimulator)' == 'true'">iPhone 11</IosSimulator>
+      <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+      <RunAOTCompilation Condition="('$(TargetsMacCatalyst)' == 'false' and '$(IosSimulator)' == '') or '$(ForceAOT)' == 'true'">true</RunAOTCompilation>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(AppDir)" />
+
+    <ItemGroup>
+      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
+      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
+    </PropertyGroup>
+
+    <MonoAOTCompiler
+        Condition="'$(RunAOTCompilation)' == 'true'"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        Mode="$(AOTMode)"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        AotModulesTablePath="$(AppDir)\modules.m"
+        AotModulesTableLanguage="ObjC"
+        OutputDir="$(PublishDir)"
+        IntermediateOutputPath="$(IntermediateOutputPath)"
+        UseLLVM="$(UseLLVM)"
+        LLVMPath="$(MonoAotCrossDir)">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+
+    <AppleAppBuilderTask
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(AppName)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\native\include\mono-2.0"
+        Assemblies="@(BundleAssemblies)"
+        MainLibraryFileName="Program.dll"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(AppDir)"
+        Optimized="$(Optimized)"
+        ForceAOT="$(RunAOTCompilation)"
+        ForceInterpreter="$(MonoForceInterpreter)"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
+        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
+    <Message Importance="High" Text="App:   $(AppBundlePath)"/>
+  </Target>
+
+  <Target Name="RunAppBundle"
+          AfterTargets="BuildAppBundle"
+          Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
+    <!-- FIXME: only run if the TargetArchitecture matches the current architecture -->
+
+    <!-- install and run on ios simulator or device -->
+    <Exec Condition="'$(TargetOS)' == 'iOSSimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'iOS'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
+
+    <!-- run on MacCatalyst -->
+    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="open -W $(AppBundlePath)" />
+
+  </Target>
+
+  <Target Name="CopySampleAppToHelixTestDir"
+          Condition="'$(ArchiveTests)' == 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish;BuildAppBundle" >
+    <PropertyGroup>
+      <!-- Helix properties -->
+      <!-- AnyCPU as Platform-->
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <!-- <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig> -->
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
+      <_AppBundleName>$([System.IO.Path]::GetFileName('$(AppBundlePath)'))</_AppBundleName>
+    </PropertyGroup>
+    <ItemGroup>
+      <_appFiles Include="$(AppBundlePath)/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_appFiles)"
+          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/$(_AppBundleName)/%(RecursiveDir)" />
+
+    <Message Importance="High" Text="AppBundlePath: $(AppBundlePath)"/>
+    <Message Importance="High" Text="HelixArchiveRunOnlyAppsDir: $(HelixArchiveRunOnlyAppsDir)"/>
+  </Target>
+</Project>

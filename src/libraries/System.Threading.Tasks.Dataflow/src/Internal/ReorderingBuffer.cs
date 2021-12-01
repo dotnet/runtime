@@ -66,7 +66,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="id">The ID of the item.</param>
         /// <param name="item">The completed item.</param>
         /// <param name="itemIsValid">Specifies whether the item is valid (true) or just a placeholder (false).</param>
-        internal void AddItem(long id, [AllowNull] TOutput item, bool itemIsValid)
+        internal void AddItem(long id, TOutput? item, bool itemIsValid)
         {
             Debug.Assert(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
@@ -104,7 +104,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// true if the item was not added but is next in line.
         /// false if the item was not added and is not next in line.
         /// </returns>
-        internal bool? AddItemIfNextAndTrusted(long id, [AllowNull] TOutput item, bool isTrusted)
+        internal bool? AddItemIfNextAndTrusted(long id, TOutput? item, bool isTrusted)
         {
             Debug.Assert(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
@@ -138,7 +138,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Outputs the item.  The item must have already been confirmed to have the next ID.</summary>
         /// <param name="theNextItem">The item to output.</param>
         /// <param name="itemIsValid">Whether the item is valid.</param>
-        private void OutputNextItem([AllowNull] TOutput theNextItem, bool itemIsValid)
+        private void OutputNextItem(TOutput? theNextItem, bool itemIsValid)
         {
             Common.ContractAssertMonitorStatus(ValueLock, held: true);
 

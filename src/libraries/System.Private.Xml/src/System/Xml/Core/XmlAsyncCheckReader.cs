@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -152,7 +151,7 @@ namespace System.Xml
             }
         }
 
-        public override string? BaseURI
+        public override string BaseURI
         {
             get
             {
@@ -278,7 +277,7 @@ namespace System.Xml
             return _coreReader.ReadContentAsString();
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             CheckAsync();
             return _coreReader.ReadContentAs(returnType, namespaceResolver);
@@ -801,7 +800,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             CheckAsync();
             var task = _coreReader.ReadContentAsAsync(returnType, namespaceResolver);
@@ -915,7 +914,7 @@ namespace System.Xml
         #endregion
     }
 
-    internal class XmlAsyncCheckReaderWithNS : XmlAsyncCheckReader, IXmlNamespaceResolver
+    internal sealed class XmlAsyncCheckReaderWithNS : XmlAsyncCheckReader, IXmlNamespaceResolver
     {
         private readonly IXmlNamespaceResolver _readerAsIXmlNamespaceResolver;
 
@@ -1005,7 +1004,7 @@ namespace System.Xml
         #endregion
     }
 
-    internal class XmlAsyncCheckReaderWithLineInfoNSSchema : XmlAsyncCheckReaderWithLineInfoNS, IXmlSchemaInfo
+    internal sealed class XmlAsyncCheckReaderWithLineInfoNSSchema : XmlAsyncCheckReaderWithLineInfoNS, IXmlSchemaInfo
     {
         private readonly IXmlSchemaInfo _readerAsIXmlSchemaInfo;
 

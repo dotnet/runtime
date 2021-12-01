@@ -3,29 +3,36 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable
+    internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable, IServiceScopeFactory
     {
         // For testing only
-        internal Action<object> _captureDisposableCallback;
-
-        private List<object> _disposables;
+        internal IList<object> Disposables => _disposables ?? (IList<object>)Array.Empty<object>();
 
         private bool _disposed;
+        private List<object> _disposables;
 
-        public ServiceProviderEngineScope(ServiceProviderEngine engine)
+        public ServiceProviderEngineScope(ServiceProvider provider, bool isRootScope)
         {
-            Engine = engine;
+            ResolvedServices = new Dictionary<ServiceCacheKey, object>();
+            RootProvider = provider;
+            IsRootScope = isRootScope;
         }
 
-        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; } = new Dictionary<ServiceCacheKey, object>();
+        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; }
 
-        public ServiceProviderEngine Engine { get; }
+        // This lock protects state on the scope, in particular, for the root scope, it protects
+        // the list of disposable entries only, since ResolvedServices are cached on CallSites
+        // For other scopes, it protects ResolvedServices and the list of disposables
+        internal object Sync => ResolvedServices;
+
+        public bool IsRootScope { get; }
+
+        internal ServiceProvider RootProvider { get; }
 
         public object GetService(Type serviceType)
         {
@@ -34,31 +41,51 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            return Engine.GetService(serviceType, this);
+            return RootProvider.GetService(serviceType, this);
         }
 
         public IServiceProvider ServiceProvider => this;
 
+        public IServiceScope CreateScope() => RootProvider.CreateScope();
+
         internal object CaptureDisposable(object service)
         {
-            Debug.Assert(!_disposed);
-
-            _captureDisposableCallback?.Invoke(service);
-
             if (ReferenceEquals(this, service) || !(service is IDisposable || service is IAsyncDisposable))
             {
                 return service;
             }
 
-            lock (ResolvedServices)
+            bool disposed = false;
+            lock (Sync)
             {
-                if (_disposables == null)
+                if (_disposed)
                 {
-                    _disposables = new List<object>();
+                    disposed = true;
+                }
+                else
+                {
+                    _disposables ??= new List<object>();
+
+                    _disposables.Add(service);
+                }
+            }
+
+            // Don't run customer code under the lock
+            if (disposed)
+            {
+                if (service is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+                else
+                {
+                    // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
+                    Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask()).GetAwaiter().GetResult();
                 }
 
-                _disposables.Add(service);
+                ThrowHelper.ThrowObjectDisposedException();
             }
+
             return service;
         }
 
@@ -122,6 +149,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
                 await vt.ConfigureAwait(false);
+                // vt is acting on the disposable at index i,
+                // decrement it and move to the next iteration
+                i--;
 
                 for (; i >= 0; i--)
                 {
@@ -140,25 +170,27 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private List<object> BeginDispose()
         {
-            List<object> toDispose;
-            lock (ResolvedServices)
+            lock (Sync)
             {
                 if (_disposed)
                 {
                     return null;
                 }
 
+                // Track statistics about the scope (number of disposable objects and number of disposed services)
+                DependencyInjectionEventSource.Log.ScopeDisposed(RootProvider.GetHashCode(), ResolvedServices.Count, _disposables?.Count ?? 0);
+
+                // We've transitioned to the disposed state, so future calls to
+                // CaptureDisposable will immediately dispose the object.
+                // No further changes to _state.Disposables, are allowed.
                 _disposed = true;
-                toDispose = _disposables;
-                _disposables = null;
 
-                // Not clearing ResolvedServices here because there might be a compilation running in background
-                // trying to get a cached singleton service instance and if it won't find
-                // it it will try to create a new one tripping the Debug.Assert in CaptureDisposable
-                // and leaking a Disposable object in Release mode
+                // ResolvedServices is never cleared for singletons because there might be a compilation running in background
+                // trying to get a cached singleton service. If it doesn't find it
+                // it will try to create a new one which will result in an ObjectDisposedException.
+
+                return _disposables;
             }
-
-            return toDispose;
         }
     }
 }

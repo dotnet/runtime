@@ -14,13 +14,13 @@
     <Compile Include="UmaTests.cs" />
     <Compile Include="UmsCtorTests.cs" />
     <Compile Include="HGlobalSafeBuffer.cs" />
-    <Compile Include="UmsDisposeAsync.cs" />
-    <Compile Include="UmsReadWrite.cs" />
     <Compile Include="UmsSafeBuffer.cs" />
     <Compile Include="UmaCtorTests.cs" />
-    <Compile Include="UmsFlush.cs" />
     <Compile Include="UmsTests.cs" />
     <Compile Include="UmsManager.cs" />
     <Compile Include="UmsSecurityTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

@@ -109,7 +109,7 @@ namespace System.Buffers.Text
             DecomposedGuid guidAsBytes = default;
             guidAsBytes.Guid = value;
 
-            // When a GUID is blitted, the first three components are little-endian, and the last component is big-endian.
+            // When a GUID is blitted, the first three components are native-endian, and the last component is big-endian.
 
             // The line below forces the JIT to hoist the bounds check for the following segment.
             // The JIT will optimize away the read, but it cannot optimize away the bounds check
@@ -117,10 +117,20 @@ namespace System.Buffers.Text
             // We use 8 instead of 7 so that we also capture the dash if we're asked to insert one.
 
             { _ = destination[8]; }
-            HexConverter.ToBytesBuffer(guidAsBytes.Byte03, destination, 0, HexConverter.Casing.Lower);
-            HexConverter.ToBytesBuffer(guidAsBytes.Byte02, destination, 2, HexConverter.Casing.Lower);
-            HexConverter.ToBytesBuffer(guidAsBytes.Byte01, destination, 4, HexConverter.Casing.Lower);
-            HexConverter.ToBytesBuffer(guidAsBytes.Byte00, destination, 6, HexConverter.Casing.Lower);
+            if (BitConverter.IsLittleEndian)
+            {
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte03, destination, 0, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte02, destination, 2, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte01, destination, 4, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte00, destination, 6, HexConverter.Casing.Lower);
+            }
+            else
+            {
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte00, destination, 0, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte01, destination, 2, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte02, destination, 4, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte03, destination, 6, HexConverter.Casing.Lower);
+            }
 
             if (flags < 0 /* use dash? */)
             {
@@ -133,8 +143,16 @@ namespace System.Buffers.Text
             }
 
             { _ = destination[4]; }
-            HexConverter.ToBytesBuffer(guidAsBytes.Byte05, destination, 0, HexConverter.Casing.Lower);
-            HexConverter.ToBytesBuffer(guidAsBytes.Byte04, destination, 2, HexConverter.Casing.Lower);
+            if (BitConverter.IsLittleEndian)
+            {
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte05, destination, 0, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte04, destination, 2, HexConverter.Casing.Lower);
+            }
+            else
+            {
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte04, destination, 0, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte05, destination, 2, HexConverter.Casing.Lower);
+            }
 
             if (flags < 0 /* use dash? */)
             {
@@ -147,8 +165,16 @@ namespace System.Buffers.Text
             }
 
             { _ = destination[4]; }
-            HexConverter.ToBytesBuffer(guidAsBytes.Byte07, destination, 0, HexConverter.Casing.Lower);
-            HexConverter.ToBytesBuffer(guidAsBytes.Byte06, destination, 2, HexConverter.Casing.Lower);
+            if (BitConverter.IsLittleEndian)
+            {
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte07, destination, 0, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte06, destination, 2, HexConverter.Casing.Lower);
+            }
+            else
+            {
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte06, destination, 0, HexConverter.Casing.Lower);
+                HexConverter.ToBytesBuffer(guidAsBytes.Byte07, destination, 2, HexConverter.Casing.Lower);
+            }
 
             if (flags < 0 /* use dash? */)
             {

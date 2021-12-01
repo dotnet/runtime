@@ -4,12 +4,20 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, EntryPoint = "GetVolumeInformationW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
-        internal static extern unsafe bool GetVolumeInformation(string drive, char* volumeName, int volumeNameBufLen, int* volSerialNumber, int* maxFileNameLen, out int fileSystemFlags, char* fileSystemName, int fileSystemNameBufLen);
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GetVolumeInformationW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static unsafe partial bool GetVolumeInformation(
+            string drive,
+            char* volumeName,
+            int volumeNameBufLen,
+            int* volSerialNumber,
+            int* maxFileNameLen,
+            out int fileSystemFlags,
+            char* fileSystemName,
+            int fileSystemNameBufLen);
 
         internal const uint FILE_SUPPORTS_ENCRYPTION = 0x00020000;
     }

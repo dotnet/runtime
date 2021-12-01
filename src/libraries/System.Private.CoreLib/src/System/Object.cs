@@ -28,10 +28,11 @@ namespace System
         // Allow an object to free resources before the object is reclaimed by the GC.
         // This method's virtual slot number is hardcoded in runtimes. Do not add any virtual methods ahead of this.
         [NonVersionable]
-        [SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers", Justification = "Base finalizer method on Object")]
+#pragma warning disable CA1821 // Remove empty Finalizers
         ~Object()
         {
         }
+#pragma warning restore CA1821
 
         // Returns a String which represents the object instance.  The default
         // for an object is to return the fully qualified name of the class.

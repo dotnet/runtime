@@ -99,7 +99,7 @@ namespace System.Linq.Parallel
         // An enumerator that implements the filtering logic.
         //
 
-        private class WhereQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
+        private sealed class WhereQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, TKey>
         {
             private readonly QueryOperatorEnumerator<TInputOutput, TKey> _source; // The data source to enumerate.
             private readonly Func<TInputOutput, bool> _predicate; // The predicate used for filtering.
@@ -125,7 +125,7 @@ namespace System.Linq.Parallel
             // Moves to the next matching element in the underlying data stream.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, [AllowNull] ref TKey currentKey)
             {
                 Debug.Assert(_predicate != null, "expected a compiled operator");
 
@@ -138,7 +138,7 @@ namespace System.Linq.Parallel
                 while (_source.MoveNext(ref currentElement!, ref currentKey))
                 {
                     if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     if (_predicate(currentElement))
                     {

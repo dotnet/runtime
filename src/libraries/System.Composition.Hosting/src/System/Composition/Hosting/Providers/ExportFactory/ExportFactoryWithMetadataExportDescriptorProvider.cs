@@ -10,7 +10,7 @@ using System.Composition.Hosting.Providers.Metadata;
 
 namespace System.Composition.Hosting.Providers.ExportFactory
 {
-    internal class ExportFactoryWithMetadataExportDescriptorProvider : ExportDescriptorProvider
+    internal sealed class ExportFactoryWithMetadataExportDescriptorProvider : ExportDescriptorProvider
     {
         private static readonly MethodInfo s_getLazyDefinitionsMethod =
             typeof(ExportFactoryWithMetadataExportDescriptorProvider).GetTypeInfo().GetDeclaredMethod("GetExportFactoryDescriptors");

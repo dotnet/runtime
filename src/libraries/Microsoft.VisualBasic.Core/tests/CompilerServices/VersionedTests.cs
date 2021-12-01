@@ -106,6 +106,16 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Versioned.TypeName(expression));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [MemberData(nameof(TypeName_ComObject_TestData))]
+        [SkipOnMono("COM Interop not supported on Mono")]
+        public void TypeName_ComObject(string progId, string expected)
+        {
+            Type type = Type.GetTypeFromProgID(progId, true);
+            object expression = Activator.CreateInstance(type);
+            Assert.Equal(expected, Versioned.TypeName(expression));
+        }
+
         public static IEnumerable<object[]> TypeName_TestData()
         {
             yield return new object[] { null, "Nothing" };
@@ -130,6 +140,13 @@ namespace Microsoft.VisualBasic.Tests
             yield return new object[] { new char[0, 0], "Char(,)" };
             yield return new object[] { default(int?), "Nothing" };
             yield return new object[] { (int?)0, "Integer" };
+        }
+
+        public static IEnumerable<object[]> TypeName_ComObject_TestData()
+        {
+            yield return new object[] { "ADODB.Stream", "Stream" };
+            yield return new object[] { "MSXML2.DOMDocument", "DOMDocument" };
+            yield return new object[] { "Scripting.Dictionary", "Dictionary" };
         }
 
         [Theory]

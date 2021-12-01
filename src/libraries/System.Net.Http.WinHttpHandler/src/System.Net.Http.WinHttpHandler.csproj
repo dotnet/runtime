@@ -1,28 +1,47 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.1-windows;netstandard2.1;netstandard2.0-windows;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides a message handler for HttpClient based on the WinHTTP interface of Windows. While similar to HttpClientHandler, it provides developers more granular control over the application's HTTP communication than the HttpClientHandler.
+
+Commonly Used Types:
+System.Net.Http.WinHttpHandler</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- Ensure Assemblies are first resolved via targeting pack when targeting net461 -->
-    <AssemblySearchPaths Condition="'$(TargetFramework)' == 'net461'">$(NuGetPackageRoot)\microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\;$(AssemblySearchPaths)</AssemblySearchPaths>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETFramework' and
+                                                            '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
+
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_ALGORITHM_IDENTIFIER.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_BIT_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />	
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />	
+             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
@@ -42,7 +61,7 @@
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
-             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />		
+             Link="Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs"
              Link="Common\System\Net\Http\HttpStatusDescription.cs" />
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs"
@@ -60,7 +79,7 @@
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs"
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs"
-             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />	
+             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
@@ -68,6 +87,7 @@
     <Compile Include="System\Net\Http\WinHttpAuthHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpCertificateHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpChannelBinding.cs" />
+    <Compile Include="System\Net\Http\WinHttpChunkMode.cs" />
     <Compile Include="System\Net\Http\WinHttpCookieContainerAdapter.cs" />
     <Compile Include="System\Net\Http\WinHttpException.cs" />
     <Compile Include="System\Net\Http\WinHttpHandler.cs" />
@@ -78,17 +98,46 @@
     <Compile Include="System\Net\Http\WinHttpResponseParser.cs" />
     <Compile Include="System\Net\Http\WinHttpResponseStream.cs" />
     <Compile Include="System\Net\Http\WinHttpTraceHelper.cs" />
+    <Compile Include="System\Net\Http\WinHttpTrailersHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpTransportContext.cs" />
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>
-  <ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.Brotli" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>

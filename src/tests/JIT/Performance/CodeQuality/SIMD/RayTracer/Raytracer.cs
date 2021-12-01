@@ -66,8 +66,16 @@ internal sealed class RayTracer
         hue => Interlocked.Decrement(ref id));
     }
 
+    public const int DefaultSeed = 20010415;
+    public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+    {
+        string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+        string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+        _ => DefaultSeed
+    };
+
     private Dictionary<int, float> _numToHueShiftLookup = new Dictionary<int, float>();
-    private Random _rand = new Random();
+    private Random _rand = new Random(Seed);
 
     private float GetHueShift(int id)
     {

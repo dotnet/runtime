@@ -1,5 +1,5 @@
-project (GenericsNative) 
-include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
+project (GenericsNative)
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 if(CLR_CMAKE_TARGET_ARCH_I386)
   add_definitions(-DTARGET_X86)
   add_definitions(-DTARGET_XARCH)
@@ -87,4 +87,4 @@ set(SOURCES
   GenericsNative.VectorU.cpp
 )
 add_library (GenericsNative SHARED ${SOURCES})
-install (TARGETS GenericsNative DESTINATION bin) 
+install (TARGETS GenericsNative DESTINATION bin)

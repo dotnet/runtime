@@ -100,14 +100,9 @@ namespace System.Collections.Immutable
             /// </remarks>
             public T this[int index]
             {
-#if !NETSTANDARD1_0
                 get { return _root.ItemRef(index); }
-#else
-                get { return _root[index]; }
-#endif
             }
 
-#if !NETSTANDARD1_0
             /// <summary>
             /// Gets a read-only reference to the element of the set at the given index.
             /// </summary>
@@ -117,14 +112,12 @@ namespace System.Collections.Immutable
             {
                 return ref _root.ItemRef(index);
             }
-#endif
 
             /// <summary>
             /// Gets the maximum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The maximum value in the set.</value>
-            [MaybeNull]
-            public T Max
+            public T? Max
             {
                 get { return _root.Max; }
             }
@@ -133,8 +126,7 @@ namespace System.Collections.Immutable
             /// Gets the minimum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The minimum value in the set.</value>
-            [MaybeNull]
-            public T Min
+            public T? Min
             {
                 get { return _root.Min; }
             }

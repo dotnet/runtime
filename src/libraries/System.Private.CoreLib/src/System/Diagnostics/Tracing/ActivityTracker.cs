@@ -38,7 +38,7 @@ namespace System.Diagnostics.Tracing
     ///
     /// On any normal event log the event with activityTracker.CurrentActivityId
     /// </summary>
-    internal class ActivityTracker
+    internal sealed class ActivityTracker
     {
         /// <summary>
         /// Called on work item begins.  The activity name = providerName + activityName without 'Start' suffix.
@@ -227,10 +227,8 @@ namespace System.Diagnostics.Tracing
                 }
                 catch (NotImplementedException)
                 {
-#if (!ES_BUILD_PCL)
                     // send message to debugger without delay
                     System.Diagnostics.Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
-#endif
                 }
             }
         }
@@ -302,7 +300,7 @@ namespace System.Diagnostics.Tracing
         /// the 'list of live parents' which indicate of those ancestors, which are alive (if they
         /// are not marked dead they are alive).
         /// </summary>
-        private class ActivityInfo
+        private sealed class ActivityInfo
         {
             public ActivityInfo(string name, long uniqueId, ActivityInfo? creator, Guid activityIDToRestore, EventActivityOptions options)
             {
@@ -323,7 +321,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (activityInfo == null)
                     return "";
-                return Path(activityInfo.m_creator) + "/" + activityInfo.m_uniqueId.ToString();
+                return $"{Path(activityInfo.m_creator)}/{activityInfo.m_uniqueId}";
             }
 
             public override string ToString()
@@ -511,7 +509,7 @@ namespace System.Diagnostics.Tracing
                 uint* sumPtr = (uint*)outPtr;
                 // We set the last DWORD the sum of the first 3 DWORDS in the GUID.   This
                 // This last number is a random number (it identifies us as us)  the process ID to make it unique per process.
-                sumPtr[3] = (sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD) ^ EventSource.s_currentPid;
+                sumPtr[3] = (sumPtr[0] + sumPtr[1] + sumPtr[2] + 0x599D99AD) ^ (uint)Environment.ProcessId;
 
                 return (int)(ptr - ((byte*)outPtr));
             }
@@ -552,12 +550,36 @@ namespace System.Diagnostics.Tracing
         // This callback is used to initialize the m_current AsyncLocal Variable.
         // Its job is to keep the ETW Activity ID (part of thread local storage) in sync
         // with m_current.ActivityID
+        //
+        // WARNING: When mixing manual usage of EventSource.SetCurrentThreadActivityID
+        // and Start/Stop EventSource events I can't identify a clear design how this
+        // synchronization is intended to work. For example code that changes
+        // SetCurrentThreadActivityID after a FooStart() event will not flow the
+        // explicit ID with the async work, but if FooStart() event is called after
+        // SetCurrentThreadActivityID then the explicit ID change does flow.
+        // For now I've adopted the approach:
+        // Priority 1: Make the API predictable/sensible when only Start/Stop events
+        // are in use.
+        // Priority 2: If users aren't complaining and it doesn't interfere with
+        // goal #1, try to preserve the arbitrary/buggy? existing behavior
+        // for mixed usage of SetActivityID + events.
+        //
+        // For scenarios that only use start/stop events this is what we expect:
+        // calling start -> push new ID on stack and update thread-local to match new ID
+        // calling stop -> pop ID from stack and update thread-local to match new topmost
+        //                 still active ID. If there is none, set ID to zero
+        // thread swap -> update thread-local to match topmost active ID.
+        //                 If there is none, set ID to zero.
         private void ActivityChanging(AsyncLocalValueChangedArgs<ActivityInfo?> args)
         {
             ActivityInfo? cur = args.CurrentValue;
             ActivityInfo? prev = args.PreviousValue;
 
-            // Are we popping off a value?   (we have a prev, and it creator is cur)
+            // Special case only relevant for mixed SetActivityID usage:
+            //
+            // Are we MAYBE popping off a value?   (we have a prev, and it creator is cur)
+            // We can't be certain this is a pop because a thread swapping between two
+            // ExecutionContexts can also appear the same way.
             // Then check if we should use the GUID at the time of the start event
             if (prev != null && prev.m_creator == cur)
             {
@@ -571,8 +593,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            // OK we did not have an explicit SetActivityID set.   Then we should be
-            // setting the activity to current ActivityInfo.  However that activity
+            // Set the activity to current ActivityInfo.  However that activity
             // might be dead, in which case we should skip it, so we never set
             // the ID to dead things.
             while (cur != null)
@@ -585,8 +606,10 @@ namespace System.Diagnostics.Tracing
                 }
                 cur = cur.m_creator;
             }
+
             // we can get here if there is no information on our activity stack (everything is dead)
-            // currently we do nothing, as that seems better than setting to Guid.Emtpy.
+            // Set ActivityID to zero
+            EventSource.SetCurrentThreadActivityId(Guid.Empty);
         }
 
         /// <summary>
@@ -620,9 +643,9 @@ namespace System.Diagnostics.Tracing
     /// </summary>
     ///
     [EventSource(Name = "Microsoft.Tasks.Nuget")]
-    internal class TplEventSource : EventSource
+    internal sealed class TplEventSource : EventSource
     {
-        public class Keywords
+        public static class Keywords
         {
             public const EventKeywords TasksFlowActivityIds = (EventKeywords)0x80;
             public const EventKeywords Debug = (EventKeywords)0x20000;
@@ -636,27 +659,4 @@ namespace System.Diagnostics.Tracing
         public void SetActivityId(Guid Id) { WriteEvent(3, Id); }
     }
 #endif
-
-#if ES_BUILD_AGAINST_DOTNET_V35 || ES_BUILD_PCL || NO_ASYNC_LOCAL
-    // In these cases we don't have any Async local support.   Do nothing.
-    internal sealed class AsyncLocalValueChangedArgs<T>
-    {
-        public T PreviousValue { get { return default(T); } }
-        public T CurrentValue { get { return default(T); } }
-
-    }
-
-    internal sealed class AsyncLocal<T>
-    {
-        public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler) {
-            throw new NotImplementedException("AsyncLocal only available on V4.6 and above");
-        }
-        public T Value
-        {
-            get { return default(T); }
-            set { }
-        }
-    }
-#endif
-
 }

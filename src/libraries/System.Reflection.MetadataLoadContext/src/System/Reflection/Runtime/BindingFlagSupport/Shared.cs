@@ -76,50 +76,5 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
             return true;
         }
-
-        //
-        // If member is a virtual member that implicitly overrides a member in a base class, return the overridden member.
-        // Otherwise, return null.
-        //
-        // - MethodImpls ignored. (I didn't say it made sense, this is just how the .NET Framework api we're porting behaves.)
-        // - Implemented interfaces ignores. (I didn't say it made sense, this is just how the .NET Framework api we're porting behaves.)
-        //
-        public static M? GetImplicitlyOverriddenBaseClassMember<M>(this M member) where M : MemberInfo
-        {
-            MemberPolicies<M> policies = MemberPolicies<M>.Default;
-            policies.GetMemberAttributes(member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot);
-            if (isNewSlot || !isVirtual)
-            {
-                return null;
-            }
-            string name = member.Name;
-            TypeInfo typeInfo = member.DeclaringType!.GetTypeInfo();
-            while (true)
-            {
-                Type? baseType = typeInfo.BaseType;
-                if (baseType == null)
-                {
-                    return null;
-                }
-                typeInfo = baseType.GetTypeInfo();
-                foreach (M candidate in policies.GetDeclaredMembers(typeInfo))
-                {
-                    if (candidate.Name != name)
-                    {
-                        continue;
-                    }
-                    policies.GetMemberAttributes(member, out MethodAttributes candidateVisibility, out bool isCandidateStatic, out bool isCandidateVirtual, out bool isCandidateNewSlot);
-                    if (!isCandidateVirtual)
-                    {
-                        continue;
-                    }
-                    if (!policies.ImplicitlyOverrides(candidate, member))
-                    {
-                        continue;
-                    }
-                    return candidate;
-                }
-            }
-        }
     }
 }

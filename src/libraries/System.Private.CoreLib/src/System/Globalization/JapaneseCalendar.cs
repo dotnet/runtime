@@ -5,17 +5,17 @@ namespace System.Globalization
 {
     /// <summary>
     /// JapaneseCalendar is based on Gregorian calendar.  The month and day values are the same as
-    /// Gregorian calendar.  However, the year value is an offset to the Gregorian
+    /// Gregorian calendar. However, the year value is an offset to the Gregorian
     /// year based on the era.
     ///
     /// This system is adopted by Emperor Meiji in 1868. The year value is counted based on the reign of an emperor,
     /// and the era begins on the day an emperor ascends the throne and continues until his death.
     /// The era changes at 12:00AM.
     ///
-    /// For example, the current era is Reiwa.  It started on 2019/5/1 A.D.  Therefore, Gregorian year 2019 is also Reiwa 1st.
+    /// For example, the current era is Reiwa. It started on 2019/5/1 A.D.  Therefore, Gregorian year 2019 is also Reiwa 1st.
     /// 2019/5/1 A.D. is also Reiwa 1st 5/1.
     ///
-    /// Any date in the year during which era is changed can be reckoned in either era.  For example,
+    /// Any date in the year during which era is changed can be reckoned in either era. For example,
     /// 2019/1/1 can be 1/1 Reiwa 1st year or 1/1 Heisei 31st year.
     ///
     /// Note:
@@ -50,7 +50,7 @@ namespace System.Globalization
         //
         // We know about 4 built-in eras, however users may add additional era(s) from the
         // registry, by adding values to HKLM\SYSTEM\CurrentControlSet\Control\Nls\Calendars\Japanese\Eras
-        // we don't read the registry and instead we call WinRT to get the needed informatio
+        // we don't read the registry and instead we call WinRT to get the needed information
         //
         // Registry values look like:
         //      yyyy.mm.dd=era_abbrev_english_englishabbrev

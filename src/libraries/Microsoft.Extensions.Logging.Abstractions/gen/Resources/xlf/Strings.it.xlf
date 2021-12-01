@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="it" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
+        <source>Argument '{0}' is not referenced from the logging message</source>
+        <target state="translated">Il messaggio di registrazione non fa riferimento all'argomento '{0}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
+        <source>Argument is not referenced from the logging message</source>
+        <target state="translated">Il messaggio di registrazione non fa riferimento all'argomento</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GeneratingForMax6ArgumentsMessage">
+        <source>Generating more than 6 arguments is not supported</source>
+        <target state="translated">La creazione di più di 6 argomenti non è supportata</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InconsistentTemplateCasingMessage">
+        <source>Can't have the same template with different casing</source>
+        <target state="translated">Impossibile avere lo stesso modello con un utilizzo di maiuscole e minuscole diverso</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodNameMessage">
+        <source>Logging method names cannot start with _</source>
+        <target state="translated">I nomi dei metodi di registrazione non possono iniziare con _</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterNameMessage">
+        <source>Logging method parameter names cannot start with _</source>
+        <target state="translated">I nomi dei parametri del metodo di registrazione non possono iniziare con _</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodHasBodyMessage">
+        <source>Logging methods cannot have a body</source>
+        <target state="translated">I metodi di registrazione non possono avere un corpo</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodIsGenericMessage">
+        <source>Logging methods cannot be generic</source>
+        <target state="translated">I metodi di registrazione non possono essere generici</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodMustBePartialMessage">
+        <source>Logging methods must be partial</source>
+        <target state="translated">I metodi di registrazione devono essere parziali</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodMustReturnVoidMessage">
+        <source>Logging methods must return void</source>
+        <target state="translated">I metodi di registrazione devono restituire void</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodShouldBeStaticMessage">
+        <source>Logging methods must be static</source>
+        <target state="translated">I metodi di registrazione devono essere statici</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsMessage">
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="translated">Impossibile avere stringhe di formato non valido (ad esempio, { tralasciato e così via)</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingLogLevelMessage">
+        <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
+        <target state="translated">È necessario specificare un valore LogLevel nell'attributo LoggerMessage o come parametro per il metodo di registrazione</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingLoggerArgumentMessage">
+        <source>One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="translated">Uno degli argomenti del metodo di registrazione statico '{0}' deve implementare l'interfaccia Microsoft.Extensions.Logging.ILogger</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerArgumentTitle">
+        <source>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="translated">Uno degli argomenti del metodo di registrazione statico deve implementare l'interfaccia Microsoft.Extensions.Logging.ILogger</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerFieldMessage">
+        <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
+        <target state="translated">Non è stato possibile trovare un campo di tipo Microsoft.Extensions.Logging.ILogger nella classe {0}</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerFieldTitle">
+        <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</source>
+        <target state="translated">Non è stato possibile trovare un campo di tipo Microsoft.Extensions.Logging.ILogger</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingRequiredTypeMessage">
+        <source>Could not find definition for type {0}</source>
+        <target state="translated">Non è stato possibile trovare una definizione per il tipo {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingRequiredTypeTitle">
+        <source>Could not find a required type definition</source>
+        <target state="translated">Non è stato possibile trovare una definizione del tipo richiesto</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleLoggerFieldsMessage">
+        <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
+        <target state="translated">Sono stati trovati più campi di tipo Microsoft.Extensions.Logging.ILogger nella classe {0}</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MultipleLoggerFieldsTitle">
+        <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</source>
+        <target state="translated">Sono stati trovati più campi di tipo Microsoft.Extensions.Logging.ILogger</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="RedundantQualifierInMessageMessage">
+        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="translated">Rimuovere il qualificatore ridondante (Informazioni:, Avviso:, Errore: e così via) dal messaggio di registrazione perché è implicito nel livello di log specificato.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RedundantQualifierInMessageTitle">
+        <source>Redundant qualifier in logging message</source>
+        <target state="translated">Qualificatore ridondante nel messaggio di registrazione</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionExceptionInMessageTitle">
+        <source>Don't include exception parameters as templates in the logging message</source>
+        <target state="translated">Non includere i parametri di eccezione come modelli nel messaggio di registrazione</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionInTemplateMessage">
+        <source>Don't include a template for {0} in the logging message since it is implicitly taken care of</source>
+        <target state="translated">Non includere un modello per {0} nel messaggio di registrazione perché è gestito in modo implicito</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionLogLevelInMessageTitle">
+        <source>Don't include log level parameters as templates in the logging message</source>
+        <target state="translated">Non includere i parametri del livello di log come modelli nel messaggio di registrazione</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionLoggerInMessageTitle">
+        <source>Don't include logger parameters as templates in the logging message</source>
+        <target state="translated">Non includere i parametri del logger come modelli nel messaggio di registrazione</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventIdsMessage">
+        <source>Multiple logging methods are using event id {0} in class {1}</source>
+        <target state="translated">Più metodi di registrazione stanno utilizzando l'ID evento {0} nella classe {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventIdsTitle">
+        <source>Multiple logging methods cannot use the same event id within a class</source>
+        <target state="translated">Più metodi di registrazione non possono utilizzare lo stesso ID evento all'interno di una classe</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
+        <source>Template '{0}' is not provided as argument to the logging method</source>
+        <target state="translated">Il modello ‘{0}’ non è specificato come argomento per il metodo di registrazione</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
+        <source>Logging template has no corresponding method argument</source>
+        <target state="translated">Il modello di registrazione non ha alcun argomento del metodo corrispondente</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

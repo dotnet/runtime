@@ -60,6 +60,10 @@ alloc_ireg_ref (MonoCompile *cfg)
 	if (cfg->compute_gc_maps)
 		mono_mark_vreg_as_ref (cfg, vreg);
 
+#ifdef TARGET_WASM
+		mono_mark_vreg_as_ref (cfg, vreg);
+#endif
+
 	return vreg;
 }
 
@@ -327,16 +331,6 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		}																\
 	} while (0)
 
-#define NEW_DOMAINCONST(cfg,dest) do { \
-		if ((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) {				 \
-			/* avoid depending on undefined C behavior in sequence points */ \
-			MonoInst* __domain_var = mono_get_domainvar (cfg); \
-			NEW_TEMPLOAD (cfg, dest, __domain_var->inst_c0); \
-		} else { \
-			NEW_PCONST (cfg, dest, (cfg)->domain); \
-		} \
-	} while (0)
-
 #define NEW_JIT_ICALL_ADDRCONST(cfg, dest, jit_icall_id) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_JIT_ICALL_ADDR, (jit_icall_id))
 
 #define NEW_VARLOAD(cfg,dest,var,vartype) do { \
@@ -488,8 +482,6 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define EMIT_NEW_TLS_OFFSETCONST(cfg,dest,key) do { NEW_TLS_OFFSETCONST ((cfg), (dest), (key)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_DOMAINCONST(cfg,dest) do { NEW_DOMAINCONST ((cfg), (dest)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
-
 #define EMIT_NEW_DECLSECCONST(cfg,dest,image,entry) do { NEW_DECLSECCONST ((cfg), (dest), (image), (entry)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_METHOD_RGCTX_CONST(cfg,dest,method) do { NEW_METHOD_RGCTX_CONST ((cfg), (dest), (method)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
@@ -510,7 +502,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
  */
 
 #define EMIT_NEW_VARLOAD_SFLOAT(cfg,dest,var,vartype) do { \
-		if (!COMPILE_LLVM ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
+		if (!COMPILE_LLVM ((cfg)) && !m_type_is_byref ((vartype)) && (vartype)->type == MONO_TYPE_R4) { \
 			MonoInst *iargs [1]; \
 			EMIT_NEW_VARLOADA (cfg, iargs [0], (var), (vartype)); \
 			(dest) = mono_emit_jit_icall (cfg, mono_fload_r4, iargs); \
@@ -520,7 +512,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 	} while (0)
 
 #define EMIT_NEW_VARSTORE_SFLOAT(cfg,dest,var,vartype,inst) do {	\
-		if (COMPILE_SOFT_FLOAT ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
+		if (COMPILE_SOFT_FLOAT ((cfg)) && !m_type_is_byref ((vartype)) && (vartype)->type == MONO_TYPE_R4) { \
 			MonoInst *iargs [2]; \
 			iargs [0] = (inst); \
 			EMIT_NEW_VARLOADA (cfg, iargs [1], (var), (vartype)); \
@@ -864,10 +856,11 @@ static int ccount = 0;
         if (cfg->cbb->last_ins && MONO_IS_COND_BRANCH_OP (cfg->cbb->last_ins) && !cfg->cbb->last_ins->inst_false_bb) { \
             cfg->cbb->last_ins->inst_false_bb = (bblock); \
             mono_link_bblock ((cfg), (cfg)->cbb, (bblock)); \
-        } else if (! (cfg->cbb->last_ins && ((cfg->cbb->last_ins->opcode == OP_BR) || (cfg->cbb->last_ins->opcode == OP_BR_REG) || MONO_IS_COND_BRANCH_OP (cfg->cbb->last_ins)))) \
+        } else if (! (cfg->cbb->last_ins && ((cfg->cbb->last_ins->opcode == OP_BR) || (cfg->cbb->last_ins->opcode == OP_BR_REG) || MONO_IS_COND_BRANCH_OP (cfg->cbb->last_ins)))) { \
             mono_link_bblock ((cfg), (cfg)->cbb, (bblock)); \
-	    (cfg)->cbb->next_bb = (bblock); \
-	    (cfg)->cbb = (bblock); \
+	} \
+	(cfg)->cbb->next_bb = (bblock); \
+	(cfg)->cbb = (bblock); \
     } while (0)
 
 /* This marks a place in code where an implicit exception could be thrown */

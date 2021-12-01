@@ -14,45 +14,54 @@ namespace System.Xml.Serialization
     using System.Xml.Serialization.Configuration;
     using System.Diagnostics;
     using System.Xml.Serialization;
+    using System.Diagnostics.CodeAnalysis;
 
     public class XmlSerializerFactory
     {
-        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace)
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace)
         {
             return CreateSerializer(type, overrides, extraTypes, root, defaultNamespace, null);
         }
 
-        public XmlSerializer CreateSerializer(Type type, XmlRootAttribute root)
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        public XmlSerializer CreateSerializer(Type type, XmlRootAttribute? root)
         {
-            return CreateSerializer(type, null, Array.Empty<Type>(), root, null, null);
+            return CreateSerializer(type, null, Type.EmptyTypes, root, null, null);
         }
 
-        public XmlSerializer CreateSerializer(Type type, Type[] extraTypes)
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        public XmlSerializer CreateSerializer(Type type, Type[]? extraTypes)
         {
             return CreateSerializer(type, null, extraTypes, null, null, null);
         }
 
-        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides)
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides? overrides)
         {
-            return CreateSerializer(type, overrides, Array.Empty<Type>(), null, null, null);
+            return CreateSerializer(type, overrides, Type.EmptyTypes, null, null, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlSerializer CreateSerializer(XmlTypeMapping xmlTypeMapping)
         {
             return new XmlSerializer(xmlTypeMapping);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlSerializer CreateSerializer(Type type)
         {
-            return CreateSerializer(type, (string)null);
+            return CreateSerializer(type, (string?)null);
         }
 
-        public XmlSerializer CreateSerializer(Type type, string defaultNamespace)
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        public XmlSerializer CreateSerializer(Type type, string? defaultNamespace)
         {
             return new XmlSerializer(type, defaultNamespace);
         }
 
-        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location)
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace, string? location)
         {
             return new XmlSerializer(type, overrides, extraTypes, root, defaultNamespace, location);
         }

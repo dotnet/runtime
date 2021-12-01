@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : IDisposable
+    internal sealed partial class HttpConnection : IDisposable
     {
         private sealed class ContentLengthWriteStream : HttpContentWriteStream
         {
@@ -17,6 +17,8 @@ namespace System.Net.Http
 
             public override void Write(ReadOnlySpan<byte> buffer)
             {
+                BytesWritten += buffer.Length;
+
                 // Have the connection write the data, skipping the buffer. Importantly, this will
                 // force a flush of anything already in the buffer, i.e. any remaining request headers
                 // that are still buffered.
@@ -27,6 +29,8 @@ namespace System.Net.Http
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ignored) // token ignored as it comes from SendAsync
             {
+                BytesWritten += buffer.Length;
+
                 // Have the connection write the data, skipping the buffer. Importantly, this will
                 // force a flush of anything already in the buffer, i.e. any remaining request headers
                 // that are still buffered.
@@ -35,10 +39,10 @@ namespace System.Net.Http
                 return connection.WriteAsync(buffer, async: true);
             }
 
-            public override ValueTask FinishAsync(bool async)
+            public override Task FinishAsync(bool async)
             {
                 _connection = null;
-                return default;
+                return Task.CompletedTask;
             }
         }
     }

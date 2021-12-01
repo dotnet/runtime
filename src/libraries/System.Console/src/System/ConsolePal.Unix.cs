@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -39,21 +39,23 @@ namespace System
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
 
-        private static readonly Interop.Sys.TerminalInvalidationCallback s_invalidateTerminalSettings = InvalidateTerminalSettings;
+        /// <summary>Whether to output ansi color strings.</summary>
+        private static volatile int s_emitAnsiColorCodes = -1;
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read);
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
+                                         useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO)), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(SafeFileHandleHelper.Open(() => Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
         }
 
         public static Encoding InputEncoding
@@ -68,7 +70,7 @@ namespace System
 
         private static SyncTextReader? s_stdInReader;
 
-        private static SyncTextReader StdInReader
+        internal static SyncTextReader StdInReader
         {
             get
             {
@@ -150,7 +152,7 @@ namespace System
                 if (!Console.IsInputRedirected)
                 {
                     EnsureConsoleInitialized();
-                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(value)) == 0)
+                    if (Interop.Sys.SetSignalForBreak(Convert.ToInt32(!value)) == 0)
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
             }
@@ -430,7 +432,7 @@ namespace System
         /// <param name="left">Cursor column.</param>
         /// <param name="top">Cursor row.</param>
         /// <param name="reinitializeForRead">Indicates whether this method is called as part of a on-going Read operation.</param>
-        internal static unsafe bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
+        internal static bool TryGetCursorPosition(out int left, out int top, bool reinitializeForRead = false)
         {
             left = top = 0;
 
@@ -508,7 +510,7 @@ namespace System
                         !BufferUntil((byte)';', r, ref readBytes, ref readBytesPos, out semiPos) ||
                         !BufferUntil((byte)'R', r, ref readBytes, ref readBytesPos, out rPos))
                     {
-                        // We were unable to read everything from stdin, e.g. a timeout ocurred.
+                        // We were unable to read everything from stdin, e.g. a timeout occurred.
                         // Since we couldn't get the complete CPR, transfer any bytes we did read
                         // back to the StdInReader's extra buffer, treating it all as user input,
                         // and exit having not computed a valid cursor position.
@@ -560,7 +562,7 @@ namespace System
                     s_firstCursorPositionRequest = false;
                 }
 
-                bool BufferUntil(byte toFind, StdInReader src, ref Span<byte> dst, ref int dstPos, out int foundPos)
+                static unsafe bool BufferUntil(byte toFind, StdInReader src, ref Span<byte> dst, ref int dstPos, out int foundPos)
                 {
                     // Loop until we find the target byte.
                     while (true)
@@ -593,8 +595,7 @@ namespace System
                     }
                 }
 
-                unsafe bool AppendToStdInReaderUntil(
-                    byte toFind, StdInReader reader, Span<byte> foundByteDst, ref int foundByteDstPos, out int foundPos)
+                static unsafe bool AppendToStdInReaderUntil(byte toFind, StdInReader reader, Span<byte> foundByteDst, ref int foundByteDstPos, out int foundPos)
                 {
                     // Loop until we find the target byte.
                     while (true)
@@ -617,11 +618,11 @@ namespace System
                         }
 
                         // Otherwise, push it back into the reader's extra buffer.
-                        reader.AppendExtraBuffer(&b, 1);
+                        reader.AppendExtraBuffer(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
                     }
                 }
 
-                void ReadRowOrCol(int startExclusive, int endExclusive, StdInReader reader, ReadOnlySpan<byte> source, ref int result)
+                static void ReadRowOrCol(int startExclusive, int endExclusive, StdInReader reader, ReadOnlySpan<byte> source, ref int result)
                 {
                     int row = 0;
 
@@ -638,7 +639,7 @@ namespace System
                         }
                         else
                         {
-                            reader.AppendExtraBuffer(&b, 1);
+                            reader.AppendExtraBuffer(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
                         }
                     }
 
@@ -647,14 +648,13 @@ namespace System
                         result = row - 1;
                     }
                 }
+            }
 
-                void TransferBytes(ReadOnlySpan<byte> src, StdInReader dst)
+            static void TransferBytes(ReadOnlySpan<byte> src, StdInReader dst)
+            {
+                for (int i = 0; i < src.Length; i++)
                 {
-                    for (int i = 0; i < src.Length; i++)
-                    {
-                        byte b = src[i];
-                        dst.AppendExtraBuffer(&b, 1);
-                    }
+                    dst.AppendExtraBuffer(src.Slice(i, 1));
                 }
             }
 
@@ -719,7 +719,7 @@ namespace System
             Encoding? enc = EncodingHelper.GetEncodingFromCharset();
             return enc != null ?
                 enc.RemovePreamble() :
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+                Encoding.Default;
         }
 
         public static void SetConsoleInputEncoding(Encoding enc)
@@ -773,8 +773,10 @@ namespace System
             // Changing the color involves writing an ANSI character sequence out to the output stream.
             // We only want to do this if we know that sequence will be interpreted by the output.
             // rather than simply displayed visibly.
-            if (Console.IsOutputRedirected)
+            if (!EmitAnsiColorCodes)
+            {
                 return;
+            }
 
             // See if we've already cached a format string for this foreground/background
             // and specific color choice.  If we have, just output that format string again.
@@ -794,7 +796,33 @@ namespace System
                 int maxColors = TerminalFormatStrings.Instance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
-                    int ansiCode = _consoleColorToAnsiCode[ccValue] % maxColors;
+                    // The values of the ConsoleColor enums unfortunately don't map to the
+                    // corresponding ANSI values.  We need to do the mapping manually.
+                    // See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
+                    ReadOnlySpan<byte> consoleColorToAnsiCode = new byte[] // rely on C# compiler optimization to avoid array allocation
+                    {
+                        // Dark/Normal colors
+                        0, // Black,
+                        4, // DarkBlue,
+                        2, // DarkGreen,
+                        6, // DarkCyan,
+                        1, // DarkRed,
+                        5, // DarkMagenta,
+                        3, // DarkYellow,
+                        7, // Gray,
+
+                        // Bright colors
+                        8,  // DarkGray,
+                        12, // Blue,
+                        10, // Green,
+                        14, // Cyan,
+                        9,  // Red,
+                        13, // Magenta,
+                        11, // Yellow,
+                        15  // White
+                    };
+
+                    int ansiCode = consoleColorToAnsiCode[ccValue] % maxColors;
                     evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
 
                     WriteStdoutAnsiString(evaluatedString);
@@ -807,40 +835,51 @@ namespace System
         /// <summary>Writes out the ANSI string to reset colors.</summary>
         private static void WriteResetColorString()
         {
-            // We only want to send the reset string if we're targeting a TTY device
-            if (!Console.IsOutputRedirected)
+            if (EmitAnsiColorCodes)
             {
                 WriteStdoutAnsiString(TerminalFormatStrings.Instance.Reset);
             }
         }
 
-        /// <summary>
-        /// The values of the ConsoleColor enums unfortunately don't map to the
-        /// corresponding ANSI values.  We need to do the mapping manually.
-        /// See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
-        /// </summary>
-        private static readonly int[] _consoleColorToAnsiCode = new int[]
+        /// <summary>Get whether to emit ANSI color codes.</summary>
+        private static bool EmitAnsiColorCodes
         {
-            // Dark/Normal colors
-            0, // Black,
-            4, // DarkBlue,
-            2, // DarkGreen,
-            6, // DarkCyan,
-            1, // DarkRed,
-            5, // DarkMagenta,
-            3, // DarkYellow,
-            7, // Gray,
+            get
+            {
+                // The flag starts at -1.  If it's no longer -1, it's 0 or 1 to represent false or true.
+                int emitAnsiColorCodes = s_emitAnsiColorCodes;
+                if (emitAnsiColorCodes != -1)
+                {
+                    return Convert.ToBoolean(emitAnsiColorCodes);
+                }
 
-            // Bright colors
-            8,  // DarkGray,
-            12, // Blue,
-            10, // Green,
-            14, // Cyan,
-            9,  // Red,
-            13, // Magenta,
-            11, // Yellow,
-            15  // White
-        };
+                // We've not yet computed whether to emit codes or not.  Do so now.  We may race with
+                // other threads, and that's ok; this is idempotent unless someone is currently changing
+                // the value of the relevant environment variables, in which case behavior here is undefined.
+
+                // By default, we emit ANSI color codes if output isn't redirected, and suppress them if output is redirected.
+                bool enabled = !Console.IsOutputRedirected;
+
+                if (enabled)
+                {
+                    // We subscribe to the informal standard from https://no-color.org/.  If we'd otherwise emit
+                    // ANSI color codes but the NO_COLOR environment variable is set, disable emitting them.
+                    enabled = Environment.GetEnvironmentVariable("NO_COLOR") is null;
+                }
+                else
+                {
+                    // We also support overriding in the other direction.  If we'd otherwise avoid emitting color
+                    // codes but the DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION environment variable is
+                    // set to 1 or true, enable color.
+                    string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
+                    enabled = envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Store and return the computed answer.
+                s_emitAnsiColorCodes = Convert.ToInt32(enabled);
+                return enabled;
+            }
+        }
 
         /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
         private static readonly string[,] s_fgbgAndColorStrings = new string[2, 16]; // 2 == fg vs bg, 16 == ConsoleColor values
@@ -870,7 +909,7 @@ namespace System
 
                 for (int i = maxRange; i >= minRange; i--)
                 {
-                    var currentString = new StringOrCharArray(givenChars, startIndex, i);
+                    var currentString = new ReadOnlyMemory<char>(givenChars, startIndex, i);
 
                     // Check if the string prefix matches.
                     if (TerminalFormatStrings.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
@@ -911,27 +950,17 @@ namespace System
         }
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
-        private static void EnsureInitializedCore()
+        private static unsafe void EnsureInitializedCore()
         {
-            // Initialization is only needed when input isn't redirected.
-            if (Console.IsInputRedirected)
-            {
-                s_initialized = true;
-                return;
-            }
-
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
                 if (!s_initialized)
                 {
+                    // Do this even when redirected to make CancelKeyPress works.
                     if (!Interop.Sys.InitializeTerminalAndSignalHandling())
                     {
                         throw new Win32Exception();
                     }
-
-                    // Register a callback for signals that may invalidate our cached terminal settings.
-                    // This includes: SIGCONT, SIGCHLD, SIGWINCH.
-                    Interop.Sys.SetTerminalInvalidationHandler(s_invalidateTerminalSettings);
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
@@ -945,20 +974,27 @@ namespace System
                         }
                     }
 
-                    // Load special control character codes used for input processing
-                    var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
+                    if (!Console.IsInputRedirected)
                     {
-                        Interop.Sys.ControlCharacterNames.VERASE,
-                        Interop.Sys.ControlCharacterNames.VEOL,
-                        Interop.Sys.ControlCharacterNames.VEOL2,
-                        Interop.Sys.ControlCharacterNames.VEOF
-                    };
-                    var controlCharacterValues = new byte[controlCharacterNames.Length];
-                    Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
-                    s_veraseCharacter = controlCharacterValues[0];
-                    s_veolCharacter = controlCharacterValues[1];
-                    s_veol2Character = controlCharacterValues[2];
-                    s_veofCharacter = controlCharacterValues[3];
+                        // Register a callback for signals that may invalidate our cached terminal settings.
+                        // This includes: SIGCONT, SIGCHLD, SIGWINCH.
+                        Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
+
+                        // Load special control character codes used for input processing
+                        var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
+                        {
+                            Interop.Sys.ControlCharacterNames.VERASE,
+                            Interop.Sys.ControlCharacterNames.VEOL,
+                            Interop.Sys.ControlCharacterNames.VEOL2,
+                            Interop.Sys.ControlCharacterNames.VEOF
+                        };
+                        var controlCharacterValues = new byte[controlCharacterNames.Length];
+                        Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
+                        s_veraseCharacter = controlCharacterValues[0];
+                        s_veolCharacter = controlCharacterValues[1];
+                        s_veol2Character = controlCharacterValues[2];
+                        s_veofCharacter = controlCharacterValues[3];
+                    }
 
                     // Mark us as initialized
                     s_initialized = true;
@@ -967,7 +1003,7 @@ namespace System
         }
 
         /// <summary>Provides format strings and related information for use with the current terminal.</summary>
-        internal class TerminalFormatStrings
+        internal sealed class TerminalFormatStrings
         {
             /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
             public static TerminalFormatStrings Instance { get { return s_instance.Value; } }
@@ -1014,7 +1050,9 @@ namespace System
             /// The dictionary of keystring to ConsoleKeyInfo.
             /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
             /// </summary>
-            public readonly Dictionary<StringOrCharArray, ConsoleKeyInfo> KeyFormatToConsoleKey = new Dictionary<StringOrCharArray, ConsoleKeyInfo>();
+            public readonly Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo> KeyFormatToConsoleKey =
+                new Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo>(new ReadOnlyMemoryContentComparer());
+
             /// <summary> Max key length </summary>
             public readonly int MaxKeyFormatLength;
             /// <summary> Min key length </summary>
@@ -1118,7 +1156,7 @@ namespace System
                     MaxKeyFormatLength = int.MinValue;
                     MinKeyFormatLength = int.MaxValue;
 
-                    foreach (KeyValuePair<StringOrCharArray, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
+                    foreach (KeyValuePair<ReadOnlyMemory<char>, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
                     {
                         if (entry.Key.Length > MaxKeyFormatLength)
                         {
@@ -1179,8 +1217,8 @@ namespace System
 
             private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key, bool shift, bool alt, bool control)
             {
-                string? keyFormat = db.GetString(keyId);
-                if (!string.IsNullOrEmpty(keyFormat))
+                ReadOnlyMemory<char> keyFormat = db.GetString(keyId).AsMemory();
+                if (!keyFormat.IsEmpty)
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
 
@@ -1195,8 +1233,8 @@ namespace System
 
             private void AddKey(TermInfo.Database db, string extendedName, ConsoleKey key, bool shift, bool alt, bool control)
             {
-                string? keyFormat = db.GetExtendedString(extendedName);
-                if (!string.IsNullOrEmpty(keyFormat))
+                ReadOnlyMemory<char> keyFormat = db.GetExtendedString(extendedName).AsMemory();
+                if (!keyFormat.IsEmpty)
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
         }
@@ -1204,84 +1242,74 @@ namespace System
         /// <summary>Reads data from the file descriptor into the buffer.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer to read into.</param>
-        /// <param name="offset">The offset at which to start writing into the buffer.</param>
-        /// <param name="count">The maximum number of bytes to read.</param>
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
-        internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
+        internal static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
         {
-            Interop.Sys.InitializeConsoleBeforeRead(convertCrToNl: true);
-            try
+            fixed (byte* bufPtr = buffer)
             {
-                fixed (byte* bufPtr = buffer)
-                {
-                    int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
-                    Debug.Assert(result <= count);
-                    return result;
-                }
-            }
-            finally
-            {
-                Interop.Sys.UninitializeConsoleAfterRead();
+                int result = Interop.CheckIo(Interop.Sys.Read(fd, bufPtr, buffer.Length));
+                Debug.Assert(result <= buffer.Length);
+                return result;
             }
         }
 
         /// <summary>Writes data from the buffer into the file descriptor.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
-        /// <param name="offset">The offset at which the data to write starts in the buffer.</param>
-        /// <param name="count">The number of bytes to write.</param>
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
-        private static unsafe void Write(SafeFileHandle fd, byte[] buffer, int offset, int count, bool mayChangeCursorPosition = true)
+        internal static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
-            fixed (byte* bufPtr = buffer)
-            {
-                Write(fd, bufPtr + offset, count, mayChangeCursorPosition);
-            }
-        }
+            // Console initialization might emit data to stdout.
+            // In order to avoid splitting user data we need to
+            // complete it before any writes are performed.
+            EnsureConsoleInitialized();
 
-        private static unsafe void Write(SafeFileHandle fd, byte* bufPtr, int count, bool mayChangeCursorPosition = true)
-        {
-            while (count > 0)
+            fixed (byte* p = buffer)
             {
-                int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
-
-                int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
-                if (bytesWritten < 0)
+                byte* bufPtr = p;
+                int count = buffer.Length;
+                while (count > 0)
                 {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error == Interop.Error.EPIPE)
+                    int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
+
+                    int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
+                    if (bytesWritten < 0)
                     {
-                        // Broken pipe... likely due to being redirected to a program
-                        // that ended, so simply pretend we were successful.
-                        return;
-                    }
-                    else if (errorInfo.Error == Interop.Error.EAGAIN) // aka EWOULDBLOCK
-                    {
-                        // May happen if the file handle is configured as non-blocking.
-                        // In that case, we need to wait to be able to write and then
-                        // try again. We poll, but don't actually care about the result,
-                        // only the blocking behavior, and thus ignore any poll errors
-                        // and loop around to do another write (which may correctly fail
-                        // if something else has gone wrong).
-                        Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
-                        continue;
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        if (errorInfo.Error == Interop.Error.EPIPE)
+                        {
+                            // Broken pipe... likely due to being redirected to a program
+                            // that ended, so simply pretend we were successful.
+                            return;
+                        }
+                        else if (errorInfo.Error == Interop.Error.EAGAIN) // aka EWOULDBLOCK
+                        {
+                            // May happen if the file handle is configured as non-blocking.
+                            // In that case, we need to wait to be able to write and then
+                            // try again. We poll, but don't actually care about the result,
+                            // only the blocking behavior, and thus ignore any poll errors
+                            // and loop around to do another write (which may correctly fail
+                            // if something else has gone wrong).
+                            Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
+                            continue;
+                        }
+                        else
+                        {
+                            // Something else... fail.
+                            throw Interop.GetExceptionForIoErrno(errorInfo);
+                        }
                     }
                     else
                     {
-                        // Something else... fail.
-                        throw Interop.GetExceptionForIoErrno(errorInfo);
+                        if (mayChangeCursorPosition)
+                        {
+                            UpdatedCachedCursorPosition(bufPtr, bytesWritten, cursorVersion);
+                        }
                     }
-                }
-                else
-                {
-                    if (mayChangeCursorPosition)
-                    {
-                        UpdatedCachedCursorPosition(bufPtr, bytesWritten, cursorVersion);
-                    }
-                }
 
-                count -= bytesWritten;
-                bufPtr += bytesWritten;
+                    count -= bytesWritten;
+                    bufPtr += bytesWritten;
+                }
             }
         }
 
@@ -1356,6 +1384,9 @@ namespace System
 
         private static void CheckTerminalSettingsInvalidated()
         {
+            // Register for signals that invalidate cached values.
+            EnsureConsoleInitialized();
+
             bool invalidateSettings = Interlocked.CompareExchange(ref s_invalidateCachedSettings, 0, 1) == 1;
             if (invalidateSettings)
             {
@@ -1364,6 +1395,7 @@ namespace System
             }
         }
 
+        [UnmanagedCallersOnly]
         private static void InvalidateTerminalSettings()
         {
             Volatile.Write(ref s_invalidateCachedSettings, 1);
@@ -1372,35 +1404,26 @@ namespace System
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>
         /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static unsafe void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
+        internal static void WriteStdoutAnsiString(string? value, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
 
-            // Except for extremely rare cases, ANSI escape strings should be very short.
-            const int StackAllocThreshold = 256;
-            if (value.Length <= StackAllocThreshold)
+            Span<byte> data = stackalloc byte[0];
+            if (value.Length <= 256) // except for extremely rare cases, ANSI escape strings are very short
             {
-                int dataLen = Encoding.UTF8.GetMaxByteCount(value.Length);
-                byte* data = stackalloc byte[dataLen];
-                fixed (char* chars = value)
-                {
-                    int bytesToWrite = Encoding.UTF8.GetBytes(chars, value.Length, data, dataLen);
-                    Debug.Assert(bytesToWrite <= dataLen);
-
-                    lock (Console.Out) // synchronize with other writers
-                    {
-                        Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, bytesToWrite, mayChangeCursorPosition);
-                    }
-                }
+                data = stackalloc byte[Encoding.UTF8.GetMaxByteCount(value.Length)];
+                int bytesToWrite = Encoding.UTF8.GetBytes(value, data);
+                data = data.Slice(0, bytesToWrite);
             }
             else
             {
-                byte[] data = Encoding.UTF8.GetBytes(value);
-                lock (Console.Out) // synchronize with other writers
-                {
-                    Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, 0, data.Length, mayChangeCursorPosition);
-                }
+                data = Encoding.UTF8.GetBytes(value);
+            }
+
+            lock (Console.Out) // synchronize with other writers
+            {
+                Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, mayChangeCursorPosition);
             }
         }
 
@@ -1410,15 +1433,19 @@ namespace System
             /// <summary>The file descriptor for the opened file.</summary>
             private readonly SafeFileHandle _handle;
 
+            private readonly bool _useReadLine;
+
             /// <summary>Initialize the stream.</summary>
             /// <param name="handle">The file handle wrapped by this stream.</param>
             /// <param name="access">FileAccess.Read or FileAccess.Write.</param>
-            internal UnixConsoleStream(SafeFileHandle handle, FileAccess access)
+            /// <param name="useReadLine">Use ReadLine API for reading.</param>
+            internal UnixConsoleStream(SafeFileHandle handle, FileAccess access, bool useReadLine = false)
                 : base(access)
             {
                 Debug.Assert(handle != null, "Expected non-null console handle");
                 Debug.Assert(!handle.IsInvalid, "Expected valid console handle");
                 _handle = handle;
+                _useReadLine = useReadLine;
             }
 
             protected override void Dispose(bool disposing)
@@ -1430,19 +1457,13 @@ namespace System
                 base.Dispose(disposing);
             }
 
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                ValidateRead(buffer, offset, count);
+            public override int Read(Span<byte> buffer) =>
+                _useReadLine ?
+                    ConsolePal.StdInReader.ReadLine(buffer) :
+                    ConsolePal.Read(_handle, buffer);
 
-                return ConsolePal.Read(_handle, buffer, offset, count);
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                ValidateWrite(buffer, offset, count);
-
-                ConsolePal.Write(_handle, buffer, offset, count);
-            }
+            public override void Write(ReadOnlySpan<byte> buffer) =>
+                ConsolePal.Write(_handle, buffer);
 
             public override void Flush()
             {
@@ -1454,48 +1475,13 @@ namespace System
             }
         }
 
-        internal sealed class ControlCHandlerRegistrar
+        private sealed class ReadOnlyMemoryContentComparer : IEqualityComparer<ReadOnlyMemory<char>>
         {
-            private bool _handlerRegistered;
+            public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) =>
+                x.Span.SequenceEqual(y.Span);
 
-            internal void Register()
-            {
-                EnsureConsoleInitialized();
-
-                Debug.Assert(!_handlerRegistered);
-                Interop.Sys.RegisterForCtrl(c => OnBreakEvent(c));
-                _handlerRegistered = true;
-            }
-
-            internal void Unregister()
-            {
-                Debug.Assert(_handlerRegistered);
-                _handlerRegistered = false;
-                Interop.Sys.UnregisterForCtrl();
-            }
-
-            private static void OnBreakEvent(Interop.Sys.CtrlCode ctrlCode)
-            {
-                // This is called on the native signal handling thread. We need to move to another thread so
-                // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
-                // on work triggered from the signal handling thread.
-                // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
-                // in case the ThreadPool is saturated.
-                Thread handlerThread = new Thread(HandleBreakEvent) { IsBackground = true };
-                handlerThread.Start(ctrlCode);
-            }
-
-            private static void HandleBreakEvent(object? state)
-            {
-                Debug.Assert(state != null);
-                var ctrlCode = (Interop.Sys.CtrlCode)state;
-                ConsoleSpecialKey controlKey = (ctrlCode == Interop.Sys.CtrlCode.Break ? ConsoleSpecialKey.ControlBreak : ConsoleSpecialKey.ControlC);
-                bool cancel = Console.HandleBreakEvent(controlKey);
-                if (!cancel)
-                {
-                    Interop.Sys.RestoreAndHandleCtrl(ctrlCode);
-                }
-            }
+            public int GetHashCode(ReadOnlyMemory<char> obj) =>
+                string.GetHashCode(obj.Span);
         }
     }
 }

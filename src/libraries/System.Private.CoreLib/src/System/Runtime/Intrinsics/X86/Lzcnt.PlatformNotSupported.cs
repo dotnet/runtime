@@ -10,17 +10,17 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel LZCNT hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class Lzcnt // : X86Base
+    public abstract class Lzcnt : X86Base
     {
         internal Lzcnt() { }
 
-        public static bool IsSupported { [Intrinsic] get { return false; } }
+        public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-        public abstract class X64 // : X86Base.X64
+        public new abstract class X64 : X86Base.X64
         {
             internal X64() { }
 
-            public static bool IsSupported { [Intrinsic] get { return false; } }
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
             /// unsigned __int64 _lzcnt_u64 (unsigned __int64 a)

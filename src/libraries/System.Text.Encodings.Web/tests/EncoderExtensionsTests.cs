@@ -12,12 +12,6 @@ namespace System.Text.Encodings.Web
     public class EncoderExtensionsTests
     {
         [Fact]
-        public void HtmlEncode_ParameterChecks()
-        {
-            Assert.Throws<ArgumentNullException>(() => EncoderExtensions.HtmlEncode(null, "Hello!", new StringWriter()));
-        }
-
-        [Fact]
         public void HtmlEncode_PositiveTestCase()
         {
             // Arrange
@@ -60,9 +54,9 @@ namespace System.Text.Encodings.Web
 
 
         [Fact]
-        public unsafe void TryEncodeUnicodeScalar_Null_Buffer()
+        public unsafe void TryEncodeUnicodeScalar_NegativeLengthBuffer()
         {
-            Assert.Throws<ArgumentNullException>("buffer", () => HtmlEncoder.Default.TryEncodeUnicodeScalar(2, null, 1, out int _));
+            Assert.Throws<ArgumentOutOfRangeException>(() => HtmlEncoder.Default.TryEncodeUnicodeScalar(2, null, -1, out int _));
         }
 
         [Fact]
@@ -75,29 +69,17 @@ namespace System.Text.Encodings.Web
         }
 
         [Fact]
-        public void JavaScriptStringEncode_ParameterChecks()
-        {
-            Assert.Throws<ArgumentNullException>(() => EncoderExtensions.JavaScriptStringEncode(null, "Hello!", new StringWriter()));
-        }
-
-        [Fact]
-        public void JavaScriptStringEncode_PositiveTestCase()
+        public void JavaScriptEncode_PositiveTestCase()
         {
             // Arrange
-            IJavaScriptStringEncoder encoder = new JavaScriptStringEncoder(UnicodeRanges.All);
+            JavaScriptEncoder encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
             StringWriter writer = new StringWriter();
 
             // Act
-            encoder.JavaScriptStringEncode("Hello+there!", writer);
+            encoder.Encode(writer, "Hello+there!");
 
             // Assert
             Assert.Equal(@"Hello\u002Bthere!", writer.ToString());
-        }
-
-        [Fact]
-        public void UrlEncode_ParameterChecks()
-        {
-            Assert.Throws<ArgumentNullException>(() => EncoderExtensions.UrlEncode(null, "Hello!", new StringWriter()));
         }
 
         [Fact]

@@ -7,12 +7,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Xml.Serialization;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
     internal sealed class SqlInt64Storage : DataStorage
     {
-        private SqlInt64[] _values = default!;
+        private SqlInt64[] _values = default!; // Late-initialized
 
         public SqlInt64Storage(DataColumn column)
         : base(column, typeof(SqlInt64), SqlInt64.Null, SqlInt64.Null, StorageType.SqlInt64)
@@ -208,6 +209,7 @@ namespace System.Data.Common
             _values = newValues;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             SqlInt64 newValue = default;
@@ -223,6 +225,7 @@ namespace System.Data.Common
             return ((SqlInt64)tmp);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             Debug.Assert(!DataStorage.IsObjectNull(value), "we shouldn't have null here");

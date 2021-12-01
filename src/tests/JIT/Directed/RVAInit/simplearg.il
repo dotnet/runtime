@@ -2,7 +2,7 @@
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 4.7.3071.0
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 
-// This is a repro case for GitHub issue #15412 ( https://github.com/dotnet/coreclr/issues/15412 )
+// This is a repro case for GitHub issue #9401 ( https://github.com/dotnet/runtime/issues/9401 )
 
 // Metadata version: v4.0.30319
 .assembly extern mscorlib
@@ -10,6 +10,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly repro2
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
@@ -103,6 +104,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       59 (0x3b)
     .maxstack  2

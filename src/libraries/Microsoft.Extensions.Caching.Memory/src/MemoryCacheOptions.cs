@@ -53,6 +53,12 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        /// <summary>
+        /// Gets or sets whether to track linked entries. Disabled by default.
+        /// </summary>
+        /// <remarks>Prior to .NET 7 this feature was always enabled.</remarks>
+        public bool TrackLinkedCacheEntries { get; set; }
+
         MemoryCacheOptions IOptions<MemoryCacheOptions>.Value
         {
             get { return this; }

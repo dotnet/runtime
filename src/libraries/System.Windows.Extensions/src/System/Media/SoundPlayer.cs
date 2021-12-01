@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -12,12 +13,13 @@ using System.Threading.Tasks;
 
 namespace System.Media
 {
+    [ToolboxItem(false)]
     public class SoundPlayer : Component, ISerializable
     {
         private const int BlockSize = 1024;
         private const int DefaultLoadTimeout = 10000; // 10 secs
 
-        private Uri _uri;
+        private Uri? _uri;
         private string _soundLocation = string.Empty;
         private int _loadTimeout = DefaultLoadTimeout;
 
@@ -27,16 +29,16 @@ namespace System.Media
         // the worker copyTask
         // we start the worker copyTask ONLY from entry points in the SoundPlayer API
         // we also set the tread to null only from the entry points in the SoundPlayer API
-        private Task _copyTask;
-        private CancellationTokenSource _copyTaskCancellation;
+        private Task? _copyTask;
+        private CancellationTokenSource? _copyTaskCancellation;
 
         // local buffer information
         private int _currentPos;
-        private Stream _stream;
-        private Exception _lastLoadException;
+        private Stream? _stream;
+        private Exception? _lastLoadException;
         private bool _doesLoadAppearSynchronous;
-        private byte[] _streamData;
-        private AsyncOperation _asyncOperation;
+        private byte[]? _streamData;
+        private AsyncOperation? _asyncOperation;
         private readonly SendOrPostCallback _loadAsyncOperationCompleted;
 
         // event
@@ -54,7 +56,7 @@ namespace System.Media
             SetupSoundLocation(soundLocation ?? string.Empty);
         }
 
-        public SoundPlayer(Stream stream) : this()
+        public SoundPlayer(Stream? stream) : this()
         {
             _stream = stream;
         }
@@ -98,7 +100,7 @@ namespace System.Media
             }
         }
 
-        public Stream Stream
+        public Stream? Stream
         {
             get
             {
@@ -125,7 +127,7 @@ namespace System.Media
 
         public bool IsLoadCompleted { get; private set; }
 
-        public object Tag { get; set; }
+        public object? Tag { get; set; }
 
         public void LoadAsync()
         {
@@ -160,9 +162,9 @@ namespace System.Media
             LoadStream(false);
         }
 
-        private void LoadAsyncOperationCompleted(object arg)
+        private void LoadAsyncOperationCompleted(object? arg)
         {
-            OnLoadCompleted((AsyncCompletedEventArgs)arg);
+            OnLoadCompleted((AsyncCompletedEventArgs)arg!);
         }
 
         // called for loading a stream synchronously
@@ -226,6 +228,7 @@ namespace System.Media
             else
             {
                 LoadSync();
+                Debug.Assert(_streamData != null);
                 ValidateSoundData(_streamData);
                 Interop.WinMM.PlaySound(_streamData, IntPtr.Zero, Interop.WinMM.SND_MEMORY | Interop.WinMM.SND_NODEFAULT | flags);
             }
@@ -258,7 +261,9 @@ namespace System.Media
             // setup the http stream
             if (_uri != null && !_uri.IsFile && _stream == null)
             {
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
                 WebRequest webRequest = WebRequest.Create(_uri);
+#pragma warning restore SYSLIB0014
                 webRequest.Timeout = LoadTimeout;
 
                 WebResponse webResponse;
@@ -268,7 +273,9 @@ namespace System.Media
                 _stream = webResponse.GetResponseStream();
             }
 
-            if (_stream.CanSeek)
+            // DO NOT assert - NRE is expected for null stream
+            // See SoundPlayerTests.Load_NullStream_ThrowsNullReferenceException
+            if (_stream!.CanSeek)
             {
                 // if we can get data synchronously, then get it
                 LoadStream(true);
@@ -301,6 +308,7 @@ namespace System.Media
 
         private void LoadStream(bool loadSync)
         {
+            Debug.Assert(_stream != null);
             if (loadSync && _stream.CanSeek)
             {
                 int streamLen = (int)_stream.Length;
@@ -336,9 +344,9 @@ namespace System.Media
             LoadAndPlay(Interop.WinMM.SND_LOOP | Interop.WinMM.SND_ASYNC);
         }
 
-        private static Uri ResolveUri(string partialUri)
+        private static Uri? ResolveUri(string partialUri)
         {
-            Uri result = null;
+            Uri? result = null;
             try
             {
                 result = new Uri(partialUri);
@@ -396,7 +404,7 @@ namespace System.Media
             }
         }
 
-        private void SetupStream(Stream stream)
+        private void SetupStream(Stream? stream)
         {
             if (_copyTask != null)
             {
@@ -417,10 +425,10 @@ namespace System.Media
 
         public void Stop()
         {
-            Interop.WinMM.PlaySound((byte[])null, IntPtr.Zero, Interop.WinMM.SND_PURGE);
+            Interop.WinMM.PlaySound((byte[]?)null, IntPtr.Zero, Interop.WinMM.SND_PURGE);
         }
 
-        public event AsyncCompletedEventHandler LoadCompleted
+        public event AsyncCompletedEventHandler? LoadCompleted
         {
             add
             {
@@ -432,7 +440,7 @@ namespace System.Media
             }
         }
 
-        public event EventHandler SoundLocationChanged
+        public event EventHandler? SoundLocationChanged
         {
             add
             {
@@ -444,7 +452,7 @@ namespace System.Media
             }
         }
 
-        public event EventHandler StreamChanged
+        public event EventHandler? StreamChanged
         {
             add
             {
@@ -458,28 +466,31 @@ namespace System.Media
 
         protected virtual void OnLoadCompleted(AsyncCompletedEventArgs e)
         {
-            ((AsyncCompletedEventHandler)Events[s_eventLoadCompleted])?.Invoke(this, e);
+            ((AsyncCompletedEventHandler?)Events[s_eventLoadCompleted])?.Invoke(this, e);
         }
 
         protected virtual void OnSoundLocationChanged(EventArgs e)
         {
-            ((EventHandler)Events[s_eventSoundLocationChanged])?.Invoke(this, e);
+            ((EventHandler?)Events[s_eventSoundLocationChanged])?.Invoke(this, e);
         }
 
         protected virtual void OnStreamChanged(EventArgs e)
         {
-            ((EventHandler)Events[s_eventStreamChanged])?.Invoke(this, e);
+            ((EventHandler?)Events[s_eventStreamChanged])?.Invoke(this, e);
         }
 
         private async Task CopyStreamAsync(CancellationToken cancellationToken)
         {
+            Exception? exception = null;
             try
             {
                 // setup the http stream
                 if (_uri != null && !_uri.IsFile && _stream == null)
                 {
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
                     WebRequest webRequest = WebRequest.Create(_uri);
-                    using (cancellationToken.Register(r => ((WebRequest)r).Abort(), webRequest))
+#pragma warning restore SYSLIB0014
+                    using (cancellationToken.Register(r => ((WebRequest)r!).Abort(), webRequest))
                     {
                         WebResponse webResponse = await webRequest.GetResponseAsync().ConfigureAwait(false);
                         _stream = webResponse.GetResponseStream();
@@ -488,6 +499,7 @@ namespace System.Media
 
                 _streamData = new byte[BlockSize];
 
+                Debug.Assert(_stream != null);
                 int readBytes = await _stream.ReadAsync(_streamData.AsMemory(_currentPos, BlockSize), cancellationToken).ConfigureAwait(false);
                 int totalBytes = readBytes;
 
@@ -503,23 +515,23 @@ namespace System.Media
                     readBytes = await _stream.ReadAsync(_streamData.AsMemory(_currentPos, BlockSize), cancellationToken).ConfigureAwait(false);
                     totalBytes += readBytes;
                 }
-
-                _lastLoadException = null;
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                _lastLoadException = exception;
+                exception = ex;
             }
 
+            _lastLoadException = exception;
             IsLoadCompleted = true;
             _semaphore.Set();
 
             if (!_doesLoadAppearSynchronous)
             {
                 // Post notification back to the UI thread.
-                AsyncCompletedEventArgs ea = _lastLoadException is OperationCanceledException ?
+                AsyncCompletedEventArgs ea = exception is OperationCanceledException ?
                     new AsyncCompletedEventArgs(null, cancelled: true, null) :
-                    new AsyncCompletedEventArgs(_lastLoadException, cancelled: false, null);
+                    new AsyncCompletedEventArgs(exception, cancelled: false, null);
+                Debug.Assert(_asyncOperation != null);
                 _asyncOperation.PostOperationCompleted(_loadAsyncOperationCompleted, ea);
             }
         }
@@ -534,18 +546,18 @@ namespace System.Media
 
             try
             {
-                Interop.WinMM.WAVEFORMATEX waveFormat = null;
+                Interop.WinMM.WAVEFORMATEX? waveFormat = null;
                 var ckRIFF = new Interop.WinMM.MMCKINFO()
                 {
                     fccType = mmioFOURCC('W', 'A', 'V', 'E')
                 };
-                var ck = new Interop.WinMM.MMCKINFO();
-                if (Interop.WinMM.mmioDescend(hMIO, ckRIFF, null, Interop.WinMM.MMIO_FINDRIFF) != 0)
+                var ck = default(Interop.WinMM.MMCKINFO);
+                if (Interop.WinMM.mmioDescend(hMIO, &ckRIFF, null, Interop.WinMM.MMIO_FINDRIFF) != 0)
                 {
                     throw new InvalidOperationException(SR.Format(SR.SoundAPIInvalidWaveFile, _soundLocation));
                 }
 
-                while (Interop.WinMM.mmioDescend(hMIO, ck, ckRIFF, 0) == 0)
+                while (Interop.WinMM.mmioDescend(hMIO, &ck, &ckRIFF, 0) == 0)
                 {
                     if (ck.dwDataOffset + ck.cksize > ckRIFF.dwDataOffset + ckRIFF.cksize)
                     {
@@ -579,7 +591,7 @@ namespace System.Media
                             // multiple formats?
                         }
                     }
-                    Interop.WinMM.mmioAscend(hMIO, ck, 0);
+                    Interop.WinMM.mmioAscend(hMIO, &ck, 0);
                 }
 
                 if (waveFormat == null)

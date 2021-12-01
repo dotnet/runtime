@@ -32,7 +32,7 @@ namespace System.Dynamic
         public CallInfo(int argCount, params string[] argNames) { }
         public int ArgumentCount { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<string> ArgumentNames { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public abstract partial class ConvertBinder : System.Dynamic.DynamicMetaObjectBinder
@@ -372,7 +372,7 @@ namespace System.Linq.Expressions
     public abstract partial class Expression
     {
         protected Expression() { }
-        [System.ObsoleteAttribute("use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
         protected Expression(System.Linq.Expressions.ExpressionType nodeType, System.Type type) { }
         public virtual bool CanReduce { get { throw null; } }
         public virtual System.Linq.Expressions.ExpressionType NodeType { get { throw null; } }
@@ -403,6 +403,7 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.UnaryExpression ArrayLength(System.Linq.Expressions.Expression array) { throw null; }
         public static System.Linq.Expressions.BinaryExpression Assign(System.Linq.Expressions.Expression left, System.Linq.Expressions.Expression right) { throw null; }
         public static System.Linq.Expressions.MemberAssignment Bind(System.Reflection.MemberInfo member, System.Linq.Expressions.Expression expression) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Property metadata or other accessor may be trimmed.")]
         public static System.Linq.Expressions.MemberAssignment Bind(System.Reflection.MethodInfo propertyAccessor, System.Linq.Expressions.Expression expression) { throw null; }
         public static System.Linq.Expressions.BlockExpression Block(System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression> expressions) { throw null; }
         public static System.Linq.Expressions.BlockExpression Block(System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression>? variables, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression> expressions) { throw null; }
@@ -425,6 +426,7 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.MethodCallExpression Call(System.Linq.Expressions.Expression? instance, System.Reflection.MethodInfo method, System.Linq.Expressions.Expression arg0, System.Linq.Expressions.Expression arg1) { throw null; }
         public static System.Linq.Expressions.MethodCallExpression Call(System.Linq.Expressions.Expression? instance, System.Reflection.MethodInfo method, System.Linq.Expressions.Expression arg0, System.Linq.Expressions.Expression arg1, System.Linq.Expressions.Expression arg2) { throw null; }
         public static System.Linq.Expressions.MethodCallExpression Call(System.Linq.Expressions.Expression? instance, System.Reflection.MethodInfo method, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.")]
         public static System.Linq.Expressions.MethodCallExpression Call(System.Linq.Expressions.Expression instance, string methodName, System.Type[]? typeArguments, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
         public static System.Linq.Expressions.MethodCallExpression Call(System.Reflection.MethodInfo method, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
         public static System.Linq.Expressions.MethodCallExpression Call(System.Reflection.MethodInfo method, System.Linq.Expressions.Expression arg0) { throw null; }
@@ -433,7 +435,8 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.MethodCallExpression Call(System.Reflection.MethodInfo method, System.Linq.Expressions.Expression arg0, System.Linq.Expressions.Expression arg1, System.Linq.Expressions.Expression arg2, System.Linq.Expressions.Expression arg3) { throw null; }
         public static System.Linq.Expressions.MethodCallExpression Call(System.Reflection.MethodInfo method, System.Linq.Expressions.Expression arg0, System.Linq.Expressions.Expression arg1, System.Linq.Expressions.Expression arg2, System.Linq.Expressions.Expression arg3, System.Linq.Expressions.Expression arg4) { throw null; }
         public static System.Linq.Expressions.MethodCallExpression Call(System.Reflection.MethodInfo method, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
-        public static System.Linq.Expressions.MethodCallExpression Call(System.Type type, string methodName, System.Type[]? typeArguments, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Calling a generic method cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method. This can be suppressed if the method is not generic.")]
+        public static System.Linq.Expressions.MethodCallExpression Call([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type type, string methodName, System.Type[]? typeArguments, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
         public static System.Linq.Expressions.CatchBlock Catch(System.Linq.Expressions.ParameterExpression variable, System.Linq.Expressions.Expression body) { throw null; }
         public static System.Linq.Expressions.CatchBlock Catch(System.Linq.Expressions.ParameterExpression variable, System.Linq.Expressions.Expression body, System.Linq.Expressions.Expression? filter) { throw null; }
         public static System.Linq.Expressions.CatchBlock Catch(System.Type type, System.Linq.Expressions.Expression body) { throw null; }
@@ -477,8 +480,9 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.BinaryExpression ExclusiveOrAssign(System.Linq.Expressions.Expression left, System.Linq.Expressions.Expression right, System.Reflection.MethodInfo? method) { throw null; }
         public static System.Linq.Expressions.BinaryExpression ExclusiveOrAssign(System.Linq.Expressions.Expression left, System.Linq.Expressions.Expression right, System.Reflection.MethodInfo? method, System.Linq.Expressions.LambdaExpression? conversion) { throw null; }
         public static System.Linq.Expressions.MemberExpression Field(System.Linq.Expressions.Expression? expression, System.Reflection.FieldInfo field) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.")]
         public static System.Linq.Expressions.MemberExpression Field(System.Linq.Expressions.Expression expression, string fieldName) { throw null; }
-        public static System.Linq.Expressions.MemberExpression Field(System.Linq.Expressions.Expression? expression, System.Type type, string fieldName) { throw null; }
+        public static System.Linq.Expressions.MemberExpression Field(System.Linq.Expressions.Expression? expression, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type type, string fieldName) { throw null; }
         public static System.Type GetActionType(params System.Type[]? typeArgs) { throw null; }
         public static System.Type GetDelegateType(params System.Type[] typeArgs) { throw null; }
         public static System.Type GetFuncType(params System.Type[]? typeArgs) { throw null; }
@@ -535,13 +539,19 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.BinaryExpression LessThanOrEqual(System.Linq.Expressions.Expression left, System.Linq.Expressions.Expression right, bool liftToNull, System.Reflection.MethodInfo? method) { throw null; }
         public static System.Linq.Expressions.MemberListBinding ListBind(System.Reflection.MemberInfo member, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ElementInit> initializers) { throw null; }
         public static System.Linq.Expressions.MemberListBinding ListBind(System.Reflection.MemberInfo member, params System.Linq.Expressions.ElementInit[] initializers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Property metadata or other accessor may be trimmed.")]
         public static System.Linq.Expressions.MemberListBinding ListBind(System.Reflection.MethodInfo propertyAccessor, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ElementInit> initializers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Property metadata or other accessor may be trimmed.")]
         public static System.Linq.Expressions.MemberListBinding ListBind(System.Reflection.MethodInfo propertyAccessor, params System.Linq.Expressions.ElementInit[] initializers) { throw null; }
         public static System.Linq.Expressions.ListInitExpression ListInit(System.Linq.Expressions.NewExpression newExpression, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ElementInit> initializers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.")]
         public static System.Linq.Expressions.ListInitExpression ListInit(System.Linq.Expressions.NewExpression newExpression, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression> initializers) { throw null; }
         public static System.Linq.Expressions.ListInitExpression ListInit(System.Linq.Expressions.NewExpression newExpression, params System.Linq.Expressions.ElementInit[] initializers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.")]
         public static System.Linq.Expressions.ListInitExpression ListInit(System.Linq.Expressions.NewExpression newExpression, params System.Linq.Expressions.Expression[] initializers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.")]
         public static System.Linq.Expressions.ListInitExpression ListInit(System.Linq.Expressions.NewExpression newExpression, System.Reflection.MethodInfo? addMethod, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression> initializers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.")]
         public static System.Linq.Expressions.ListInitExpression ListInit(System.Linq.Expressions.NewExpression newExpression, System.Reflection.MethodInfo? addMethod, params System.Linq.Expressions.Expression[] initializers) { throw null; }
         public static System.Linq.Expressions.LoopExpression Loop(System.Linq.Expressions.Expression body) { throw null; }
         public static System.Linq.Expressions.LoopExpression Loop(System.Linq.Expressions.Expression body, System.Linq.Expressions.LabelTarget? @break) { throw null; }
@@ -564,7 +574,9 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.UnaryExpression MakeUnary(System.Linq.Expressions.ExpressionType unaryType, System.Linq.Expressions.Expression operand, System.Type type, System.Reflection.MethodInfo? method) { throw null; }
         public static System.Linq.Expressions.MemberMemberBinding MemberBind(System.Reflection.MemberInfo member, System.Collections.Generic.IEnumerable<System.Linq.Expressions.MemberBinding> bindings) { throw null; }
         public static System.Linq.Expressions.MemberMemberBinding MemberBind(System.Reflection.MemberInfo member, params System.Linq.Expressions.MemberBinding[] bindings) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Property metadata or other accessor may be trimmed.")]
         public static System.Linq.Expressions.MemberMemberBinding MemberBind(System.Reflection.MethodInfo propertyAccessor, System.Collections.Generic.IEnumerable<System.Linq.Expressions.MemberBinding> bindings) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Property metadata or other accessor may be trimmed.")]
         public static System.Linq.Expressions.MemberMemberBinding MemberBind(System.Reflection.MethodInfo propertyAccessor, params System.Linq.Expressions.MemberBinding[] bindings) { throw null; }
         public static System.Linq.Expressions.MemberInitExpression MemberInit(System.Linq.Expressions.NewExpression newExpression, System.Collections.Generic.IEnumerable<System.Linq.Expressions.MemberBinding> bindings) { throw null; }
         public static System.Linq.Expressions.MemberInitExpression MemberInit(System.Linq.Expressions.NewExpression newExpression, params System.Linq.Expressions.MemberBinding[] bindings) { throw null; }
@@ -589,10 +601,12 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.UnaryExpression NegateChecked(System.Linq.Expressions.Expression expression, System.Reflection.MethodInfo? method) { throw null; }
         public static System.Linq.Expressions.NewExpression New(System.Reflection.ConstructorInfo constructor) { throw null; }
         public static System.Linq.Expressions.NewExpression New(System.Reflection.ConstructorInfo constructor, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Property metadata or other accessor may be trimmed.")]
         public static System.Linq.Expressions.NewExpression New(System.Reflection.ConstructorInfo constructor, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments, System.Collections.Generic.IEnumerable<System.Reflection.MemberInfo>? members) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Property metadata or other accessor may be trimmed.")]
         public static System.Linq.Expressions.NewExpression New(System.Reflection.ConstructorInfo constructor, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments, params System.Reflection.MemberInfo[]? members) { throw null; }
         public static System.Linq.Expressions.NewExpression New(System.Reflection.ConstructorInfo constructor, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
-        public static System.Linq.Expressions.NewExpression New(System.Type type) { throw null; }
+        public static System.Linq.Expressions.NewExpression New([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
         public static System.Linq.Expressions.NewArrayExpression NewArrayBounds(System.Type type, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression> bounds) { throw null; }
         public static System.Linq.Expressions.NewArrayExpression NewArrayBounds(System.Type type, params System.Linq.Expressions.Expression[] bounds) { throw null; }
         public static System.Linq.Expressions.NewArrayExpression NewArrayInit(System.Type type, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression> initializers) { throw null; }
@@ -625,13 +639,17 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.UnaryExpression PreDecrementAssign(System.Linq.Expressions.Expression expression, System.Reflection.MethodInfo? method) { throw null; }
         public static System.Linq.Expressions.UnaryExpression PreIncrementAssign(System.Linq.Expressions.Expression expression) { throw null; }
         public static System.Linq.Expressions.UnaryExpression PreIncrementAssign(System.Linq.Expressions.Expression expression, System.Reflection.MethodInfo? method) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Property metadata or other accessor may be trimmed.")]
         public static System.Linq.Expressions.MemberExpression Property(System.Linq.Expressions.Expression? expression, System.Reflection.MethodInfo propertyAccessor) { throw null; }
         public static System.Linq.Expressions.MemberExpression Property(System.Linq.Expressions.Expression? expression, System.Reflection.PropertyInfo property) { throw null; }
         public static System.Linq.Expressions.IndexExpression Property(System.Linq.Expressions.Expression? instance, System.Reflection.PropertyInfo indexer, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
         public static System.Linq.Expressions.IndexExpression Property(System.Linq.Expressions.Expression? instance, System.Reflection.PropertyInfo indexer, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.")]
         public static System.Linq.Expressions.MemberExpression Property(System.Linq.Expressions.Expression expression, string propertyName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.")]
         public static System.Linq.Expressions.IndexExpression Property(System.Linq.Expressions.Expression instance, string propertyName, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
-        public static System.Linq.Expressions.MemberExpression Property(System.Linq.Expressions.Expression? expression, System.Type type, string propertyName) { throw null; }
+        public static System.Linq.Expressions.MemberExpression Property(System.Linq.Expressions.Expression? expression, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type type, string propertyName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.")]
         public static System.Linq.Expressions.MemberExpression PropertyOrField(System.Linq.Expressions.Expression expression, string propertyOrFieldName) { throw null; }
         public static System.Linq.Expressions.UnaryExpression Quote(System.Linq.Expressions.Expression expression) { throw null; }
         public virtual System.Linq.Expressions.Expression Reduce() { throw null; }
@@ -834,7 +852,7 @@ namespace System.Linq.Expressions
         public new TDelegate Compile() { throw null; }
         public new TDelegate Compile(bool preferInterpretation) { throw null; }
         public new TDelegate Compile(System.Runtime.CompilerServices.DebugInfoGenerator debugInfoGenerator) { throw null; }
-        public System.Linq.Expressions.Expression<TDelegate>? Update(System.Linq.Expressions.Expression body, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression>? parameters) { throw null; }
+        public System.Linq.Expressions.Expression<TDelegate> Update(System.Linq.Expressions.Expression body, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression>? parameters) { throw null; }
     }
     public sealed partial class GotoExpression : System.Linq.Expressions.Expression
     {
@@ -952,7 +970,7 @@ namespace System.Linq.Expressions
     }
     public abstract partial class MemberBinding
     {
-        [System.ObsoleteAttribute("Do not use this constructor. It will be removed in future releases.")]
+        [System.ObsoleteAttribute("This constructor has been deprecated and is not supported.")]
         protected MemberBinding(System.Linq.Expressions.MemberBindingType type, System.Reflection.MemberInfo member) { }
         public System.Linq.Expressions.MemberBindingType BindingType { get { throw null; } }
         public System.Reflection.MemberInfo Member { get { throw null; } }
@@ -1008,7 +1026,7 @@ namespace System.Linq.Expressions
         public sealed override System.Type Type { get { throw null; } }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
         System.Linq.Expressions.Expression System.Linq.Expressions.IArgumentProvider.GetArgument(int index) { throw null; }
-        public System.Linq.Expressions.MethodCallExpression Update(System.Linq.Expressions.Expression @object, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
+        public System.Linq.Expressions.MethodCallExpression Update(System.Linq.Expressions.Expression? @object, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
     }
     public partial class NewArrayExpression : System.Linq.Expressions.Expression
     {

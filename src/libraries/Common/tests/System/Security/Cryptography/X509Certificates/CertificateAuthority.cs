@@ -96,6 +96,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         internal bool CorruptRevocationSignature { get; set; }
         internal DateTimeOffset? RevocationExpiration { get; set; }
         internal bool CorruptRevocationIssuerName { get; set; }
+        internal bool OmitNextUpdateInCrl { get; set; }
 
         // All keys created in this method are smaller than recommended,
         // but they only live for a few seconds (at most),
@@ -343,7 +344,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     writer.WriteUtcTime(_cert.NotBefore);
 
                     // nextUpdate
-                    writer.WriteUtcTime(RevocationExpiration.Value);
+                    if (!OmitNextUpdateInCrl)
+                    {
+                        writer.WriteUtcTime(RevocationExpiration.Value);
+                    }
                 }
                 else
                 {
@@ -351,7 +355,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     writer.WriteUtcTime(now);
 
                     // nextUpdate
-                    writer.WriteUtcTime(newExpiry);
+                    if (!OmitNextUpdateInCrl)
+                    {
+                        writer.WriteUtcTime(newExpiry);
+                    }
                 }
 
                 // revokedCertificates (don't write down if empty)
@@ -510,8 +517,9 @@ SingleResponse ::= SEQUENCE {
                         }
                         else if (status == CertStatus.Revoked)
                         {
+                            // Android does not support all precisions for seconds - just omit fractional seconds for testing on Android
                             writer.PushSequence(s_context1);
-                            writer.WriteGeneralizedTime(revokedTime);
+                            writer.WriteGeneralizedTime(revokedTime, omitFractionalSeconds: OperatingSystem.IsAndroid());
                             writer.PopSequence(s_context1);
                         }
                         else
@@ -635,10 +643,7 @@ SingleResponse ::= SEQUENCE {
 
             if (_dnHash == null)
             {
-                using (HashAlgorithm hash = SHA1.Create())
-                {
-                    _dnHash = hash.ComputeHash(_cert.SubjectName.RawData);
-                }
+                _dnHash = SHA1.HashData(_cert.SubjectName.RawData);
             }
 
             if (!idReader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> reqDn))
@@ -816,8 +821,9 @@ SingleResponse ::= SEQUENCE {
             PkiOptions pkiOptions,
             out RevocationResponder responder,
             out CertificateAuthority rootAuthority,
-            out CertificateAuthority intermediateAuthority,
+            out CertificateAuthority[] intermediateAuthorities,
             out X509Certificate2 endEntityCert,
+            int intermediateAuthorityCount,
             string testName = null,
             bool registerAuthorities = true,
             bool pkiOptionsInSubject = false,
@@ -837,14 +843,10 @@ SingleResponse ::= SEQUENCE {
                     endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
                 "At least one revocation mode is enabled");
 
-            if (extensions == null)
-            {
-                // default to client
-                extensions = new X509ExtensionCollection() { s_eeConstraints, s_eeKeyUsage, s_tlsClientEku };
-            }
+            // default to client
+            extensions ??= new X509ExtensionCollection() { s_eeConstraints, s_eeKeyUsage, s_tlsClientEku };
 
             using (RSA rootKey = RSA.Create(keySize))
-            using (RSA intermedKey = RSA.Create(keySize))
             using (RSA eeKey = RSA.Create(keySize))
             {
                 var rootReq = new CertificateRequest(
@@ -878,35 +880,45 @@ SingleResponse ::= SEQUENCE {
                     issuerRevocationViaCrl ? cdpUrl : null,
                     issuerRevocationViaOcsp ? ocspUrl : null);
 
-                // Don't dispose this, it's being transferred to the CertificateAuthority
-                X509Certificate2 intermedCert;
+                CertificateAuthority issuingAuthority = rootAuthority;
+                intermediateAuthorities = new CertificateAuthority[intermediateAuthorityCount];
 
+                for (int intermediateIndex = 0; intermediateIndex < intermediateAuthorityCount; intermediateIndex++)
                 {
-                    X509Certificate2 intermedPub = rootAuthority.CreateSubordinateCA(
-                        BuildSubject("A Revocation Test CA", testName, pkiOptions, pkiOptionsInSubject),
-                        intermedKey);
+                    using RSA intermediateKey = RSA.Create(keySize);
 
-                    intermedCert = intermedPub.CopyWithPrivateKey(intermedKey);
-                    intermedPub.Dispose();
+                    // Don't dispose this, it's being transferred to the CertificateAuthority
+                    X509Certificate2 intermedCert;
+
+                    {
+                        X509Certificate2 intermedPub = issuingAuthority.CreateSubordinateCA(
+                            BuildSubject($"A Revocation Test CA {intermediateIndex}", testName, pkiOptions, pkiOptionsInSubject),
+                            intermediateKey);
+                        intermedCert = intermedPub.CopyWithPrivateKey(intermediateKey);
+                        intermedPub.Dispose();
+                    }
+
+                    X509SubjectKeyIdentifierExtension intermedSkid =
+                        intermedCert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().Single();
+
+                    certUrl = $"{responder.UriPrefix}cert/{intermedSkid.SubjectKeyIdentifier}.cer";
+                    cdpUrl = $"{responder.UriPrefix}crl/{intermedSkid.SubjectKeyIdentifier}.crl";
+                    ocspUrl = $"{responder.UriPrefix}ocsp/{intermedSkid.SubjectKeyIdentifier}";
+
+                    CertificateAuthority intermediateAuthority = new CertificateAuthority(
+                        intermedCert,
+                        issuerDistributionViaHttp ? certUrl : null,
+                        endEntityRevocationViaCrl ? cdpUrl : null,
+                        endEntityRevocationViaOcsp ? ocspUrl : null);
+
+                    issuingAuthority = intermediateAuthority;
+                    intermediateAuthorities[intermediateIndex] = intermediateAuthority;
                 }
 
-                X509SubjectKeyIdentifierExtension intermedSkid =
-                    intermedCert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().Single();
-
-                certUrl = $"{responder.UriPrefix}cert/{intermedSkid.SubjectKeyIdentifier}.cer";
-                cdpUrl = $"{responder.UriPrefix}crl/{intermedSkid.SubjectKeyIdentifier}.crl";
-                ocspUrl = $"{responder.UriPrefix}ocsp/{intermedSkid.SubjectKeyIdentifier}";
-
-                intermediateAuthority = new CertificateAuthority(
-                    intermedCert,
-                    issuerDistributionViaHttp ? certUrl : null,
-                    endEntityRevocationViaCrl ? cdpUrl : null,
-                    endEntityRevocationViaOcsp ? ocspUrl : null);
-
-                endEntityCert = intermediateAuthority.CreateEndEntity(
-                        BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
-                        eeKey,
-                        extensions);
+                endEntityCert = issuingAuthority.CreateEndEntity(
+                    BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
+                    eeKey,
+                    extensions);
 
                 endEntityCert = endEntityCert.CopyWithPrivateKey(eeKey);
             }
@@ -914,8 +926,43 @@ SingleResponse ::= SEQUENCE {
             if (registerAuthorities)
             {
                 responder.AddCertificateAuthority(rootAuthority);
-                responder.AddCertificateAuthority(intermediateAuthority);
+
+                foreach (CertificateAuthority authority in intermediateAuthorities)
+                {
+                    responder.AddCertificateAuthority(authority);
+                }
             }
+        }
+
+        internal static void BuildPrivatePki(
+            PkiOptions pkiOptions,
+            out RevocationResponder responder,
+            out CertificateAuthority rootAuthority,
+            out CertificateAuthority intermediateAuthority,
+            out X509Certificate2 endEntityCert,
+            string testName = null,
+            bool registerAuthorities = true,
+            bool pkiOptionsInSubject = false,
+            string subjectName = null,
+            int keySize = DefaultKeySize,
+            X509ExtensionCollection extensions = null)
+        {
+
+            BuildPrivatePki(
+                pkiOptions,
+                out responder,
+                out rootAuthority,
+                out CertificateAuthority[] intermediateAuthorities,
+                out endEntityCert,
+                intermediateAuthorityCount: 1,
+                testName: testName,
+                registerAuthorities: registerAuthorities,
+                pkiOptionsInSubject: pkiOptionsInSubject,
+                subjectName: subjectName,
+                keySize: keySize,
+                extensions: extensions);
+
+            intermediateAuthority = intermediateAuthorities.Single();
         }
 
         private static string BuildSubject(

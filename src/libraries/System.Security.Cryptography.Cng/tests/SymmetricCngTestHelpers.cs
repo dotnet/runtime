@@ -18,7 +18,8 @@ namespace System.Security.Cryptography.Cng.Tests
             Func<string, SymmetricAlgorithm> persistedFunc,
             Func<SymmetricAlgorithm> ephemeralFunc,
             CipherMode cipherMode,
-            PaddingMode paddingMode)
+            PaddingMode paddingMode,
+            int feedbackSizeInBits)
         {
             string keyName = Guid.NewGuid().ToString();
             CngKeyCreationParameters creationParameters = new CngKeyCreationParameters
@@ -41,7 +42,8 @@ namespace System.Security.Cryptography.Cng.Tests
                     persistedFunc,
                     ephemeralFunc,
                     cipherMode,
-                    paddingMode);
+                    paddingMode,
+                    feedbackSizeInBits);
             }
             finally
             {
@@ -56,15 +58,21 @@ namespace System.Security.Cryptography.Cng.Tests
             Func<string, SymmetricAlgorithm> persistedFunc,
             Func<SymmetricAlgorithm> ephemeralFunc,
             CipherMode cipherMode,
-            PaddingMode paddingMode)
+            PaddingMode paddingMode,
+            int feedbackSizeInBits)
         {
-            byte[] plainBytes = GenerateRandom(plainBytesCount);
+            byte[] plainBytes = RandomNumberGenerator.GetBytes(plainBytesCount);
 
             using (SymmetricAlgorithm persisted = persistedFunc(keyName))
             using (SymmetricAlgorithm ephemeral = ephemeralFunc())
             {
                 persisted.Mode = ephemeral.Mode = cipherMode;
                 persisted.Padding = ephemeral.Padding = paddingMode;
+
+                if (cipherMode == CipherMode.CFB)
+                {
+                    persisted.FeedbackSize = ephemeral.FeedbackSize = feedbackSizeInBits;
+                }
 
                 ephemeral.Key = persisted.Key;
                 ephemeral.GenerateIV();
@@ -99,6 +107,45 @@ namespace System.Security.Cryptography.Cng.Tests
                     }
 
                     Assert.Equal(expectedBytes, persistedDecrypted);
+                }
+
+                byte[] oneShotPersistedEncrypted = null;
+                byte[] oneShotEphemeralEncrypted = null;
+                byte[] oneShotPersistedDecrypted = null;
+
+                if (cipherMode == CipherMode.ECB)
+                {
+                    oneShotPersistedEncrypted = persisted.EncryptEcb(plainBytes, paddingMode);
+                    oneShotEphemeralEncrypted = ephemeral.EncryptEcb(plainBytes, paddingMode);
+                    oneShotPersistedDecrypted = persisted.DecryptEcb(oneShotEphemeralEncrypted, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CBC)
+                {
+                    oneShotPersistedEncrypted = persisted.EncryptCbc(plainBytes, persisted.IV, paddingMode);
+                    oneShotEphemeralEncrypted = ephemeral.EncryptCbc(plainBytes, ephemeral.IV, paddingMode);
+                    oneShotPersistedDecrypted = persisted.DecryptCbc(oneShotEphemeralEncrypted, persisted.IV, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CFB)
+                {
+                    oneShotPersistedEncrypted = persisted.EncryptCfb(plainBytes, persisted.IV, paddingMode, feedbackSizeInBits);
+                    oneShotEphemeralEncrypted = ephemeral.EncryptCfb(plainBytes, ephemeral.IV, paddingMode, feedbackSizeInBits);
+                    oneShotPersistedDecrypted = persisted.DecryptCfb(oneShotEphemeralEncrypted, persisted.IV, paddingMode, feedbackSizeInBits);
+                }
+
+                if (oneShotPersistedEncrypted is not null)
+                {
+                    Assert.Equal(oneShotEphemeralEncrypted, oneShotPersistedEncrypted);
+
+                    if (paddingMode == PaddingMode.Zeros)
+                    {
+                        byte[] plainPadded = new byte[oneShotPersistedDecrypted.Length];
+                        plainBytes.AsSpan().CopyTo(plainPadded);
+                        Assert.Equal(plainPadded, oneShotPersistedDecrypted);
+                    }
+                    else
+                    {
+                        Assert.Equal(plainBytes, oneShotPersistedDecrypted);
+                    }
                 }
             }
         }
@@ -148,7 +195,7 @@ namespace System.Security.Cryptography.Cng.Tests
                     stable.GenerateIV();
 
                     // Generate (4 * 8) = 32 blocks of plaintext
-                    byte[] plainTextBytes = GenerateRandom(4 * stable.BlockSize);
+                    byte[] plainTextBytes = RandomNumberGenerator.GetBytes(4 * stable.BlockSize);
                     byte[] iv = stable.IV;
 
                     regenKey.IV = replaceKey.IV = iv;
@@ -247,7 +294,8 @@ namespace System.Security.Cryptography.Cng.Tests
                     persistedFunc,
                     ephemeralFunc,
                     CipherMode.CBC,
-                    PaddingMode.PKCS7);
+                    PaddingMode.PKCS7,
+                    feedbackSizeInBits: 0);
             }
             finally
             {
@@ -256,43 +304,76 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        private static bool? s_supportsPersistedSymmetricKeys;
-        internal static bool SupportsPersistedSymmetricKeys
+        public static void VerifyCfbPersistedUnsupportedFeedbackSize(
+            CngAlgorithm algorithm,
+            Func<string, SymmetricAlgorithm> persistedFunc,
+            int notSupportedFeedbackSizeInBits)
         {
-            get
-            {
-                if (!s_supportsPersistedSymmetricKeys.HasValue)
-                {
-                    // Windows 7 (Microsoft Windows 6.1) does not support persisted symmetric keys
-                    // in the Microsoft Software KSP
-                    s_supportsPersistedSymmetricKeys = !RuntimeInformation.OSDescription.Contains("Windows 6.1");
-                }
+            string keyName = Guid.NewGuid().ToString();
+            string feedbackSizeString = notSupportedFeedbackSizeInBits.ToString();
 
-                return s_supportsPersistedSymmetricKeys.Value;
+            // We try to delete the key later which will also dispose of it, so no need
+            // to put this in a using.
+            CngKey cngKey = CngKey.Create(algorithm, keyName);
+
+            try
+            {
+                using (SymmetricAlgorithm alg = persistedFunc(keyName))
+                {
+                    alg.Mode = CipherMode.CFB;
+                    alg.FeedbackSize = notSupportedFeedbackSizeInBits;
+                    alg.Padding = PaddingMode.None;
+
+                    byte[] destination = new byte[alg.BlockSize / 8];
+                    CryptographicException ce = Assert.ThrowsAny<CryptographicException>(() =>
+                        alg.EncryptCfb(Array.Empty<byte>(), destination, PaddingMode.None, notSupportedFeedbackSizeInBits));
+
+                    Assert.Contains(feedbackSizeString, ce.Message);
+
+                    ce = Assert.ThrowsAny<CryptographicException>(() =>
+                        alg.DecryptCfb(Array.Empty<byte>(), destination, PaddingMode.None, notSupportedFeedbackSizeInBits));
+
+                    Assert.Contains(feedbackSizeString, ce.Message);
+
+                    ce = Assert.ThrowsAny<CryptographicException>(() => alg.CreateDecryptor());
+                    Assert.Contains(feedbackSizeString, ce.Message);
+
+                    ce = Assert.ThrowsAny<CryptographicException>(() => alg.CreateEncryptor());
+                    Assert.Contains(feedbackSizeString, ce.Message);
+                }
+            }
+            finally
+            {
+                cngKey.Delete();
             }
         }
 
-        private static readonly Lazy<bool> s_isAdministrator = new Lazy<bool>(
-            () =>
-            {
-                using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
-                {
-                    WindowsPrincipal principal = new WindowsPrincipal(identity);
-                    return principal.IsInRole(WindowsBuiltInRole.Administrator);
-                }
-            });
-
-        internal static bool IsAdministrator => s_isAdministrator.Value;
-
-        internal static byte[] GenerateRandom(int count)
+        internal static void VerifyMismatchAlgorithmFails(
+            CngAlgorithm algorithm,
+            Func<string, SymmetricAlgorithm> createFromKey)
         {
-            byte[] buffer = new byte[count];
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            string keyName = Guid.NewGuid().ToString();
+
+            // We try to delete the key later which will also dispose of it, so no need
+            // to put this in a using.
+            CngKey cngKey = CngKey.Create(algorithm, keyName);
+
+            try
             {
-                rng.GetBytes(buffer);
+                CryptographicException ce = Assert.Throws<CryptographicException>(() => createFromKey(keyName));
+                Assert.Contains($"'{algorithm.Algorithm}'", ce.Message);
             }
-            return buffer;
+            finally
+            {
+                cngKey.Delete();
+            }
         }
+
+        // Windows 7 (Microsoft Windows 6.1) does not support persisted symmetric keys
+        // in the Microsoft Software KSP
+        internal static bool SupportsPersistedSymmetricKeys => PlatformDetection.IsWindows8xOrLater;
+
+        internal static bool IsAdministrator => PlatformDetection.IsWindowsAndElevated;
 
         internal static void AssertTransformsEqual(byte[] plainTextBytes, ICryptoTransform decryptor, byte[] encryptedBytes)
         {

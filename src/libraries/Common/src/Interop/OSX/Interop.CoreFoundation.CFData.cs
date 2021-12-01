@@ -13,11 +13,11 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern unsafe byte* CFDataGetBytePtr(SafeCFDataHandle cfData);
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static unsafe partial byte* CFDataGetBytePtr(SafeCFDataHandle cfData);
 
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern CFIndex CFDataGetLength(SafeCFDataHandle cfData);
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static partial CFIndex CFDataGetLength(SafeCFDataHandle cfData);
 
         internal static unsafe Span<byte> CFDataDangerousGetSpan(SafeCFDataHandle cfData)
         {
@@ -86,7 +86,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeCFDataHandle : SafeHandle
     {
-        internal SafeCFDataHandle()
+        public SafeCFDataHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

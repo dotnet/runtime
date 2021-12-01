@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestExitCode>134</CLRTestExitCode>
+    <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-2146232797</CLRTestExitCode>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ParallelCrash.cs" />
+  </ItemGroup>
+</Project>

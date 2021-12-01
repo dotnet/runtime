@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -155,7 +154,7 @@ namespace System.Xml.Schema
             }
         }
 
-        internal class NamesCollection : ICollection
+        internal sealed class NamesCollection : ICollection
         {
             private readonly List<XmlSchemaObjectEntry> _entries;
             private readonly int _size;
@@ -210,7 +209,7 @@ namespace System.Xml.Schema
         }
 
         //ICollection for Values
-        internal class ValuesCollection : ICollection
+        internal sealed class ValuesCollection : ICollection
         {
             private readonly List<XmlSchemaObjectEntry> _entries;
             private readonly int _size;
@@ -335,7 +334,7 @@ namespace System.Xml.Schema
             }
         }
 
-        internal class XSODictionaryEnumerator : XSOEnumerator, IDictionaryEnumerator
+        internal sealed class XSODictionaryEnumerator : XSOEnumerator, IDictionaryEnumerator
         {
             internal XSODictionaryEnumerator(List<XmlSchemaObjectEntry> entries, int size, EnumeratorType enumType) : base(entries, size, enumType)
             {

@@ -5,7 +5,7 @@ using System.Configuration;
 
 namespace System.Diagnostics
 {
-    internal class PerfCounterSection : ConfigurationElement
+    internal sealed class PerfCounterSection : ConfigurationElement
     {
         private static readonly ConfigurationProperty s_propFileMappingSize = new ConfigurationProperty("filemappingsize", typeof(int), 524288, ConfigurationPropertyOptions.None);
         private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection { s_propFileMappingSize };

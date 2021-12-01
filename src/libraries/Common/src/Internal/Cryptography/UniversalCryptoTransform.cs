@@ -17,7 +17,10 @@ namespace Internal.Cryptography
     //
     internal abstract class UniversalCryptoTransform : ICryptoTransform
     {
-        public static ICryptoTransform Create(PaddingMode paddingMode, BasicSymmetricCipher cipher, bool encrypting)
+        public static UniversalCryptoTransform Create(
+            PaddingMode paddingMode,
+            BasicSymmetricCipher cipher,
+            bool encrypting)
         {
             if (encrypting)
                 return new UniversalCryptoEncryptor(paddingMode, cipher);
@@ -39,6 +42,11 @@ namespace Internal.Cryptography
         public bool CanTransformMultipleBlocks
         {
             get { return true; }
+        }
+
+        protected int PaddingSizeBytes
+        {
+            get { return BasicSymmetricCipher.PaddingSizeInBytes; }
         }
 
         public int InputBlockSize
@@ -70,13 +78,13 @@ namespace Internal.Cryptography
             if (inputCount % InputBlockSize != 0)
                 throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_MustTransformWholeBlock);
             if (inputCount > inputBuffer.Length - inputOffset)
-                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_TransformBeyondEndOfBuffer);
+                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Argument_InvalidOffLen);
             if (outputBuffer == null)
                 throw new ArgumentNullException(nameof(outputBuffer));
             if (outputOffset > outputBuffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(outputOffset));
             if (inputCount > outputBuffer.Length - outputOffset)
-                throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Cryptography_TransformBeyondEndOfBuffer);
+                throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Argument_InvalidOffLen);
 
             int numBytesWritten = UncheckedTransformBlock(inputBuffer, inputOffset, inputCount, outputBuffer, outputOffset);
             Debug.Assert(numBytesWritten >= 0 && numBytesWritten <= inputCount);
@@ -94,11 +102,13 @@ namespace Internal.Cryptography
             if (inputOffset > inputBuffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputCount > inputBuffer.Length - inputOffset)
-                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_TransformBeyondEndOfBuffer);
+                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Argument_InvalidOffLen);
 
             byte[] output = UncheckedTransformFinalBlock(inputBuffer, inputOffset, inputCount);
             return output;
         }
+
+        public abstract bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten);
 
         protected virtual void Dispose(bool disposing)
         {

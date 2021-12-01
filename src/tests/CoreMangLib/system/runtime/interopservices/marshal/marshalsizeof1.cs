@@ -226,7 +226,7 @@ public class MarshalSizeOf1
             obj.TestDouble = TestLibrary.Generator.GetDouble(-55);
             int expectedSize;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
             {
                 expectedSize = 16; // sizeof(double) + sizeof(int) + padding
             }

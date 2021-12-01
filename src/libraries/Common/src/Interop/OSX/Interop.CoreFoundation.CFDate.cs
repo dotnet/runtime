@@ -17,8 +17,8 @@ internal static partial class Interop
         // https://developer.apple.com/reference/corefoundation/cfabsolutetime
         private static readonly DateTime s_cfDateEpoch = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern SafeCFDateHandle CFDateCreate(IntPtr zero, CFAbsoluteTime at);
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static partial SafeCFDateHandle CFDateCreate(IntPtr zero, CFAbsoluteTime at);
 
         internal static SafeCFDateHandle CFDateCreate(DateTime date)
         {
@@ -49,7 +49,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeCFDateHandle : SafeHandle
     {
-        internal SafeCFDateHandle()
+        public SafeCFDateHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

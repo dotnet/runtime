@@ -30,7 +30,7 @@ namespace System.Reflection.Metadata
         private MetadataReader? _lazyMetadataReader;
         private readonly object _metadataReaderGuard = new object();
 
-        private MetadataReaderProvider(AbstractMemoryBlock metadataBlock)
+        internal MetadataReaderProvider(AbstractMemoryBlock metadataBlock)
         {
             Debug.Assert(metadataBlock != null);
             _lazyMetadataBlock = metadataBlock;
@@ -184,17 +184,15 @@ namespace System.Reflection.Metadata
             bool closeStream = true;
             try
             {
-                bool isFileStream = FileStreamReadLightUp.IsFileStream(stream);
-
                 if ((options & MetadataStreamOptions.PrefetchMetadata) == 0)
                 {
-                    result = new MetadataReaderProvider(new StreamMemoryBlockProvider(stream, start, actualSize, isFileStream, (options & MetadataStreamOptions.LeaveOpen) != 0));
+                    result = new MetadataReaderProvider(new StreamMemoryBlockProvider(stream, start, actualSize, (options & MetadataStreamOptions.LeaveOpen) != 0));
                     closeStream = false;
                 }
                 else
                 {
                     // Read in the entire image or metadata blob:
-                    result = new MetadataReaderProvider(StreamMemoryBlockProvider.ReadMemoryBlockNoLock(stream, isFileStream, start, actualSize));
+                    result = new MetadataReaderProvider(StreamMemoryBlockProvider.ReadMemoryBlockNoLock(stream, start, actualSize));
 
                     // We read all we need, the stream is going to be closed.
                 }

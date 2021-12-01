@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class Matrix3x2Tests
+    public sealed class Matrix3x2Tests
     {
         static Matrix3x2 GenerateIncrementalMatrixNumber(float value = 0.0f)
         {
@@ -25,6 +25,47 @@ namespace System.Numerics.Tests
             Matrix3x2 m = Matrix3x2.CreateRotation(MathHelper.ToRadians(30.0f));
             m.Translation = new Vector2(111.0f, 222.0f);
             return m;
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f)]
+        public void Matrix3x2IndexerGetTest(float m11, float m12, float m21, float m22, float m31, float m32)
+        {
+            var matrix = new Matrix3x2(m11, m12, m21, m22, m31, m32);
+
+            Assert.Equal(m11, matrix[0, 0]);
+            Assert.Equal(m12, matrix[0, 1]);
+            Assert.Equal(m21, matrix[1, 0]);
+            Assert.Equal(m22, matrix[1, 1]);
+            Assert.Equal(m31, matrix[2, 0]);
+            Assert.Equal(m32, matrix[2, 1]);
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f)]
+        public void Matrix3x2IndexerSetTest(float m11, float m12, float m21, float m22, float m31, float m32)
+        {
+            var matrix = new Matrix3x2(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+
+            matrix[0, 0] = m11;
+            matrix[0, 1] = m12;
+            matrix[1, 0] = m21;
+            matrix[1, 1] = m22;
+            matrix[2, 0] = m31;
+            matrix[2, 1] = m32;
+
+            Assert.Equal(m11, matrix[0, 0]);
+            Assert.Equal(m12, matrix[0, 1]);
+            Assert.Equal(m21, matrix[1, 0]);
+            Assert.Equal(m22, matrix[1, 1]);
+            Assert.Equal(m31, matrix[2, 0]);
+            Assert.Equal(m32, matrix[2, 1]);
         }
 
         // A test for Identity
@@ -527,9 +568,9 @@ namespace System.Numerics.Tests
         public void Matrix3x2GetHashCodeTest()
         {
             Matrix3x2 target = GenerateIncrementalMatrixNumber();
-            int expected = unchecked(target.M11.GetHashCode() + target.M12.GetHashCode() +
-                                     target.M21.GetHashCode() + target.M22.GetHashCode() +
-                                     target.M31.GetHashCode() + target.M32.GetHashCode());
+            int expected = HashCode.Combine(target.M11, target.M12,
+                                     target.M21, target.M22,
+                                     target.M31, target.M32);
             int actual;
 
             actual = target.GetHashCode();

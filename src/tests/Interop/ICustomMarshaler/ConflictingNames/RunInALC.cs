@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using TestLibrary;
+using Xunit;
 
 public class RunInALC
 {
@@ -39,12 +39,12 @@ public class RunInALC
 
     static void Run(AssemblyLoadContext context)
     {
-        string currentAssemblyDirectory = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).AbsolutePath);
+        string currentAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         Assembly inContextAssembly = context.LoadFromAssemblyPath(Path.Combine(currentAssemblyDirectory, "CustomMarshaler.dll"));
         Type inContextType = inContextAssembly.GetType("CustomMarshalers.CustomMarshalerTest");
         object instance = Activator.CreateInstance(inContextType);
         MethodInfo parseIntMethod = inContextType.GetMethod("ParseInt", BindingFlags.Instance | BindingFlags.Public);
-        Assert.AreEqual(1234, (int)parseIntMethod.Invoke(instance, new object[]{"1234"}));
+        Assert.Equal(1234, (int)parseIntMethod.Invoke(instance, new object[]{"1234"}));
         GC.KeepAlive(context);
     }
 }
@@ -54,7 +54,7 @@ class UnloadableLoadContext : AssemblyLoadContext
     public UnloadableLoadContext()
         :base(true)
     {
-        
+
     }
 
     protected override Assembly Load(AssemblyName assemblyName)

@@ -5,9 +5,9 @@ using Microsoft.Win32.SafeHandles;
 using System.IO;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         private const uint MOVEFILE_REPLACE_EXISTING = 0x01;
         private const uint MOVEFILE_COPY_ALLOWED = 0x02;
@@ -15,8 +15,9 @@ internal partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use MoveFile.
         /// </summary>
-        [DllImport(Libraries.Kernel32, EntryPoint = "MoveFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        private static extern bool MoveFileExPrivate(string src, string dst, uint flags);
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "MoveFileExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        private static partial bool MoveFileExPrivate(
+            string src, string dst, uint flags);
 
         /// <summary>
         /// Moves a file or directory, optionally overwriting existing destination file. NOTE: overwrite must be false for directories.

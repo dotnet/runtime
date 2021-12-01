@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-
 using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal partial class ReadContentAsBinaryHelper
+    internal sealed partial class ReadContentAsBinaryHelper
     {
         // Internal methods
 
@@ -316,7 +315,7 @@ namespace System.Xml
                     {
                         if (_valueOffset < _valueChunkLength)
                         {
-                            int decodedCharsCount = _decoder.Decode(_valueChunk, _valueOffset, _valueChunkLength - _valueOffset);
+                            int decodedCharsCount = _decoder.Decode(_valueChunk!, _valueOffset, _valueChunkLength - _valueOffset);
                             _valueOffset += decodedCharsCount;
                         }
                         if (_decoder.IsFull)
@@ -324,7 +323,7 @@ namespace System.Xml
                             return _decoder.DecodedCount;
                         }
                         Debug.Assert(_valueOffset == _valueChunkLength);
-                        if ((_valueChunkLength = await _reader.ReadValueChunkAsync(_valueChunk, 0, ChunkSize).ConfigureAwait(false)) == 0)
+                        if ((_valueChunkLength = await _reader.ReadValueChunkAsync(_valueChunk!, 0, ChunkSize).ConfigureAwait(false)) == 0)
                         {
                             break;
                         }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -133,7 +132,7 @@ namespace System.IO
                 }
                 // Check If the match is at the beginning of the string, or is preceded by a newline.
                 else if (keyIndex == 0
-                    || (keyIndex >= Environment.NewLine.Length && _buffer.Substring(keyIndex - Environment.NewLine.Length, Environment.NewLine.Length) == Environment.NewLine))
+                    || (keyIndex >= Environment.NewLine.Length && _buffer.AsSpan(keyIndex - Environment.NewLine.Length, Environment.NewLine.Length).SequenceEqual(Environment.NewLine)))
                 {
                     // Check if the match is followed by whitespace, meaning it is not part of a larger word.
                     if (HasFollowingWhitespace(keyIndex, key.Length))

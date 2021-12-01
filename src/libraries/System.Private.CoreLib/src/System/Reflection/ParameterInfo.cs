@@ -46,8 +46,8 @@ namespace System.Reflection
             return Array.Empty<object>();
         }
 
-        public virtual Type[] GetOptionalCustomModifiers() => Array.Empty<Type>();
-        public virtual Type[] GetRequiredCustomModifiers() => Array.Empty<Type>();
+        public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
+        public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
 
         public virtual int MetadataToken => MetadataToken_ParamDef;
 
@@ -94,7 +94,12 @@ namespace System.Reflection
             }
         }
 
-        public override string ToString() => ParameterType.FormatTypeName() + " " + Name;
+        public override string ToString()
+        {
+            string typeName = ParameterType.FormatTypeName();
+            string? name = Name;
+            return name is null ? typeName : typeName + " " + name;
+        }
 
         protected ParameterAttributes AttrsImpl;
         protected Type? ClassImpl;

@@ -383,5 +383,16 @@ namespace System.Collections.Tests
         }
     }
 
+    public sealed class EqualityComparerConstantHashCode<T> : IEqualityComparer<T>
+    {
+        private readonly IEqualityComparer<T> _comparer;
+
+        public EqualityComparerConstantHashCode(IEqualityComparer<T> comparer) => _comparer = comparer;
+
+        public bool Equals(T x, T y) => _comparer.Equals(x, y);
+
+        public int GetHashCode(T obj) => 42;
+    }
+
     #endregion
 }

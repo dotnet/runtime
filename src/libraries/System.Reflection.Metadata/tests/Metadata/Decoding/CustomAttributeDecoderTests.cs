@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata.Tests;
@@ -12,10 +13,11 @@ namespace System.Reflection.Metadata.Decoding.Tests
     public class CustomAttributeDecoderTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on .NET Framework.")]
         public void TestCustomAttributeDecoder()
         {
-            using (FileStream stream = File.OpenRead(typeof(HasAttributes).GetTypeInfo().Assembly.Location))
+            using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(HasAttributes).GetTypeInfo().Assembly)))
             using (var peReader = new PEReader(stream))
             {
                 MetadataReader reader = peReader.GetMetadataReader();

@@ -518,6 +518,11 @@ namespace Microsoft.CSharp
 
         private void GenerateStatement(CodeStatement e)
         {
+            if (e == null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
+
             if (e.StartDirectives.Count > 0)
             {
                 GenerateDirectives(e.StartDirectives);
@@ -683,25 +688,13 @@ namespace Microsoft.CSharp
                 Output.Write(((ulong)e.Value).ToString(CultureInfo.InvariantCulture));
                 Output.Write("ul");
             }
-            else
-            {
-                GeneratePrimitiveExpressionBase(e);
-            }
-        }
-
-        private void GeneratePrimitiveExpressionBase(CodePrimitiveExpression e)
-        {
-            if (e.Value == null)
+            else if (e.Value == null)
             {
                 Output.Write(NullToken);
             }
             else if (e.Value is string)
             {
                 Output.Write(QuoteSnippetString((string)e.Value));
-            }
-            else if (e.Value is char)
-            {
-                Output.Write("'" + e.Value.ToString() + "'");
             }
             else if (e.Value is byte)
             {
@@ -744,7 +737,7 @@ namespace Microsoft.CSharp
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.InvalidPrimitiveType, e.Value.GetType()));
+                throw new ArgumentException(SR.Format(SR.InvalidPrimitiveType, e.Value.GetType()), nameof(e));
             }
         }
 
@@ -800,12 +793,12 @@ namespace Microsoft.CSharp
             if (b == null)
             {
                 Output.Write("\\u");
-                Output.Write(((int)value).ToString("X4", CultureInfo.InvariantCulture));
+                Output.Write(((int)value).ToString("X4"));
             }
             else
             {
                 b.Append("\\u");
-                b.Append(((int)value).ToString("X4", CultureInfo.InvariantCulture));
+                b.Append(((int)value).ToString("X4"));
             }
         }
 
@@ -858,10 +851,20 @@ namespace Microsoft.CSharp
             string commentLineStart = e.DocComment ? "///" : "//";
             Output.Write(commentLineStart);
             Output.Write(' ');
+            bool isAfterCommentLineStart = false;
 
             string value = e.Text;
             for (int i = 0; i < value.Length; i++)
             {
+                if (isAfterCommentLineStart)
+                {
+                    if (value[i] == '/' && (e.DocComment || !value.HasCharAt(i + 1, '/')))
+                    {
+                        Output.Write(' ');
+                    }
+                    isAfterCommentLineStart = false;
+                }
+
                 if (value[i] == '\u0000')
                 {
                     continue;
@@ -870,22 +873,25 @@ namespace Microsoft.CSharp
 
                 if (value[i] == '\r')
                 {
-                    if (i < value.Length - 1 && value[i + 1] == '\n')
+                    if (value.HasCharAt(i + 1, '\n'))
                     { // if next char is '\n', skip it
                         Output.Write('\n');
                         i++;
                     }
                     _output.InternalOutputTabs();
                     Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
                 else if (value[i] == '\n')
                 {
                     _output.InternalOutputTabs();
                     Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
                 else if (value[i] == '\u2028' || value[i] == '\u2029' || value[i] == '\u0085')
                 {
                     Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
             }
             Output.WriteLine();
@@ -929,8 +935,8 @@ namespace Microsoft.CSharp
             GenerateStatements(e.TrueStatements);
             Indent--;
 
-            CodeStatementCollection falseStatemetns = e.FalseStatements;
-            if (falseStatemetns.Count > 0)
+            CodeStatementCollection falseStatements = e.FalseStatements;
+            if (falseStatements.Count > 0)
             {
                 Output.Write('}');
                 if (_options.ElseOnClosing)
@@ -2508,7 +2514,7 @@ namespace Microsoft.CSharp
             {
                 foreach (byte b in checksumPragma.ChecksumData)
                 {
-                    Output.Write(b.ToString("X2", CultureInfo.InvariantCulture));
+                    Output.Write(b.ToString("X2"));
                 }
             }
             Output.WriteLine("\"");
@@ -2557,7 +2563,11 @@ namespace Microsoft.CSharp
 
         private void GenerateAttributes(CodeAttributeDeclarationCollection attributes, string prefix, bool inLine)
         {
-            if (attributes.Count == 0) return;
+            if (attributes.Count == 0)
+            {
+                return;
+            }
+
             bool paramArray = false;
             foreach (CodeAttributeDeclaration current in attributes)
             {
@@ -2666,12 +2676,17 @@ namespace Microsoft.CSharp
         {
             if (!IsValidIdentifier(value))
             {
-                throw new ArgumentException(SR.Format(SR.InvalidIdentifier, value));
+                throw new ArgumentException(SR.Format(SR.InvalidIdentifier, value), nameof(value));
             }
         }
 
         public string CreateValidIdentifier(string name)
         {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (CSharpHelpers.IsPrefixTwoUnderscore(name))
             {
                 name = "_" + name;
@@ -2687,6 +2702,11 @@ namespace Microsoft.CSharp
 
         public string CreateEscapedIdentifier(string name)
         {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             return CSharpHelpers.CreateEscapedIdentifier(name);
         }
 

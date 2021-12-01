@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Security;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -25,7 +26,8 @@ namespace System.Runtime.Serialization
             _reflectionReader = new ReflectionXmlReader();
         }
 
-        public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context, XmlDictionaryString[]? memberNames, XmlDictionaryString[]? memberNamespaces)
         {
             return _reflectionReader.ReflectionReadClass(xmlReader, context, memberNames, memberNamespaces, _classContract);
         }
@@ -35,11 +37,13 @@ namespace System.Runtime.Serialization
     {
         private readonly ReflectionReader _reflectionReader = new ReflectionXmlReader();
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public object ReflectionReadCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract)
         {
             return _reflectionReader.ReflectionReadCollection(xmlReader, context, itemName, itemNamespace/*itemNamespace*/, collectionContract);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void ReflectionReadGetOnlyCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNs, CollectionDataContract collectionContract)
         {
             _reflectionReader.ReflectionReadGetOnlyCollection(xmlReader, context, itemName, itemNs, collectionContract);
@@ -48,9 +52,12 @@ namespace System.Runtime.Serialization
 
     internal sealed class ReflectionXmlReader : ReflectionReader
     {
-        protected override void ReflectionReadMembers(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, ClassDataContract classContract, ref object obj)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected override void ReflectionReadMembers(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[]? memberNamespaces, ClassDataContract classContract, ref object obj)
         {
-            int memberCount = classContract.MemberNames.Length;
+            Debug.Assert(memberNamespaces != null);
+
+            int memberCount = classContract.MemberNames!.Length;
             context.IncrementItemCount(memberCount);
             int memberIndex = -1;
             int firstRequiredMember;
@@ -60,7 +67,7 @@ namespace System.Runtime.Serialization
             DataMember[] members = new DataMember[memberCount];
             int reflectedMemberCount = ReflectionGetMembers(classContract, members);
             Debug.Assert(reflectedMemberCount == memberCount, "The value returned by ReflectionGetMembers() should equal to memberCount.");
-            ExtensionDataObject extensionData = null;
+            ExtensionDataObject? extensionData = null;
 
             if (classContract.HasExtensionData)
             {
@@ -94,7 +101,7 @@ namespace System.Runtime.Serialization
 
         protected override string GetClassContractNamespace(ClassDataContract classContract)
         {
-            return classContract.StableName.Namespace;
+            return classContract.StableName!.Namespace;
         }
 
         protected override string GetCollectionContractItemName(CollectionDataContract collectionContract)
@@ -107,7 +114,8 @@ namespace System.Runtime.Serialization
             return collectionContract.StableName.Namespace;
         }
 
-        protected override object ReflectionReadDictionaryItem(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected override object? ReflectionReadDictionaryItem(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract)
         {
             Debug.Assert(collectionContract.Kind == CollectionKind.Dictionary || collectionContract.Kind == CollectionKind.GenericDictionary);
             context.ReadAttributes(xmlReader);
@@ -116,7 +124,7 @@ namespace System.Runtime.Serialization
 
         private bool[] GetRequiredMembers(ClassDataContract contract, out int firstRequiredMember)
         {
-            int memberCount = contract.MemberNames.Length;
+            int memberCount = contract.MemberNames!.Length;
             bool[] requiredMembers = new bool[memberCount];
             GetRequiredMembers(contract, requiredMembers);
             for (firstRequiredMember = 0; firstRequiredMember < memberCount; firstRequiredMember++)
@@ -128,7 +136,7 @@ namespace System.Runtime.Serialization
         private int GetRequiredMembers(ClassDataContract contract, bool[] requiredMembers)
         {
             int memberCount = (contract.BaseContract == null) ? 0 : GetRequiredMembers(contract.BaseContract, requiredMembers);
-            List<DataMember> members = contract.Members;
+            List<DataMember> members = contract.Members!;
             for (int i = 0; i < members.Count; i++, memberCount++)
             {
                 requiredMembers[memberCount] = members[i].IsRequired;

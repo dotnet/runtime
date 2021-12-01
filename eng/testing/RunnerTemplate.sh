@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 
 usage()
 {
@@ -15,7 +15,7 @@ RUNTIME_PATH=''
 RSP_FILE=''
 
 while [[ $# > 0 ]]; do
-  opt="$(echo "${1}" | awk '{print tolower($0)}')"
+  opt="$(echo "${1}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     --help|-h)
       usage
@@ -39,7 +39,7 @@ while [[ $# > 0 ]]; do
   shift
 done
 
-if [ "$RUNTIME_PATH" == "" ]; then
+if [[ -z "$RUNTIME_PATH" ]]; then
   echo "error: -r|--runtime-path argument is required."
   usage
   exit -1
@@ -127,14 +127,15 @@ function copy_core_file_to_temp_location {
 }
 
 # ========================= BEGIN Core File Setup ============================
-if [ "$(uname -s)" == "Darwin" ]; then
-  # On OS X, we will enable core dump generation only if there are no core 
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  # On OS X, we will enable core dump generation only if there are no core
   # files already in /cores/ at this point. This is being done to prevent
   # inadvertently flooding the CI machines with dumps.
   if [[ ! -d "/cores" || ! "$(ls -A /cores)" ]]; then
     ulimit -c unlimited
   fi
-elif [ "$(uname -s)" == "Linux" ]; then
+
+elif [[ "$(uname -s)" == "Linux" ]]; then
   # On Linux, we'll enable core file generation unconditionally, and if a dump
   # is generated, we will print some useful information from it and delete the
   # dump immediately.
@@ -151,7 +152,7 @@ fi
 # ========================= END Core File Setup ==============================
 
 # ========================= BEGIN Test Execution =============================
-echo ----- start $(date) ===============  To repro directly: ===================================================== 
+echo ----- start $(date) ===============  To repro directly: =====================================================
 echo pushd $EXECUTION_DIR
 [[RunCommandsEcho]]
 echo popd
@@ -162,31 +163,48 @@ test_exitcode=$?
 popd
 echo ----- end $(date) ----- exit code $test_exitcode ----------------------------------------------------------
 
-if [ "${exitcode_list[$test_exitcode]}" != "" ]; then
+if [[ -n "${exitcode_list[$test_exitcode]}" ]]; then
   echo exit code $test_exitcode means ${exitcode_list[$test_exitcode]}
 fi
 # ========================= END Test Execution ===============================
 
 # ======================= BEGIN Core File Inspection =========================
 pushd $EXECUTION_DIR >/dev/null
+
+if [[ $test_exitcode -ne 0 ]]; then
+  echo ulimit -c value: $(ulimit -c)
+fi
+
 if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
   if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
-     have_sleep=$(which sleep)
-     if [ -x "$have_sleep" ]; then
-         echo Waiting a few seconds for any dump to be written..
-          sleep 10s
-     fi
+
+    # For abrupt failures, in Helix, dump some of the kernel log, in case there is a hint
+    if [[ $test_exitcode -ne 1 ]]; then
+      dmesg | tail -50
+    fi
+
+    have_sleep=$(which sleep)
+    if [ -x "$have_sleep" ]; then
+      echo Waiting a few seconds for any dump to be written..
+      sleep 10s
+    fi
   fi
+
+  echo cat /proc/sys/kernel/core_pattern: $(cat /proc/sys/kernel/core_pattern)
+  echo cat /proc/sys/kernel/core_uses_pid: $(cat /proc/sys/kernel/core_uses_pid)
+  echo cat /proc/sys/kernel/coredump_filter: $(cat /proc/sys/kernel/coredump_filter)
+
   echo Looking around for any Linux dump..
+
   # Depending on distro/configuration, the core files may either be named "core"
-  # or "core.<PID>" by default. We read /proc/sys/kernel/core_uses_pid to 
+  # or "core.<PID>" by default. We read /proc/sys/kernel/core_uses_pid to
   # determine which it is.
   core_name_uses_pid=0
-  if [ -e /proc/sys/kernel/core_uses_pid ] && [ "1" == $(cat /proc/sys/kernel/core_uses_pid) ]; then
+  if [[ -e /proc/sys/kernel/core_uses_pid && "1" == $(cat /proc/sys/kernel/core_uses_pid) ]]; then
     core_name_uses_pid=1
   fi
 
-  if [ $core_name_uses_pid == "1" ]; then
+  if [[ "$core_name_uses_pid" == "1" ]]; then
     # We don't know what the PID of the process was, so let's look at all core
     # files whose name matches core.NUMBER
     echo Looking for files matching core.* ...
@@ -204,4 +222,14 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
 fi
 popd >/dev/null
 # ======================== END Core File Inspection ==========================
+# The helix work item should not exit with non-zero if tests ran and produced results
+# The special console runner for runtime returns 1 when tests fail
+if [[ "$test_exitcode" == "1" ]]; then
+  if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
+    exit 0
+  fi
+fi
+
 exit $test_exitcode
+fi
+

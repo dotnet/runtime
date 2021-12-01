@@ -32,10 +32,10 @@ namespace Microsoft.CSharp
 
         public override string FileExtension => "cs";
 
-        [Obsolete("Callers should not use the ICodeGenerator interface and should instead use the methods directly on the CodeDomProvider class.")]
+        [Obsolete("ICodeGenerator has been deprecated. Use the methods directly on the CodeDomProvider class instead.")]
         public override ICodeGenerator CreateGenerator() => _generator;
 
-        [Obsolete("Callers should not use the ICodeCompiler interface and should instead use the methods directly on the CodeDomProvider class.")]
+        [Obsolete("ICodeCompiler has been deprecated. Use the methods directly on the CodeDomProvider class instead.")]
         public override ICodeCompiler CreateCompiler() => _generator;
 
         public override TypeConverter GetConverter(Type type) =>

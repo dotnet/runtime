@@ -162,14 +162,14 @@ namespace Internal.NativeCrypto
             {
                 BinaryReader br = new BinaryReader(new MemoryStream(cspBlob));
 
-                byte bType = br.ReadByte();    // BLOBHEADER.bType: Expected to be 0x6 (PUBLICKEYBLOB) or 0x7 (PRIVATEKEYBLOB), though there's no check for backward compat reasons.
-                byte bVersion = br.ReadByte(); // BLOBHEADER.bVersion: Expected to be 0x2, though there's no check for backward compat reasons.
+                br.ReadByte();    // BLOBHEADER.bType: Expected to be 0x6 (PUBLICKEYBLOB) or 0x7 (PRIVATEKEYBLOB), though there's no check for backward compat reasons.
+                br.ReadByte(); // BLOBHEADER.bVersion: Expected to be 0x2, though there's no check for backward compat reasons.
                 br.ReadUInt16();               // BLOBHEADER.wReserved
                 int algId = br.ReadInt32();    // BLOBHEADER.aiKeyAlg
                 if (algId != CALG_RSA_KEYX && algId != CALG_RSA_SIGN)
                     throw new PlatformNotSupportedException();  // The FCall this code was ported from supports other algid's but we're only porting what we use.
 
-                int magic = br.ReadInt32();    // RSAPubKey.magic: Expected to be 0x31415352 ('RSA1') or 0x32415352 ('RSA2')
+                br.ReadInt32();    // RSAPubKey.magic: Expected to be 0x31415352 ('RSA1') or 0x32415352 ('RSA2')
                 int bitLen = br.ReadInt32();   // RSAPubKey.bitLen
 
                 int modulusLength = bitLen / 8;

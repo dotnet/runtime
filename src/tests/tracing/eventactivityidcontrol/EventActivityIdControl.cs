@@ -24,7 +24,6 @@ namespace Tracing.Tests
         private const uint NumTasks = 20;
 
         private static MethodInfo s_EventActivityIdControl;
-        private static object s_EventPipeEventProvider;
         private static bool s_FailureEncountered = false;
 
         static int Main(string[] args)
@@ -181,7 +180,7 @@ namespace Tracing.Tests
             };
 
             int retCode = (int) s_EventActivityIdControl.Invoke(
-                s_EventPipeEventProvider,
+                null,
                 parameters);
 
             // Copy the by ref activityid out of the parameters array.
@@ -204,18 +203,11 @@ namespace Tracing.Tests
                 Console.WriteLine("Failed to get System.Diagnostics.Tracing.EventPipeEventProvider type.");
                 return false;
             }
-            s_EventActivityIdControl = eventPipeEventProviderType.GetMethod("System.Diagnostics.Tracing.IEventProvider.EventActivityIdControl", BindingFlags.NonPublic | BindingFlags.Instance );
+            s_EventActivityIdControl = eventPipeEventProviderType.GetMethod("EventActivityIdControl", BindingFlags.NonPublic | BindingFlags.Static );
             if(s_EventActivityIdControl == null)
             {
                 Console.WriteLine("Failed to get EventActivityIdControl method.");
                 return false;
-            }
-
-            // Create an instance of EventPipeEventProvider.
-            s_EventPipeEventProvider = Activator.CreateInstance(eventPipeEventProviderType);
-            if(s_EventPipeEventProvider == null)
-            {
-                Console.WriteLine("Failed to create EventPipeEventProvider instance.");
             }
 
             return true;

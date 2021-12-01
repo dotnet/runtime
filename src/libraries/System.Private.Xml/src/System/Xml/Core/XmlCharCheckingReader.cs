@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Xml;
 using System.Diagnostics;
@@ -40,7 +39,6 @@ namespace System.Xml
         private readonly DtdProcessing _dtdProcessing; // -1 means do nothing
 
         private XmlNodeType _lastNodeType;
-        private XmlCharType _xmlCharType;
 
         private ReadContentAsBinaryHelper? _readBinaryHelper;
 
@@ -61,11 +59,6 @@ namespace System.Xml
             _dtdProcessing = dtdProcessing;
 
             _lastNodeType = XmlNodeType.None;
-
-            if (checkCharacters)
-            {
-                _xmlCharType = XmlCharType.Instance;
-            }
         }
 
         //
@@ -321,7 +314,7 @@ namespace System.Xml
                             if (str != null)
                             {
                                 int i;
-                                if ((i = _xmlCharType.IsPublicId(str)) >= 0)
+                                if ((i = XmlCharType.IsPublicId(str)) >= 0)
                                 {
                                     Throw(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(str, i));
                                 }
@@ -623,7 +616,7 @@ namespace System.Xml
         private void CheckWhitespace(string value)
         {
             int i;
-            if ((i = _xmlCharType.IsOnlyWhitespaceWithPos(value)) != -1)
+            if ((i = XmlCharType.IsOnlyWhitespaceWithPos(value)) != -1)
             {
                 Throw(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(value, i));
             }
@@ -631,8 +624,7 @@ namespace System.Xml
 
         private void ValidateQName(string name)
         {
-            string prefix, localName;
-            ValidateNames.ParseQNameThrow(name, out prefix, out localName);
+            ValidateNames.ParseQNameThrow(name);
         }
 
         private void ValidateQName(string prefix, string localName)
@@ -670,7 +662,7 @@ namespace System.Xml
     //
     // XmlCharCheckingReaderWithNS
     //
-    internal class XmlCharCheckingReaderWithNS : XmlCharCheckingReader, IXmlNamespaceResolver
+    internal sealed class XmlCharCheckingReaderWithNS : XmlCharCheckingReader, IXmlNamespaceResolver
     {
         internal IXmlNamespaceResolver readerAsNSResolver;
 

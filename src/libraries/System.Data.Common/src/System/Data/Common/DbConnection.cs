@@ -128,6 +128,12 @@ namespace System.Data.Common
             }
         }
 
+        public virtual bool CanCreateBatch => false;
+
+        public DbBatch CreateBatch() => CreateDbBatch();
+
+        protected virtual DbBatch CreateDbBatch() => throw new NotSupportedException();
+
         public DbCommand CreateCommand() => CreateDbCommand();
 
         IDbCommand IDbConnection.CreateCommand() => CreateDbCommand();

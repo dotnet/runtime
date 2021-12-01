@@ -129,13 +129,8 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-#if !NETSTANDARD1_0
                     return this.Root.ItemRef(index);
-#else
-                    return this.Root[index];
-#endif
                 }
-
                 set
                 {
                     this.Root = this.Root.ReplaceAt(index, value);
@@ -153,7 +148,6 @@ namespace System.Collections.Immutable
                 }
             }
 
-#if !NETSTANDARD1_0
             /// <summary>
             /// Gets a read-only reference to the value for a given index into the list.
             /// </summary>
@@ -163,7 +157,6 @@ namespace System.Collections.Immutable
             {
                 return ref this.Root.ItemRef(index);
             }
-#endif
 
             #endregion
 
@@ -395,8 +388,7 @@ namespace System.Collections.Immutable
             /// The first element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
-            [return: MaybeNull]
-            public T Find(Predicate<T> match) => _root.Find(match);
+            public T? Find(Predicate<T> match) => _root.Find(match);
 
             /// <summary>
             /// Retrieves all the elements that match the conditions defined by the specified
@@ -469,8 +461,7 @@ namespace System.Collections.Immutable
             /// The last element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
-            [return: MaybeNull]
-            public T FindLast(Predicate<T> match) => _root.FindLast(match);
+            public T? FindLast(Predicate<T> match) => _root.FindLast(match);
 
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
@@ -1102,7 +1093,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A simple view of the immutable list that the debugger can show to the developer.
     /// </summary>
-    internal class ImmutableListBuilderDebuggerProxy<T>
+    internal sealed class ImmutableListBuilderDebuggerProxy<T>
     {
         /// <summary>
         /// The collection to be enumerated.

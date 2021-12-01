@@ -74,6 +74,8 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
+            _family = AddressFamily.Unknown;
+
             try
             {
                 Connect(hostname, port);
@@ -171,6 +173,11 @@ namespace System.Net.Sockets
                             if ((address.AddressFamily == AddressFamily.InterNetwork && Socket.OSSupportsIPv4) || Socket.OSSupportsIPv6)
                             {
                                 var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                                if (address.IsIPv4MappedToIPv6)
+                                {
+                                    socket.DualMode = true;
+                                }
+
                                 // Use of Interlocked.Exchanged ensures _clientSocket is written before Disposed is read.
                                 Interlocked.Exchange(ref _clientSocket!, socket);
                                 if (Disposed)
@@ -259,13 +266,8 @@ namespace System.Net.Sockets
             _active = true;
         }
 
-        public Task ConnectAsync(IPAddress address, int port)
-        {
-
-            Task result = CompleteConnectAsync(Client.ConnectAsync(address, port));
-
-            return result;
-        }
+        public Task ConnectAsync(IPAddress address, int port) =>
+            CompleteConnectAsync(Client.ConnectAsync(address, port));
 
         public Task ConnectAsync(string host, int port) =>
             CompleteConnectAsync(Client.ConnectAsync(host, port));
@@ -273,7 +275,39 @@ namespace System.Net.Sockets
         public Task ConnectAsync(IPAddress[] addresses, int port) =>
             CompleteConnectAsync(Client.ConnectAsync(addresses, port));
 
+        /// <summary>
+        /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
+        /// </summary>
+        /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public Task ConnectAsync(IPEndPoint remoteEP) =>
+            CompleteConnectAsync(Client.ConnectAsync(remoteEP));
+
         private async Task CompleteConnectAsync(Task task)
+        {
+            await task.ConfigureAwait(false);
+            _active = true;
+        }
+
+        public ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(address, port, cancellationToken));
+
+        public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(host, port, cancellationToken));
+
+        public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(addresses, port, cancellationToken));
+
+        /// <summary>
+        /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
+        /// </summary>
+        /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
+        /// <param name="cancellationToken">A cancellation token used to propagate notification that this operation should be canceled.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public ValueTask ConnectAsync(IPEndPoint remoteEP, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(remoteEP, cancellationToken));
+
+        private async ValueTask CompleteConnectAsync(ValueTask task)
         {
             await task.ConfigureAwait(false);
             _active = true;
@@ -419,12 +453,7 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            if (Disposed)
-            {
-                ThrowObjectDisposedException();
-            }
-
-            void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
+            ObjectDisposedException.ThrowIf(Disposed, this);
         }
     }
 }

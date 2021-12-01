@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal sealed class XPathScanner
+    internal struct XPathScanner
     {
         private readonly string _xpathExpr;
         private int _xpathExprIndex;
@@ -19,17 +19,17 @@ namespace MS.Internal.Xml.XPath
         private string? _name;
         private string? _prefix;
         private string? _stringValue;
-        private double _numberValue = double.NaN;
+        private double _numberValue;
         private bool _canBeFunction;
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
-        public XPathScanner(string xpathExpr)
+        public XPathScanner(string xpathExpr) : this()
         {
             if (xpathExpr == null)
             {
                 throw XPathException.Create(SR.Xp_ExprExpected, string.Empty);
             }
             _xpathExpr = xpathExpr;
+            _numberValue = double.NaN;
             NextChar();
             NextLex();
         }
@@ -41,16 +41,18 @@ namespace MS.Internal.Xml.XPath
         private bool NextChar()
         {
             Debug.Assert(0 <= _xpathExprIndex && _xpathExprIndex <= _xpathExpr.Length);
-            if (_xpathExprIndex < _xpathExpr.Length)
+
+            string expr = _xpathExpr;
+            int index = _xpathExprIndex;
+            if ((uint)index < (uint)expr.Length)
             {
-                _currentChar = _xpathExpr[_xpathExprIndex++];
+                _currentChar = expr[index];
+                _xpathExprIndex = index + 1;
                 return true;
             }
-            else
-            {
-                _currentChar = '\0';
-                return false;
-            }
+
+            _currentChar = '\0';
+            return false;
         }
 
         public LexKind Kind { get { return _kind; } }
@@ -106,15 +108,25 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SkipSpace()
         {
-            while (_xmlCharType.IsWhiteSpace(this.CurrentChar) && NextChar()) ;
+            if (XmlCharType.IsWhiteSpace(CurrentChar))
+            {
+                SkipKnownSpace();
+            }
+        }
+
+        private void SkipKnownSpace()
+        {
+            Debug.Assert(XmlCharType.IsWhiteSpace(CurrentChar));
+            while (NextChar() && XmlCharType.IsWhiteSpace(CurrentChar));
         }
 
         public bool NextLex()
         {
             SkipSpace();
-            switch (this.CurrentChar)
+            switch (CurrentChar)
             {
                 case '\0':
                     _kind = LexKind.Eof;
@@ -132,13 +144,13 @@ namespace MS.Internal.Xml.XPath
                 case '=':
                 case '#':
                 case '$':
-                    _kind = (LexKind)Convert.ToInt32(this.CurrentChar, CultureInfo.InvariantCulture);
+                    _kind = (LexKind)Convert.ToInt32(CurrentChar, CultureInfo.InvariantCulture);
                     NextChar();
                     break;
                 case '<':
                     _kind = LexKind.Lt;
                     NextChar();
-                    if (this.CurrentChar == '=')
+                    if (CurrentChar == '=')
                     {
                         _kind = LexKind.Le;
                         NextChar();
@@ -147,7 +159,7 @@ namespace MS.Internal.Xml.XPath
                 case '>':
                     _kind = LexKind.Gt;
                     NextChar();
-                    if (this.CurrentChar == '=')
+                    if (CurrentChar == '=')
                     {
                         _kind = LexKind.Ge;
                         NextChar();
@@ -156,7 +168,7 @@ namespace MS.Internal.Xml.XPath
                 case '!':
                     _kind = LexKind.Bang;
                     NextChar();
-                    if (this.CurrentChar == '=')
+                    if (CurrentChar == '=')
                     {
                         _kind = LexKind.Ne;
                         NextChar();
@@ -165,12 +177,12 @@ namespace MS.Internal.Xml.XPath
                 case '.':
                     _kind = LexKind.Dot;
                     NextChar();
-                    if (this.CurrentChar == '.')
+                    if (CurrentChar == '.')
                     {
                         _kind = LexKind.DotDot;
                         NextChar();
                     }
-                    else if (XmlCharType.IsDigit(this.CurrentChar))
+                    else if (XmlCharType.IsDigit(CurrentChar))
                     {
                         _kind = LexKind.Number;
                         _numberValue = ScanFraction();
@@ -179,7 +191,7 @@ namespace MS.Internal.Xml.XPath
                 case '/':
                     _kind = LexKind.Slash;
                     NextChar();
-                    if (this.CurrentChar == '/')
+                    if (CurrentChar == '/')
                     {
                         _kind = LexKind.SlashSlash;
                         NextChar();
@@ -191,23 +203,23 @@ namespace MS.Internal.Xml.XPath
                     _stringValue = ScanString();
                     break;
                 default:
-                    if (XmlCharType.IsDigit(this.CurrentChar))
+                    if (XmlCharType.IsDigit(CurrentChar))
                     {
                         _kind = LexKind.Number;
                         _numberValue = ScanNumber();
                     }
-                    else if (_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar))
+                    else if (XmlCharType.IsStartNCNameSingleChar(CurrentChar))
                     {
                         _kind = LexKind.Name;
                         _name = ScanName();
                         _prefix = string.Empty;
                         // "foo:bar" is one lexeme not three because it doesn't allow spaces in between
                         // We should distinct it from "foo::" and need process "foo ::" as well
-                        if (this.CurrentChar == ':')
+                        if (CurrentChar == ':')
                         {
                             NextChar();
                             // can be "foo:bar" or "foo::"
-                            if (this.CurrentChar == ':')
+                            if (CurrentChar == ':')
                             {   // "foo::"
                                 NextChar();
                                 _kind = LexKind.Axe;
@@ -215,12 +227,12 @@ namespace MS.Internal.Xml.XPath
                             else
                             {                          // "foo:*", "foo:bar" or "foo: "
                                 _prefix = _name;
-                                if (this.CurrentChar == '*')
+                                if (CurrentChar == '*')
                                 {
                                     NextChar();
                                     _name = "*";
                                 }
-                                else if (_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar))
+                                else if (XmlCharType.IsStartNCNameSingleChar(CurrentChar))
                                 {
                                     _name = ScanName();
                                 }
@@ -233,11 +245,11 @@ namespace MS.Internal.Xml.XPath
                         else
                         {
                             SkipSpace();
-                            if (this.CurrentChar == ':')
+                            if (CurrentChar == ':')
                             {
                                 NextChar();
                                 // it can be "foo ::" or just "foo :"
-                                if (this.CurrentChar == ':')
+                                if (CurrentChar == ':')
                                 {
                                     NextChar();
                                     _kind = LexKind.Axe;
@@ -249,7 +261,7 @@ namespace MS.Internal.Xml.XPath
                             }
                         }
                         SkipSpace();
-                        _canBeFunction = (this.CurrentChar == '(');
+                        _canBeFunction = (CurrentChar == '(');
                     }
                     else
                     {
@@ -262,17 +274,17 @@ namespace MS.Internal.Xml.XPath
 
         private double ScanNumber()
         {
-            Debug.Assert(this.CurrentChar == '.' || XmlCharType.IsDigit(this.CurrentChar));
+            Debug.Assert(CurrentChar == '.' || XmlCharType.IsDigit(CurrentChar));
             int start = _xpathExprIndex - 1;
             int len = 0;
-            while (XmlCharType.IsDigit(this.CurrentChar))
+            while (XmlCharType.IsDigit(CurrentChar))
             {
                 NextChar(); len++;
             }
-            if (this.CurrentChar == '.')
+            if (CurrentChar == '.')
             {
                 NextChar(); len++;
-                while (XmlCharType.IsDigit(this.CurrentChar))
+                while (XmlCharType.IsDigit(CurrentChar))
                 {
                     NextChar(); len++;
                 }
@@ -282,11 +294,11 @@ namespace MS.Internal.Xml.XPath
 
         private double ScanFraction()
         {
-            Debug.Assert(XmlCharType.IsDigit(this.CurrentChar));
+            Debug.Assert(XmlCharType.IsDigit(CurrentChar));
             int start = _xpathExprIndex - 2;
             Debug.Assert(0 <= start && _xpathExpr[start] == '.');
             int len = 1; // '.'
-            while (XmlCharType.IsDigit(this.CurrentChar))
+            while (XmlCharType.IsDigit(CurrentChar))
             {
                 NextChar(); len++;
             }
@@ -295,11 +307,11 @@ namespace MS.Internal.Xml.XPath
 
         private string ScanString()
         {
-            char endChar = this.CurrentChar;
+            char endChar = CurrentChar;
             NextChar();
             int start = _xpathExprIndex - 1;
             int len = 0;
-            while (this.CurrentChar != endChar)
+            while (CurrentChar != endChar)
             {
                 if (!NextChar())
                 {
@@ -307,30 +319,33 @@ namespace MS.Internal.Xml.XPath
                 }
                 len++;
             }
-            Debug.Assert(this.CurrentChar == endChar);
+            Debug.Assert(CurrentChar == endChar);
             NextChar();
             return _xpathExpr.Substring(start, len);
         }
 
         private string ScanName()
         {
-            Debug.Assert(_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar));
-            int start = _xpathExprIndex - 1;
-            int len = 0;
+            ReadOnlySpan<char> span = _xpathExpr.AsSpan(_xpathExprIndex - 1);
 
-            while (true)
+            Debug.Assert(!span.IsEmpty);
+            Debug.Assert(span[0] == CurrentChar);
+            Debug.Assert(XmlCharType.IsStartNCNameSingleChar(span[0]));
+            Debug.Assert(XmlCharType.IsNCNameSingleChar(span[0]));
+
+            int i;
+            for (i = 1; i < span.Length && XmlCharType.IsNCNameSingleChar(span[i]); i++);
+
+            if ((uint)i < (uint)span.Length)
             {
-                if (_xmlCharType.IsNCNameSingleChar(this.CurrentChar))
-                {
-                    NextChar();
-                    len++;
-                }
-                else
-                {
-                    break;
-                }
+                _currentChar = span[i];
+                _xpathExprIndex += i;
+                return span.Slice(0, i).ToString();
             }
-            return _xpathExpr.Substring(start, len);
+
+            _currentChar = '\0';
+            _xpathExprIndex += i - 1;
+            return span.ToString();
         }
 
         public enum LexKind

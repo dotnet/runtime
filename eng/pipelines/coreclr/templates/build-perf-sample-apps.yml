@@ -1,0 +1,90 @@
+parameters:
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  buildConfig: ''
+  runtimeFlavor: ''
+  helixQueues: ''
+  targetRid: ''
+  nameSuffix: ''
+  platform: ''
+  shouldContinueOnError: ''
+  rootFolder: ''
+  includeRootFolder: ''
+  displayName: ''
+  artifactName: ''
+  archiveExtension: ''
+  archiveType: ''
+  tarCompression: ''
+
+steps:
+# Build Android sample app
+  - ${{ if eq(parameters.osGroup, 'Android') }}:
+    - script: make run MONO_ARCH=arm64 DEPLOY_AND_RUN=false
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
+      displayName: Build HelloAndroid sample app
+  - ${{ if eq(parameters.osGroup, 'iOS') }}:
+    - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false
+      env:
+        DevTeamProvisioning: '-'
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+      displayName: Build HelloiOS AOT sample app LLVM=False
+    - task: PublishBuildArtifacts@1
+      condition: succeededOrFailed()
+      displayName: 'Publish binlog'
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
+        artifactName:  ${{ parameters.artifactName }}
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
+          includeRootFolder: true
+          displayName: iOS Sample App NoLLVM
+          artifactName: iOSSampleAppNoLLVM
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+    - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+      displayName: Clean bindir
+    - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=True DEPLOY_AND_RUN=false
+      env:
+        DevTeamProvisioning: '-'
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+      displayName: Build HelloiOS AOT sample app LLVM=True
+    - task: PublishBuildArtifacts@1
+      condition: succeededOrFailed()
+      displayName: 'Publish binlog'
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
+        artifactName:  ${{ parameters.artifactName }}
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
+          includeRootFolder: true
+          displayName: iOS Sample App LLVM
+          artifactName: iOSSampleAppLLVM
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      archType: ${{ parameters.archType }}
+      buildConfig: ${{ parameters.buildConfig }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      helixQueues: ${{ parameters.helixQueues }}
+      targetRid: ${{ parameters.targetRid }}
+      nameSuffix: ${{ parameters.nameSuffix }}
+      platform: ${{ parameters.platform }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      rootFolder:  ${{ parameters.rootFolder }}
+      includeRootFolder:  ${{ parameters.includeRootFolder }}
+      displayName:  ${{ parameters.displayName }}
+      artifactName:  ${{ parameters.artifactName }}
+      archiveExtension:  ${{ parameters.archiveExtension }}
+      archiveType:  ${{ parameters.archiveType }}
+      tarCompression:  ${{ parameters.tarCompression }}
+  

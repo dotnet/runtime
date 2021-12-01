@@ -367,7 +367,7 @@ namespace System.ComponentModel.Composition.Hosting
             return true;
         }
 
-        private class MetadataList
+        private sealed class MetadataList
         {
             private Type? _arrayType;
             private bool _containsNulls;

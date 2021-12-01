@@ -43,10 +43,11 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51393", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void File_Move_Multiple_From_Watched_To_Unwatched(int filesCount)
         {
             FileMove_Multiple_FromWatchedToUnwatched(filesCount, skipOldEvents: false);
@@ -118,6 +119,29 @@ namespace System.IO.Tests
         public void Unix_File_Move_With_Set_NotifyFilter()
         {
             FileMove_WithNotifyFilter(WatcherChangeTypes.Renamed);
+        }
+
+        [Fact]
+        public void File_Move_SynchronizingObject()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
+            using (var testFile = new TempFile(Path.Combine(dir.Path, "file")))
+            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            {
+                TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
+                watcher.SynchronizingObject = invoker;
+
+                string sourcePath = testFile.Path;
+                string targetPath = testFile.Path + "_Renamed";
+
+                // Move the testFile to a different name in the same directory
+                Action action = () => File.Move(sourcePath, targetPath);
+                Action cleanup = () => File.Move(targetPath, sourcePath);
+
+                ExpectEvent(watcher, WatcherChangeTypes.Renamed, action, cleanup, targetPath);
+                Assert.True(invoker.BeginInvoke_Called);
+            }
         }
 
         #region Test Helpers

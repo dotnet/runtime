@@ -5,7 +5,7 @@ using System.Configuration;
 
 namespace System.Diagnostics
 {
-    internal class SystemDiagnosticsSection : ConfigurationSection
+    internal sealed class SystemDiagnosticsSection : ConfigurationSection
     {
         private static readonly ConfigurationProperty s_propPerfCounters = new ConfigurationProperty("performanceCounters", typeof(PerfCounterSection), new PerfCounterSection(), ConfigurationPropertyOptions.None);
         private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection { s_propPerfCounters };

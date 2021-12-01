@@ -13,7 +13,7 @@ namespace System.Threading.Tasks
     // the scheduler, and if it starts running we queue another one, etc., up to some (potentially) user-defined
     // limit.
     //
-    internal class TaskReplicator
+    internal sealed class TaskReplicator
     {
         public delegate void ReplicatableUserAction<TState>(ref TState replicaState, int timeout, out bool yieldedBeforeCompletion);
 
@@ -131,17 +131,29 @@ namespace System.Threading.Tasks
 
         public static void Run<TState>(ReplicatableUserAction<TState> action, ParallelOptions options, bool stopOnFirstFailure)
         {
-            int maxConcurrencyLevel = (options.EffectiveMaxConcurrencyLevel > 0) ? options.EffectiveMaxConcurrencyLevel : int.MaxValue;
+            // Browser hosts do not support synchronous Wait so we want to run the
+            //  replicated task directly instead of going through Task infrastructure
+            if (OperatingSystem.IsBrowser()) {
+                // Since we are running on a single thread, we don't want the action to time out
+                var timeout = int.MaxValue - 1;
+                var state = default(TState)!;
 
-            TaskReplicator replicator = new TaskReplicator(options, stopOnFirstFailure);
-            new Replica<TState>(replicator, maxConcurrencyLevel, CooperativeMultitaskingTaskTimeout_RootTask, action).Start();
+                action(ref state, timeout, out bool yieldedBeforeCompletion);
+                if (yieldedBeforeCompletion)
+                    throw new Exception("Replicated tasks cannot yield in this single-threaded browser environment");
+            } else {
+                int maxConcurrencyLevel = (options.EffectiveMaxConcurrencyLevel > 0) ? options.EffectiveMaxConcurrencyLevel : int.MaxValue;
 
-            Replica? nextReplica;
-            while (replicator._pendingReplicas.TryDequeue(out nextReplica))
-                nextReplica.Wait();
+                TaskReplicator replicator = new TaskReplicator(options, stopOnFirstFailure);
+                new Replica<TState>(replicator, maxConcurrencyLevel, CooperativeMultitaskingTaskTimeout_RootTask, action).Start();
 
-            if (replicator._exceptions != null)
-                throw new AggregateException(replicator._exceptions);
+                Replica? nextReplica;
+                while (replicator._pendingReplicas.TryDequeue(out nextReplica))
+                    nextReplica.Wait();
+
+                if (replicator._exceptions != null)
+                    throw new AggregateException(replicator._exceptions);
+            }
         }
 
 

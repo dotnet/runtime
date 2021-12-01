@@ -14,12 +14,12 @@ using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
 {
-    internal class XplatEventLogger : EventListener
+    internal sealed class XplatEventLogger : EventListener
     {
+        public XplatEventLogger() {}
+
         private static readonly Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
         private static readonly Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
-
-        public XplatEventLogger() {}
 
         private static bool initializedPersistentListener;
 
@@ -131,9 +131,9 @@ namespace System.Diagnostics.Tracing
                     }
                     default:
                     {
-                        if (payload[i] != null)
+                        if (payload[i] is object o)
                         {
-                            sb.Append(payload[i]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                            sb.Append(o.ToString());
                         }
                         break;
                     }
@@ -160,11 +160,6 @@ namespace System.Diagnostics.Tracing
 
         protected internal override void OnEventSourceCreated(EventSource eventSource)
         {
-            // Don't enable forwarding of NativeRuntimeEventSource events.`
-            if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
-            {
-                return;
-            }
 
             string? eventSourceFilter = eventSourceNameFilter.Value;
             if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
@@ -175,6 +170,16 @@ namespace System.Diagnostics.Tracing
 
         protected internal override void OnEventWritten(EventWrittenEventArgs eventData)
         {
+            // Don't enable forwarding of NativeRuntimeEventSource events.
+            // NativeRuntimeEventSource events are written to the native side via QCalls (see NativeRuntimeEventSource.cs/nativeeventsource.cpp)
+            // and is forwarded back to this EventListener via NativeRuntimeEventSource.ProcessEvent. We need to filter these events here
+            // because then these events can get logged back into the native runtime as EventSourceEvent events which we use to log
+            // managed events from other EventSources to LTTng.
+            if (eventData.EventSource.GetType() == typeof(NativeRuntimeEventSource))
+            {
+                return;
+            }
+
             string? eventFilter = eventSourceEventFilter.Value;
             if (string.IsNullOrEmpty(eventFilter) || (eventData.EventName!.IndexOf(eventFilter, StringComparison.OrdinalIgnoreCase) >= 0))
             {
@@ -182,12 +187,13 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private void LogOnEventWritten(EventWrittenEventArgs eventData)
+        private static void LogOnEventWritten(EventWrittenEventArgs eventData)
         {
             string payload = "";
             if (eventData.Payload != null)
             {
-                try{
+                try
+                {
                     payload = Serialize(eventData.PayloadNames, eventData.Payload, eventData.Message);
                 }
                 catch (Exception ex)

@@ -7,17 +7,17 @@ namespace System.Runtime.Serialization
 {
     public class ExportOptions
     {
-        private Collection<Type> _knownTypes;
+        private Collection<Type>? _knownTypes;
 #if SUPPORT_SURROGATE
-        private IDataContractSurrogate _dataContractSurrogate;
+        private IDataContractSurrogate? _dataContractSurrogate;
 
-        public IDataContractSurrogate DataContractSurrogate
+        public IDataContractSurrogate? DataContractSurrogate
         {
             get { return _dataContractSurrogate; }
             set { _dataContractSurrogate = value; }
         }
 
-        internal IDataContractSurrogate GetSurrogate()
+        internal IDataContractSurrogate? GetSurrogate()
         {
             return _dataContractSurrogate;
         }

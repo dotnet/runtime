@@ -13,7 +13,7 @@ namespace System.Composition.Convention
     /// <typeparam name="T">The type of the part, or a type to which the part is assignable.</typeparam>
     public class PartConventionBuilder<T> : PartConventionBuilder
     {
-        private class MethodExpressionAdapter
+        private sealed class MethodExpressionAdapter
         {
             private readonly MethodInfo _methodInfo;
 
@@ -48,7 +48,7 @@ namespace System.Composition.Convention
                 throw new ArgumentException(SR.Format(SR.Argument_ExpressionMustBeVoidMethodWithNoArguments, nameof(methodSelector)), nameof(methodSelector));
             }
 
-            protected static Expression<Func<T, object>> Reduce(Expression<Func<T, object>> expr)
+            private static Expression<Func<T, object>> Reduce(Expression<Func<T, object>> expr)
             {
                 while (expr.CanReduce)
                 {
@@ -57,7 +57,7 @@ namespace System.Composition.Convention
                 return expr;
             }
 
-            protected static Expression<Action<T>> Reduce(Expression<Action<T>> expr)
+            private static Expression<Action<T>> Reduce(Expression<Action<T>> expr)
             {
                 while (expr.CanReduce)
                 {
@@ -67,7 +67,7 @@ namespace System.Composition.Convention
             }
         }
 
-        private class PropertyExpressionAdapter
+        private sealed class PropertyExpressionAdapter
         {
             private readonly PropertyInfo _propertyInfo;
             private readonly Action<ImportConventionBuilder> _configureImport;
@@ -119,7 +119,7 @@ namespace System.Composition.Convention
                 throw new ArgumentException(SR.Format(SR.Argument_ExpressionMustBePropertyMember, nameof(propertySelector)), nameof(propertySelector));
             }
 
-            protected static Expression<Func<T, object>> Reduce(Expression<Func<T, object>> expr)
+            private static Expression<Func<T, object>> Reduce(Expression<Func<T, object>> expr)
             {
                 while (expr.CanReduce)
                 {
@@ -129,7 +129,7 @@ namespace System.Composition.Convention
             }
         }
 
-        private class ConstructorExpressionAdapter
+        private sealed class ConstructorExpressionAdapter
         {
             private ConstructorInfo _constructorInfo;
             private Dictionary<ParameterInfo, Action<ImportConventionBuilder>> _importBuilders;

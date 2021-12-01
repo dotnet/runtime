@@ -5,7 +5,7 @@ using System.Reflection.Context.Projection;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomEventInfo : ProjectingEventInfo
+    internal sealed class CustomEventInfo : ProjectingEventInfo
     {
         public CustomEventInfo(EventInfo template, CustomReflectionContext context)
             : base(template, context.Projector)

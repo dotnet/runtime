@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetSockets_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemNetSockets_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <PropertyGroup>
     <!-- SYSTEM_NET_SOCKETS_DLL is required to allow source-level code sharing for types defined within the
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_SOCKETS_DLL</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <!-- All configurations -->
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveMessageFromResult.cs" />
@@ -43,16 +43,7 @@
     <Compile Include="System\Net\Sockets\TransmitFileOptions.cs" />
     <Compile Include="System\Net\Sockets\UDPClient.cs" />
     <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />
-    <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\DisconnectOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\MultipleConnectAsync.cs" />
-    <Compile Include="System\Net\Sockets\OverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.cs" />
-    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
-             Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
@@ -62,12 +53,6 @@
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandleMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugSafeHandleMinusOneIsInvalid.cs" />
     <!-- System.Net common -->
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
-             Link="Common\System\Net\ContextAwareResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
-             Link="Common\System\Net\LazyAsyncResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\ByteOrder.cs"
-             Link="Common\System\Net\ByteOrder.cs" />
     <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs"
              Link="Common\System\Net\IPEndPointStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
@@ -80,6 +65,10 @@
              Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
              Link="Common\System\Net\TcpValidationHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
+             Link="Common\System\Net\SocketProtocolSupportPal.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
+             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs"
              Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
@@ -96,21 +85,13 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- Windows: CoreCLR -->
-    <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Windows.cs" />
-    <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Windows.cs" />
-    <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.Windows.cs" />
-    <Compile Include="System\Net\Sockets\OverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\DynamicWinsockMethods.cs" />
-    <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\SafeSocketHandle.Windows.cs" />
     <Compile Include="System\Net\Sockets\Socket.Windows.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Windows.cs" />
     <Compile Include="System\Net\Sockets\IOControlKeepAlive.Windows.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Windows.cs" />
-    <Compile Include="System\Net\Sockets\TransmitFileAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Windows.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
-             Link="Common\System\Net\ContextAwareResult.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
              Link="Common\System\Net\SocketAddressPal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Windows.cs"
@@ -174,6 +155,8 @@
              Link="Common\Interop\Windows\WinSock\Interop.WSASocketW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSASocketW.SafeCloseSocket.cs"
              Link="Common\Interop\Windows\WinSock\Interop.WSASocketW.SafeCloseSocket.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAStartup.cs"
+             Link="Common\Interop\Windows\WinSock\Interop.WSAStartup.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs"
              Link="Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\SafeNativeOverlapped.cs"
@@ -192,12 +175,6 @@
              Link="Common\System\Net\CompletionPortHelper.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\DisconnectOverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\OverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\SafeSocketHandle.Unix.cs" />
     <Compile Include="System\Net\Sockets\Socket.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncContext.Unix.cs" />
@@ -205,8 +182,6 @@
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Unix.cs" />
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
-             Link="Common\System\Net\ContextAwareResult.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
@@ -215,8 +190,6 @@
              Link="Common\System\Net\SocketProtocolSupportPal.Unix" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
              Link="Common\System\Net\Sockets\SocketErrorPal.Unix" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -265,8 +238,8 @@
              Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Listen.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Listen.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MemSet.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.MemSet.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IOVector.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.IOVector.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MessageHeader.cs"
              Link="Common\Interop\Unix\System.Native\Interop.MessageHeader.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MulticastOption.cs"
@@ -277,6 +250,8 @@
              Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs"
              Link="Common\Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
+             Link="Common\Interop\Unix\Interop.Read.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Receive.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Receive.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReceiveMessage.cs"
@@ -301,10 +276,10 @@
              Link="Common\Interop\Unix\System.Native\Interop.Write.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
@@ -312,15 +287,14 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Security.Claims" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
 </Project>

@@ -8,6 +8,9 @@ using System;
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
+
 namespace System.Diagnostics.Tracing
 #endif
 {
@@ -19,6 +22,9 @@ namespace System.Diagnostics.Tracing
     /// Unlike IncrementingEventCounter, this takes in a polling callback that it can call to update
     /// its own metric periodically.
     /// </summary>
+#if NETCOREAPP
+    [UnsupportedOSPlatform("browser")]
+#endif
     public partial class IncrementingPollingCounter : DiagnosticCounter
     {
         /// <summary>
@@ -64,6 +70,11 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The DynamicDependency will preserve the properties of IncrementingCounterPayload")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(IncrementingCounterPayload))]
+#endif
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
             UpdateMetric();
@@ -88,7 +99,7 @@ namespace System.Diagnostics.Tracing
     /// This is the payload that is sent in the with EventSource.Write
     /// </summary>
     [EventData]
-    internal class IncrementingPollingCounterPayloadType
+    internal sealed class IncrementingPollingCounterPayloadType
     {
         public IncrementingPollingCounterPayloadType(IncrementingCounterPayload payload) { Payload = payload; }
         public IncrementingCounterPayload Payload { get; set; }

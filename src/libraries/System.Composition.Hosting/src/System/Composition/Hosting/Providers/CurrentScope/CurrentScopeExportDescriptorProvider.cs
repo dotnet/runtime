@@ -6,7 +6,7 @@ using System.Composition.Hosting.Core;
 
 namespace System.Composition.Hosting.Providers.CurrentScope
 {
-    internal class CurrentScopeExportDescriptorProvider : ExportDescriptorProvider
+    internal sealed class CurrentScopeExportDescriptorProvider : ExportDescriptorProvider
     {
         private static readonly CompositionContract s_currentScopeContract = new CompositionContract(typeof(CompositionContext));
 
@@ -17,7 +17,7 @@ namespace System.Composition.Hosting.Providers.CurrentScope
 
             return new[] { new ExportDescriptorPromise(
                 contract,
-                typeof(CompositionContext).Name,
+                nameof(CompositionContext),
                 true,
                 NoDependencies,
                 _ => ExportDescriptor.Create((c, o) => c, NoMetadata)) };

@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace System.Composition.Debugging
 {
-    internal class DiscoveredPartDebuggerProxy
+    internal sealed class DiscoveredPartDebuggerProxy
     {
         private readonly DiscoveredPart _discoveredPart;
 

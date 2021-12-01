@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="Unloaded.csproj" />
+    <ProjectReference Include="Accessor.csproj" />
+    <Compile Include="CollectibleStatics.cs" />
+  </ItemGroup>
+</Project>

@@ -233,7 +233,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 				t = mono_get_int_type ();
 			t = mono_type_get_underlying_type (t);
 
-			if (!t->byref && t->type == MONO_TYPE_R4) {
+			if (!m_type_is_byref (t) && t->type == MONO_TYPE_R4) {
 				MonoInst *iargs [1];
 				MonoInst *conv;
 
@@ -450,11 +450,7 @@ MonoInst*
 mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig, gboolean tailcall,
 							MonoInst **args, MonoInst *this_ins, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
-#ifndef DISABLE_REMOTING
-	gboolean might_be_remote = FALSE;
-#endif
 	gboolean virtual_ = this_ins != NULL;
-	int context_used;
 	MonoCallInst *call;
 	int rgctx_reg = 0;
 	gboolean need_unbox_trampoline;
@@ -476,23 +472,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		sig = ctor_sig;
 	}
 
-	context_used = mini_method_check_context_used (cfg, method);
-
-#ifndef DISABLE_REMOTING
-	might_be_remote = this_ins && sig->hasthis &&
-		(mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) &&
-		!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) && (!MONO_CHECK_THIS (this_ins) || context_used);
-
-	if (might_be_remote && context_used) {
-		MonoInst *addr;
-
-		g_assert (cfg->gshared);
-
-		addr = mini_emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK);
-
-		return mini_emit_calli (cfg, sig, args, addr, NULL, NULL);
-	}
-#endif
+	mini_method_check_context_used (cfg, method);
 
 	if (cfg->llvm_only && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 		return mini_emit_llvmonly_virtual_call (cfg, method, sig, 0, args);
@@ -510,15 +490,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	need_unbox_trampoline = method->klass == mono_defaults.object_class || mono_class_is_interface (method->klass);
 
 	call = mini_emit_call_args (cfg, sig, args, FALSE, virtual_, tailcall, rgctx_arg ? TRUE : FALSE, need_unbox_trampoline, method);
-
-#ifndef DISABLE_REMOTING
-	if (might_be_remote) {
-		ERROR_DECL (error);
-		call->method = mono_marshal_get_remoting_invoke_with_check (method, error);
-		mono_error_assert_ok (error);
-	} else
-#endif
-		call->method = method;
+	call->method = method;
 	call->inst.flags |= MONO_INST_HAS_METHOD;
 	call->inst.inst_left = this_ins;
 
@@ -560,25 +532,11 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		}
 
 		if ((!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-			 (MONO_METHOD_IS_FINAL (method) &&
-			  method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) &&
-			!(mono_class_is_marshalbyref (method->klass) && context_used)) {
+			 (MONO_METHOD_IS_FINAL (method)))) {
 			/* 
 			 * the method is not virtual, we just need to ensure this is not null
 			 * and then we can call the method directly.
 			 */
-#ifndef DISABLE_REMOTING
-			if (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) {
-				ERROR_DECL (error);
-				/* 
-				 * The check above ensures method is not gshared, this is needed since
-				 * gshared methods can't have wrappers.
-				 */
-				method = call->method = mono_marshal_get_remoting_invoke_with_check (method, error);
-				mono_error_assert_ok (error);
-			}
-#endif
-
 			virtual_ = FALSE;
 		} else if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && MONO_METHOD_IS_FINAL (method)) {
 			/*
@@ -711,9 +669,16 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	int offset;
 	gboolean special_array_interface = m_class_is_array_special_interface (cmethod->klass);
 
-	if (cfg->interp && can_enter_interp (cfg, cmethod, TRUE))
+	if (cfg->interp && can_enter_interp (cfg, cmethod, TRUE)) {
 		/* Need wrappers for this signature to be able to enter interpreter */
 		cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, fsig);
+
+		if (m_class_is_delegate (cmethod->klass) && !strcmp (cmethod->name, "Invoke")) {
+			/* To support dynamically generated code, add a signature for the actual method called by the delegate as well. */
+			MonoMethodSignature *nothis_sig = mono_metadata_signature_dup_add_this (m_class_get_image (cmethod->klass), fsig, mono_get_object_class ());
+			cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, nothis_sig);
+		}
+	}
 
 	/*
 	 * In llvm-only mode, vtables contain function descriptors instead of
@@ -737,7 +702,22 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		helper_sig_llvmonly_imt_trampoline = tmp;
 	}
 
-	if (!fsig->generic_param_count && !is_iface && !is_gsharedvt) {
+	if (!cfg->gsharedvt && (m_class_get_parent (cmethod->klass) == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke")) {
+		/* Delegate invokes */
+		MONO_EMIT_NULL_CHECK (cfg, this_reg, FALSE);
+
+		/* Make a call to delegate->invoke_impl */
+		int invoke_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, invoke_reg, this_reg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl));
+
+		int addr_reg = alloc_preg (cfg);
+		int arg_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, invoke_reg, 0);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, invoke_reg, TARGET_SIZEOF_VOID_P);
+		return mini_emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+	}
+
+	if (!fsig->generic_param_count && !is_iface) {
 		/*
 		 * The simplest case, a normal virtual call.
 		 */
@@ -771,14 +751,22 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 
 		/* Fastpath */
 		MONO_START_BB (cfg, non_null_bb);
-		/* Load the address + arg from the vtable slot */
-		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, slot_reg, TARGET_SIZEOF_VOID_P);
-
-		return mini_emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+		if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
+			MonoInst *wrapper_ins = mini_emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT);
+			int arg_reg = alloc_preg (cfg);
+			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, arg_reg, slot_reg);
+			int addr_reg = alloc_preg (cfg);
+			EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, wrapper_ins->dreg, 0);
+			return mini_emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+		} else {
+			/* Load the address + arg from the vtable slot */
+			EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, slot_reg, TARGET_SIZEOF_VOID_P);
+			return mini_emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+		}
 	}
 
-	if (!fsig->generic_param_count && is_iface && !variant_iface && !is_gsharedvt && !special_array_interface) {
+	if (!fsig->generic_param_count && is_iface && !variant_iface && !special_array_interface) {
 		/*
 		 * A simple interface call
 		 *
@@ -814,10 +802,17 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 												cmethod, MONO_RGCTX_INFO_METHOD);
 		ftndesc_ins = mini_emit_calli (cfg, helper_sig_llvmonly_imt_trampoline, icall_args, thunk_addr_ins, NULL, NULL);
 
-		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
+		if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
+			MonoInst *wrapper_ins = mini_emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT);
+			int addr_reg = alloc_preg (cfg);
+			EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, wrapper_ins->dreg, 0);
+			return mini_emit_extra_arg_calli (cfg, fsig, sp, ftndesc_ins->dreg, call_target);
+		} else {
+			return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
+		}
 	}
 
-	if ((fsig->generic_param_count || variant_iface || special_array_interface) && !is_gsharedvt) {
+	if (fsig->generic_param_count || variant_iface || special_array_interface) {
 		/*
 		 * This is similar to the interface case, the vtable slot points to an imt thunk which is
 		 * dynamically extended as more instantiations are discovered.
@@ -881,7 +876,15 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 
 		/* Common case */
 		MONO_START_BB (cfg, end_bb);
-		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
+
+		if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig)) {
+			MonoInst *wrapper_ins = mini_emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT);
+			int addr_reg = alloc_preg (cfg);
+			EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, wrapper_ins->dreg, 0);
+			return mini_emit_extra_arg_calli (cfg, fsig, sp, ftndesc_ins->dreg, call_target);
+		} else {
+			return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
+		}
 	}
 
 	/*
@@ -922,7 +925,7 @@ sig_to_rgctx_sig (MonoMethodSignature *sig)
 	res->param_count = sig->param_count + 1;
 	for (i = 0; i < sig->param_count; ++i)
 		res->params [i] = sig->params [i];
-	res->params [sig->param_count] = m_class_get_this_arg (mono_defaults.int_class);
+	res->params [sig->param_count] = mono_class_get_byref_type (mono_defaults.int_class);
 	return res;
 }
 

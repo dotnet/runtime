@@ -96,13 +96,11 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BroadcastBlock<T>)state!).Complete(), this);
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
@@ -191,7 +189,7 @@ namespace System.Threading.Tasks.Dataflow
                         Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                         bool consumed;
-                        messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
+                        messageValue = source.ConsumeMessage(messageHeader, this, out consumed)!;
                         if (!consumed) return DataflowMessageStatus.NotAvailable;
                     }
 
@@ -257,7 +255,6 @@ namespace System.Threading.Tasks.Dataflow
                     new Task(state => ((BroadcastBlock<T>)state!).ConsumeMessagesLoopCore(), this,
                         Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if FEATURE_TRACING
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -265,7 +262,6 @@ namespace System.Threading.Tasks.Dataflow
                         this, _boundingState.TaskForInputProcessing, DataflowEtwProvider.TaskLaunchedReason.ProcessingInputMessages,
                         _boundingState.PostponedMessages.Count);
                 }
-#endif
 
                 // Start the task handling scheduling exceptions
                 Exception? exception = Common.StartTaskSafe(_boundingState.TaskForInputProcessing, _source.DataflowBlockOptions.TaskScheduler);
@@ -352,7 +348,7 @@ namespace System.Threading.Tasks.Dataflow
                 bool consumed = false;
                 try
                 {
-                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
+                    T? consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
                     if (consumed)
                     {
                         _source.AddMessage(consumedValue!);
@@ -417,8 +413,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
-        [return: MaybeNull]
-        T ISourceBlock<T>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<T> target, out bool messageConsumed)
+        T? ISourceBlock<T>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<T> target, out bool messageConsumed)
         {
             return _source.ConsumeMessage(messageHeader, target, out messageConsumed);
         }
@@ -444,16 +439,8 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent
-        {
-            get
-            {
-                return string.Format("{0}, HasValue={1}, Value={2}",
-                    Common.GetNameForDebugger(this, _source.DataflowBlockOptions),
-                    HasValueForDebugger,
-                    ValueForDebugger);
-            }
-        }
+        private object DebuggerDisplayContent => $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, HasValue={HasValueForDebugger}, Value={ValueForDebugger}";
+
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
 
@@ -531,8 +518,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>An indicator whether _currentMessage has a value.</summary>
             private bool _currentMessageIsValid;
             /// <summary>The message currently being broadcast.</summary>
-            [AllowNull, MaybeNull]
-            private TOutput _currentMessage = default;
+            private TOutput? _currentMessage;
             /// <summary>The target that the next message is reserved for, or null if nothing is reserved.</summary>
             private ITargetBlock<TOutput>? _nextMessageReservedFor;
             /// <summary>Whether this block should again attempt to offer messages to targets.</summary>
@@ -579,7 +565,7 @@ namespace System.Threading.Tasks.Dataflow
                 // synchronizing with other activities on the block.
                 // We don't want to execute the user-provided cloning delegate
                 // while holding the lock.
-                TOutput message;
+                TOutput? message;
                 bool isValid;
                 lock (OutgoingLock)
                 {
@@ -609,7 +595,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Try to receive the one item this block may have.
                 // If we can, give back an array of one item. Otherwise, give back null.
-                TOutput item;
+                TOutput? item;
                 if (TryReceive(null, out item))
                 {
                     items = new TOutput[] { item };
@@ -685,7 +671,7 @@ namespace System.Threading.Tasks.Dataflow
                 Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
                 // Get the current message if there is one
-                TOutput currentMessage;
+                TOutput? currentMessage;
                 bool isValid;
                 lock (ValueLock)
                 {
@@ -727,7 +713,7 @@ namespace System.Threading.Tasks.Dataflow
                 Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
                 DataflowMessageHeader header = default(DataflowMessageHeader);
-                TOutput message = default(TOutput);
+                TOutput? message = default(TOutput);
                 int numDequeuedMessages = 0;
                 lock (ValueLock)
                 {
@@ -846,14 +832,12 @@ namespace System.Threading.Tasks.Dataflow
                     _taskForOutputProcessing = new Task(thisSourceCore => ((BroadcastingSourceCore<TOutput>)thisSourceCore!).OfferMessagesLoopCore(), this,
                                                         Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if FEATURE_TRACING
                     DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
                         etwLog.TaskLaunchedForMessageHandling(
                             _owningSource, _taskForOutputProcessing, DataflowEtwProvider.TaskLaunchedReason.OfferingOutputMessages, _messages.Count);
                     }
-#endif
 
                     // Start the task handling scheduling exceptions
                     Exception? exception = Common.StartTaskSafe(_taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
@@ -1009,13 +993,11 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Now that the completion task is completed, we may propagate completion to the linked targets
                 _targetRegistry.PropagateCompletion(linkedTargets);
-#if FEATURE_TRACING
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.DataflowBlockCompleted(_owningSource);
                 }
-#endif
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
@@ -1049,14 +1031,13 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
-            [return: MaybeNull]
-            internal TOutput ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out bool messageConsumed)
+            internal TOutput? ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out bool messageConsumed)
             {
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (target == null) throw new ArgumentNullException(nameof(target));
 
-                TOutput valueToClone;
+                TOutput? valueToClone;
                 lock (OutgoingLock) // We may currently be calling out under this lock to the target; requires it to be reentrant
                 {
                     lock (ValueLock)
@@ -1128,7 +1109,7 @@ namespace System.Threading.Tasks.Dataflow
                     // If someone else holds the reservation, bail.
                     if (_nextMessageReservedFor != target) throw new InvalidOperationException(SR.InvalidOperation_MessageNotReservedByTarget);
 
-                    TOutput messageToReoffer;
+                    TOutput? messageToReoffer;
                     lock (ValueLock)
                     {
                         // If this is not the message at the head of the queue, bail
@@ -1203,8 +1184,7 @@ namespace System.Threading.Tasks.Dataflow
                 get
                 {
                     var displaySource = _owningSource as IDebuggerDisplay;
-                    return string.Format("Block=\"{0}\"",
-                        displaySource != null ? displaySource.Content : _owningSource);
+                    return $"Block=\"{(displaySource != null ? displaySource.Content : _owningSource)}\"";
                 }
             }
 

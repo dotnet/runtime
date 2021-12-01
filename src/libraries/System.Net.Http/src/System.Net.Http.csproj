@@ -3,14 +3,29 @@
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Android</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_MOBILE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_ANDROID</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsiOS)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_IOS</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_MACCATALYST</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsTVOS)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGET_TVOS</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <DefineConstants>$(DefineConstants);TARGETS_BROWSER</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
   <!-- ILLinker settings -->
   <PropertyGroup>
@@ -18,8 +33,10 @@
   </PropertyGroup>
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+    <ILLinkSubstitutionsXmls Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
+                             Include="$(ILLinkDirectory)ILLink.Substitutions.mobile.xml" />
+    <ILLinkSuppressionsXmls Condition="'$(TargetsMobile)' == 'true'" Include="$(ILLinkDirectory)ILLink.Suppressions.Mobile.LibraryBuild.xml" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
@@ -29,14 +46,18 @@
     <Compile Include="System\Net\Http\EmptyContent.cs" />
     <Compile Include="System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
-    <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
-    <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
+    <Compile Include="System\Net\Http\HeaderEncodingSelector.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderType.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
     <Compile Include="System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
-    <Compile Include="System\Net\Http\HttpClientHandler.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
+             Include="System\Net\Http\HttpClientHandler.AnyMobile.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
+             Include="System\Net\Http\HttpClientHandler.AnyMobile.InvokeNativeHandler.cs" />
+    <Compile Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsTVOS)' != 'true'"
+             Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="System\Net\Http\HttpContent.cs" />
     <Compile Include="System\Net\Http\HttpMessageHandler.cs" />
@@ -50,7 +71,7 @@
     <Compile Include="System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.cs" />
-    <Compile Include="System\Net\Http\HttpUtilities.cs" />
+    <Compile Include="System\Net\Http\HttpVersionPolicy.cs" />
     <Compile Include="System\Net\Http\MessageProcessingHandler.cs" />
     <Compile Include="System\Net\Http\MultipartContent.cs" />
     <Compile Include="System\Net\Http\MultipartFormDataContent.cs" />
@@ -58,6 +79,7 @@
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\RequestRetryType.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpMessageHandlerStage.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -72,11 +94,13 @@
     <Compile Include="System\Net\Http\Headers\EntityTagHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\GenericHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\HeaderDescriptor.cs" />
+    <Compile Include="System\Net\Http\Headers\HeaderStringValues.cs" />
     <Compile Include="System\Net\Http\Headers\HeaderUtilities.cs" />
     <Compile Include="System\Net\Http\Headers\HttpContentHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpGeneralHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaders.cs" />
+    <Compile Include="System\Net\Http\Headers\HttpHeadersNonValidated.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderValueCollection.cs" />
     <Compile Include="System\Net\Http\Headers\HttpRequestHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpResponseHeaders.cs" />
@@ -104,10 +128,6 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
-    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
-             Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
-             Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs"
@@ -124,12 +144,23 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
              Link="Common\System\Net\ArrayBuffer.cs"/>
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs"
+             Link="Common\System\Net\MultiArrayBuffer.cs"/>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs" />
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <Compile Include="System\Net\Http\HttpHandlerDefaults.cs" />
+    <Compile Include="System\Net\Http\HttpMethod.Http3.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
+    <Compile Include="System\Net\Http\Headers\KnownHeader.Http2And3.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
+    <Compile Condition="'$(TargetstvOS)' != 'true'" Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
@@ -147,6 +178,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamWindowManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
@@ -164,93 +196,31 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentWriteStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpUtilities.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpTrace.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionContext.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\HttpTelemetry.AnyOS.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Connections\SocketConnection.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Connections\TaskSocketAsyncEventArgs.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\DnsEndPointWithProperties.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionFactory.cs" />
-    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocksHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocksException.cs" />
+    <Compile Condition="'$(TargetstvOS)' != 'true'" Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
              Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
              Link="Common\System\Net\ContextFlagsPal.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicConnection.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicConnection.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicListener.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicListener.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicStream.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicStream.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicImplementationProvider.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicImplementationProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicListenerProvider.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicListenerProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicConnectionProvider.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicConnectionProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicStreamProvider.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicStreamProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockImplementationProvider.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockImplementationProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockListener.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockListener.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockConnection.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockConnection.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockStream.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockStream.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusCodes.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusCodes.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusHelper.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicClientConnectionOptions.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicClientConnectionOptions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicImplementationProviders.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicImplementationProviders.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicConnection.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicConnection.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicListener.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicListener.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicListenerOptions.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicListenerOptions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicOperationAbortedException.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicOperationAbortedException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicStream.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicStream.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicException.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicConnectionAbortedException.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicConnectionAbortedException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicStreamAbortedException.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicStreamAbortedException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\Interop.MsQuic.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\Interop.MsQuic.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicEnums.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicEnums.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs"
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs"
              Link="Common\System\Net\SecurityStatusPal.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"
+             Link="Common\System\Net\Security\SafeCredentialReference.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
              Link="Common\System\Net\Security\SSPIHandleCache.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SslClientAuthenticationOptionsExtensions.cs"
+             Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
              Link="Common\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
@@ -271,9 +241,9 @@
              Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
-  </ItemGroup>
+    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
+             Link="Common\Extensions\ValueStopwatch\ValueStopwatch.cs" />
   <!-- Header support -->
-  <ItemGroup>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
       <Link>Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs</Link>
     </Compile>
@@ -307,8 +277,8 @@
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs">
       <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.Http2.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.Http2.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs">
       <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs</Link>
@@ -346,8 +316,8 @@
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs">
       <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.Http3.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http3\QPack\H3StaticTable.Http3.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Linux specific files -->
@@ -371,24 +341,37 @@
              Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
-             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs"
-             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
-             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
              Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs"
-             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetstvOS)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
+             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetstvOS)' == 'true'">
+    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.tvOS.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.PlatformNotSupported.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.PlatformNotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
@@ -431,24 +414,32 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
-            Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />
+             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_ALGORITHM_IDENTIFIER.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_BIT_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CertFreeCertificateContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs"
-             Link="Common\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs"
              Link="Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp_types.cs"
@@ -477,12 +468,8 @@
              Link="Common\System\Net\Security\CertificateHelper.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs"
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
-    <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs"
-             Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs"
-             Link="Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs"
              Link="Common\System\Net\Security\SecurityBuffer.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs"
@@ -509,8 +496,6 @@
              Link="Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\NegotiationInfoClass.cs"
              Link="Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs"
-             Link="Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs"
              Link="Common\Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPISecureChannelType.cs"
@@ -540,22 +525,8 @@
   <ItemGroup>
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs"
-             Link="Common\System\Net\Mail\DomainLiteralReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\DotAtomReader.cs"
-             Link="Common\System\Net\Mail\DotAtomReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddress.cs"
-             Link="Common\System\Net\Mail\MailAddress.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailAddressParser.cs"
-             Link="Common\System\Net\Mail\MailAddressParser.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs"
-             Link="Common\System\Net\Mail\MailBnfHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedPairReader.cs"
-             Link="Common\System\Net\Mail\QuotedPairReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\QuotedStringFormatReader.cs"
-             Link="Common\System\Net\Mail\QuotedStringFormatReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\Mail\WhitespaceReader.cs"
-             Link="Common\System\Net\Mail\WhitespaceReader.cs" />
+    <Compile Include="System\Net\Http\GlobalHttpSettings.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
   </ItemGroup>
@@ -626,6 +597,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs"
@@ -664,24 +637,28 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="System\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionContext.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SystemProxyInfo.Browser.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
-    <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpConnectionFactory.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
+    <Compile Include="System\Net\Http\BrowserHttpHandler\HttpTelemetry.Browser.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
+             Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Pipelines" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Connections" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
@@ -689,14 +666,13 @@
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Runtime.InteropServices.JavaScript" Condition="'$(TargetsBrowser)' == 'true'" />
     <Reference Include="System.Security.Claims" Condition="'$(TargetsWindows)' == 'true'" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Threading" />
@@ -704,32 +680,19 @@
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
-    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="libmsquic.so" Condition="Exists('libmsquic.so')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\SR.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
   </ItemGroup>
 </Project>

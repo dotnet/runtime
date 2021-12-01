@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
+using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
@@ -64,14 +64,18 @@ namespace System
 #pragma warning disable CS0067 // events raised by the VM
         public static event UnhandledExceptionEventHandler? UnhandledException;
 
-        public static event System.EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
+        public static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
-        public static event System.EventHandler? ProcessExit;
+        public static event EventHandler? ProcessExit;
 
         internal static void OnProcessExit()
         {
             AssemblyLoadContext.OnProcessExit();
+            if (EventSource.IsSupported)
+            {
+                EventListener.DisposeOnShutdown();
+            }
 
             ProcessExit?.Invoke(AppDomain.CurrentDomain, EventArgs.Empty);
         }

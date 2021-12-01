@@ -359,8 +359,8 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.Now.AddYears(10001));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.Now.AddYears(-10001));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MaxValue.AddYears(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTimeOffset.MinValue.AddYears(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.AddYears(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.AddYears(-1));
         }
 
         public static IEnumerable<object[]> AddMonths_TestData()
@@ -1255,6 +1255,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android)]
         public static void ToString_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
             if (provider == null)
@@ -1354,6 +1355,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android)]
         public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
             var destination = new char[expected.Length];

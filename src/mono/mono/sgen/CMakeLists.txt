@@ -1,0 +1,56 @@
+
+set(sgen_sources_base
+    gc-internal-agnostic.h
+    sgen-alloc.c
+    sgen-archdep.h
+    sgen-cardtable.c
+    sgen-cardtable.h
+    sgen-client.h
+    sgen-conf.h
+    sgen-copy-object.h
+    sgen-debug.c
+    sgen-descriptor.c
+    sgen-descriptor.h
+    sgen-fin-weak-hash.c
+    sgen-gc.c
+    sgen-gc.h
+    sgen-gchandles.c
+    sgen-gray.c
+    sgen-gray.h
+    sgen-hash-table.c
+    sgen-hash-table.h
+    sgen-internal.c
+    sgen-layout-stats.c
+    sgen-layout-stats.h
+    sgen-los.c
+    sgen-major-copy-object.h
+    sgen-marksweep-drain-gray-stack.h
+    sgen-marksweep.c
+    sgen-memory-governor.c
+    sgen-memory-governor.h
+    sgen-minor-copy-object.h
+    sgen-minor-scan-object.h
+    sgen-nursery-allocator.c
+    sgen-pinning-stats.c
+    sgen-pinning.c
+    sgen-pinning.h
+    sgen-pointer-queue.c
+    sgen-pointer-queue.h
+    sgen-array-list.h
+    sgen-array-list.c
+    sgen-protocol-def.h
+    sgen-protocol.c
+    sgen-protocol.h
+    sgen-qsort.c
+    sgen-qsort.h
+    sgen-scan-object.h
+    sgen-simple-nursery.c
+    sgen-split-nursery.c
+    sgen-tagged-pointer.h
+    sgen-thread-pool.c
+    sgen-thread-pool.h
+    sgen-workers.c
+    sgen-workers.h)
+
+addprefix(sgen_sources ../sgen/ "${sgen_sources_base}")
+set_source_files_properties(${sgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")

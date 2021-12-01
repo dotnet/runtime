@@ -9,7 +9,7 @@ namespace System.Net.Http
     /// Central repository for default values used in http handler settings.  Not all settings are relevant
     /// to or configurable by all handlers.
     /// </summary>
-    internal static class HttpHandlerDefaults
+    internal static partial class HttpHandlerDefaults
     {
         public const int DefaultMaxAutomaticRedirections = 50;
         public const int DefaultMaxConnectionsPerServer = int.MaxValue;
@@ -25,7 +25,7 @@ namespace System.Net.Http
         public const bool DefaultUseDefaultCredentials = false;
         public const bool DefaultCheckCertificateRevocationList = false;
         public static readonly TimeSpan DefaultPooledConnectionLifetime = Timeout.InfiniteTimeSpan;
-        public static readonly TimeSpan DefaultPooledConnectionIdleTimeout = TimeSpan.FromMinutes(2);
+        public static readonly TimeSpan DefaultPooledConnectionIdleTimeout = TimeSpan.FromMinutes(1);
         public static readonly TimeSpan DefaultExpect100ContinueTimeout = TimeSpan.FromSeconds(1);
         public static readonly TimeSpan DefaultConnectTimeout = Timeout.InfiniteTimeSpan;
     }

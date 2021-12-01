@@ -11,6 +11,8 @@
     <Compile Include="System\Net\SecurityProtocolType.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />

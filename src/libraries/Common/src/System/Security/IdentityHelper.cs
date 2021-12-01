@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;

@@ -1,13 +1,11 @@
 *This blog post originally appeared on David Broman's blog on 11/4/2009*
 
-***[Update 5/30/19]: The archived content below refers to an Attach mechanism that only worked on desktop, not on .Net Core. Please see [Profiler Attach on CoreCLR](../Profiler Attach on Coreclr.md) for profiler attach on CoreCLR***
+***[Update 5/30/19]: The archived content below refers to an Attach mechanism that only worked on desktop, not on .Net Core. Please see [Profiler Attach on CoreCLR](../Profiler%20Attach%20on%20CoreCLR.md) for profiler attach on CoreCLR***
 
 
 Profiler attach is a feature that allows you to attach a profiler to an already running process. The usefulness of this is fairly obvious to anyone who's ever attached a debugger to a running-process: It's helpful when diagnosing hard-to-reproduce problems, and particularly useful when encountering issues in production.
 
 Please note!  You can't just take any profiler you bought and suddenly be able to attach it to a running application.  The profiler must be built with "attachability" in mind.  So if you're a profiler developer looking to pump some attachability into your product, read on--this article is for you.  Everyone else, this article will probably be less useful--but just as riveting.
-
-# 
 
 # The Players
 
@@ -19,17 +17,17 @@ In order to force your profiler DLL to load into the target profilee process, yo
 
 # Inside the Trigger Process
 
-Your trigger uses a simple API method, AttachProfiler, to request the target process to load your profiler.  Where is this method defined?  Well, it doesn't make much sense to put it on ICorProfilerInfo, since that interface is only available to a profiler after it's been loaded.  You could imagine a C export from mscoree.dll.  But because of in-process side-by-side CLR instances, we're moving away from mscoree.dll exports to a COM-based interface model called "metahost". 
+Your trigger uses a simple API method, AttachProfiler, to request the target process to load your profiler.  Where is this method defined?  Well, it doesn't make much sense to put it on ICorProfilerInfo, since that interface is only available to a profiler after it's been loaded.  You could imagine a C export from mscoree.dll.  But because of in-process side-by-side CLR instances, we're moving away from mscoree.dll exports to a COM-based interface model called "metahost".
 
 ## Meta-whos-its?
 
 Whereas the "hosting" interfaces enable one to host and manage a CLR in a process, the "metahost" interfaces allow one to manage multiple CLRs that may be installed onto a machine or loaded into a single process.  Here's a high-level view of how you navigate your way through metahost to find AttachProfiler() (there’s a pointer to actual sample code below).
 
-- Get ICLRMetaHost 
-- Enumerate the CLRs loaded into the target process 
-- Get ICLRRuntimeInfo for the particular CLR in the target process you want to profile 
-- Get the corresponding ICLRProfiling 
-- Call ICLRProfiling::AttachProfiler 
+- Get ICLRMetaHost
+- Enumerate the CLRs loaded into the target process
+- Get ICLRRuntimeInfo for the particular CLR in the target process you want to profile
+- Get the corresponding ICLRProfiling
+- Call ICLRProfiling::AttachProfiler
 
 ## Users and Integrity
 
@@ -57,8 +55,6 @@ From your InitializeForAttach implementation, your profiler will call SetEventMa
 
 It was impossible to enable all profiling scenarios for attach in the time we had for the V4 release.  So only profilers that do **sampling** and **memory** analysis will function properly after attaching to a live process.  Attempts to use other profiling APIs after attach will be met with CORPROF\_E\_UNSUPPORTED\_FOR\_ATTACHING\_PROFILER.
 
-### 
-
 ## Specific Callback Limitations
 
 When your attaching profiler calls SetEventMask, you will be limited to only those event mask flags present in the COR\_PRF\_ALLOWABLE\_AFTER\_ATTACH bitmask (you'll find it in corprof.idl).  Any other flags, and SetEventMask will return CORPROF\_E\_UNSUPPORTED\_FOR\_ATTACHING\_PROFILER.
@@ -67,14 +63,14 @@ When your attaching profiler calls SetEventMask, you will be limited to only tho
 
 Most of the ICorProfilerInfo\* methods are available to your attaching profiler, however some are not--particularly those involved in **IL rewriting**.  Here's a list of all ICorProfilerInfo\* methods NOT supported for attaching profilers:
 
-- GetILFunctionBody 
-- GetILFunctionBodyAllocator 
-- SetILFunctionBody 
-- SetILInstrumentedCodeMap 
-- SetEnterLeaveFunctionHooks\* 
-- SetFunctionIDMapper\* 
-- GetNotifiedExceptionClauseInfo 
-- All methods related to Enter/Leave/Tailcall 
+- GetILFunctionBody
+- GetILFunctionBodyAllocator
+- SetILFunctionBody
+- SetILInstrumentedCodeMap
+- SetEnterLeaveFunctionHooks\*
+- SetFunctionIDMapper\*
+- GetNotifiedExceptionClauseInfo
+- All methods related to Enter/Leave/Tailcall
 
 It's expected that future releases of the CLR will enable more API methods for use by attaching profilers.
 
@@ -84,9 +80,9 @@ It's expected that future releases of the CLR will enable more API methods for u
 
 To understand limitations around the GC modes, here's a quick review of the GC modes an app can run under:
 
-- **Workstation Blocking mode**.  The thread that triggered the GC performs the GC while all other threads executing managed code must wait. 
-- **Workstation Concurrent / Background mode (the default)**.  Concurrent GC (V1 & V2) allows portions of a full GC to execute while other threads are allowed to run.  Background GC (its replacement in V4) takes it one step further, and also allows an ephemeral GC (i.e., gen 0 or gen 1) to execute while a gen 2 GC is executing. 
-- **Server mode**.  Hosts like ASP.NET may choose to enable server mode which creates a heap + dedicated GC thread per CPU.  This allows GCs to be fanned out to multiple threads. 
+- **Workstation Blocking mode**.  The thread that triggered the GC performs the GC while all other threads executing managed code must wait.
+- **Workstation Concurrent / Background mode (the default)**.  Concurrent GC (V1 & V2) allows portions of a full GC to execute while other threads are allowed to run.  Background GC (its replacement in V4) takes it one step further, and also allows an ephemeral GC (i.e., gen 0 or gen 1) to execute while a gen 2 GC is executing.
+- **Server mode**.  Hosts like ASP.NET may choose to enable server mode which creates a heap + dedicated GC thread per CPU.  This allows GCs to be fanned out to multiple threads.
 
 Of course, [Maoni's blog](https://devblogs.microsoft.com/dotnet/author/maoni/) is required reading for anyone who wants to understand how the GC works.
 
@@ -96,15 +92,13 @@ So here's the catch.  What if a V4 app starts up in background GC mode _without_
 
 Of course, you could forcibly turn off concurrent / background mode every time the app starts up via a config file:
 
-| 
-
-\<configuration\>   
-    \<runtime\>   
-        \<gcConcurrent enabled="false"/\>   
-    \</runtime\>   
-\</configuration\>
-
- |
+```xml
+<configuration>
+    <runtime>
+        <gcConcurrent enabled="false"/>
+    </runtime>
+</configuration>
+```
 
 But you don't really want to be running your apps with a sub-optimal GC mode all the time, just on the off-chance you might need to attach a memory profiler to it.  If you suspect you might need to do some memory profiling of a client app, you should just start up your app with the memory profiler to begin with.
 

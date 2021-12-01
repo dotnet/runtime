@@ -4,4 +4,6 @@
 using System;
 using Xunit;
 
-[assembly: SkipOnMono("System.Configuration.ConfigurationManager is not supported on WASM", TestPlatforms.Browser)]
+[assembly: CollectionBehavior(DisableTestParallelization = true, MaxParallelThreads = 1)]
+
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Configuration.ConfigurationManager is not supported on Browser")]

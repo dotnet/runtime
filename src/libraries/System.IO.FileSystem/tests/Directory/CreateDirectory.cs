@@ -201,6 +201,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DirectoryEqualToMaxDirectory_CanBeCreatedAllAtOnce()
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
@@ -210,17 +211,26 @@ namespace System.IO.Tests
             Assert.Equal(path, result.FullName);
             Assert.True(Directory.Exists(result.FullName));
         }
+        #endregion
+
+        #region PlatformSpecific
 
         [Theory,
             MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not have a limit on the maximum component length")]
         public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsException(string path)
         {
             AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(() => Create(path));
         }
 
-        #endregion
-
-        #region PlatformSpecific
+        [Theory,
+            MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
+        [PlatformSpecific(TestPlatforms.Browser)] // Browser specific test in case the check changes in the future
+        public void DirectoryWithComponentLongerThanMaxComponentAsPath_BrowserDoesNotThrowException(string path)
+        {
+            DirectoryInfo result = Create(path);
+            Assert.True(Directory.Exists(path));
+        }
 
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -405,18 +415,16 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory,
-            MemberData(nameof(PathsWithReservedDeviceNames))]
-        [PlatformSpecific(TestPlatforms.Windows)] // device name prefixes
+        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
+        [MemberData(nameof(PathsWithReservedDeviceNames))]
         public void PathWithReservedDeviceNameAsPath_ThrowsDirectoryNotFoundException(string path)
         {
             // Throws DirectoryNotFoundException, when the behavior really should be an invalid path
             Assert.Throws<DirectoryNotFoundException>(() => Create(path));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
-            MemberData(nameof(ReservedDeviceNames))]
-        [PlatformSpecific(TestPlatforms.Windows)] // device name prefixes
+        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked), nameof(UsingNewNormalization))] // device name prefixes
+        [MemberData(nameof(ReservedDeviceNames))]
         public void PathWithReservedDeviceNameAsExtendedPath(string path)
         {
             Assert.True(Create(IOInputs.ExtendedPrefix + Path.Combine(TestDirectory, path)).Exists, path);

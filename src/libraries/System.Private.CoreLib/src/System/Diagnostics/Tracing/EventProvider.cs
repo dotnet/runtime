@@ -1,22 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using Microsoft.Win32;
 using System;
 using System.Diagnostics;
-using System.Security.Permissions;
-using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
-#endif
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
-#if (CORECLR || MONO) && TARGET_WINDOWS
-using Internal.Win32;
+using System.Threading;
+
+#if ES_BUILD_STANDALONE
+using Microsoft.Win32;
+using System.Security.Permissions;
 #endif
-#if ES_BUILD_AGAINST_DOTNET_V35
-using Microsoft.Internal;       // for Tuple (can't define alias for open generic types so we "use" the whole namespace)
+
+#if !ES_BUILD_STANDALONE && TARGET_WINDOWS
+using Internal.Win32;
 #endif
 
 #if ES_BUILD_STANDALONE
@@ -84,7 +83,7 @@ namespace System.Diagnostics.Tracing
         private byte m_level;                            // Tracing Level
         private long m_anyKeywordMask;                   // Trace Enable Flags
         private long m_allKeywordMask;                   // Match all keyword
-        private List<SessionInfo>? m_liveSessions;       // current live sessions (Tuple<sessionIdBit, etwSessionId>)
+        private List<SessionInfo>? m_liveSessions;       // current live sessions (KeyValuePair<sessionIdBit, etwSessionId>)
         private bool m_enabled;                          // Enabled flag from Trace callback
         private string? m_providerName;                  // Control name
         private Guid m_providerId;                       // Control Guid
@@ -93,10 +92,10 @@ namespace System.Diagnostics.Tracing
         [ThreadStatic]
         private static WriteEventErrorCode s_returnCode; // The last return code
 
-        private const int s_basicTypeAllocationBufferSize = 16;
-        private const int s_etwMaxNumberArguments = 128;
-        private const int s_etwAPIMaxRefObjCount = 8;
-        private const int s_traceEventMaximumSize = 65482;
+        private const int BasicTypeAllocationBufferSize = 16;
+        private const int EtwMaxNumberArguments = 128;
+        private const int EtwAPIMaxRefObjCount = 8;
+        private const int TraceEventMaximumSize = 65482;
 
         public enum WriteEventErrorCode : int
         {
@@ -211,6 +210,7 @@ namespace System.Diagnostics.Tracing
             // deadlocks in race conditions (dispose racing with an ETW command).
             //
             // We solve by Unregistering after releasing the EventListenerLock.
+            Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
             if (registrationHandle != 0)
                 EventUnregister(registrationHandle);
         }
@@ -258,7 +258,7 @@ namespace System.Diagnostics.Tracing
                     m_anyKeywordMask = anyKeyword;
                     m_allKeywordMask = allKeyword;
 
-                    List<Tuple<SessionInfo, bool>> sessionsChanged = GetSessions();
+                    List<KeyValuePair<SessionInfo, bool>> sessionsChanged = GetSessions();
 
                     // The GetSessions() logic was here to support the idea that different ETW sessions
                     // could have different user-defined filters.   (I believe it is currently broken but that is another matter.)
@@ -270,13 +270,13 @@ namespace System.Diagnostics.Tracing
                     // All this session based logic should be reviewed and likely removed, but that is a larger
                     // change that needs more careful staging.
                     if (sessionsChanged.Count == 0)
-                        sessionsChanged.Add(new Tuple<SessionInfo, bool>(new SessionInfo(0, 0), true));
+                        sessionsChanged.Add(new KeyValuePair<SessionInfo, bool>(new SessionInfo(0, 0), true));
 
-                    foreach (Tuple<SessionInfo, bool> session in sessionsChanged)
+                    foreach (KeyValuePair<SessionInfo, bool> session in sessionsChanged)
                     {
-                        int sessionChanged = session.Item1.sessionIdBit;
-                        int etwSessionId = session.Item1.etwSessionId;
-                        bool bEnabling = session.Item2;
+                        int sessionChanged = session.Key.sessionIdBit;
+                        int etwSessionId = session.Key.etwSessionId;
+                        bool bEnabling = session.Value;
 
                         skipFinalOnControllerCommand = true;
                         args = null;                                // reinitialize args for every session...
@@ -376,7 +376,7 @@ namespace System.Diagnostics.Tracing
         /// ETW session that was added or remove, and the bool specifies whether the
         /// session was added or whether it was removed from the set.
         /// </summary>
-        private List<Tuple<SessionInfo, bool>> GetSessions()
+        private List<KeyValuePair<SessionInfo, bool>> GetSessions()
         {
             List<SessionInfo>? liveSessionList = null;
 
@@ -385,7 +385,7 @@ namespace System.Diagnostics.Tracing
                     GetSessionInfoCallback(etwSessionId, matchAllKeywords, ref sessionList),
                 ref liveSessionList);
 
-            List<Tuple<SessionInfo, bool>> changedSessionList = new List<Tuple<SessionInfo, bool>>();
+            List<KeyValuePair<SessionInfo, bool>> changedSessionList = new List<KeyValuePair<SessionInfo, bool>>();
 
             // first look for sessions that have gone away (or have changed)
             // (present in the m_liveSessions but not in the new liveSessionList)
@@ -396,7 +396,7 @@ namespace System.Diagnostics.Tracing
                     int idx;
                     if ((idx = IndexOfSessionInList(liveSessionList, s.etwSessionId)) < 0 ||
                         (liveSessionList![idx].sessionIdBit != s.sessionIdBit))
-                        changedSessionList.Add(Tuple.Create(s, false));
+                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, false));
                 }
             }
             // next look for sessions that were created since the last callback  (or have changed)
@@ -408,7 +408,7 @@ namespace System.Diagnostics.Tracing
                     int idx;
                     if ((idx = IndexOfSessionInList(m_liveSessions, s.etwSessionId)) < 0 ||
                         (m_liveSessions![idx].sessionIdBit != s.sessionIdBit))
-                        changedSessionList.Add(Tuple.Create(s, true));
+                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, true));
                 }
             }
 
@@ -521,7 +521,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 #else
-#if !ES_BUILD_PCL && TARGET_WINDOWS  // TODO command arguments don't work on PCL builds...
+#if TARGET_WINDOWS
             // This code is only used in the Nuget Package Version of EventSource.  because
             // the code above is using APIs baned from UWP apps.
             //
@@ -602,14 +602,18 @@ namespace System.Diagnostics.Tracing
         /// returns an array of bytes representing the data, the index into that byte array where the data
         /// starts, and the command being issued associated with that data.
         /// </summary>
-        private unsafe bool GetDataFromController(int etwSessionId,
+        private
+#if !TARGET_WINDOWS
+        static
+#endif
+        unsafe bool GetDataFromController(int etwSessionId,
             Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
         {
             data = null;
             dataStart = 0;
             if (filterData == null)
             {
-#if (!ES_BUILD_PCL && TARGET_WINDOWS)
+#if TARGET_WINDOWS
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
                 if (IntPtr.Size == 8)
                     regKey = @"Software\Wow6432Node" + regKey;
@@ -774,7 +778,7 @@ namespace System.Diagnostics.Tracing
 
                 // then the array parameters
                 dataDescriptor++;
-                dataBuffer += s_basicTypeAllocationBufferSize;
+                dataBuffer += BasicTypeAllocationBufferSize;
                 dataDescriptor->Size = (uint)blobRet.Length;
             }
             else if (data is IntPtr)
@@ -933,7 +937,7 @@ namespace System.Diagnostics.Tracing
 
             // advance buffers
             dataDescriptor++;
-            dataBuffer += s_basicTypeAllocationBufferSize;
+            dataBuffer += BasicTypeAllocationBufferSize;
 
             return (object?)sRet ?? (object?)blobRet;
         }
@@ -973,7 +977,7 @@ namespace System.Diagnostics.Tracing
         // <UsesUnsafeCode Name="Local v7 of type: Char*" />
         // <ReferencesCritical Name="Method: EncodeObject(Object&, EventData*, Byte*):String" Ring="1" />
         // </SecurityKernel>
-        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, params object?[] eventPayload)
+        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, object?[] eventPayload)
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;
 
@@ -981,7 +985,7 @@ namespace System.Diagnostics.Tracing
             {
                 int argCount = eventPayload.Length;
 
-                if (argCount > s_etwMaxNumberArguments)
+                if (argCount > EtwMaxNumberArguments)
                 {
                     s_returnCode = WriteEventErrorCode.TooManyArgs;
                     return false;
@@ -990,13 +994,23 @@ namespace System.Diagnostics.Tracing
                 uint totalEventSize = 0;
                 int index;
                 int refObjIndex = 0;
-                List<int> refObjPosition = new List<int>(s_etwAPIMaxRefObjCount);
-                List<object?> dataRefObj = new List<object?>(s_etwAPIMaxRefObjCount);
+
+#if ES_BUILD_STANDALONE
+                int[] refObjPosition = new int[EtwAPIMaxRefObjCount];
+                object?[] dataRefObj = new object?[EtwAPIMaxRefObjCount];
+#else
+                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
+                EightObjects eightObjectStack = default;
+                Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
+                Span<object?> dataRefObj = new Span<object?>(ref eightObjectStack._arg0, EtwAPIMaxRefObjCount);
+#endif
+
                 EventData* userData = stackalloc EventData[2 * argCount];
                 for (int i = 0; i < 2 * argCount; i++)
                     userData[i] = default;
-                EventData* userDataPtr = (EventData*)userData;
-                byte* dataBuffer = stackalloc byte[s_basicTypeAllocationBufferSize * 2 * argCount]; // Assume 16 chars for non-string argument
+
+                EventData* userDataPtr = userData;
+                byte* dataBuffer = stackalloc byte[BasicTypeAllocationBufferSize * 2 * argCount]; // Assume 16 chars for non-string argument
                 byte* currentBuffer = dataBuffer;
 
                 //
@@ -1018,15 +1032,32 @@ namespace System.Diagnostics.Tracing
                             int idx = (int)(userDataPtr - userData - 1);
                             if (!(supportedRefObj is string))
                             {
-                                if (eventPayload.Length + idx + 1 - index > s_etwMaxNumberArguments)
+                                if (eventPayload.Length + idx + 1 - index > EtwMaxNumberArguments)
                                 {
                                     s_returnCode = WriteEventErrorCode.TooManyArgs;
                                     return false;
                                 }
                                 hasNonStringRefArgs = true;
                             }
-                            dataRefObj.Add(supportedRefObj);
-                            refObjPosition.Add(idx);
+
+                            if (refObjIndex >= dataRefObj.Length)
+                            {
+#if ES_BUILD_STANDALONE
+                                Array.Resize(ref dataRefObj, dataRefObj.Length * 2);
+                                Array.Resize(ref refObjPosition, refObjPosition.Length * 2);
+#else
+                                Span<object?> newDataRefObj = new object?[dataRefObj.Length * 2];
+                                dataRefObj.CopyTo(newDataRefObj);
+                                dataRefObj = newDataRefObj;
+
+                                Span<int> newRefObjPosition = new int[refObjPosition.Length * 2];
+                                refObjPosition.CopyTo(newRefObjPosition);
+                                refObjPosition = newRefObjPosition;
+#endif
+                            }
+
+                            dataRefObj[refObjIndex] = supportedRefObj;
+                            refObjPosition[refObjIndex] = idx;
                             refObjIndex++;
                         }
                     }
@@ -1040,22 +1071,23 @@ namespace System.Diagnostics.Tracing
                 // update argCount based on actual number of arguments written to 'userData'
                 argCount = (int)(userDataPtr - userData);
 
-                if (totalEventSize > s_traceEventMaximumSize)
+                if (totalEventSize > TraceEventMaximumSize)
                 {
                     s_returnCode = WriteEventErrorCode.EventTooBig;
                     return false;
                 }
 
                 // the optimized path (using "fixed" instead of allocating pinned GCHandles
-                if (!hasNonStringRefArgs && (refObjIndex < s_etwAPIMaxRefObjCount))
+                if (!hasNonStringRefArgs && (refObjIndex <= EtwAPIMaxRefObjCount))
                 {
                     // Fast path: at most 8 string arguments
 
                     // ensure we have at least s_etwAPIMaxStringCount in dataString, so that
                     // the "fixed" statement below works
-                    while (refObjIndex < s_etwAPIMaxRefObjCount)
+                    while (refObjIndex < EtwAPIMaxRefObjCount)
                     {
-                        dataRefObj.Add(null);
+                        dataRefObj[refObjIndex] = null;
+                        refObjPosition[refObjIndex] = -1;
                         ++refObjIndex;
                     }
 
@@ -1065,7 +1097,7 @@ namespace System.Diagnostics.Tracing
                     fixed (char* v0 = (string?)dataRefObj[0], v1 = (string?)dataRefObj[1], v2 = (string?)dataRefObj[2], v3 = (string?)dataRefObj[3],
                             v4 = (string?)dataRefObj[4], v5 = (string?)dataRefObj[5], v6 = (string?)dataRefObj[6], v7 = (string?)dataRefObj[7])
                     {
-                        userDataPtr = (EventData*)userData;
+                        userDataPtr = userData;
                         if (dataRefObj[0] != null)
                         {
                             userDataPtr[refObjPosition[0]].Ptr = (ulong)v0;
@@ -1105,7 +1137,7 @@ namespace System.Diagnostics.Tracing
                 else
                 {
                     // Slow path: use pinned handles
-                    userDataPtr = (EventData*)userData;
+                    userDataPtr = userData;
 
                     GCHandle[] rgGCHandle = new GCHandle[refObjIndex];
                     for (int i = 0; i < refObjIndex; ++i)
@@ -1142,6 +1174,23 @@ namespace System.Diagnostics.Tracing
 
             return true;
         }
+
+#if !ES_BUILD_STANDALONE
+        /// <summary>Workaround for inability to stackalloc object[EtwAPIMaxRefObjCount == 8].</summary>
+        private struct EightObjects
+        {
+            internal object? _arg0;
+#pragma warning disable CA1823, CS0169, IDE0051
+            private object? _arg1;
+            private object? _arg2;
+            private object? _arg3;
+            private object? _arg4;
+            private object? _arg5;
+            private object? _arg6;
+            private object? _arg7;
+#pragma warning restore CA1823, CS0169, IDE0051
+        }
+#endif
 
         /// <summary>
         /// WriteEvent, method to be used by generated code on a derived class
@@ -1233,7 +1282,7 @@ namespace System.Diagnostics.Tracing
 
         internal unsafe int SetInformation(
             Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
-            IntPtr data,
+            void* data,
             uint dataSize)
         {
             int status = Interop.Errors.ERROR_NOT_SUPPORTED;
@@ -1245,8 +1294,8 @@ namespace System.Diagnostics.Tracing
                     status = Interop.Advapi32.EventSetInformation(
                         m_regHandle,
                         eventInfoClass,
-                        (void*)data,
-                        (int)dataSize);
+                        data,
+                        dataSize);
                 }
                 catch (TypeLoadException)
                 {

@@ -11,7 +11,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets the currently active designer.
         /// </summary>
-        IDesignerHost ActiveDesigner { get; }
+        IDesignerHost? ActiveDesigner { get; }
 
         /// <summary>
         /// Gets or sets a collection of running design documents in the development environment.

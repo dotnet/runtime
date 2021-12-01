@@ -67,8 +67,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
     }
     public partial class PhysicalFilesWatcher : System.IDisposable
     {
-        public PhysicalFilesWatcher(string root, System.IO.FileSystemWatcher fileSystemWatcher, bool pollForChanges) { }
-        public PhysicalFilesWatcher(string root, System.IO.FileSystemWatcher fileSystemWatcher, bool pollForChanges, Microsoft.Extensions.FileProviders.Physical.ExclusionFilters filters) { }
+        public PhysicalFilesWatcher(string root, System.IO.FileSystemWatcher? fileSystemWatcher, bool pollForChanges) { }
+        public PhysicalFilesWatcher(string root, System.IO.FileSystemWatcher? fileSystemWatcher, bool pollForChanges, Microsoft.Extensions.FileProviders.Physical.ExclusionFilters filters) { }
         public Microsoft.Extensions.Primitives.IChangeToken CreateFileChangeToken(string filter) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         public PollingFileChangeToken(System.IO.FileInfo fileInfo) { }
         public bool ActiveChangeCallbacks { get { throw null; } }
         public bool HasChanged { get { throw null; } }
-        public System.IDisposable RegisterChangeCallback(System.Action<object> callback, object state) { throw null; }
+        public System.IDisposable RegisterChangeCallback(System.Action<object?> callback, object? state) { throw null; }
     }
     public partial class PollingWildCardChangeToken : Microsoft.Extensions.Primitives.IChangeToken
     {
@@ -87,6 +87,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
         public bool ActiveChangeCallbacks { get { throw null; } }
         public bool HasChanged { get { throw null; } }
         protected virtual System.DateTime GetLastWriteUtc(string path) { throw null; }
-        System.IDisposable Microsoft.Extensions.Primitives.IChangeToken.RegisterChangeCallback(System.Action<object> callback, object state) { throw null; }
+        System.IDisposable Microsoft.Extensions.Primitives.IChangeToken.RegisterChangeCallback(System.Action<object?> callback, object? state) { throw null; }
     }
 }

@@ -70,11 +70,9 @@ namespace System.Net.Security.Tests
                 return true;
             });
 
-            VirtualNetwork vn = new VirtualNetwork();
-            using (VirtualNetworkStream serverStream = new VirtualNetworkStream(vn, isServer: true),
-                                        clientStream = new VirtualNetworkStream(vn, isServer: false))
-            using (SslStream server = new SslStream(serverStream, false, null, selectionCallback),
-                             client = new SslStream(clientStream, leaveInnerStreamOpen: false, validationCallback))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
+                             client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
                 Task clientJob = Task.Run(() => {
                     client.AuthenticateAsClient(hostName);
@@ -117,11 +115,9 @@ namespace System.Net.Security.Tests
                 return true;
             });
 
-            VirtualNetwork vn = new VirtualNetwork();
-            using (VirtualNetworkStream serverStream = new VirtualNetworkStream(vn, isServer: true),
-                                        clientStream = new VirtualNetworkStream(vn, isServer: false))
-            using (SslStream server = new SslStream(serverStream, false, null, selectionCallback),
-                             client = new SslStream(clientStream, leaveInnerStreamOpen: false, validationCallback))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
+                             client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
                 Task clientJob = Task.Run(() => {
                     client.AuthenticateAsClient(hostName);
@@ -144,7 +140,7 @@ namespace System.Net.Security.Tests
             await WithVirtualConnection(async (server, client) =>
             {
                 Task clientJob = Task.Run(() => {
-                    Assert.Throws<VirtualNetwork.VirtualNetworkConnectionBroken>(() =>
+                    Assert.Throws<IOException>(() =>
                         client.AuthenticateAsClient("test")
                     );
                 });

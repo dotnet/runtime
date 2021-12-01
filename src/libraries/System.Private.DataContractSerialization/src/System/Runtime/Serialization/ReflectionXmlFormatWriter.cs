@@ -4,21 +4,24 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Xml;
 
 namespace System.Runtime.Serialization
 {
-    internal class ReflectionXmlFormatWriter
+    internal sealed class ReflectionXmlFormatWriter
     {
         private readonly ReflectionXmlClassWriter _reflectionClassWriter = new ReflectionXmlClassWriter();
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
             _reflectionClassWriter.ReflectionWriteClass(xmlWriter, obj, context, classContract, null/*memberNames*/);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void ReflectionWriteCollection(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract collectionDataContract)
         {
             XmlDictionaryString ns = collectionDataContract.Namespace;
@@ -36,7 +39,7 @@ namespace System.Runtime.Serialization
                 if (!ReflectionTryWritePrimitiveArray(xmlWriter, obj, collectionDataContract.UnderlyingType, itemType, itemName, ns))
                 {
                     Array array = (Array)obj;
-                    PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
+                    PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
                     for (int i = 0; i < array.Length; ++i)
                     {
                         _reflectionClassWriter.ReflectionWriteStartElement(xmlWriter, itemType, ns, ns.Value, itemName.Value, 0);
@@ -50,7 +53,7 @@ namespace System.Runtime.Serialization
                 collectionDataContract.IncrementCollectionCount(xmlWriter, obj, context);
 
                 IEnumerator enumerator = collectionDataContract.GetEnumeratorForCollection(obj);
-                PrimitiveDataContract primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(collectionDataContract.UnderlyingType);
+                PrimitiveDataContract? primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(collectionDataContract.UnderlyingType);
 
                 if (primitiveContractForType != null && primitiveContractForType.UnderlyingType != Globals.TypeOfObject)
                 {
@@ -85,9 +88,10 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private bool ReflectionTryWritePrimitiveArray(XmlWriterDelegator xmlWriter, object obj, Type type, Type itemType, XmlDictionaryString collectionItemName, XmlDictionaryString itemNamespace)
         {
-            PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
+            PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
             if (primitiveContract == null)
                 return false;
 
@@ -124,16 +128,17 @@ namespace System.Runtime.Serialization
 
     internal sealed class ReflectionXmlClassWriter : ReflectionClassWriter
     {
-        protected override int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[] emptyStringArray)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected override int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[]? emptyStringArray)
         {
             int memberCount = (classContract.BaseContract == null) ? 0 :
                 ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseContract, derivedMostClassContract, childElementIndex, emptyStringArray);
 
             childElementIndex += memberCount;
 
-            XmlDictionaryString[] memberNames = classContract.MemberNames;
+            XmlDictionaryString[] memberNames = classContract.MemberNames!;
             XmlDictionaryString ns = classContract.Namespace;
-            context.IncrementItemCount(classContract.Members.Count);
+            context.IncrementItemCount(classContract.Members!.Count);
             for (int i = 0; i < classContract.Members.Count; i++, memberCount++)
             {
                 DataMember member = classContract.Members[i];
@@ -148,11 +153,11 @@ namespace System.Runtime.Serialization
                 }
 
                 bool shouldWriteValue = true;
-                object memberValue = null;
+                object? memberValue = null;
                 if (!member.EmitDefaultValue)
                 {
                     memberValue = ReflectionGetMemberValue(obj, member);
-                    object defaultValue = XmlFormatGeneratorStatics.GetDefaultValue(memberType);
+                    object? defaultValue = XmlFormatGeneratorStatics.GetDefaultValue(memberType);
                     if ((memberValue == null && defaultValue == null)
                         || (memberValue != null && memberValue.Equals(defaultValue)))
                     {
@@ -172,14 +177,14 @@ namespace System.Runtime.Serialization
                     {
                         memberValue = ReflectionGetMemberValue(obj, member);
                     }
-                    PrimitiveDataContract primitiveContract = member.MemberPrimitiveContract;
+                    PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
 
                     if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, ns, primitiveContract))
                     {
                         ReflectionWriteStartElement(xmlWriter, memberType, ns, ns.Value, member.Name, 0);
-                        if (classContract.ChildElementNamespaces[i + childElementIndex] != null)
+                        if (classContract.ChildElementNamespaces![i + childElementIndex] != null)
                         {
-                            var nsChildElement = classContract.ChildElementNamespaces[i + childElementIndex];
+                            var nsChildElement = classContract.ChildElementNamespaces[i + childElementIndex]!;
                             xmlWriter.WriteNamespaceDecl(nsChildElement);
                         }
                         ReflectionWriteValue(xmlWriter, context, memberType, memberValue, writeXsiType, primitiveContractForParamType: null);
@@ -215,7 +220,7 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteEndElement();
         }
 
-        private bool NeedsPrefix(Type type, XmlDictionaryString ns)
+        private bool NeedsPrefix(Type type, XmlDictionaryString? ns)
         {
             return type == Globals.TypeOfXmlQualifiedName && (ns != null && ns.Value != null && ns.Value.Length > 0);
         }
@@ -227,14 +232,14 @@ namespace System.Runtime.Serialization
                 return true;
 
             // Check for conflict with derived type members
-            string name = member.Name;
-            string ns = classContract.StableName.Namespace;
-            ClassDataContract currentContract = derivedMostClassContract;
+            string? name = member.Name;
+            string? ns = classContract.StableName.Namespace;
+            ClassDataContract? currentContract = derivedMostClassContract;
             while (currentContract != null && currentContract != classContract)
             {
                 if (ns == currentContract.StableName.Namespace)
                 {
-                    List<DataMember> members = currentContract.Members;
+                    List<DataMember> members = currentContract.Members!;
                     for (int j = 0; j < members.Count; j++)
                     {
                         if (name == members[j].Name)

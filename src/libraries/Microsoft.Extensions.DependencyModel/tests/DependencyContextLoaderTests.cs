@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using FluentAssertions;
+using System.IO;
 using System.Reflection;
 using Xunit;
 
@@ -89,6 +90,20 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var loader = new DependencyContextLoader();
             Assert.Null(loader.Load(typeof(Moq.Mock).Assembly));
+        }
+
+        [Fact]
+        public void LoadReturnsNullWhenAssemblyLocationIsEmpty()
+        {
+            var loader = new DependencyContextLoader();
+            Assert.Null(loader.Load(new EmptyLocationAssembly()));
+        }
+
+        private class EmptyLocationAssembly : Assembly
+        {
+            public override string Location => string.Empty;
+            public override AssemblyName GetName() => new AssemblyName("EmptyLocation");
+            public override Stream? GetManifestResourceStream(string name) => null;
         }
     }
 }

@@ -619,6 +619,9 @@ namespace System.Diagnostics.Contracts
         /// This method is used internally to trigger a failure indicating to the "programmer" that they are using the interface incorrectly.
         /// It is NEVER used to indicate failure of actual contracts at runtime.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "StackFrame.GetMethod is only used to help diagnosing incorrect use of contracts. " +
+                "It handles missing or incomplete metadata.")]
         private static void AssertMustUseRewriter(ContractFailureKind kind, string contractKind)
         {
             // For better diagnostics, report which assembly is at fault.  Walk up stack and
@@ -628,7 +631,7 @@ namespace System.Diagnostics.Contracts
             Assembly? probablyNotRewritten = null;
             for (int i = 0; i < stack.FrameCount; i++)
             {
-                Assembly? caller = stack.GetFrame(i)!.GetMethod()?.DeclaringType!.Assembly;
+                Assembly? caller = stack.GetFrame(i)!.GetMethod()?.DeclaringType?.Assembly;
                 if (caller != null && caller != thisAssembly)
                 {
                     probablyNotRewritten = caller;

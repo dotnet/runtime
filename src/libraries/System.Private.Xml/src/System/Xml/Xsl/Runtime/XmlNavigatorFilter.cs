@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System.Xml;
 using System.Xml.XPath;
 using System.Diagnostics;
@@ -57,7 +58,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Filters any non-element and any element with a non-matching local name or namespace uri.
     /// </summary>
-    internal class XmlNavNameFilter : XmlNavigatorFilter
+    internal sealed class XmlNavNameFilter : XmlNavigatorFilter
     {
         private readonly string _localName;
         private readonly string _namespaceUri;
@@ -132,7 +133,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Filters any node not of the specified type (type may not be attribute or namespace).
     /// </summary>
-    internal class XmlNavTypeFilter : XmlNavigatorFilter
+    internal sealed class XmlNavTypeFilter : XmlNavigatorFilter
     {
         private static readonly XmlNavigatorFilter[] s_typeFilters = CreateTypeFilters();
         private readonly XPathNodeType _nodeType;
@@ -223,7 +224,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Filters all attribute nodes.
     /// </summary>
-    internal class XmlNavAttrFilter : XmlNavigatorFilter
+    internal sealed class XmlNavAttrFilter : XmlNavigatorFilter
     {
         private static readonly XmlNavigatorFilter s_singleton = new XmlNavAttrFilter();
 
@@ -295,7 +296,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Never filter nodes.
     /// </summary>
-    internal class XmlNavNeverFilter : XmlNavigatorFilter
+    internal sealed class XmlNavNeverFilter : XmlNavigatorFilter
     {
         private static readonly XmlNavigatorFilter s_singleton = new XmlNavNeverFilter();
 

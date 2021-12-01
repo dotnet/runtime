@@ -27,8 +27,7 @@ namespace System.Threading.Tasks.Dataflow
         // IMPLEMENT EXPLICITLY
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
-        [return: MaybeNull]
-        TOutput ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out bool messageConsumed);
+        TOutput? ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out bool messageConsumed);
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ReserveMessage"]/*' />
         bool ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target);

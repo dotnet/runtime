@@ -10,7 +10,7 @@ namespace System.Globalization
     internal enum StrongBidiCategory
     {
         Other = 0x00,
-        StrongLeftToRight = 0x10,
-        StrongRightToLeft = 0x20,
+        StrongLeftToRight = 0x20,
+        StrongRightToLeft = 0x40,
     }
 }

@@ -11,6 +11,8 @@ internal static partial class Interop
             Generic = 0,
             Standard = 1,
             DaylightSavings = 2,
+            GenericLocation = 3,
+            ExemplarCity = 4,
         }
     }
 }

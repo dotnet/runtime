@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Text;
 using Xunit;
@@ -258,9 +259,13 @@ namespace System.Globalization.Tests
 
             // Turkish
             yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.None, 1 };
-            yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.IgnoreCase, 1 };
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.IgnoreCase, 1 };
+                yield return new object[] { s_turkishCompare, "i", "\u0130", CompareOptions.IgnoreCase, 0 };
+            }
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.None, -1 };
-            yield return new object[] { s_turkishCompare, "i", "\u0130", CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "i", "I", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "i", "I", CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.None, -1 };
@@ -359,6 +364,14 @@ namespace System.Globalization.Tests
             SortKeyTest(compareInfo, string1, string2, options, expected);
         }
 
+
+        [DllImport("kernel32", CharSet = CharSet.Unicode)]
+        private static extern int CompareStringEx(string lpLocaleName, uint dwCmpFlags, string lpString1, int cchCount1, string lpString2, int cchCount2, IntPtr lpVersionInformation, IntPtr lpReserved, int lParam);
+        private const int NORM_LINGUISTIC_CASING = 0x08000000;       // use linguistic rules for casing
+
+        private static bool WindowsVersionHasTheCompareStringRegression =>
+                    PlatformDetection.IsNlsGlobalization && CompareStringEx("", NORM_LINGUISTIC_CASING, "", 0, "\u200C", 1, IntPtr.Zero, IntPtr.Zero, 0) != 2;
+
         [Theory]
         [MemberData(nameof(SortKey_TestData))]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
@@ -368,7 +381,11 @@ namespace System.Globalization.Tests
 
             Assert.Equal(expectedSign, Math.Sign(SortKey.Compare(sk1, sk2)));
             Assert.Equal(expectedSign == 0, sk1.Equals(sk2));
-            Assert.Equal(Math.Sign(compareInfo.Compare(string1, string2, options)), Math.Sign(SortKey.Compare(sk1, sk2)));
+
+            if (!WindowsVersionHasTheCompareStringRegression)
+            {
+                Assert.Equal(Math.Sign(compareInfo.Compare(string1, string2, options)), Math.Sign(SortKey.Compare(sk1, sk2)));
+            }
 
             Assert.Equal(compareInfo.GetHashCode(string1, options), sk1.GetHashCode());
             Assert.Equal(compareInfo.GetHashCode(string2, options), sk2.GetHashCode());

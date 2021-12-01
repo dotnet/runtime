@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestDataAsync();
-                        await connection.SendResponseAsync(HttpStatusCode.OK, content: null, isFinal: false);
+                        await connection.SendPartialResponseHeadersAsync(HttpStatusCode.OK);
 
                         partialResponseHeadersSent.TrySetResult(true);
                         await clientFinished.Task;
@@ -201,7 +201,7 @@ namespace System.Net.Http.Functional.Tests
                 // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
             }
-            
+
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -235,7 +235,11 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>
                     {
-                        HttpResponseMessage resp = await getResponse;
+                        // This 'using' shouldn't be necessary in general. However, HTTP3 does not remove the request stream from the
+                        // active stream table until the user disposes the response (or it gets finalized).
+                        // This means the connection will fail to shut down promptly.
+                        // See https://github.com/dotnet/runtime/issues/58072
+                        using HttpResponseMessage resp = await getResponse;
                         Stream respStream = await resp.Content.ReadAsStreamAsync(TestAsync);
                         Task readTask = readOrCopyToAsync ?
                             respStream.ReadAsync(new byte[1], 0, 1, cts.Token) :
@@ -329,6 +333,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer is not supported on Browser")]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -351,10 +356,10 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask1 = server.AcceptConnectionAsync(async connection1 =>
                     {
                         await connection1.ReadRequestHeaderAsync();
-                        await connection1.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\n");
+                        await connection1.WriteStringAsync($"HTTP/1.1 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\n");
                         serverAboutToBlock.SetResult(true);
                         await blockServerResponse.Task;
-                        await connection1.Writer.WriteAsync("Content-Length: 5\r\n\r\nhello");
+                        await connection1.WriteStringAsync("Content-Length: 5\r\n\r\nhello");
                     });
 
                     Task get1 = client.GetAsync(url);
@@ -528,6 +533,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
 #if !NETFRAMEWORK
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41531")]
         [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]

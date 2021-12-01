@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.Qil
     /// <remarks>
     /// Don't construct QIL nodes directly; instead, use the <see cref="QilFactory">QilFactory</see>.
     /// </remarks>
-    internal class QilTargetType : QilBinary
+    internal sealed class QilTargetType : QilBinary
     {
         //-----------------------------------------------
         // Constructor
@@ -40,7 +40,7 @@ namespace System.Xml.Xsl.Qil
 
         public XmlQueryType TargetType
         {
-            get { return (XmlQueryType)((QilLiteral)Right).Value; }
+            get { return (XmlQueryType)((QilLiteral)Right).Value!; }
             set { ((QilLiteral)Right).Value = value; }
         }
     }

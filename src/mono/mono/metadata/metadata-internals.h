@@ -33,7 +33,7 @@ struct _MonoType {
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	MonoTypeEnum type     : 8;
 	unsigned int has_cmods : 1;  
-	unsigned int byref    : 1;
+	unsigned int byref__    : 1; /* don't access directly, use m_type_is_byref */
 	unsigned int pinned   : 1;  /* valid when included in a local var signature */
 };
 
@@ -169,11 +169,11 @@ struct _MonoAssemblyName {
 	uint32_t hash_alg;
 	uint32_t hash_len;
 	uint32_t flags;
-#ifdef ENABLE_NETCORE
-	int major, minor, build, revision, arch;
-#else
-	uint16_t major, minor, build, revision, arch;
-#endif
+	int32_t major, minor, build, revision, arch;
+	//Add members for correct work with mono_stringify_assembly_name
+	MonoBoolean without_version;
+	MonoBoolean without_culture;
+	MonoBoolean without_public_key_token;
 };
 
 struct MonoTypeNameParse {
@@ -186,25 +186,9 @@ struct MonoTypeNameParse {
 };
 
 
-typedef enum MonoAssemblyContextKind {
-	/* Default assembly context: Load(String) and assembly references */
-	MONO_ASMCTX_DEFAULT = 0,
-	/* Reflection-only only context: ReflectionOnlyLoad and ReeflectionOnlyLoadFrom */
-	MONO_ASMCTX_REFONLY = 1,
-	/* LoadFrom context: LoadFrom() and references */
-	MONO_ASMCTX_LOADFROM = 2,
-	/* Individual assembly context (.NET Framework docs call this "not in
-	 * any context"): LoadFile(String) and Load(byte[]) are here.
-	 */
-	MONO_ASMCTX_INDIVIDUAL = 3,
-	/* Used internally by the runtime, not visible to managed code */
-	MONO_ASMCTX_INTERNAL = 4,
-
-	MONO_ASMCTX_LAST = 4
-} MonoAssemblyContextKind;
-
 typedef struct _MonoAssemblyContext {
-	MonoAssemblyContextKind kind;
+	/* Don't fire managed load event for this assembly */
+	guint8 no_managed_load_event : 1;
 } MonoAssemblyContext;
 
 struct _MonoAssembly {
@@ -216,65 +200,22 @@ struct _MonoAssembly {
 	 * the additional reference, they can be freed at any time.
 	 * The ref_count is initially 0.
 	 */
-	int ref_count; /* use atomic operations only */
+	gint32 ref_count; /* use atomic operations only */
 	char *basedir;
 	MonoAssemblyName aname;
 	MonoImage *image;
 	GSList *friend_assembly_names; /* Computed by mono_assembly_load_friends () */
+	GSList *ignores_checks_assembly_names; /* Computed by mono_assembly_load_friends () */
 	guint8 friend_assembly_names_inited;
-	guint8 in_gac;
 	guint8 dynamic;
-	guint8 corlib_internal;
 	MonoAssemblyContext context;
 	guint8 wrap_non_exception_throws;
 	guint8 wrap_non_exception_throws_inited;
 	guint8 jit_optimizer_disabled;
 	guint8 jit_optimizer_disabled_inited;
 	/* security manager flags (one bit is for lazy initialization) */
-	guint32 ecma:2;		/* Has the ECMA key */
-	guint32 aptc:2;		/* Has the [AllowPartiallyTrustedCallers] attributes */
-	guint32 fulltrust:2;	/* Has FullTrust permission */
-	guint32 unmanaged:2;	/* Has SecurityPermissionFlag.UnmanagedCode permission */
 	guint32 skipverification:2;	/* Has SecurityPermissionFlag.SkipVerification permission */
 };
-
-typedef struct {
-	/*
-	 * indexed by MonoMethodSignature 
-	 * Protected by the marshal lock
-	 */
-	GHashTable *delegate_invoke_cache;
-	GHashTable *delegate_begin_invoke_cache;
-	GHashTable *delegate_end_invoke_cache;
-	GHashTable *runtime_invoke_signature_cache;
-	GHashTable *runtime_invoke_sig_cache;
-
-	/*
-	 * indexed by SignaturePointerPair
-	 */
-	GHashTable *delegate_abstract_invoke_cache;
-	GHashTable *delegate_bound_static_invoke_cache;
-
-	/*
-	 * indexed by MonoMethod pointers
-	 * Protected by the marshal lock
-	 */
-	GHashTable *runtime_invoke_method_cache;
-	GHashTable *managed_wrapper_cache;
-
-	GHashTable *native_wrapper_cache;
-	GHashTable *native_wrapper_aot_cache;
-	GHashTable *native_wrapper_check_cache;
-	GHashTable *native_wrapper_aot_check_cache;
-
-	GHashTable *native_func_wrapper_aot_cache;
-	GHashTable *remoting_invoke_cache;
-	GHashTable *synchronized_cache;
-	GHashTable *unbox_wrapper_cache;
-	GHashTable *cominterop_invoke_cache;
-	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
-	GHashTable *thunk_invoke_cache;
-} MonoWrapperCaches;
 
 typedef struct {
 	const char* data;
@@ -283,7 +224,8 @@ typedef struct {
 
 struct _MonoTableInfo {
 	const char *base;
-	guint       rows     : 24;
+	guint       rows_     : 24;	/* don't access directly, use table_info_get_rows */
+
 	guint       row_size : 8;
 
 	/*
@@ -367,17 +309,11 @@ struct _MonoImage {
 	/* Whenever this is a dynamically emitted module */
 	guint8 dynamic : 1;
 
-	/* Whenever this is a reflection only image */
-	guint8 ref_only : 1;
-
 	/* Whenever this image contains uncompressed metadata */
 	guint8 uncompressed_metadata : 1;
 
 	/* Whenever this image contains metadata only without PE data */
 	guint8 metadata_only : 1;
-
-	/*  Whether this image belongs to load-from context */
-	guint8 load_from_context: 1;
 
 	guint8 checked_module_cctor : 1;
 	guint8 has_module_cctor : 1;
@@ -386,8 +322,11 @@ struct _MonoImage {
 	guint8 idx_guid_wide : 1;
 	guint8 idx_blob_wide : 1;
 
-	/* Whenever this image is considered as platform code for the CoreCLR security model */
+	/* NOT SUPPORTED: Whenever this image is considered as platform code for the CoreCLR security model */
 	guint8 core_clr_platform_code : 1;
+
+	/* Whether a #JTD stream was present. Indicates that this image was a minimal delta and its heaps only include the new heap entries */
+	guint8 minimal_delta : 1;
 
 	/* The path to the file for this image or an arbitrary name for images loaded from data. */
 	char *name;
@@ -458,12 +397,10 @@ struct _MonoImage {
 	 */
 	MonoAssembly *assembly;
 
-#ifdef ENABLE_NETCORE
 	/*
 	 * The AssemblyLoadContext that this image was loaded into.
 	 */
 	MonoAssemblyLoadContext *alc;
-#endif
 
 	/*
 	 * Indexed by method tokens and typedef tokens.
@@ -513,17 +450,7 @@ struct _MonoImage {
 	GHashTable *wrapper_param_names;
 	GHashTable *array_accessor_cache;
 
-	/*
-	 * indexed by MonoClass pointers
-	 */
-	GHashTable *ldfld_wrapper_cache;
-	GHashTable *ldflda_wrapper_cache;
-	GHashTable *stfld_wrapper_cache;
-	GHashTable *isinst_cache;
-
 	GHashTable *icall_wrapper_cache;
-	GHashTable *castclass_cache;
-	GHashTable *proxy_isinst_cache;
 	GHashTable *rgctx_template_hash; /* LOCKING: templates lock */
 
 	/* Contains rarely used fields of runtime structures belonging to this image */
@@ -566,11 +493,6 @@ struct _MonoImage {
 	MonoConcurrentHashTable *var_gparam_cache;
 	MonoConcurrentHashTable *mvar_gparam_cache;
 
-#ifndef ENABLE_NETCORE
-	/* Maps malloc-ed char* pinvoke scope -> MonoDl* */
-	GHashTable *pinvoke_scopes;
-#endif
-
 	/* The loader used to load this image */
 	MonoImageLoader *loader;
 
@@ -583,48 +505,15 @@ struct _MonoImage {
 	/* Contains 1 based indexes */
 	GHashTable *weak_field_indexes;
 
+        /* baseline images only: whether any metadata updates have been applied to this image */
+        gboolean has_updates;
+
 	/*
 	 * No other runtime locks must be taken while holding this lock.
 	 * It's meant to be used only to mutate and query structures part of this image.
 	 */
 	mono_mutex_t    lock;
 };
-
-/*
- * Generic instances and aggregated custom modifiers depend on many images, and they need to be deleted if one
- * of the images they depend on is unloaded. For example,
- * List<Foo> depends on both List's image and Foo's image.
- * A MonoImageSet is the owner of all generic instances depending on the same set of
- * images.
- */
-typedef struct {
-	int nimages;
-	MonoImage **images;
-
-	// Generic-specific caches
-	GHashTable *ginst_cache, *gmethod_cache, *gsignature_cache;
-	MonoConcurrentHashTable *gclass_cache;
-
-	/* mirror caches of ones already on MonoImage. These ones contain generics */
-	GHashTable *szarray_cache, *array_cache, *ptr_cache;
-
-	MonoWrapperCaches wrapper_caches;
-
-	GHashTable *aggregate_modifiers_cache;
-
-	/* Indexed by MonoGenericParam pointers */
-	GHashTable **gshared_types;
-	/* The length of the above array */
-	int gshared_types_len;
-
-	mono_mutex_t    lock;
-
-	/*
-	 * Memory for generic instances owned by this image set should be allocated from
-	 * this mempool, using the mono_image_set_alloc family of functions.
-	 */
-	MonoMemPool         *mempool;
-} MonoImageSet;
 
 enum {
 	MONO_SECTION_TEXT,
@@ -655,9 +544,6 @@ struct _MonoDynamicAssembly {
 	MonoAssembly assembly;
 	char *strong_name;
 	guint32 strong_name_size;
-	guint8 run;
-	guint8 save;
-	MonoDomain *domain;
 };
 
 struct _MonoDynamicImage {
@@ -684,19 +570,9 @@ struct _MonoDynamicImage {
 	GHashTable *blob_cache;
 	GHashTable *standalonesig_cache;
 	GList *array_methods;
-	GPtrArray *gen_params;
-	MonoGHashTable *token_fixups;
-	GHashTable *method_to_table_idx;
-	GHashTable *field_to_table_idx;
 	GHashTable *method_aux_hash;
 	GHashTable *vararg_aux_hash;
 	MonoGHashTable *generic_def_objects;
-	/*
-	 * Maps final token values to the object they describe.
-	 */
-	MonoGHashTable *remapped_tokens;
-	gboolean run;
-	gboolean save;
 	gboolean initial_image;
 	guint32 pe_kind, machine;
 	char *strong_name;
@@ -780,6 +656,7 @@ struct _MonoMethodSignature {
 	unsigned int  pinvoke             : 1;
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
+	unsigned int  suppress_gc_transition : 1;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -819,8 +696,14 @@ assembly_is_dynamic (MonoAssembly *assembly)
 #endif
 }
 
+static inline int
+table_info_get_rows (const MonoTableInfo *table)
+{
+	return table->rows_;
+}
+
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
-guint mono_aligned_addr_hash (gconstpointer ptr);
+MONO_COMPONENT_API guint mono_aligned_addr_hash (gconstpointer ptr);
 
 void
 mono_image_check_for_module_cctor (MonoImage *image);
@@ -848,9 +731,11 @@ mono_g_list_prepend_image (MonoImage *image, GList *list, gpointer data);
 GSList*
 mono_g_slist_append_image (MonoImage *image, GSList *list, gpointer data);
 
+MONO_COMPONENT_API
 void
 mono_image_lock (MonoImage *image);
 
+MONO_COMPONENT_API
 void
 mono_image_unlock (MonoImage *image);
 
@@ -863,9 +748,11 @@ mono_image_property_insert (MonoImage *image, gpointer subject, guint32 property
 void
 mono_image_property_remove (MonoImage *image, gpointer subject);
 
+MONO_COMPONENT_API
 gboolean
 mono_image_close_except_pools (MonoImage *image);
 
+MONO_COMPONENT_API
 void
 mono_image_close_finish (MonoImage *image);
 
@@ -883,31 +770,49 @@ mono_install_image_loader (const MonoImageLoader *loader);
 void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass);
 
-gpointer
-mono_image_set_alloc  (MonoImageSet *set, guint size);
+typedef struct _MonoMetadataUpdateData MonoMetadataUpdateData;
 
-gpointer
-mono_image_set_alloc0 (MonoImageSet *set, guint size);
+struct _MonoMetadataUpdateData {
+	int has_updates;
+};
+
+extern MonoMetadataUpdateData mono_metadata_update_data_private;
+
+/* returns TRUE if there's at least one update */
+static inline gboolean
+mono_metadata_has_updates (void)
+{
+	return mono_metadata_update_data_private.has_updates != 0;
+}
+
+/* components can't call the inline function directly since the private data isn't exported */
+MONO_COMPONENT_API
+gboolean
+mono_metadata_has_updates_api (void);
 
 void
-mono_image_set_lock (MonoImageSet *set);
+mono_image_effective_table_slow (const MonoTableInfo **t, int idx);
 
-void
-mono_image_set_unlock (MonoImageSet *set);
+gboolean
+mono_metadata_update_has_modified_rows (const MonoTableInfo *t);
 
-char*
-mono_image_set_strdup (MonoImageSet *set, const char *s);
+static inline void
+mono_image_effective_table (const MonoTableInfo **t, int idx)
+{
+	if (G_UNLIKELY (mono_metadata_has_updates ())) {
+		if (G_UNLIKELY (idx >= table_info_get_rows ((*t)) || mono_metadata_update_has_modified_rows (*t))) {
+			mono_image_effective_table_slow (t, idx);
+		}
+	}
+}
 
-MonoImageSet *
-mono_metadata_get_image_set_for_aggregate_modifiers (MonoAggregateModContainer *amods);
+enum MonoEnCDeltaOrigin {
+        MONO_ENC_DELTA_API = 0,
+        MONO_ENC_DELTA_DBG = 1,
+};
 
-MonoImageSet *
-mono_metadata_get_image_set_for_type (MonoType *type);
-
-MonoImageSet *
-mono_metadata_merge_image_sets (MonoImageSet *set1, MonoImageSet *set2);
-
-#define mono_image_set_new0(image,type,size) ((type *) mono_image_set_alloc0 (image, sizeof (type)* (size)))
+MONO_COMPONENT_API void
+mono_image_load_enc_delta (int delta_origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error);
 
 gboolean
 mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);
@@ -924,6 +829,10 @@ mono_metadata_blob_heap_checked (MonoImage *meta, uint32_t table_index, MonoErro
 gboolean
 mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t, int idx, uint32_t *res, int res_size, MonoError *error);
 
+MONO_COMPONENT_API
+void
+mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, uint32_t *res, int res_size);
+
 gboolean
 mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const MonoDynamicTable *t, int idx, guint32 *res, int res_size, MonoError *error);
 
@@ -931,14 +840,36 @@ MonoType*
 mono_metadata_get_shared_type (MonoType *type);
 
 void
-mono_metadata_clean_for_image (MonoImage *image);
-
-void
 mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 
-MONO_API void
-mono_metadata_cleanup (void);
+gboolean
+mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
 
+int
+mono_metadata_table_num_rows_slow (MonoImage *image, int table_index);
+
+static inline int
+mono_metadata_table_num_rows (MonoImage *image, int table_index)
+{
+	if (G_LIKELY (!image->has_updates))
+		return table_info_get_rows (&image->tables [table_index]);
+	else
+		return mono_metadata_table_num_rows_slow (image, table_index);
+}
+
+/* token_index is 1-based */
+static inline gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+{
+	/* returns true if given index is not in bounds with provided table/index pair */
+	if (G_LIKELY (token_index <= table_info_get_rows (&image->tables [table_index])))
+		return FALSE;
+        if (G_LIKELY (!image->has_updates))
+                return TRUE;
+	return mono_metadata_table_bounds_check_slow (image, table_index, token_index);
+}
+
+MONO_COMPONENT_API
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);
 
@@ -990,7 +921,7 @@ mono_metadata_parse_generic_inst            (MonoImage             *image,
 					     const char           **rptr,
 						 MonoError *error);
 
-MonoGenericInst *
+MONO_COMPONENT_API MonoGenericInst *
 mono_metadata_get_generic_inst              (int 		    type_argc,
 					     MonoType 		  **type_argv);
 
@@ -1011,9 +942,13 @@ gboolean
 mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2);
 
 void mono_dynamic_stream_reset  (MonoDynamicStream* stream);
-MONO_API void mono_assembly_addref       (MonoAssembly *assembly);
 void mono_assembly_load_friends (MonoAssembly* ass);
 gboolean mono_assembly_has_skip_verification (MonoAssembly* ass);
+
+MONO_API gint32 
+mono_assembly_addref (MonoAssembly *assembly);
+gint32
+mono_assembly_decref (MonoAssembly *assembly);
 
 void mono_assembly_release_gc_roots (MonoAssembly *assembly);
 gboolean mono_assembly_close_except_image_pools (MonoAssembly *assembly);
@@ -1023,8 +958,6 @@ void mono_assembly_close_finish (MonoAssembly *assembly);
 gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2);
 
 void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info);
-void mono_config_parse_assembly_bindings (const char *filename, int major, int minor, void *user_data,
-					  void (*infocb)(MonoAssemblyBindingInfo *info, void *user_data));
 
 gboolean
 mono_assembly_name_parse_full 		     (const char	   *name,
@@ -1035,7 +968,6 @@ mono_assembly_name_parse_full 		     (const char	   *name,
 
 gboolean
 mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname, gboolean copyBlobs);
-
 
 MONO_API guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
 
@@ -1050,6 +982,7 @@ MonoType *mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o
 
 MonoMethodSignature  *mono_metadata_signature_dup_full (MonoImage *image,MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig);
+MonoMethodSignature  *mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
 
 MonoGenericInst *
@@ -1104,7 +1037,8 @@ MonoImage *mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname,
 
 MonoImage *mono_image_open_metadata_only (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
 
-MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name);
+MONO_COMPONENT_API
+MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean metadata_only, const char *name, const char *filename);
 
 MonoException *mono_get_exception_field_access_msg (const char *msg);
 
@@ -1117,14 +1051,13 @@ MonoMethod *mono_get_method_constrained_checked (MonoImage *image, guint32 token
 
 void mono_type_set_alignment (MonoTypeEnum type, int align);
 
-MonoAotCacheConfig *mono_get_aot_cache_config (void);
 MonoType *
 mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, MonoError *error);
 
 MonoMethodSignature*
 mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error);
 	
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context, MonoError *error);
 
 guint32
@@ -1145,17 +1078,8 @@ mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container,
 MonoGenericContainer *
 mono_get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar);
 
-char *
-mono_image_set_description (MonoImageSet *);
-
-MonoImageSet *
-mono_find_image_set_owner (void *ptr);
-
 void
 mono_loader_register_module (const char *name, MonoDl *module);
-
-gboolean
-mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 minor, guint16 build, guint16 revision);
 
 void
 mono_ginst_get_desc (GString *str, MonoGenericInst *ginst);
@@ -1166,14 +1090,14 @@ mono_loader_set_strict_assembly_name_check (gboolean enabled);
 gboolean
 mono_loader_get_strict_assembly_name_check (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_type_in_image (MonoType *type, MonoImage *image);
 
 gboolean
 mono_type_is_valid_generic_argument (MonoType *type);
 
-MonoAssemblyContextKind
-mono_asmctx_get_kind (const MonoAssemblyContext *ctx);
+void
+mono_metadata_get_class_guid (MonoClass* klass, uint8_t* guid, MonoError *error);
 
 #define MONO_CLASS_IS_INTERFACE_INTERNAL(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_INTERFACE) || mono_type_is_generic_parameter (m_class_get_byval_arg (c)))
 
@@ -1225,11 +1149,7 @@ static inline
 MonoAssemblyLoadContext *
 mono_image_get_alc (MonoImage *image)
 {
-#ifndef ENABLE_NETCORE
-	return NULL;
-#else
 	return image->alc;
-#endif
 }
 
 static inline
@@ -1272,15 +1192,15 @@ mono_type_get_signature_internal (MonoType *type)
 }
 
 /**
- * mono_type_is_byref_internal:
+ * m_type_is_byref:
  * \param type the \c MonoType operated on
  * \returns TRUE if \p type represents a type passed by reference,
  * FALSE otherwise.
  */
-static inline mono_bool
-mono_type_is_byref_internal (MonoType *type)
+static inline gboolean
+m_type_is_byref (const MonoType *type)
 {
-	return type->byref;
+	return type->byref__;
 }
 
 /**
@@ -1310,6 +1230,20 @@ static inline MonoArrayType*
 mono_type_get_array_type_internal (MonoType *type)
 {
 	return type->data.array;
+}
+
+static inline int
+mono_metadata_table_to_ptr_table (int table_num)
+{
+	switch (table_num) {
+	case MONO_TABLE_FIELD: return MONO_TABLE_FIELD_POINTER;
+	case MONO_TABLE_METHOD: return MONO_TABLE_METHOD_POINTER;
+	case MONO_TABLE_PARAM: return MONO_TABLE_PARAM_POINTER;
+	case MONO_TABLE_PROPERTY: return MONO_TABLE_PROPERTY_POINTER;
+	case MONO_TABLE_EVENT: return MONO_TABLE_EVENT_POINTER;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */

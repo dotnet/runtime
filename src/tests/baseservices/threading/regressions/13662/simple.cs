@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 
 
-public class Test {
+public class Test_simple {
 
 	public static int Main(){
 

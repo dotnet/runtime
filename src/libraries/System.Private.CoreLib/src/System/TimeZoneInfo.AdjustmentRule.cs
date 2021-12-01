@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System
@@ -30,7 +31,10 @@ namespace System
 
             public TransitionTime DaylightTransitionEnd => _daylightTransitionEnd;
 
-            internal TimeSpan BaseUtcOffsetDelta => _baseUtcOffsetDelta;
+            /// <summary>
+            /// Gets the time difference with the base UTC offset for the time zone during the adjustment-rule period.
+            /// </summary>
+            public TimeSpan BaseUtcOffsetDelta => _baseUtcOffsetDelta;
 
             /// <summary>
             /// Gets a value indicating that this AdjustmentRule fixes the time zone offset
@@ -43,7 +47,7 @@ namespace System
                 (DaylightTransitionStart != default && DaylightTransitionStart.TimeOfDay != DateTime.MinValue) ||
                 (DaylightTransitionEnd != default && DaylightTransitionEnd.TimeOfDay != DateTime.MinValue.AddMilliseconds(1));
 
-            public bool Equals(AdjustmentRule? other) =>
+            public bool Equals([NotNullWhen(true)] AdjustmentRule? other) =>
                 other != null &&
                 _dateStart == other._dateStart &&
                 _dateEnd == other._dateEnd &&
@@ -73,6 +77,34 @@ namespace System
                 _daylightTransitionEnd = daylightTransitionEnd;
                 _baseUtcOffsetDelta = baseUtcOffsetDelta;
                 _noDaylightTransitions = noDaylightTransitions;
+            }
+
+            /// <summary>
+            /// Creates a new adjustment rule for a particular time zone.
+            /// </summary>
+            /// <param name="dateStart">The effective date of the adjustment rule. If the value is <c>DateTime.MinValue.Date</c>, this is the first adjustment rule in effect for a time zone.</param>
+            /// <param name="dateEnd">The last date that the adjustment rule is in force. If the value is <c>DateTime.MaxValue.Date</c>, the adjustment rule has no end date.</param>
+            /// <param name="daylightDelta">The time change that results from the adjustment. This value is added to the time zone's <see cref="P:System.TimeZoneInfo.BaseUtcOffset" /> and <see cref="P:System.TimeZoneInfo.BaseUtcOffsetDelta" /> properties to obtain the correct daylight offset from Coordinated Universal Time (UTC). This value can range from -14 to 14.</param>
+            /// <param name="daylightTransitionStart">The start of daylight saving time.</param>
+            /// <param name="daylightTransitionEnd">The end of daylight saving time.</param>
+            /// <param name="baseUtcOffsetDelta">The time difference with the base UTC offset for the time zone during the adjustment-rule period.</param>
+            /// <returns>The new adjustment rule.</returns>
+            public static AdjustmentRule CreateAdjustmentRule(
+                DateTime dateStart,
+                DateTime dateEnd,
+                TimeSpan daylightDelta,
+                TransitionTime daylightTransitionStart,
+                TransitionTime daylightTransitionEnd,
+                TimeSpan baseUtcOffsetDelta)
+            {
+                return new AdjustmentRule(
+                    dateStart,
+                    dateEnd,
+                    daylightDelta,
+                    daylightTransitionStart,
+                    daylightTransitionEnd,
+                    baseUtcOffsetDelta,
+                    noDaylightTransitions: false);
             }
 
             public static AdjustmentRule CreateAdjustmentRule(
@@ -119,8 +151,7 @@ namespace System
             internal bool IsStartDateMarkerForBeginningOfYear() =>
                 !NoDaylightTransitions &&
                 DaylightTransitionStart.Month == 1 && DaylightTransitionStart.Day == 1 &&
-                DaylightTransitionStart.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond && // < 12:00:01 AM
-                _dateStart.Year == _dateEnd.Year;
+                DaylightTransitionStart.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond; // < 12:00:01 AM
 
             //
             // When Windows sets the daylight transition end Jan 1st at 12:00 AM, it means the year ends with the daylight saving on.
@@ -129,8 +160,7 @@ namespace System
             internal bool IsEndDateMarkerForEndOfYear() =>
                 !NoDaylightTransitions &&
                 DaylightTransitionEnd.Month == 1 && DaylightTransitionEnd.Day == 1 &&
-                DaylightTransitionEnd.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond && // < 12:00:01 AM
-                _dateStart.Year == _dateEnd.Year;
+                DaylightTransitionEnd.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond; // < 12:00:01 AM
 
             /// <summary>
             /// Helper function that performs all of the validation checks for the factory methods and deserialization callback.

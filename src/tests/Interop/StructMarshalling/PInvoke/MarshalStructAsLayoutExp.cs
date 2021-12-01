@@ -211,6 +211,8 @@ public class Managed
     #endregion
     [DllImport("MarshalStructAsParam")]
     static extern LongStructPack16Explicit GetLongStruct(long l1, long l2);
+    [DllImport("MarshalStructAsParam")]
+    static extern IntStructPack8Explicit GetIntStruct(int i, int j);
 
     [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsExpByValOverlappingLongFloat(OverlappingLongFloat str, long expected);
@@ -1678,6 +1680,13 @@ public class Managed
         if(longStruct.l1 != 123456 || longStruct.l2 != 78910)
         {
             Console.WriteLine("Failed to return LongStructPack16Explicit.");
+            failures++;
+        }
+
+        IntStructPack8Explicit intStruct = GetIntStruct(12345, 678910);
+        if(intStruct.i1 != 12345 || intStruct.i2 != 678910)
+        {
+            Console.WriteLine("Failed to return IntStructPack8Explicit.");
             failures++;
         }
     }

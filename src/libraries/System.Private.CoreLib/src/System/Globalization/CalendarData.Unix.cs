@@ -3,7 +3,7 @@
 
 namespace System.Globalization
 {
-    internal partial class CalendarData
+    internal sealed partial class CalendarData
     {
         private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId) =>
             IcuLoadCalendarDataFromSystem(localeName, calendarId);

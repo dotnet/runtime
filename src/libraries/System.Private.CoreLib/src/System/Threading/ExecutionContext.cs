@@ -24,17 +24,17 @@ namespace System.Threading
 
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
-        internal static readonly ExecutionContext Default = new ExecutionContext(isDefault: true);
-        internal static readonly ExecutionContext DefaultFlowSuppressed = new ExecutionContext(AsyncLocalValueMap.Empty, Array.Empty<IAsyncLocal>(), isFlowSuppressed: true);
+        internal static readonly ExecutionContext Default = new ExecutionContext();
+        private static volatile ExecutionContext? s_defaultFlowSuppressed;
 
         private readonly IAsyncLocalValueMap? m_localValues;
         private readonly IAsyncLocal[]? m_localChangeNotifications;
         private readonly bool m_isFlowSuppressed;
         private readonly bool m_isDefault;
 
-        private ExecutionContext(bool isDefault)
+        private ExecutionContext()
         {
-            m_isDefault = isDefault;
+            m_isDefault = true;
         }
 
         private ExecutionContext(
@@ -67,15 +67,32 @@ namespace System.Threading
             return executionContext;
         }
 
+        // Allows capturing asynclocals for a FlowSuppressed ExecutionContext rather than returning null.
+        internal static ExecutionContext? CaptureForRestore()
+        {
+            // This is a short cut for:
+            //
+            // ExecutionContext.RestoreFlow()
+            // var ec = ExecutionContext.Capture()
+            // ExecutionContext.SuppressFlow();
+            // ...
+            // ExecutionContext.Restore(ec)
+            // ExecutionContext.SuppressFlow();
+
+            return Thread.CurrentThread._executionContext;
+        }
+
         private ExecutionContext? ShallowClone(bool isFlowSuppressed)
         {
             Debug.Assert(isFlowSuppressed != m_isFlowSuppressed);
 
             if (m_localValues == null || AsyncLocalValueMap.IsEmpty(m_localValues))
             {
+#pragma warning disable CA1825 // Avoid unnecessary zero-length array allocations
                 return isFlowSuppressed ?
-                    DefaultFlowSuppressed :
+                    (s_defaultFlowSuppressed ??= new ExecutionContext(AsyncLocalValueMap.Empty, new IAsyncLocal[0], isFlowSuppressed: true)) :
                     null; // implies the default context
+#pragma warning restore CA1825
             }
 
             return new ExecutionContext(m_localValues, m_localChangeNotifications, isFlowSuppressed);
@@ -134,25 +151,20 @@ namespace System.Threading
         {
             // Note: ExecutionContext.RunInternal is an extremely hot function and used by every await, ThreadPool execution, etc.
             // Note: Manual enregistering may be addressed by "Exception Handling Write Through Optimization"
-            //       https://github.com/dotnet/runtime/blob/master/docs/design/features/eh-writethru.md
+            //       https://github.com/dotnet/runtime/blob/main/docs/design/features/eh-writethru.md
 
-            // Enregister variables with 0 post-fix so they can be used in registers without EH forcing them to stack
-            // Capture references to Thread Contexts
-            Thread currentThread0 = Thread.CurrentThread;
-            Thread currentThread = currentThread0;
-            ExecutionContext? previousExecutionCtx0 = currentThread0._executionContext;
+            // Enregister previousExecutionCtx0 so they can be used in registers without EH forcing them to stack
+
+            Thread currentThread = Thread.CurrentThread;
+            ExecutionContext? previousExecutionCtx0 = currentThread._executionContext;
             if (previousExecutionCtx0 != null && previousExecutionCtx0.m_isDefault)
             {
                 // Default is a null ExecutionContext internally
                 previousExecutionCtx0 = null;
             }
 
-            // Store current ExecutionContext and SynchronizationContext as "previousXxx".
-            // This allows us to restore them and undo any Context changes made in callback.Invoke
-            // so that they won't "leak" back into caller.
-            // These variables will cross EH so be forced to stack
             ExecutionContext? previousExecutionCtx = previousExecutionCtx0;
-            SynchronizationContext? previousSyncCtx = currentThread0._synchronizationContext;
+            SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
 
             if (executionContext != null && executionContext.m_isDefault)
             {
@@ -160,9 +172,9 @@ namespace System.Threading
                 executionContext = null;
             }
 
-            if (previousExecutionCtx0 != executionContext)
+            if (previousExecutionCtx != executionContext)
             {
-                RestoreChangedContextToThread(currentThread0, executionContext, previousExecutionCtx0);
+                RestoreChangedContextToThread(currentThread, executionContext, previousExecutionCtx);
             }
 
             ExceptionDispatchInfo? edi = null;
@@ -178,28 +190,43 @@ namespace System.Threading
                 edi = ExceptionDispatchInfo.Capture(ex);
             }
 
-            // Re-enregistrer variables post EH with 1 post-fix so they can be used in registers rather than from stack
-            SynchronizationContext? previousSyncCtx1 = previousSyncCtx;
-            Thread currentThread1 = currentThread;
             // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
-            if (currentThread1._synchronizationContext != previousSyncCtx1)
+            if (currentThread._synchronizationContext != previousSyncCtx)
             {
                 // Restore changed SynchronizationContext back to previous
-                currentThread1._synchronizationContext = previousSyncCtx1;
+                currentThread._synchronizationContext = previousSyncCtx;
             }
 
-            ExecutionContext? previousExecutionCtx1 = previousExecutionCtx;
-            ExecutionContext? currentExecutionCtx1 = currentThread1._executionContext;
-            if (currentExecutionCtx1 != previousExecutionCtx1)
+            ExecutionContext? currentExecutionCtx = currentThread._executionContext;
+            if (currentExecutionCtx != previousExecutionCtx)
             {
-                RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
+                RestoreChangedContextToThread(currentThread, previousExecutionCtx, currentExecutionCtx);
             }
 
             // If exception was thrown by callback, rethrow it now original contexts are restored
             edi?.Throw();
         }
 
-        internal static void Restore(ExecutionContext? executionContext)
+        /// <summary>
+        /// Restores a captured execution context to on the current thread.
+        /// </summary>
+        /// <remarks>
+        /// To revert to the current execution context; capture it before Restore, and Restore it again.
+        /// It will not automatically be reverted unlike <seealso cref="ExecutionContext.Run"/>.
+        /// </remarks>
+        /// <param name="executionContext">The ExecutionContext to set.</param>
+        /// <exception cref="InvalidOperationException"><paramref name="executionContext"/> is null.</exception>
+        public static void Restore(ExecutionContext executionContext)
+        {
+            if (executionContext == null)
+            {
+                ThrowNullContext();
+            }
+
+            RestoreInternal(executionContext);
+        }
+
+        internal static void RestoreInternal(ExecutionContext? executionContext)
         {
             Thread currentThread = Thread.CurrentThread;
 
@@ -524,7 +551,7 @@ namespace System.Threading
         }
     }
 
-    public struct AsyncFlowControl : IDisposable
+    public struct AsyncFlowControl : IEquatable<AsyncFlowControl>, IDisposable
     {
         private Thread? _thread;
 
@@ -569,9 +596,9 @@ namespace System.Threading
             Undo();
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is AsyncFlowControl && Equals((AsyncFlowControl)obj);
+            return obj is AsyncFlowControl asyncControl && Equals(asyncControl);
         }
 
         public bool Equals(AsyncFlowControl obj)

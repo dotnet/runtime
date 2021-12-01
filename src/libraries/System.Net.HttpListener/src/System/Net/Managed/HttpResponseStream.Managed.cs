@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Net.ResponseStream
 //
@@ -38,7 +39,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    internal partial class HttpResponseStream : Stream
+    internal sealed partial class HttpResponseStream : Stream
     {
         private HttpListenerResponse _response;
         private bool _ignore_errors;
@@ -54,8 +55,8 @@ namespace System.Net
 
         private void DisposeCore()
         {
-            byte[] bytes = null;
-            MemoryStream ms = GetHeaders(true);
+            byte[]? bytes = null;
+            MemoryStream? ms = GetHeaders(true);
             bool chunked = _response.SendChunked;
             if (_stream.CanWrite)
             {
@@ -95,7 +96,7 @@ namespace System.Net
 
             if (_stream.CanWrite)
             {
-                MemoryStream ms = GetHeaders(closing: false, isWebSocketHandshake: true);
+                MemoryStream ms = GetHeaders(closing: false, isWebSocketHandshake: true)!;
                 bool chunked = _response.SendChunked;
 
                 long start = ms.Position;
@@ -111,7 +112,7 @@ namespace System.Net
             }
         }
 
-        private MemoryStream GetHeaders(bool closing, bool isWebSocketHandshake = false)
+        private MemoryStream? GetHeaders(bool closing, bool isWebSocketHandshake = false)
         {
             // SendHeaders works on shared headers
             lock (_response._headersLock)
@@ -128,11 +129,8 @@ namespace System.Net
         }
 
         private static byte[] s_crlf = new byte[] { 13, 10 };
-        private static byte[] GetChunkSizeBytes(int size, bool final)
-        {
-            string str = string.Format("{0:x}\r\n{1}", size, final ? "\r\n" : "");
-            return Encoding.ASCII.GetBytes(str);
-        }
+        private static byte[] GetChunkSizeBytes(int size, bool final) =>
+            Encoding.ASCII.GetBytes($"{size:x}\r\n{(final ? "\r\n" : "")}");
 
         internal void InternalWrite(byte[] buffer, int offset, int count)
         {
@@ -171,8 +169,8 @@ namespace System.Net
             if (size == 0)
                 return;
 
-            byte[] bytes = null;
-            MemoryStream ms = GetHeaders(false);
+            byte[]? bytes = null;
+            MemoryStream? ms = GetHeaders(false);
             bool chunked = _response.SendChunked;
             if (ms != null)
             {
@@ -204,7 +202,7 @@ namespace System.Net
                 InternalWrite(s_crlf, 0, 2);
         }
 
-        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
+        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback? cback, object? state)
         {
             if (_closed)
             {
@@ -215,8 +213,8 @@ namespace System.Net
                 return ares;
             }
 
-            byte[] bytes = null;
-            MemoryStream ms = GetHeaders(false);
+            byte[]? bytes = null;
+            MemoryStream? ms = GetHeaders(false);
             bool chunked = _response.SendChunked;
             if (ms != null)
             {

@@ -26,7 +26,7 @@
  *   See tramp-x86.c for documentation.
  */
 gpointer
-mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
+mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *buf;
 	int buf_len = 40;
@@ -42,7 +42,7 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	code = mono_arm_emit_imm64 (code, ARMREG_IP1, (guint64)arg);
 	code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)addr);
 
-	arm_brx (code, ARMREG_IP0);
+	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	g_assert ((code - buf) < buf_len);
 
@@ -308,7 +308,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arm_start_gsharedvt_call));
 	else
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_arm_start_gsharedvt_call);
-	arm_blrx (code, ARMREG_IP0);
+	code = mono_arm_emit_blrx (code, ARMREG_IP0);
 
 	/* Make the real method call */
 	/* R0 contains the addr to call */
@@ -325,7 +325,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* Clear callee reg area */
 	arm_addx_imm (code, ARMREG_SP, ARMREG_SP, ((n_arg_regs + n_arg_fregs) * sizeof (target_mgreg_t)) + 8);
 	/* Make the call */
-	arm_blrx (code, ARMREG_IP1);
+	code = mono_arm_emit_blrx (code, ARMREG_IP1);
 
 	br_ret_index = 0;
 	bcc_ret_index = 0;

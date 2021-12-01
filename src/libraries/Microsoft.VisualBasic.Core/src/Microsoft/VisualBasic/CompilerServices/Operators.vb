@@ -4,14 +4,10 @@
 Option Strict On
 
 Imports System
-Imports System.Collections.Generic
 Imports System.ComponentModel
 Imports System.Diagnostics
-Imports System.Globalization
-Imports System.Reflection
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Runtime.CompilerServices
-
-Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Imports Microsoft.VisualBasic.CompilerServices.Utils
 
@@ -38,6 +34,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         Private Const s_TCMAX As Integer = TypeCode.String + 1
+        Private Const OperatorsTrimMessage As String = "The object types cannot be statically analyzed so their operators may be trimmed"
 
         Private Shared Function ToVBBool(ByVal conv As Object) As SByte
             Return CSByte(Convert.ToBoolean(conv))
@@ -136,6 +133,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Undefined
         End Enum
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function CompareObjectEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -154,6 +152,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function ConditionalCompareObjectEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -172,6 +171,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function CompareObjectNotEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -190,6 +190,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function ConditionalCompareObjectNotEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -208,6 +209,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function CompareObjectLess(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -226,6 +228,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function ConditionalCompareObjectLess(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -244,6 +247,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function CompareObjectLessEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -262,6 +266,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function ConditionalCompareObjectLessEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -280,6 +285,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function CompareObjectGreaterEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -298,6 +304,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function ConditionalCompareObjectGreaterEqual(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -316,6 +323,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function CompareObjectGreater(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Object
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -334,6 +342,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function ConditionalCompareObjectGreater(ByVal Left As Object, ByVal Right As Object, ByVal TextCompare As Boolean) As Boolean
             Dim comparison As CompareClass = CompareObject2(Left, Right, TextCompare)
 
@@ -871,6 +880,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Unary Plus + "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function PlusObject(ByVal Operand As Object) As Object
 
             Dim typ As TypeCode = GetTypeCode(Operand)
@@ -932,6 +942,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Negate - "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function NegateObject(ByVal Operand As Object) As Object
 
             Dim tc As TypeCode = GetTypeCode(Operand)
@@ -1115,6 +1126,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Not "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function NotObject(ByVal Operand As Object) As Object
 
             Dim tc As TypeCode = GetTypeCode(Operand)
@@ -1257,6 +1269,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator And "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function AndObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -1636,6 +1649,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Or "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function OrObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -2007,6 +2021,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Xor "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function XorObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -2399,6 +2414,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Plus + "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function AddObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -2916,6 +2932,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Minus - "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function SubtractObject(ByVal Left As Object, ByVal Right As Object) As Object
             Dim tc1 As TypeCode = GetTypeCode(Left)
             Dim tc2 As TypeCode = GetTypeCode(Right)
@@ -3379,6 +3396,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Multiply * "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function MultiplyObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -3833,6 +3851,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Divide / "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function DivideObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -4139,6 +4158,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Power ^ "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function ExponentObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -4220,6 +4240,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Mod "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function ModObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -4570,7 +4591,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Throw GetNoValidOperatorException(UserDefinedOperator.Modulus, Left, Right)
         End Function
 
-        <MethodImpl(MethodImplOptions.NoInlining)> ' To work around https://github.com/dotnet/coreclr/issues/8648
+        <MethodImpl(MethodImplOptions.NoInlining)> ' To work around https://github.com/dotnet/runtime/issues/7141
         Private Shared Function ModSByte(ByVal left As SByte, ByVal right As SByte) As Object
             Return left Mod right
         End Function
@@ -4632,6 +4653,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Integral Divide \ "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function IntDivideObject(ByVal Left As Object, ByVal Right As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Left)
@@ -5002,6 +5024,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Shift Left << "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function LeftShiftObject(ByVal Operand As Object, ByVal Amount As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Operand)
@@ -5047,6 +5070,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Shift Right >> "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function RightShiftObject(ByVal Operand As Object, ByVal Amount As Object) As Object
 
             Dim tc1 As TypeCode = GetTypeCode(Operand)
@@ -5091,6 +5115,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 #Region " Operator Concatenate & "
 
+        <RequiresUnreferencedCode(OperatorsTrimMessage)>
         Public Shared Function ConcatenateObject(ByVal Left As Object, ByVal Right As Object) As Object
             Dim conv1, conv2 As IConvertible
             Dim tc1, tc2 As TypeCode

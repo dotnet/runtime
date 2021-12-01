@@ -16,6 +16,8 @@ using System.Runtime.CompilerServices;
 
 namespace System.Data.Odbc
 {
+    [Designer("Microsoft.VSDesigner.Data.VS.OdbcCommandDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [ToolboxItem(true)]
     public sealed class OdbcCommand : DbCommand, ICloneable
     {
         private static int s_objectTypeCount; // Bid counter
@@ -155,6 +157,8 @@ namespace System.Data.Odbc
         }
 
         [AllowNull]
+        [Editor("Microsoft.VSDesigner.Data.Odbc.Design.OdbcCommandTextEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public override string CommandText
         {
             get
@@ -233,6 +237,8 @@ namespace System.Data.Odbc
             }
         }
 
+        [Editor("Microsoft.VSDesigner.Data.Design.DbConnectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OdbcConnection? Connection
         {
             get
@@ -443,13 +449,13 @@ namespace System.Data.Odbc
                     lock (stmt)
                     {
                         // Cancel the statement
-                        ODBC32.RetCode retcode = stmt.Cancel();
+                        ODBC32.SQLRETURN retcode = stmt.Cancel();
 
                         // copy of StatementErrorHandler, because stmt may become null
                         switch (retcode)
                         {
-                            case ODBC32.RetCode.SUCCESS:
-                            case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                            case ODBC32.SQLRETURN.SUCCESS:
+                            case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                                 // don't fire info message events on cancel
                                 break;
                             default:
@@ -596,7 +602,7 @@ namespace System.Data.Odbc
                     behavior |= CommandBehavior.SingleResult;
                 }
 
-                ODBC32.RetCode retcode;
+                ODBC32.SQLRETURN retcode;
 
                 OdbcStatementHandle stmt = GetStatementHandle().StatementHandle!;
                 _cmdWrapper!.Canceling = false;
@@ -668,7 +674,7 @@ namespace System.Data.Odbc
                 {
                     retcode = stmt.Prepare(CommandText);
 
-                    if (ODBC32.RetCode.SUCCESS != retcode)
+                    if (ODBC32.SQLRETURN.SUCCESS != retcode)
                     {
                         _connection!.HandleError(stmt, retcode);
                     }
@@ -715,14 +721,14 @@ namespace System.Data.Odbc
                         {
                             short cColsAffected;
                             retcode = stmt.NumberOfResultColumns(out cColsAffected);
-                            if (retcode == ODBC32.RetCode.SUCCESS || retcode == ODBC32.RetCode.SUCCESS_WITH_INFO)
+                            if (retcode == ODBC32.SQLRETURN.SUCCESS || retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO)
                             {
                                 if (cColsAffected > 0)
                                 {
                                     localReader.GetSchemaTable();
                                 }
                             }
-                            else if (retcode == ODBC32.RetCode.NO_DATA)
+                            else if (retcode == ODBC32.SQLRETURN.NO_DATA)
                             {
                                 // do nothing
                             }
@@ -801,7 +807,7 @@ namespace System.Data.Odbc
                         }
 
                         //Note: Execute will return NO_DATA for Update/Delete non-row returning queries
-                        if ((ODBC32.RetCode.SUCCESS != retcode) && (ODBC32.RetCode.NO_DATA != retcode))
+                        if ((ODBC32.SQLRETURN.SUCCESS != retcode) && (ODBC32.SQLRETURN.NO_DATA != retcode))
                         {
                             _connection!.HandleError(stmt, retcode);
                         }
@@ -884,7 +890,7 @@ namespace System.Data.Odbc
         //
         public override void Prepare()
         {
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             ValidateOpenConnection(ADP.Prepare);
 
@@ -906,7 +912,7 @@ namespace System.Data.Odbc
             retcode = stmt.Prepare(CommandText);
 
 
-            if (ODBC32.RetCode.SUCCESS != retcode)
+            if (ODBC32.SQLRETURN.SUCCESS != retcode)
             {
                 _connection.HandleError(stmt, retcode);
             }
@@ -917,12 +923,12 @@ namespace System.Data.Odbc
 
         private void TrySetStatementAttribute(OdbcStatementHandle stmt, ODBC32.SQL_ATTR stmtAttribute, IntPtr value)
         {
-            ODBC32.RetCode retcode = stmt.SetStatementAttribute(
+            ODBC32.SQLRETURN retcode = stmt.SetStatementAttribute(
                 stmtAttribute,
                 value,
                 ODBC32.SQL_IS.UINTEGER);
 
-            if (retcode == ODBC32.RetCode.ERROR)
+            if (retcode == ODBC32.SQLRETURN.ERROR)
             {
                 string sqlState;
                 stmt.GetDiagnosticField(out sqlState);
@@ -1106,7 +1112,7 @@ namespace System.Data.Odbc
             {
                 try
                 {
-                    ODBC32.RetCode retcode;
+                    ODBC32.SQLRETURN retcode;
                     retcode = handle.FreeStatement(stmt);
                     StatementErrorHandler(retcode);
                 }
@@ -1166,12 +1172,12 @@ namespace System.Data.Odbc
             return sqlstate;
         }
 
-        internal void StatementErrorHandler(ODBC32.RetCode retcode)
+        internal void StatementErrorHandler(ODBC32.SQLRETURN retcode)
         {
             switch (retcode)
             {
-                case ODBC32.RetCode.SUCCESS:
-                case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                case ODBC32.SQLRETURN.SUCCESS:
+                case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     _connection.HandleErrorNoThrow(_stmt!, retcode);
                     break;
                 default:

@@ -24,11 +24,14 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-proclib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 #ifndef HOST_WIN32
 #include <sys/socket.h>
+#else
+#define sleep(t)                 Sleep((t) * 1000)
 #endif
 #include <glib.h>
 
@@ -76,6 +79,12 @@ prof_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 	if (prof->methods)
 		g_ptr_array_add (prof->methods, method);
 	mono_os_mutex_unlock (&prof->mutex);
+}
+
+static void
+prof_inline_method (MonoProfiler *prof, MonoMethod *method, MonoMethod *inlined_method)
+{
+	prof_jit_done (prof, inlined_method, NULL);
 }
 
 static void
@@ -213,7 +222,7 @@ static void prof_save (MonoProfiler *prof, FILE* file);
 static void *
 helper_thread (void *arg)
 {
-	mono_thread_attach (mono_get_root_domain ());
+	mono_thread_internal_attach (mono_get_root_domain ());
 
 	mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (), "AOT Profiler Helper", MonoSetThreadNameFlag_None);
 
@@ -312,7 +321,7 @@ helper_thread (void *arg)
 	prof_shutdown (&aot_profiler);
 
 	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
-	mono_thread_detach (mono_thread_current ());
+	mono_thread_internal_detach (mono_thread_current ());
 
 	return NULL;
 }
@@ -364,7 +373,7 @@ mono_profiler_init_aot (const char *desc)
 		if (!aot_profiler.outfile_name)
 			aot_profiler.outfile_name = g_strdup ("output.aotprofile");
 		else if (*aot_profiler.outfile_name == '+')
-			aot_profiler.outfile_name = g_strdup_printf ("%s.%d", aot_profiler.outfile_name + 1, getpid ());
+			aot_profiler.outfile_name = g_strdup_printf ("%s.%d", aot_profiler.outfile_name + 1, mono_process_current_pid ());
 
 		if (*aot_profiler.outfile_name == '|') {
 #ifdef HAVE_POPEN
@@ -392,8 +401,8 @@ mono_profiler_init_aot (const char *desc)
 
 	MonoProfilerHandle handle = mono_profiler_create (&aot_profiler);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
-	mono_profiler_set_runtime_shutdown_end_callback (handle, prof_shutdown);
 	mono_profiler_set_jit_done_callback (handle, prof_jit_done);
+	mono_profiler_set_inline_method_callback (handle, prof_inline_method);
 }
 
 static void
@@ -671,7 +680,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 
 		sig = mono_method_signature_checked (send_method, error);
 		mono_error_assert_ok (error);
-		if (sig->param_count != 3 || !sig->params [0]->byref || sig->params [0]->type != MONO_TYPE_U1 || sig->params [1]->type != MONO_TYPE_I4 || sig->params [2]->type != MONO_TYPE_STRING) {
+		if (sig->param_count != 3 || !m_type_is_byref (sig->params [0]) || sig->params [0]->type != MONO_TYPE_U1 || sig->params [1]->type != MONO_TYPE_I4 || sig->params [2]->type != MONO_TYPE_STRING) {
 			mono_profiler_printf_err ("Method '%s' should have signature void (byte&,int,string).", prof->send_to_str);
 			exit (1);
 		}
@@ -681,7 +690,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 
 		MonoString *extra_arg = NULL;
 		if (prof->send_to_arg) {
-			extra_arg = mono_string_new_checked (mono_domain_get (), prof->send_to_arg, error);
+			extra_arg = mono_string_new_checked (prof->send_to_arg, error);
 			mono_error_assert_ok (error);
 		}
 

@@ -14,7 +14,10 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace System
@@ -22,7 +25,14 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Char : IComparable, IComparable<char>, IEquatable<char>, IConvertible
+    public readonly struct Char : IComparable, IComparable<char>, IEquatable<char>, IConvertible, ISpanFormattable
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
+        , IBinaryInteger<char>,
+          IMinMaxValue<char>,
+          IUnsignedNumber<char>
+#pragma warning restore SA1001, CA2252
+#endif // FEATURE_GENERIC_MATH
     {
         //
         // Member Variables
@@ -47,13 +57,9 @@ namespace System
         // - 0x40 bit if set means 'is uppercase letter'
         // - 0x20 bit if set means 'is lowercase letter'
         // - bottom 5 bits are the UnicodeCategory of the character
-        //
-        // n.b. This data is locked to an earlier version of the Unicode standard (2.0, perhaps?), so
-        // the UnicodeCategory data contained here doesn't necessarily reflect the UnicodeCategory data
-        // contained within the CharUnicodeInfo or Rune types, which generally follow the latest Unicode
-        // standard.
         private static ReadOnlySpan<byte> Latin1CharInfo => new byte[]
         {
+        //  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x8E, 0x8E, 0x8E, 0x8E, 0x0E, 0x0E, // U+0000..U+000F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0010..U+001F
             0x8B, 0x18, 0x18, 0x18, 0x1A, 0x18, 0x18, 0x18, 0x14, 0x15, 0x18, 0x19, 0x18, 0x13, 0x18, 0x18, // U+0020..U+002F
@@ -64,8 +70,8 @@ namespace System
             0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x14, 0x19, 0x15, 0x19, 0x0E, // U+0070..U+007F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x8E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0080..U+008F
             0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, // U+0090..U+009F
-            0x8B, 0x18, 0x1A, 0x1A, 0x1A, 0x1A, 0x1C, 0x1C, 0x1B, 0x1C, 0x21, 0x16, 0x19, 0x13, 0x1C, 0x1B, // U+00A0..U+00AF
-            0x1C, 0x19, 0x0A, 0x0A, 0x1B, 0x21, 0x1C, 0x18, 0x1B, 0x0A, 0x21, 0x17, 0x0A, 0x0A, 0x0A, 0x18, // U+00B0..U+00BF
+            0x8B, 0x18, 0x1A, 0x1A, 0x1A, 0x1A, 0x1C, 0x18, 0x1B, 0x1C, 0x04, 0x16, 0x19, 0x0F, 0x1C, 0x1B, // U+00A0..U+00AF
+            0x1C, 0x19, 0x0A, 0x0A, 0x1B, 0x21, 0x18, 0x18, 0x1B, 0x0A, 0x04, 0x17, 0x0A, 0x0A, 0x0A, 0x18, // U+00B0..U+00BF
             0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, // U+00C0..U+00CF
             0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x19, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x21, // U+00D0..U+00DF
             0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, // U+00E0..U+00EF
@@ -73,22 +79,24 @@ namespace System
         };
 
         // Return true for all characters below or equal U+00ff, which is ASCII + Latin-1 Supplement.
-        private static bool IsLatin1(char ch)
-        {
-            return (uint)ch < (uint)Latin1CharInfo.Length;
-        }
+        private static bool IsLatin1(char c) => (uint)c < (uint)Latin1CharInfo.Length;
 
         // Return true for all characters below or equal U+007f, which is ASCII.
-        private static bool IsAscii(char ch)
-        {
-            return (uint)ch <= '\x007f';
-        }
+
+        /// <summary>
+        /// Returns <see langword="true"/> if <paramref name="c"/> is an ASCII
+        /// character ([ U+0000..U+007F ]).
+        /// </summary>
+        /// <remarks>
+        /// Per http://www.unicode.org/glossary/#ASCII, ASCII is only U+0000..U+007F.
+        /// </remarks>
+        public static bool IsAscii(char c) => (uint)c <= '\x007f';
 
         // Return the Unicode category for Unicode character <= 0x00ff.
-        private static UnicodeCategory GetLatin1UnicodeCategory(char ch)
+        private static UnicodeCategory GetLatin1UnicodeCategory(char c)
         {
-            Debug.Assert(IsLatin1(ch), "char.GetLatin1UnicodeCategory(): ch should be <= 00ff");
-            return (UnicodeCategory)(Latin1CharInfo[ch] & UnicodeCategoryMask);
+            Debug.Assert(IsLatin1(c), "char.GetLatin1UnicodeCategory(): c should be <= 00ff");
+            return (UnicodeCategory)(Latin1CharInfo[c] & UnicodeCategoryMask);
         }
 
         //
@@ -96,7 +104,7 @@ namespace System
         //
 
         //
-        // Overriden Instance Methods
+        // Overridden Instance Methods
         //
 
         // Calculate a hashcode for a 2 byte Unicode character.
@@ -107,7 +115,7 @@ namespace System
 
         // Used for comparing two boxed Char objects.
         //
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is char))
             {
@@ -168,11 +176,26 @@ namespace System
         // Provides a string representation of a character.
         public static string ToString(char c) => string.CreateFromChar(c);
 
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            if (!destination.IsEmpty)
+            {
+                destination[0] = m_value;
+                charsWritten = 1;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString(m_value);
+
         public static char Parse(string s)
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             if (s.Length != 1)
@@ -200,7 +223,7 @@ namespace System
         //
         // Static Methods
         //
-        /*=================================ISDIGIT======================================
+        /*=================================IsDigit======================================
         **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a digit.                                    **
         ==============================================================================*/
@@ -226,17 +249,17 @@ namespace System
             return IsInRange(uc, UnicodeCategory.UppercaseLetter, UnicodeCategory.OtherLetter);
         }
 
-        /*=================================ISLETTER=====================================
+        /*=================================IsLetter=====================================
         **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a letter.                                   **
         ==============================================================================*/
         // Determines whether a character is a letter.
         public static bool IsLetter(char c)
         {
-            if (IsLatin1(c))
+            if (IsAscii(c))
             {
                 // For the version of the Unicode standard the Char type is locked to, the
-                // Latin-1 range doesn't include letters in categories other than "upper" and "lower".
+                // ASCII range doesn't include letters in categories other than "upper" and "lower".
                 return (Latin1CharInfo[c] & (IsUpperCaseLetterFlag | IsLowerCaseLetterFlag)) != 0;
             }
             return CheckLetter(CharUnicodeInfo.GetUnicodeCategory(c));
@@ -248,7 +271,7 @@ namespace System
             return (Latin1CharInfo[c] & IsWhiteSpaceFlag) != 0;
         }
 
-        /*===============================ISWHITESPACE===================================
+        /*===============================IsWhiteSpace===================================
         **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a whitespace character.                     **
         ==============================================================================*/
@@ -264,7 +287,7 @@ namespace System
         }
 
         /*===================================IsUpper====================================
-        **Arguments: c -- the characater to be checked.
+        **Arguments: c -- the character to be checked.
         **Returns:  True if c is an uppercase character.
         ==============================================================================*/
         // Determines whether a character is upper-case.
@@ -278,7 +301,7 @@ namespace System
         }
 
         /*===================================IsLower====================================
-        **Arguments: c -- the characater to be checked.
+        **Arguments: c -- the character to be checked.
         **Returns:  True if c is an lowercase character.
         ==============================================================================*/
         // Determines whether a character is lower-case.
@@ -297,7 +320,7 @@ namespace System
         }
 
         /*================================IsPunctuation=================================
-        **Arguments: c -- the characater to be checked.
+        **Arguments: c -- the character to be checked.
         **Returns:  True if c is an punctuation mark
         ==============================================================================*/
         // Determines whether a character is a punctuation mark.
@@ -336,11 +359,14 @@ namespace System
         public static char ToUpper(char c, CultureInfo culture)
         {
             if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+            }
+
             return culture.TextInfo.ToUpper(c);
         }
 
-        /*=================================TOUPPER======================================
+        /*=================================ToUpper======================================
         **A wrapper for char.ToUpperCase.  Converts character c to its **
         **uppercase equivalent.  If c is already an uppercase character or is not an  **
         **alphabetic, nothing happens.                                                **
@@ -363,11 +389,14 @@ namespace System
         public static char ToLower(char c, CultureInfo culture)
         {
             if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+            }
+
             return culture.TextInfo.ToLower(c);
         }
 
-        /*=================================TOLOWER======================================
+        /*=================================ToLower======================================
         **A wrapper for char.ToLowerCase.  Converts character c to its **
         **lowercase equivalent.  If c is already a lowercase character or is not an   **
         **alphabetic, nothing happens.                                                **
@@ -475,10 +504,12 @@ namespace System
         public static bool IsControl(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             // Control chars are always in the BMP, so don't need to worry about surrogate handling.
@@ -488,67 +519,83 @@ namespace System
         public static bool IsDigit(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return IsInRange(c, '0', '9');
             }
-            return CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.DecimalDigitNumber;
+
+            return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index) == UnicodeCategory.DecimalDigitNumber;
         }
 
         public static bool IsLetter(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
-            if (IsLatin1(c))
+            if (IsAscii(c))
             {
-                // The Latin-1 range doesn't include letters in categories other than "upper" and "lower"
+                // The ASCII range doesn't include letters in categories other than "upper" and "lower"
                 return (Latin1CharInfo[c] & (IsUpperCaseLetterFlag | IsLowerCaseLetterFlag)) != 0;
             }
-            return CheckLetter(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckLetter(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsLetterOrDigit(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
             }
-            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsLower(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return (Latin1CharInfo[c] & IsLowerCaseLetterFlag) != 0;
             }
 
-            return CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.LowercaseLetter;
+            return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index) == UnicodeCategory.LowercaseLetter;
         }
 
         /*=================================CheckNumber=====================================
@@ -576,11 +623,14 @@ namespace System
         public static bool IsNumber(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
@@ -588,9 +638,11 @@ namespace System
                 {
                     return IsInRange(c, '0', '9');
                 }
+
                 return CheckNumber(GetLatin1UnicodeCategory(c));
             }
-            return CheckNumber(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckNumber(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -604,21 +656,25 @@ namespace System
         public static bool IsPunctuation(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return CheckPunctuation(GetLatin1UnicodeCategory(c));
             }
-            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         /*================================= CheckSeparator ============================
-        ** Check if the specified UnicodeCategory belongs to the seprator categories.
+        ** Check if the specified UnicodeCategory belongs to the separator categories.
         ==============================================================================*/
 
         internal static bool CheckSeparator(UnicodeCategory uc)
@@ -645,17 +701,21 @@ namespace System
         public static bool IsSeparator(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return IsSeparatorLatin1(c);
             }
-            return CheckSeparator(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckSeparator(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsSurrogate(char c)
@@ -667,12 +727,13 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return IsSurrogate(s[index]);
         }
 
@@ -697,43 +758,52 @@ namespace System
         public static bool IsSymbol(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return CheckSymbol(GetLatin1UnicodeCategory(c));
             }
-            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategory(s, index));
+
+            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsUpper(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             char c = s[index];
             if (IsLatin1(c))
             {
                 return (Latin1CharInfo[c] & IsUpperCaseLetterFlag) != 0;
             }
 
-            return CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.UppercaseLetter;
+            return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index) == UnicodeCategory.UppercaseLetter;
         }
 
         public static bool IsWhiteSpace(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             // All white space code points are within the BMP,
@@ -754,15 +824,19 @@ namespace System
         public static UnicodeCategory GetUnicodeCategory(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             if (IsLatin1(s[index]))
             {
                 return GetLatin1UnicodeCategory(s[index]);
             }
+
             return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index);
         }
 
@@ -774,12 +848,15 @@ namespace System
         public static double GetNumericValue(string s, int index)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
             if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
-            return CharUnicodeInfo.GetNumericValue(s, index);
+
+            return CharUnicodeInfo.GetNumericValueInternal(s, index);
         }
 
         /*================================= IsHighSurrogate ============================
@@ -794,12 +871,13 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (index < 0 || index >= s.Length)
+            if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return IsHighSurrogate(s[index]);
         }
 
@@ -815,12 +893,13 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (index < 0 || index >= s.Length)
+            if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             return IsLowSurrogate(s[index]);
         }
 
@@ -831,16 +910,18 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (index < 0 || index >= s.Length)
+            if (((uint)index) >= ((uint)s.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
             if (index + 1 < s.Length)
             {
                 return IsSurrogatePair(s[index], s[index + 1]);
             }
+
             return false;
         }
 
@@ -935,7 +1016,7 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             if (index < 0 || index >= s.Length)
@@ -978,5 +1059,741 @@ namespace System
             // Not a high-surrogate or low-surrogate. Genereate the UTF32 value for the BMP characters.
             return (int)s[index];
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IAdditionOperators<char, char, char>.operator +(char left, char right)
+            => (char)(left + right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked char IAdditionOperators<char, char, char>.operator +(char left, char right)
+        //     => checked((char)(left + right));
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IAdditiveIdentity<char, char>.AdditiveIdentity => (char)0;
+
+        //
+        // IBinaryInteger
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBinaryInteger<char>.LeadingZeroCount(char value)
+            => (char)(BitOperations.LeadingZeroCount(value) - 16);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBinaryInteger<char>.PopCount(char value)
+            => (char)BitOperations.PopCount(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBinaryInteger<char>.RotateLeft(char value, int rotateAmount)
+            => (char)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBinaryInteger<char>.RotateRight(char value, int rotateAmount)
+            => (char)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBinaryInteger<char>.TrailingZeroCount(char value)
+            => (char)(BitOperations.TrailingZeroCount(value << 16) - 16);
+
+        //
+        // IBinaryNumber
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IBinaryNumber<char>.IsPow2(char value)
+            => BitOperations.IsPow2((uint)value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBinaryNumber<char>.Log2(char value)
+            => (char)BitOperations.Log2(value);
+
+        //
+        // IBitwiseOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBitwiseOperators<char, char, char>.operator &(char left, char right)
+            => (char)(left & right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBitwiseOperators<char, char, char>.operator |(char left, char right)
+            => (char)(left | right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBitwiseOperators<char, char, char>.operator ^(char left, char right)
+            => (char)(left ^ right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IBitwiseOperators<char, char, char>.operator ~(char value)
+            => (char)(~value);
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<char, char>.operator <(char left, char right)
+            => left < right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<char, char>.operator <=(char left, char right)
+            => left <= right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<char, char>.operator >(char left, char right)
+            => left > right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<char, char>.operator >=(char left, char right)
+            => left >= right;
+
+        //
+        // IDecrementOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IDecrementOperators<char>.operator --(char value)
+            => --value;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked char IDecrementOperators<char>.operator --(char value)
+        //     => checked(--value);
+
+        //
+        // IDivisionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IDivisionOperators<char, char, char>.operator /(char left, char right)
+            => (char)(left / right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked char IDivisionOperators<char, char, char>.operator /(char left, char right)
+        //     => checked((char)(left / right));
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<char, char>.operator ==(char left, char right)
+            => left == right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<char, char>.operator !=(char left, char right)
+            => left != right;
+
+        //
+        // IIncrementOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IIncrementOperators<char>.operator ++(char value)
+            => ++value;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked char IIncrementOperators<char>.operator ++(char value)
+        //     => checked(++value);
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IMinMaxValue<char>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IMinMaxValue<char>.MaxValue => MaxValue;
+
+        //
+        // IModulusOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IModulusOperators<char, char, char>.operator %(char left, char right)
+            => (char)(left % right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked char IModulusOperators<char, char, char>.operator %(char left, char right)
+        //     => checked((char)(left % right));
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IMultiplicativeIdentity<char, char>.MultiplicativeIdentity => (char)1;
+
+        //
+        // IMultiplyOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IMultiplyOperators<char, char, char>.operator *(char left, char right)
+            => (char)(left * right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked char IMultiplyOperators<char, char, char>.operator *(char left, char right)
+        //     => checked((char)(left * right));
+
+        //
+        // INumber
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char INumber<char>.One => (char)1;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char INumber<char>.Zero => (char)0;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char INumber<char>.Abs(char value)
+            => value;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char INumber<char>.Clamp(char value, char min, char max)
+            => (char)Math.Clamp(value, min, max);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static char INumber<char>.Create<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (char)(byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return checked((char)(decimal)(object)value);
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return checked((char)(double)(object)value);
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return checked((char)(short)(object)value);
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return checked((char)(int)(object)value);
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return checked((char)(long)(object)value);
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return checked((char)(nint)(object)value);
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return checked((char)(sbyte)(object)value);
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return checked((char)(float)(object)value);
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (char)(ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return checked((char)(uint)(object)value);
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return checked((char)(ulong)(object)value);
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return checked((char)(nuint)(object)value);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static char INumber<char>.CreateSaturating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (char)(byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                var actualValue = (short)(object)value;
+                return (actualValue < MinValue) ? MinValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                var actualValue = (int)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                var actualValue = (long)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                var actualValue = (nint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                var actualValue = (sbyte)(object)value;
+                return (actualValue < MinValue) ? MinValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (char)(ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                var actualValue = (uint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (char)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (char)actualValue;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static char INumber<char>.CreateTruncating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (char)(byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (char)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (char)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (char)(short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (char)(int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (char)(long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (char)(nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (char)(sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (char)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (char)(ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (char)(uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (char)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (char)(nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static (char Quotient, char Remainder) INumber<char>.DivRem(char left, char right)
+            => ((char, char))Math.DivRem(left, right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char INumber<char>.Max(char x, char y)
+            => (char)Math.Max(x, y);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char INumber<char>.Min(char x, char y)
+            => (char)Math.Min(x, y);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char INumber<char>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char INumber<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+        {
+            if (s.Length != 1)
+            {
+                throw new FormatException(SR.Format_NeedSingleChar);
+            }
+            return s[0];
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char INumber<char>.Sign(char value)
+            => (char)((value == 0) ? 0 : 1);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumber<char>.TryCreate<TOther>(TOther value, out char result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                result = (char)(byte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                result = (char)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                var actualValue = (short)(object)value;
+
+                if (actualValue < 0)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                var actualValue = (int)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                var actualValue = (long)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                var actualValue = (nint)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                var actualValue = (sbyte)(object)value;
+
+                if (actualValue < 0)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                var actualValue = (ushort)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                var actualValue = (uint)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (char)actualValue;
+                return true;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                result = default;
+                return false;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool INumber<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result)
+            => TryParse(s, out result);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool INumber<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result)
+        {
+            if (s.Length != 1)
+            {
+                result = default;
+                return false;
+            }
+            result = s[0];
+            return true;
+        }
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IParseable<char>.Parse(string s, IFormatProvider? provider)
+            => Parse(s);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IParseable<char>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out char result)
+            => TryParse(s, out result);
+
+        //
+        // IShiftOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IShiftOperators<char, char>.operator <<(char value, int shiftAmount)
+            => (char)(value << shiftAmount);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IShiftOperators<char, char>.operator >>(char value, int shiftAmount)
+            => (char)(value >> shiftAmount);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static char IShiftOperators<char, char, char>.operator >>>(char value, int shiftAmount)
+        //     => (char)(value >> shiftAmount);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char ISpanParseable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+        {
+            if (s.Length != 1)
+            {
+                throw new FormatException(SR.Format_NeedSingleChar);
+            }
+            return s[0];
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool ISpanParseable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result)
+        {
+            if (s.Length != 1)
+            {
+                result = default;
+                return false;
+            }
+            result = s[0];
+            return true;
+        }
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char ISubtractionOperators<char, char, char>.operator -(char left, char right)
+            => (char)(left - right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked char ISubtractionOperators<char, char, char>.operator -(char left, char right)
+        //     => checked((char)(left - right));
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IUnaryNegationOperators<char, char>.operator -(char value)
+            => (char)(-value);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked char IUnaryNegationOperators<char, char>.operator -(char value)
+        //     => checked((char)(-value));
+
+        //
+        // IUnaryPlusOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static char IUnaryPlusOperators<char, char>.operator +(char value)
+            => (char)(+value);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked char IUnaryPlusOperators<char, char>.operator +(char value)
+        //     => checked((char)(+value));
+#endif // FEATURE_GENERIC_MATH
     }
 }

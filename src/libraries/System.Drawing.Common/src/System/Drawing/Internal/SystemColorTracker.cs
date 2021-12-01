@@ -39,6 +39,7 @@ namespace System.Drawing.Internal
 
                 if (!addedTracker)
                 {
+                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                     addedTracker = true;
                     SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
                 }
@@ -54,7 +55,7 @@ namespace System.Drawing.Internal
                     list[index] = new WeakReference(obj);
                 else
                 {
-                    Debug.Assert(list[index].Target == null, "Trying to reuse a weak reference that isn't broken yet: list[" + index + "], length =" + list.Length);
+                    Debug.Assert(list[index].Target == null, $"Trying to reuse a weak reference that isn't broken yet: list[{index}], length = {list.Length}");
                     list[index].Target = obj;
                 }
             }
@@ -131,6 +132,7 @@ namespace System.Drawing.Internal
 
         private static void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
         {
+            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
 
             // Update pens and brushes
             if (e.Category == UserPreferenceCategory.Color)

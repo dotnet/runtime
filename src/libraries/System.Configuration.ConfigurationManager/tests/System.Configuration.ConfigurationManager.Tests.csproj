@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- XUnit AppDomains BaseDirectory path doesn't contain a trailing slash, which impacts our tests. -->
-    <TestDisableAppDomain>true</TestDisableAppDomain>
-    <TestDisableParallelization>true</TestDisableParallelization>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
@@ -58,19 +56,16 @@
     <Compile Include="Mono\TimeSpanValidatorTest.cs" />
     <Compile Include="Mono\TypeNameConverterTest.cs" />
     <Compile Include="Mono\WhiteSpaceTrimStringConverterTest.cs" />
-    <Compile Include="Resources\Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\Configuration\ApplicationSettingsBaseTests.cs" />
     <Compile Include="System\Configuration\AppSettingsReaderTests.cs" />
     <Compile Include="System\Configuration\AppSettingsTests.cs" />
+    <Compile Include="System\Configuration\BinaryFormatterDeprecationTests.cs" />
     <Compile Include="System\Configuration\CallBackValidatorAttributeTests.cs" />
     <Compile Include="System\Configuration\ConfigPathUtilityTests.cs" />
     <Compile Include="System\Configuration\ConfigurationElementCollectionTests.cs" />
     <Compile Include="System\Configuration\ConfigurationElementTests.cs" />
     <Compile Include="System\Configuration\ConfigurationPropertyAttributeTests.cs" />
+    <Compile Include="System\Configuration\ConfigurationPathTests.cs" />
     <Compile Include="System\Configuration\CustomHostTests.cs" />
     <Compile Include="System\Configuration\ConfigurationPropertyTests.cs" />
     <Compile Include="System\Configuration\ConfigurationTests.cs" />
@@ -108,7 +103,9 @@
   <ItemGroup>
     <ProjectReference Include="..\src\System.Configuration.ConfigurationManager.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />
+    <!-- Manually reference the transitive dependency to make NuGet pick the package over the transitive project: https://github.com/NuGet/Home/issues/10368 -->
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

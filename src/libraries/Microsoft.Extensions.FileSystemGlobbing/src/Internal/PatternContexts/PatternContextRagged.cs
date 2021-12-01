@@ -11,14 +11,14 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     {
         public PatternContextRagged(IRaggedPattern pattern)
         {
-            Pattern = pattern;
+            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
         }
 
         public override PatternTestResult Test(FileInfoBase file)
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException("Can't test file before entering a directory.");
+                throw new InvalidOperationException(SR.CannotTestFile);
             }
 
             if (!Frame.IsNotApplicable && IsEndingGroup() && TestMatchingGroup(file))
@@ -122,17 +122,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
 
             public bool InStem;
 
-            private IList<string> _stemItems;
+            private IList<string>? _stemItems;
 
-            public IList<string> StemItems
-            {
-                get { return _stemItems ?? (_stemItems = new List<string>()); }
-            }
+            public IList<string> StemItems => _stemItems ??= new List<string>();
 
-            public string Stem
-            {
-                get { return _stemItems == null ? null : string.Join("/", _stemItems); }
-            }
+            public string? Stem => _stemItems == null ? null : string.Join("/", _stemItems);
         }
 
         protected IRaggedPattern Pattern { get; }
@@ -165,11 +159,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
                 return false;
             }
 
-            FileSystemInfoBase scan = value;
+            FileSystemInfoBase? scan = value;
             for (int index = 0; index != groupLength; ++index)
             {
                 IPathSegment segment = Frame.SegmentGroup[groupLength - index - 1];
-                if (!segment.Match(scan.Name))
+                if (scan == null || !segment.Match(scan.Name))
                 {
                     return false;
                 }

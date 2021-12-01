@@ -9,7 +9,7 @@ using System.Reflection.Metadata;
 
 namespace IlasmPortablePdbTests
 {
-    public class IlasmPortablePdbTester : XunitBase
+    public class IlasmPortablePdbTester : IDisposable
     {
         private const string CoreRoot = "CORE_ROOT";
         private const string IlasmFileName = "ilasm";
@@ -22,7 +22,7 @@ namespace IlasmPortablePdbTests
         public IlasmPortablePdbTester()
         {
             CoreRootVar = Environment.GetEnvironmentVariable(CoreRoot);
-            IsUnix = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            IsUnix = !OperatingSystem.IsWindows();
             NativeExtension = IsUnix ? string.Empty : ".exe";
             IlasmFile = IlasmFileName + NativeExtension;
         }
@@ -36,7 +36,7 @@ namespace IlasmPortablePdbTests
         {
             var ilasm = IlasmPortablePdbTesterCommon.GetIlasmFullPath(CoreRootVar, IlasmFile);
             IlasmPortablePdbTesterCommon.Assemble(ilasm, ilSource, TestDir, out string dll, out string pdb);
-            
+
             using (var peStream = new FileStream(dll, FileMode.Open, FileAccess.Read))
             {
                 using (var peReader = new PEReader(peStream))
@@ -102,7 +102,7 @@ namespace IlasmPortablePdbTests
                         var portablePdbMdReader = pdbReaderProvider.GetMetadataReader();
                         Assert.NotNull(portablePdbMdReader);
                         Assert.Equal(expected.Count, portablePdbMdReader.Documents.Count);
-                        
+
                         int i = 0;
                         foreach (var documentHandle in portablePdbMdReader.Documents)
                         {
@@ -118,10 +118,35 @@ namespace IlasmPortablePdbTests
             }
         }
 
+        // Tests whether the portable PDB MethodDebugInformation table has all the entries as MethoDef table
+        [Fact]
+        public void TestPortablePdbMethodDebugInformation1()
+        {
+            var ilSource = "TestMethodDebugInformation.il";
+
+            var ilasm = IlasmPortablePdbTesterCommon.GetIlasmFullPath(CoreRootVar, IlasmFile);
+            IlasmPortablePdbTesterCommon.Assemble(ilasm, ilSource, TestDir, out string dll, out string pdb);
+
+            using (var peStream = new FileStream(dll, FileMode.Open, FileAccess.Read))
+            {
+                using (var peReader = new PEReader(peStream))
+                {
+                    var peMdReader = peReader.GetMetadataReader();
+                    Assert.NotNull(peMdReader);
+                    using (var pdbReaderProvider = IlasmPortablePdbTesterCommon.GetMetadataReaderProvider(dll, pdb, peReader, false))
+                    {
+                        var portablePdbMdReader = pdbReaderProvider.GetMetadataReader();
+                        Assert.NotNull(portablePdbMdReader);
+                        Assert.Equal(peMdReader.MethodDefinitions.Count, portablePdbMdReader.MethodDebugInformation.Count);
+                    }
+                }
+            }
+        }
+
         // Tests whether the portable PDB has appropriate sequence points defined
         // The test source file includes external source reference and thus has 2 variants depending on OS type
         [Fact]
-        public void TestPortablePdbMethodDebugInformation()
+        public void TestPortablePdbMethodDebugInformation2()
         {
             var ilSource = IsUnix ? "TestMethodDebugInformation_unix.il" : "TestMethodDebugInformation_win.il";
 
@@ -221,7 +246,7 @@ namespace IlasmPortablePdbTests
                                 Assert.Equal(expected[i].Length, localScope.Length);
                                 var variableHandles = localScope.GetLocalVariables();
                                 Assert.Equal(expected[i].Variables.Count, variableHandles.Count);
-                                
+
                                 int j = 0;
                                 foreach (var variableHandle in localScope.GetLocalVariables())
                                 {
@@ -230,7 +255,7 @@ namespace IlasmPortablePdbTests
                                     var variableName = portablePdbMdReader.GetString(variable.Name);
                                     Assert.Equal(expected[i].Variables[j].Name, variableName);
                                     Assert.Equal(expected[i].Variables[j].Index, variable.Index);
-                                    Assert.Equal(expected[i].Variables[j].IsDebuggerHidden, 
+                                    Assert.Equal(expected[i].Variables[j].IsDebuggerHidden,
                                         variable.Attributes == LocalVariableAttributes.DebuggerHidden);
                                     j++;
                                 }
@@ -243,10 +268,7 @@ namespace IlasmPortablePdbTests
                 }
             }
         }
-        
-        public static int Main(string[] args)
-        {
-            return new IlasmPortablePdbTester().RunTests();
-        }
+
+        public void Dispose() {}
     }
 }

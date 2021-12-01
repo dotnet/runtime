@@ -3,7 +3,7 @@
 
 namespace System.Net
 {
-    internal class AuthenticationTypes
+    internal static class AuthenticationTypes
     {
         internal const string NTLM = "NTLM";
         internal const string Negotiate = "Negotiate";

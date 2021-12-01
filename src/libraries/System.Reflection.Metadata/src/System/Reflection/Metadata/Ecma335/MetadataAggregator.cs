@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             public override string ToString()
             {
-                return string.Format("+0x{0:x} ~0x{1:x}", AggregateInserts, Updates);
+                return $"+0x{AggregateInserts:x} ~0x{Updates:x}";
             }
         }
 

@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Reflection;
 using Internal.Runtime.CompilerServices;
 
@@ -66,28 +65,6 @@ namespace System.Runtime.CompilerServices
             return dest;
         }
 
-        public static object GetUninitializedObject(
-            // This API doesn't call any constructors, but the type needs to be seen as constructed.
-            // A type is seen as constructed if a constructor is kept.
-            // This obviously won't cover a type with no constructor. Reference types with no
-            // constructor are an academic problem. Valuetypes with no constructors are a problem,
-            // but IL Linker currently treats them as always implicitly boxed.
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            Type type)
-        {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-            }
-
-            if (!type.IsRuntimeImplemented())
-            {
-                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
-            }
-
-            return GetUninitializedObjectInternal(type);
-        }
-
         [Obsolete(Obsoletions.ConstrainedExecutionRegionMessage, DiagnosticId = Obsoletions.ConstrainedExecutionRegionDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData)
         {
@@ -132,5 +109,13 @@ namespace System.Runtime.CompilerServices
         internal static bool IsPrimitiveType(this CorElementType et)
             // COR_ELEMENT_TYPE_I1,I2,I4,I8,U1,U2,U4,U8,R4,R8,I,U,CHAR,BOOLEAN
             => ((1 << (int)et) & 0b_0011_0000_0000_0011_1111_1111_1100) != 0;
+
+        /// <summary>Provide a fast way to access constant data stored in a module as a ReadOnlySpan{T}</summary>
+        /// <param name="fldHandle">A field handle that specifies the location of the data to be referred to by the ReadOnlySpan{T}. The Rva of the field must be aligned on a natural boundary of type T</param>
+        /// <returns>A ReadOnlySpan{T} of the data stored in the field</returns>
+        /// <exception cref="ArgumentException"><paramref name="fldHandle"/> does not refer to a field which is an Rva, is misaligned, or T is of an invalid type.</exception>
+        /// <remarks>This method is intended for compiler user rather than use directly in code. T must be one of byte, sbyte, char, short, ushort, int, long, ulong, float, or double.</remarks>
+        [Intrinsic]
+        public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) => new ReadOnlySpan<T>(GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length), length);
     }
 }

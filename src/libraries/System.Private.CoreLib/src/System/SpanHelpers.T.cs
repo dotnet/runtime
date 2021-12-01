@@ -2,13 +2,190 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
     internal static partial class SpanHelpers // .T
     {
+        public static void Fill<T>(ref T refData, nuint numElements, T value)
+        {
+            // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.
+            // - T cannot contain references (GC can't track references in vectors)
+            // - Vectorization must be hardware-accelerated
+            // - T's size must not exceed the vector's size
+            // - T's size must be a whole power of 2
+
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) { goto CannotVectorize; }
+            if (!Vector.IsHardwareAccelerated) { goto CannotVectorize; }
+            if (Unsafe.SizeOf<T>() > Vector<byte>.Count) { goto CannotVectorize; }
+            if (!BitOperations.IsPow2(Unsafe.SizeOf<T>())) { goto CannotVectorize; }
+
+            if (numElements >= (uint)(Vector<byte>.Count / Unsafe.SizeOf<T>()))
+            {
+                // We have enough data for at least one vectorized write.
+
+                T tmp = value; // Avoid taking address of the "value" argument. It would regress performance of the loops below.
+                Vector<byte> vector;
+
+                if (Unsafe.SizeOf<T>() == 1)
+                {
+                    vector = new Vector<byte>(Unsafe.As<T, byte>(ref tmp));
+                }
+                else if (Unsafe.SizeOf<T>() == 2)
+                {
+                    vector = (Vector<byte>)(new Vector<ushort>(Unsafe.As<T, ushort>(ref tmp)));
+                }
+                else if (Unsafe.SizeOf<T>() == 4)
+                {
+                    // special-case float since it's already passed in a SIMD reg
+                    vector = (typeof(T) == typeof(float))
+                        ? (Vector<byte>)(new Vector<float>((float)(object)tmp!))
+                        : (Vector<byte>)(new Vector<uint>(Unsafe.As<T, uint>(ref tmp)));
+                }
+                else if (Unsafe.SizeOf<T>() == 8)
+                {
+                    // special-case double since it's already passed in a SIMD reg
+                    vector = (typeof(T) == typeof(double))
+                        ? (Vector<byte>)(new Vector<double>((double)(object)tmp!))
+                        : (Vector<byte>)(new Vector<ulong>(Unsafe.As<T, ulong>(ref tmp)));
+                }
+                else if (Unsafe.SizeOf<T>() == 16)
+                {
+                    Vector128<byte> vec128 = Unsafe.As<T, Vector128<byte>>(ref tmp);
+                    if (Vector<byte>.Count == 16)
+                    {
+                        vector = vec128.AsVector();
+                    }
+                    else if (Vector<byte>.Count == 32)
+                    {
+                        vector = Vector256.Create(vec128, vec128).AsVector();
+                    }
+                    else
+                    {
+                        Debug.Fail("Vector<T> isn't 128 or 256 bits in size?");
+                        goto CannotVectorize;
+                    }
+                }
+                else if (Unsafe.SizeOf<T>() == 32)
+                {
+                    if (Vector<byte>.Count == 32)
+                    {
+                        vector = Unsafe.As<T, Vector256<byte>>(ref tmp).AsVector();
+                    }
+                    else
+                    {
+                        Debug.Fail("Vector<T> isn't 256 bits in size?");
+                        goto CannotVectorize;
+                    }
+                }
+                else
+                {
+                    Debug.Fail("Vector<T> is greater than 256 bits in size?");
+                    goto CannotVectorize;
+                }
+
+                ref byte refDataAsBytes = ref Unsafe.As<T, byte>(ref refData);
+                nuint totalByteLength = numElements * (nuint)Unsafe.SizeOf<T>(); // get this calculation ready ahead of time
+                nuint stopLoopAtOffset = totalByteLength & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
+                nuint offset = 0;
+
+                // Loop, writing 2 vectors at a time.
+                // Compare 'numElements' rather than 'stopLoopAtOffset' because we don't want a dependency
+                // on the very recently calculated 'stopLoopAtOffset' value.
+
+                if (numElements >= (uint)(2 * Vector<byte>.Count / Unsafe.SizeOf<T>()))
+                {
+                    do
+                    {
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, offset), vector);
+                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, offset + (nuint)Vector<byte>.Count), vector);
+                        offset += (uint)(2 * Vector<byte>.Count);
+                    } while (offset < stopLoopAtOffset);
+                }
+
+                // At this point, if any data remains to be written, it's strictly less than
+                // 2 * sizeof(Vector) bytes. The loop above had us write an even number of vectors.
+                // If the total byte length instead involves us writing an odd number of vectors, write
+                // one additional vector now. The bit check below tells us if we're in an "odd vector
+                // count" situation.
+
+                if ((totalByteLength & (nuint)Vector<byte>.Count) != 0)
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, offset), vector);
+                }
+
+                // It's possible that some small buffer remains to be populated - something that won't
+                // fit an entire vector's worth of data. Instead of falling back to a loop, we'll write
+                // a vector at the very end of the buffer. This may involve overwriting previously
+                // populated data, which is fine since we're splatting the same value for all entries.
+                // There's no need to perform a length check here because we already performed this
+                // check before entering the vectorized code path.
+
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref refDataAsBytes, totalByteLength - (nuint)Vector<byte>.Count), vector);
+
+                // And we're done!
+
+                return;
+            }
+
+        CannotVectorize:
+
+            // If we reached this point, we cannot vectorize this T, or there are too few
+            // elements for us to vectorize. Fall back to an unrolled loop.
+
+            nuint i = 0;
+
+            // Write 8 elements at a time
+
+            if (numElements >= 8)
+            {
+                nuint stopLoopAtOffset = numElements & ~(nuint)7;
+                do
+                {
+                    Unsafe.Add(ref refData, (nint)i + 0) = value;
+                    Unsafe.Add(ref refData, (nint)i + 1) = value;
+                    Unsafe.Add(ref refData, (nint)i + 2) = value;
+                    Unsafe.Add(ref refData, (nint)i + 3) = value;
+                    Unsafe.Add(ref refData, (nint)i + 4) = value;
+                    Unsafe.Add(ref refData, (nint)i + 5) = value;
+                    Unsafe.Add(ref refData, (nint)i + 6) = value;
+                    Unsafe.Add(ref refData, (nint)i + 7) = value;
+                } while ((i += 8) < stopLoopAtOffset);
+            }
+
+            // Write next 4 elements if needed
+
+            if ((numElements & 4) != 0)
+            {
+                Unsafe.Add(ref refData, (nint)i + 0) = value;
+                Unsafe.Add(ref refData, (nint)i + 1) = value;
+                Unsafe.Add(ref refData, (nint)i + 2) = value;
+                Unsafe.Add(ref refData, (nint)i + 3) = value;
+                i += 4;
+            }
+
+            // Write next 2 elements if needed
+
+            if ((numElements & 2) != 0)
+            {
+                Unsafe.Add(ref refData, (nint)i + 0) = value;
+                Unsafe.Add(ref refData, (nint)i + 1) = value;
+                i += 2;
+            }
+
+            // Write final element if needed
+
+            if ((numElements & 1) != 0)
+            {
+                Unsafe.Add(ref refData, (nint)i) = value;
+            }
+        }
+
         public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
             Debug.Assert(searchSpaceLength >= 0);
@@ -49,7 +226,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
 
             if (default(T) != null || (object)value != null)
             {
@@ -99,8 +276,8 @@ namespace System
             }
             else
             {
-                byte* len = (byte*)length;
-                for (index = (IntPtr)0; index.ToPointer() < len; index += 1)
+                nint len = length;
+                for (index = 0; index < len; index++)
                 {
                     if ((object)Unsafe.Add(ref searchSpace, index) is null)
                     {
@@ -115,11 +292,120 @@ namespace System
             return true;
         }
 
+        internal static unsafe int IndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, IEquatable<T>
+        {
+            Debug.Assert(length >= 0);
+
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
+            if (Vector.IsHardwareAccelerated && Vector<T>.IsTypeSupported && (Vector<T>.Count * 2) <= length)
+            {
+                Vector<T> valueVector = new Vector<T>(value);
+                Vector<T> compareVector = default;
+                Vector<T> matchVector = default;
+                if ((uint)length % (uint)Vector<T>.Count != 0)
+                {
+                    // Number of elements is not a multiple of Vector<T>.Count, so do one
+                    // check and shift only enough for the remaining set to be a multiple
+                    // of Vector<T>.Count.
+                    compareVector = Unsafe.As<T, Vector<T>>(ref Unsafe.Add(ref searchSpace, index));
+                    matchVector = Vector.Equals(valueVector, compareVector);
+                    if (matchVector != Vector<T>.Zero)
+                    {
+                        goto VectorMatch;
+                    }
+                    index += length % Vector<T>.Count;
+                    length -= length % Vector<T>.Count;
+                }
+                while (length > 0)
+                {
+                    compareVector = Unsafe.As<T, Vector<T>>(ref Unsafe.Add(ref searchSpace, index));
+                    matchVector = Vector.Equals(valueVector, compareVector);
+                    if (matchVector != Vector<T>.Zero)
+                    {
+                        goto VectorMatch;
+                    }
+                    index += Vector<T>.Count;
+                    length -= Vector<T>.Count;
+                }
+                goto NotFound;
+            VectorMatch:
+                for (int i = 0; i < Vector<T>.Count; i++)
+                    if (compareVector[i].Equals(value))
+                        return (int)(index + i);
+            }
+
+            while (length >= 8)
+            {
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                    goto Found1;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                    goto Found2;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    goto Found3;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 4)))
+                    goto Found4;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 5)))
+                    goto Found5;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 6)))
+                    goto Found6;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
+                    goto Found7;
+
+                length -= 8;
+                index += 8;
+            }
+
+            while (length >= 4)
+            {
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                    goto Found1;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                    goto Found2;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    goto Found3;
+
+                length -= 4;
+                index += 4;
+            }
+
+            while (length > 0)
+            {
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+
+                index += 1;
+                length--;
+            }
+        NotFound:
+            return -1;
+
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
+            return (int)index;
+        Found1:
+            return (int)(index + 1);
+        Found2:
+            return (int)(index + 2);
+        Found3:
+            return (int)(index + 3);
+        Found4:
+            return (int)(index + 4);
+        Found5:
+            return (int)(index + 5);
+        Found6:
+            return (int)(index + 6);
+        Found7:
+            return (int)(index + 7);
+        }
+
         public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
@@ -173,8 +459,8 @@ namespace System
             }
             else
             {
-                byte* len = (byte*)length;
-                for (index = (IntPtr)0; index.ToPointer() < len; index += 1)
+                nint len = (nint)length;
+                for (index = 0; index < len; index++)
                 {
                     if ((object)Unsafe.Add(ref searchSpace, index) is null)
                     {
@@ -185,21 +471,21 @@ namespace System
             return -1;
 
         Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return (int)(byte*)index;
+            return (int)index;
         Found1:
-            return (int)(byte*)(index + 1);
+            return (int)(index + 1);
         Found2:
-            return (int)(byte*)(index + 2);
+            return (int)(index + 2);
         Found3:
-            return (int)(byte*)(index + 3);
+            return (int)(index + 3);
         Found4:
-            return (int)(byte*)(index + 4);
+            return (int)(index + 4);
         Found5:
-            return (int)(byte*)(index + 5);
+            return (int)(index + 5);
         Found6:
-            return (int)(byte*)(index + 6);
+            return (int)(index + 6);
         Found7:
-            return (int)(byte*)(index + 7);
+            return (int)(index + 7);
         }
 
         public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
@@ -417,21 +703,67 @@ namespace System
             if (valueLength == 0)
                 return -1;  // A zero-length set of values is always treated as "not found".
 
-            int index = -1;
-            for (int i = 0; i < valueLength; i++)
-            {
-                int tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
-                if ((uint)tempIndex < (uint)index)
-                {
-                    index = tempIndex;
-                    // Reduce space for search, cause we don't care if we find the search value after the index of a previously found value
-                    searchSpaceLength = tempIndex;
+            // For the following paragraph, let:
+            //   n := length of haystack
+            //   i := index of first occurrence of any needle within haystack
+            //   l := length of needle array
+            //
+            // We use a naive non-vectorized search because we want to bound the complexity of IndexOfAny
+            // to O(i * l) rather than O(n * l), or just O(n * l) if no needle is found. The reason for
+            // this is that it's common for callers to invoke IndexOfAny immediately before slicing,
+            // and when this is called in a loop, we want the entire loop to be bounded by O(n * l)
+            // rather than O(n^2 * l).
 
-                    if (index == 0)
-                        break;
+            if (typeof(T).IsValueType)
+            {
+                // Calling ValueType.Equals (devirtualized), which takes 'this' byref. We'll make
+                // a byval copy of the candidate from the search space in the outer loop, then in
+                // the inner loop we'll pass a ref (as 'this') to each element in the needle.
+
+                for (int i = 0; i < searchSpaceLength; i++)
+                {
+                    T candidate = Unsafe.Add(ref searchSpace, i);
+                    for (int j = 0; j < valueLength; j++)
+                    {
+                        if (Unsafe.Add(ref value, j).Equals(candidate))
+                        {
+                            return i;
+                        }
+                    }
                 }
             }
-            return index;
+            else
+            {
+                // Calling IEquatable<T>.Equals (virtual dispatch). We'll perform the null check
+                // in the outer loop instead of in the inner loop to save some branching.
+
+                for (int i = 0; i < searchSpaceLength; i++)
+                {
+                    T candidate = Unsafe.Add(ref searchSpace, i);
+                    if (candidate is not null)
+                    {
+                        for (int j = 0; j < valueLength; j++)
+                        {
+                            if (candidate.Equals(Unsafe.Add(ref value, j)))
+                            {
+                                return i;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (int j = 0; j < valueLength; j++)
+                        {
+                            if (Unsafe.Add(ref value, j) is null)
+                            {
+                                return i;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return -1; // not found
         }
 
         public static int LastIndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
@@ -763,14 +1095,52 @@ namespace System
             if (valueLength == 0)
                 return -1;  // A zero-length set of values is always treated as "not found".
 
-            int index = -1;
-            for (int i = 0; i < valueLength; i++)
+            // See comments in IndexOfAny(ref T, int, ref T, int) above regarding algorithmic complexity concerns.
+            // This logic is similar, but it runs backward.
+
+            if (typeof(T).IsValueType)
             {
-                int tempIndex = LastIndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
-                if (tempIndex > index)
-                    index = tempIndex;
+                for (int i = searchSpaceLength - 1; i >= 0; i--)
+                {
+                    T candidate = Unsafe.Add(ref searchSpace, i);
+                    for (int j = 0; j < valueLength; j++)
+                    {
+                        if (Unsafe.Add(ref value, j).Equals(candidate))
+                        {
+                            return i;
+                        }
+                    }
+                }
             }
-            return index;
+            else
+            {
+                for (int i = searchSpaceLength - 1; i >= 0; i--)
+                {
+                    T candidate = Unsafe.Add(ref searchSpace, i);
+                    if (candidate is not null)
+                    {
+                        for (int j = 0; j < valueLength; j++)
+                        {
+                            if (candidate.Equals(Unsafe.Add(ref value, j)))
+                            {
+                                return i;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (int j = 0; j < valueLength; j++)
+                        {
+                            if (Unsafe.Add(ref value, j) is null)
+                            {
+                                return i;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return -1; // not found
         }
 
         public static bool SequenceEqual<T>(ref T first, ref T second, int length) where T : IEquatable<T>
@@ -780,7 +1150,7 @@ namespace System
             if (Unsafe.AreSame(ref first, ref second))
                 goto Equal;
 
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             T lookUp0;
             T lookUp1;
             while (length >= 8)

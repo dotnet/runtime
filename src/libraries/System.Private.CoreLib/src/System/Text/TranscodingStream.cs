@@ -79,7 +79,7 @@ namespace System.Text
         public override long Position
         {
             get => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
-            set => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            set => ThrowHelper.ThrowNotSupportedException_UnseekableStream();
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -185,7 +185,7 @@ namespace System.Text
             {
                 if (!CanRead)
                 {
-                    throw Error.GetReadNotSupported();
+                    ThrowHelper.ThrowNotSupportedException_UnreadableStream();
                 }
 
                 _innerDecoder = _innerEncoding.GetDecoder();
@@ -217,7 +217,7 @@ namespace System.Text
             {
                 if (!CanWrite)
                 {
-                    throw Error.GetWriteNotSupported();
+                    ThrowHelper.ThrowNotSupportedException_UnwritableStream();
                 }
 
                 _innerEncoder = _innerEncoding.GetEncoder();
@@ -288,10 +288,7 @@ namespace System.Text
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             return Read(new Span<byte>(buffer, offset, count));
         }
@@ -315,18 +312,28 @@ namespace System.Text
 
                 try
                 {
-                    // Beware: Use our constant value instead of 'rentedBytes.Length' for the count
-                    // parameter below. The reason for this is that the array pool could've returned
-                    // a larger-than-expected array, but our worst-case expansion calculations
-                    // performed earlier didn't take that into account.
+                    int pendingReadDataPopulatedJustNow;
+                    bool isEofReached;
 
-                    int innerBytesReadJustNow = _innerStream.Read(rentedBytes, 0, DefaultReadByteBufferSize);
-                    bool isEofReached = (innerBytesReadJustNow == 0);
+                    do
+                    {
+                        // Beware: Use our constant value instead of 'rentedBytes.Length' for the count
+                        // parameter below. The reason for this is that the array pool could've returned
+                        // a larger-than-expected array, but our worst-case expansion calculations
+                        // performed earlier didn't take that into account.
 
-                    // convert bytes [inner] -> chars, then convert chars -> bytes [this]
+                        int innerBytesReadJustNow = _innerStream.Read(rentedBytes, 0, DefaultReadByteBufferSize);
+                        isEofReached = (innerBytesReadJustNow == 0);
 
-                    int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
-                    int pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
+                        // Convert bytes [inner] -> chars, then convert chars -> bytes [this].
+                        // We can't return 0 to our caller until inner stream EOF has been reached. But if the
+                        // inner stream returns a non-empty but incomplete buffer, GetBytes may return 0 anyway
+                        // since it can't yet make forward progress on the input data. If this happens, we'll
+                        // loop so that we don't return 0 to our caller until we truly see inner stream EOF.
+
+                        int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
+                        pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
+                    } while (!isEofReached && pendingReadDataPopulatedJustNow == 0);
 
                     _readBufferOffset = 0;
                     _readBufferCount = pendingReadDataPopulatedJustNow;
@@ -352,10 +359,7 @@ namespace System.Text
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
@@ -387,18 +391,28 @@ namespace System.Text
 
                     try
                     {
-                        // Beware: Use our constant value instead of 'rentedBytes.Length' when creating
-                        // the Mem<byte> struct. The reason for this is that the array pool could've returned
-                        // a larger-than-expected array, but our worst-case expansion calculations
-                        // performed earlier didn't take that into account.
+                        int pendingReadDataPopulatedJustNow;
+                        bool isEofReached;
 
-                        int innerBytesReadJustNow = await _innerStream.ReadAsync(rentedBytes.AsMemory(0, DefaultReadByteBufferSize), cancellationToken).ConfigureAwait(false);
-                        bool isEofReached = (innerBytesReadJustNow == 0);
+                        do
+                        {
+                            // Beware: Use our constant value instead of 'rentedBytes.Length' when creating
+                            // the Mem<byte> struct. The reason for this is that the array pool could've returned
+                            // a larger-than-expected array, but our worst-case expansion calculations
+                            // performed earlier didn't take that into account.
 
-                        // convert bytes [inner] -> chars, then convert chars -> bytes [this]
+                            int innerBytesReadJustNow = await _innerStream.ReadAsync(rentedBytes.AsMemory(0, DefaultReadByteBufferSize), cancellationToken).ConfigureAwait(false);
+                            isEofReached = (innerBytesReadJustNow == 0);
 
-                        int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
-                        int pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
+                            // Convert bytes [inner] -> chars, then convert chars -> bytes [this].
+                            // We can't return 0 to our caller until inner stream EOF has been reached. But if the
+                            // inner stream returns a non-empty but incomplete buffer, GetBytes may return 0 anyway
+                            // since it can't yet make forward progress on the input data. If this happens, we'll
+                            // loop so that we don't return 0 to our caller until we truly see inner stream EOF.
+
+                            int charsDecodedJustNow = _innerDecoder.GetChars(rentedBytes, 0, innerBytesReadJustNow, rentedChars, 0, flush: isEofReached);
+                            pendingReadDataPopulatedJustNow = _thisEncoder.GetBytes(rentedChars, 0, charsDecodedJustNow, _readBuffer, 0, flush: isEofReached);
+                        } while (!isEofReached && pendingReadDataPopulatedJustNow == 0);
 
                         _readBufferOffset = 0;
                         _readBufferCount = pendingReadDataPopulatedJustNow;
@@ -423,18 +437,17 @@ namespace System.Text
             }
         }
 
-        public override int ReadByte()
+        public override unsafe int ReadByte()
         {
-            Span<byte> buffer = stackalloc byte[1];
-            int bytesRead = Read(buffer);
-            return (bytesRead == 0) ? -1 /* EOF */ : buffer[0];
+            byte b;
+            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
             => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         public override void SetLength(long value)
-            => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            => ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
         [StackTraceHidden]
         private void ThrowIfDisposed()
@@ -449,17 +462,12 @@ namespace System.Text
         [StackTraceHidden]
         private void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(
-                objectName: GetType().Name,
-                message: SR.ObjectDisposed_StreamClosed);
+            ThrowHelper.ThrowObjectDisposedException_StreamClosed(GetType().Name);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             Write(new ReadOnlySpan<byte>(buffer, offset, count));
         }
@@ -467,6 +475,11 @@ namespace System.Text
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             EnsurePreWriteConditions();
+
+            if (buffer.IsEmpty)
+            {
+                return;
+            }
 
             int rentalLength = Math.Clamp(buffer.Length, MinWriteRentedArraySize, MaxWriteRentedArraySize);
 
@@ -488,11 +501,11 @@ namespace System.Text
                         out int charsWritten,
                         out decoderFinished);
 
-                    buffer = buffer[bytesConsumed..];
+                    buffer = buffer.Slice(bytesConsumed);
 
                     // convert chars -> bytes [inner]
 
-                    Span<char> decodedChars = scratchChars.AsSpan(..charsWritten);
+                    Span<char> decodedChars = scratchChars.AsSpan(0, charsWritten);
 
                     do
                     {
@@ -504,7 +517,7 @@ namespace System.Text
                             out int bytesWritten,
                             out encoderFinished);
 
-                        decodedChars = decodedChars[charsConsumed..];
+                        decodedChars = decodedChars.Slice(charsConsumed);
 
                         // It's more likely that the inner stream provides an optimized implementation of
                         // Write(byte[], ...) over Write(ROS<byte>), so we'll prefer the byte[]-based overloads.
@@ -522,10 +535,7 @@ namespace System.Text
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
@@ -537,6 +547,11 @@ namespace System.Text
             if (cancellationToken.IsCancellationRequested)
             {
                 return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            if (buffer.IsEmpty)
+            {
+                return ValueTask.CompletedTask;
             }
 
             return WriteAsyncCore(buffer, cancellationToken);
@@ -562,7 +577,7 @@ namespace System.Text
                             out int charsWritten,
                             out decoderFinished);
 
-                        remainingOuterEncodedBytes = remainingOuterEncodedBytes[bytesConsumed..];
+                        remainingOuterEncodedBytes = remainingOuterEncodedBytes.Slice(bytesConsumed);
 
                         // convert chars -> bytes [inner]
 
@@ -578,7 +593,7 @@ namespace System.Text
                                 out int bytesWritten,
                                 out encoderFinished);
 
-                            decodedChars = decodedChars[charsConsumed..];
+                            decodedChars = decodedChars.Slice(charsConsumed);
                             await _innerStream.WriteAsync(new ReadOnlyMemory<byte>(scratchBytes, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
                         } while (!encoderFinished);
                     } while (!decoderFinished);
@@ -591,7 +606,7 @@ namespace System.Text
             }
         }
 
-        public override void WriteByte(byte value)
-            => Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+        public override unsafe void WriteByte(byte value)
+            => Write(new ReadOnlySpan<byte>(&value, 1));
     }
 }

@@ -6,9 +6,9 @@ using System.Diagnostics;
 
 namespace System.IO.MemoryMappedFiles
 {
-    internal partial class MemoryMappedView
+    internal sealed partial class MemoryMappedView
     {
-        public static unsafe MemoryMappedView CreateView(
+        public static MemoryMappedView CreateView(
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
         {
@@ -26,7 +26,7 @@ namespace System.IO.MemoryMappedFiles
             }
             if (memMappedFileHandle.IsClosed)
             {
-                throw new ObjectDisposedException(typeof(MemoryMappedFile).Name);
+                throw new ObjectDisposedException(nameof(MemoryMappedFile));
             }
 
             if (requestedSize == MemoryMappedFile.DefaultSize)
@@ -56,10 +56,10 @@ namespace System.IO.MemoryMappedFiles
             // If we have a file handle, get the file descriptor from it.  If the handle is null,
             // we'll use an anonymous backing store for the map.
             SafeFileHandle fd;
-            if (memMappedFileHandle._fileStream != null)
+            if (memMappedFileHandle._fileStreamHandle != null)
             {
                 // Get the file descriptor from the SafeFileHandle
-                fd = memMappedFileHandle._fileStream.SafeFileHandle;
+                fd = memMappedFileHandle._fileStreamHandle;
                 Debug.Assert(!fd.IsInvalid);
             }
             else

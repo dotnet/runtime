@@ -9,10 +9,17 @@ namespace System.DirectoryServices.Protocols
     {
         internal bool _needDispose;
 
-        internal ConnectionHandle()
+        public ConnectionHandle()
             :base(true)
         {
-            Interop.ldap_initialize(out handle, null);
+            Interop.Ldap.ldap_initialize(out handle, null);
+            _needDispose = true;
+        }
+
+        internal ConnectionHandle(string uri)
+            :base(true)
+        {
+            Interop.Ldap.ldap_initialize(out handle, uri);
             _needDispose = true;
         }
 
@@ -34,7 +41,7 @@ namespace System.DirectoryServices.Protocols
             if (_needDispose)
             {
                 IntPtr nullPointer = IntPtr.Zero;
-                Interop.ldap_unbind_ext_s(handle, ref nullPointer, ref nullPointer);
+                Interop.Ldap.ldap_unbind_ext_s(handle, ref nullPointer, ref nullPointer);
             }
 
             handle = IntPtr.Zero;
@@ -44,9 +51,9 @@ namespace System.DirectoryServices.Protocols
 
     internal sealed class SafeBerHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeBerHandle() : base(true)
+        public SafeBerHandle() : base(true)
         {
-            SetHandle(Interop.ber_alloc(1));
+            SetHandle(Interop.Ldap.ber_alloc(1));
             if (handle == IntPtr.Zero)
             {
                 throw new OutOfMemoryException();
@@ -62,7 +69,7 @@ namespace System.DirectoryServices.Protocols
             {
                 throw new BerConversionException();
             }
-            SetHandle(Interop.ber_init(value));
+            SetHandle(Interop.Ldap.ber_init(value));
             if (handle == IntPtr.Zero)
             {
                 throw new BerConversionException();
@@ -71,7 +78,7 @@ namespace System.DirectoryServices.Protocols
 
         protected override bool ReleaseHandle()
         {
-            Interop.ber_free(handle, 1);
+            Interop.Ldap.ber_free(handle, 1);
             return true;
         }
     }

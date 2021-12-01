@@ -65,7 +65,28 @@ namespace System.Net.Security.Tests
         [InlineData("www.apple.com")]
         [InlineData("www.icloud.com")]
         [PlatformSpecific(TestPlatforms.OSX)]
-        public async Task CertificateValidationApple_EndToEnd_Ok(string host)
+        public Task CertificateValidationApple_EndToEnd_Ok(string host)
+        {
+            return EndToEndHelper(host);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls12))]
+        [OuterLoop("Uses external servers")]
+        [InlineData("api.nuget.org")]
+        [InlineData("")]
+        public async Task DefaultConnect_EndToEnd_Ok(string host)
+        {
+            if (string.IsNullOrEmpty(host))
+            {
+                host = Configuration.Security.TlsServer.IdnHost;
+            }
+
+            await EndToEndHelper(host);
+            // Second try may change the handshake because of TLS resume.
+            await EndToEndHelper(host);
+        }
+
+        private async Task EndToEndHelper(string host)
         {
             using (var client = new TcpClient())
             {

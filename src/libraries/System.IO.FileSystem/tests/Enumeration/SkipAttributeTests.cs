@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO.Enumeration;
 using System.Linq;
 using Xunit;
@@ -21,25 +22,42 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
-        public void SkippingHiddenFiles()
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        public void SkippingHiddenFiles_Windows_OSX()
+        {
+            SkippingHiddenFilesInternal(useDotPrefix: false, useHiddenFlag: true);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void SkippingHiddenFiles_Unix()
+        {
+            SkippingHiddenFilesInternal(useDotPrefix: true, useHiddenFlag: false);
+        }
+
+        private void SkippingHiddenFilesInternal(bool useDotPrefix, bool useHiddenFlag)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
             DirectoryInfo testSubdirectory = Directory.CreateDirectory(Path.Combine(testDirectory.FullName, GetTestFileName()));
-            FileInfo fileOne = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
 
-            // Put a period in front to make it hidden on Unix
-            FileInfo fileTwo = new FileInfo(Path.Combine(testDirectory.FullName, "." + GetTestFileName()));
+            FileInfo fileOne = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
             FileInfo fileThree = new FileInfo(Path.Combine(testSubdirectory.FullName, GetTestFileName()));
-            FileInfo fileFour = new FileInfo(Path.Combine(testSubdirectory.FullName, "." + GetTestFileName()));
+
+            // Put a period in front of files two and four to make them hidden on Unix
+            string prefix = useDotPrefix ? "." : "";
+            FileInfo fileTwo = new FileInfo(Path.Combine(testDirectory.FullName, prefix + GetTestFileName()));
+            FileInfo fileFour = new FileInfo(Path.Combine(testSubdirectory.FullName, prefix + GetTestFileName()));
 
             fileOne.Create().Dispose();
             fileTwo.Create().Dispose();
-            if (PlatformDetection.IsWindows)
-                fileTwo.Attributes = fileTwo.Attributes | FileAttributes.Hidden;
             fileThree.Create().Dispose();
             fileFour.Create().Dispose();
-            if (PlatformDetection.IsWindows)
-                fileFour.Attributes = fileTwo.Attributes | FileAttributes.Hidden;
+
+            if (useHiddenFlag)
+            {
+                fileTwo.Attributes |= FileAttributes.Hidden;
+                fileFour.Attributes |= FileAttributes.Hidden;
+            }
 
             // Default EnumerationOptions is to skip hidden
             string[] paths = GetPaths(testDirectory.FullName, new EnumerationOptions());

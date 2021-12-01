@@ -78,10 +78,7 @@ namespace System.Net.NetworkInformation
 
         private void CheckDisposed()
         {
-            if (_disposeRequested)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposeRequested, this);
         }
 
         private void CheckStart()
@@ -423,8 +420,6 @@ namespace System.Net.NetworkInformation
         // Tests if the current machine supports the given ip protocol family.
         private void TestIsIpSupported(IPAddress ip)
         {
-            InitializeSockets();
-
             if (ip.AddressFamily == AddressFamily.InterNetwork && !SocketProtocolSupportPal.OSSupportsIPv4)
             {
                 throw new NotSupportedException(SR.net_ipv4_not_installed);
@@ -435,7 +430,6 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        static partial void InitializeSockets();
         partial void InternalDisposeCore();
 
         // Creates a default send buffer if a buffer wasn't specified.  This follows the ping.exe model.

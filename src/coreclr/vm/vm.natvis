@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+Licensed to the .NET Foundation under one or more agreements.
+The .NET Foundation licenses this file to you under the MIT license.
+-->
+
+
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="HolderBase&lt;*&gt;">
+        <DisplayString>{m_value}</DisplayString>
+        <Expand>
+            <ExpandedItem>m_value</ExpandedItem>
+        </Expand>
+    </Type>
+    <Type Name="Volatile&lt;*&gt;">
+        <DisplayString>{m_val}</DisplayString>
+        <Expand>
+            <ExpandedItem>m_val</ExpandedItem>
+        </Expand>
+    </Type>
+    <Type Name="Object">
+        <Expand>
+            <Item Name="[Type]">m_pMethTab</Item>
+            <Item Name="[Header]">*(((PTR_ObjHeader)this)-1)</Item>
+        </Expand>
+    </Type>
+    <Type Name="ObjHeader">
+        <Expand>
+            <Item Name="[Object]">(PTR_Object)(this + 1)</Item>
+            <Item Name="[SyncBlock]" Condition="(m_SyncBlockValue.m_val &amp; 0x0C000000) == 0x08000000">g_pSyncTable [m_SyncBlockValue.m_val &amp; ((1&lt;&lt;26)-1)].m_SyncBlock</Item>
+        </Expand>
+    </Type>
+    <Type Name="MethodTable">
+        <Expand>
+            <Item Name="[Type Name]" Optional="true">debug_m_szClassName,s8</Item>
+        </Expand>
+    </Type>
+</AutoVisualizer>

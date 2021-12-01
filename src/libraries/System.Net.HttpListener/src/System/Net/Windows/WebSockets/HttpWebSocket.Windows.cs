@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -14,7 +15,7 @@ namespace System.Net.WebSockets
     internal static partial class HttpWebSocket
     {
         internal static Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(HttpListenerContext context,
-            string subProtocol,
+            string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
@@ -27,12 +28,12 @@ namespace System.Net.WebSockets
         }
 
         private static async Task<HttpListenerWebSocketContext> AcceptWebSocketAsyncCore(HttpListenerContext context,
-            string subProtocol,
+            string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
         {
-            HttpListenerWebSocketContext webSocketContext = null;
+            HttpListenerWebSocketContext? webSocketContext = null;
             try
             {
                 // get property will create a new response if one doesn't exist.
@@ -40,10 +41,10 @@ namespace System.Net.WebSockets
                 HttpListenerRequest request = context.Request;
                 ValidateWebSocketHeaders(context);
 
-                string secWebSocketVersion = request.Headers[HttpKnownHeaderNames.SecWebSocketVersion];
+                string? secWebSocketVersion = request.Headers[HttpKnownHeaderNames.SecWebSocketVersion];
 
                 // Optional for non-browser client
-                string origin = request.Headers[HttpKnownHeaderNames.Origin];
+                string? origin = request.Headers[HttpKnownHeaderNames.Origin];
 
                 List<string> secWebSocketProtocols = new List<string>();
                 string outgoingSecWebSocketProtocolString;
@@ -61,7 +62,7 @@ namespace System.Net.WebSockets
                 }
 
                 // negotiate the websocket key return value
-                string secWebSocketKey = request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
+                string? secWebSocketKey = request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
                 string secWebSocketAccept = HttpWebSocket.GetSecWebSocketAcceptString(secWebSocketKey);
 
                 response.Headers.Add(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
@@ -91,7 +92,7 @@ namespace System.Net.WebSockets
 
                 await response.OutputStream.FlushAsync().SuppressContextFlow();
 
-                HttpResponseStream responseStream = response.OutputStream as HttpResponseStream;
+                HttpResponseStream responseStream = (response.OutputStream as HttpResponseStream)!;
                 Debug.Assert(responseStream != null, "'responseStream' MUST be castable to System.Net.HttpResponseStream.");
                 ((HttpResponseStream)response.OutputStream).SwitchToOpaqueMode();
                 HttpRequestStream requestStream = new HttpRequestStream(context);
@@ -105,17 +106,17 @@ namespace System.Net.WebSockets
                     internalBuffer);
 
                 webSocketContext = new HttpListenerWebSocketContext(
-                                                                    request.Url,
+                                                                    request.Url!,
                                                                     request.Headers,
                                                                     request.Cookies,
-                                                                    context.User,
+                                                                    context.User!,
                                                                     request.IsAuthenticated,
                                                                     request.IsLocal,
                                                                     request.IsSecureConnection,
-                                                                    origin,
+                                                                    origin!,
                                                                     secWebSocketProtocols.AsReadOnly(),
-                                                                    secWebSocketVersion,
-                                                                    secWebSocketKey,
+                                                                    secWebSocketVersion!,
+                                                                    secWebSocketKey!,
                                                                     webSocket);
 
                 if (NetEventSource.Log.IsEnabled())
@@ -134,15 +135,6 @@ namespace System.Net.WebSockets
             }
 
             return webSocketContext;
-        }
-
-        internal static string GetTraceMsgForParameters(int offset, int count, CancellationToken cancellationToken)
-        {
-            return string.Format(CultureInfo.InvariantCulture,
-                "offset: {0}, count: {1}, cancellationToken.CanBeCanceled: {2}",
-                offset,
-                count,
-                cancellationToken.CanBeCanceled);
         }
 
         internal static ConfiguredTaskAwaitable SuppressContextFlow(this Task task)
@@ -197,6 +189,7 @@ namespace System.Net.WebSockets
             }
         }
 
+        [DoesNotReturn]
         internal static void ThrowPlatformNotSupportedException_WSPC()
         {
             throw new PlatformNotSupportedException(SR.net_WebSockets_UnsupportedPlatform);

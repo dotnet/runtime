@@ -1,29 +1,37 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
     <!-- Create an intermediate runsettings file to enable VSTest discovery. -->
     <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
     <CreateIntermediateRunSettingsFile>true</CreateIntermediateRunSettingsFile>
+    <CreateVsCodeRunSettingsFile>true</CreateVsCodeRunSettingsFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <!--
-    Explicitly build the runtime.depproj project first to create the PlatformManifest for
+    Explicitly build the externals.csproj project first to create the PlatformManifest for
     the targeting and runtimepack before the test runners which consume that asset are built.
   -->
   <ItemGroup>
-    <RuntimeProject Include="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj" />
-    <ProjectReference Include="@(RuntimeProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+    <ExternalsProject Include="externals.csproj" />
+    <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
-    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"/>
+    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"/>
     <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
     <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'Browser'" />
+
+    <!-- needed to test workloads for wasm -->
+    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" Pack="true" Condition="'$(TargetOS)' == 'Browser'" />
   </ItemGroup>
-  
-  <Target Name="RestoreRuntimeDepproj"
+
+  <Target Name="BuildExternalsProject"
           BeforeTargets="Build">
     <MSBuild Targets="Build"
-             Projects="@(RuntimeProject)"
+             Projects="@(ExternalsProject)"
              Properties="$(TraversalGlobalProperties)" />
   </Target>
 
@@ -34,6 +42,7 @@
 
   <Target Name="GetSharedFrameworkRuntimeFiles">
     <ItemGroup>
+      <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Android.so" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.OpenSsl.so" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Apple.dylib" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
@@ -48,42 +57,42 @@
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateFileVersionPropsRuntimePack"
           DependsOnTargets="GetSharedFrameworkRuntimeFiles"
-          AfterTargets="RestoreRuntimeDepproj"
+          AfterTargets="BuildExternalsProject"
           Inputs="@(SharedFrameworkRuntimeFile)"
           Outputs="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
-                              PackageId="$(SharedFrameworkName).Runtime.$(PackageRID)"
+                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(PackageRID)"
                               PackageVersion="$(ProductVersion)"
                               PlatformManifestFile="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
-                              PreferredPackages="$(SharedFrameworkName).Runtime.$(PackageRID)"
+                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(PackageRID)"
                               PermitDllAndExeFilesLackingFileVersion="true" />
   </Target>
 
   <!-- Generate the ref pack's PlatformManifest -->
   <Target Name="GenerateFileVersionPropsRefPack"
           DependsOnTargets="GetSharedFrameworkRuntimeFiles"
-          AfterTargets="RestoreRuntimeDepproj"
+          AfterTargets="BuildExternalsProject"
           Inputs="@(SharedFrameworkRuntimeFile)"
           Outputs="$(MicrosoftNetCoreAppRefPackDataDir)PlatformManifest.txt"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
-                              PackageId="$(SharedFrameworkName).Ref"
+                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Ref"
                               PackageVersion="$(ProductVersion)"
                               PlatformManifestFile="$(MicrosoftNetCoreAppRefPackDataDir)PlatformManifest.txt"
-                              PreferredPackages="$(SharedFrameworkName).Ref"
+                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Ref"
                               PermitDllAndExeFilesLackingFileVersion="true" />
   </Target>
 
   <!-- Generate the shared framework's deps.json -->
   <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateTestSharedFrameworkAssets"
-          AfterTargets="RestoreRuntimeDepproj"
-          Inputs="$(NETCoreAppTestSharedFrameworkPath)*.*"
-          Outputs="$(NETCoreAppTestSharedFrameworkPath)$(SharedFrameworkName).deps.json"
-          Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
+          AfterTargets="BuildExternalsProject"
+          Inputs="$(NetCoreAppCurrentTestHostSharedFrameworkPath)*.*"
+          Outputs="$(NetCoreAppCurrentTestHostSharedFrameworkPath)$(MicrosoftNetCoreAppFrameworkName).deps.json"
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
-    <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
+    <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NetCoreAppCurrentTestHostSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />
   </Target>
@@ -114,18 +123,18 @@
   </Target>
 
   <!-- Generate the runtime pack's RuntimeList.xml -->
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetBuildTasksSharedFrameworkTaskFile)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)"/>
   <Target Name="GenerateRuntimeListFile"
           DependsOnTargets="GetRuntimePackFiles"
-          AfterTargets="RestoreRuntimeDepproj"
+          AfterTargets="BuildExternalsProject"
           Inputs="@(RuntimePackLibFile);@(RuntimePackNativeFile)"
           Outputs="$(MicrosoftNetCoreAppRuntimePackDir)data\RuntimeList.xml"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ItemGroup>
       <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
       <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
       <FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
-      <FrameworkListRootAttribute Include="FrameworkName" Value="$(SharedFrameworkName)" />
+      <FrameworkListRootAttribute Include="FrameworkName" Value="$(MicrosoftNetCoreAppFrameworkName)" />
     </ItemGroup>
 
     <CreateFrameworkListFile Files="@(RuntimePackLibFile);@(RuntimePackNativeFile)"
@@ -134,5 +143,5 @@
                              RootAttributes="@(FrameworkListRootAttribute)" />
   </Target>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 </Project>

@@ -1,0 +1,17 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Managed clients include an app manifest, making them incompatible with some test scenarios -->
+  <PropertyGroup Condition="'$(IsManagedCOMClient)' == 'true'">
+    <!-- Tests would require the runincontext.exe to include a manifest describing the COM interfaces -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- ilasm round-trip testing blocked on ILAsm supporting embedding resources. See https://github.com/dotnet/runtime/issues/11412 -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseManagedCOMServer)' == 'true'">
+    <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
+    <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+</Project>

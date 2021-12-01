@@ -9,6 +9,11 @@ namespace System.Runtime.CompilerServices
     public static partial class CompilerMarshalOverride
     {
     }
+    [AttributeUsageAttribute(AttributeTargets.Assembly, AllowMultiple=true)]
+    public sealed class CppInlineNamespaceAttribute : Attribute
+    {
+        public CppInlineNamespaceAttribute(string dottedName) {}
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class HasCopySemanticsAttribute : System.Attribute
     {
@@ -48,11 +53,6 @@ namespace System.Runtime.CompilerServices
     public sealed partial class NativeCppClassAttribute : System.Attribute
     {
         public NativeCppClassAttribute() { }
-    }
-    [AttributeUsageAttribute(AttributeTargets.Assembly, AllowMultiple=true)]
-    public sealed class CppInlineNamespaceAttribute : Attribute
-    {
-        public CppInlineNamespaceAttribute(string dottedName) {}
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class RequiredAttributeAttribute : System.Attribute

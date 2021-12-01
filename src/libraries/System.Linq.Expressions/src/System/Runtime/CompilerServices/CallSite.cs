@@ -266,31 +266,28 @@ namespace System.Runtime.CompilerServices
             if (i > 1)
             {
                 T[] rules = Rules!;
-                T rule = rules[i];
+                // Synchronization of AddRule is omitted for performance. Concurrent invocations of AddRule
+                // may cause Rules to revert back to an older (smaller) version, making i out of bounds.
+                if (i < rules.Length)
+                {
+                    T rule = rules[i];
 
-                rules[i] = rules[i - 1];
-                rules[i - 1] = rules[i - 2];
-                rules[i - 2] = rule;
+                    rules[i] = rules[i - 1];
+                    rules[i - 1] = rules[i - 2];
+                    rules[i - 2] = rule;
+                }
             }
         }
 
-#if FEATURE_COMPILE
-        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(UpdateDelegates))]
-#endif
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "UpdateDelegates methods don't have ILLink annotations.")]
         internal T MakeUpdateDelegate()
         {
-#if !FEATURE_COMPILE
             Type target = typeof(T);
             MethodInfo invoke = target.GetInvokeMethod();
 
-            s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
-            return CreateCustomUpdateDelegate(invoke);
-#else
-            Type target = typeof(T);
-            Type[] args;
-            MethodInfo invoke = target.GetInvokeMethod();
-
-            if (target.IsGenericType && IsSimpleSignature(invoke, out args))
+            if (System.Linq.Expressions.LambdaExpression.CanCompileToIL
+                && target.IsGenericType && IsSimpleSignature(invoke, out Type[] args))
             {
                 MethodInfo? method = null;
                 MethodInfo? noMatchMethod = null;
@@ -320,10 +317,8 @@ namespace System.Runtime.CompilerServices
 
             s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
             return CreateCustomUpdateDelegate(invoke);
-#endif
         }
 
-#if FEATURE_COMPILE
         private static bool IsSimpleSignature(MethodInfo invoke, out Type[] sig)
         {
             ParameterInfo[] pis = invoke.GetParametersCached();
@@ -348,8 +343,9 @@ namespace System.Runtime.CompilerServices
             sig = args;
             return supported;
         }
-#endif
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "CallSiteOps methods don't have trimming annotations.")]
         private T CreateCustomUpdateDelegate(MethodInfo invoke)
         {
             Type returnType = invoke.GetReturnType();
@@ -378,7 +374,7 @@ namespace System.Runtime.CompilerServices
             ParameterExpression originalRule = Expression.Variable(typeof(T), "originalRule");
             vars.UncheckedAdd(originalRule);
 
-            Expression target = Expression.Field(@this, nameof(Target));
+            Expression target = Expression.Field(@this, typeof(CallSite<T>).GetField(nameof(Target))!);
             body.UncheckedAdd(Expression.Assign(originalRule, target));
 
             ParameterExpression? result = null;
@@ -595,7 +591,7 @@ namespace System.Runtime.CompilerServices
                     rule,
                     Expression.Call(
                         CallSiteOps_Bind.MakeGenericMethod(typeArgs),
-                        Expression.Property(@this, nameof(Binder)),
+                        Expression.Property(@this, typeof(CallSite).GetProperty(nameof(Binder))!),
                         @this,
                         args
                     )

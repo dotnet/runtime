@@ -1,18 +1,18 @@
 # Working in dotnet/runtime using Visual Studio
 
-Visual Studio is a great tool to use when working in the dotnet/runtime repo. 
+Visual Studio is a great tool to use when working in the dotnet/runtime repo.
 
 Almost all its features should work well, but there are a few special considerations to bear in mind:
 
-## Test Explorer 
+## Test Explorer
 
 You can run tests from the Visual Studio Test Explorer, but there are a few settings you need:
 - Enable `Auto detect runsettings Files` (`Test Explorer window -> Settings button -> Options`). Test parameters (like which `dotnet` host to use) are persisted in an auto-generated .runsettings file, and it's important that Visual Studio knows to use it.
 - Set `Processor Architecture for AnyCPU project` to `auto` (`Test Explorer window -> Settings button`).
-- Consider whether to disable `Discover tests in real time from C# and Visual Basic .NET source files` (`Test explorer window -> Settings button -> Options`). 
+- Consider whether to disable `Discover tests in real time from C# and Visual Basic .NET source files` (`Test explorer window -> Settings button -> Options`).
     - You may want it enabled if you're actively writing new tests and want them to show up in Test Explorer without building first.
     - You may want it disabled if you're mostly running existing tests, and some of them have conditional attributes. Many of our unit tests have attributes, like `[SkipOnTargetFramework]`, to indicate that they're only valid in certain configurations. Because the real-time discovery feature does not currently recognize these attributes the tests will show up in Test Explorer as well, and fail or possibly hang when you try to run them.
-- Consider whether to enable `Run tests in Parallel` (`Test Explorer window -> Settings button`). 
+- Consider whether to enable `Run tests in Parallel` (`Test Explorer window -> Settings button`).
     - You may want it enabled if some of the unit tests you're working with run slowly or there's many of them.
     - You may want it disabled if you want to simplify debugging or viewing debug output.
 

@@ -7,12 +7,9 @@ namespace System.Formats.Cbor
 {
     public partial class CborReader
     {
-        /// <summary>
-        ///   Read the next CBOR token, without advancing the reader.
-        /// </summary>
-        /// <exception cref="CborContentException">
-        ///   The underlying data is not a well-formed CBOR encoding.
-        /// </exception>
+        /// <summary>Reads the next CBOR token, without advancing the reader.</summary>
+        /// <returns>An object that represents the current CBOR reader state.</returns>
+        /// <exception cref="CborContentException">The underlying data is not a well-formed CBOR encoding.</exception>
         public CborReaderState PeekState()
         {
             if (_cachedState == CborReaderState.Undefined)

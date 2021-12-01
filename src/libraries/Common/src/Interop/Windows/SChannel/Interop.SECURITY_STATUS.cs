@@ -50,5 +50,6 @@ internal static partial class Interop
         BadBinding = unchecked((int)0x80090346),
         DowngradeDetected = unchecked((int)0x80090350),
         ApplicationProtocolMismatch = unchecked((int)0x80090367),
+        NoRenegotiation = unchecked((int)0x00090360),
     }
 }

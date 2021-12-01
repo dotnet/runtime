@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/mono-private-unstable.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/utils/mono-forward.h>
 #include <mono/utils/mono-error.h>
@@ -29,19 +30,9 @@ typedef struct MonoLookupPInvokeStatus {
 } MonoLookupPInvokeStatus;
 
 gpointer
-mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus *error);
+mono_lookup_pinvoke_qcall_internal (const char *name);
 
-typedef struct MonoQCallDef
-{
-    const char *class_name;
-    const char *namespace_name;
-    const void **functions;
-} MonoQCallDef;
-
-typedef struct MonoQCallFunc {
-    intptr_t        flags; //legal values (0x01 - end of array mareker, 0x08 - qcall)
-    void           *implementation;
-    const char     *method_name;
-} MonoQCallFunc;
+void
+mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn);
 
 #endif

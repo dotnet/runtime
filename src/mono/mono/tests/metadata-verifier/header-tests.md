@@ -24,21 +24,21 @@ msdos-lfanew {
 	invalid offset 0x3f truncate
 
 	#not enough space for the PE water mark
-	invalid offset 0x3c set-uint 0xffffffff 
-	invalid offset 0x3c set-uint file-size - 1 
+	invalid offset 0x3c set-uint 0xffffffff
+	invalid offset 0x3c set-uint file-size - 1
 	invalid offset 0x3c set-uint file-size - 2
 }
 
 pe-signature {
 	assembly simple-assembly.exe
 
-	valid offset pe-signature + 0 set-byte 'P'	
-	valid offset pe-signature + 1 set-byte 'E'	
+	valid offset pe-signature + 0 set-byte 'P'
+	valid offset pe-signature + 1 set-byte 'E'
 	valid offset pe-signature + 2 set-byte 0
 	valid offset pe-signature + 3 set-byte 0
 
-	invalid offset pe-signature + 0 set-byte 'M'	
-	invalid offset pe-signature + 1 set-byte 'K'	
+	invalid offset pe-signature + 0 set-byte 'M'
+	invalid offset pe-signature + 1 set-byte 'K'
 	invalid offset pe-signature + 2 set-byte 1
 	invalid offset pe-signature + 3 set-byte 2
 
@@ -100,7 +100,7 @@ pe-optional-header-standard-fields {
 
 	valid offset pe-optional-header + 3 set-byte 0
 	valid offset pe-optional-header + 3 set-byte 99
-	
+
 	#Code size is just an informative field as well, nobody cares
 	valid offset pe-optional-header + 4 set-uint 0
 	valid offset pe-optional-header + 4 set-uint 0x999999

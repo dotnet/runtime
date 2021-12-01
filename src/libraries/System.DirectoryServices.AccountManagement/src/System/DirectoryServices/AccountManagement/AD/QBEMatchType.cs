@@ -5,7 +5,7 @@ using System;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class QbeMatchType
+    internal sealed class QbeMatchType
     {
         private object _value;
         private MatchType _matchType;

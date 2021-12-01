@@ -26,6 +26,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-mmap.h>
@@ -455,7 +456,7 @@ get_call_info_internal (CallInfo *cinfo, MonoMethodSignature *sig)
 			add_general (&gr, param_regs, &stack_size, &cinfo->sig_cookie);
 		}
 
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			add_general (&gr, param_regs, &stack_size, ainfo);
 			continue;
 		}
@@ -1330,7 +1331,7 @@ collect_fp_stack_space (MonoMethodSignature *sig, int start_arg, int *fp_arg_set
 
 	for (; start_arg < sig->param_count; ++start_arg) {
 		t = mini_get_underlying_type (sig->params [start_arg]);
-		if (!t->byref && t->type == MONO_TYPE_R8) {
+		if (!m_type_is_byref (t) && t->type == MONO_TYPE_R8) {
 			fp_space += sizeof (double);
 			*fp_arg_setup = start_arg;
 		} else {
@@ -1611,7 +1612,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		} else {
 			switch (ainfo->storage) {
 			case ArgOnStack:
-				if (!t->byref) {
+				if (!m_type_is_byref (t)) {
 					if (t->type == MONO_TYPE_R4) {
 						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, X86_ESP, ainfo->offset, in->dreg);
 						argsize = 4;
@@ -1648,7 +1649,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 						/* this */
 						if (call->need_unbox_trampoline)
 							/* The unbox trampoline transforms this into a managed pointer */
-							emit_gc_param_slot_def (cfg, ainfo->offset, m_class_get_this_arg (mono_defaults.int_class));
+							emit_gc_param_slot_def (cfg, ainfo->offset, mono_class_get_byref_type (mono_defaults.int_class));
 						else
 							emit_gc_param_slot_def (cfg, ainfo->offset, mono_get_object_type ());
 					} else {
@@ -1746,7 +1747,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
-	if (!ret->byref) {
+	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_R4) {
 			if (COMPILE_LLVM (cfg))
 				MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
@@ -4745,18 +4746,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_EXTRACT_I1:
-		case OP_EXTRACT_U1:
 			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
 			if (ins->inst_c0)
 				x86_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_c0 * 8);
-			x86_widen_reg (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I1, FALSE);
+			x86_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I1, FALSE);
 			break;
 		case OP_EXTRACT_I2:
-		case OP_EXTRACT_U2:
 			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
 			if (ins->inst_c0)
 				x86_shift_reg_imm (code, X86_SHR, ins->dreg, 16);
-			x86_widen_reg (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I2, TRUE);
+			x86_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I2, TRUE);
 			break;
 		case OP_EXTRACT_R8:
 			if (ins->inst_c0)
@@ -4981,7 +4980,7 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	unsigned char *ip = ji->ip.i + code;
 
@@ -5518,13 +5517,14 @@ imt_branch_distance (MonoIMTCheckItem **imt_entries, int start, int target)
  * LOCKING: called with the domain lock held
  */
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count,
 	gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
 	guint8 *code, *start;
 	GSList *unwind_ops;
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -5549,10 +5549,11 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		}
 		size += item->chunk_size;
 	}
-	if (fail_tramp)
-		code = (guint8*)mono_method_alloc_generic_virtual_trampoline (domain, size);
-	else
-		code = mono_domain_code_reserve (domain, size);
+	if (fail_tramp) {
+		code = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, size);
+	} else {
+		code = mono_mem_manager_code_reserve (mem_manager, size);
+	}
 	start = code;
 
 	unwind_ops = mono_arch_get_cie_program ();
@@ -5642,7 +5643,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), mem_manager);
 
 	return start;
 }
@@ -5767,7 +5768,7 @@ mono_arch_get_patch_offset (guint8 *code)
 }
 
 /**
- * \return TRUE if no sw breakpoint was present.
+ * \return TRUE if no sw breakpoint was present (always).
  *
  * Copy \p size bytes from \p code - \p offset to the buffer \p buf. If the debugger inserted software
  * breakpoints in the original code, they are removed in the copy.
@@ -6073,6 +6074,24 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	}
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	switch (reg) {
+	case X86_EAX: return &ctx->eax;
+	case X86_EBX: return &ctx->ebx;
+	case X86_ECX: return &ctx->ecx;
+	case X86_EDX: return &ctx->edx;
+	case X86_ESP: return &ctx->esp;
+	case X86_EBP: return &ctx->ebp;
+	case X86_ESI: return &ctx->esi;
+	case X86_EDI: return &ctx->edi;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
 void
 mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 {
@@ -6292,8 +6311,8 @@ mono_arch_emit_load_got_addr (guint8 *start, guint8 *code, MonoCompile *cfg, Mon
 		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_GOT_OFFSET, NULL);
 	x86_pop_reg (code, MONO_ARCH_GOT_REG);
 	x86_alu_reg_imm (code, X86_ADD, MONO_ARCH_GOT_REG, 0xf0f0f0f0);
-
-	set_code_cursor (cfg, code);
+	if (cfg)
+		set_code_cursor (cfg, code);
 	return code;
 }
 
@@ -6439,7 +6458,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
  *   See mini-amd64.c for docs.
  */
 SeqPointInfo*
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	NOT_IMPLEMENTED;
 	return NULL;

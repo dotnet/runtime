@@ -53,7 +53,7 @@ namespace System.Collections
         // Fills a Stack with the contents of a particular collection.  The items are
         // pushed onto the stack in the same order they are read by the enumerator.
         //
-        public Stack(ICollection col) : this((col == null ? 32 : col.Count))
+        public Stack(ICollection col) : this(col == null ? 32 : col.Count)
         {
             if (col == null)
                 throw new ArgumentNullException(nameof(col));
@@ -216,7 +216,7 @@ namespace System.Collections
             return objArray;
         }
 
-        private class SyncStack : Stack
+        private sealed class SyncStack : Stack
         {
             private readonly Stack _s;
             private readonly object _root;
@@ -324,7 +324,7 @@ namespace System.Collections
             }
         }
 
-        private class StackEnumerator : IEnumerator, ICloneable
+        private sealed class StackEnumerator : IEnumerator, ICloneable
         {
             private readonly Stack _stack;
             private int _index;
@@ -341,7 +341,7 @@ namespace System.Collections
 
             public object Clone() => MemberwiseClone();
 
-            public virtual bool MoveNext()
+            public bool MoveNext()
             {
                 bool retval;
                 if (_version != _stack._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
@@ -366,7 +366,7 @@ namespace System.Collections
                 return retval;
             }
 
-            public virtual object? Current
+            public object? Current
             {
                 get
                 {
@@ -376,7 +376,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual void Reset()
+            public void Reset()
             {
                 if (_version != _stack._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = -2;
@@ -384,7 +384,7 @@ namespace System.Collections
             }
         }
 
-        internal class StackDebugView
+        internal sealed class StackDebugView
         {
             private readonly Stack _stack;
 

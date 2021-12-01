@@ -60,7 +60,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task BufferSegmentsPooledUpToThreshold()
         {
-            int blockCount = Pipe.MaxSegmentPoolSize + 1;
+            int blockCount = PipeOptions.Default.MaxSegmentPoolSize + 1;
 
             // Write 256 blocks to ensure they get reused
             for (int i = 0; i < blockCount; i++)
@@ -95,9 +95,9 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.AdvanceTo(result.Buffer.End);
 
             // Assert Pipe.MaxSegmentPoolSize pooled segments
-            for (int i = 0; i < Pipe.MaxSegmentPoolSize; i++)
+            for (int i = 0; i < PipeOptions.Default.MaxSegmentPoolSize; i++)
             {
-                Assert.Same(oldSegments[i], newSegments[Pipe.MaxSegmentPoolSize - i - 1]);
+                Assert.Same(oldSegments[i], newSegments[PipeOptions.Default.MaxSegmentPoolSize - i - 1]);
             }
 
             // The last segment shouldn't exist in the new list of segments at all (it should be new)

@@ -220,7 +220,11 @@ namespace System.Configuration
 
             string parentListEnclosed = "," + _seedList + ",";
             if (name.Equals(_ignoreName) ||
-                (parentListEnclosed.IndexOf("," + name + ",", StringComparison.Ordinal) >= 0))
+#if NETCOREAPP
+                parentListEnclosed.Contains("," + name + ",", StringComparison.Ordinal))
+#else
+                parentListEnclosed.IndexOf("," + name + ",", StringComparison.Ordinal) >= 0)
+#endif
                 return true;
             return _internalDictionary.Contains(name) &&
                 (((ConfigurationValueFlags)_internalDictionary[name] & ConfigurationValueFlags.Inherited) != 0);

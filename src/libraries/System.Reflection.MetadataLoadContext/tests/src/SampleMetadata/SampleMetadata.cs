@@ -198,6 +198,8 @@ namespace SampleMetadata
         public void Foo4(short s = -34) { }
         public void Foo5(decimal d = 1234m) { }
         public void Foo6([DateTimeConstant(ticks: 8736726782)] DateTime dt) { }
+        public void Foo7(string s1 = "foo", string s2 = "", string s3 = null) { }
+        public void Foo8(Action a = null) { }
     }
 
     public class ParametersWithPseudoCustomtAttributes
@@ -418,6 +420,9 @@ namespace SampleMetadata
 
         [MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "Blah", MarshalCookie = "YumYum")]
         public int F20;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 65)]
+        public int F21;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -450,6 +455,8 @@ namespace SampleMetadata
         public MarkAttribute(int mark) { }
     }
 
+    public class MyGenericClass<T> { }
+
     public class MethodHolderBase<T>
     {
         [Mark(10)]
@@ -467,6 +474,17 @@ namespace SampleMetadata
         [Mark(30)]
         private void Poo(int x, int y) { }
 
+        [Mark(40)]
+        public virtual void Foo<K>(MyGenericClass<K> x, int y) { }
+
+        [Mark(50)]
+        public virtual void Foo<K>(MyGenericClass<T> x, int y) { }
+
+        [Mark(60)]
+        public virtual void Foo(MyGenericClass<T> x, string y) { }
+
+        [Mark(70)]
+        public virtual void Foo(int x, int y) { }
     }
 
     public class MethodHolderDerived<T> : MethodHolderBase<T>
@@ -476,6 +494,18 @@ namespace SampleMetadata
 
         [Mark(10020)]
         public override void Voo(int x, int y) { }
+
+        [Mark(10040)]
+        public override void Foo<K>(MyGenericClass<K> x, int y) { }
+
+        [Mark(10050)]
+        public virtual void Foo<K>(MyGenericClass<int> x, int y) { }
+
+        [Mark(10060)]
+        public override void Foo(MyGenericClass<T> x, string y) { }
+
+        [Mark(10070)]
+        public override void Foo(int x, int y) { }
     }
 
     public class PropertyHolder1<T>

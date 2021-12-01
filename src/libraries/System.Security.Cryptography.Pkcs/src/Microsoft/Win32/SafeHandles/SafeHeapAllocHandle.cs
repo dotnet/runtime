@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeHeapAllocHandle : SafeBuffer, IDisposable
     {
-        private SafeHeapAllocHandle() : base(true) { }
+        public SafeHeapAllocHandle() : base(true) { }
 
         internal static SafeHeapAllocHandle Alloc(int size)
         {

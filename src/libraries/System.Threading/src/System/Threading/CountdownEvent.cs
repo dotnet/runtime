@@ -8,6 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -414,6 +415,7 @@ namespace System.Threading
         /// </remarks>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void Wait()
         {
             Wait(Timeout.Infinite, CancellationToken.None);
@@ -437,6 +439,7 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void Wait(CancellationToken cancellationToken)
         {
             Wait(Timeout.Infinite, cancellationToken);
@@ -456,6 +459,7 @@ namespace System.Threading
         /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -486,6 +490,7 @@ namespace System.Threading
         /// disposed.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> has
         /// been canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -509,6 +514,7 @@ namespace System.Threading
         /// negative number other than -1, which represents an infinite time-out.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout)
         {
             return Wait(millisecondsTimeout, CancellationToken.None);
@@ -531,6 +537,7 @@ namespace System.Threading
         /// disposed.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> has
         /// been canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             if (millisecondsTimeout < -1)

@@ -178,5 +178,28 @@ namespace System.Linq
             // Don't pre-allocate based on knowledge of size, as potentially many elements will be dropped.
             return new HashSet<TSource>(source, comparer);
         }
+
+        /// <summary>Default initial capacity to use when creating sets for internal temporary storage.</summary>
+        /// <remarks>This is based on the implicit size used in previous implementations, which used a custom Set type.</remarks>
+        private const int DefaultInternalSetCapacity = 7;
+
+        private static TSource[] HashSetToArray<TSource>(HashSet<TSource> set)
+        {
+            var result = new TSource[set.Count];
+            set.CopyTo(result);
+            return result;
+        }
+
+        private static List<TSource> HashSetToList<TSource>(HashSet<TSource> set)
+        {
+            var result = new List<TSource>(set.Count);
+
+            foreach (TSource item in set)
+            {
+                result.Add(item);
+            }
+
+            return result;
+        }
     }
 }

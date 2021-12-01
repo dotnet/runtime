@@ -1,5 +1,6 @@
 #include "mini.h"
 #include "interp/interp.h"
+#include <mono/metadata/components.h>
 
 void mono_sdb_single_step_trampoline (void);
 
@@ -10,7 +11,7 @@ mono_wasm_specific_trampoline (void)
 }
 
 gpointer
-mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len)
 {
 	return (gpointer)mono_wasm_specific_trampoline;
 }
@@ -47,7 +48,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr)
 {
 	g_error (__func__);
 	return NULL;
@@ -76,10 +77,10 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	guint8* code;
 	if (single_step) {
 		name = "sdb_single_step_trampoline";
-		code = (guint8*)mono_wasm_single_step_hit;
+		code = (guint8*)mono_component_debugger ()->mono_wasm_single_step_hit;
 	} else {
 		name = "sdb_breakpoint_trampoline";
-		code = (guint8*)mono_wasm_breakpoint_hit;
+		code = (guint8*)mono_component_debugger ()->mono_wasm_breakpoint_hit;
 	}
 
 	if (info)
@@ -106,7 +107,7 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, host_mgreg_t *regs, guint8 *co
 }
 
 gpointer
-mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
+mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 {
 	g_error (__func__);
 	return NULL;

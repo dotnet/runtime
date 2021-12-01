@@ -43,77 +43,6 @@ namespace System.Collections.ObjectModel
         protected override void RemoveItem(int index) { }
         protected override void SetItem(int index, T item) { }
     }
-    public partial class ReadOnlyDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable where TKey : notnull
-    {
-        public ReadOnlyDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary) { }
-        public int Count { get { throw null; } }
-        protected System.Collections.Generic.IDictionary<TKey, TValue> Dictionary { get { throw null; } }
-        public TValue this[TKey key] { get { throw null; } }
-        public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.KeyCollection Keys { get { throw null; } }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.IsReadOnly { get { throw null; } }
-        TValue System.Collections.Generic.IDictionary<TKey,TValue>.this[TKey key] { get { throw null; } set { } }
-        System.Collections.Generic.ICollection<TKey> System.Collections.Generic.IDictionary<TKey,TValue>.Keys { get { throw null; } }
-        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<TKey,TValue>.Values { get { throw null; } }
-        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Keys { get { throw null; } }
-        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Values { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        bool System.Collections.IDictionary.IsFixedSize { get { throw null; } }
-        bool System.Collections.IDictionary.IsReadOnly { get { throw null; } }
-        object? System.Collections.IDictionary.this[object key] { get { throw null; } set { } }
-        System.Collections.ICollection System.Collections.IDictionary.Keys { get { throw null; } }
-        System.Collections.ICollection System.Collections.IDictionary.Values { get { throw null; } }
-        public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.ValueCollection Values { get { throw null; } }
-        public bool ContainsKey(TKey key) { throw null; }
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> GetEnumerator() { throw null; }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Clear() { }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
-        void System.Collections.Generic.IDictionary<TKey,TValue>.Add(TKey key, TValue value) { }
-        bool System.Collections.Generic.IDictionary<TKey,TValue>.Remove(TKey key) { throw null; }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object? value) { }
-        void System.Collections.IDictionary.Clear() { }
-        bool System.Collections.IDictionary.Contains(object key) { throw null; }
-        System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
-        void System.Collections.IDictionary.Remove(object key) { }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
-        public sealed partial class KeyCollection : System.Collections.Generic.ICollection<TKey>, System.Collections.Generic.IEnumerable<TKey>, System.Collections.Generic.IReadOnlyCollection<TKey>, System.Collections.ICollection, System.Collections.IEnumerable
-        {
-            internal KeyCollection() { }
-            public int Count { get { throw null; } }
-            bool System.Collections.Generic.ICollection<TKey>.IsReadOnly { get { throw null; } }
-            bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-            object System.Collections.ICollection.SyncRoot { get { throw null; } }
-            public void CopyTo(TKey[] array, int arrayIndex) { }
-            public System.Collections.Generic.IEnumerator<TKey> GetEnumerator() { throw null; }
-            void System.Collections.Generic.ICollection<TKey>.Add(TKey item) { }
-            void System.Collections.Generic.ICollection<TKey>.Clear() { }
-            bool System.Collections.Generic.ICollection<TKey>.Contains(TKey item) { throw null; }
-            bool System.Collections.Generic.ICollection<TKey>.Remove(TKey item) { throw null; }
-            void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        }
-        public sealed partial class ValueCollection : System.Collections.Generic.ICollection<TValue>, System.Collections.Generic.IEnumerable<TValue>, System.Collections.Generic.IReadOnlyCollection<TValue>, System.Collections.ICollection, System.Collections.IEnumerable
-        {
-            internal ValueCollection() { }
-            public int Count { get { throw null; } }
-            bool System.Collections.Generic.ICollection<TValue>.IsReadOnly { get { throw null; } }
-            bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-            object System.Collections.ICollection.SyncRoot { get { throw null; } }
-            public void CopyTo(TValue[] array, int arrayIndex) { }
-            public System.Collections.Generic.IEnumerator<TValue> GetEnumerator() { throw null; }
-            void System.Collections.Generic.ICollection<TValue>.Add(TValue item) { }
-            void System.Collections.Generic.ICollection<TValue>.Clear() { }
-            bool System.Collections.Generic.ICollection<TValue>.Contains(TValue item) { throw null; }
-            bool System.Collections.Generic.ICollection<TValue>.Remove(TValue item) { throw null; }
-            void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        }
-    }
     public partial class ReadOnlyObservableCollection<T> : System.Collections.ObjectModel.ReadOnlyCollection<T>, System.Collections.Specialized.INotifyCollectionChanged, System.ComponentModel.INotifyPropertyChanged
     {
         public ReadOnlyObservableCollection(System.Collections.ObjectModel.ObservableCollection<T> list) : base (default(System.Collections.Generic.IList<T>)) { }
@@ -198,18 +127,19 @@ namespace System.ComponentModel
     {
         public static readonly System.ComponentModel.TypeConverterAttribute Default;
         public TypeConverterAttribute() { }
-        public TypeConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName) { }
-        public TypeConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+        public TypeConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName) { }
+        public TypeConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ConverterTypeName { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=true)]
     public sealed partial class TypeDescriptionProviderAttribute : System.Attribute
     {
-        public TypeDescriptionProviderAttribute(string typeName) { }
-        public TypeDescriptionProviderAttribute(System.Type type) { }
+        public TypeDescriptionProviderAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName) { }
+        public TypeDescriptionProviderAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string TypeName { get { throw null; } }
     }
 }
@@ -226,7 +156,7 @@ namespace System.Windows.Input
     [System.Windows.Markup.ValueSerializerAttribute("System.Windows.Input.CommandValueSerializer, PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, Custom=null")]
     public partial interface ICommand
     {
-        event System.EventHandler CanExecuteChanged;
+        event System.EventHandler? CanExecuteChanged;
         bool CanExecute(object? parameter);
         void Execute(object? parameter);
     }
@@ -236,9 +166,11 @@ namespace System.Windows.Markup
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=true)]
     public sealed partial class ValueSerializerAttribute : System.Attribute
     {
-        public ValueSerializerAttribute(string valueSerializerTypeName) { }
-        public ValueSerializerAttribute(System.Type valueSerializerType) { }
+        public ValueSerializerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string valueSerializerTypeName) { }
+        public ValueSerializerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type valueSerializerType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type ValueSerializerType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ValueSerializerTypeName { get { throw null; } }
     }
 }

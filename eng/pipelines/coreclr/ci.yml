@@ -2,7 +2,7 @@ trigger:
   batch: true
   branches:
     include:
-    - master
+    - release/*.*
   paths:
     include:
     - '*'
@@ -23,14 +23,15 @@ trigger:
     - eng/pipelines/libraries/*
     - eng/pipelines/runtime.yml
 
-
-pr: none
+schedules:
+  - cron: "0 9,18,1 * * *" # run at 9:00, 18:00 and 01:00 (UTC) which is 2:00, 11:00 and 18:00 (PST).
+    displayName: runtime-coreclr-outerloop default schedule
+    branches:
+      include:
+      - main
+    always: false # run only if there were changes since the last successful scheduled run.
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Debug builds
@@ -45,9 +46,10 @@ jobs:
     - Linux_musl_arm64
     - Linux_musl_x64
     - Linux_x64
+    - OSX_arm64
     - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - windows_arm
+    - windows_arm64
     jobParameters:
       testGroup: outerloop
 
@@ -59,6 +61,10 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platformGroup: all
+    platforms:
+    # It is too early to include OSX_arm64 in platform group all
+    # Adding it here will enable it also
+    - OSX_arm64
     jobParameters:
       testGroup: outerloop
 
@@ -73,8 +79,9 @@ jobs:
     - Linux_arm
     - Linux_musl_arm64
     - Linux_x64
+    - OSX_arm64
     - OSX_x64
-    - Windows_NT_x86
+    - windows_x86
     jobParameters:
       testGroup: outerloop
 
@@ -86,6 +93,10 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platformGroup: all
+    platforms:
+    # It is too early to include OSX_arm64 in platform group all
+    # Adding it here will enable it also
+    - OSX_arm64
     jobParameters:
       isOfficialBuild: false
       liveRuntimeBuildConfig: checked
@@ -100,8 +111,6 @@ jobs:
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     testGroup: outerloop
-    jobParameters:
-      liveLibrariesBuildConfig: Release
 
 #
 # Checked JIT test runs
@@ -111,6 +120,10 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platformGroup: all
+    platforms:
+    # It is too early to include OSX_arm64 in platform group all
+    # Adding it here will enable it to also run this test
+    - OSX_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -130,31 +143,18 @@ jobs:
     - Linux_musl_arm64
     - Linux_x64
     - OSX_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - windows_x64
+    - windows_x86
+    - windows_arm
+    - windows_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
       readyToRun: true
-      displayNameArgs: R2R
+      crossgen2: true
+      displayNameArgs: R2R_CG2
       liveLibrariesBuildConfig: Release
-
-#
-# Crossgen-comparison jobs
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
-    buildConfig: release
-    platforms:
-    # Currently failing globally, should be uncommented once the tracking bug gets fixed:
-    # https://github.com/dotnet/runtime/issues/1282
-    # - Linux_arm
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
 
 #
 # Formatting
@@ -164,4 +164,4 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
     - Linux_x64
-    - Windows_NT_x64
+    - windows_x64

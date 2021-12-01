@@ -6,6 +6,8 @@ using System.Data.Common;
 
 namespace System.Data.Odbc
 {
+    [Editor("Microsoft.VSDesigner.Data.Design.DBParametersEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class OdbcParameterCollection : DbParameterCollection
     {
         private bool _rebindCollection;   // The collection needs to be (re)bound
@@ -62,7 +64,7 @@ namespace System.Data.Odbc
         }
 
         [EditorBrowsableAttribute(EditorBrowsableState.Never)]
-        [ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated.  Use AddWithValue(String parameterName, Object value).  https://go.microsoft.com/fwlink/?linkid=14202", false)] // 79027
+        [ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated. Use AddWithValue(String parameterName, Object value) instead.")]
         public OdbcParameter Add(string? parameterName, object? value)
         {
             // MDAC 59206

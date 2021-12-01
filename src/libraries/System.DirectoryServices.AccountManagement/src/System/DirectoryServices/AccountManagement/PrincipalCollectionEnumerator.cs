@@ -9,7 +9,7 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class PrincipalCollectionEnumerator : IEnumerator<Principal>, IEnumerator
+    internal sealed class PrincipalCollectionEnumerator : IEnumerator<Principal>, IEnumerator
     {
         //
         // Public properties

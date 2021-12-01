@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -16,7 +19,10 @@ namespace System.Reflection
         public abstract MethodAttributes Attributes { get; }
         public virtual MethodImplAttributes MethodImplementationFlags => GetMethodImplementationFlags();
         public abstract MethodImplAttributes GetMethodImplementationFlags();
+
+        [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public virtual MethodBody? GetMethodBody() { throw new InvalidOperationException(); }
+
         public virtual CallingConventions CallingConvention => CallingConventions.Standard;
 
         public bool IsAbstract => (Attributes & MethodAttributes.Abstract) != 0;
@@ -115,6 +121,75 @@ namespace System.Reflection
                 sbParamList.Append(comma);
                 sbParamList.Append("...");
             }
+        }
+
+        private protected void ValidateInvokeTarget(object? target)
+        {
+            // Confirm member invocation has an instance and is of the correct type
+            if (!IsStatic)
+            {
+                if (target == null)
+                {
+                    throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
+                }
+
+                if (!DeclaringType!.IsInstanceOfType(target))
+                {
+                    throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                }
+            }
+        }
+
+        private protected Span<object?> CheckArguments(ref StackAllocedArguments stackArgs, ReadOnlySpan<object?> parameters, Binder? binder,
+            BindingFlags invokeAttr, CultureInfo? culture, RuntimeType[] sigTypes)
+        {
+            Debug.Assert(Unsafe.SizeOf<StackAllocedArguments>() == StackAllocedArguments.MaxStackAllocArgCount * Unsafe.SizeOf<object>(),
+                "MaxStackAllocArgCount not properly defined.");
+            Debug.Assert(!parameters.IsEmpty);
+
+            // We need to perform type safety validation against the incoming arguments, but we also need
+            // to be resilient against the possibility that some other thread (or even the binder itself!)
+            // may mutate the array after we've validated the arguments but before we've properly invoked
+            // the method. The solution is to copy the arguments to a different, not-user-visible buffer
+            // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
+            // considered user-visible to threads which may still be holding on to returned instances.
+
+            Span<object?> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
+                    ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
+                    : new Span<object?>(new object?[parameters.Length]);
+
+            ParameterInfo[]? p = null;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                object? arg = parameters[i];
+                RuntimeType argRT = sigTypes[i];
+
+                if (arg == Type.Missing)
+                {
+                    p ??= GetParametersNoCopy();
+                    if (p[i].DefaultValue == System.DBNull.Value)
+                        throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                    arg = p[i].DefaultValue!;
+                }
+                copyOfParameters[i] = argRT.CheckValue(arg, binder, culture, invokeAttr);
+            }
+
+            return copyOfParameters;
+        }
+
+        // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
+        // Typical usage is to define a local of type default(StackAllocedArguments), then pass 'ref theLocal'
+        // as the first parameter to CheckArguments. CheckArguments will try to utilize storage within this
+        // struct instance if there's sufficient space; otherwise CheckArguments will allocate a temp array.
+        private protected struct StackAllocedArguments
+        {
+            internal const int MaxStackAllocArgCount = 4;
+            internal object? _arg0;
+#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
+            private object? _arg1;
+            private object? _arg2;
+            private object? _arg3;
+#pragma warning restore CA1823, CS0169, IDE0051
         }
     }
 }

@@ -3,6 +3,7 @@
 
 using Profiler.Tests;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
@@ -35,6 +36,8 @@ namespace EventPipeTests
 
         public static int RunTest()
         {
+            ArrayPool<char>.Shared.Rent(1); // workaround for https://github.com/dotnet/runtime/issues/1892
+
             bool success = true;
             int allTypesEventCount = 0;
             int arrayTypeEventCount = 0;
@@ -284,7 +287,7 @@ namespace EventPipeTests
             // // { COR_PRF_EVENTPIPE_DATETIME, L"DateTime" }
             // CopyToBuffer<uint64_t>(buffer, 132243707160000000ULL, &offset);
             DateTime dt = ((DateTime)traceEvent.PayloadValue(14)).ToUniversalTime();
-            if (payloadNames[14] != "DateTime" || dt != DateTime.Parse("1/24/2020 8:18:36 PM"))
+            if (payloadNames[14] != "DateTime" || dt != DateTime.Parse("1/24/2020 8:18:36 PM", CultureInfo.InvariantCulture))
             {
                 Console.WriteLine($"Argument 14 failed to parse, got {dt}");
                 return false;

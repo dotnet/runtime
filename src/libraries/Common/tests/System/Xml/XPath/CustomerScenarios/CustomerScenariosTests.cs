@@ -34,7 +34,6 @@ namespace XPathTests.FunctionalTests
                     HasNameTable = true,
                     Value = "Porsche 911"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -59,7 +58,6 @@ namespace XPathTests.FunctionalTests
                     HasNameTable = true,
                     Value = "Porsche 911"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -86,7 +84,6 @@ namespace XPathTests.FunctionalTests
                     Value =
                         "\n        \n            Almond Chicken\n            Sesame Chicken\n            Crispy Duck\n        \n        \n            Mashed potatoes with overcooked veggies and fat meat topped with some rich gravy\n            That's it!\n        \n        \n            Triple Bacon Cheeseburger\n            Double Bacon Cheeseburger\n            Bacon Cheeseburger\n        \n    "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -124,7 +121,6 @@ namespace XPathTests.FunctionalTests
                     Value =
                         "\n        \n            BMW M5\n            Mercedes S Class\n            Porsche 911\n        \n        \n            Acura CL 3.2\n            Lexus RX300\n            Infiniti QX4\n        \n        \n    "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }

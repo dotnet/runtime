@@ -12,7 +12,7 @@ using System.DirectoryServices;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal partial class SAMStoreCtx : StoreCtx
+    internal sealed partial class SAMStoreCtx : StoreCtx
     {
         //
         // Query operations
@@ -146,5 +146,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-//#endif  // PAPI_REGSAM

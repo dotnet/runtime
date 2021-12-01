@@ -1,8 +1,10 @@
 parameters:
+  BARBuildId: ''
+  PromoteToChannelIds: ''
   artifactsPublishingAdditionalParameters: ''
   dependsOn:
   - Validate
-  publishInstallersAndChecksums: false
+  publishInstallersAndChecksums: true
   symbolPublishingAdditionalParameters: ''
   stageName: ''
   channelName: ''
@@ -19,6 +21,9 @@ stages:
   displayName: ${{ parameters.channelName }} Publishing
   jobs:
   - template: ../setup-maestro-vars.yml
+    parameters:
+      BARBuildId: ${{ parameters.BARBuildId }}
+      PromoteToChannelIds: ${{ parameters.PromoteToChannelIds }}
 
   - job: publish_symbols
     displayName: Symbol Publishing
@@ -35,6 +40,9 @@ stages:
     pool:
       vmImage: 'windows-2019'
     steps:
+      - script: echo "##vso[task.logissue type=warning]Going forward, v2 Arcade publishing is no longer supported. Please read https://github.com/dotnet/arcade/blob/main/Documentation/CorePackages/Publishing.md for details, then contact dnceng if you have further questions."
+        displayName: Warn about v2 Arcade Publishing Usage
+
       # This is necessary whenever we want to publish/restore to an AzDO private feed
       - task: NuGetAuthenticate@0
         displayName: 'Authenticate to AzDO Feeds'
@@ -53,6 +61,7 @@ stages:
             PdbArtifacts/**
             BlobArtifacts/**
           downloadPath: '$(Build.ArtifactStagingDirectory)'
+          checkDownloadedFiles: true
 
       # This is necessary whenever we want to publish/restore to an AzDO private feed
       # Since sdk-task.ps1 tries to restore packages we need to do this authentication here
@@ -104,6 +113,9 @@ stages:
     pool:
       vmImage: 'windows-2019'
     steps:
+      - script: echo "##vso[task.logissue type=warning]Going forward, v2 Arcade publishing is no longer supported. Please read https://github.com/dotnet/arcade/blob/main/Documentation/CorePackages/Publishing.md for details, then contact dnceng if you have further questions."
+        displayName: Warn about v2 Arcade Publishing Usage
+
       - task: DownloadBuildArtifacts@0
         displayName: Download Build Assets
         continueOnError: true
@@ -119,6 +131,7 @@ stages:
             BlobArtifacts/**
             AssetManifests/**
           downloadPath: '$(Build.ArtifactStagingDirectory)'
+          checkDownloadedFiles: true
 
       - task: NuGetToolInstaller@1
         displayName: 'Install NuGet.exe'
@@ -138,6 +151,7 @@ stages:
         inputs:
           filePath: eng\common\sdk-task.ps1
           arguments: -task PublishArtifactsInManifest -restore -msbuildEngine dotnet
+            /p:PublishingInfraVersion=2
             /p:IsStableBuild=$(IsStableBuild)
             /p:IsInternalBuild=$(IsInternalBuild)
             /p:RepositoryName=$(Build.Repository.Name)
@@ -152,7 +166,7 @@ stages:
             /p:BlobBasePath='$(Build.ArtifactStagingDirectory)/BlobArtifacts/'
             /p:PackageBasePath='$(Build.ArtifactStagingDirectory)/PackageArtifacts/'
             /p:Configuration=Release
-            /p:PublishInstallersAndChecksums=true
+            /p:PublishInstallersAndChecksums=${{ parameters.publishInstallersAndChecksums }}
             /p:ChecksumsTargetStaticFeed=$(InternalChecksumsBlobFeedUrl)
             /p:ChecksumsAzureAccountKey=$(InternalChecksumsBlobFeedKey)
             /p:InstallersTargetStaticFeed=$(InternalInstallersBlobFeedUrl)

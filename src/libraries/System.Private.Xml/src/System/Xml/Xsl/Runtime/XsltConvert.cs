@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -81,7 +82,7 @@ namespace System.Xml.Xsl.Runtime
             }
             else
             {
-                Debug.Assert(itemType == BooleanType, "Unexpected type of atomic sequence " + itemType.ToString());
+                Debug.Assert(itemType == BooleanType, $"Unexpected type of atomic sequence {itemType}");
                 return item.ValueAsBoolean;
             }
         }
@@ -125,7 +126,7 @@ namespace System.Xml.Xsl.Runtime
             }
             else
             {
-                Debug.Assert(itemType == BooleanType, "Unexpected type of atomic sequence " + itemType.ToString());
+                Debug.Assert(itemType == BooleanType, $"Unexpected type of atomic sequence {itemType}");
                 return item.ValueAsBoolean ? 1d : 0d;
             }
         }
@@ -346,7 +347,7 @@ namespace System.Xml.Xsl.Runtime
                     break;
             }
 
-            Debug.Fail("Conversion from " + value.XmlType.QualifiedName.Name + " to " + destinationType + " is not supported.");
+            Debug.Fail($"Conversion from {value.XmlType.QualifiedName.Name} to {destinationType} is not supported.");
             return value;
         }
 

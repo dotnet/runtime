@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Threading.Tasks
 {
     /// <summary>
@@ -9,26 +8,33 @@ namespace System.Threading.Tasks
     /// <seealso cref="OperationCanceledException"/>s contain the relevant <see cref="CancellationToken"/>,
     /// while also avoiding unnecessary allocations for closure captures.
     /// </summary>
-    internal class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
+    internal sealed class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
     {
-        private CancellationToken _cancellationToken;
-
         public TaskCompletionSourceWithCancellation() : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
         }
 
-        private void OnCancellation()
-        {
-            TrySetCanceled(_cancellationToken);
-        }
-
         public async ValueTask<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
         {
-            _cancellationToken = cancellationToken;
-            using (cancellationToken.UnsafeRegister(static s => ((TaskCompletionSourceWithCancellation<T>)s!).OnCancellation(), this))
+            using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSourceWithCancellation<T>)s!).TrySetCanceled(cancellationToken), this))
             {
                 return await Task.ConfigureAwait(false);
             }
+        }
+
+        public T WaitWithCancellation(CancellationToken cancellationToken)
+        {
+            using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSourceWithCancellation<T>)s!).TrySetCanceled(cancellationToken), this))
+            {
+                return Task.GetAwaiter().GetResult();
+            }
+        }
+
+        public ValueTask<T> WaitWithCancellationAsync(bool async, CancellationToken cancellationToken)
+        {
+            return async ?
+                WaitWithCancellationAsync(cancellationToken) :
+                new ValueTask<T>(WaitWithCancellation(cancellationToken));
         }
     }
 }

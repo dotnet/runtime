@@ -9,7 +9,7 @@ namespace System.Diagnostics
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
-        public static Process[] GetProcessesByName(string processName, string machineName)
+        public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             throw new PlatformNotSupportedException();
         }
@@ -52,7 +52,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
-        private unsafe IntPtr ProcessorAffinityCore
+        private IntPtr ProcessorAffinityCore
         {
             get { throw new PlatformNotSupportedException(); }
             set { throw new PlatformNotSupportedException(); }
@@ -76,16 +76,12 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException();
         }
 
-        private static string GetExePath()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         /// <summary>Gets execution path</summary>
         private string GetPathToOpenFile()
         {
             throw new PlatformNotSupportedException();
         }
 
+        private int ParentProcessId => throw new PlatformNotSupportedException();
     }
 }

@@ -4,17 +4,17 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern bool CryptExportKey(
+        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        public static partial bool CryptExportKey(
             SafeKeyHandle hKey,
             SafeKeyHandle hExpKey,
             int dwBlobType,
             int dwFlags,
-            [In, Out] byte[]? pbData,
+            byte[]? pbData,
             ref int dwDataLen);
     }
 }

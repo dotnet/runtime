@@ -41,7 +41,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// A simple (internal) node type used to store elements of concurrent stacks and queues.
         /// </summary>
-        private class Node
+        private sealed class Node
         {
             internal readonly T _value; // Value of the node.
             internal Node? _next; // Next pointer.
@@ -349,7 +349,6 @@ namespace System.Collections.Concurrent
             if (count == 0)
                 return;
 
-
             Node head, tail;
             head = tail = new Node(items[startIndex]);
             for (int i = startIndex + 1; i < startIndex + count; i++)
@@ -410,7 +409,7 @@ namespace System.Collections.Concurrent
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ConcurrentStack_PushPopRange_CountOutOfRange);
             }
             int length = items.Length;
-            if (startIndex >= length || startIndex < 0)
+            if (startIndex > length || startIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ConcurrentStack_PushPopRange_StartOutOfRange);
             }
@@ -606,7 +605,6 @@ namespace System.Collections.Concurrent
             Node? head;
             Node next;
             int backoff = 1;
-            Random? r = null;
             while (true)
             {
                 head = _head;
@@ -649,11 +647,7 @@ namespace System.Collections.Concurrent
 
                 if (spin.NextSpinWillYield)
                 {
-                    if (r == null)
-                    {
-                        r = new Random();
-                    }
-                    backoff = r.Next(1, BACKOFF_MAX_YIELDS);
+                    backoff = Random.Shared.Next(1, BACKOFF_MAX_YIELDS);
                 }
                 else
                 {

@@ -1,7 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- This is a preview package. Do not mark as stable. -->
     <SuppressFinalPackageVersion>true</SuppressFinalPackageVersion>
     <IsShippingAssembly>false</IsShippingAssembly>

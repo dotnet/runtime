@@ -9,13 +9,15 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using static System.Data.Common.UnsafeNativeMethods;
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
 namespace System.Data.OleDb
 {
     internal sealed class DualCoTaskMem : SafeHandle
     {
         private IntPtr handle2;   // this must be protected so derived classes can use out params.
 
-        private DualCoTaskMem() : base(IntPtr.Zero, true)
+        public DualCoTaskMem() : base(IntPtr.Zero, true)
         {
             this.handle2 = IntPtr.Zero;
         }
@@ -64,14 +66,14 @@ namespace System.Data.OleDb
             base.handle = IntPtr.Zero;
             if (IntPtr.Zero != ptr)
             {
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
 
             ptr = this.handle2;
             this.handle2 = IntPtr.Zero;
             if (IntPtr.Zero != ptr)
             {
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
             return true;
         }
@@ -659,7 +661,7 @@ namespace System.Data.OleDb
 
     #endregion PROPVARIANT
 
-    internal class NativeOledbWrapper
+    internal static class NativeOledbWrapper
     {
         internal static unsafe OleDbHResult IChapteredRowsetReleaseChapter(System.IntPtr ptr, System.IntPtr chapter)
         {

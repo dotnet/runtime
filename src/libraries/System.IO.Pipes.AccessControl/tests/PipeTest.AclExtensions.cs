@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    public abstract class PipeTest_AclExtensions : PipeTestBase
+    public abstract class PipeTest_AclExtensions
     {
         [Fact]
         public void GetAccessControl_NullPipeStream()
@@ -96,6 +96,30 @@ namespace System.IO.Pipes.Tests
             {
                 new PipeAccessRule(si, PipeAccessRights.Synchronize, AccessControlType.Deny);
             });
+        }
+
+        protected static string GetUniquePipeName() =>
+            PlatformDetection.IsInAppContainer ? @"LOCAL\" + Path.GetRandomFileName() :
+            Path.GetRandomFileName();
+
+        protected abstract ServerClientPair CreateServerClientPair();
+
+        protected class ServerClientPair : IDisposable
+        {
+            public PipeStream readablePipe;
+            public PipeStream writeablePipe;
+
+            public void Dispose()
+            {
+                try
+                {
+                    readablePipe?.Dispose();
+                }
+                finally
+                {
+                    writeablePipe.Dispose();
+                }
+            }
         }
     }
 }

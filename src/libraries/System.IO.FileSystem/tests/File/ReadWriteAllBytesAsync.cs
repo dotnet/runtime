@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using System.IO.Pipes;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_ReadWriteAllBytesAsync : FileSystemTest
     {
         [Fact]
@@ -71,7 +72,8 @@ namespace System.IO.Tests
 
         [Fact]
         [OuterLoop]
-        public Task ReadFileOver2GBAsync()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
+        public async Task ReadFileOver2GBAsync()
         {
             string path = GetTestFilePath();
             using (FileStream fs = File.Create(path))
@@ -79,8 +81,23 @@ namespace System.IO.Tests
                 fs.SetLength(int.MaxValue + 1L);
             }
 
-            // File is too large for ReadAllBytes at once
-            return Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
+            // File is too large for ReadAllBytesAsync at once
+            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
+        }
+
+        [Fact]
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
+        public async Task ReadFileOverMaxArrayLengthAsync()
+        {
+            string path = GetTestFilePath();
+            using (FileStream fs = File.Create(path))
+            {
+                fs.SetLength(Array.MaxLength + 1L);
+            }
+
+            // File is too large for ReadAllBytesAsync at once
+            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
         }
 
         [Fact]
@@ -94,7 +111,7 @@ namespace System.IO.Tests
             Assert.Equal(overwriteBytes, await File.ReadAllBytesAsync(path));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public async Task OpenFile_ThrowsIOExceptionAsync()
         {
             string path = GetTestFilePath();
@@ -112,6 +129,7 @@ namespace System.IO.Tests
         /// file is allowed.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public async Task WriteToReadOnlyFileAsync()
         {
             string path = GetTestFilePath();
@@ -120,7 +138,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
+                if (PlatformDetection.IsSuperUser)
                 {
                     await File.WriteAllBytesAsync(path, Encoding.UTF8.GetBytes("text"));
                     Assert.Equal(Encoding.UTF8.GetBytes("text"), await File.ReadAllBytesAsync(path));
@@ -184,6 +202,62 @@ namespace System.IO.Tests
         public async Task ProcFs_NotEmpty(string path)
         {
             Assert.InRange((await File.ReadAllBytesAsync(path)).Length, 1, int.MaxValue);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
+        public async Task ReadAllBytesAsync_NonSeekableFileStream_InWindows()
+        {
+            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+
+            var namedPipeWriterStream = new NamedPipeServerStream(pipeName, PipeDirection.Out);
+            var contentBytes = new byte[] { 1, 2, 3 };
+
+            using (var cts = new CancellationTokenSource())
+            {
+                Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
+                Task<byte[]> readTask = File.ReadAllBytesAsync(pipePath, cts.Token);
+                cts.CancelAfter(TimeSpan.FromSeconds(50));
+
+                await writingServerTask;
+                byte[] readBytes = await readTask;
+                Assert.Equal<byte>(contentBytes, readBytes);
+            }
+
+            static async Task WaitConnectionAndWritePipeStreamAsync(NamedPipeServerStream namedPipeWriterStream, byte[] contentBytes, CancellationToken cancellationToken)
+            {
+                await using (namedPipeWriterStream)
+                {
+                    await namedPipeWriterStream.WaitForConnectionAsync(cancellationToken);
+                    await namedPipeWriterStream.WriteAsync(contentBytes, cancellationToken);
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        public async Task ReadAllBytesAsync_NonSeekableFileStream_InUnix()
+        {
+            string fifoPath = GetTestFilePath();
+            Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
+
+            var contentBytes = new byte[] { 1, 2, 3 };
+
+            await Task.WhenAll(
+                Task.Run(async () =>
+                {
+                    byte[] readBytes = await File.ReadAllBytesAsync(fifoPath);
+                    Assert.Equal<byte>(contentBytes, readBytes);
+                }),
+                Task.Run(() =>
+                {
+                    using var fs = new FileStream(fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read);
+                    foreach (byte content in contentBytes)
+                    {
+                        fs.WriteByte(content);
+                    }
+                }));
         }
     }
 }

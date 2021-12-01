@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -13,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
-    internal class ValidatingReaderNodeData
+    internal sealed class ValidatingReaderNodeData
     {
         private string _localName;
         private string _namespaceUri;
@@ -85,7 +84,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    _nameWPrefix = nameTable.Add(string.Concat(_prefix, ":", _localName));
+                    _nameWPrefix = nameTable.Add($"{_prefix}:{_localName}");
                 }
             }
 

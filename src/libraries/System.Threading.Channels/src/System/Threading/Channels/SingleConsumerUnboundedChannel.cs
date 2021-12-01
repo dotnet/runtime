@@ -18,7 +18,7 @@ namespace System.Threading.Channels
     internal sealed class SingleConsumerUnboundedChannel<T> : Channel<T>, IDebugEnumerable<T>
     {
         /// <summary>Task that indicates the channel has completed.</summary>
-        private readonly TaskCompletionSource<VoidResult> _completion;
+        private readonly TaskCompletionSource _completion;
         /// <summary>
         /// A concurrent queue to hold the items for this channel.  The queue itself supports at most
         /// one writer and one reader at a time; as a result, since this channel supports multiple writers,
@@ -42,7 +42,7 @@ namespace System.Threading.Channels
         internal SingleConsumerUnboundedChannel(bool runContinuationsAsynchronously)
         {
             _runContinuationsAsynchronously = runContinuationsAsynchronously;
-            _completion = new TaskCompletionSource<VoidResult>(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
+            _completion = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
 
             Reader = new UnboundedChannelReader(this);
             Writer = new UnboundedChannelWriter(this);
@@ -65,6 +65,8 @@ namespace System.Threading.Channels
 
             public override Task Completion => _parent._completion.Task;
 
+            public override bool CanPeek => true;
+
             public override ValueTask<T> ReadAsync(CancellationToken cancellationToken)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -72,7 +74,7 @@ namespace System.Threading.Channels
                     return new ValueTask<T>(Task.FromCanceled<T>(cancellationToken));
                 }
 
-                if (TryRead(out T item))
+                if (TryRead(out T? item))
                 {
                     return new ValueTask<T>(item);
                 }
@@ -131,6 +133,9 @@ namespace System.Threading.Channels
                 }
                 return false;
             }
+
+            public override bool TryPeek([MaybeNullWhen(false)] out T item) =>
+                _parent._items.TryPeek(out item);
 
             public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken)
             {

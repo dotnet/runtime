@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -25,8 +24,8 @@ namespace System.Net.Sockets.Tests
             Type esType = typeof(Socket).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
 
-            Assert.Equal("Microsoft-System-Net-Sockets", EventSource.GetName(esType));
-            Assert.Equal(Guid.Parse("e03c0352-f9c9-56ff-0ea7-b94ba8cabc6b"), EventSource.GetGuid(esType));
+            Assert.Equal("Private.InternalDiagnostics.System.Net.Sockets", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("ae391de7-a2cb-557c-dd34-fe00d0b98c7f"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
@@ -35,29 +34,29 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_EventsRaisedAsExpected()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(async () =>
             {
-                using (var listener = new TestEventListener("Microsoft-System-Net-Sockets", EventLevel.Verbose))
+                using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Sockets", EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                    listener.RunWithCallback(events.Enqueue, () =>
+                    await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                     {
                         // Invoke several tests to execute code paths while tracing is enabled
 
-                        new SendReceiveSync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveSync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Sync(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new SendReceiveTask(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveTask(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Task(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new SendReceiveEap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveEap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Eap(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).GetAwaiter();
-                        new SendReceiveApm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).GetAwaiter();
+                        await new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false);
+                        await new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true);
 
-                        new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).GetAwaiter().GetResult();
-                        new NetworkStreamTest().Timeout_ValidData_Roundtrips().GetAwaiter().GetResult();
+                        await new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true);
+                        await new NetworkStreamTest().Timeout_Roundtrips();
                     });
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);

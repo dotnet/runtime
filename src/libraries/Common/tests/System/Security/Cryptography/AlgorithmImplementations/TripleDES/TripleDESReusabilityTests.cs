@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static class TripleDESReusabilityTests
     {
         [Fact]

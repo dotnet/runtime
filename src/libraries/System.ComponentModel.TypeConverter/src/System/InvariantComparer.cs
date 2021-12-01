@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System
 {
-    internal class InvariantComparer : IComparer
+    internal sealed class InvariantComparer : IComparer
     {
         private readonly CompareInfo _compareInfo;
         internal static readonly InvariantComparer Default = new InvariantComparer();
@@ -16,7 +16,7 @@ namespace System
             _compareInfo = CultureInfo.InvariantCulture.CompareInfo;
         }
 
-        public int Compare(object a, object b)
+        public int Compare(object? a, object? b)
         {
             if (a is string sa && b is string sb)
             {

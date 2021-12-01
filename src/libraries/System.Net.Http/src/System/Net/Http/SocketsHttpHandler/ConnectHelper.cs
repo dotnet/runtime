@@ -3,10 +3,11 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Net.Connections;
 using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,45 +33,7 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<Connection> ConnectAsync(ConnectionFactory factory, DnsEndPoint endPoint, IConnectionProperties? options, CancellationToken cancellationToken)
-        {
-            try
-            {
-                return await factory.ConnectAsync(endPoint, options, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
-            {
-                throw CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
-            }
-        }
-
-        public static Connection Connect(string host, int port, CancellationToken cancellationToken)
-        {
-            // For synchronous connections, we can just create a socket and make the connection.
-            cancellationToken.ThrowIfCancellationRequested();
-            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            try
-            {
-                socket.NoDelay = true;
-                using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
-                {
-                    socket.Connect(new DnsEndPoint(host, port));
-                }
-            }
-            catch (Exception e)
-            {
-                socket.Dispose();
-                throw CreateWrappedException(e, host, port, cancellationToken);
-            }
-
-            return new SocketConnection(socket);
-        }
-
-        public static ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
+        private static SslClientAuthenticationOptions SetUpRemoteCertificateValidationCallback(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request)
         {
             // If there's a cert validation callback, and if it came from HttpClientHandler,
             // wrap the original delegate in order to change the sender to be the request message (expected by HttpClientHandler's delegate).
@@ -89,12 +52,13 @@ namespace System.Net.Http
                 };
             }
 
-            // Create the SslStream, authenticate, and return it.
-            return EstablishSslConnectionAsyncCore(async, stream, sslOptions, cancellationToken);
+            return sslOptions;
         }
 
-        private static async ValueTask<SslStream> EstablishSslConnectionAsyncCore(bool async, Stream stream, SslClientAuthenticationOptions sslOptions, CancellationToken cancellationToken)
+        public static async ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
         {
+            sslOptions = SetUpRemoteCertificateValidationCallback(sslOptions, request);
+
             SslStream sslStream = new SslStream(stream);
 
             try
@@ -138,37 +102,27 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(string host, int port, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macos")]
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
         {
-            IPAddress[] addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
-            Exception? lastException = null;
+            clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
 
-            foreach (IPAddress address in addresses)
+            QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
+            try
             {
-                QuicConnection con = new QuicConnection(new IPEndPoint(address, port), clientAuthenticationOptions);
-                try
-                {
-                    await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
-                    return con;
-                }
-                // TODO: it would be great to catch a specific exception here... QUIC implementation dependent.
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                    con.Dispose();
-                    lastException = ex;
-                }
+                await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                return con;
             }
-
-            if (lastException != null)
+            catch (Exception ex)
             {
-                throw CreateWrappedException(lastException, host, port, cancellationToken);
+                con.Dispose();
+                throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
-
-            // TODO: find correct exception to throw here.
-            throw new HttpRequestException("No host found.");
         }
 
-        private static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
+        internal static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
         {
             return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
                 CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :

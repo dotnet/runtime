@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Resources
@@ -26,26 +27,16 @@ namespace System.Resources
     // default file format.
     //
 
-    internal struct ResourceLocator
+    internal readonly struct ResourceLocator
     {
-        internal object? _value;  // Can be null.
-        internal int _dataPos;
-
         internal ResourceLocator(int dataPos, object? value)
         {
-            _dataPos = dataPos;
-            _value = value;
+            DataPosition = dataPos;
+            Value = value;
         }
 
-        internal int DataPosition => _dataPos;
-
-        // Allows adding in profiling data in a future version, or a special
-        // resource profiling build.  We could also use WeakReference.
-        internal object? Value
-        {
-            get => _value;
-            set => _value = value;
-        }
+        internal int DataPosition { get; }
+        internal object? Value { get; }
 
         internal static bool CanCache(ResourceTypeCode value)
         {
@@ -137,6 +128,8 @@ namespace System.Resources
             ReadResources();
         }
 
+        internal static bool AllowCustomResourceTypes { get; } = AppContext.TryGetSwitch("System.Resources.ResourceManager.AllowCustomResourceTypes", out bool allowReflection) ? allowReflection : true;
+
         public void Close()
         {
             Dispose(true);
@@ -157,11 +150,11 @@ namespace System.Resources
                     // Close the stream in a thread-safe way.  This fix means
                     // that we may call Close n times, but that's safe.
                     BinaryReader copyOfStore = _store;
-                    _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    _store = null!;
                     if (copyOfStore != null)
                         copyOfStore.Close();
                 }
-                _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                _store = null!;
                 _namePositions = null;
                 _nameHashes = null;
                 _ums = null;
@@ -172,11 +165,8 @@ namespace System.Resources
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
-            byte* buffer = (byte*)p;
-            // Unaligned, little endian format
-            return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+            return BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(p, sizeof(int)));
         }
-
 
         private void SkipString()
         {
@@ -190,7 +180,7 @@ namespace System.Resources
 
         private unsafe int GetNameHash(int index)
         {
-            Debug.Assert(index >= 0 && index < _numResources, "Bad index into hash array.  index: " + index);
+            Debug.Assert(index >= 0 && index < _numResources, $"Bad index into hash array.  index: {index}");
 
             if (_ums == null)
             {
@@ -206,7 +196,7 @@ namespace System.Resources
 
         private unsafe int GetNamePosition(int index)
         {
-            Debug.Assert(index >= 0 && index < _numResources, "Bad index into name position array.  index: " + index);
+            Debug.Assert(index >= 0 && index < _numResources, $"Bad index into name position array.  index: {index}");
             int r;
             if (_ums == null)
             {
@@ -393,7 +383,19 @@ namespace System.Resources
                     string? s = null;
                     char* charPtr = (char*)_ums.PositionPointer;
 
-                    s = new string(charPtr, 0, byteLen / 2);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        s = new string(charPtr, 0, byteLen / 2);
+                    }
+                    else
+                    {
+                        char[] arr = new char[byteLen / 2];
+                        for (int i = 0; i < arr.Length; i++)
+                        {
+                            arr[i] = (char)BinaryPrimitives.ReverseEndianness((short)charPtr[i]);
+                        }
+                        s = new string(arr);
+                    }
 
                     _ums.Position += byteLen;
                     dataOffset = _store.ReadInt32();
@@ -573,7 +575,11 @@ namespace System.Resources
                 return new TimeSpan(_store.ReadInt64());
             else if (type == typeof(decimal))
             {
+#if RESOURCES_EXTENSIONS
                 int[] bits = new int[4];
+#else
+                Span<int> bits = stackalloc int[4];
+#endif
                 for (int i = 0; i < bits.Length; i++)
                     bits[i] = _store.ReadInt32();
                 return new decimal(bits);
@@ -802,8 +808,12 @@ namespace System.Resources
             // Read RuntimeResourceSet header
             // Do file version check
             int version = _store.ReadInt32();
-            if (version != RuntimeResourceSet.Version && version != 1)
-                throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, RuntimeResourceSet.Version, version));
+
+            // File format version number
+            const int CurrentVersion = 2;
+
+            if (version != CurrentVersion && version != 1)
+                throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, CurrentVersion, version));
             _version = version;
 
             _numResources = _store.ReadInt32();
@@ -923,42 +933,56 @@ namespace System.Resources
         // This allows us to delay-initialize the Type[].  This might be a
         // good startup time savings, since we might have to load assemblies
         // and initialize Reflection.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "UseReflectionToGetType will get trimmed out when AllowCustomResourceTypes is set to false. " +
+            "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+            "the user to only get one error.")]
         private Type FindType(int typeIndex)
         {
+            if (!AllowCustomResourceTypes)
+            {
+                throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
+            }
+
             if (typeIndex < 0 || typeIndex >= _typeTable.Length)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_InvalidType);
             }
-            if (_typeTable[typeIndex] == null)
+
+            return _typeTable[typeIndex] ?? UseReflectionToGetType(typeIndex);
+        }
+
+        [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
+            "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
+        private Type UseReflectionToGetType(int typeIndex)
+        {
+            long oldPos = _store.BaseStream.Position;
+            try
             {
-                long oldPos = _store.BaseStream.Position;
-                try
-                {
-                    _store.BaseStream.Position = _typeNamePositions[typeIndex];
-                    string typeName = _store.ReadString();
-                    _typeTable[typeIndex] = Type.GetType(typeName, true);
-                }
-                // If serialization isn't supported, we convert FileNotFoundException to
-                // NotSupportedException for consistency with v2. This is a corner-case, but the
-                // idea is that we want to give the user a more accurate error message. Even if
-                // the dependency were found, we know it will require serialization since it
-                // can't be one of the types we special case. So if the dependency were found,
-                // it would go down the serialization code path, resulting in NotSupported for
-                // SKUs without serialization.
-                //
-                // We don't want to regress the expected case by checking the type info before
-                // getting to Type.GetType -- this is costly with v1 resource formats.
-                catch (FileNotFoundException)
-                {
-                    throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
-                }
-                finally
-                {
-                    _store.BaseStream.Position = oldPos;
-                }
+                _store.BaseStream.Position = _typeNamePositions[typeIndex];
+                string typeName = _store.ReadString();
+                _typeTable[typeIndex] = Type.GetType(typeName, true);
+                Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
+                return _typeTable[typeIndex]!;
             }
-            Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
-            return _typeTable[typeIndex]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+            // If serialization isn't supported, we convert FileNotFoundException to
+            // NotSupportedException for consistency with v2. This is a corner-case, but the
+            // idea is that we want to give the user a more accurate error message. Even if
+            // the dependency were found, we know it will require serialization since it
+            // can't be one of the types we special case. So if the dependency were found,
+            // it would go down the serialization code path, resulting in NotSupported for
+            // SKUs without serialization.
+            //
+            // We don't want to regress the expected case by checking the type info before
+            // getting to Type.GetType -- this is costly with v1 resource formats.
+            catch (FileNotFoundException)
+            {
+                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+            }
+            finally
+            {
+                _store.BaseStream.Position = oldPos;
+            }
         }
 
         private string TypeNameFromTypeCode(ResourceTypeCode typeCode)

@@ -44,8 +44,6 @@ namespace System.Net.Http.Unit.Tests.HPack
 
         private const string _userAgentString = "user-agent";
 
-        private static readonly byte[] _userAgentBytes = Encoding.ASCII.GetBytes(_userAgentString);
-
         private const string _headerNameString = "new-header";
 
         private static readonly byte[] _headerNameBytes = Encoding.ASCII.GetBytes(_headerNameString);
@@ -104,10 +102,27 @@ namespace System.Net.Http.Unit.Tests.HPack
         }
 
         [Fact]
-        public void DecodesIndexedHeaderField_StaticTable()
+        public void DecodesIndexedHeaderField_StaticTableWithValue()
         {
             _decoder.Decode(_indexedHeaderStatic, endHeaders: true, handler: _handler);
             Assert.Equal("GET", _handler.DecodedHeaders[":method"]);
+
+            Assert.Equal(":method", _handler.DecodedStaticHeaders[H2StaticTable.MethodGet].Key);
+            Assert.Equal("GET", _handler.DecodedStaticHeaders[H2StaticTable.MethodGet].Value);
+        }
+
+        [Fact]
+        public void DecodesIndexedHeaderField_StaticTableWithoutValue()
+        {
+            byte[] encoded = _literalHeaderFieldWithIndexingIndexedName
+                .Concat(_headerValue)
+                .ToArray();
+
+            _decoder.Decode(encoded, endHeaders: true, handler: _handler);
+            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_userAgentString]);
+
+            Assert.Equal(_userAgentString, _handler.DecodedStaticHeaders[H2StaticTable.UserAgent].Key);
+            Assert.Equal(_headerValueString, _handler.DecodedStaticHeaders[H2StaticTable.UserAgent].Value);
         }
 
         [Fact]
@@ -707,6 +722,7 @@ namespace System.Net.Http.Unit.Tests.HPack
     public class TestHttpHeadersHandler : IHttpHeadersHandler
     {
         public Dictionary<string, string> DecodedHeaders { get; } = new Dictionary<string, string>();
+        public Dictionary<int, KeyValuePair<string, string>> DecodedStaticHeaders { get; } = new Dictionary<int, KeyValuePair<string, string>>();
 
         void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
@@ -718,14 +734,16 @@ namespace System.Net.Http.Unit.Tests.HPack
 
         void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
         {
-            // Not yet implemented for HPACK.
-            throw new NotImplementedException();
+            ref readonly HeaderField entry = ref H2StaticTable.Get(index - 1);
+            ((IHttpHeadersHandler)this).OnHeader(entry.Name, entry.Value);
+            DecodedStaticHeaders[index] = new KeyValuePair<string, string>(Encoding.ASCII.GetString(entry.Name), Encoding.ASCII.GetString(entry.Value));
         }
 
         void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
         {
-            // Not yet implemented for HPACK.
-            throw new NotImplementedException();
+            byte[] name = H2StaticTable.Get(index - 1).Name;
+            ((IHttpHeadersHandler)this).OnHeader(name, value);
+            DecodedStaticHeaders[index] = new KeyValuePair<string, string>(Encoding.ASCII.GetString(name), Encoding.ASCII.GetString(value));
         }
 
         void IHttpHeadersHandler.OnHeadersComplete(bool endStream) { }

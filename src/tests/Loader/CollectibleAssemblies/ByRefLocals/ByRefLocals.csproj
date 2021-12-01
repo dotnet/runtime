@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="Unloaded.csproj" />
+    <ProjectReference Include="SpanAccessor.csproj" />
+    <Compile Include="ByRefLocals.cs" />
+  </ItemGroup>
+</Project>

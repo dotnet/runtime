@@ -43,7 +43,7 @@ namespace System.Net.Http.Functional.Tests
             var source = new MockStream(new byte[10], true, true); // Supports seeking.
             var content = new StreamContent(source);
 
-            Assert.Equal(source.Length, content.Headers.ContentLength);;
+            Assert.Equal(source.Length, content.Headers.ContentLength);
         }
 
         [Fact]

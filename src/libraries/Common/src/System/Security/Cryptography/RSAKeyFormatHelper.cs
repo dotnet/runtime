@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
-    internal static class RSAKeyFormatHelper
+    internal static partial class RSAKeyFormatHelper
     {
         private static readonly string[] s_validOids =
         {
@@ -68,6 +69,26 @@ namespace System.Security.Cryptography
             };
         }
 
+        internal static void ReadRsaPublicKey(
+            ReadOnlyMemory<byte> keyData,
+            out int bytesRead)
+        {
+            int read;
+
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(keyData.Span, AsnEncodingRules.DER);
+                read = reader.PeekEncodedValue().Length;
+                RSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            bytesRead = read;
+        }
+
         internal static void ReadSubjectPublicKeyInfo(
             ReadOnlySpan<byte> source,
             out int bytesRead,
@@ -89,6 +110,25 @@ namespace System.Security.Cryptography
                 s_validOids,
                 source,
                 out bytesRead);
+        }
+
+        /// <summary>
+        ///   Checks that a SubjectPublicKeyInfo represents an RSA key.
+        /// </summary>
+        /// <returns>The number of bytes read from <paramref name="source"/>.</returns>
+        internal static unsafe int CheckSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
+        {
+            int bytesRead;
+
+            fixed (byte* ptr = source)
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                {
+                    _ = ReadSubjectPublicKeyInfo(manager.Memory, out bytesRead);
+                }
+            }
+
+            return bytesRead;
         }
 
         public static void ReadPkcs8(
@@ -114,34 +154,23 @@ namespace System.Security.Cryptography
                 out bytesRead);
         }
 
-        internal static void ReadEncryptedPkcs8(
-            ReadOnlySpan<byte> source,
-            ReadOnlySpan<char> password,
-            out int bytesRead,
-            out RSAParameters key)
+        /// <summary>
+        ///   Checks that a Pkcs8PrivateKeyInfo represents an RSA key.
+        /// </summary>
+        /// <returns>The number of bytes read from <paramref name="source"/>.</returns>
+        internal static unsafe int CheckPkcs8(ReadOnlySpan<byte> source)
         {
-            KeyFormatHelper.ReadEncryptedPkcs8<RSAParameters>(
-                s_validOids,
-                source,
-                password,
-                FromPkcs1PrivateKey,
-                out bytesRead,
-                out key);
-        }
+            int bytesRead;
 
-        internal static void ReadEncryptedPkcs8(
-            ReadOnlySpan<byte> source,
-            ReadOnlySpan<byte> passwordBytes,
-            out int bytesRead,
-            out RSAParameters key)
-        {
-            KeyFormatHelper.ReadEncryptedPkcs8<RSAParameters>(
-                s_validOids,
-                source,
-                passwordBytes,
-                FromPkcs1PrivateKey,
-                out bytesRead,
-                out key);
+            fixed (byte* ptr = source)
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                {
+                    _ = ReadPkcs8(manager.Memory, out bytesRead);
+                }
+            }
+
+            return bytesRead;
         }
 
         internal static AsnWriter WriteSubjectPublicKeyInfo(ReadOnlySpan<byte> pkcs1PublicKey)

@@ -784,7 +784,6 @@ namespace System.Drawing.Tests
         [InlineData(FontStyle.Strikeout | FontStyle.Bold | FontStyle.Italic, 255, true, "@", 700)]
         [InlineData(FontStyle.Regular, 0, false, "", 400)]
         [InlineData(FontStyle.Regular, 10, false, "", 400)]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/38889", RuntimeTestModes.TailcallStress)]
         public void ToLogFont_Invoke_ReturnsExpected(FontStyle fontStyle, byte gdiCharSet, bool gdiVerticalFont, string expectedNamePrefix, int expectedWeight)
         {
             using (FontFamily family = FontFamily.GenericMonospace)
@@ -801,7 +800,7 @@ namespace System.Drawing.Tests
                 Assert.Equal(font.Italic ? 1 : 0, logFont.lfItalic);
                 Assert.Equal(font.Underline ? 1 : 0, logFont.lfUnderline);
                 Assert.Equal(font.Strikeout ? 1 : 0, logFont.lfStrikeOut);
-                Assert.Equal(font.GdiCharSet, logFont.lfCharSet);
+                Assert.Equal(SystemFonts.DefaultFont.GdiCharSet <= 2 ? font.GdiCharSet : SystemFonts.DefaultFont.GdiCharSet, logFont.lfCharSet);
                 Assert.Equal(0, logFont.lfOutPrecision);
                 Assert.Equal(0, logFont.lfClipPrecision);
                 Assert.Equal(0, logFont.lfQuality);
@@ -818,7 +817,6 @@ namespace System.Drawing.Tests
         [InlineData(TextRenderingHint.SingleBitPerPixel)]
         [InlineData(TextRenderingHint.SingleBitPerPixelGridFit)]
         [InlineData(TextRenderingHint.ClearTypeGridFit)]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/38889", RuntimeTestModes.TailcallStress)]
         public void ToLogFont_InvokeGraphics_ReturnsExpected(TextRenderingHint textRenderingHint)
         {
             using (FontFamily family = FontFamily.GenericMonospace)
@@ -839,7 +837,7 @@ namespace System.Drawing.Tests
                 Assert.Equal(0, logFont.lfItalic);
                 Assert.Equal(0, logFont.lfUnderline);
                 Assert.Equal(0, logFont.lfStrikeOut);
-                Assert.Equal(1, logFont.lfCharSet);
+                Assert.Equal(SystemFonts.DefaultFont.GdiCharSet <= 2 ? font.GdiCharSet : SystemFonts.DefaultFont.GdiCharSet, logFont.lfCharSet);
                 Assert.Equal(0, logFont.lfOutPrecision);
                 Assert.Equal(0, logFont.lfClipPrecision);
                 Assert.Equal(0, logFont.lfQuality);
@@ -979,6 +977,23 @@ namespace System.Drawing.Tests
 
             Assert.False(font.IsSystemFont);
             Assert.Empty(font.SystemFontName);
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetHashCode doesn't include font name in .NET Framework")]
+        public void GetHashCode_DifferentNameSameSizeStyleUnit_HashCodeIsNotSame()
+        {
+            using FontFamily family1 = FontFamily.GenericSansSerif;
+            using var font1 = new Font(family1, 1, FontStyle.Bold, GraphicsUnit.Point);
+
+            using FontFamily family2 = FontFamily.GenericMonospace;
+            using var font2 = new Font(family2, 1, FontStyle.Bold, GraphicsUnit.Point);
+            // This test depends on machine setup and whether the fonts we use are installed or not.
+            // If not installed we could get the same font for the two Font families we are testing for.
+            if (font1.Name.Equals(font2.Name, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            Assert.NotEqual(font1.GetHashCode(), font2.GetHashCode());
         }
     }
 }

@@ -142,7 +142,7 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal class BranchInstruction : OffsetInstruction
+    internal sealed class BranchInstruction : OffsetInstruction
     {
         private static Instruction[][][]? s_caches;
 

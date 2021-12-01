@@ -102,7 +102,7 @@ namespace System.Net.Mail
             }
         }
 
-        [Obsolete("ReplyTo is obsoleted for this type.  Please use ReplyToList instead which can accept multiple addresses. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("ReplyTo has been deprecated. Use ReplyToList instead, which can accept multiple addresses.")]
         public MailAddress? ReplyTo
         {
             get
@@ -288,10 +288,7 @@ namespace System.Net.Mail
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _attachments ??= new AttachmentCollection();
             }
@@ -300,10 +297,7 @@ namespace System.Net.Mail
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _views ??= new AlternateViewCollection();
             }
@@ -426,17 +420,15 @@ namespace System.Net.Mail
                     part = new MimeMultiPart(MimeMultiPartType.Mixed);
                     part.Parts.Add(viewsPart);
 
-                    MimeMultiPart attachmentsPart = new MimeMultiPart(MimeMultiPartType.Mixed);
                     foreach (Attachment attachment in Attachments)
                     {
                         if (attachment != null)
                         {
                             //ensure we can read from the stream.
                             attachment.PrepareForSending(allowUnicode);
-                            attachmentsPart.Parts.Add(attachment.MimePart);
+                            part.Parts.Add(attachment.MimePart);
                         }
                     }
-                    part.Parts.Add(attachmentsPart);
                     _message.Content = part;
                 }
                 // If there is no Attachement, AND only "1" Alternate View AND !!no body!!

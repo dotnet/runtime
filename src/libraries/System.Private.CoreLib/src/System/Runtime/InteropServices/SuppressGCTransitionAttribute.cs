@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices
     /// of the unmanaged function. However, avoiding this transition removes some of the guarantees the runtime
     /// provides through a normal P/Invoke. When exiting the managed runtime to enter an unmanaged function the
     /// GC must transition from Cooperative mode into Preemptive mode. Full details on these modes can be found at
-    /// https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/clr-code-guide.md#2.1.8.
+    /// https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/clr-code-guide.md#2.1.8.
     /// Suppressing the GC transition is an advanced scenario and should not be done without fully understanding
     /// potential consequences.
     ///

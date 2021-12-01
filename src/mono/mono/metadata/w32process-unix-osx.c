@@ -15,6 +15,7 @@
 #include <sys/utsname.h>
 #include <mach-o/dyld.h>
 #include <mach-o/getsect.h>
+#include <dlfcn.h>
 
 /* sys/resource.h (for rusage) is required when using osx 10.3 (but not 10.4) */
 #ifdef __APPLE__
@@ -115,60 +116,6 @@ mono_w32process_get_path (pid_t pid)
 		return NULL;
 	return g_strdup (buf);
 #endif
-}
-
-GSList*
-mono_w32process_get_modules (pid_t pid)
-{
-	GSList *ret = NULL;
-	MonoW32ProcessModule *mod;
-	guint32 count;
-	int i = 0;
-
-	if (pid != getpid ())
-		return NULL;
-
-	count = _dyld_image_count ();
-	for (i = 0; i < count; i++) {
-#if SIZEOF_VOID_P == 8
-		const struct mach_header_64 *hdr;
-		const struct section_64 *sec;
-#else
-		const struct mach_header *hdr;
-		const struct section *sec;
-#endif
-		const char *name;
-
-		name = _dyld_get_image_name (i);
-#if SIZEOF_VOID_P == 8
-		hdr = (const struct mach_header_64*)_dyld_get_image_header (i);
-		sec = getsectbynamefromheader_64 (hdr, SEG_DATA, SECT_DATA);
-#else
-		hdr = _dyld_get_image_header (i);
-		sec = getsectbynamefromheader (hdr, SEG_DATA, SECT_DATA);
-#endif
-
-		/* Some dynlibs do not have data sections on osx (#533893) */
-		if (sec == 0)
-			continue;
-
-		mod = g_new0 (MonoW32ProcessModule, 1);
-		mod->address_start = GINT_TO_POINTER (sec->addr);
-		mod->address_end = GINT_TO_POINTER (sec->addr+sec->size);
-		mod->perms = g_strdup ("r--p");
-		mod->address_offset = 0;
-		mod->device = makedev (0, 0);
-		mod->inode = i;
-		mod->filename = g_strdup (name);
-
-		if (g_slist_find_custom (ret, mod, mono_w32process_module_equals) == NULL) {
-			ret = g_slist_prepend (ret, mod);
-		} else {
-			mono_w32process_module_free (mod);
-		}
-	}
-
-	return g_slist_reverse (ret);
 }
 
 #else

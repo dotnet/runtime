@@ -14,7 +14,7 @@ namespace System.DirectoryServices.AccountManagement
     /// <summary>
     /// This is a class designed to cache DirectoryEntires instead of creating them every time.
     /// </summary>
-    internal class SDSCache
+    internal sealed class SDSCache
     {
         public static SDSCache Domain
         {
@@ -205,13 +205,13 @@ namespace System.DirectoryServices.AccountManagement
         private readonly object _tableLock = new object();
         private readonly bool _isSAM;
 
-        private class CredHolder
+        private sealed class CredHolder
         {
             public Hashtable explicitCreds = new Hashtable();
             public Hashtable defaultCreds = new Hashtable();
         }
 
-        private class Placeholder
+        private sealed class Placeholder
         {
             // initially non-signaled
             public ManualResetEvent contextReadyEvent = new ManualResetEvent(false);

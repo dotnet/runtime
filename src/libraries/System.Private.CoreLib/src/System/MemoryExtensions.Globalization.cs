@@ -83,7 +83,7 @@ namespace System
                 return false;
             if (value.Length == 0)  // span.Length == value.Length == 0
                 return true;
-            return CompareInfo.EqualsOrdinalIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), span.Length);
+            return Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), span.Length);
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace System
 
                 default:
                     Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
-                    return CompareInfo.CompareOrdinalIgnoreCase(span, other);
+                    return Ordinal.CompareStringIgnoreCase(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(other), other.Length);
             }
         }
 
@@ -130,11 +130,7 @@ namespace System
 
             if (comparisonType == StringComparison.Ordinal)
             {
-                return SpanHelpers.IndexOf(
-                    ref MemoryMarshal.GetReference(span),
-                    span.Length,
-                    ref MemoryMarshal.GetReference(value),
-                    value.Length);
+                return SpanHelpers.IndexOf(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(value), value.Length);
             }
 
             switch (comparisonType)
@@ -149,7 +145,7 @@ namespace System
 
                 default:
                     Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
-                    return CompareInfo.IndexOfOrdinalIgnoreCase(span, value, fromBeginning: true);
+                    return Ordinal.IndexOfOrdinalIgnoreCase(span, value);
             }
         }
 
@@ -184,7 +180,7 @@ namespace System
 
                 default:
                     Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
-                    return CompareInfo.IndexOfOrdinalIgnoreCase(span, value, fromBeginning: false);
+                    return Ordinal.LastIndexOfOrdinalIgnoreCase(span, value);
             }
         }
 
@@ -210,7 +206,7 @@ namespace System
                 return -1;
 
             if (GlobalizationMode.Invariant)
-                TextInfo.ToLowerAsciiInvariant(source, destination);
+                InvariantModeCasing.ToLower(source, destination);
             else
                 culture.TextInfo.ChangeCaseToLower(source, destination);
             return source.Length;
@@ -234,7 +230,7 @@ namespace System
                 return -1;
 
             if (GlobalizationMode.Invariant)
-                TextInfo.ToLowerAsciiInvariant(source, destination);
+                InvariantModeCasing.ToLower(source, destination);
             else
                 TextInfo.Invariant.ChangeCaseToLower(source, destination);
             return source.Length;
@@ -262,7 +258,7 @@ namespace System
                 return -1;
 
             if (GlobalizationMode.Invariant)
-                TextInfo.ToUpperAsciiInvariant(source, destination);
+                InvariantModeCasing.ToUpper(source, destination);
             else
                 culture.TextInfo.ChangeCaseToUpper(source, destination);
             return source.Length;
@@ -286,7 +282,7 @@ namespace System
                 return -1;
 
             if (GlobalizationMode.Invariant)
-                TextInfo.ToUpperAsciiInvariant(source, destination);
+                InvariantModeCasing.ToUpper(source, destination);
             else
                 TextInfo.Invariant.ChangeCaseToUpper(source, destination);
             return source.Length;
@@ -324,7 +320,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EndsWithOrdinalIgnoreCase(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
             => value.Length <= span.Length
-            && CompareInfo.EqualsOrdinalIgnoreCase(
+            && Ordinal.EqualsIgnoreCase(
                 ref Unsafe.Add(ref MemoryMarshal.GetReference(span), span.Length - value.Length),
                 ref MemoryMarshal.GetReference(value),
                 value.Length);
@@ -361,7 +357,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool StartsWithOrdinalIgnoreCase(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
             => value.Length <= span.Length
-            && CompareInfo.EqualsOrdinalIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), value.Length);
+            && Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), value.Length);
 
         /// <summary>
         /// Returns an enumeration of <see cref="Rune"/> from the provided span.
@@ -383,6 +379,32 @@ namespace System
         public static SpanRuneEnumerator EnumerateRunes(this Span<char> span)
         {
             return new SpanRuneEnumerator(span);
+        }
+
+        /// <summary>
+        /// Returns an enumeration of lines over the provided span.
+        /// </summary>
+        /// <remarks>
+        /// It is recommended that protocol parsers not utilize this API. See the documentation
+        /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
+        /// sequences are detected.
+        /// </remarks>
+        public static SpanLineEnumerator EnumerateLines(this ReadOnlySpan<char> span)
+        {
+            return new SpanLineEnumerator(span);
+        }
+
+        /// <summary>
+        /// Returns an enumeration of lines over the provided span.
+        /// </summary>
+        /// <remarks>
+        /// It is recommended that protocol parsers not utilize this API. See the documentation
+        /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
+        /// sequences are detected.
+        /// </remarks>
+        public static SpanLineEnumerator EnumerateLines(this Span<char> span)
+        {
+            return new SpanLineEnumerator(span);
         }
     }
 }

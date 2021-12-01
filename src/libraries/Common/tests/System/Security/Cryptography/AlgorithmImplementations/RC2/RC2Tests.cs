@@ -7,6 +7,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
     using RC2 = System.Security.Cryptography.RC2;
 
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static partial class RC2Tests
     {
         [Fact]

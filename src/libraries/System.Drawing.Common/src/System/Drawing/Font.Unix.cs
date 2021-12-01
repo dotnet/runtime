@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.Fonts.cs
 //
@@ -64,7 +65,7 @@ namespace System.Drawing
             int status = Gdip.GdipCreateFont(new HandleRef(this, family.NativeFamily), emSize, style, unit, out _nativeFont);
 
             if (status == Gdip.FontStyleNotFound)
-                throw new ArgumentException(string.Format("Style {0} isn't supported by font {1}.", style.ToString(), familyName));
+                throw new ArgumentException($"Style {style} isn't supported by font {familyName}.");
 
             Gdip.CheckStatus(status);
         }

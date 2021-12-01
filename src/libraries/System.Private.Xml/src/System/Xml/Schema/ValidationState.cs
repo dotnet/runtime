@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -43,7 +42,8 @@ namespace System.Xml.Schema
         public bool HasMatched;       // whether the element has been verified correctly
 
         //For NFAs
-        public BitSet[] CurPos = new BitSet[2];
+        private BitSet[]? _curPos;
+        public BitSet[] CurPos => _curPos ??= new BitSet[2];
 
         //For all
         public BitSet? AllElementsSet;

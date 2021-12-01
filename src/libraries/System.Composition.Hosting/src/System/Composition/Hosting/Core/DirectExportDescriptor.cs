@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Composition.Hosting.Core
 {
-    internal class DirectExportDescriptor : ExportDescriptor
+    internal sealed class DirectExportDescriptor : ExportDescriptor
     {
         private readonly CompositeActivator _activator;
         private readonly IDictionary<string, object> _metadata;

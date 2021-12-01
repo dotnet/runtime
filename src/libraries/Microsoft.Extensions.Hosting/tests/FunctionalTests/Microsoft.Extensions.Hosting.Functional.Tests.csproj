@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="testroot\**\*" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\Common\TestLoggerBuilder.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs"
-             Link="TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\LogLevelAttribute.cs"
              Link="tests\DI.Common\Common\src\LogLevelAttribute.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\LogValuesAssert.cs"
@@ -21,10 +19,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\TestApp\Microsoft.Extensions.Hosting.TestApp.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 

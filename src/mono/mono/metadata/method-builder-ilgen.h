@@ -128,6 +128,9 @@ void
 mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str);
 
 void
+mono_mb_emit_no_nullcheck (MonoMethodBuilder *mb);
+
+void
 mono_mb_set_clauses (MonoMethodBuilder *mb, int num_clauses, MonoExceptionClause *clauses);
 
 void

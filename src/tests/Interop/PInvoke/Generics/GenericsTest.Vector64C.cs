@@ -4,24 +4,24 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector64<char> GetVector64C(char e00, char e01, char e02, char e03);
+    public static extern Vector64<char> GetVector64C([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVector64COut(char e00, char e01, char e02, char e03, Vector64<char>* value);
+    public static extern void GetVector64COut([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, Vector64<char>* value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetVector64COut(char e00, char e01, char e02, char e03, out Vector64<char> value);
+    public static extern void GetVector64COut([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03, out Vector64<char> value);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern Vector64<char>* GetVector64CPtr(char e00, char e01, char e02, char e03);
+    public static extern Vector64<char>* GetVector64CPtr([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03);
 
     [DllImport(nameof(GenericsNative), EntryPoint = "GetVector64CPtr")]
-    public static extern ref readonly Vector64<char> GetVector64CRef(char e00, char e01, char e02, char e03);
+    public static extern ref readonly Vector64<char> GetVector64CRef([MarshalAs(UnmanagedType.U2)]char e00, [MarshalAs(UnmanagedType.U2)]char e01, [MarshalAs(UnmanagedType.U2)]char e02, [MarshalAs(UnmanagedType.U2)]char e03);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Vector64<char> AddVector64C(Vector64<char> lhs, Vector64<char> rhs);
@@ -45,19 +45,19 @@ unsafe partial class GenericsTest
         Vector64<char> value2;
         GenericsNative.GetVector64COut('0', '1', '2', '3', &value2);
         Vector64<short> tValue2 = *(Vector64<short>*)&value2;
-        Assert.AreEqual(tValue2.GetElement(0), (short)'0');
-        Assert.AreEqual(tValue2.GetElement(1), (short)'1');
-        Assert.AreEqual(tValue2.GetElement(2), (short)'2');
-        Assert.AreEqual(tValue2.GetElement(3), (short)'3');
+        Assert.Equal(tValue2.GetElement(0), (short)'0');
+        Assert.Equal(tValue2.GetElement(1), (short)'1');
+        Assert.Equal(tValue2.GetElement(2), (short)'2');
+        Assert.Equal(tValue2.GetElement(3), (short)'3');
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64COut('0', '1', '2', '3', out Vector64<char> value3));
 
         Vector64<char>* value4 = GenericsNative.GetVector64CPtr('0', '1', '2', '3');
         Vector64<short>* tValue4 = (Vector64<short>*)value4;
-        Assert.AreEqual(tValue4->GetElement(0), (short)'0');
-        Assert.AreEqual(tValue4->GetElement(1), (short)'1');
-        Assert.AreEqual(tValue4->GetElement(2), (short)'2');
-        Assert.AreEqual(tValue4->GetElement(3), (short)'3');
+        Assert.Equal(tValue4->GetElement(0), (short)'0');
+        Assert.Equal(tValue4->GetElement(1), (short)'1');
+        Assert.Equal(tValue4->GetElement(2), (short)'2');
+        Assert.Equal(tValue4->GetElement(3), (short)'3');
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64CRef('0', '1', '2', '3'));
 

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\tests\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs">
+      <Link>Common\tests\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs">
+      <Link>System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs">
+      <Link>System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Threading.Tasks.Extensions\tests\ManualResetValueTaskSourceTests.cs"
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+      <Link>System.Threading.Tasks.Extensions\tests\ManualResetValueTaskSourceTests.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+  </ItemGroup>
+</Project>

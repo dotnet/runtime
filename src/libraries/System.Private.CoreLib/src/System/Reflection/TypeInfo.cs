@@ -39,7 +39,7 @@ namespace System.Reflection
                     yield return method;
             }
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
                 Justification = "The yield return state machine doesn't propagate annotations")]
             static MethodInfo[] GetDeclaredOnlyMethods(
                 Type type) => type.GetMethods(TypeInfo.DeclaredOnlyLookup);
@@ -85,7 +85,7 @@ namespace System.Reflection
                     yield return t.GetTypeInfo();
                 }
 
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
                     Justification = "The yield return state machine doesn't propagate annotations")]
                 static Type[] GetDeclaredOnlyNestedTypes(
                     Type type) => type.GetNestedTypes(TypeInfo.DeclaredOnlyLookup);
@@ -98,7 +98,11 @@ namespace System.Reflection
             get => GetProperties(TypeInfo.DeclaredOnlyLookup);
         }
 
-        public virtual IEnumerable<Type> ImplementedInterfaces => GetInterfaces();
+        public virtual IEnumerable<Type> ImplementedInterfaces
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+            get => GetInterfaces();
+        }
 
         // a re-implementation of ISAF from Type, skipping the use of UnderlyingType
         public virtual bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)

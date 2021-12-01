@@ -21,6 +21,13 @@ namespace System.ComponentModel.Composition.Hosting
     [DebuggerTypeProxy(typeof(DirectoryCatalogDebuggerProxy))]
     public partial class DirectoryCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged, ICompositionElement
     {
+        private static bool IsWindows =>
+#if NETCOREAPP_5_0_OR_GREATER
+            OperatingSystem.IsWindows();
+#else
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#endif
+
         private readonly Lock _thisLock = new Lock();
         private readonly ICompositionElement? _definitionOrigin;
         private ComposablePartCatalogCollection _catalogCollection;
@@ -725,24 +732,25 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private string GetDisplayName()
-        {
-            return string.Format(CultureInfo.CurrentCulture,
-                                "{0} (Path=\"{1}\")",   // NOLOC
-                                GetType().Name,
-                                _path);
-        }
+        private string GetDisplayName() =>
+            $"{GetType().Name} (Path=\"{_path}\")";   // NOLOC
 
         private string[] GetFiles()
         {
             string[] files = Directory.GetFiles(_fullPath, _searchPattern);
-            return Array.ConvertAll<string, string>(files, (file) => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? file.ToUpperInvariant() : file);
+
+            if (!IsWindows)
+            {
+                return files;
+            }
+
+            return Array.ConvertAll<string, string>(files, (file) => file.ToUpperInvariant());
         }
 
         private static string GetFullPath(string path)
         {
             var fullPath = IOPath.GetFullPath(path);
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? fullPath.ToUpperInvariant() : fullPath;
+            return IsWindows ? fullPath.ToUpperInvariant() : fullPath;
         }
 
         [MemberNotNull(nameof(_path))]

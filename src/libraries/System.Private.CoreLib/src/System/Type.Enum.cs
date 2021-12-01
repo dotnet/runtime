@@ -105,7 +105,7 @@ namespace System
             return values;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Literal fields on enums can never be trimmed")]
         // This will return enumValues and enumNames sorted by the values.
         private void GetEnumData(out string[] enumNames, out Array enumValues)
@@ -124,7 +124,7 @@ namespace System
             // Insertion Sort these values in ascending order.
             // We use this O(n^2) algorithm, but it turns out that most of the time the elements are already in sorted order and
             // the common case performance will be faster than quick sorting this.
-            IComparer comparer = Comparer<object>.Default;
+            Comparer comparer = Comparer.Default;
             for (int i = 1; i < values.Length; i++)
             {
                 int j = i;

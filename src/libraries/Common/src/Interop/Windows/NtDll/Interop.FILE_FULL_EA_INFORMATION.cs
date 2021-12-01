@@ -4,16 +4,16 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class NtDll
+    internal static partial class NtDll
     {
         /// <summary>
         /// <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/wdm/ns-wdm-_file_full_ea_information">FILE_FULL_EA_INFORMATION</a> structure.
         /// Provides extended attribute (EA) information. This structure is used primarily by network drivers.
         /// </summary>
         [StructLayoutAttribute(LayoutKind.Sequential)]
-        internal unsafe struct FILE_FULL_EA_INFORMATION
+        internal struct FILE_FULL_EA_INFORMATION
         {
             /// <summary>
             /// The offset of the next FILE_FULL_EA_INFORMATION-type entry. This member is zero if no other entries follow this one.

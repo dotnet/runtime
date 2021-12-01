@@ -12,17 +12,17 @@ namespace System.Drawing
 {
     public class SizeConverter : TypeConverter
     {
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string strValue)
             {
@@ -41,11 +41,11 @@ namespace System.Drawing
                 char sep = culture.TextInfo.ListSeparator[0];
                 string[] tokens = text.Split(sep);
                 int[] values = new int[tokens.Length];
-                TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
+                TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
                 for (int i = 0; i < values.Length; i++)
                 {
                     // Note: ConvertFromString will raise exception if value cannot be converted.
-                    values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i]);
+                    values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i])!;
                 }
 
                 if (values.Length != 2)
@@ -59,7 +59,7 @@ namespace System.Drawing
             return base.ConvertFrom(context, culture, value);
         }
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -76,10 +76,10 @@ namespace System.Drawing
                     }
 
                     string sep = culture.TextInfo.ListSeparator + " ";
-                    TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
+                    TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
 
                     // Note: ConvertToString will raise exception if value cannot be converted.
-                    var args = new string[]
+                    var args = new string?[]
                     {
                         intConverter.ConvertToString(context, culture, size.Width),
                         intConverter.ConvertToString(context, culture, size.Height)
@@ -88,7 +88,7 @@ namespace System.Drawing
                 }
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo ctor = typeof(Size).GetConstructor(new Type[] { typeof(int), typeof(int) });
+                    ConstructorInfo? ctor = typeof(Size).GetConstructor(new Type[] { typeof(int), typeof(int) });
                     if (ctor != null)
                     {
                         return new InstanceDescriptor(ctor, new object[] { size.Width, size.Height });
@@ -99,15 +99,15 @@ namespace System.Drawing
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
             if (propertyValues == null)
             {
                 throw new ArgumentNullException(nameof(propertyValues));
             }
 
-            object width = propertyValues["Width"];
-            object height = propertyValues["Height"];
+            object? width = propertyValues["Width"];
+            object? height = propertyValues["Height"];
 
             if (width == null || height == null || !(width is int) || !(height is int))
             {
@@ -117,16 +117,17 @@ namespace System.Drawing
             return new Size((int)width, (int)height);
         }
 
-        public override bool GetCreateInstanceSupported(ITypeDescriptorContext context) => true;
+        public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) => true;
 
         private static readonly string[] s_propertySort = { "Width", "Height" };
 
-        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes)
         {
             PropertyDescriptorCollection props = TypeDescriptor.GetProperties(typeof(Size), attributes);
             return props.Sort(s_propertySort);
         }
 
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
     }
 }

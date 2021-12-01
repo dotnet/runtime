@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
+    [Designer("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [ToolboxItem("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed class OleDbDataAdapter : DbDataAdapter, IDbDataAdapter, ICloneable
     {
         private static readonly object EventRowUpdated = new object();
@@ -41,9 +43,9 @@ namespace System.Data.OleDb
             GC.SuppressFinalize(this);
         }
 
-        [
-        DefaultValue(null),
-        ]
+        [DefaultValue(null)]
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OleDbCommand? DeleteCommand
         {
             get { return _deleteCommand; }
@@ -56,9 +58,9 @@ namespace System.Data.OleDb
             set { _deleteCommand = (OleDbCommand?)value; }
         }
 
-        [
-        DefaultValue(null)
-        ]
+        [DefaultValue(null)]
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OleDbCommand? InsertCommand
         {
             get { return _insertCommand; }
@@ -71,9 +73,9 @@ namespace System.Data.OleDb
             set { _insertCommand = (OleDbCommand?)value; }
         }
 
-        [
-        DefaultValue(null)
-        ]
+        [DefaultValue(null)]
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OleDbCommand? SelectCommand
         {
             get { return _selectCommand; }
@@ -86,9 +88,9 @@ namespace System.Data.OleDb
             set { _selectCommand = (OleDbCommand?)value; }
         }
 
-        [
-        DefaultValue(null)
-        ]
+        [DefaultValue(null)]
+        [Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new OleDbCommand? UpdateCommand
         {
             get { return _updateCommand; }
@@ -115,7 +117,7 @@ namespace System.Data.OleDb
 
                 // prevent someone from registering two different command builders on the adapter by
                 // silently removing the old one
-                if ((null != handler) && (value.Target is DbCommandBuilder))
+                if ((null != handler) && (value!.Target is DbCommandBuilder))
                 {
                     OleDbRowUpdatingEventHandler? d = (OleDbRowUpdatingEventHandler?)ADP.FindBuilder(handler);
                     if (null != d)
@@ -257,8 +259,7 @@ namespace System.Data.OleDb
                             // Current provider does not support returning multiple recordsets from a single execution.
                             if (ODB.ADODB_NextResultError != (int)hr)
                             {
-                                UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-                                UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
+                                SafeNativeMethods.Wrapper.ClearErrorInfo();
 
                                 string message = string.Empty;
                                 throw new COMException(message, (int)hr);
@@ -428,8 +429,7 @@ namespace System.Data.OleDb
             }
             if ((0 < (int)hr) && (ODB.ADODB_AlreadyClosedError != (int)hr))
             {
-                UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-                UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
+                SafeNativeMethods.Wrapper.ClearErrorInfo();
                 string message = string.Empty;
                 throw new COMException(message, (int)hr);
             }

@@ -10,7 +10,7 @@ namespace System.Reflection.Emit.Tests
     {
         private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineParameter_TwoParameters()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -37,6 +37,11 @@ namespace System.Reflection.Emit.Tests
             // Invoke the method to verify it works correctly
             MethodInfo resultMethod = resultType.GetMethod("TestMethod");
             Assert.Equal(expectedReturn, resultMethod.Invoke(null, new object[] { "hello", new object() }));
+
+            // Verify MetadataToken
+            Assert.Equal(method.MetadataToken, resultMethod.MetadataToken);
+            MethodInfo methodFromToken = (MethodInfo)type.Module.ResolveMethod(method.MetadataToken);
+            Assert.Equal(resultMethod, methodFromToken);
         }
 
         [Fact]

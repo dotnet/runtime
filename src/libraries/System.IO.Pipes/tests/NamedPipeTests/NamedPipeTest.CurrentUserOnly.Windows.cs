@@ -22,14 +22,10 @@ namespace System.IO.Pipes.Tests
         public TestAccountImpersonator()
         {
             string testAccountPassword;
-            using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
-            {
-                var randomBytes = new byte[33];
-                rng.GetBytes(randomBytes);
+            byte[] randomBytes = RandomNumberGenerator.GetBytes(33);
 
-                // Add special chars to ensure it satisfies password requirements.
-                testAccountPassword = Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
-            }
+            // Add special chars to ensure it satisfies password requirements.
+            testAccountPassword = Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
 
             DateTime accountExpirationDate = DateTime.UtcNow + TimeSpan.FromMinutes(2);
             using (var principalCtx = new PrincipalContext(ContextType.Machine))
@@ -121,11 +117,12 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Negative tests for PipeOptions.CurrentUserOnly in Windows.
     /// </summary>
-    public class NamedPipeTest_CurrentUserOnly_Windows : NamedPipeTestBase, IClassFixture<TestAccountImpersonator>
+    public class NamedPipeTest_CurrentUserOnly_Windows : IClassFixture<TestAccountImpersonator>
     {
         public static bool IsAdminOnSupportedWindowsVersions => PlatformDetection.IsWindowsAndElevated
             && !PlatformDetection.IsWindows7
-            && !PlatformDetection.IsWindowsNanoServer;
+            && !PlatformDetection.IsWindowsNanoServer
+            && !PlatformDetection.IsWindowsServerCore;
 
         private TestAccountImpersonator _testAccountImpersonator;
 
@@ -143,7 +140,7 @@ namespace System.IO.Pipes.Tests
         public void Connection_UnderDifferentUsers_BehavesAsExpected(
             PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
         {
-            string name = GetUniquePipeName();
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (var cts = new CancellationTokenSource())
             using (var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, serverPipeOptions | PipeOptions.Asynchronous))
             {
@@ -168,7 +165,7 @@ namespace System.IO.Pipes.Tests
         [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
         public void Allow_Connection_UnderDifferentUsers_ForClientReading()
         {
-            string name = GetUniquePipeName();
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(
                 name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             {

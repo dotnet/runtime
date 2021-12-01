@@ -37,10 +37,12 @@
     <Compile Include="XmlIdeographicCharConvertTests1.cs" />
     <Compile Include="XmlIdeographicCharConvertTests2.cs" />
     <Compile Include="XmlIdeographicCharConvertTests3.cs" />
-    <Compile Include="$(CommonTestPath)System\Xml\DisableParallelization.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelizationPerAssembly.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
+
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)..\ILLink.Descriptors.ModuleCore.xml" />
   </ItemGroup>
 </Project>

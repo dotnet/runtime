@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
@@ -41,7 +40,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
         /// <returns><c>True</c> if a value for the specified key was found, otherwise <c>false</c>.</returns>
-        public bool TryGet(string key, out string value)
+        public bool TryGet(string key, out string? value)
         {
             value = _config[key];
             return !string.IsNullOrEmpty(value);
@@ -52,7 +51,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
-        public void Set(string key, string value) => _config[key] = value;
+        public void Set(string key, string? value) => _config[key] = value;
 
         /// <summary>
         /// Returns a change token if this provider supports change tracking, null otherwise.
@@ -75,14 +74,17 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The child keys.</returns>
         public IEnumerable<string> GetChildKeys(
             IEnumerable<string> earlierKeys,
-            string parentPath)
+            string? parentPath)
         {
             IConfiguration section = parentPath == null ? _config : _config.GetSection(parentPath);
-            IEnumerable<IConfigurationSection> children = section.GetChildren();
             var keys = new List<string>();
-            keys.AddRange(children.Select(c => c.Key));
-            return keys.Concat(earlierKeys)
-                .OrderBy(k => k, ConfigurationKeyComparer.Instance);
+            foreach (IConfigurationSection child in section.GetChildren())
+            {
+                keys.Add(child.Key);
+            }
+            keys.AddRange(earlierKeys);
+            keys.Sort(ConfigurationKeyComparer.Comparison);
+            return keys;
         }
 
         /// <inheritdoc />

@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Data.SqlTypes;
 using System.Reflection;
@@ -58,14 +59,16 @@ namespace System.Data
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object to the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) =>
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) =>
             destinationType == typeof(InstanceDescriptor) ||
             base.CanConvertTo(context, destinationType);
 
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        public override object? ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object? value, Type destinationType)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "InstanceDescriptor calls GetType(string) on AssemblyQualifiedName of instance of type we already have in here.")]
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -104,11 +107,11 @@ namespace System.Data
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) =>
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
             sourceType == typeof(string) ||
             base.CanConvertTo(context, sourceType);
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value != null && value.GetType() == typeof(string))
             {
@@ -123,13 +126,13 @@ namespace System.Data
                 return typeof(string);
             }
 
-            return base.ConvertFrom(context, culture, value);
+            return base.ConvertFrom(context, culture, value!);
         }
 
         /// <summary>
         /// Gets a collection of standard values for the data type this validator is designed for.
         /// </summary>
-        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
         {
             if (_values == null)
             {
@@ -154,12 +157,12 @@ namespace System.Data
         /// Gets a value indicating whether the list of standard values returned from
         /// <see cref='System.ComponentModel.TypeListConverter.GetStandardValues'/> is an exclusive list.
         /// </summary>
-        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) => true;
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) => true;
 
         /// <summary>
         /// Gets a value indicating whether this object supports a
         /// standard set of values that can be picked from a list using the specified context.
         /// </summary>
-        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
     }
 }

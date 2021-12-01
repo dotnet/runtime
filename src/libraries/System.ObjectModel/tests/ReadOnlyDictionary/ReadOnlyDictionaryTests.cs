@@ -143,6 +143,20 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         /// <summary>
+        /// Tests that the explicit IDictionary.Item[] implementation returns null on a non-existing key.
+        /// </summary>
+        [Fact]
+        public static void IDictionaryItemTests()
+        {
+            KeyValuePair<int, string>[] expectedArr = new KeyValuePair<int, string>[] {
+                new KeyValuePair<int, string>(1, "one")
+            };
+            DummyDictionary<int, string> dummyExpectedDict = new DummyDictionary<int, string>(expectedArr);
+            IDictionary dictionary = new ReadOnlyDictionary<int, string>(dummyExpectedDict);
+            Assert.Null(dictionary[2]);
+        }
+
+        /// <summary>
         /// Tests that items can be retrieved by key from the Dictionary.
         /// </summary>
         [Fact]
@@ -210,6 +224,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void DebuggerAttributeTests()
         {
             ReadOnlyDictionary<int, int> dict = new ReadOnlyDictionary<int, int>(new Dictionary<int, int>{{1, 2}, {2, 4}, {3, 6}});
@@ -233,6 +248,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void DebuggerAttribute_NullDictionary_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() =>   DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>), null));
@@ -241,6 +257,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void DebuggerAttribute_NullDictionaryKeys_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, null));

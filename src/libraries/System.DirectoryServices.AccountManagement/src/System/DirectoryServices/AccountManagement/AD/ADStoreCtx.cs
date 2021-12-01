@@ -1570,7 +1570,7 @@ namespace System.DirectoryServices.AccountManagement
                         sddlSid = sddlSid.Substring(0, index) + "-" + ((uint)primaryGroupId).ToString(CultureInfo.InvariantCulture);
 
                         // Now, we convert the SDDL back into a SID
-                        if (UnsafeNativeMethods.ConvertStringSidToSid(sddlSid, ref pGroupSid))
+                        if (Interop.Advapi32.ConvertStringSidToSid(sddlSid, out pGroupSid) != Interop.BOOL.FALSE)
                         {
                             // Now we convert the native SID to a byte[] SID
                             groupSid = Utils.ConvertNativeSidToByteArray(pGroupSid);
@@ -1581,7 +1581,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pGroupSid != IntPtr.Zero)
-                    UnsafeNativeMethods.LocalFree(pGroupSid);
+                    Interop.Kernel32.LocalFree(pGroupSid);
             }
 
             if (groupSid != null)
@@ -1824,12 +1824,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                string path = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "LDAP://{0}/{1}",
-                    string.IsNullOrEmpty(this.UserSuppliedServerName) ? this.DnsHostName : this.UserSuppliedServerName,
-                    this.ContextBasePartitionDN
-                    );
+                string path = $"LDAP://{(string.IsNullOrEmpty(this.UserSuppliedServerName) ? this.DnsHostName : this.UserSuppliedServerName)}/{this.ContextBasePartitionDN}";
 
                 defaultNCDirEntry = SDSUtils.BuildDirectoryEntry(path, this.credentials, this.authTypes);
 
@@ -2159,18 +2154,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     ContextOptions remoteOptions = DefaultContextOptions.ADDefaultContextOption;
 
-#if USE_CTX_CACHE
                     PrincipalContext remoteCtx = SDSCache.Domain.GetContext(domainName, this.credentials, remoteOptions);
-#else
-                    PrincipalContext remoteCtx = new PrincipalContext(
-                                    ContextType.Domain,
-                                    domainName,
-                                    null,
-                                    (this.credentials != null ? credentials.UserName : null),
-                                    (this.credentials != null ? credentials.Password : null),
-                                    remoteOptions);
-
-#endif
                     foreignStoreCtx = remoteCtx.QueryCtx;
                 }
 
@@ -2587,5 +2571,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-//#endif  // PAPI_AD

@@ -612,8 +612,7 @@ namespace System.Globalization
         public override DayOfWeek GetDayOfWeek(DateTime time)
         {
             // If we calculate back, the Hebrew day of week for Gregorian 0001/1/1 is Monday (1).
-            // Therfore, the fomula is:
-            return (DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7);
+            return time.DayOfWeek;
         }
 
         internal static int GetHebrewYearType(int year, int era)
@@ -660,11 +659,11 @@ namespace System.Globalization
             CheckHebrewMonthValue(year, month, era);
 
             Debug.Assert(hebrewYearType >= 1 && hebrewYearType <= 6,
-                "hebrewYearType should be from  1 to 6, but now hebrewYearType = " + hebrewYearType + " for hebrew year " + year);
+                $"hebrewYearType should be from  1 to 6, but now hebrewYearType = {hebrewYearType} for hebrew year {year}");
             int monthDays = LunarMonthLen[hebrewYearType * MaxMonthPlusOne + month];
             if (monthDays == 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
+                ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             }
 
             return monthDays;
@@ -892,7 +891,7 @@ namespace System.Globalization
             return year;
         }
 
-        internal class DateBuffer
+        internal sealed class DateBuffer
         {
             internal int year;
             internal int month;

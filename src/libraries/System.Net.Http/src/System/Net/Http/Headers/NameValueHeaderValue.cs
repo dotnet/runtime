@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -51,7 +49,7 @@ namespace System.Net.Http.Headers
             _value = value;
         }
 
-        protected NameValueHeaderValue(NameValueHeaderValue source)
+        protected internal NameValueHeaderValue(NameValueHeaderValue source)
         {
             Debug.Assert(source != null);
 
@@ -80,7 +78,7 @@ namespace System.Net.Http.Headers
             return nameHashCode;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             NameValueHeaderValue? other = obj as NameValueHeaderValue;
 
@@ -164,7 +162,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static void ToString(ObjectCollection<NameValueHeaderValue>? values, char separator, bool leadingSeparator,
+        internal static void ToString(UnvalidatedObjectCollection<NameValueHeaderValue>? values, char separator, bool leadingSeparator,
             StringBuilder destination)
         {
             Debug.Assert(destination != null);
@@ -185,7 +183,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static int GetHashCode(ObjectCollection<NameValueHeaderValue>? values)
+        internal static int GetHashCode(UnvalidatedObjectCollection<NameValueHeaderValue>? values)
         {
             if ((values == null) || (values.Count == 0))
             {
@@ -265,7 +263,7 @@ namespace System.Net.Http.Headers
         // Returns the length of a name/value list, separated by 'delimiter'. E.g. "a=b, c=d, e=f" adds 3
         // name/value pairs to 'nameValueCollection' if 'delimiter' equals ','.
         internal static int GetNameValueListLength(string? input, int startIndex, char delimiter,
-            ObjectCollection<NameValueHeaderValue> nameValueCollection)
+            UnvalidatedObjectCollection<NameValueHeaderValue> nameValueCollection)
         {
             Debug.Assert(nameValueCollection != null);
             Debug.Assert(startIndex >= 0);
@@ -303,7 +301,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static NameValueHeaderValue? Find(ObjectCollection<NameValueHeaderValue>? values, string name)
+        internal static NameValueHeaderValue? Find(UnvalidatedObjectCollection<NameValueHeaderValue>? values, string name)
         {
             Debug.Assert((name != null) && (name.Length > 0));
 
@@ -353,11 +351,33 @@ namespace System.Net.Http.Headers
 
         private static void CheckValueFormat(string? value)
         {
-            // Either value is null/empty or a valid token/quoted string
-            if (!(string.IsNullOrEmpty(value) || (GetValueLength(value, 0) == value.Length)))
+            // Either value is null/empty or a valid token/quoted string https://tools.ietf.org/html/rfc7230#section-3.2.6
+            if (string.IsNullOrEmpty(value))
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                return;
             }
+
+            // Trailing/leading space are not allowed
+            if (value[0] == ' ' || value[0] == '\t' || value[^1] == ' ' || value[^1] == '\t')
+            {
+                ThrowFormatException(value);
+            }
+
+            if (value[0] == '"')
+            {
+                HttpParseResult parseResult = HttpRuleParser.GetQuotedStringLength(value, 0, out int valueLength);
+                if (parseResult != HttpParseResult.Parsed || valueLength != value.Length)
+                {
+                    ThrowFormatException(value);
+                }
+            }
+            else if (HttpRuleParser.ContainsNewLine(value))
+            {
+                ThrowFormatException(value);
+            }
+
+            static void ThrowFormatException(string value) =>
+                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
         }
 
         private static NameValueHeaderValue CreateNameValue()

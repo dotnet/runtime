@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
@@ -9,7 +8,7 @@ namespace MS.Internal.Xml.XPath
     // We need this wrapper object to:
     //      1. Calculate position
     //      2. Protect internal query.Current from user who may call MoveNext().
-    internal class XPathSelectionIterator : ResetableIterator
+    internal sealed class XPathSelectionIterator : ResetableIterator
     {
         private XPathNavigator _nav;
         private readonly Query _query;
@@ -21,7 +20,7 @@ namespace MS.Internal.Xml.XPath
             _query = query;
         }
 
-        protected XPathSelectionIterator(XPathSelectionIterator it)
+        private XPathSelectionIterator(XPathSelectionIterator it)
         {
             _nav = it._nav.Clone();
             _query = (Query)it._query.Clone();

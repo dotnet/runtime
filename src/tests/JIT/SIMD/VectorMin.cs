@@ -86,6 +86,8 @@ internal partial class VectorTest
         if (VectorMinTest<sbyte>.VectorMin(-2, 3, -2) != Pass) returnVal = Fail;
         if (VectorMinTest<uint>.VectorMin(0x80000000u, 0x40000000u, 0x40000000u) != Pass) returnVal = Fail;
         if (VectorMinTest<ulong>.VectorMin(2ul, 3ul, 2ul) != Pass) returnVal = Fail;
+        if (VectorMinTest<nint>.VectorMin(2, 3, 2) != Pass) returnVal = Fail;
+        if (VectorMinTest<nuint>.VectorMin(0x80000000u, 0x40000000u, 0x40000000u) != Pass) returnVal = Fail;
 
         JitLog jitLog = new JitLog();
         if (!jitLog.Check("Min", "Single")) returnVal = Fail;
@@ -101,6 +103,8 @@ internal partial class VectorTest
         if (!jitLog.Check("Min", "SByte")) returnVal = Fail;
         if (!jitLog.Check("Min", "UInt32")) returnVal = Fail;
         if (!jitLog.Check("Min", "UInt64")) returnVal = Fail;
+        if (!jitLog.Check("Min", "IntPtr")) returnVal = Fail;
+        if (!jitLog.Check("Min", "UIntPtr")) returnVal = Fail;
         jitLog.Dispose();
 
         return returnVal;

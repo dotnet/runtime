@@ -8,12 +8,12 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    public partial class ECDsa : AsymmetricAlgorithm
+    public partial class ECDsa : ECAlgorithm
     {
         /// <summary>
         /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.
         /// </summary>
-        public static new ECDsa Create()
+        public static new partial ECDsa Create()
         {
             return new ECDsaImplementation.ECDsaSecurityTransforms();
         }
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
         /// <param name="curve">
         /// The <see cref="ECCurve"/> representing the elliptic curve.
         /// </param>
-        public static ECDsa Create(ECCurve curve)
+        public static partial ECDsa Create(ECCurve curve)
         {
             ECDsa ecdsa = Create();
             ecdsa.GenerateKey(curve);
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         /// <param name="parameters">
         /// The <see cref="ECParameters"/> representing the elliptic curve parameters.
         /// </param>
-        public static ECDsa Create(ECParameters parameters)
+        public static partial ECDsa Create(ECParameters parameters)
         {
             ECDsa ecdsa = Create();
             ecdsa.ImportParameters(parameters);
@@ -106,7 +106,11 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
 
-                    byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, hash);
+                    byte[] derFormatSignature = Interop.AppleCrypto.CreateSignature(
+                        keys.PrivateKey,
+                        hash,
+                        Interop.AppleCrypto.PAL_HashAlgorithm.Unknown,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.EC);
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
                         derFormatSignature.AsSpan(0, derFormatSignature.Length),
                         KeySize);
@@ -122,7 +126,11 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
 
-                    byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, source);
+                    byte[] derFormatSignature = Interop.AppleCrypto.CreateSignature(
+                        keys.PrivateKey,
+                        source,
+                        Interop.AppleCrypto.PAL_HashAlgorithm.Unknown,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.EC);
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
                         derFormatSignature.AsSpan(0, derFormatSignature.Length),
                         KeySize);
@@ -167,7 +175,9 @@ namespace System.Security.Cryptography
                     return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
                         hash,
-                        AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature));
+                        AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature),
+                        Interop.AppleCrypto.PAL_HashAlgorithm.Unknown,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.EC);
                 }
 
                 protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>

@@ -4,19 +4,18 @@
 Imports System
 Imports System.Collections.Generic
 Imports System.Diagnostics
-Imports System.Dynamic
-Imports System.Linq.Expressions
 Imports System.Reflection
 
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Imports Microsoft.VisualBasic.CompilerServices.OverloadResolution
-Imports Microsoft.VisualBasic.CompilerServices.Utils
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements VB operator resolution semantics.
     Partial Public NotInheritable Class Operators
 
+        <RequiresUnreferencedCode("Calls CollectOverloadCandidates")>
         Friend Shared Function CollectOperators(
             ByVal op As UserDefinedOperator,
             ByVal type1 As System.Type,
@@ -96,6 +95,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
+        <RequiresUnreferencedCode("Calls ResolveOverloadedCall")>
         Friend Shared Function ResolveUserDefinedOperator(
             ByVal op As UserDefinedOperator,
             ByVal arguments As Object(),
@@ -184,6 +184,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return Nothing
         End Function
 
+        <RequiresUnreferencedCode("Calls Container.InvokeMethod")>
         Friend Shared Function InvokeUserDefinedOperator(
             ByVal operatorMethod As Method,
             ByVal forceArgumentValidation As Boolean,
@@ -229,6 +230,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     BindingFlagsInvokeMethod)
         End Function
 
+        <RequiresUnreferencedCode("Calls Return IDOBinder.InvokeUserDefinedOperator")>
         Friend Shared Function InvokeUserDefinedOperator(
             ByVal op As UserDefinedOperator,
             ByVal ParamArray arguments As Object()) As Object
@@ -242,6 +244,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <ObsoleteAttribute("do not use this method", True)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
+        <RequiresUnreferencedCode("The object types cannot be statically analyzed so their operators may be trimmed")>
         Public Shared Function FallbackInvokeUserDefinedOperator(
                 ByVal vbOp As Object,
                 ByVal arguments As Object()) As Object
@@ -249,6 +252,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return InvokeObjectUserDefinedOperator(CType(vbOp, UserDefinedOperator), arguments)
         End Function
 
+        <RequiresUnreferencedCode("Calls InvokeUserDefinedOperator")>
         Friend Shared Function InvokeObjectUserDefinedOperator(
             ByVal op As UserDefinedOperator,
             ByVal arguments As Object()) As Object
@@ -267,6 +271,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Function
 
+        <RequiresUnreferencedCode("Calls CanMatchArguments")>
         Friend Shared Function GetCallableUserDefinedOperator(
             ByVal op As UserDefinedOperator,
             ByVal ParamArray arguments As Object()) As Method

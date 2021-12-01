@@ -18,7 +18,6 @@ namespace System.Runtime.Loader.Tests
         private const string TestAssemblyNotSupported = "System.Runtime.Loader.Test.AssemblyNotSupported";
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39379", TestPlatforms.Browser)]
         public static void GetAssemblyNameTest_ValidAssembly()
         {
             var expectedName = typeof(AssemblyLoadContextTest).Assembly.GetName();
@@ -70,6 +69,8 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void LoadAssemblyByPath_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -79,10 +80,13 @@ namespace System.Runtime.Loader.Tests
             var asm = loadContext.LoadFromAssemblyName(asmName);
 
             Assert.NotNull(asm);
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
             Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
         }
 
         [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void LoadAssemblyByStream_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -92,6 +96,7 @@ namespace System.Runtime.Loader.Tests
             var asm = loadContext.LoadFromAssemblyName(asmName);
 
             Assert.NotNull(asm);
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
             Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
         }
 
@@ -106,6 +111,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Corelib does not exist on disc for Browser builds")]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
             var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
@@ -122,6 +128,24 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        public static void LoadFromAssemblyName_FallbackToDefaultContext()
+        {
+            var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
+            asmName.CodeBase = null;
+            var loadContext = new AssemblyLoadContext("FallbackToDefaultContextTest");
+
+            // This should not have any special handlers, so it should just find the version in the default context
+            var asm = loadContext.LoadFromAssemblyName(asmName);
+            Assert.NotNull(asm);
+            var loadedContext = AssemblyLoadContext.GetLoadContext(asm);
+            Assert.NotNull(loadedContext);
+            Assert.Same(AssemblyLoadContext.Default, loadedContext);
+            Assert.NotEqual(loadContext, loadedContext);
+            Assert.Same(typeof(System.Linq.Enumerable).Assembly, asm);
+        }
+
+        [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         public static void GetLoadContextTest_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -141,6 +165,7 @@ namespace System.Runtime.Loader.Tests
             var context = AssemblyLoadContext.GetLoadContext(asm);
 
             Assert.NotNull(context);
+            Assert.Same(AssemblyLoadContext.Default, context);
         }
 
         [Fact]
@@ -195,6 +220,19 @@ namespace System.Runtime.Loader.Tests
             Assert.Equal(name, alc.Name);
             Assert.Contains(name, alc.ToString());
             Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Empty(alc.Assemblies);
+        }
+
+        [Fact]
+        public static void SubclassAssemblyLoadContext_Properties()
+        {
+            AssemblyLoadContext alc = new ResourceAssemblyLoadContext();
+
+            Assert.False(alc.IsCollectible);
+            Assert.Null(alc.Name);
+            Assert.Contains("\"\"", alc.ToString());
+            Assert.Contains(typeof(ResourceAssemblyLoadContext).ToString(), alc.ToString());
             Assert.Contains(alc, AssemblyLoadContext.All);
             Assert.Empty(alc.Assemblies);
         }

@@ -16,6 +16,7 @@ namespace Internal.Cryptography
     {
         // SymmetricAlgorithm members used by the core.
         int BlockSize { get; }
+        int FeedbackSize { get; }
         CipherMode Mode { get; }
         PaddingMode Padding { get; }
         byte[] IV { get; set; }
@@ -27,8 +28,10 @@ namespace Internal.Cryptography
 
         // Other members.
         bool IsWeakKey(byte[] key);
-        SafeAlgorithmHandle GetEphemeralModeHandle();
+        SafeAlgorithmHandle GetEphemeralModeHandle(CipherMode mode, int feedbackSizeInBits);
         string GetNCryptAlgorithmIdentifier();
         byte[] PreprocessKey(byte[] key);
+        int GetPaddingSize(CipherMode mode, int feedbackSizeBits);
+        bool IsValidEphemeralFeedbackSize(int feedbackSizeInBits);
     }
 }

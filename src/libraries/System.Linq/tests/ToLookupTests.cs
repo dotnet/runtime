@@ -41,7 +41,7 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCall()
         {
             var q1 = from x1 in new string[] { "Alen", "Felix", null, null, "X", "Have Space", "Clinton", "" }
-                     select x1; ;
+                     select x1;
 
             var q2 = from x2 in new int[] { 55, 49, 9, -100, 24, 25, -1, 0 }
                      select x2;

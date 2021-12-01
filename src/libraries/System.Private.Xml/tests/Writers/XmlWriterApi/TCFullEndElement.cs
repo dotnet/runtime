@@ -5755,7 +5755,14 @@ namespace System.Xml.Tests
                         w.WriteBinHex(Wbase64, 0, (int)Wbase64len);
                         w.WriteEndElement();
                     }
-                    Assert.True(utils.CompareReader("<root a='610062006300' />"));
+                    if (System.BitConverter.IsLittleEndian)
+                    {
+                        Assert.True(utils.CompareReader("<root a='610062006300' />"));
+                    }
+                    else
+                    {
+                        Assert.True(utils.CompareReader("<root a='006100620063' />"));
+                    }
                 }
 
                 // Call WriteBinHex and verify results can be read as a string
@@ -5777,7 +5784,14 @@ namespace System.Xml.Tests
                         w.WriteBinHex(Wbase64, 0, (int)Wbase64len);
                         w.WriteEndElement();
                     }
-                    Assert.True(utils.CompareReader("<root>610062006300</root>"));
+                    if (System.BitConverter.IsLittleEndian)
+                    {
+                        Assert.True(utils.CompareReader("<root>610062006300</root>"));
+                    }
+                    else
+                    {
+                        Assert.True(utils.CompareReader("<root>006100620063</root>"));
+                    }
                 }
             }
 

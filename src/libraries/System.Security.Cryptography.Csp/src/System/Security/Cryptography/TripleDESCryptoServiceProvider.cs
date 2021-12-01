@@ -6,6 +6,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class TripleDESCryptoServiceProvider : TripleDES
     {
@@ -16,7 +17,6 @@ namespace System.Security.Cryptography
         {
             // This class wraps TripleDES
             _impl = TripleDES.Create();
-            _impl.FeedbackSize = 8;
         }
 
         public override int FeedbackSize

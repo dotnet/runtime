@@ -24,7 +24,7 @@ namespace SslStress
 {
     public struct DataSegment
     {
-        private readonly byte[] _buffer;
+        private byte[] _buffer;
 
         public DataSegment(int length)
         {
@@ -37,7 +37,12 @@ namespace SslStress
         public Span<byte> AsSpan() => new Span<byte>(_buffer, 0, Length);
 
         public ulong Checksum => CRC.CalculateCRC(AsSpan());
-        public void Return() => ArrayPool<byte>.Shared.Return(_buffer);
+        public void Return()
+        {
+            byte[] toReturn = _buffer;
+            _buffer = null;
+            ArrayPool<byte>.Shared.Return(toReturn);
+        }
 
         /// Create and populate a segment with random data
         public static DataSegment CreateRandom(Random random, int maxLength)
@@ -77,11 +82,11 @@ namespace SslStress
         {
             // length
             int numsize = s_encoding.GetBytes(segment.Length.ToString(), _buffer);
-            await stream.WriteAsync(_buffer.AsMemory().Slice(0, numsize), token);
+            await stream.WriteAsync(_buffer.AsMemory(0, numsize), token);
             stream.WriteByte((byte)',');
             // checksum
             numsize = s_encoding.GetBytes(segment.Checksum.ToString(), _buffer);
-            await stream.WriteAsync(_buffer.AsMemory().Slice(0, numsize), token);
+            await stream.WriteAsync(_buffer.AsMemory(0, numsize), token);
             stream.WriteByte((byte)',');
             // payload
             Memory<byte> source = segment.AsMemory();
@@ -147,7 +152,7 @@ namespace SslStress
 
             ReadOnlySequence<byte> lengthBytes = buffer.Slice(0, pos.Value);
             int numSize = s_encoding.GetChars(lengthBytes.ToArray(), _charBuffer);
-            int length = int.Parse(_charBuffer.AsSpan().Slice(0, numSize));
+            int length = int.Parse(_charBuffer.AsSpan(0, numSize));
             buffer = buffer.Slice(buffer.GetPosition(1, pos.Value));
 
             // checksum
@@ -159,7 +164,7 @@ namespace SslStress
 
             ReadOnlySequence<byte> checksumBytes = buffer.Slice(0, pos.Value);
             numSize = s_encoding.GetChars(checksumBytes.ToArray(), _charBuffer);
-            ulong checksum = ulong.Parse(_charBuffer.AsSpan().Slice(0, numSize));
+            ulong checksum = ulong.Parse(_charBuffer.AsSpan(0, numSize));
             buffer = buffer.Slice(buffer.GetPosition(1, pos.Value));
 
             // payload
@@ -285,10 +290,10 @@ namespace SslStress
                     return Task.CompletedTask;
                 }
             }
-            
+
             async Task Monitor(CancellationToken token)
             {
-                do 
+                do
                 {
                     await Task.Delay(500);
 

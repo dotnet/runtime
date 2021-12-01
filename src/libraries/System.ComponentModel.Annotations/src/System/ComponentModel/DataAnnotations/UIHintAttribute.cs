@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -30,7 +31,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="uiHint">The name of the control to use</param>
         /// <param name="presentationLayer">The name of the presentation layer that supports this control</param>
-        public UIHintAttribute(string uiHint, string presentationLayer)
+        public UIHintAttribute(string uiHint, string? presentationLayer)
             : this(uiHint, presentationLayer, Array.Empty<object>())
         {
         }
@@ -65,10 +66,10 @@ namespace System.ComponentModel.DataAnnotations
 
         public override int GetHashCode() => _implementation.GetHashCode();
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is UIHintAttribute otherAttribute && _implementation.Equals(otherAttribute._implementation);
 
-        internal class UIHintImplementation
+        internal sealed class UIHintImplementation
         {
             private readonly object?[]? _inputControlParameters;
             private IDictionary<string, object?>? _controlParameters;
@@ -118,7 +119,7 @@ namespace System.ComponentModel.DataAnnotations
             /// </summary>
             /// <param name="obj">An System.Object.</param>
             /// <returns>true if obj is a UIHintAttribute and its value is the same as this instance; otherwise, false.</returns>
-            public override bool Equals(object? obj)
+            public override bool Equals([NotNullWhen(true)] object? obj)
             {
                 var otherImplementation = obj as UIHintImplementation;
 

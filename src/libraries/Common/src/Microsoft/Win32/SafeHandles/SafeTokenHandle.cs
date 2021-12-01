@@ -11,7 +11,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeTokenHandle : SafeHandle
     {
-        private SafeTokenHandle() : base(IntPtr.Zero, true) { }
+        public SafeTokenHandle() : base(IntPtr.Zero, true) { }
 
         // 0 is an Invalid Handle
         internal SafeTokenHandle(IntPtr handle) : base(IntPtr.Zero, true)

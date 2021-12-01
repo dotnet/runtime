@@ -7,12 +7,13 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal abstract class HttpConnectionBase : IHttpTrace
+    internal abstract class HttpConnectionBase : IDisposable, IHttpTrace
     {
         /// <summary>Cached string for the last Date header received on this connection.</summary>
         private string? _lastDateHeaderValue;
@@ -20,25 +21,25 @@ namespace System.Net.Http
         private string? _lastServerHeaderValue;
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
-        public string GetResponseHeaderValueWithCaching(HeaderDescriptor descriptor, ReadOnlySpan<byte> value)
+        public string GetResponseHeaderValueWithCaching(HeaderDescriptor descriptor, ReadOnlySpan<byte> value, Encoding? valueEncoding)
         {
             return
-                ReferenceEquals(descriptor.KnownHeader, KnownHeaders.Date) ? GetOrAddCachedValue(ref _lastDateHeaderValue, descriptor, value) :
-                ReferenceEquals(descriptor.KnownHeader, KnownHeaders.Server) ? GetOrAddCachedValue(ref _lastServerHeaderValue, descriptor, value) :
-                descriptor.GetHeaderValue(value);
+                ReferenceEquals(descriptor.KnownHeader, KnownHeaders.Date) ? GetOrAddCachedValue(ref _lastDateHeaderValue, descriptor, value, valueEncoding) :
+                ReferenceEquals(descriptor.KnownHeader, KnownHeaders.Server) ? GetOrAddCachedValue(ref _lastServerHeaderValue, descriptor, value, valueEncoding) :
+                descriptor.GetHeaderValue(value, valueEncoding);
 
-            static string GetOrAddCachedValue([NotNull] ref string? cache, HeaderDescriptor descriptor, ReadOnlySpan<byte> value)
+            static string GetOrAddCachedValue([NotNull] ref string? cache, HeaderDescriptor descriptor, ReadOnlySpan<byte> value, Encoding? encoding)
             {
                 string? lastValue = cache;
                 if (lastValue is null || !ByteArrayHelpers.EqualsOrdinalAscii(lastValue, value))
                 {
-                    cache = lastValue = descriptor.GetHeaderValue(value);
+                    cache = lastValue = descriptor.GetHeaderValue(value, encoding);
                 }
+                Debug.Assert(cache is not null);
                 return lastValue;
             }
         }
 
-        public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken);
         public abstract void Trace(string message, [CallerMemberName] string? memberName = null);
 
         protected void TraceConnection(Stream stream)
@@ -59,28 +60,15 @@ namespace System.Net.Http
             }
         }
 
-        private long CreationTickCount { get; } = Environment.TickCount64;
+        private readonly long _creationTickCount = Environment.TickCount64;
 
-        // Check if lifetime expired on connection.
-        public bool LifetimeExpired(long nowTicks, TimeSpan lifetime)
-        {
-            bool expired =
-                lifetime != Timeout.InfiniteTimeSpan &&
-                (lifetime == TimeSpan.Zero || (nowTicks - CreationTickCount) > lifetime.TotalMilliseconds);
+        public long GetLifetimeTicks(long nowTicks) => nowTicks - _creationTickCount;
 
-            if (expired && NetEventSource.Log.IsEnabled()) Trace($"Connection no longer usable. Alive {TimeSpan.FromMilliseconds((nowTicks - CreationTickCount))} > {lifetime}.");
-            return expired;
-        }
+        public abstract long GetIdleTicks(long nowTicks);
 
-        internal static HttpRequestException CreateRetryException()
-        {
-            // This is an exception that's thrown during request processing to indicate that the
-            // attempt to send the request failed in such a manner that the server is guaranteed to not have
-            // processed the request in any way, and thus the request can be retried.
-            // This will be caught in HttpConnectionPool.SendWithRetryAsync and the retry logic will kick in.
-            // The user should never see this exception.
-            throw new HttpRequestException(null, null, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
-        }
+        /// <summary>Check whether a connection is still usable, or should be scavenged.</summary>
+        /// <returns>True if connection can be used.</returns>
+        public virtual bool CheckUsabilityOnScavenge() => true;
 
         internal static bool IsDigit(byte c) => (uint)(c - '0') <= '9' - '0';
 
@@ -139,5 +127,7 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) connection.Trace($"Exception from asynchronous processing: {e}");
             }
         }
+
+        public abstract void Dispose();
     }
 }

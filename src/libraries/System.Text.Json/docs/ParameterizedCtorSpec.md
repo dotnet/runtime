@@ -28,7 +28,7 @@ Also consider `User`:
 public class User
 {
   public string UserName { get; private set; }
-  
+
   public bool Enabled { get; private set; }
 
   public User() { }
@@ -129,7 +129,7 @@ Non-`public` support is not provided by `JsonSerializer` by default, so configur
 
 The constructor to use can also be specified with a `[SerializationConstructor]` attribute.
 
-`Utf8Json` does not support non-`public` constructors, even with the attribute. 
+`Utf8Json` does not support non-`public` constructors, even with the attribute.
 
 ### `Jil` (.NET)
 
@@ -145,7 +145,7 @@ and proposed in this spec.
 ```Java
 @JsonCreator
 public BeanWithCreator(
-    @JsonProperty("id") int id, 
+    @JsonProperty("id") int id,
     @JsonProperty("theName") String name) {
     this.id = id;
     this.name = name;
@@ -459,7 +459,7 @@ Given `Person:
 public class Person
 {
     public string FirstName { get; set; }
-    
+
     public string LastName { get; set; }
 
     public Guid Id { get; }
@@ -506,7 +506,7 @@ public class PointWrapper
 
 	public PointWrapper(Point_3D point) {}
 }
-	
+
 public struct Point_3D
 {
 	public int X { get; }
@@ -523,7 +523,7 @@ We can ignore `null` tokens and not pass them as arguments to a non-nullable par
 ```C#
 JsonSerializerOptions options = new JsonSerializerOptions
 {
-    IgnoreNullValues = true 
+    IgnoreNullValues = true
 };
 PointWrapper obj = JsonSerializer.Deserialize<PointWrapper>(@"{""Point"":null}"); // obj.Point is `default`
 ```
@@ -546,7 +546,7 @@ We expect most users to have significantly less than 64 parameters, but we can r
 
 #### [`ReferenceHandling` semantics](https://github.com/dotnet/runtime/blob/13c1e65a9f7aab201fe77e3daba11946aeb7cbaa/src/libraries/System.Text.Json/docs/ReferenceHandling_spec.md) will not be applied to objects deserialized with parameterized constructors
 
-`NotSupportedException` will be thrown if any properties named "$id", "$ref", or "$values" are found in the payload, and `options.ReferenceHandling` is set to 
+`NotSupportedException` will be thrown if any properties named "$id", "$ref", or "$values" are found in the payload, and `options.ReferenceHandling` is set to
 `ReferenceHandling.Preserve`. If the feature is off, these properties will be treated like any other (likely end up in extension data property).
 This behavior prevents us from breaking people if we implement this feature in the future.
 

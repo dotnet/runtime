@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.IntegrationTesting
@@ -85,7 +84,7 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
                     // Core+Standalone always publishes. This must be Clr+Standalone or Core+Portable.
                     // Run from the pre-built bin/{config}/{tfm} directory.
                     var targetFramework = DeploymentParameters.TargetFramework
-                        ?? (DeploymentParameters.RuntimeFlavor == RuntimeFlavor.Clr ? Tfm.Net461 : Tfm.NetCoreApp22);
+                        ?? (DeploymentParameters.RuntimeFlavor == RuntimeFlavor.Clr ? Tfm.Net462 : Tfm.NetCoreApp22);
                     workingDirectory = Path.Combine(DeploymentParameters.ApplicationPath, "bin", DeploymentParameters.Configuration, targetFramework);
                     // CurrentDirectory will point to bin/{config}/{tfm}, but the config and static files aren't copied, point to the app base instead.
                     DeploymentParameters.EnvironmentVariables["DOTNET_CONTENTROOT"] = DeploymentParameters.ApplicationPath;
@@ -165,7 +164,7 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
                     // The timeout here is large, because we don't know how long the test could need
                     // We cover a lot of error cases above, but I want to make sure we eventually give up and don't hang the build
                     // just in case we missed one -anurse
-                    await started.Task.TimeoutAfter(TimeSpan.FromMinutes(10));
+                    await started.Task.WaitAsync(TimeSpan.FromMinutes(10));
                 }
 
                 return hostExitTokenSource.Token;

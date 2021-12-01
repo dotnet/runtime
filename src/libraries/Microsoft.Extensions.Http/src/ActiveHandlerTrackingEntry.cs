@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Http
 {
     // Thread-safety: We treat this class as immutable except for the timer. Creating a new object
     // for the 'expiry' pool simplifies the threading requirements significantly.
-    internal class ActiveHandlerTrackingEntry
+    internal sealed class ActiveHandlerTrackingEntry
     {
         private static readonly TimerCallback _timerCallback = (s) => ((ActiveHandlerTrackingEntry)s).Timer_Tick();
         private readonly object _lock;

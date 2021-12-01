@@ -7,11 +7,11 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, ExactSpelling = true)]
-        internal static extern unsafe int EventSetInformation(
+        [GeneratedDllImport(Libraries.Advapi32, ExactSpelling = true)]
+        internal static unsafe partial int EventSetInformation(
             long registrationHandle,
             EVENT_INFO_CLASS informationClass,
             void* eventInformation,
-            int informationLength);
+            uint informationLength);
     }
 }

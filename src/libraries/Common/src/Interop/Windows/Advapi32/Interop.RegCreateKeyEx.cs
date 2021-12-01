@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 #if REGISTRY_ASSEMBLY
 using Microsoft.Win32.SafeHandles;
 #else
@@ -15,8 +14,8 @@ internal static partial class Interop
     {
         // Note: RegCreateKeyEx won't set the last error on failure - it returns
         // an error code if it fails.
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegCreateKeyExW", ExactSpelling = true)]
-        internal static extern int RegCreateKeyEx(
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegCreateKeyExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegCreateKeyEx(
             SafeRegistryHandle hKey,
             string lpSubKey,
             int Reserved,

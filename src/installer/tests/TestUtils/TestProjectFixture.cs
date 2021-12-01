@@ -5,6 +5,7 @@ using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -75,40 +76,44 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
         }
 
+        private readonly static object s_buildFilesLock = new object();
+
         private TestProject CopyTestProject(TestProject sourceTestProject)
         {
-            EnsureDirectoryBuildFiles(TestArtifact.TestArtifactsPath);
-            return sourceTestProject.Copy();
-        }
-
-        private void EnsureDirectoryBuildFiles(string testArtifactDirectory)
-        {
-            Directory.CreateDirectory(testArtifactDirectory);
-
-            // write an empty Directory.Build.* file to ensure that msbuild doesn't pick up
-            // the repo's root Directory.Build.*.
-            EnsureTestProjectsFileContent(testArtifactDirectory, "props");
-            EnsureTestProjectsFileContent(testArtifactDirectory, "targets");
-        }
-
-        private void EnsureTestProjectsFileContent(string dir, string type) => EnsureFileWithContent(
-            Path.Combine(dir, $"Directory.Build.{type}"),
-            string.Join(
-                Environment.NewLine,
-                "<Project>",
-                $"  <Import Project=\"{RepoDirProvider.TestAssetsFolder}/TestUtils/TestProjects.{type}\" />",
-                "</Project>"));
-
-        private void EnsureFileWithContent(string path, string content)
-        {
-            for(int i = 0; i < 3 && !File.Exists(path); i++)
+            lock (s_buildFilesLock)
             {
-                try
+                // Prevent in-process race condition since the TestArtifactsPath is shared by the current
+                // assembly
+                EnsureDirectoryBuildFiles(RepoDirProvider.TestAssetsFolder, TestArtifact.TestArtifactsPath);
+            }
+
+            return sourceTestProject.Copy();
+
+            static void EnsureDirectoryBuildFiles(string testAssetsFolder, string testArtifactDirectory)
+            {
+                Directory.CreateDirectory(testArtifactDirectory);
+
+                // write an empty Directory.Build.* file to ensure that msbuild doesn't pick up
+                // the repo's root Directory.Build.*.
+                EnsureTestProjectsFileContent(testAssetsFolder, testArtifactDirectory, "props");
+                EnsureTestProjectsFileContent(testAssetsFolder, testArtifactDirectory, "targets");
+
+                static void EnsureTestProjectsFileContent(string testAssetsFolder, string dir, string type)
                 {
-                    File.WriteAllText(path, content);
+                    var fileName = Path.Combine(dir, $"Directory.Build.{type}");
+                    if (File.Exists(fileName))
+                    {
+                        return;
+                    }
+
+                    File.WriteAllText(
+                        fileName,
+                        string.Join(
+                            Environment.NewLine,
+                            "<Project>",
+                            $"  <Import Project=\"{testAssetsFolder}/TestUtils/TestProjects.{type}\" />",
+                            "</Project>"));
                 }
-                catch (IOException)
-                {}
             }
         }
 
@@ -119,9 +124,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 throw new Exception($"Unable to find built host and sharedfx, please ensure the build has been run: {repoDirectoriesProvider.BuiltDotnet}");
             }
 
-            if ( ! Directory.Exists(repoDirectoriesProvider.CorehostPackages))
+            if ( ! Directory.Exists(repoDirectoriesProvider.HostArtifacts))
             {
-                throw new Exception($"Unable to find host packages directory, please ensure the build has been run: {repoDirectoriesProvider.CorehostPackages}");
+                throw new Exception($"Unable to find host artifacts directory, please ensure the build has been run: {repoDirectoriesProvider.HostArtifacts}");
             }
         }
 
@@ -254,10 +259,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             DotNetCli dotnet = null,
             string runtime = null,
             string framework = null,
-            string selfContained = null,
+            bool? selfContained = null,
             string outputDirectory = null,
             bool singleFile = false,
-            bool restore = false)
+            bool restore = false,
+            params string[] extraArgs)
         {
             dotnet = dotnet ?? SdkDotnet;
             outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
@@ -291,7 +297,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (selfContained != null)
             {
                 publishArgs.Add("--self-contained");
-                publishArgs.Add(selfContained);
+                publishArgs.Add(selfContained.Value ? "true" : "false");
             }
 
             if (outputDirectory != null)
@@ -307,6 +313,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
             publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+
+            foreach (var arg in extraArgs)
+            {
+                publishArgs.Add(arg);
+            }
 
             dotnet.Publish(publishArgs.ToArray())
                 .WorkingDirectory(TestProject.ProjectDirectory)
@@ -352,7 +363,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestored(params string[] fallbackSources)
         {
-            if ( ! TestProject.IsRestored())
+            if (!TestProject.IsRestored())
             {
                 RestoreProject(fallbackSources);
             }
@@ -362,7 +373,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestoredForRid(string rid, params string[] fallbackSources)
         {
-            if ( ! TestProject.IsRestored())
+            if (!TestProject.IsRestored())
             {
                 string extraMSBuildProperties = $"/p:TestTargetRid={rid}";
                 RestoreProject(fallbackSources, extraMSBuildProperties);

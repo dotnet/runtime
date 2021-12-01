@@ -102,7 +102,7 @@ namespace System.Text.Unicode
 
                     destination = destination.Slice((int)(pOutputBufferRemaining - (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(destination))));
 
-                    if (2 >= (uint)destination.Length)
+                    if (destination.Length <= 2)
                     {
                         operationStatus = OperationStatus.DestinationTooSmall;
                         break;

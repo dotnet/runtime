@@ -112,7 +112,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
 
                 Span<char> escapedPropertyName;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocCharThreshold)
                 {
                     propertyArray = ArrayPool<char>.Shared.Rent(length);
                     escapedPropertyName = propertyArray;
@@ -122,8 +122,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
-                        escapedPropertyName = new Span<char>(ptr, length);
+                        char* ptr = stackalloc char[JsonConstants.StackallocCharThreshold];
+                        escapedPropertyName = new Span<char>(ptr, JsonConstants.StackallocCharThreshold);
                     }
                 }
 
@@ -183,7 +183,7 @@ namespace System.Text.Json
         private void WriteStringIndentedPropertyName(ReadOnlySpan<char> escapedPropertyName)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue - 5 - indent - s_newLineLength) / JsonConstants.MaxExpansionFactorWhileTranscoding);
@@ -274,7 +274,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
 
                 Span<byte> escapedPropertyName;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocByteThreshold)
                 {
                     propertyArray = ArrayPool<byte>.Shared.Rent(length);
                     escapedPropertyName = propertyArray;
@@ -284,8 +284,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
-                        escapedPropertyName = new Span<byte>(ptr, length);
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                        escapedPropertyName = new Span<byte>(ptr, JsonConstants.StackallocByteThreshold);
                     }
                 }
 
@@ -374,7 +374,7 @@ namespace System.Text.Json
         private void WriteStringIndentedPropertyName(ReadOnlySpan<byte> escapedPropertyName)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedPropertyName.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - 5 - s_newLineLength);
@@ -896,8 +896,8 @@ namespace System.Text.Json
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8Value.Length, firstEscapeIndex);
 
-            Span<byte> escapedValue = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
+            Span<byte> escapedValue = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (valueArray = ArrayPool<byte>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndex, _options.Encoder, out int written);
@@ -919,8 +919,8 @@ namespace System.Text.Json
 
             int length = JsonWriterHelper.GetMaxEscapedLength(value.Length, firstEscapeIndex);
 
-            Span<char> escapedValue = length <= JsonConstants.StackallocThreshold ?
-                stackalloc char[length] :
+            Span<char> escapedValue = length <= JsonConstants.StackallocCharThreshold ?
+                stackalloc char[JsonConstants.StackallocCharThreshold] :
                 (valueArray = ArrayPool<char>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndex, _options.Encoder, out int written);
@@ -942,8 +942,8 @@ namespace System.Text.Json
 
             int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndex);
 
-            Span<char> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
-                stackalloc char[length] :
+            Span<char> escapedPropertyName = length <= JsonConstants.StackallocCharThreshold ?
+                stackalloc char[JsonConstants.StackallocCharThreshold] :
                 (propertyArray = ArrayPool<char>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndex, _options.Encoder, out int written);
@@ -965,8 +965,8 @@ namespace System.Text.Json
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndex);
 
-            Span<byte> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
+            Span<byte> escapedPropertyName = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (propertyArray = ArrayPool<byte>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndex, _options.Encoder, out int written);
@@ -1068,7 +1068,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(value.Length, firstEscapeIndexVal);
 
                 Span<char> escapedValue;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocCharThreshold)
                 {
                     valueArray = ArrayPool<char>.Shared.Rent(length);
                     escapedValue = valueArray;
@@ -1078,8 +1078,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
-                        escapedValue = new Span<char>(ptr, length);
+                        char* ptr = stackalloc char[JsonConstants.StackallocCharThreshold];
+                        escapedValue = new Span<char>(ptr, JsonConstants.StackallocCharThreshold);
                     }
                 }
 
@@ -1092,7 +1092,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
 
                 Span<char> escapedPropertyName;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocCharThreshold)
                 {
                     propertyArray = ArrayPool<char>.Shared.Rent(length);
                     escapedPropertyName = propertyArray;
@@ -1102,8 +1102,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
-                        escapedPropertyName = new Span<char>(ptr, length);
+                        char* ptr = stackalloc char[JsonConstants.StackallocCharThreshold];
+                        escapedPropertyName = new Span<char>(ptr, JsonConstants.StackallocCharThreshold);
                     }
                 }
 
@@ -1137,7 +1137,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(utf8Value.Length, firstEscapeIndexVal);
 
                 Span<byte> escapedValue;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocByteThreshold)
                 {
                     valueArray = ArrayPool<byte>.Shared.Rent(length);
                     escapedValue = valueArray;
@@ -1147,8 +1147,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
-                        escapedValue = new Span<byte>(ptr, length);
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                        escapedValue = new Span<byte>(ptr, JsonConstants.StackallocByteThreshold);
                     }
                 }
 
@@ -1161,7 +1161,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
 
                 Span<byte> escapedPropertyName;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocByteThreshold)
                 {
                     propertyArray = ArrayPool<byte>.Shared.Rent(length);
                     escapedPropertyName = propertyArray;
@@ -1171,8 +1171,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
-                        escapedPropertyName = new Span<byte>(ptr, length);
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                        escapedPropertyName = new Span<byte>(ptr, JsonConstants.StackallocByteThreshold);
                     }
                 }
 
@@ -1206,7 +1206,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(utf8Value.Length, firstEscapeIndexVal);
 
                 Span<byte> escapedValue;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocByteThreshold)
                 {
                     valueArray = ArrayPool<byte>.Shared.Rent(length);
                     escapedValue = valueArray;
@@ -1216,8 +1216,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
-                        escapedValue = new Span<byte>(ptr, length);
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                        escapedValue = new Span<byte>(ptr, JsonConstants.StackallocByteThreshold);
                     }
                 }
 
@@ -1230,7 +1230,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
 
                 Span<char> escapedPropertyName;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocCharThreshold)
                 {
                     propertyArray = ArrayPool<char>.Shared.Rent(length);
                     escapedPropertyName = propertyArray;
@@ -1240,8 +1240,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
-                        escapedPropertyName = new Span<char>(ptr, length);
+                        char* ptr = stackalloc char[JsonConstants.StackallocCharThreshold];
+                        escapedPropertyName = new Span<char>(ptr, JsonConstants.StackallocCharThreshold);
                     }
                 }
 
@@ -1275,7 +1275,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(value.Length, firstEscapeIndexVal);
 
                 Span<char> escapedValue;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocCharThreshold)
                 {
                     valueArray = ArrayPool<char>.Shared.Rent(length);
                     escapedValue = valueArray;
@@ -1285,8 +1285,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
-                        escapedValue = new Span<char>(ptr, length);
+                        char* ptr = stackalloc char[JsonConstants.StackallocCharThreshold];
+                        escapedValue = new Span<char>(ptr, JsonConstants.StackallocCharThreshold);
                     }
                 }
 
@@ -1299,7 +1299,7 @@ namespace System.Text.Json
                 int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
 
                 Span<byte> escapedPropertyName;
-                if (length > JsonConstants.StackallocThreshold)
+                if (length > JsonConstants.StackallocByteThreshold)
                 {
                     propertyArray = ArrayPool<byte>.Shared.Rent(length);
                     escapedPropertyName = propertyArray;
@@ -1309,8 +1309,8 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
-                        escapedPropertyName = new Span<byte>(ptr, length);
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                        escapedPropertyName = new Span<byte>(ptr, JsonConstants.StackallocByteThreshold);
                     }
                 }
 
@@ -1530,7 +1530,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<char> escapedValue)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedValue.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < ((int.MaxValue - 7 - indent - s_newLineLength) / JsonConstants.MaxExpansionFactorWhileTranscoding) - escapedValue.Length);
@@ -1580,7 +1580,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> escapedValue)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedValue.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - escapedValue.Length - 7 - s_newLineLength);
@@ -1631,7 +1631,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> escapedValue)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedValue.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - escapedValue.Length - 7 - indent - s_newLineLength);
@@ -1682,7 +1682,7 @@ namespace System.Text.Json
         private void WriteStringIndented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<char> escapedValue)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(escapedValue.Length <= JsonConstants.MaxEscapedTokenSize);
             Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - escapedValue.Length - 7 - indent - s_newLineLength);

@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -150,9 +150,6 @@
   <data name="net_http_headers_invalid_host_header" xml:space="preserve">
     <value>The specified value is not a valid 'Host' header string.</value>
   </data>
-  <data name="net_http_headers_invalid_from_header" xml:space="preserve">
-    <value>The specified value is not a valid 'From' header string.</value>
-  </data>
   <data name="net_http_headers_invalid_etag_name" xml:space="preserve">
     <value>The specified value is not a valid quoted string.</value>
   </data>
@@ -160,7 +157,7 @@
     <value>Invalid range. At least one of the two parameters must not be null.</value>
   </data>
   <data name="net_http_headers_no_newlines" xml:space="preserve">
-    <value>New-line characters in header values must be followed by a white-space character.</value>
+    <value>New-line characters are not allowed in header values.</value>
   </data>
   <data name="net_http_content_buffersize_exceeded" xml:space="preserve">
     <value>Cannot write more bytes to the buffer than the configured maximum buffer size: {0}.</value>
@@ -199,10 +196,10 @@
     <value>The base address must be an absolute URI.</value>
   </data>
   <data name="net_http_client_invalid_requesturi" xml:space="preserve">
-    <value>An invalid request URI was provided. The request URI must either be an absolute URI or BaseAddress must be set.</value>
+    <value>An invalid request URI was provided. Either the request URI must be an absolute URI or BaseAddress must be set.</value>
   </data>
-  <data name="net_http_client_http_baseaddress_required" xml:space="preserve">
-    <value>Only 'http' and 'https' schemes are allowed.</value>
+  <data name="net_http_unsupported_requesturi_scheme" xml:space="preserve">
+    <value>The '{0}' scheme is not supported.</value>
   </data>
   <data name="net_http_parser_invalid_base64_string" xml:space="preserve">
     <value>Value '{0}' is not a valid Base64 string. Error: {1}</value>
@@ -220,13 +217,10 @@
     <value>The field cannot be longer than {0} characters.</value>
   </data>
   <data name="net_http_log_headers_no_newlines" xml:space="preserve">
-    <value>Value for header '{0}' contains invalid new-line characters. Value: '{1}'.</value>
+    <value>Value for header '{0}' contains new-line characters. Value: '{1}'.</value>
   </data>
   <data name="net_http_log_headers_invalid_quality" xml:space="preserve">
     <value>The 'q' value is invalid: '{0}'.</value>
-  </data>
-  <data name="net_http_log_headers_wrong_email_format" xml:space="preserve">
-    <value>Value '{0}' is not a valid email address</value>
   </data>
   <data name="net_http_handler_not_assigned" xml:space="preserve">
     <value>The inner handler has not been assigned.</value>
@@ -264,17 +258,8 @@
   <data name="net_http_value_must_be_greater_than" xml:space="preserve">
     <value>The specified value must be greater than {0}.</value>
   </data>
-  <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
-    <value>An invalid character was found in the mail header: '{0}'.</value>
-  </data>
-  <data name="MailAddressInvalidFormat" xml:space="preserve">
-    <value>The specified string is not in the form required for an e-mail address.</value>
-  </data>
-  <data name="MailHeaderFieldMalformedHeader" xml:space="preserve">
-    <value>The mail header is malformed.</value>
-  </data>
-  <data name="InvalidHeaderName" xml:space="preserve">
-    <value>An invalid character was found in header name.</value>
+  <data name="net_http_value_must_be_greater_than_or_equal" xml:space="preserve">
+    <value>The specified value '{0}' must be greater than or equal to '{1}'.</value>
   </data>
   <data name="net_cookie_attribute" xml:space="preserve">
     <value>The '{0}'='{1}' part of the cookie is invalid.</value>
@@ -351,6 +336,9 @@
   <data name="net_http_invalid_response_status_reason" xml:space="preserve">
     <value>Received status phrase could not be decoded with iso-8859-1: '{0}'.</value>
   </data>
+  <data name="net_http_invalid_response_multiple_status_codes" xml:space="preserve">
+    <value>The response contained more than one status code.</value>
+  </data>
   <data name="net_http_invalid_response_header_folder" xml:space="preserve">
     <value>Received an invalid folded header.</value>
   </data>
@@ -397,7 +385,7 @@
     <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
   </data>
   <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
-    <value>Only the 'http' scheme is allowed for proxies.</value>
+    <value>Only the 'http', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
   </data>
   <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
     <value>Request headers must contain only ASCII characters.</value>
@@ -434,6 +422,12 @@
   </data>
   <data name="net_http_http2_stream_error" xml:space="preserve">
     <value>The HTTP/2 server reset the stream. HTTP/2 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_http2_connection_not_established" xml:space="preserve">
+    <value>An HTTP/2 connection could not be established because the server did not complete the HTTP/2 handshake.</value>
+  </data>
+  <data name="net_http_http2_invalidinitialstreamwindowsize" xml:space="preserve">
+    <value>The initial HTTP/2 stream window size must be between {0} and {1}.</value>
   </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
@@ -546,11 +540,14 @@
   <data name="net_http_request_timedout" xml:space="preserve">
     <value>The request was canceled due to the configured HttpClient.Timeout of {0} seconds elapsing.</value>
   </data>
+  <data name="net_http_connect_timedout" xml:space="preserve">
+    <value>A connection could not be established within the configured ConnectTimeout.</value>
+  </data>
   <data name="net_quic_connectionaborted" xml:space="preserve">
     <value>Connection aborted by peer ({0}).</value>
   </data>
   <data name="net_quic_notsupported" xml:space="preserve">
-    <value>QUIC is not supported on this platform. See http://aka.ms/dotnetquic</value>
+    <value>QUIC is not supported on this platform. See https://aka.ms/dotnetquic</value>
   </data>
   <data name="net_quic_operationaborted" xml:space="preserve">
     <value>Operation aborted.</value>
@@ -563,5 +560,62 @@
   </data>
   <data name="net_http_http2_sync_not_supported" xml:space="preserve">
     <value>The synchronous method is not supported by '{0}' for HTTP/2 or higher. Either use an asynchronous method or downgrade the request version to HTTP/1.1 or lower.</value>
+  </data>
+  <data name="net_http_upgrade_not_enabled_sync" xml:space="preserve">
+    <value>HTTP request version upgrade is not enabled for synchronous '{0}'. Do not use '{1}' version policy for synchronous HTTP methods.</value>
+  </data>
+  <data name="net_http_requested_version_cannot_establish" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while unable to establish HTTP/{2} connection.</value>
+  </data>
+  <data name="net_http_requested_version_alpn_refused" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while server returned HTTP/1.1 in ALPN.</value>
+  </data>
+  <data name="net_http_requested_version_server_refused" xml:space="preserve">
+    <value>Requesting HTTP version {0} with version policy {1} while server offers only version fallback.</value>
+  </data>
+  <data name="net_http_exception_during_plaintext_filter" xml:space="preserve">
+    <value>An exception occurred while invoking the PlaintextStreamFilter.</value>
+  </data>
+  <data name="net_http_null_from_connect_callback" xml:space="preserve">
+    <value>The user-supplied ConnectCallback returned null.</value>
+  </data>
+  <data name="net_http_null_from_plaintext_filter" xml:space="preserve">
+    <value>The user-supplied PlaintextStreamFilter returned null.</value>
+  </data>
+  <data name="net_http_marshalling_response_promise_from_fetch" xml:space="preserve">
+    <value>Internal error marshalling the response Promise from `fetch`.</value>
+  </data>
+  <data name="net_http_synchronous_reads_not_supported" xml:space="preserve">
+    <value>Synchronous reads are not supported, use ReadAsync instead.</value>
+  </data>
+  <data name="net_socks_auth_failed" xml:space="preserve">
+    <value>Failed to authenticate with the SOCKS server.</value>
+  </data>
+  <data name="net_socks_bad_address_type" xml:space="preserve">
+    <value>SOCKS server returned an unknown address type.</value>
+  </data>
+  <data name="net_socks_connection_failed" xml:space="preserve">
+    <value>SOCKS server failed to connect to the destination.</value>
+  </data>
+  <data name="net_socks_ipv6_notsupported" xml:space="preserve">
+    <value>SOCKS4 does not support IPv6 addresses.</value>
+  </data>
+  <data name="net_socks_no_auth_method" xml:space="preserve">
+    <value>SOCKS server did not return a suitable authentication method.</value>
+  </data>
+  <data name="net_socks_no_ipv4_address" xml:space="preserve">
+    <value>Failed to resolve the destination host to an IPv4 address.</value>
+  </data>
+  <data name="net_socks_unexpected_version" xml:space="preserve">
+    <value>Unexpected SOCKS protocol version. Required {0}, got {1}.</value>
+  </data>
+  <data name="net_socks_string_too_long" xml:space="preserve">
+    <value>Encoding the {0} took more than the maximum of 255 bytes.</value>
+  </data>
+  <data name="net_socks_auth_required" xml:space="preserve">
+    <value>SOCKS server requested username &amp; password authentication.</value>
+  </data>
+  <data name="net_http_proxy_tunnel_returned_failure_status_code" xml:space="preserve">
+    <value>The proxy tunnel request to proxy '{0}' failed with status code '{1}'."</value>
   </data>
 </root>

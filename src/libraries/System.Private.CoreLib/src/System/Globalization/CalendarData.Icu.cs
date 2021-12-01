@@ -29,7 +29,7 @@ namespace System.Globalization
         AbbrevEraNames = 14,
     }
 
-    internal partial class CalendarData
+    internal sealed partial class CalendarData
     {
         private bool IcuLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
@@ -433,7 +433,7 @@ namespace System.Globalization
         {
             try
             {
-                var calendarStringSpan = new ReadOnlySpan<char>(calendarStringPtr, string.wcslen(calendarStringPtr));
+                ReadOnlySpan<char> calendarStringSpan = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(calendarStringPtr);
                 ref IcuEnumCalendarsData callbackContext = ref Unsafe.As<byte, IcuEnumCalendarsData>(ref *(byte*)context);
 
                 if (callbackContext.DisallowDuplicates)

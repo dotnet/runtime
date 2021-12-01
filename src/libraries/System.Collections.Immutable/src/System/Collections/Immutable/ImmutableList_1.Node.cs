@@ -186,7 +186,6 @@ namespace System.Collections.Immutable
                 }
             }
 
-#if !NETSTANDARD1_0
             /// <summary>
             /// Gets a read-only reference to the element of the set at the given index.
             /// </summary>
@@ -196,20 +195,24 @@ namespace System.Collections.Immutable
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
 
+                return ref ItemRefUnchecked(index);
+            }
+
+            private ref readonly T ItemRefUnchecked(int index)
+            {
                 Debug.Assert(_left != null && _right != null);
                 if (index < _left._count)
                 {
-                    return ref _left.ItemRef(index);
+                    return ref _left.ItemRefUnchecked(index);
                 }
 
                 if (index > _left._count)
                 {
-                    return ref _right.ItemRef(index - _left._count - 1);
+                    return ref _right.ItemRefUnchecked(index - _left._count - 1);
                 }
 
                 return ref _key;
             }
-#endif
 
             #region IEnumerable<T> Members
 
@@ -524,13 +527,8 @@ namespace System.Collections.Immutable
                 int end = index + count - 1;
                 while (start < end)
                 {
-#if !NETSTANDARD1_0
                     T a = result.ItemRef(start);
                     T b = result.ItemRef(end);
-#else
-                    T a = result[start];
-                    T b = result[end];
-#endif
                     result = result
                         .ReplaceAt(end, a)
                         .ReplaceAt(start, b);
@@ -998,8 +996,7 @@ namespace System.Collections.Immutable
             /// The first element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
-            [return: MaybeNull]
-            internal T Find(Predicate<T> match)
+            internal T? Find(Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
 
@@ -1011,7 +1008,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                return default(T)!;
+                return default;
             }
 
             /// <summary>
@@ -1144,8 +1141,7 @@ namespace System.Collections.Immutable
             /// The last element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
-            [return: MaybeNull]
-            internal T FindLast(Predicate<T> match)
+            internal T? FindLast(Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
 
@@ -1160,7 +1156,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                return default(T)!;
+                return default;
             }
 
             /// <summary>

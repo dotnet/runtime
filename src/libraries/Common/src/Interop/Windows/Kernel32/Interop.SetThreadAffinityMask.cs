@@ -5,11 +5,11 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern IntPtr SetThreadAffinityMask(SafeThreadHandle handle, IntPtr mask);
+        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial IntPtr SetThreadAffinityMask(SafeThreadHandle handle, IntPtr mask);
     }
 }

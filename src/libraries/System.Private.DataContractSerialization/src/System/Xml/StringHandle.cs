@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.Serialization;
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -15,7 +15,7 @@ namespace System.Xml
         Item = 2
     }
 
-    internal class StringHandle : IEquatable<StringHandle>
+    internal sealed class StringHandle : IEquatable<StringHandle>
     {
         private readonly XmlBufferReader _bufferReader;
         private StringHandleType _type;
@@ -161,7 +161,7 @@ namespace System.Xml
             }
         }
 
-        public bool TryGetDictionaryString(out XmlDictionaryString value)
+        public bool TryGetDictionaryString([NotNullWhen(true)] out XmlDictionaryString? value)
         {
             if (_type == StringHandleType.Dictionary)
             {
@@ -226,9 +226,9 @@ namespace System.Xml
             return GetString() == _bufferReader.GetString(offset2, length2);
         }
 
-        public bool Equals(StringHandle other)
+        public bool Equals([NotNullWhen(true)] StringHandle? other)
         {
-            if (ReferenceEquals(other, null))
+            if (other is null)
                 return false;
             StringHandleType type = other._type;
             if (type == StringHandleType.Dictionary)
@@ -275,7 +275,7 @@ namespace System.Xml
             else
                 return string.Compare(this.GetString(), that.GetString(), StringComparison.Ordinal);
         }
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return Equals(obj as StringHandle);
         }

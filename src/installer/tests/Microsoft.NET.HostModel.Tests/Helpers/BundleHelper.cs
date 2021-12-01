@@ -6,6 +6,8 @@ using Microsoft.NET.HostModel.Bundle;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
 
 namespace BundleTests.Helpers
@@ -13,6 +15,7 @@ namespace BundleTests.Helpers
     public static class BundleHelper
     {
         public const string DotnetBundleExtractBaseEnvVariable = "DOTNET_BUNDLE_EXTRACT_BASE_DIR";
+        public const string CoreServicingEnvVariable = "CORE_SERVICING";
 
         public static string GetHostPath(TestProjectFixture fixture)
         {
@@ -22,6 +25,11 @@ namespace BundleTests.Helpers
         public static string GetAppPath(TestProjectFixture fixture)
         {
             return Path.Combine(GetPublishPath(fixture), GetAppName(fixture));
+        }
+
+        public static string GetDepsJsonPath(TestProjectFixture fixture)
+        {
+            return Path.Combine(GetPublishPath(fixture), $"{GetAppBaseName(fixture)}.deps.json");
         }
 
         public static string GetPublishedSingleFilePath(TestProjectFixture fixture)
@@ -50,17 +58,36 @@ namespace BundleTests.Helpers
             return new string[] { $"{appBaseName}.dll", $"{appBaseName}.deps.json", $"{appBaseName}.runtimeconfig.json" };
         }
 
-        public static string[] GetExtractedFiles(TestProjectFixture fixture)
+        public static string[] GetExtractedFiles(TestProjectFixture fixture, BundleOptions bundleOptions)
         {
-            return new string[] { Path.GetFileName(fixture.TestProject.CoreClrDll) };
+            switch (bundleOptions & ~BundleOptions.EnableCompression)
+            {
+                case BundleOptions.None:
+                case BundleOptions.BundleOtherFiles:
+                case BundleOptions.BundleSymbolFiles:
+                    throw new ArgumentException($"Bundle option {bundleOptions} doesn't extract any files to disk.");
+
+                case BundleOptions.BundleAllContent:
+                    return Directory.GetFiles(GetPublishPath(fixture))
+                        .Select(f => Path.GetFileName(f))
+                        .Except(GetFilesNeverExtracted(fixture)).ToArray();
+
+                case BundleOptions.BundleNativeBinaries:
+                    return new string[] { Path.GetFileName(fixture.TestProject.CoreClrDll) };
+
+                default:
+                    throw new ArgumentException("Unsupported bundle option.");
+            }
         }
 
         public static string[] GetFilesNeverExtracted(TestProjectFixture fixture)
         {
             string appBaseName = GetAppBaseName(fixture);
-            return new string[] { $"{appBaseName}.deps.json",
-                                  $"{appBaseName}.runtimeconfig.json",
+            return new string[] { $"{appBaseName}",
                                   $"{appBaseName}.dll",
+                                  $"{appBaseName}.exe",
+                                  $"{appBaseName}.pdb",
+                                  $"{appBaseName}.runtimeconfig.dev.json",
                                   Path.GetFileName(fixture.TestProject.HostFxrDll),
                                   Path.GetFileName(fixture.TestProject.HostPolicyDll) };
         }
@@ -90,9 +117,29 @@ namespace BundleTests.Helpers
             return Path.Combine(GetExtractionRootPath(fixture), GetAppBaseName(fixture), bundler.BundleManifest.BundleID);
 
         }
+
         public static DirectoryInfo GetExtractionDir(TestProjectFixture fixture, Bundler bundler)
         {
             return new DirectoryInfo(GetExtractionPath(fixture, bundler));
+        }
+
+        public static OSPlatform GetTargetOS(string runtimeIdentifier)
+        {
+            return runtimeIdentifier.Split('-')[0] switch {
+                "win" => OSPlatform.Windows,
+                "osx" => OSPlatform.OSX,
+                "linux" => OSPlatform.Linux,
+                _ => throw new ArgumentException(nameof(runtimeIdentifier))
+            };
+        }
+
+        public static Architecture GetTargetArch(string runtimeIdentifier)
+        {
+            return runtimeIdentifier.EndsWith("-x64") || runtimeIdentifier.Contains("-x64-") ? Architecture.X64 :
+                   runtimeIdentifier.EndsWith("-x86") || runtimeIdentifier.Contains("-x86-") ? Architecture.X86 :
+                   runtimeIdentifier.EndsWith("-arm64") || runtimeIdentifier.Contains("-arm64-") ? Architecture.Arm64 :
+                   runtimeIdentifier.EndsWith("-arm") || runtimeIdentifier.Contains("-arm-") ? Architecture.Arm :
+                   throw new ArgumentException(nameof (runtimeIdentifier));
         }
 
         /// Generate a bundle containind the (embeddable) files in sourceDir
@@ -145,8 +192,10 @@ namespace BundleTests.Helpers
             var hostName = GetHostName(fixture);
             string publishPath = GetPublishPath(fixture);
             var bundleDir = GetBundleDir(fixture);
+            var targetOS = GetTargetOS(fixture.CurrentRid);
+            var targetArch = GetTargetArch(fixture.CurrentRid);
 
-            var bundler = new Bundler(hostName, bundleDir.FullName, options, targetFrameworkVersion: targetFrameworkVersion);
+            var bundler = new Bundler(hostName, bundleDir.FullName, options, targetOS, targetArch, targetFrameworkVersion, macosCodesign: true);
             singleFile = GenerateBundle(bundler, publishPath, bundleDir.FullName, copyExcludedFiles);
 
             return bundler;

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 using CultureInfo = System.Globalization.CultureInfo;
@@ -29,7 +31,7 @@ namespace System.Xml.Linq
             }
         }
 
-        internal XAttribute next;
+        internal XAttribute? next;
         internal XName name;
         internal string value;
 
@@ -105,7 +107,7 @@ namespace System.Xml.Linq
         /// If this attribute does not have a parent, or if there is no next attribute,
         /// then this property returns null.
         /// </remarks>
-        public XAttribute NextAttribute
+        public XAttribute? NextAttribute
         {
             get { return parent != null && ((XElement)parent).lastAttr != this ? next : null; }
         }
@@ -131,15 +133,15 @@ namespace System.Xml.Linq
         /// If this attribute does not have a parent, or if there is no previous attribute,
         /// then this property returns null.
         /// </remarks>
-        public XAttribute PreviousAttribute
+        public XAttribute? PreviousAttribute
         {
             get
             {
                 if (parent == null) return null;
-                XAttribute a = ((XElement)parent).lastAttr;
+                XAttribute a = ((XElement)parent).lastAttr!;
                 while (a.next != this)
                 {
-                    a = a.next;
+                    a = a.next!;
                 }
                 return a != ((XElement)parent).lastAttr ? a : null;
             }
@@ -226,7 +228,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="string"/>.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator string(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator string?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return attribute.value;
@@ -261,7 +264,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="bool"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator bool?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator bool?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToBoolean(attribute.value.ToLowerInvariant());
@@ -296,7 +300,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as an <see cref="int"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator int?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator int?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToInt32(attribute.value);
@@ -331,7 +336,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as an <see cref="uint"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator uint?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator uint?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToUInt32(attribute.value);
@@ -366,7 +372,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="long"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator long?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator long?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToInt64(attribute.value);
@@ -401,7 +408,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as an <see cref="ulong"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator ulong?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator ulong?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToUInt64(attribute.value);
@@ -436,7 +444,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="float"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator float?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator float?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToSingle(attribute.value);
@@ -471,7 +480,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="double"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator double?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator double?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToDouble(attribute.value);
@@ -506,7 +516,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="decimal"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator decimal?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator decimal?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToDecimal(attribute.value);
@@ -541,7 +552,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="DateTime"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator DateTime?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator DateTime?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return DateTime.Parse(attribute.value, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind);
@@ -576,7 +588,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="DateTimeOffset"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator DateTimeOffset?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator DateTimeOffset?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToDateTimeOffset(attribute.value);
@@ -611,7 +624,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="TimeSpan"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator TimeSpan?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator TimeSpan?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToTimeSpan(attribute.value);
@@ -646,7 +660,8 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XAttribute"/> as a <see cref="Guid"/>?.
         /// </returns>
         [CLSCompliant(false)]
-        public static explicit operator Guid?(XAttribute attribute)
+        [return: NotNullIfNotNull("attribute")]
+        public static explicit operator Guid?(XAttribute? attribute)
         {
             if (attribute == null) return null;
             return XmlConvert.ToGuid(attribute.value);
@@ -657,7 +672,7 @@ namespace System.Xml.Linq
             return name.GetHashCode() ^ value.GetHashCode();
         }
 
-        internal string GetPrefixOfNamespace(XNamespace ns)
+        internal string? GetPrefixOfNamespace(XNamespace ns)
         {
             string namespaceName = ns.NamespaceName;
             if (namespaceName.Length == 0) return string.Empty;

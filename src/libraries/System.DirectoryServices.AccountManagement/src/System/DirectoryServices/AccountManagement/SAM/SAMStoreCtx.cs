@@ -9,7 +9,7 @@ using System.Security.Principal;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal partial class SAMStoreCtx : StoreCtx
+    internal sealed partial class SAMStoreCtx : StoreCtx
     {
         private readonly DirectoryEntry _ctxBase;
         private readonly object _ctxBaseLock = new object(); // when mutating ctxBase
@@ -853,18 +853,7 @@ namespace System.DirectoryServices.AccountManagement
             // Since this is SAM, the remote principal must be an AD principal.
             // Build a PrincipalContext for the store which owns the principal
             // Use the ad default options so we turn sign and seal back on.
-#if USE_CTX_CACHE
             PrincipalContext remoteCtx = SDSCache.Domain.GetContext(domainName, _credentials, DefaultContextOptions.ADDefaultContextOption);
-#else
-            PrincipalContext remoteCtx = new PrincipalContext(
-                            ContextType.Domain,
-                            domainName,
-                            null,
-                            (this.credentials != null ? credentials.UserName : null),
-                            (this.credentials != null ? credentials.Password : null),
-                            DefaultContextOptions.ADDefaultContextOption);
-
-#endif
 
             SecurityIdentifier sidObj = new SecurityIdentifier(sid, 0);
 
@@ -1063,7 +1052,7 @@ namespace System.DirectoryServices.AccountManagement
             try
             {
                 // This function takes in a flat or DNS name, and returns the flat name of the computer
-                int err = UnsafeNativeMethods.NetWkstaGetInfo(_machineUserSuppliedName, 100, ref buffer);
+                int err = Interop.Wkscli.NetWkstaGetInfo(_machineUserSuppliedName, 100, ref buffer);
                 if (err == 0)
                 {
                     UnsafeNativeMethods.WKSTA_INFO_100 wkstaInfo =
@@ -1083,7 +1072,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (buffer != IntPtr.Zero)
-                    UnsafeNativeMethods.NetApiBufferFree(buffer);
+                    Interop.Netutils.NetApiBufferFree(buffer);
             }
         }
 
@@ -1103,5 +1092,3 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 }
-
-// #endif  // PAPI_REGSAM

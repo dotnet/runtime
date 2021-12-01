@@ -54,6 +54,6 @@ cli-metadata-stream-headers {
 	#unkwnown name
 	invalid offset stream-header ( 0 ) + 8 set-byte 0x42
 
-	#duplicate name, change #~ to #US 
+	#duplicate name, change #~ to #US
 	invalid offset stream-header ( 0 ) + 9 set-byte 0x55 , offset stream-header ( 0 ) + 10 set-byte 0x53
 }

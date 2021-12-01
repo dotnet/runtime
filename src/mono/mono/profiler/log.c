@@ -18,6 +18,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/icall-internals.h>
+#include <mono/metadata/jit-info.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/metadata-internals.h>
@@ -49,6 +50,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/os-event.h>
+#include <mono/utils/w32subset.h>
 #include "log.h"
 #include "helper.h"
 
@@ -205,6 +207,24 @@ typedef struct {
 #define PROF_TLS_SET(VAL) mono_thread_info_set_tools_data (VAL)
 #define PROF_TLS_GET mono_thread_info_get_tools_data
 
+static int32_t
+domain_get_id (MonoDomain *domain)
+{
+	return 1;
+}
+
+static int32_t
+context_get_id (MonoAppContext *context)
+{
+	return 1;
+}
+
+static int32_t
+context_get_domain_id (MonoAppContext *context)
+{
+	return 1;
+}
+
 static uintptr_t
 thread_id (void)
 {
@@ -310,7 +330,9 @@ struct _MonoProfiler {
 	LARGE_INTEGER pcounter_freq;
 #endif
 
+#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32)
 	int pipe_output;
+#endif
 	int command_port;
 	int server_socket;
 
@@ -1295,10 +1317,10 @@ gc_root_register (MonoProfiler *prof, const mono_byte *start, size_t size, MonoG
 	switch (source) {
 	case MONO_ROOT_SOURCE_DOMAIN:
 		if (key)
-			key = (void *)(uintptr_t) mono_domain_get_id ((MonoDomain *) key);
+			key = (void *)(uintptr_t) domain_get_id ((MonoDomain *) key);
 		break;
 	case MONO_ROOT_SOURCE_CONTEXT_STATIC:
-		key = (void *)(uintptr_t) mono_context_get_id ((MonoAppContext *) key);
+		key = (void *)(uintptr_t) context_get_id ((MonoAppContext *) key);
 		break;
 	default:
 		break;
@@ -1903,7 +1925,7 @@ vtable_loaded (MonoProfiler *prof, MonoVTable *vtable)
 {
 	MonoClass *klass = mono_vtable_class_internal (vtable);
 	MonoDomain *domain = mono_vtable_domain_internal (vtable);
-	uint32_t domain_id = domain ? mono_domain_get_id (domain) : 0;
+	uint32_t domain_id = domain ? domain_get_id (domain) : 0;
 
 	ENTER_LOG (&vtable_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -2208,7 +2230,7 @@ domain_loaded (MonoProfiler *prof, MonoDomain *domain)
 
 	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_DOMAIN);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	emit_ptr (logbuffer, (void*)(uintptr_t) domain_get_id (domain));
 
 	EXIT_LOG;
 }
@@ -2224,7 +2246,7 @@ domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
 
 	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_DOMAIN);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	emit_ptr (logbuffer, (void*)(uintptr_t) domain_get_id (domain));
 
 	EXIT_LOG;
 }
@@ -2243,7 +2265,7 @@ domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
 
 	emit_event (logbuffer, TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_DOMAIN);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
+	emit_ptr (logbuffer, (void*)(uintptr_t) domain_get_id (domain));
 	memcpy (logbuffer->cursor, name, nlen);
 	logbuffer->cursor += nlen;
 
@@ -2262,8 +2284,8 @@ context_loaded (MonoProfiler *prof, MonoAppContext *context)
 
 	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_CONTEXT);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) context_get_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) context_get_domain_id (context));
 
 	EXIT_LOG;
 }
@@ -2280,8 +2302,8 @@ context_unloaded (MonoProfiler *prof, MonoAppContext *context)
 
 	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_CONTEXT);
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_id (context));
-	emit_ptr (logbuffer, (void*)(uintptr_t) mono_context_get_domain_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) context_get_id (context));
+	emit_ptr (logbuffer, (void*)(uintptr_t) context_get_domain_id (context));
 
 	EXIT_LOG;
 }
@@ -2926,8 +2948,8 @@ signal_helper_thread (char c)
 	if (client_socket != INVALID_SOCKET) {
 		struct sockaddr_in client_addr;
 		client_addr.sin_family = AF_INET;
-		client_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 		client_addr.sin_port = htons(log_profiler.command_port);
+		inet_pton (client_addr.sin_family, "127.0.0.1", &client_addr.sin_addr);
 
 		gulong non_blocking = 1;
 		ioctlsocket (client_socket, FIONBIO, &non_blocking);
@@ -3064,9 +3086,11 @@ log_shutdown (MonoProfiler *prof)
 	if (prof->gzfile)
 		gzclose (prof->gzfile);
 #endif
+#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32)
 	if (prof->pipe_output)
 		pclose (prof->file);
 	else
+#endif
 		fclose (prof->file);
 
 	mono_conc_hashtable_destroy (prof->method_table);
@@ -3150,7 +3174,7 @@ profiler_thread_begin_function (const char *name8, const gunichar2* name16, size
 	mono_thread_info_attach ();
 	MonoProfilerThread *thread = init_thread (FALSE);
 
-	mono_thread_attach (mono_get_root_domain ());
+	mono_thread_internal_attach (mono_get_root_domain ());
 
 	MonoInternalThread *internal = mono_thread_internal_current ();
 
@@ -3177,7 +3201,7 @@ profiler_thread_begin_function (const char *name8, const gunichar2* name16, size
 }
 
 #define profiler_thread_begin(name, send)							\
-	profiler_thread_begin_function (name, MONO_THREAD_NAME_WINDOWS_CONSTANT (name), G_N_ELEMENTS (name) - 1, (send))
+	profiler_thread_begin_function (name, MONO_THREAD_NAME_WINDOWS_CONSTANT (name), STRING_LENGTH (name), (send))
 
 static void
 profiler_thread_end (MonoProfilerThread *thread, MonoOSEvent *event, gboolean send)
@@ -3199,7 +3223,7 @@ profiler_thread_check_detach (MonoProfilerThread *thread)
 		thread->did_detach = TRUE;
 
 		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
-		mono_thread_detach (mono_thread_current ());
+		mono_thread_internal_detach (mono_thread_current ());
 
 		mono_os_sem_post (&log_profiler.detach_threads_sem);
 	}
@@ -3300,9 +3324,11 @@ helper_thread (void *arg)
 			int fd = accept (log_profiler.server_socket, NULL, NULL);
 
 			if (fd != -1) {
+#ifndef HOST_WIN32
 				if (fd >= FD_SETSIZE)
 					mono_profhelper_close_socket_fd (fd);
 				else
+#endif
 					g_array_append_val (command_sockets, fd);
 			}
 		}
@@ -3498,7 +3524,7 @@ handle_dumper_queue_entry (void)
 				g_assert (domain && "What happened to the domain pointer?");
 				g_assert (address && "What happened to the instruction pointer?");
 
-				MonoJitInfo *ji = mono_jit_info_table_find (domain, address);
+				MonoJitInfo *ji = mono_jit_info_table_find_internal (address, TRUE, FALSE);
 
 				if (ji)
 					method = mono_jit_info_get_method (ji);
@@ -4102,8 +4128,12 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		}
 	}
 	if (*nf == '|') {
+#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32)
 		log_profiler.file = popen (nf + 1, "w");
 		log_profiler.pipe_output = 1;
+#else
+		mono_profiler_printf_err ("Platform doesn't support popen");
+#endif
 	} else if (*nf == '#') {
 		int fd = strtol (nf + 1, NULL, 10);
 		log_profiler.file = fdopen (fd, "a");
@@ -4187,8 +4217,6 @@ mono_profiler_init_log (const char *desc)
 	 * allocations, exceptions) are dynamically enabled/disabled.
 	 */
 
-	mono_profiler_set_runtime_shutdown_begin_callback (handle, log_early_shutdown);
-	mono_profiler_set_runtime_shutdown_end_callback (handle, log_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 
 	mono_profiler_set_gc_event_callback (handle, gc_event);

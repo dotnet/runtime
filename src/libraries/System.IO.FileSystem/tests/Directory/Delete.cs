@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
@@ -10,7 +9,7 @@ namespace System.IO.Tests
 {
     public class Directory_Delete_str : FileSystemTest
     {
-        static bool IsBindMountSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !PlatformDetection.IsInContainer;
+        static bool IsBindMountSupported => OperatingSystem.IsLinux() && !PlatformDetection.IsInContainer;
 
         #region Utilities
 
@@ -218,7 +217,7 @@ namespace System.IO.Tests
         #endregion
     }
 
-    public class Directory_Delete_str_bool : Directory_Delete_str
+    public partial class Directory_Delete_str_bool : Directory_Delete_str
     {
         #region Utilities
 
@@ -245,6 +244,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40536", TestPlatforms.Browser)]
         public void RecursiveDeleteWithTrailingSlash()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -289,6 +289,35 @@ namespace System.IO.Tests
                 Assert.Throws<IOException>(() => Delete(testDir.FullName, true));
             }
             Assert.True(testDir.Exists);
+        }
+
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        public void RecursiveDeletingDoesntFollowLinks()
+        {
+            var target = GetTestFilePath();
+            Directory.CreateDirectory(target);
+
+            var fileInTarget = Path.Combine(target, GetTestFileName());
+            File.WriteAllText(fileInTarget, "");
+
+            var linkParent = GetTestFilePath();
+            Directory.CreateDirectory(linkParent);
+
+            var linkPath = Path.Combine(linkParent, GetTestFileName());
+            Assert.NotNull(Directory.CreateSymbolicLink(linkPath, target));
+
+            // Both the symlink and the target exist
+            Assert.True(Directory.Exists(target), "target should exist");
+            Assert.True(Directory.Exists(linkPath), "linkPath should exist");
+            Assert.True(File.Exists(fileInTarget), "fileInTarget should exist");
+
+            // Delete the parent folder of the symlink.
+            Delete(linkParent, true);
+
+            // Target should still exist
+            Assert.True(Directory.Exists(target), "target should still exist");
+            Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
+            Assert.True(File.Exists(fileInTarget), "fileInTarget should exist");
         }
     }
 }

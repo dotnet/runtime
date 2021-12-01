@@ -108,6 +108,9 @@ namespace System.Linq.Parallel
             FixedMaxHeap<TKey> sharedIndices = new FixedMaxHeap<TKey>(_count, inputStream.KeyComparer); // an array used to track the sequence of indices leading up to the Nth index
             CountdownEvent sharedBarrier = new CountdownEvent(partitionCount); // a barrier to synchronize before yielding
 
+            if (ParallelEnumerable.SinglePartitionMode)
+                Debug.Assert(partitionCount == 1);
+
             PartitionedStream<TResult, TKey> outputStream =
                 new PartitionedStream<TResult, TKey>(partitionCount, inputStream.KeyComparer, OrdinalIndexState);
             for (int i = 0; i < partitionCount; i++)
@@ -145,7 +148,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the Take or Skip.
         //
 
-        private class TakeOrSkipQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TResult, TKey>
+        private sealed class TakeOrSkipQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TResult, TKey>
         {
             private readonly QueryOperatorEnumerator<TResult, TKey> _source; // The data source to enumerate.
             private readonly int _count; // The number of elements to take or skip.
@@ -187,7 +190,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TResult currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TResult currentElement, [AllowNull] ref TKey currentKey)
             {
                 Debug.Assert(_sharedIndices != null);
 
@@ -205,7 +208,7 @@ namespace System.Linq.Parallel
                     while (buffer.Count < _count && _source.MoveNext(ref current!, ref index))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         // Add the current element to our buffer.
                         buffer.Add(new Pair<TResult, TKey>(current, index));
@@ -222,9 +225,11 @@ namespace System.Linq.Parallel
                         }
                     }
 
-                    // Before exiting the search phase, we will synchronize with others. This is a barrier.
-                    _sharedBarrier.Signal();
-                    _sharedBarrier.Wait(_cancellationToken);
+                    if (!ParallelEnumerable.SinglePartitionMode) {
+                        // Before exiting the search phase, we will synchronize with others. This is a barrier.
+                        _sharedBarrier.Signal();
+                        _sharedBarrier.Wait(_cancellationToken);
+                    }
 
                     // Publish the buffer and set the index to just before the 1st element.
                     _buffer = buffer;
@@ -325,7 +330,7 @@ namespace System.Linq.Parallel
         // results were indexable.
         //
 
-        private class TakeOrSkipQueryOperatorResults : UnaryQueryOperatorResults
+        private sealed class TakeOrSkipQueryOperatorResults : UnaryQueryOperatorResults
         {
             private readonly TakeOrSkipQueryOperator<TResult> _takeOrSkipOp; // The operator that generated the results
             private readonly int _childCount; // The number of elements in child results

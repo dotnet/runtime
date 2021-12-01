@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
@@ -42,6 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
             base.Reset();
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2()
             : base()
         {
@@ -170,6 +172,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return Pal.Archived;
             }
 
+            [SupportedOSPlatform("windows")]
             set
             {
                 ThrowIfInvalid();
@@ -216,6 +219,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return Pal.FriendlyName;
             }
 
+            [SupportedOSPlatform("windows")]
             set
             {
                 ThrowIfInvalid();
@@ -234,6 +238,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [Obsolete(Obsoletions.X509CertificatePrivateKeyMessage, DiagnosticId = Obsoletions.X509CertificatePrivateKeyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AsymmetricAlgorithm? PrivateKey
         {
             get
@@ -307,18 +312,22 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] RawData
+        public byte[] RawData => RawDataMemory.ToArray();
+
+        /// <summary>
+        /// Gets the raw data of a certificate.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="RawData" />, this does not create a fresh copy of the data
+        /// every time.
+        /// </remarks>
+        public ReadOnlyMemory<byte> RawDataMemory
         {
             get
             {
                 ThrowIfInvalid();
 
-                byte[]? rawData = _lazyRawData;
-                if (rawData == null)
-                {
-                    rawData = _lazyRawData = Pal.RawData;
-                }
-                return rawData.CloneByteArray();
+                return _lazyRawData ??= Pal.RawData;
             }
         }
 
@@ -340,7 +349,7 @@ namespace System.Security.Cryptography.X509Certificates
                 if (signatureAlgorithm == null)
                 {
                     string oidValue = Pal.SignatureAlgorithm;
-                    signatureAlgorithm = _lazySignatureAlgorithm = Oid.FromOidValue(oidValue, OidGroup.SignatureAlgorithm);
+                    signatureAlgorithm = _lazySignatureAlgorithm = new Oid(oidValue, null);
                 }
                 return signatureAlgorithm;
             }
@@ -412,7 +421,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             // .NET Framework compat: The .NET Framework expands the filename to a full path for the purpose of performing a CAS permission check. While CAS is not present here,
             // we still need to call GetFullPath() so we get the same exception behavior if the fileName is bad.
-            string fullPath = Path.GetFullPath(fileName);
+            _ = Path.GetFullPath(fileName);
 
             return X509Pal.Instance.GetCertContentType(fileName);
         }
@@ -630,33 +639,39 @@ namespace System.Security.Cryptography.X509Certificates
             return sb.ToString();
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(byte[] rawData)
         {
             base.Import(rawData);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(rawData, password, keyStorageFlags);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(rawData, password, keyStorageFlags);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(string fileName)
         {
             base.Import(fileName);
         }
 
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(fileName, password, keyStorageFlags);
         }
 
         [System.CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CertificateImmutableMessage, DiagnosticId = Obsoletions.X509CertificateImmutableDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public override void Import(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             base.Import(fileName, password, keyStorageFlags);
@@ -684,6 +699,83 @@ namespace System.Security.Cryptography.X509Certificates
 
                 return verified;
             }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="ECDiffieHellman" /> public key from this certificate.
+        /// </summary>
+        /// <returns>
+        /// The public key, or <see langword="null" /> if this certificate does not have
+        /// an ECDiffieHellman public key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The handle is invalid.
+        /// </exception>
+        public ECDiffieHellman? GetECDiffieHellmanPublicKey()
+        {
+            return this.GetPublicKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+        }
+
+        /// <summary>
+        /// Gets the <see cref="ECDiffieHellman" /> private key from this certificate.
+        /// </summary>
+        /// <returns>
+        /// The private key, or <see langword="null" /> if this certificate does not have
+        /// an ECDiffieHellman private key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The handle is invalid.
+        /// </exception>
+        public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
+        {
+            return this.GetPrivateKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+        }
+
+        /// <summary>
+        /// Combines a private key with the public key of an <see cref="ECDiffieHellman" />
+        /// certificate to generate a new ECDiffieHellman certificate.
+        /// </summary>
+        /// <param name="privateKey">The private ECDiffieHellman key.</param>
+        /// <returns>
+        /// A new ECDiffieHellman certificate with the <see cref="HasPrivateKey" /> property set to <see langword="true"/>.
+        /// The current certificate isn't modified.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="privateKey" /> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// The certificate already has an associated private key.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <para>
+        ///   The certificate doesn't have a public key.
+        /// </para>
+        /// <para> -or- </para>
+        /// <para>
+        ///   The specified private key doesn't match the public key for this certificate.
+        /// </para>
+        /// </exception>
+        public X509Certificate2 CopyWithPrivateKey(ECDiffieHellman privateKey)
+        {
+            if (privateKey is null)
+                throw new ArgumentNullException(nameof(privateKey));
+
+            if (HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            using (ECDiffieHellman? publicKey = GetECDiffieHellmanPublicKey())
+            {
+                if (publicKey is null)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+                }
+
+                if (!Helpers.AreSamePublicECParameters(publicKey.ExportParameters(false), privateKey.ExportParameters(false)))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+            }
+
+            ICertificatePal pal = Pal.CopyWithPrivateKey(privateKey);
+            return new X509Certificate2(pal);
         }
 
         /// <summary>
@@ -837,7 +929,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <para>
         ///   The SubjectPublicKeyInfo from the certificate determines what PEM labels are accepted for the private key.
         ///   For RSA certificates, accepted private key PEM labels are "RSA PRIVATE KEY" and "PRIVATE KEY".
-        ///   For ECDSA certificates, accepted private key PEM labels are "EC PRIVATE KEY" and "PRIVATE KEY".
+        ///   For ECDSA and ECDH certificates, accepted private key PEM labels are "EC PRIVATE KEY" and "PRIVATE KEY".
         ///   For DSA certificates, the accepted private key PEM label is "PRIVATE KEY".
         /// </para>
         /// <para>PEM-encoded items that have a different label are ignored.</para>
@@ -859,15 +951,26 @@ namespace System.Security.Cryptography.X509Certificates
         /// </remarks>
         public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem)
         {
-            using (X509Certificate2 certificate = ExtractCertificateFromPem(certPem))
+            using (X509Certificate2 certificate = CreateFromPem(certPem))
             {
                 string keyAlgorithm = certificate.GetKeyAlgorithm();
 
                 return keyAlgorithm switch
                 {
                     Oids.Rsa => ExtractKeyFromPem<RSA>(keyPem, s_RsaPublicKeyPrivateKeyLabels, RSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.Dsa => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey => ExtractKeyFromPem<ECDsa>(keyPem, s_EcPublicKeyPrivateKeyLabels, ECDsa.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa when Helpers.IsDSASupported => ExtractKeyFromPem<DSA>(keyPem, s_DsaPublicKeyPrivateKeyLabels, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDsa(certificate) =>
+                        ExtractKeyFromPem<ECDsa>(
+                            keyPem,
+                            s_EcPublicKeyPrivateKeyLabels,
+                            ECDsa.Create,
+                            certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
+                        ExtractKeyFromPem<ECDiffieHellman>(
+                            keyPem,
+                            s_EcPublicKeyPrivateKeyLabels,
+                            ECDiffieHellman.Create,
+                            certificate.CopyWithPrivateKey),
                     _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
                 };
             }
@@ -913,26 +1016,74 @@ namespace System.Security.Cryptography.X509Certificates
         ///   PEM-encoded values and apply any custom loading behavior.
         /// </para>
         /// <para>
-        /// For PEM-encoded keys without a password, use <see cref="CreateFromPem" />.
+        /// For PEM-encoded keys without a password, use <see cref="CreateFromPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />.
         /// </para>
         /// </remarks>
         public static X509Certificate2 CreateFromEncryptedPem(ReadOnlySpan<char> certPem, ReadOnlySpan<char> keyPem, ReadOnlySpan<char> password)
         {
-            using (X509Certificate2 certificate = ExtractCertificateFromPem(certPem))
+            using (X509Certificate2 certificate = CreateFromPem(certPem))
             {
                 string keyAlgorithm = certificate.GetKeyAlgorithm();
 
                 return keyAlgorithm switch
                 {
                     Oids.Rsa => ExtractKeyFromEncryptedPem<RSA>(keyPem, password, RSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.Dsa => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
-                    Oids.EcPublicKey => ExtractKeyFromEncryptedPem<ECDsa>(keyPem, password, ECDsa.Create, certificate.CopyWithPrivateKey),
+                    Oids.Dsa when Helpers.IsDSASupported => ExtractKeyFromEncryptedPem<DSA>(keyPem, password, DSA.Create, certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDsa(certificate) =>
+                        ExtractKeyFromEncryptedPem<ECDsa>(
+                            keyPem,
+                            password,
+                            ECDsa.Create,
+                            certificate.CopyWithPrivateKey),
+                    Oids.EcPublicKey when IsECDiffieHellman(certificate) =>
+                        ExtractKeyFromEncryptedPem<ECDiffieHellman>(
+                            keyPem,
+                            password,
+                            ECDiffieHellman.Create,
+                            certificate.CopyWithPrivateKey),
                     _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)),
                 };
             }
         }
 
-        private static X509Certificate2 ExtractCertificateFromPem(ReadOnlySpan<char> certPem)
+        private static bool IsECDsa(X509Certificate2 certificate)
+        {
+            using (ECDsa? ecdsa = certificate.GetECDsaPublicKey())
+            {
+                return ecdsa is not null;
+            }
+        }
+
+        private static bool IsECDiffieHellman(X509Certificate2 certificate)
+        {
+            using (ECDiffieHellman? ecdh = certificate.GetECDiffieHellmanPublicKey())
+            {
+                return ecdh is not null;
+            }
+        }
+
+        /// <summary>
+        /// Creates a new X509 certificate from the contents of an RFC 7468 PEM-encoded
+        /// certificate.
+        /// </summary>
+        /// <param name="certPem">The text of the PEM-encoded X509 certificate.</param>
+        /// <returns>A new X509 certificate.</returns>
+        /// <exception cref="CryptographicException">
+        /// The contents of <paramref name="certPem" /> do not contain a PEM-encoded certificate, or it is malformed.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// This loads the first well-formed PEM found with a CERTIFICATE label.
+        /// </para>
+        /// <para>
+        /// For PEM-encoded certificates with a private key, use
+        /// <see cref="CreateFromPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />.
+        /// </para>
+        /// <para>
+        /// For PEM-encoded certificates in a file, use <see cref="X509Certificate2(string)" />.
+        /// </para>
+        /// </remarks>
+        public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem)
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
             {
@@ -971,6 +1122,70 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
+        }
+
+        /// <summary>
+        /// Exports the public X.509 certificate, encoded as PEM.
+        /// </summary>
+        /// <returns>
+        /// The PEM encoding of the certificate.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The certificate is corrupt, in an invalid state, or could not be exported
+        /// to PEM.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded X.509 certificate will begin with <c>-----BEGIN CERTIFICATE-----</c>
+        ///   and end with <c>-----END CERTIFICATE-----</c>, with the base64 encoded DER
+        ///   contents of the certificate between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The certificate is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public string ExportCertificatePem()
+        {
+            int pemSize = PemEncoding.GetEncodedSize(PemLabels.X509Certificate.Length, RawDataMemory.Length);
+
+            return string.Create(pemSize, this, static (destination, cert) => {
+                if (!cert.TryExportCertificatePem(destination, out int charsWritten) ||
+                    charsWritten != destination.Length)
+                {
+                    Debug.Fail("Pre-allocated buffer was not the correct size.");
+                    throw new CryptographicException();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Attempts to export the public X.509 certificate, encoded as PEM.
+        /// </summary>
+        /// <param name="destination">The buffer to receive the PEM encoded certificate.</param>
+        /// <param name="charsWritten">When this method returns, the total number of characters written to <paramref name="destination" />.</param>
+        /// <returns>
+        ///   <see langword="true"/> if <paramref name="destination"/> was large enough to receive the encoded PEM;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The certificate is corrupt, in an invalid state, or could not be exported
+        /// to PEM.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded X.509 certificate will begin with <c>-----BEGIN CERTIFICATE-----</c>
+        ///   and end with <c>-----END CERTIFICATE-----</c>, with the base64 encoded DER
+        ///   contents of the certificate between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The certificate is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportCertificatePem(Span<char> destination, out int charsWritten)
+        {
+            return PemEncoding.TryWrite(PemLabels.X509Certificate, RawDataMemory.Span, destination, out charsWritten);
         }
 
         private static X509Certificate2 ExtractKeyFromPem<TAlg>(
@@ -1045,5 +1260,22 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.SubjectKeyIdentifier => new X509SubjectKeyIdentifierExtension(),
                 _ => null,
             };
+
+        private static bool HasECDiffieHellmanKeyUsage(X509Certificate2 certificate)
+        {
+            foreach (X509Extension extension in certificate.Extensions)
+            {
+                if (extension.Oid?.Value == Oids.KeyUsage && extension is X509KeyUsageExtension ext)
+                {
+                    // keyAgreement is mandatory for id-ecPublicKey certificates
+                    // when used with ECDH.
+                    return ((ext.KeyUsages & X509KeyUsageFlags.KeyAgreement) != 0);
+                }
+            }
+
+            // If the key usage extension is not present in the certificate it is
+            // considered valid for all usages, so we can use it for ECDH.
+            return true;
+        }
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.Serialization;
 using Interlocked = System.Threading.Interlocked;
 
@@ -146,8 +147,8 @@ namespace System.Collections.Generic
 
         private void RemoveAllElements(IEnumerable<T> collection)
         {
-            T min = Min;
-            T max = Max;
+            T? min = Min;
+            T? max = Max;
             foreach (T item in collection)
             {
                 if (!(comparer.Compare(item, min) < 0 || comparer.Compare(item, max) > 0) && Contains(item))
@@ -755,9 +756,9 @@ namespace System.Collections.Generic
             return -1;
         }
 
-        internal Node? FindRange([AllowNull] T from, [AllowNull]  T to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
+        internal Node? FindRange(T? from, T? to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
 
-        internal Node? FindRange([AllowNull] T from, [AllowNull] T to, bool lowerBoundActive, bool upperBoundActive)
+        internal Node? FindRange(T? from, T? to, bool lowerBoundActive, bool upperBoundActive)
         {
             Node? current = root;
             while (current != null)
@@ -1031,7 +1032,7 @@ namespace System.Collections.Generic
                 Enumerator mine = this.GetEnumerator();
                 Enumerator theirs = asSorted.GetEnumerator();
                 bool mineEnded = !mine.MoveNext(), theirsEnded = !theirs.MoveNext();
-                T max = Max;
+                T? max = Max;
 
                 while (!mineEnded && !theirsEnded && Comparer.Compare(theirs.Current, max) <= 0)
                 {
@@ -1109,8 +1110,8 @@ namespace System.Collections.Generic
                 // Outside range, no point in doing anything
                 if (comparer.Compare(asSorted.Max, Min) >= 0 && comparer.Compare(asSorted.Min, Max) <= 0)
                 {
-                    T min = Min;
-                    T max = Max;
+                    T? min = Min;
+                    T? max = Max;
                     foreach (T item in other)
                     {
                         if (comparer.Compare(item, min) < 0)
@@ -1504,17 +1505,15 @@ namespace System.Collections.Generic
 
         #region ISorted members
 
-        [MaybeNull]
-        public T Min => MinInternal;
+        public T? Min => MinInternal;
 
-        [MaybeNull]
-        internal virtual T MinInternal
+        internal virtual T? MinInternal
         {
             get
             {
                 if (root == null)
                 {
-                    return default(T)!;
+                    return default;
                 }
 
                 Node current = root;
@@ -1527,17 +1526,15 @@ namespace System.Collections.Generic
             }
         }
 
-        [MaybeNull]
-        public T Max => MaxInternal;
+        public T? Max => MaxInternal;
 
-        [MaybeNull]
-        internal virtual T MaxInternal
+        internal virtual T? MaxInternal
         {
             get
             {
                 if (root == null)
                 {
-                    return default(T)!;
+                    return default;
                 }
 
                 Node current = root;
@@ -1559,7 +1556,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public virtual SortedSet<T> GetViewBetween([AllowNull] T lowerValue, [AllowNull] T upperValue)
+        public virtual SortedSet<T> GetViewBetween(T? lowerValue, T? upperValue)
         {
             if (Comparer.Compare(lowerValue, upperValue) > 0)
             {
@@ -1684,41 +1681,27 @@ namespace System.Collections.Generic
 #if DEBUG
                 Debug.Assert(count == GetCount());
 #endif
-
-                // Breadth-first traversal to recreate nodes, preorder traversal to replicate nodes.
-
-                var originalNodes = new Stack<Node>(2 * Log2(count) + 2);
-                var newNodes = new Stack<Node>(2 * Log2(count) + 2);
                 Node newRoot = ShallowClone();
 
-                Node? originalCurrent = this;
-                Node newCurrent = newRoot;
+                var pendingNodes = new Stack<(Node source, Node target)>(2 * Log2(count) + 2);
+                pendingNodes.Push((this, newRoot));
 
-                while (originalCurrent != null)
+                while (pendingNodes.TryPop(out var next))
                 {
-                    originalNodes.Push(originalCurrent);
-                    newNodes.Push(newCurrent);
-                    newCurrent.Left = originalCurrent.Left?.ShallowClone();
-                    originalCurrent = originalCurrent.Left;
-                    newCurrent = newCurrent.Left!;
-                }
+                    Node clonedNode;
 
-                while (originalNodes.Count != 0)
-                {
-                    originalCurrent = originalNodes.Pop();
-                    newCurrent = newNodes.Pop();
-
-                    Node? originalRight = originalCurrent.Right;
-                    Node? newRight = originalRight?.ShallowClone();
-                    newCurrent.Right = newRight;
-
-                    while (originalRight != null)
+                    if (next.source.Left is Node left)
                     {
-                        originalNodes.Push(originalRight);
-                        newNodes.Push(newRight!);
-                        newRight!.Left = originalRight.Left?.ShallowClone();
-                        originalRight = originalRight.Left;
-                        newRight = newRight.Left;
+                        clonedNode = left.ShallowClone();
+                        next.target.Left = clonedNode;
+                        pendingNodes.Push((left, clonedNode));
+                    }
+
+                    if (next.source.Right is Node right)
+                    {
+                        clonedNode = right.ShallowClone();
+                        next.target.Right = clonedNode;
+                        pendingNodes.Push((right, clonedNode));
                     }
                 }
 
@@ -2074,21 +2057,12 @@ namespace System.Collections.Generic
                 actualValue = node.Item;
                 return true;
             }
-            actualValue = default(T)!;
+            actualValue = default;
             return false;
         }
 
         // Used for set checking operations (using enumerables) that rely on counting
-        private static int Log2(int value)
-        {
-            int result = 0;
-            while (value > 0)
-            {
-                result++;
-                value >>= 1;
-            }
-            return result;
-        }
+        private static int Log2(int value) => BitOperations.Log2((uint) value);
 
         #endregion
     }

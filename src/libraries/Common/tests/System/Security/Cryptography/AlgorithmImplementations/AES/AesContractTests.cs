@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
     using Aes = System.Security.Cryptography.Aes;
 
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class AesContractTests
     {
         [Fact]
@@ -16,6 +18,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             {
                 Assert.Equal(128, aes.BlockSize);
                 Assert.Equal(256, aes.KeySize);
+                Assert.Equal(8, aes.FeedbackSize);
                 Assert.Equal(CipherMode.CBC, aes.Mode);
                 Assert.Equal(PaddingMode.PKCS7, aes.Padding);
             }
@@ -90,6 +93,71 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 e = Record.Exception(() => aes.CreateDecryptor(key, iv));
                 Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {(e?.ToString() ?? "null")}");
+            }
+        }
+
+        [Theory]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        [InlineData(7, true)]
+        [InlineData(9, true)]
+        [InlineData(-1, true)]
+        [InlineData(int.MaxValue, true)]
+        [InlineData(int.MinValue, true)]
+        [InlineData(64, false)]
+        [InlineData(256, true)]
+        [InlineData(127, true)]
+        public static void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.GenerateKey();
+                aes.Mode = CipherMode.CFB;
+
+                if (discoverableInSetter)
+                {
+                    // there are some key sizes that are invalid for any of the modes,
+                    // so the exception is thrown in the setter
+                    Assert.Throws<CryptographicException>(() =>
+                    {
+                        aes.FeedbackSize = feedbackSize;
+                    });
+                }
+                else
+                {
+                    aes.FeedbackSize = feedbackSize;
+
+                    // however, for CFB only few sizes are valid. Those should throw in the
+                    // actual AES instantiation.
+
+                    Assert.Throws<CryptographicException>(() => aes.CreateDecryptor());
+                    Assert.Throws<CryptographicException>(() => aes.CreateEncryptor());
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(8)]
+        [InlineData(128)]
+        public static void ValidCFBFeedbackSizes(int feedbackSize)
+        {
+            // Windows 7 only supports CFB8.
+            if (feedbackSize != 8 && PlatformDetection.IsWindows7)
+            {
+                return;
+            }
+
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.GenerateKey();
+                aes.Mode = CipherMode.CFB;
+
+                aes.FeedbackSize = feedbackSize;
+
+                using var decryptor = aes.CreateDecryptor();
+                using var encryptor = aes.CreateEncryptor();
+                Assert.NotNull(decryptor);
+                Assert.NotNull(encryptor);
             }
         }
 
@@ -310,6 +378,25 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 Assert.Equal(firstBlockEncrypted, firstBlockEncryptedFromCount);
                 Assert.Equal(middleHalfEncrypted, middleHalfEncryptedFromOffsetAndCount);
+            }
+        }
+
+        [Fact]
+        public static void Cfb8ModeCanDepadCfb128Padding()
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                // 1, 2, 3, 4, 5 encrypted with CFB8 but padded with block-size padding.
+                byte[] ciphertext = "68C272ACF16BE005A361DB1C147CA3AD".HexToByteArray();
+                aes.Key = "3279CE2E9669A54E038AA62818672150D0B5A13F6757C27F378115501F83B119".HexToByteArray();
+                aes.IV = new byte[16];
+                aes.Padding = PaddingMode.PKCS7;
+                aes.Mode = CipherMode.CFB;
+                aes.FeedbackSize = 8;
+
+                using ICryptoTransform transform = aes.CreateDecryptor();
+                byte[] decrypted = transform.TransformFinalBlock(ciphertext, 0, ciphertext.Length);
+                Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, decrypted);
             }
         }
 

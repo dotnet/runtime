@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -53,7 +54,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// An implementation of XmlSequenceWriter that builds a cached XPath/XQuery sequence.
     /// </summary>
-    internal class XmlCachedSequenceWriter : XmlSequenceWriter
+    internal sealed class XmlCachedSequenceWriter : XmlSequenceWriter
     {
         private readonly XmlQueryItemSequence _seqTyped;
         private XPathDocument _doc;
@@ -118,7 +119,7 @@ namespace System.Xml.Xsl.Runtime
     ///   3. A call to XmlRawWriter.WriteWhitespace(" ") is made between adjacent atomic values at the top-level
     ///   4. All items in the top-level sequence are merged together into a single result document.
     /// </summary>
-    internal class XmlMergeSequenceWriter : XmlSequenceWriter
+    internal sealed class XmlMergeSequenceWriter : XmlSequenceWriter
     {
         private readonly XmlRawWriter _xwrt;
         private bool _lastItemWasAtomic;

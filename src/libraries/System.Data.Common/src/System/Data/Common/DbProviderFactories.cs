@@ -17,12 +17,13 @@ namespace System.Data.Common
     {
         private struct ProviderRegistration
         {
-            internal ProviderRegistration(string factoryTypeAssemblyQualifiedName, DbProviderFactory? factoryInstance)
+            internal ProviderRegistration([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] string factoryTypeAssemblyQualifiedName, DbProviderFactory? factoryInstance)
             {
                 this.FactoryTypeAssemblyQualifiedName = factoryTypeAssemblyQualifiedName;
                 this.FactoryInstance = factoryInstance;
             }
 
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
             internal string FactoryTypeAssemblyQualifiedName { get; }
 
             /// <summary>
@@ -51,6 +52,7 @@ namespace System.Data.Common
             return GetFactory(providerInvariantName, throwOnError: true)!;
         }
 
+        [RequiresUnreferencedCode("Provider type and its members might be trimmed if not referenced directly.")]
         public static DbProviderFactory GetFactory(DataRow providerRow)
         {
             ADP.CheckArgumentNull(providerRow, nameof(providerRow));
@@ -105,7 +107,7 @@ namespace System.Data.Common
             return _registeredFactories.Keys.ToList();
         }
 
-        public static void RegisterFactory(string providerInvariantName, string factoryTypeAssemblyQualifiedName)
+        public static void RegisterFactory(string providerInvariantName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] string factoryTypeAssemblyQualifiedName)
         {
             ADP.CheckArgumentLength(providerInvariantName, nameof(providerInvariantName));
             ADP.CheckArgumentLength(factoryTypeAssemblyQualifiedName, nameof(factoryTypeAssemblyQualifiedName));
@@ -114,7 +116,7 @@ namespace System.Data.Common
             _registeredFactories[providerInvariantName] = new ProviderRegistration(factoryTypeAssemblyQualifiedName, null);
         }
 
-        public static void RegisterFactory(string providerInvariantName, Type providerFactoryClass)
+        public static void RegisterFactory(string providerInvariantName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type providerFactoryClass)
         {
             RegisterFactory(providerInvariantName, GetFactoryInstance(providerFactoryClass));
         }
@@ -163,7 +165,7 @@ namespace System.Data.Common
             return toReturn;
         }
 
-        private static DbProviderFactory GetFactoryInstance(Type providerFactoryClass)
+        private static DbProviderFactory GetFactoryInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type providerFactoryClass)
         {
             ADP.CheckArgumentNull(providerFactoryClass, nameof(providerFactoryClass));
             if (!providerFactoryClass.IsSubclassOf(typeof(DbProviderFactory)))
@@ -188,8 +190,8 @@ namespace System.Data.Common
             return (DbProviderFactory)factory;
         }
 
-
-        private static Type GetProviderTypeFromTypeName(string assemblyQualifiedName)
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+        private static Type GetProviderTypeFromTypeName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] string assemblyQualifiedName)
         {
             Type? providerType = Type.GetType(assemblyQualifiedName);
             if (null == providerType)

@@ -242,6 +242,8 @@ namespace System
     internal static partial class Number
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
+        internal const string PreviewFeatureMessage = "Generic Math is in preview.";
+        internal const string PreviewFeatureUrl = "https://aka.ms/dotnet-warnings/generic-math-preview";
 
         // SinglePrecision and DoublePrecision represent the maximum number of digits required
         // to guarantee that any given Single or Double can roundtrip. Some numbers may require
@@ -758,7 +760,7 @@ namespace System
         {
             Debug.Assert(source != null);
 
-            if (source.AsSpan().TryCopyTo(destination))
+            if (source.TryCopyTo(destination))
             {
                 charsWritten = source.Length;
                 return true;
@@ -1334,7 +1336,8 @@ namespace System
         {
             while (--digits >= 0 || value != 0)
             {
-                value = Math.DivRem(value, 10, out uint remainder);
+                uint remainder;
+                (value, remainder) = Math.DivRem(value, 10);
                 *(--bufferEnd) = (byte)(remainder + '0');
             }
             return bufferEnd;
@@ -1344,7 +1347,8 @@ namespace System
         {
             while (--digits >= 0 || value != 0)
             {
-                value = Math.DivRem(value, 10, out uint remainder);
+                uint remainder;
+                (value, remainder) = Math.DivRem(value, 10);
                 *(--bufferEnd) = (char)(remainder + '0');
             }
             return bufferEnd;
@@ -1367,7 +1371,8 @@ namespace System
                 char* p = buffer + bufferLength;
                 do
                 {
-                    value = Math.DivRem(value, 10, out uint remainder);
+                    uint remainder;
+                    (value, remainder) = Math.DivRem(value, 10);
                     *(--p) = (char)(remainder + '0');
                 }
                 while (value != 0);
@@ -1409,7 +1414,8 @@ namespace System
                 {
                     do
                     {
-                        value = Math.DivRem(value, 10, out uint remainder);
+                        uint remainder;
+                        (value, remainder) = Math.DivRem(value, 10);
                         *(--p) = (char)(remainder + '0');
                     }
                     while (value != 0);
@@ -1703,9 +1709,14 @@ namespace System
                     // digits.  Further, for compat, we need to stop when we hit a null char.
                     int n = 0;
                     int i = 1;
-                    while (i < format.Length && (((uint)format[i] - '0') < 10) && n < 10)
+                    while (i < format.Length && (((uint)format[i] - '0') < 10))
                     {
-                        n = (n * 10) + format[i++] - '0';
+                        int temp = ((n * 10) + format[i++] - '0');
+                        if (temp < n)
+                        {
+                            throw new FormatException(SR.Argument_BadFormatSpecifier);
+                        }
+                        n = temp;
                     }
 
                     // If we're at the end of the digits rather than having stopped because we hit something
@@ -2620,7 +2631,7 @@ namespace System
 
         private static ulong ExtractFractionAndBiasedExponent(double value, out int exponent)
         {
-            ulong bits = (ulong)(BitConverter.DoubleToInt64Bits(value));
+            ulong bits = BitConverter.DoubleToUInt64Bits(value);
             ulong fraction = (bits & 0xFFFFFFFFFFFFF);
             exponent = ((int)(bits >> 52) & 0x7FF);
 
@@ -2652,7 +2663,7 @@ namespace System
 
         private static ushort ExtractFractionAndBiasedExponent(Half value, out int exponent)
         {
-            ushort bits = (ushort)BitConverter.HalfToInt16Bits(value);
+            ushort bits = BitConverter.HalfToUInt16Bits(value);
             ushort fraction = (ushort)(bits & 0x3FF);
             exponent = ((int)(bits >> 10) & 0x1F);
 
@@ -2684,7 +2695,7 @@ namespace System
 
         private static uint ExtractFractionAndBiasedExponent(float value, out int exponent)
         {
-            uint bits = (uint)(BitConverter.SingleToInt32Bits(value));
+            uint bits = BitConverter.SingleToUInt32Bits(value);
             uint fraction = (bits & 0x7FFFFF);
             exponent = ((int)(bits >> 23) & 0xFF);
 

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -747,7 +746,7 @@ namespace System.Xml.Schema
         private XmlSchemaSimpleType[]? CompileBaseMemberTypes(XmlSchemaSimpleType simpleType)
         {
             XmlSchemaSimpleType? unionMember;
-            ArrayList memberTypeDefinitions = new ArrayList();
+            var memberTypeDefinitions = new List<XmlSchemaSimpleType>();
 
             XmlSchemaSimpleTypeUnion mainUnion = (XmlSchemaSimpleTypeUnion)simpleType.Content!;
 
@@ -799,11 +798,11 @@ namespace System.Xml.Schema
                 }
             }
             //set all types
-            mainUnion.SetBaseMemberTypes((memberTypeDefinitions.ToArray(typeof(XmlSchemaSimpleType)) as XmlSchemaSimpleType[])!);
+            mainUnion.SetBaseMemberTypes(memberTypeDefinitions.ToArray());
             return mainUnion.BaseMemberTypes;
         }
 
-        private void CheckUnionType(XmlSchemaSimpleType unionMember, ArrayList memberTypeDefinitions, XmlSchemaSimpleType parentType)
+        private void CheckUnionType(XmlSchemaSimpleType unionMember, List<XmlSchemaSimpleType> memberTypeDefinitions, XmlSchemaSimpleType parentType)
         {
             XmlSchemaDatatype unionDatatype = unionMember.Datatype!;
             if (unionMember.DerivedBy == XmlSchemaDerivationMethod.Restriction && (unionDatatype.HasLexicalFacets || unionDatatype.HasValueFacets))
@@ -1955,7 +1954,7 @@ namespace System.Xml.Schema
             {
                 maxOccurs = derivedSequence.MaxOccurs * derivedSequence.Items.Count;
             }
-            if (!IsValidOccurrenceRangeRestriction(minOccurs, maxOccurs, baseChoice.MinOccurs, baseChoice.MaxOccurs) || derivedSequence.Items.Count > baseChoice.Items.Count)
+            if (!IsValidOccurrenceRangeRestriction(minOccurs, maxOccurs, baseChoice.MinOccurs, baseChoice.MaxOccurs))
             {
                 return false;
             }

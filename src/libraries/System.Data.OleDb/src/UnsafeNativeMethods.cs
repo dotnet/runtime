@@ -8,16 +8,11 @@ using System.Security;
 
 namespace System.Data.Common
 {
-    internal static class UnsafeNativeMethods
+    internal static partial class UnsafeNativeMethods
     {
         //
         // Oleaut32
         //
-
-        [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = true)]
-        internal static extern System.Data.OleDb.OleDbHResult GetErrorInfo(
-            [In] int dwReserved,
-            [Out, MarshalAs(UnmanagedType.Interface)] out IErrorInfo ppIErrorInfo);
 
         [Guid("00000567-0000-0010-8000-00AA006D2EA4"), InterfaceType(ComInterfaceType.InterfaceIsDual), ComImport, SuppressUnmanagedCodeSecurity]
         internal interface ADORecordConstruction
@@ -518,11 +513,11 @@ namespace System.Data.Common
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetSource(
-                [Out, MarshalAs(UnmanagedType.BStr)] out string pBstrSource);
+                [MarshalAs(UnmanagedType.BStr)] out string? pBstrSource);
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetDescription(
-                [Out, MarshalAs(UnmanagedType.BStr)] out string pBstrDescription);
+                [MarshalAs(UnmanagedType.BStr)] out string? pBstrDescription);
 
             //[ Obsolete("not used", true)] void GetHelpFile(/*deleted parameter signature*/);
 
@@ -723,7 +718,7 @@ namespace System.Data.Common
             System.Data.OleDb.OleDbHResult GetReferencedRowset(
                 [In] IntPtr iOrdinal,
                 [In] ref Guid riid,
-                [Out, MarshalAs(UnmanagedType.Interface)] out IRowset ppRowset);
+                [Out, MarshalAs(UnmanagedType.Interface)] out IRowset? ppRowset);
 
             //[PreserveSig]
             //int GetSpecification(/*deleted parameter signature*/);
@@ -837,11 +832,11 @@ namespace System.Data.Common
             }
         }
 
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int CreateWellKnownSid(
+        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static partial int CreateWellKnownSid(
             int sidType,
             byte[]? domainSid,
-            [Out] byte[] resultSid,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] out byte[] resultSid,
             ref uint resultSidLength);
     }
 }

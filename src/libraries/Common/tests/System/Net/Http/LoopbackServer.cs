@@ -7,62 +7,97 @@ using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Net.WebSockets;
 using Xunit;
 
 namespace System.Net.Test.Common
 {
     public sealed partial class LoopbackServer : GenericLoopbackServer, IDisposable
     {
+        private static readonly byte[] s_newLineBytes = new byte[] { (byte)'\r', (byte)'\n' };
+        private static readonly byte[] s_colonSpaceBytes = new byte[] { (byte)':', (byte)' ' };
+
+        private SocketWrapper _socketWrapper;
+#if TARGET_BROWSER
+        private ClientWebSocket _listenSocket;
+#else
         private Socket _listenSocket;
+#endif
         private Options _options;
         private Uri _uri;
 
         public LoopbackServer(Options options = null)
         {
             _options = options ??= new Options();
+        }
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        public async Task ListenAsync()
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
             try
             {
-                _listenSocket = new Socket(options.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                _listenSocket.Bind(new IPEndPoint(options.Address, 0));
-                _listenSocket.Listen(options.ListenBacklog);
+                IPEndPoint localEndPoint;
+#if TARGET_BROWSER
+                _listenSocket = new ClientWebSocket();
 
-                var localEndPoint = (IPEndPoint)_listenSocket.LocalEndPoint;
-                string host = options.Address.AddressFamily == AddressFamily.InterNetworkV6 ?
+                await _listenSocket.ConnectAsync(Configuration.Http.RemoteLoopServer, CancellationToken.None);
+
+                byte[] buffer = new byte[128 * 1024];
+                var message = Encoding.ASCII.GetBytes($"{_options.ListenBacklog},{_options.Address}");
+                await _listenSocket.SendAsync(message, WebSocketMessageType.Binary, true, CancellationToken.None);
+                var first = await _listenSocket.ReceiveAsync(buffer, CancellationToken.None);
+                localEndPoint = IPEndPoint.Parse(Encoding.ASCII.GetString(buffer, 0, first.Count));
+#else
+                _listenSocket = new Socket(_options.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                _listenSocket.Bind(new IPEndPoint(_options.Address, 0));
+                _listenSocket.Listen(_options.ListenBacklog);
+                localEndPoint = (IPEndPoint)_listenSocket.LocalEndPoint;
+#endif
+
+                string host = _options.Address.AddressFamily == AddressFamily.InterNetworkV6 ?
                     $"[{localEndPoint.Address}]" :
                     localEndPoint.Address.ToString();
 
-                string scheme = options.UseSsl ? "https" : "http";
-                if (options.WebSocketEndpoint)
+                string scheme = _options.UseSsl ? "https" : "http";
+                if (_options.WebSocketEndpoint)
                 {
-                    scheme = options.UseSsl ? "wss" : "ws";
+                    scheme = _options.UseSsl ? "wss" : "ws";
                 }
 
                 _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
+                _socketWrapper = new SocketWrapper(_listenSocket);
             }
             catch
             {
-                _listenSocket.Dispose();
+                _listenSocket?.Dispose();
+                _socketWrapper?.Dispose();
+                throw;
             }
         }
 
         public override void Dispose()
         {
-            if (_listenSocket != null)
+            _listenSocket = null;
+            if (_socketWrapper != null)
             {
-                _listenSocket.Dispose();
-                _listenSocket = null;
+                _socketWrapper.Dispose();
+                _socketWrapper = null;
             }
         }
 
-        public Socket ListenSocket => _listenSocket;
+        public SocketWrapper ListenSocket => _socketWrapper;
         public override Uri Address => _uri;
 
         public static async Task CreateServerAsync(Func<LoopbackServer, Task> funcAsync, Options options = null)
         {
             using (var server = new LoopbackServer(options))
             {
+                await server.ListenAsync();
                 await funcAsync(server).ConfigureAwait(false);
             }
         }
@@ -90,41 +125,31 @@ namespace System.Net.Test.Common
 
         public async Task<Connection> EstablishConnectionAsync()
         {
-            Socket s = await _listenSocket.AcceptAsync().ConfigureAwait(false);
+            SocketWrapper closableWrapper = null;
             try
             {
+                Stream stream = null;
+#if TARGET_BROWSER
+                closableWrapper = new SocketWrapper(_listenSocket);
+                stream = new WebSocketStream(_listenSocket, ownsSocket: true);
+#else
+                var socket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
+                closableWrapper = new SocketWrapper(socket);
+
                 try
                 {
-                    s.NoDelay = true;
+                    socket.NoDelay = true;
                 }
                 // OSX can throw if socket is in weird state during close or cancellation
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.InvalidArgument && PlatformDetection.IsOSXLike) { }
 
-                Stream stream = new NetworkStream(s, ownsSocket: false);
-                if (_options.UseSsl)
-                {
-                    var sslStream = new SslStream(stream, false, delegate { return true; });
-                    using (var cert = Configuration.Certificates.GetServerCertificate())
-                    {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: _options.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
-                    stream = sslStream;
-                }
-
-                if (_options.StreamWrapper != null)
-                {
-                    stream = _options.StreamWrapper(stream);
-                }
-
-                return new Connection(s, stream);
+                stream = new NetworkStream(socket, ownsSocket: false);
+#endif
+                return await Connection.CreateAsync(closableWrapper, stream, _options).ConfigureAwait(false);
             }
             catch (Exception)
             {
-                s.Close();
+                closableWrapper?.Close();
                 throw;
             }
         }
@@ -344,11 +369,19 @@ namespace System.Net.Test.Common
         public static string GetHttpResponseHeaders(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null, bool connectionClose = false) =>
             GetHttpResponseHeaders(statusCode, additionalHeaders, content == null ? 0 : content.Length, connectionClose);
 
+        public static string CorsHeaders = PlatformDetection.IsBrowser
+                ? "Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE\r\n" +
+                  "Access-Control-Expose-Headers: *\r\n" +
+                  "Access-Control-Allow-Headers: *\r\n" +
+                  "Access-Control-Allow-Origin: *\r\n"
+                : "";
+
         public static string GetHttpResponseHeaders(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, int contentLength = 0, bool connectionClose = false) =>
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
             (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             $"Content-Length: {contentLength}\r\n" +
+            CorsHeaders +
             additionalHeaders +
             "\r\n";
 
@@ -357,6 +390,7 @@ namespace System.Net.Test.Common
             (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             "Transfer-Encoding: chunked\r\n" +
+            CorsHeaders +
             additionalHeaders +
             "\r\n" +
             (string.IsNullOrEmpty(content) ? "" :
@@ -370,6 +404,7 @@ namespace System.Net.Test.Common
             (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             "Transfer-Encoding: chunked\r\n" +
+            CorsHeaders +
             additionalHeaders +
             "\r\n" +
             (string.IsNullOrEmpty(content) ? "" : string.Concat(content.Select(c => $"1\r\n{c}\r\n"))) +
@@ -380,13 +415,13 @@ namespace System.Net.Test.Common
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
             "Connection: close\r\n" +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+            CorsHeaders +
             additionalHeaders +
             "\r\n" +
             content;
 
         public class Options : GenericLoopbackOptions
         {
-            public int ListenBacklog { get; set; } = 1;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
             public string Username { get; set; }
@@ -408,30 +443,50 @@ namespace System.Net.Test.Common
         public sealed class Connection : GenericLoopbackConnection
         {
             private const int BufferSize = 4000;
-            private Socket _socket;
+            private SocketWrapper _socket;
             private Stream _stream;
-            private StreamWriter _writer;
             private byte[] _readBuffer;
             private int _readStart;
             private int _readEnd;
             private int _contentLength = 0;
             private bool _bodyRead = false;
 
-            public Connection(Socket socket, Stream stream)
+            public Connection(SocketWrapper socket, Stream stream)
             {
                 _socket = socket;
                 _stream = stream;
-
-                _writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true };
 
                 _readBuffer = new byte[BufferSize];
                 _readStart = 0;
                 _readEnd = 0;
             }
 
-            public Socket Socket => _socket;
+            public SocketWrapper Socket => _socket;
             public Stream Stream => _stream;
-            public StreamWriter Writer => _writer;
+
+            public static async Task<Connection> CreateAsync(SocketWrapper socket, Stream stream, Options httpOptions)
+            {
+                if (httpOptions.UseSsl)
+                {
+                    var sslStream = new SslStream(stream, false, delegate { return true; });
+                    using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
+                    {
+                        await sslStream.AuthenticateAsServerAsync(
+                            cert,
+                            clientCertificateRequired: true, // allowed but not required
+                            enabledSslProtocols: httpOptions.SslProtocols,
+                            checkCertificateRevocation: false).ConfigureAwait(false);
+                    }
+                    stream = sslStream;
+                }
+
+                if (httpOptions.StreamWrapper != null)
+                {
+                    stream = httpOptions.StreamWrapper(stream);
+                }
+
+                return new Connection(socket, stream);
+            }
 
             public async Task<int> ReadAsync(Memory<byte> buffer, int offset, int size)
             {
@@ -533,6 +588,16 @@ namespace System.Net.Test.Common
 
             public async Task<string> ReadLineAsync()
             {
+                byte[] lineBytes = await ReadLineBytesAsync().ConfigureAwait(false);
+
+                if (lineBytes is null)
+                    return null;
+
+                return Encoding.ASCII.GetString(lineBytes);
+            }
+
+            private async Task<byte[]> ReadLineBytesAsync()
+            {
                 int index = 0;
                 int startSearch = _readStart;
 
@@ -553,6 +618,7 @@ namespace System.Net.Test.Common
                                 _readStart = 0;
                                 _readEnd = dataLength;
                                 _readBuffer = newBuffer;
+                                startSearch = dataLength;
                             }
                         }
 
@@ -578,7 +644,7 @@ namespace System.Net.Test.Common
                     if (_readBuffer[_readStart + stringLength] == '\n') { stringLength--; }
                     if (_readBuffer[_readStart + stringLength] == '\r') { stringLength--; }
 
-                    string line = System.Text.Encoding.ASCII.GetString(_readBuffer, _readStart, stringLength + 1);
+                    byte[] line = _readBuffer.AsSpan(_readStart, stringLength + 1).ToArray();
                     _readStart = index + 1;
                     return line;
                 }
@@ -598,7 +664,6 @@ namespace System.Net.Test.Common
                 }
                 catch (Exception) { }
 
-                _writer.Dispose();
                 _stream.Dispose();
                 _socket?.Dispose();
             }
@@ -625,9 +690,46 @@ namespace System.Net.Test.Common
                 return lines;
             }
 
+            private async Task<List<byte[]>> ReadRequestHeaderBytesAsync()
+            {
+                var lines = new List<byte[]>();
+
+                byte[] line;
+
+                while (true)
+                {
+                    line = await ReadLineBytesAsync().ConfigureAwait(false);
+
+                    if (line is null || line.Length == 0)
+                    {
+                        break;
+                    }
+
+                    lines.Add(line);
+                }
+
+                if (line == null)
+                {
+                    throw new IOException("Unexpected EOF trying to read request header");
+                }
+
+                return lines;
+            }
+
+            public async Task WriteStringAsync(string s)
+            {
+                byte[] bytes = Encoding.ASCII.GetBytes(s);
+                await _stream.WriteAsync(bytes);
+            }
+
             public async Task SendResponseAsync(string response)
             {
-                await _writer.WriteAsync(response).ConfigureAwait(false);
+                await WriteStringAsync(response);
+            }
+
+            public async Task SendResponseAsync(byte[] response)
+            {
+                await _stream.WriteAsync(response);
             }
 
             public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
@@ -638,7 +740,7 @@ namespace System.Net.Test.Common
             public async Task<List<string>> ReadRequestHeaderAndSendCustomResponseAsync(string response)
             {
                 List<string> lines = await ReadRequestHeaderAsync().ConfigureAwait(false);
-                await _writer.WriteAsync(response).ConfigureAwait(false);
+                await WriteStringAsync(response);
                 return lines;
             }
 
@@ -652,6 +754,11 @@ namespace System.Net.Test.Common
             public async Task<List<string>> ReadRequestHeaderAndSendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
             {
                 List<string> lines = await ReadRequestHeaderAsync().ConfigureAwait(false);
+
+#if TARGET_BROWSER
+                lines = await HandleCORSPreFlight(lines);
+#endif
+
                 await SendResponseAsync(statusCode, additionalHeaders, content).ConfigureAwait(false);
                 return lines;
             }
@@ -663,24 +770,25 @@ namespace System.Net.Test.Common
 
             public override async Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true)
             {
-                List<string> headerLines = null;
                 HttpRequestData requestData = new HttpRequestData();
 
-                headerLines = await ReadRequestHeaderAsync().ConfigureAwait(false);
+                List<byte[]> headerLines = await ReadRequestHeaderBytesAsync().ConfigureAwait(false);
 
                 // Parse method and path
-                string[] splits = headerLines[0].Split(' ');
+                string[] splits = Encoding.ASCII.GetString(headerLines[0]).Split(' ');
                 requestData.Method = splits[0];
                 requestData.Path = splits[1];
+                requestData.Version = Version.Parse(splits[2].Substring(splits[2].IndexOf('/') + 1));
 
                 // Convert header lines to key/value pairs
                 // Skip first line since it's the status line
-                foreach (var line in headerLines.Skip(1))
+                foreach (byte[] lineBytes in headerLines.Skip(1))
                 {
+                    string line = Encoding.ASCII.GetString(lineBytes);
                     int offset = line.IndexOf(':');
                     string name = line.Substring(0, offset);
                     string value = line.Substring(offset + 1).TrimStart();
-                    requestData.Headers.Add(new HttpHeaderData(name, value));
+                    requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes));
                 }
 
                 if (requestData.Method != "GET")
@@ -758,9 +866,15 @@ namespace System.Net.Test.Common
                 return buffer;
             }
 
-            public override async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null, bool isFinal = true, int requestId = 0)
+            public void CompleteRequestProcessing()
             {
-                string headerString = null;
+                _contentLength = 0;
+                _bodyRead = false;
+            }
+
+            public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
+            {
+                MemoryStream headerBytes = new MemoryStream();
                 int contentLength = -1;
                 bool isChunked = false;
                 bool hasContentLength  = false;
@@ -785,29 +899,45 @@ namespace System.Net.Test.Common
                             isChunked = true;
                         }
 
-                        headerString = headerString + $"{headerData.Name}: {headerData.Value}\r\n";
+                        byte[] nameBytes = Encoding.ASCII.GetBytes(headerData.Name);
+                        headerBytes.Write(nameBytes, 0, nameBytes.Length);
+                        headerBytes.Write(s_colonSpaceBytes, 0, s_colonSpaceBytes.Length);
+
+                        byte[] valueBytes = (headerData.ValueEncoding ?? Encoding.ASCII).GetBytes(headerData.Value);
+                        headerBytes.Write(valueBytes, 0, valueBytes.Length);
+                        headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
                     }
                 }
 
-                bool endHeaders = content != null || isFinal;
-                if (statusCode != null)
+                if (PlatformDetection.IsBrowser)
                 {
-                    // If we need to send status line, prepped it to headers and possibly add missing headers to the end.
-                    headerString =
-                        $"HTTP/1.1 {(int)statusCode} {GetStatusDescription((HttpStatusCode)statusCode)}\r\n" +
-                        (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : "") +
-                        headerString +
-                        (endHeaders ? "\r\n" : "");
+                    byte[] corsBytes = Encoding.ASCII.GetBytes(CorsHeaders);
+                    headerBytes.Write(corsBytes, 0, corsBytes.Length);
                 }
 
-                await SendResponseAsync(headerString).ConfigureAwait(false);
+                byte[] temp = headerBytes.ToArray();
+
+                headerBytes.SetLength(0);
+
+                byte[] headerStartBytes = Encoding.ASCII.GetBytes(
+                    $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
+                    (!hasContentLength && !isChunked && content != null ? $"Content-length: {content.Length}\r\n" : ""));
+
+                headerBytes.Write(headerStartBytes, 0, headerStartBytes.Length);
+                headerBytes.Write(temp, 0, temp.Length);
+
+                headerBytes.Write(s_newLineBytes, 0, s_newLineBytes.Length);
+
+                headerBytes.Position = 0;
+                await headerBytes.CopyToAsync(_stream).ConfigureAwait(false);
+
                 if (content != null)
                 {
-                    await SendResponseBodyAsync(content, isFinal: isFinal, requestId: requestId).ConfigureAwait(false);
+                    await SendResponseBodyAsync(content, isFinal: isFinal).ConfigureAwait(false);
                 }
             }
 
-            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+            private string GetResponseHeaderString(HttpStatusCode statusCode, IList<HttpHeaderData> headers)
             {
                 string headerString = null;
 
@@ -818,18 +948,106 @@ namespace System.Net.Test.Common
                         headerString = headerString + $"{headerData.Name}: {headerData.Value}\r\n";
                     }
                 }
+                headerString += CorsHeaders;
 
                 headerString = GetHttpResponseHeaders(statusCode, headerString, 0, connectionClose: true);
+
+                return headerString;
+            }
+
+            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+            {
+                string headerString = GetResponseHeaderString(statusCode, headers);
+                await SendResponseAsync(headerString).ConfigureAwait(false);
+            }
+
+            public override async Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+            {
+                string headerString = GetResponseHeaderString(statusCode, headers);
+
+                // Lop off the final \r\n so the headers are not complete.
+                headerString = headerString.Substring(0, headerString.Length - 2);
 
                 await SendResponseAsync(headerString).ConfigureAwait(false);
             }
 
-            public override async Task SendResponseBodyAsync(byte[] body, bool isFinal = true, int requestId = 0)
+            public override async Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
             {
-                await SendResponseAsync(Encoding.UTF8.GetString(body)).ConfigureAwait(false);
+                await SendResponseAsync(content).ConfigureAwait(false);
             }
 
-            public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
+            public async Task<HttpRequestData> HandleCORSPreFlight(HttpRequestData requestData)
+            {
+                if (PlatformDetection.IsBrowser && requestData.Method == "OPTIONS" && requestData.Headers.Any(h => h.Name.StartsWith("Access-Control-Request-Method")))
+                {
+                    // handle CORS pre-flight
+                    await SendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
+
+                    // reset state
+                    _bodyRead = false;
+                    _contentLength = 0;
+                    _readStart = 0;
+                    _readEnd = 0;
+
+                    // wait for real request
+                    return await ReadRequestDataAsync().ConfigureAwait(false);
+                }
+                return requestData;
+            }
+
+            public async Task<List<string>> HandleCORSPreFlight(List<string> lines)
+            {
+                if (PlatformDetection.IsBrowser && lines[0].Contains("OPTIONS") && lines.Any(h => h.StartsWith("Access-Control-Request-Method")))
+                {
+                    // handle CORS pre-flight
+                    await SendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
+
+                    // reset state
+                    _bodyRead = false;
+                    _contentLength = 0;
+                    _readStart = 0;
+                    _readEnd = 0;
+
+                    // wait for real request
+                    return await ReadRequestHeaderAsync().ConfigureAwait(false);
+                }
+                return lines;
+            }
+
+            public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
+            {
+                HttpRequestData requestData = await ReadRequestDataAsync().ConfigureAwait(false);
+
+#if TARGET_BROWSER
+                requestData = await HandleCORSPreFlight(requestData);
+#endif
+
+                // For historical reasons, we added Date and "Connection: close" (to improve test reliability)
+                bool hasDate = false;
+                List<HttpHeaderData> newHeaders = new List<HttpHeaderData>();
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        newHeaders.Add(header);
+                        if (header.Name.Equals("Date", StringComparison.OrdinalIgnoreCase))
+                        {
+                            hasDate = true;
+                        }
+                    }
+                }
+
+                newHeaders.Add(new HttpHeaderData("Connection", "Close"));
+                if (!hasDate)
+                {
+                    newHeaders.Add(new HttpHeaderData("Date", $"{DateTimeOffset.UtcNow:R}"));
+                }
+
+                await SendResponseAsync(statusCode, newHeaders, content: content).ConfigureAwait(false);
+                return requestData;
+            }
+
+            public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
             {
                 var buffer = new byte[1024];
                 while (true)
@@ -853,31 +1071,7 @@ namespace System.Net.Test.Common
         {
             using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
-                HttpRequestData requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
-
-                // For historical reasons, we added Date and "Connection: close" (to improve test reliability)
-                bool hasDate = false;
-                List<HttpHeaderData> newHeaders = new List<HttpHeaderData>();
-                if (headers != null)
-                {
-                    foreach (var header in headers)
-                    {
-                        newHeaders.Add(header);
-                        if (header.Name.Equals("Date", StringComparison.OrdinalIgnoreCase))
-                        {
-                            hasDate = true;
-                        }
-                    }
-                }
-
-                newHeaders.Add(new HttpHeaderData("Connection", "Close"));
-                if (!hasDate)
-                {
-                    newHeaders.Add(new HttpHeaderData("Date", "{DateTimeOffset.UtcNow:R}"));
-                }
-
-                await connection.SendResponseAsync(statusCode, newHeaders, content: content).ConfigureAwait(false);
-                return requestData;
+                return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
             }
         }
 
@@ -893,7 +1087,9 @@ namespace System.Net.Test.Common
 
         public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {
-            return new LoopbackServer(CreateOptions(options));
+            var loopbackServer = new LoopbackServer(CreateOptions(options));
+            Task.WaitAll(loopbackServer.ListenAsync());
+            return loopbackServer;
         }
 
         public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
@@ -901,9 +1097,9 @@ namespace System.Net.Test.Common
             return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: CreateOptions(options));
         }
 
-        public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null)
         {
-            return Task.FromResult<GenericLoopbackConnection>(new LoopbackServer.Connection(socket, stream));
+            return await LoopbackServer.Connection.CreateAsync(socket, stream, CreateOptions(options));
         }
 
         private static LoopbackServer.Options CreateOptions(GenericLoopbackOptions options)
@@ -912,6 +1108,9 @@ namespace System.Net.Test.Common
             if (options != null)
             {
                 newOptions.Address = options.Address;
+                newOptions.UseSsl = options.UseSsl;
+                newOptions.SslProtocols = options.SslProtocols;
+                newOptions.ListenBacklog = options.ListenBacklog;
             }
             return newOptions;
         }

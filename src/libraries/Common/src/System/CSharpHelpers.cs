@@ -116,7 +116,7 @@ namespace System
         ///       independent identifier.
         ///    </para>
         /// </devdoc>
-        public static bool IsValidLanguageIndependentIdentifier(string value)
+        public static bool IsValidLanguageIndependentIdentifier(string? value)
         {
             return IsValidTypeNameOrIdentifier(value, false);
         }
@@ -138,7 +138,7 @@ namespace System
             }
         }
 
-        internal static bool IsValidTypeNameOrIdentifier(string value, bool isTypeName)
+        internal static bool IsValidTypeNameOrIdentifier(string? value, bool isTypeName)
         {
             bool nextMustBeStartChar = true;
 

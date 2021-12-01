@@ -5,9 +5,9 @@ using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class BCrypt
+    internal static partial class BCrypt
     {
         internal static SafeBCryptHashHandle BCryptDuplicateHash(SafeBCryptHashHandle hHash)
         {
@@ -23,8 +23,8 @@ internal partial class Interop
             return newHash;
         }
 
-        [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        private static extern NTSTATUS BCryptDuplicateHash(
+        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        private static partial NTSTATUS BCryptDuplicateHash(
             SafeBCryptHashHandle hHash,
             out SafeBCryptHashHandle phNewHash,
             IntPtr pbHashObject,

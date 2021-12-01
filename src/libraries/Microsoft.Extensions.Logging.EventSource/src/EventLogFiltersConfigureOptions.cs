@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class EventLogFiltersConfigureOptions : IConfigureOptions<LoggerFilterOptions>
+    internal sealed class EventLogFiltersConfigureOptions : IConfigureOptions<LoggerFilterOptions>
     {
         private readonly LoggingEventSource _eventSource;
 

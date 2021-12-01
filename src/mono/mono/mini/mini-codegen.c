@@ -697,7 +697,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 		break;
 	case OP_IL_SEQ_POINT:
 	case OP_SEQ_POINT:
-		g_string_append_printf (sbuf, " il: 0x%x%s", (int)ins->inst_imm, ins->flags & MONO_INST_NONEMPTY_STACK ? ", nonempty-stack" : "");
+		g_string_append_printf (sbuf, "%s il: 0x%x%s", (ins->flags & MONO_INST_SINGLE_STEP_LOC) ? " intr" : "", (int)ins->inst_imm, ins->flags & MONO_INST_NONEMPTY_STACK ? ", nonempty-stack" : "");
 		break;
 	case OP_COND_EXC_EQ:
 	case OP_COND_EXC_GE:
@@ -1152,6 +1152,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Validate the cpu description against the info in mini-ops.h */
 #if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined (TARGET_RISCV)
+		/* Check that the table size is correct */
+		g_assert (MONO_ARCH_CPU_SPEC_IDX(MONO_ARCH_CPU_SPEC)[OP_LAST - OP_LOAD] == 0xffff);
 		for (i = OP_LOAD; i < OP_LAST; ++i) {
 			const char *ispec;
 
@@ -1159,11 +1161,11 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ispec = INS_INFO (i);
 
 			if ((spec [MONO_INST_DEST] && (ispec [MONO_INST_DEST] == ' ')))
-				printf ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC1] && (ispec [MONO_INST_SRC1] == ' ')))
-				printf ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC2] && (ispec [MONO_INST_SRC2] == ' ')))
-				printf ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
 		}
 #endif
 	}
@@ -1744,7 +1746,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		if (spec [MONO_INST_CLOB] == 'c') {
-			int j, s, dreg, dreg2, cur_bank;
+			int j, dreg, dreg2, cur_bank;
+			regmask_t s;
 			guint64 clob_mask;
 
 			clob_mask = MONO_ARCH_CALLEE_REGS;
@@ -2748,7 +2751,7 @@ mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 			prev_ftype = ftype;
 			nfields += nested_nfields;
 		} else {
-			if (!(!ftype->byref && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
+			if (!(!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
 				return FALSE;
 			if (prev_ftype && prev_ftype->type != ftype->type)
 				return FALSE;
@@ -2758,8 +2761,8 @@ mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 	}
 	if (nfields == 0)
 		return FALSE;
-	*out_nfields = nfields;
 	*out_esize = prev_ftype->type == MONO_TYPE_R4 ? 4 : 8;
+	*out_nfields = mono_class_value_size (klass, NULL) / *out_esize;
 	return TRUE;
 }
 

@@ -5,9 +5,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
         internal enum GetDefaultProviderFlags : int
         {
@@ -20,7 +20,9 @@ internal partial class Interop
             int dwProvType,
             IntPtr pdwReserved,
             GetDefaultProviderFlags dwFlags,
-            StringBuilder? pszProvName,
+#pragma warning disable CA1838 // not on a hot path
+            [Out] StringBuilder? pszProvName,
+#pragma warning restore CA1838
             ref int pcbProvName);
     }
 }

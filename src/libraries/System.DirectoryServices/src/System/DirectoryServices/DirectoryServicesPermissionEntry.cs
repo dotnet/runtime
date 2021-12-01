@@ -5,8 +5,8 @@ namespace System.DirectoryServices
 {
     public class DirectoryServicesPermissionEntry
     {
-        public DirectoryServicesPermissionEntry(DirectoryServicesPermissionAccess permissionAccess, string path) { }
-        public string Path { get; }
+        public DirectoryServicesPermissionEntry(DirectoryServicesPermissionAccess permissionAccess, string? path) { }
+        public string? Path { get; }
         public DirectoryServicesPermissionAccess PermissionAccess { get; }
     }
 }

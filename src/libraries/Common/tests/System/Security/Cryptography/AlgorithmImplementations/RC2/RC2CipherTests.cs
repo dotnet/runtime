@@ -10,7 +10,9 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
     using RC2 = System.Security.Cryptography.RC2;
 
-    public static class RC2CipherTests
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [ConditionalClass(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
+    public static partial class RC2CipherTests
     {
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.
         private static readonly string s_multiBlockString = new ASCIIEncoding().GetBytes(
@@ -159,6 +161,88 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 
                 byte[] decrypted = alg.Decrypt(cipher);
                 Assert.Equal<byte>(expectedDecryptedBytes, decrypted);
+
+                if (RC2Factory.OneShotSupported)
+                {
+                    byte[] oneShotEncrypt = cipherMode switch
+                    {
+                        CipherMode.ECB => alg.EncryptEcb(textHex.HexToByteArray(), paddingMode),
+                        CipherMode.CBC => alg.EncryptCbc(textHex.HexToByteArray(), iv.HexToByteArray(), paddingMode),
+                        _ => throw new NotImplementedException(),
+                    };
+
+                    Assert.Equal(expectedEncryptedBytes, oneShotEncrypt);
+
+                    byte[] oneShotDecrypt = cipherMode switch
+                    {
+                        CipherMode.ECB => alg.DecryptEcb(cipher, paddingMode),
+                        CipherMode.CBC => alg.DecryptCbc(cipher, iv.HexToByteArray(), paddingMode),
+                        _ => throw new NotImplementedException(),
+                    };
+
+                    Assert.Equal(expectedDecryptedBytes, oneShotDecrypt);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "b72606c98d8e4fabf08839abf7a0ac61".HexToByteArray();
+
+            using (RC2 rc2 = RC2Factory.Create())
+            {
+                rc2.Mode = cipherMode;
+
+                if (feedbackSize > 0)
+                {
+                    rc2.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = rc2.CreateEncryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "896072ab28e5fdfc".HexToByteArray();
+            var key = "3000000000000000".HexToByteArray();
+            var iv = "3000000000000000".HexToByteArray();
+
+            using (RC2 rc2 = RC2Factory.Create())
+            {
+                rc2.Mode = cipherMode;
+                rc2.Key = key;
+                rc2.IV = iv;
+                rc2.Padding = PaddingMode.None;
+
+                if (feedbackSize > 0)
+                {
+                    rc2.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = rc2.CreateDecryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
             }
         }
 

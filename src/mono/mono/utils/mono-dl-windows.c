@@ -13,11 +13,10 @@
 
 #if defined(HOST_WIN32)
 
-#include "mono/utils/mono-dl.h"
-#include "mono/utils/mono-dl-windows-internals.h"
-#include "mono/utils/mono-embed.h"
-#include "mono/utils/mono-path.h"
-#include "mono/metadata/w32subset.h"
+#include <mono/utils/mono-dl.h>
+#include <mono/utils/mono-dl-windows-internals.h>
+#include <mono/utils/mono-embed.h>
+#include <mono/utils/mono-path.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -27,6 +26,8 @@
 
 #include <windows.h>
 #include <psapi.h>
+
+#include <mono/utils/w32subset.h>
 
 const char*
 mono_dl_get_so_prefix (void)
@@ -57,11 +58,11 @@ mono_dl_open_file (const char *file, int flags)
 		guint32 last_error = 0;
 
 #if HAVE_API_SUPPORT_WIN32_LOAD_LIBRARY
-		hModule = LoadLibraryW (file_utf16);
+		hModule = LoadLibraryExW (file_utf16, NULL, flags);
 #elif HAVE_API_SUPPORT_WIN32_LOAD_PACKAGED_LIBRARY
 		hModule = LoadPackagedLibrary (file_utf16, NULL);
 #else
-		g_assert_not_reached ();
+#error unknown Windows variant
 #endif
 		if (!hModule)
 			last_error = GetLastError ();
@@ -78,7 +79,7 @@ mono_dl_open_file (const char *file, int flags)
 #if HAVE_API_SUPPORT_WIN32_GET_MODULE_HANDLE
 		hModule = GetModuleHandleW (NULL);
 #else
-		g_assert_not_reached ();
+#error unknown Windows variant
 #endif
 	}
 	return hModule;
@@ -91,7 +92,7 @@ mono_dl_close_handle (MonoDl *module)
 		FreeLibrary ((HMODULE)module->handle);
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES
 void*
 mono_dl_lookup_symbol_in_process (const char *symbol_name)
 {
@@ -139,7 +140,15 @@ mono_dl_lookup_symbol_in_process (const char *symbol_name)
 	g_free (modules);
 	return NULL;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_ENUM_PROCESS_MODULES
+void*
+mono_dl_lookup_symbol_in_process (const char *symbol_name)
+{
+	g_unsupported_api ("EnumProcessModules");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_ENUM_PROCESS_MODULES */
 
 void*
 mono_dl_lookup_symbol (MonoDl *module, const char *symbol_name)
@@ -148,7 +157,21 @@ mono_dl_lookup_symbol (MonoDl *module, const char *symbol_name)
 
 	/* get the symbol directly from the specified module */
 	if (!module->main_module)
+	{
+		if (symbol_name[0] == '#')
+		{
+			/* lookup by ordinal */
+			unsigned long ord;
+			char *end;
+
+			ord = strtoul(symbol_name + 1, &end, 10);
+
+			if (*end == '\0' && ord > 0 && ord < 65536)
+				symbol_name = (const char*)(uintptr_t)ord;
+		}
+
 		return (void*)GetProcAddress ((HMODULE)module->handle, symbol_name);
+	}
 
 	/* get the symbol from the main module */
 	proc = (gpointer)GetProcAddress ((HMODULE)module->handle, symbol_name);
@@ -160,36 +183,42 @@ mono_dl_lookup_symbol (MonoDl *module, const char *symbol_name)
 }
 
 int
-mono_dl_convert_flags (int flags)
+mono_dl_convert_flags (int mono_flags, int native_flags)
 {
-	return 0;
+	// Mono flags are not applicable on Windows
+	return native_flags;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_FORMAT_MESSAGE
 char*
 mono_dl_current_error_string (void)
 {
 	char* ret = NULL;
-	wchar_t* buf = NULL;
 	DWORD code = GetLastError ();
-
-	if (FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buf, 0, NULL))
-	{
-		ret = g_utf16_to_utf8 (buf, wcslen(buf), NULL, NULL, NULL);
+#if HAVE_API_SUPPORT_WIN32_LOCAL_ALLOC_FREE
+	PWSTR buf = NULL;
+	if (FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (PWSTR)&buf, 0, NULL)) {
+		ret = u16to8 (buf);
 		LocalFree (buf);
-	} else {
-		g_assert_not_reached ();
 	}
+#else
+	WCHAR local_buf [1024];
+	if (!FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, STRING_LENGTH (local_buf), NULL) )
+		local_buf [0] = TEXT('\0');
+
+	ret = u16to8 (local_buf)
+#endif
 	return ret;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
-
-int
-mono_dl_get_executable_path (char *buf, int buflen)
+#elif !HAVE_EXTERN_DEFINED_WIN32_FORMAT_MESSAGE
+char *
+mono_dl_current_error_string (void)
 {
-	return -1; //TODO
+	return g_strdup_printf ("GetLastError=%d. FormatMessage not supported.", GetLastError ());
 }
+#endif /* HAVE_API_SUPPORT_WIN32_FORMAT_MESSAGE */
 
 const char*
 mono_dl_get_system_dir (void)

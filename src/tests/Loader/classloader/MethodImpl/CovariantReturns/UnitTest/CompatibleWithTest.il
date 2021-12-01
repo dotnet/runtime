@@ -1,4 +1,5 @@
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 .assembly extern System.Collections { }
 .assembly extern System.Runtime { }
 .assembly extern mscorlib { }
@@ -120,6 +121,17 @@
     {
         .override method instance int32[] C1::M1();
         ldnull
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit D2 extends C2
+{
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
+
+    .method public hidebysig newslot virtual instance int32 MD2()
+    {
+        ldc.i4.0
         ret
     }
 }
@@ -491,6 +503,16 @@
         ret
     }
 
+    .method public static void RunTestD2() noinlining
+    {
+        newobj instance void class D2::.ctor()
+        callvirt instance int32 class D2::MD2()
+        pop
+        ldstr "Unexpectedly succeeded"
+        call void [System.Console]System.Console::WriteLine(string)
+        ret
+    }
+
     .method public static void RunTestC3() noinlining 
     {
         newobj instance void class C3::.ctor()
@@ -763,6 +785,9 @@
 
     .method public hidebysig static int32 Main(string[] args) cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .locals init ( bool result )
 
@@ -796,6 +821,24 @@ CC2:
             call void Main::RunTestC2()
             ldc.i4.0
             stloc.0
+            leave.s CD2
+        }
+        catch [mscorlib]System.TypeLoadException
+        {
+            ldstr "Caught expected TypeLoadException:"
+            call       void [System.Console]System.Console::WriteLine(string)
+            call       void [System.Console]System.Console::WriteLine(object)
+            leave.s CD2
+        }
+CD2:
+        ldstr "D2: call non-overriding method MD2 when base class of D2 has invalid covariant override"
+        call void [System.Console]System.Console::WriteLine(string)
+
+        .try
+        {
+            call void Main::RunTestD2()
+            ldc.i4.0
+            stloc.0
             leave.s CC3
         }
         catch [mscorlib]System.TypeLoadException
@@ -804,7 +847,7 @@ CC2:
             call       void [System.Console]System.Console::WriteLine(string)
             call       void [System.Console]System.Console::WriteLine(object)        
             leave.s CC3
-        }  
+        }
 CC3:
         ldstr "C3: override IList<int32> by int32[]"
         call void [System.Console]System.Console::WriteLine(string)

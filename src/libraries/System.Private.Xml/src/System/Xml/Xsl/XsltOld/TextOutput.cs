@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using System.Text;
 
-    internal class TextOutput : SequentialOutput
+    internal sealed class TextOutput : SequentialOutput
     {
         private TextWriter _writer;
 
@@ -42,7 +42,7 @@ namespace System.Xml.Xsl.XsltOld
             _writer.Write(outputChar);
         }
 
-        internal override void Write(string outputText)
+        internal override void Write(string? outputText)
         {
             _writer.Write(outputText);
         }
@@ -50,7 +50,7 @@ namespace System.Xml.Xsl.XsltOld
         internal override void Close()
         {
             _writer.Flush();
-            _writer = null;
+            _writer = null!;
         }
     }
 }

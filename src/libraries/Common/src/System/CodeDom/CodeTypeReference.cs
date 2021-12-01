@@ -5,14 +5,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
-#if !FEATURE_SERIALIZATION
+#nullable enable
+
+#if CODEDOM
 namespace System.CodeDom
 #else
 namespace System.Runtime.Serialization
 #endif
 {
     [Flags]
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
     public enum CodeTypeReferenceOptions
 #else
     internal enum CodeTypeReferenceOptions
@@ -22,15 +24,15 @@ namespace System.Runtime.Serialization
         GenericTypeParameter = 0x00000002
     }
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
     public class CodeTypeReference : CodeObject
 #else
-    internal class CodeTypeReference : CodeObject
+    internal sealed class CodeTypeReference : CodeObject
 #endif
     {
-        private string _baseType;
+        private string? _baseType;
         private readonly bool _isInterface;
-        private CodeTypeReferenceCollection _typeArguments;
+        private CodeTypeReferenceCollection? _typeArguments;
         private bool _needsFixup;
 
         public CodeTypeReference()
@@ -50,7 +52,7 @@ namespace System.Runtime.Serialization
             if (type.IsArray)
             {
                 ArrayRank = type.GetArrayRank();
-                ArrayElementType = new CodeTypeReference(type.GetElementType());
+                ArrayElementType = new CodeTypeReference(type.GetElementType()!);
                 _baseType = null;
             }
             else
@@ -73,7 +75,7 @@ namespace System.Runtime.Serialization
             Initialize(typeName, codeTypeReferenceOption);
         }
 
-        public CodeTypeReference(string typeName)
+        public CodeTypeReference(string? typeName)
         {
             Initialize(typeName);
         }
@@ -86,7 +88,7 @@ namespace System.Runtime.Serialization
                 Type currentType = type;
                 while (currentType.IsNested)
                 {
-                    currentType = currentType.DeclaringType;
+                    currentType = currentType.DeclaringType!;
                     _baseType = currentType.Name + "+" + _baseType;
                 }
 
@@ -116,17 +118,17 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void Initialize(string typeName)
+        private void Initialize(string? typeName)
         {
             Initialize(typeName, Options);
         }
 
-        private void Initialize(string typeName, CodeTypeReferenceOptions options)
+        private void Initialize(string? typeName, CodeTypeReferenceOptions options)
         {
             Options = options;
             if (string.IsNullOrEmpty(typeName))
             {
-                typeName = typeof(void).FullName;
+                typeName = typeof(void).FullName!;
                 _baseType = typeName;
                 ArrayRank = 0;
                 ArrayElementType = null;
@@ -281,7 +283,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
         public CodeTypeReference(CodeTypeParameter typeParameter) :
             this(typeParameter?.Name)
         {
@@ -303,7 +305,7 @@ namespace System.Runtime.Serialization
             ArrayElementType = arrayType;
         }
 
-        public CodeTypeReference ArrayElementType { get; set; }
+        public CodeTypeReference? ArrayElementType { get; set; }
 
         public int ArrayRank { get; set; }
 
@@ -325,7 +327,7 @@ namespace System.Runtime.Serialization
 
                 string returnType = _baseType;
                 return _needsFixup && TypeArguments.Count > 0 ?
-                    returnType + '`' + TypeArguments.Count.ToString(CultureInfo.InvariantCulture) :
+                    $"{returnType}`{(uint)TypeArguments.Count}" :
                     returnType;
             }
             set

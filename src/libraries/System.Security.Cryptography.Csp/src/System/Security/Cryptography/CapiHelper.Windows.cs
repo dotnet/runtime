@@ -615,7 +615,7 @@ namespace Internal.NativeCrypto
             {
                 case CryptGetKeyParamQueryType.KP_IV:
                     if (!Interop.Advapi32.CryptSetKeyParam(safeKeyHandle, (int)keyParam, value, 0))
-                        throw new CryptographicException(SR.CryptSetKeyParam_Failed, Convert.ToString(GetErrorCode()));
+                        throw new CryptographicException(SR.CryptSetKeyParam_Failed, GetErrorCode().ToString());
 
                     break;
                 default:
@@ -640,7 +640,7 @@ namespace Internal.NativeCrypto
                 case CryptGetKeyParamQueryType.KP_MODE_BITS:
                 case CryptGetKeyParamQueryType.KP_EFFECTIVE_KEYLEN:
                     if (!Interop.Advapi32.CryptSetKeyParam(safeKeyHandle, (int)keyParam, ref value, 0))
-                        throw new CryptographicException(SR.CryptSetKeyParam_Failed, Convert.ToString(GetErrorCode()));
+                        throw new CryptographicException(SR.CryptSetKeyParam_Failed, GetErrorCode().ToString());
 
                     break;
                 default:
@@ -716,7 +716,7 @@ namespace Internal.NativeCrypto
                                             CspProviderFlags.UseUserProtectedKey);
                 if ((flags & keyFlags) != CspProviderFlags.NoFlags)
                 {
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, Convert.ToString(flags)), nameof(flags));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, flags), nameof(flags));
                 }
             }
         }
@@ -756,7 +756,7 @@ namespace Internal.NativeCrypto
                 (keyType == CspAlgorithmType.Dss && dwAlgId != CALG_DSS_SIGN))
             {
                 hKey.Dispose();
-                throw new CryptographicException(SR.Format(SR.Cryptography_CSP_WrongKeySpec, Convert.ToString(keyType)));
+                throw new CryptographicException(SR.Format(SR.Cryptography_CSP_WrongKeySpec, keyType));
             }
 
             return hKey;
@@ -768,7 +768,7 @@ namespace Internal.NativeCrypto
         /// <returns>returns the error code</returns>
         internal static int GetErrorCode()
         {
-            return Marshal.GetLastWin32Error();
+            return Marshal.GetLastPInvokeError();
         }
 
         /// <summary>
@@ -910,7 +910,6 @@ namespace Internal.NativeCrypto
             bool isFinal)
         {
             VerifyValidHandle(hKey);
-            Debug.Assert((input.Length % 8) == 0);
 
             // Figure out how big the encrypted data will be
             int cbEncryptedData = input.Length;
@@ -949,7 +948,6 @@ namespace Internal.NativeCrypto
             Span<byte> output)
         {
             VerifyValidHandle(hKey);
-            Debug.Assert((input.Length % 8) == 0);
 
             byte[] dataToBeDecrypted = new byte[input.Length];
             input.CopyTo(dataToBeDecrypted);
@@ -1083,7 +1081,7 @@ namespace Internal.NativeCrypto
             else
             {
                 Type? hashAlgType = hashAlg as Type;
-                if ((object?)hashAlgType != null)
+                if (hashAlgType is not null)
                 {
                     if (typeof(MD5).IsAssignableFrom(hashAlgType))
                         return CapiHelper.CALG_MD5;
@@ -1206,8 +1204,13 @@ namespace Internal.NativeCrypto
                     throw new InvalidOperationException();
             }
 
-            using (SafeHashHandle hHash = hProv.CreateHashHandle(hash, calgHash))
+            using (SafeHashHandle? hHash = hProv.CreateHashHandle(hash, calgHash, throwOnSizeError: false))
             {
+                if (hHash == null)
+                {
+                    return false;
+                }
+
                 bool verified = Interop.Advapi32.CryptVerifySignature(hHash, signature, signature.Length, hKey, null, Interop.Advapi32.CryptSignAndVerifyHashFlags.None);
                 return verified;
             }
@@ -1360,6 +1363,11 @@ namespace Internal.NativeCrypto
         /// </summary>
         private static SafeHashHandle CreateHashHandle(this SafeProvHandle hProv, byte[] hash, int calgHash)
         {
+            return CreateHashHandle(hProv, hash, calgHash, throwOnSizeError: true)!;
+        }
+
+        private static SafeHashHandle? CreateHashHandle(this SafeProvHandle hProv, byte[] hash, int calgHash, bool throwOnSizeError)
+        {
             SafeHashHandle? hHash;
             if (!CryptCreateHash(hProv, calgHash, SafeKeyHandle.InvalidHandle, Interop.Advapi32.CryptCreateHashFlags.None, out hHash))
             {
@@ -1379,8 +1387,16 @@ namespace Internal.NativeCrypto
                     int hr = Marshal.GetHRForLastWin32Error();
                     throw hr.ToCryptographicException();
                 }
+
                 if (dwHashSize != hash.Length)
-                    throw unchecked((int)CryptKeyError.NTE_BAD_HASH).ToCryptographicException();
+                {
+                    if (throwOnSizeError)
+                    {
+                        throw unchecked((int)CryptKeyError.NTE_BAD_HASH).ToCryptographicException();
+                    }
+
+                    return null;
+                }
 
                 if (!Interop.Advapi32.CryptSetHashParam(hHash, Interop.Advapi32.CryptHashProperty.HP_HASHVAL, hash, 0))
                 {

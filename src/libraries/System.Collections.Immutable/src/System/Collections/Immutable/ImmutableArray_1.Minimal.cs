@@ -51,7 +51,7 @@ namespace System.Collections.Immutable
         /// This would be private, but we make it internal so that our own extension methods can access it.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        internal T[]? array;
+        internal readonly T[]? array;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct
@@ -132,7 +132,6 @@ namespace System.Collections.Immutable
             }
         }
 
-#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference to the element at the specified index in the read-only list.
         /// </summary>
@@ -147,7 +146,6 @@ namespace System.Collections.Immutable
             // of removing array bounds checking to work.
             return ref this.array![index];
         }
-#endif
 
         /// <summary>
         /// Gets a value indicating whether this collection is empty.
@@ -156,7 +154,7 @@ namespace System.Collections.Immutable
         public bool IsEmpty
         {
             [NonVersionable]
-            get { return this.Length == 0; }
+            get { return this.array!.Length == 0; }
         }
 
         /// <summary>
@@ -217,7 +215,7 @@ namespace System.Collections.Immutable
             get
             {
                 var self = this;
-                return self.IsDefault ? "Uninitialized" : string.Format(CultureInfo.CurrentCulture, "Length = {0}", self.Length);
+                return self.IsDefault ? "Uninitialized" : $"Length = {self.Length}";
             }
         }
 
@@ -306,7 +304,7 @@ namespace System.Collections.Immutable
         /// <returns>
         ///   <c>true</c> if the specified <see cref="object"/> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is IImmutableArray other && this.array == other.Array;
         }
@@ -333,8 +331,12 @@ namespace System.Collections.Immutable
         /// Covariant upcasts from this method may be reversed by calling the
         /// <see cref="ImmutableArray{T}.As{TOther}"/>  or <see cref="ImmutableArray{T}.CastArray{TOther}"/>method.
         /// </remarks>
-        public static ImmutableArray<T> CastUp<TDerived>(ImmutableArray<TDerived> items)
-            where TDerived : class, T
+        public static ImmutableArray<
+#nullable disable
+            T
+#nullable restore
+            > CastUp<TDerived>(ImmutableArray<TDerived> items)
+            where TDerived : class?, T
         {
             return new ImmutableArray<T>(items.array);
         }
@@ -344,7 +346,11 @@ namespace System.Collections.Immutable
         /// array to an array of type <typeparam name="TOther"/>.
         /// </summary>
         /// <exception cref="InvalidCastException">Thrown if the cast is illegal.</exception>
-        public ImmutableArray<TOther> CastArray<TOther>() where TOther : class
+        public ImmutableArray<
+#nullable disable
+            TOther
+#nullable restore
+            > CastArray<TOther>() where TOther : class?
         {
             return new ImmutableArray<TOther>((TOther[])(object)array!);
         }
@@ -364,9 +370,13 @@ namespace System.Collections.Immutable
         /// element types to their derived types. However, downcasting is only successful
         /// when it reverses a prior upcasting operation.
         /// </remarks>
-        public ImmutableArray<TOther> As<TOther>() where TOther : class
+        public ImmutableArray<
+#nullable disable
+            TOther
+#nullable restore
+            > As<TOther>() where TOther : class?
         {
-            return new ImmutableArray<TOther>((this.array as TOther[])!);
+            return new ImmutableArray<TOther>((this.array as TOther[]));
         }
 
         /// <summary>

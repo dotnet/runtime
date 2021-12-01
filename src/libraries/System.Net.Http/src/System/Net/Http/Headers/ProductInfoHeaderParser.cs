@@ -8,7 +8,7 @@ namespace System.Net.Http.Headers
 {
     // Don't derive from BaseHeaderParser since empty values are not supported. After a ' ' separator a valid value
     // must follow. Also leading separators are not allowed.
-    internal class ProductInfoHeaderParser : HttpHeaderParser
+    internal sealed class ProductInfoHeaderParser : HttpHeaderParser
     {
         // Unlike most other headers, User-Agent and Server use whitespace as separators
         private const string separator = " ";
@@ -21,7 +21,7 @@ namespace System.Net.Http.Headers
         {
         }
 
-        public override bool TryParseValue(string? value, object? storeValue, ref int index, [NotNullWhen(true)] out object? parsedValue)
+        public override bool TryParseValue([NotNullWhen(true)] string? value, object? storeValue, ref int index, [NotNullWhen(true)] out object? parsedValue)
         {
             parsedValue = null;
 

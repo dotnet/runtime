@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -82,7 +83,7 @@ namespace System.Data
                     return null;
                 }
             }
-
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)
@@ -105,7 +106,7 @@ namespace System.Data
         /// </summary>
         /// <param name="key">Value of the key to find</param>
         /// <returns>Index of the first match of input key</returns>
-        internal override int FindByKey(object key)
+        internal override int FindByKey(object? key)
         {
             Debug.Assert(base.Sort != null);
             Debug.Assert(!(!string.IsNullOrEmpty(base.Sort) && base.SortComparison != null),
@@ -128,7 +129,7 @@ namespace System.Data
                 Index.ComparisonBySelector<object, DataRow> compareDelg =
                     new Index.ComparisonBySelector<object, DataRow>(comparerKeyRow!);
 
-                List<object> keyList = new List<object>();
+                List<object?> keyList = new List<object?>();
                 keyList.Add(key);
                 Range range = FindRecords<object, DataRow>(compareDelg, keyList);
 
@@ -230,8 +231,6 @@ namespace System.Data
         #endregion
 
         #region IBindingList
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         /// <summary>
         /// Clears both expression-based and DataView's string-based sorting.
         /// </summary>
@@ -245,7 +244,7 @@ namespace System.Data
         /// Overrides IBindingList's SortProperty so that it returns null if expression based sort
         /// is used in the LinkDataView, otherwise it defers the result to DataView
         /// </summary>
-        PropertyDescriptor IBindingList.SortProperty
+        PropertyDescriptor? IBindingList.SortProperty
         {
             get
             {
@@ -282,7 +281,6 @@ namespace System.Data
                 return !(base.SortComparison == null && base.Sort.Length == 0);
             }
         }
-#nullable enable
         #endregion
     }
 }

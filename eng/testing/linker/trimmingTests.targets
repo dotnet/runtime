@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TrimmingTestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'trimmingTests'))</TrimmingTestDir>
     <TrimmingTestProjectsDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestDir)', 'projects'))</TrimmingTestProjectsDir>
-    <TestDotNetPath>$([MSBuild]::NormalizePath('$(DotNetRoot)', 'dotnet'))</TestDotNetPath>
     <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
   </PropertyGroup>
 
@@ -12,10 +11,6 @@
     <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles\Directory.Build.*">
       <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
     </TestSupportFiles>
-
-    <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
-    <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
   <Target Name="CreateTestDir"
@@ -30,20 +25,24 @@
       <TestConsoleAppSourceFiles>
         <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(PackageRID)'))</ProjectDir>
         <TestRuntimeIdentifier>$(PackageRID)</TestRuntimeIdentifier>
+        <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+        <TargetFramework Condition="'%(TestConsoleAppSourceFiles.TargetOS)' != ''">$(NetCoreAppCurrent)-%(TestConsoleAppSourceFiles.TargetOS)</TargetFramework>
       </TestConsoleAppSourceFiles>
-      <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier bellow -->
+      <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier below -->
       <TestConsoleAppSourceFiles>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
-        <TestCommand>$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
-        <TestExecutionDirectory>$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
-        <RuntimePackDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.%(TestRuntimeIdentifier)', '$(Configuration)'))</RuntimePackDirectory>
+        <TestCommand Condition="'$(TargetArchitecture)' != 'wasm' Or '$(TargetOs)' != 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
+        <TestCommand Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'AppBundle', 'run-v8.sh'))</TestCommand>
+        <TestExecutionDirectory Condition="'$(TargetArchitecture)' != 'wasm' Or '$(TargetOs)' != 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
+        <TestExecutionDirectory Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '%(TargetFramework)', '%(TestRuntimeIdentifier)', 'AppBundle'))</TestExecutionDirectory>
       </TestConsoleAppSourceFiles>
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(PackageRID)'))">
       <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')" Condition="!$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))">
         <ProjectCompileItems>%(Identity)</ProjectCompileItems>
       </TestConsoleApps>
+      <TestConsoleApps AdditionalProperties="MSBuildEnableWorkloadResolver=$(MSBuildEnableWorkloadResolver)" Condition="'$(MSBuildEnableWorkloadResolver)' != ''" />
     </ItemGroup>
   </Target>
 
@@ -57,19 +56,52 @@
       <_projectSourceFile>%(TestConsoleApps.ProjectCompileItems)</_projectSourceFile>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(AdditionalProjectReferences)' != ''">
+      <_additionalProjectReferenceTemp Include="$(AdditionalProjectReferences)" />
+      <_additionalProjectReference Include="&lt;ProjectReference Include=&quot;$(LibrariesProjectRoot)%(_additionalProjectReferenceTemp.Identity)\src\%(_additionalProjectReferenceTemp.Identity).csproj&quot; SkipUseReferenceAssembly=&quot;true&quot; /&gt;" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+      <_additionalProjectReferencesString>@(_additionalProjectReference, '%0a')</_additionalProjectReferencesString>
+    </PropertyGroup>
+
     <ItemGroup>
       <_additionalProjectSourceFiles Include="%(TestConsoleApps.AdditionalSourceFiles)" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_switchesAsItems Include="%(TestConsoleApps.DisabledFeatureSwitches)" Value="false" />
+      <_switchesAsItems Include="%(TestConsoleApps.EnabledFeatureSwitches)" Value="true" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_runtimeHostConfigurationOptionsString>@(_switchesAsItems->'&lt;RuntimeHostConfigurationOption Include=&quot;%(Identity)&quot; Value=&quot;%(Value)&quot; Trim=&quot;true&quot; /&gt;', '%0a    ')</_runtimeHostConfigurationOptionsString>
+    </PropertyGroup>
+
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
-                                                 .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
-                                                 .Replace('{RuntimePackDir}', '%(TestConsoleApps.RuntimePackDirectory)')
-                                                 .Replace('{TargetingPackDir}','$(MicrosoftNetCoreAppRefPackDir)')
+                                                 .Replace('{TargetFramework}', '%(TestConsoleApps.TargetFramework)')
+                                                 .Replace('{NetCoreAppMaximumVersion}', '$(NetCoreAppMaximumVersion)')
+                                                 .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
                                                  .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
-                                                 .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)'))"
+                                                 .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
+                                                 .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
+                                                 .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
+                                                 .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
+                                                 .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
+                                                 .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
+                                                 .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
+                                                 .Replace('{MonoTargetsTasksAssemblyPath}', '$(MonoTargetsTasksAssemblyPath)')
+                                                 .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
+                                                 .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)')
+                                                 .Replace('{ProductVersion}', '$(ProductVersion)')
+                                                 .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
+                                                 .Replace('{NetCoreAppCurrentVersion}', '$(NetCoreAppCurrentVersion)')
+                                                 .Replace('{MicrosoftNetCoreAppFrameworkName}', '$(MicrosoftNetCoreAppFrameworkName)')
+                                                 .Replace('{MicrosoftNetCoreAppRefPackDir}', '$(MicrosoftNetCoreAppRefPackDir)')
+                                                 .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile)"
           DestinationFolder="$(_projectDir)" />
@@ -79,17 +111,21 @@
     <Message Text="Generated $(_projectFile)" />
   </Target>
 
+  <Target Name="GetTrimmingProjectsToRestore"
+          DependsOnTargets="GenerateProjects"
+          Returns="@(TestConsoleApps)" />
+
   <Target Name="PublishTrimmedProjects"
           DependsOnTargets="GenerateProjects">
-    <PropertyGroup>
-      <TestPublishTrimmedCommand>"$(TestDotNetPath)"</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) build /t:PublishTrimmed</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /nr:false</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
-    </PropertyGroup>
 
-    <Exec Command="$(TestPublishTrimmedCommand) %(TestConsoleApps.AdditionalArgs)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+    <MSBuild Projects="@(TestConsoleApps)"
+             Targets="Restore"
+             Condition="'$(SkipTrimmingProjectsRestore)' != 'true'"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration)" />
+
+    <MSBuild Projects="@(TestConsoleApps)"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);BuildProjectReferences=false" />
   </Target>
 
   <Target Name="ExecuteApplications"
@@ -103,7 +139,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ExecutionExitCode" />
     </Exec>
 
-    <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems) The Command %(TestConsoleApps.TestCommand) return a non-success exit code." />
+    <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems) The Command %(TestConsoleApps.TestCommand) return a non-success exit code." ContinueOnError="ErrorAndContinue" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="ExecuteApplications" />

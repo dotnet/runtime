@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
-using System.Collections;
+using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Xml.Schema;
 
 namespace System.Xml
@@ -105,7 +106,7 @@ namespace System.Xml
             }
 
 
-            public override bool Equals(object? other)
+            public override bool Equals([NotNullWhen(true)] object? other)
             {
                 if (other is QName that)
                 {
@@ -119,7 +120,7 @@ namespace System.Xml
                 if (prefix.Length == 0)
                     return this.localname;
                 else
-                    return this.prefix + ":" + this.localname;
+                    return $"{this.prefix}:{this.localname}";
             }
 
             public static bool operator ==(QName a, QName b)
@@ -214,7 +215,7 @@ namespace System.Xml
             }
         }
 
-        private class NamespaceDecl
+        private sealed class NamespaceDecl
         {
             public string prefix;
             public string uri;
@@ -253,7 +254,7 @@ namespace System.Xml
             }
         }
 
-        private class NestedBinXml
+        private sealed class NestedBinXml
         {
             public SymbolTables symbolTables;
             public int docState;
@@ -334,17 +335,11 @@ namespace System.Xml
         private readonly bool _ignoreComments;
         private readonly DtdProcessing _dtdProcessing;
 
-        private XmlCharType _xmlCharType;
-        private readonly Encoding _unicode;
-
         // current version of the protocol
         private byte _version;
 
         public XmlSqlBinaryReader(Stream stream, byte[] data, int len, string baseUri, bool closeInput, XmlReaderSettings settings)
         {
-            _unicode = System.Text.Encoding.Unicode;
-            _xmlCharType = XmlCharType.Instance;
-
             _xnt = settings.NameTable!;
             if (_xnt == null)
             {
@@ -1784,7 +1779,7 @@ namespace System.Xml
             return base.ReadContentAsObject();
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             int origPos = _pos;
             try
@@ -1992,7 +1987,7 @@ namespace System.Xml
         {
             _symbolTables.symCount = _symbolTables.qnameCount = 1;
             Array.Clear(_symbolTables.symtable, 1, _symbolTables.symtable.Length - 1);
-            Array.Clear(_symbolTables.qnametable, 0, _symbolTables.qnametable.Length);
+            Array.Clear(_symbolTables.qnametable);
         }
 
         private void SkipExtn()
@@ -2352,28 +2347,21 @@ namespace System.Xml
         private string GetString(int pos, int cch)
         {
             Debug.Assert(pos >= 0 && cch >= 0);
-            if (checked(pos + (cch * 2)) > _end)
+            if (checked(pos + (cch * sizeof(char))) > _end)
                 throw new XmlException(SR.Xml_UnexpectedEOF1, (string[]?)null);
             if (cch == 0)
                 return string.Empty;
-            // GetStringUnaligned is _significantly_ faster than unicode.GetString()
-            // but since IA64 doesn't support unaligned reads, we can't do it if
-            // the address is not aligned properly.  Since the byte[] will be aligned,
-            // we can detect address alignment my just looking at the offset
-            if ((pos & 1) == 0)
-                return GetStringAligned(_data, pos, cch);
-            else
-                return _unicode.GetString(_data, pos, checked(cch * 2));
-        }
 
-        private unsafe string GetStringAligned(byte[] data, int offset, int cch)
-        {
-            Debug.Assert((offset & 1) == 0);
-            fixed (byte* pb = data)
+            return string.Create(cch, (_data, pos), static (dstChars, state) =>
             {
-                char* p = (char*)(pb + offset);
-                return new string(p, 0, cch);
-            }
+                // bitblt source bytes directly into the destination char span
+                // n.b. source buffer assumed to be well-formed UTF-16 machine endian
+
+                int cch = dstChars.Length;
+                ReadOnlySpan<byte> srcBytes = state._data.AsSpan(state.pos, checked(cch * sizeof(char)));
+                Span<byte> dstBytes = MemoryMarshal.AsBytes(dstChars);
+                srcBytes.CopyTo(dstBytes);
+            });
         }
 
         private string GetAttributeText(int i)
@@ -3526,64 +3514,55 @@ namespace System.Xml
             return XmlNodeType.Text;
         }
 
-        private unsafe XmlNodeType CheckText(bool attr)
+        private XmlNodeType CheckText(bool attr)
         {
             Debug.Assert(_checkCharacters, "this.checkCharacters");
-            // assert that size is an even number
-            Debug.Assert(0 == ((_pos - _tokDataPos) & 1), "Data size should not be odd");
             // grab local copy (perf)
-            XmlCharType xmlCharType = _xmlCharType;
 
-            fixed (byte* pb = _data)
+            ReadOnlySpan<byte> data = _data.AsSpan(_tokDataPos, _end - _tokDataPos);
+            Debug.Assert(data.Length % 2 == 0, "Data size should not be odd");
+
+            if (!attr)
             {
-                int end = _pos;
-                int pos = _tokDataPos;
-
-                if (!attr)
-                {
-                    // scan if this is whitespace
-                    while (true)
-                    {
-                        int posNext = pos + 2;
-                        if (posNext > end)
-                            return _xmlspacePreserve ? XmlNodeType.SignificantWhitespace : XmlNodeType.Whitespace;
-                        if (pb[pos + 1] != 0 || !xmlCharType.IsWhiteSpace((char)pb[pos]))
-                            break;
-                        pos = posNext;
-                    }
-                }
-
+                // scan if this is whitespace
                 while (true)
                 {
-                    char ch;
-                    while (true)
-                    {
-                        int posNext = pos + 2;
-                        if (posNext > end)
-                            return XmlNodeType.Text;
-                        ch = (char)(pb[pos] | ((int)(pb[pos + 1]) << 8));
-                        if (!_xmlCharType.IsCharData(ch))
-                            break;
-                        pos = posNext;
-                    }
+                    if (!BinaryPrimitives.TryReadUInt16LittleEndian(data, out ushort value))
+                        return _xmlspacePreserve ? XmlNodeType.SignificantWhitespace : XmlNodeType.Whitespace;
+                    if (value > byte.MaxValue || !XmlCharType.IsWhiteSpace((char)value))
+                        break;
+                    data = data.Slice(2); // we consumed one ANSI whitespace char
+                }
+            }
 
-                    if (!XmlCharType.IsHighSurrogate(ch))
+            while (true)
+            {
+                char ch;
+                while (true)
+                {
+                    if (!BinaryPrimitives.TryReadUInt16LittleEndian(data, out ushort value))
+                        return XmlNodeType.Text;
+                    data = data.Slice(2); // we consumed one char (possibly a high surrogate)
+                    ch = (char)value;
+                    if (!XmlCharType.IsCharData(ch))
+                        break;
+                }
+
+                if (!XmlCharType.IsHighSurrogate(ch))
+                {
+                    throw XmlConvert.CreateInvalidCharException(ch, '\0', ExceptionType.XmlException);
+                }
+                else
+                {
+                    if (!BinaryPrimitives.TryReadUInt16LittleEndian(data, out ushort lowSurr))
                     {
-                        throw XmlConvert.CreateInvalidCharException(ch, '\0', ExceptionType.XmlException);
+                        throw ThrowXmlException(SR.Xml_InvalidSurrogateMissingLowChar);
                     }
-                    else
+                    if (!XmlCharType.IsLowSurrogate((char)lowSurr))
                     {
-                        if ((pos + 4) > end)
-                        {
-                            throw ThrowXmlException(SR.Xml_InvalidSurrogateMissingLowChar);
-                        }
-                        char chNext = (char)(pb[pos + 2] | ((int)(pb[pos + 3]) << 8));
-                        if (!XmlCharType.IsLowSurrogate(chNext))
-                        {
-                            throw XmlConvert.CreateInvalidSurrogatePairException(ch, chNext);
-                        }
+                        throw XmlConvert.CreateInvalidSurrogatePairException(ch, (char)lowSurr);
                     }
-                    pos += 4;
+                    data = data.Slice(2); //consumed a low surrogate char
                 }
             }
         }
@@ -4069,7 +4048,7 @@ namespace System.Xml
                             if (qname.prefix.Length == 0)
                                 return qname.localname;
                             else
-                                return string.Concat(qname.prefix, ":", qname.localname);
+                                return $"{qname.prefix}:{qname.localname}";
                         }
 
                     default:
@@ -4229,7 +4208,7 @@ namespace System.Xml
             return xsst.ValueConverter;
         }
 
-        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver namespaceResolver)
+        private object ValueAs(BinXmlToken token, Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             object value;
             CheckValueTokenBounds();
@@ -4425,79 +4404,25 @@ namespace System.Xml
             return value;
         }
 
-        private short GetInt16(int pos)
-        {
-            byte[] data = _data;
-            return (short)(data[pos] | data[pos + 1] << 8);
-        }
+        private short GetInt16(int pos) => BinaryPrimitives.ReadInt16LittleEndian(_data.AsSpan(pos));
 
-        private ushort GetUInt16(int pos)
-        {
-            byte[] data = _data;
-            return (ushort)(data[pos] | data[pos + 1] << 8);
-        }
+        private ushort GetUInt16(int pos) => BinaryPrimitives.ReadUInt16LittleEndian(_data.AsSpan(pos));
 
-        private int GetInt32(int pos)
-        {
-            byte[] data = _data;
-            return (int)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-        }
+        private int GetInt32(int pos) => BinaryPrimitives.ReadInt32LittleEndian(_data.AsSpan(pos));
 
-        private uint GetUInt32(int pos)
-        {
-            byte[] data = _data;
-            return (uint)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-        }
+        private uint GetUInt32(int pos) => BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(pos));
 
-        private long GetInt64(int pos)
-        {
-            byte[] data = _data;
-            uint lo = (uint)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-            uint hi = (uint)(data[pos + 4] | data[pos + 5] << 8 | data[pos + 6] << 16 | data[pos + 7] << 24);
-            return (long)((ulong)hi) << 32 | lo;
-        }
+        private long GetInt64(int pos) => BinaryPrimitives.ReadInt64LittleEndian(_data.AsSpan(pos));
 
-        private ulong GetUInt64(int pos)
-        {
-            byte[] data = _data;
-            uint lo = (uint)(data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24);
-            uint hi = (uint)(data[pos + 4] | data[pos + 5] << 8 | data[pos + 6] << 16 | data[pos + 7] << 24);
-            return (ulong)((ulong)hi) << 32 | lo;
-        }
+        private ulong GetUInt64(int pos) => BinaryPrimitives.ReadUInt64LittleEndian(_data.AsSpan(pos));
 
-        private float GetSingle(int offset)
-        {
-            byte[] data = _data;
-            uint tmp = (uint)(data[offset]
-                            | data[offset + 1] << 8
-                            | data[offset + 2] << 16
-                            | data[offset + 3] << 24);
-            unsafe
-            {
-                return *((float*)&tmp);
-            }
-        }
+        private float GetSingle(int offset) => BinaryPrimitives.ReadSingleLittleEndian(_data.AsSpan(offset));
 
-        private double GetDouble(int offset)
-        {
-            uint lo = (uint)(_data[offset + 0]
-                            | _data[offset + 1] << 8
-                            | _data[offset + 2] << 16
-                            | _data[offset + 3] << 24);
-            uint hi = (uint)(_data[offset + 4]
-                            | _data[offset + 5] << 8
-                            | _data[offset + 6] << 16
-                            | _data[offset + 7] << 24);
-            ulong tmp = ((ulong)hi) << 32 | lo;
-            unsafe
-            {
-                return *((double*)&tmp);
-            }
-        }
+        private double GetDouble(int offset) => BinaryPrimitives.ReadDoubleLittleEndian(_data.AsSpan(offset));
 
         private Exception ThrowUnexpectedToken(BinXmlToken token)
         {
-            System.Diagnostics.Debug.WriteLine("Unhandled token: " + token.ToString());
+            System.Diagnostics.Debug.WriteLine($"Unhandled token: {token}");
             return ThrowXmlException(SR.XmlBinary_UnexpectedToken);
         }
 

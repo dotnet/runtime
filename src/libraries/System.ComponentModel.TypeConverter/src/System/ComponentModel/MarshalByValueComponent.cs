@@ -10,7 +10,8 @@ namespace System.ComponentModel
     /// Provides the base implementation for <see cref='System.ComponentModel.IComponent'/>,
     /// which is the base class for all components in Win Forms.
     /// </summary>
-    [Designer("System.Windows.Forms.Design.ComponentDocumentDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", typeof(IRootDesigner))]
+    [Designer("System.Windows.Forms.Design.ComponentDocumentDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+              "System.ComponentModel.Design.IRootDesigner, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     [DesignerCategory("Component")]
     [TypeConverter(typeof(ComponentConverter))]
     public class MarshalByValueComponent : IComponent, IServiceProvider
@@ -20,8 +21,8 @@ namespace System.ComponentModel
         /// </summary>
         private static readonly object s_eventDisposed = new object();
 
-        private ISite _site;
-        private EventHandlerList _events;
+        private ISite? _site;
+        private EventHandlerList? _events;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.MarshalByValueComponent'/> class.
@@ -35,7 +36,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Adds an event handler to listen to the Disposed event on the component.
         /// </summary>
-        public event EventHandler Disposed
+        public event EventHandler? Disposed
         {
             add => Events.AddHandler(s_eventDisposed, value);
             remove => Events.RemoveHandler(s_eventDisposed, value);
@@ -50,7 +51,7 @@ namespace System.ComponentModel
         /// Gets or sets the site of the component.
         /// </summary>
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public virtual ISite Site
+        public virtual ISite? Site
         {
             get => _site;
             set => _site = value;
@@ -129,7 +130,7 @@ namespace System.ComponentModel
                 lock (this)
                 {
                     _site?.Container?.Remove(this);
-                    ((EventHandler)_events?[s_eventDisposed])?.Invoke(this, EventArgs.Empty);
+                    ((EventHandler?)_events?[s_eventDisposed])?.Invoke(this, EventArgs.Empty);
                 }
             }
         }
@@ -138,12 +139,12 @@ namespace System.ComponentModel
         /// Gets the container for the component.
         /// </summary>
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public virtual IContainer Container => _site?.Container;
+        public virtual IContainer? Container => _site?.Container;
 
         /// <summary>
         /// Gets the implementer of the <see cref='System.IServiceProvider'/>.
         /// </summary>
-        public virtual object GetService(Type service) => _site?.GetService(service);
+        public virtual object? GetService(Type service) => _site?.GetService(service);
 
         /// <summary>
         /// Gets a value indicating whether the component is currently in design mode.
@@ -156,9 +157,9 @@ namespace System.ComponentModel
         /// overridden. For
         /// internal use only.
         /// </summary>
-        public override string ToString()
+        public override string? ToString()
         {
-            ISite s = _site;
+            ISite? s = _site;
 
             if (s != null)
                 return s.Name + " [" + GetType().FullName + "]";

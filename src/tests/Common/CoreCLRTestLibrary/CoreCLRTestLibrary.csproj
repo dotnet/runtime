@@ -5,17 +5,24 @@
     <CLRTestKind>BuildOnly</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateRunScript>false</GenerateRunScript>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <ProjectAssetsFile>$(TestSourceDir)Common\CoreCLRTestLibrary\obj\project.assets.json</ProjectAssetsFile>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Assertion.cs" />
+    <Compile Include="AssertExtensions.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="TestFramework.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="HostPolicyMock.cs" />
     <Compile Include="XPlatformUtils.cs" />
+    <Compile Include="CoreClrConfigurationDetection.cs" />
+    <Compile Include="OutOfProcessTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="$(XUnitVersion)" ExcludeAssets="runtime" />
+  </ItemGroup>
 </Project>

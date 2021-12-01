@@ -44,7 +44,7 @@ namespace System.Drawing
         /// Also avoid calling Remove(item). Instead call RemoveByHashCode(item)
         /// to make sure dead refs are removed.
         /// </summary>
-        internal class WeakRefCollection : IList
+        internal sealed class WeakRefCollection : IList
         {
             internal WeakRefCollection() : this(4) { }
 
@@ -99,7 +99,7 @@ namespace System.Drawing
             {
                 if (!(obj is WeakRefCollection other))
                 {
-                    return true;
+                    return false;
                 }
 
                 if (other == null || Count != other.Count)
@@ -109,9 +109,11 @@ namespace System.Drawing
 
                 for (int i = 0; i < Count; i++)
                 {
-                    if (InnerList[i] != other.InnerList[i])
+                    object? thisObj = InnerList[i];
+                    object? otherObj = other.InnerList[i];
+                    if (thisObj != otherObj)
                     {
-                        if (InnerList[i] == null || !InnerList[i]!.Equals(other.InnerList[i])) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                        if (thisObj is null || !thisObj.Equals(otherObj))
                         {
                             return false;
                         }
@@ -225,7 +227,7 @@ namespace System.Drawing
             /// added to a collection since Contains(WeakRef(item)) and Remove(WeakRef(item)) would not be able to
             /// identify the item.
             /// </summary>
-            internal class WeakRefObject
+            internal sealed class WeakRefObject
             {
                 private readonly int _hash;
                 private readonly WeakReference _weakHolder;

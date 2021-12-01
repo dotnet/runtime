@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -12,8 +11,8 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
-        private static extern int EcKeyCreateByKeyParameters(
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
+        private static partial int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
             string oid,
             byte[]? qx, int qxLength,
@@ -38,8 +37,8 @@ internal static partial class Interop
             return key;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
-        internal static extern SafeEcKeyHandle EcKeyCreateByExplicitParameters(
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
+        internal static partial SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,
             byte[]? qx, int qxLength,
             byte[]? qy, int qyLength,
@@ -98,8 +97,8 @@ internal static partial class Interop
         }
 
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_GetECKeyParameters(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_GetECKeyParameters(
             SafeEcKeyHandle key,
             bool includePrivate,
             out SafeBignumHandle qx_bn, out int x_cb,
@@ -167,8 +166,8 @@ internal static partial class Interop
             return parameters;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_GetECCurveParameters(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_GetECCurveParameters(
             SafeEcKeyHandle key,
             bool includePrivate,
             out ECCurve.ECCurveType curveType,
@@ -295,41 +294,6 @@ internal static partial class Interop
                 if (refAdded)
                     key.DangerousRelease();
             }
-        }
-
-        /// <summary>
-        /// Return the maximum value in the array; assumes non-negative values.
-        /// </summary>
-        private static int GetMax(int[] values)
-        {
-            int max = 0;
-
-            foreach (var i in values)
-            {
-                Debug.Assert(i >= 0);
-                if (i > max)
-                    max = i;
-            }
-
-            return max;
-        }
-
-        /// <summary>
-        /// Return the maximum value in the array; assumes non-negative values.
-        /// </summary>
-        private static int GetMax(int value1, int value2)
-        {
-            Debug.Assert(value1 >= 0);
-            Debug.Assert(value2 >= 0);
-            return (value1 > value2 ? value1 : value2);
-        }
-
-        /// <summary>
-        /// Return the maximum value in the array; assumes non-negative values.
-        /// </summary>
-        private static int GetMax(int value1, int value2, int value3)
-        {
-            return GetMax(GetMax(value1, value2), value3);
         }
     }
 }

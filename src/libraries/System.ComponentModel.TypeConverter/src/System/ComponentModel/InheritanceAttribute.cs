@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -75,7 +77,7 @@ namespace System.ComponentModel
         /// Override to test for equality.
         ///
         /// </summary>
-        public override bool Equals(object value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value == this)
             {
@@ -104,6 +106,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts this attribute to a string.
         /// </summary>
-        public override string ToString() => TypeDescriptor.GetConverter(typeof(InheritanceLevel)).ConvertToString(InheritanceLevel);
+        public override string ToString() => TypeDescriptor.GetConverterTrimUnsafe(typeof(InheritanceLevel)).ConvertToString(InheritanceLevel)!;
     }
 }

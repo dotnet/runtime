@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.DirectoryServices
 {
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SortOption
     {
-        private string _propertyName;
+        private string? _propertyName;
         private SortDirection _sortDirection;
 
         public SortOption()
@@ -22,7 +23,8 @@ namespace System.DirectoryServices
         }
 
         [DefaultValue(null)]
-        public string PropertyName
+        [DisallowNull]
+        public string? PropertyName
         {
             get => _propertyName;
             set => _propertyName = value ?? throw new ArgumentNullException(nameof(value));

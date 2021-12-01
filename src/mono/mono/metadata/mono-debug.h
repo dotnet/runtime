@@ -156,7 +156,7 @@ struct _MonoDebugVarInfo {
 
 MONO_API void mono_debug_init (MonoDebugFormat format);
 MONO_API void mono_debug_open_image_from_memory (MonoImage *image, const mono_byte *raw_contents, int size);
-MONO_API void mono_debug_cleanup (void);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_debug_cleanup (void);
 
 MONO_API void mono_debug_close_image (MonoImage *image);
 
@@ -191,7 +191,7 @@ mono_debug_add_delegate_trampoline (void* code, int size);
 MONO_API MonoDebugLocalsInfo*
 mono_debug_lookup_locals (MonoMethod *method);
 
-MonoDebugMethodAsyncInfo*
+MONO_API MonoDebugMethodAsyncInfo*
 mono_debug_lookup_method_async_debug_info (MonoMethod *method);
 
 MONO_API

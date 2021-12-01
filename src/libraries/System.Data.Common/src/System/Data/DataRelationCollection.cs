@@ -15,6 +15,8 @@ namespace System.Data
     /// </summary>
     [DefaultEvent(nameof(CollectionChanged))]
     [DefaultProperty("Table")]
+    [Editor("Microsoft.VSDesigner.Data.Design.DataRelationCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public abstract class DataRelationCollection : InternalDataCollectionBase
     {
         private DataRelation? _inTransition;

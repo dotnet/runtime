@@ -14,8 +14,6 @@ namespace System
 {
     public static partial class Environment
     {
-        private static Func<string, object>? s_directoryCreateDirectory;
-
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
             // Get the path for the SpecialFolder
@@ -37,20 +35,12 @@ namespace System
             {
                 return string.Empty;
             }
-            else
-            {
-                Debug.Assert(option == SpecialFolderOption.Create);
 
-                Func<string, object> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, static () =>
-                {
-                    Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true)!;
-                    MethodInfo mi = dirType.GetTypeInfo().GetDeclaredMethod("CreateDirectory")!;
-                    return mi.CreateDelegate<Func<string, object>>();
-                });
-                createDirectory(path);
+            Debug.Assert(option == SpecialFolderOption.Create);
 
-                return path;
-            }
+            Directory.CreateDirectory(path);
+
+            return path;
         }
 
         private static string GetFolderPathCoreWithoutValidation(SpecialFolder folder)

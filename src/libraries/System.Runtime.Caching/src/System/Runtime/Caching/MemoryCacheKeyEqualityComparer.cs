@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Runtime.Caching
 {
-    internal class MemoryCacheEqualityComparer : IEqualityComparer
+    internal sealed class MemoryCacheEqualityComparer : IEqualityComparer
     {
         bool IEqualityComparer.Equals(object x, object y)
         {

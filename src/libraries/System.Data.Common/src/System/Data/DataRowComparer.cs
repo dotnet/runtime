@@ -24,8 +24,8 @@ namespace System.Data
                 // same reference or (null, null) or (DBNull.Value, DBNull.Value)
                 return true;
             }
-            if (ReferenceEquals(a, null) || ReferenceEquals(a, DBNull.Value) ||
-                ReferenceEquals(b, null) || ReferenceEquals(b, DBNull.Value))
+            if (a is null || ReferenceEquals(a, DBNull.Value) ||
+                b is null || ReferenceEquals(b, DBNull.Value))
             {
                 // (null, non-null) or (null, DBNull.Value) or vice versa
                 return false;
@@ -40,8 +40,8 @@ namespace System.Data
                 // same reference or (null, null) or (DBNull.Value, DBNull.Value)
                 return true;
             }
-            if (ReferenceEquals(a, null) || ReferenceEquals(a, DBNull.Value) ||
-                ReferenceEquals(b, null) || ReferenceEquals(b, DBNull.Value))
+            if (a is null || ReferenceEquals(a, DBNull.Value) ||
+                b is null || ReferenceEquals(b, DBNull.Value))
             {
                 // (null, non-null) or (null, DBNull.Value) or vice versa
                 return false;
@@ -74,10 +74,8 @@ namespace System.Data
                         return CompareEquatableArray((int[])a, (int[])b);
                     case TypeCode.Int64:
                         return CompareEquatableArray((long[])a, (long[])b);
-#nullable disable
                     case TypeCode.String:
                         return CompareEquatableArray((string[])a, (string[])b);
-#nullable enable
                 }
             }
 
@@ -143,8 +141,8 @@ namespace System.Data
                 return true;
             }
 
-            if (ReferenceEquals(leftRow, null) ||
-                ReferenceEquals(rightRow, null))
+            if (leftRow is null ||
+                rightRow is null)
             {
                 return false;
             }

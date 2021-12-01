@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.PrinterSettings.cs
 //
@@ -364,13 +365,7 @@ namespace System.Drawing.Printing
             throw new NotImplementedException();
         }
 
-        public override string ToString()
-        {
-            return "Printer [PrinterSettings " + printer_name + " Copies=" + copies + " Collate=" + collate
-            + " Duplex=" + can_duplex + " FromPage=" + from_page + " LandscapeAngle=" + landscape_angle
-            + " MaximumCopies=" + maximum_copies + " OutputPort=" + " ToPage=" + to_page + "]";
-
-        }
+        public override string ToString() => $"Printer [PrinterSettings {printer_name} Copies={copies} Collate={collate} Duplex={can_duplex} FromPage={from_page} LandscapeAngle={landscape_angle} MaximumCopies={maximum_copies} OutputPort= ToPage={to_page}]";
 
         // Public subclasses
         #region Public Subclasses

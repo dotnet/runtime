@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 
@@ -10,7 +9,7 @@ namespace System.Xml
     /// <summary>
     /// Manages a stack of bits.  Exposes push, pop, and peek operations.
     /// </summary>
-    internal class BitStack
+    internal sealed class BitStack
     {
         private uint[]? _bitStack;
         private int _stackPos;

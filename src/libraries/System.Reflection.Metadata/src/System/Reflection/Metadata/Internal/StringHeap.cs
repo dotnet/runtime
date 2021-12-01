@@ -113,7 +113,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             for (int i = 0; i < s_virtualValues!.Length; i++)
             {
-                Debug.Assert(s_virtualValues[i] != null, "Missing virtual value for StringHandle.VirtualIndex." + (StringHandle.VirtualIndex)i);
+                Debug.Assert(s_virtualValues[i] != null, $"Missing virtual value for StringHandle.VirtualIndex.{(StringHandle.VirtualIndex)i}");
             }
         }
 

@@ -54,44 +54,48 @@ namespace System.Drawing.Internal
             Debug.Assert(g != null, "null Graphics object.");
 
             WindowsRegion? wr = null;
-            float[]? elements = null;
 
-            Region? clipRgn = null;
-            Matrix? worldTransf = null;
+            PointF offset = default;
 
-            if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0 || (properties & ApplyGraphicsProperties.Clipping) != 0)
+            if (properties != ApplyGraphicsProperties.None)
             {
+                Region? clip = null;
+
+#if NETCOREAPP3_1_OR_GREATER
+                if (properties.HasFlag(ApplyGraphicsProperties.Clipping))
+                {
+                    g.GetContextInfo(out offset, out clip);
+                }
+                else
+                {
+                    g.GetContextInfo(out offset);
+                }
+#else
+                Matrix? worldTransf = null;
                 if (g.GetContextInfo() is object[] data && data.Length == 2)
                 {
-                    clipRgn = data[0] as Region;
+                    if (properties.HasFlag(ApplyGraphicsProperties.Clipping))
+                    {
+                        clip = data[0] as Region;
+                    }
                     worldTransf = data[1] as Matrix;
-                }
-
-                if (worldTransf != null)
-                {
-                    if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0)
+                    if (worldTransf != null)
                     {
-                        elements = worldTransf.Elements;
+                        offset = worldTransf.Offset;
                     }
-
-                    worldTransf.Dispose();
                 }
+#endif
 
-                if (clipRgn != null)
+                if (clip is not null)
                 {
-                    if ((properties & ApplyGraphicsProperties.Clipping) != 0)
-                    {
-                        // We have to create the WindowsRegion and dipose the Region object before locking the Graphics object,
-                        // in case of an unlikely exception before releasing the WindowsRegion, the finalizer will do it for us.
-                        // (no try-finally block since this method is used frequently - perf).
-                        // If the Graphics.Clip has not been set (Region.IsInfinite) we don't need to apply it to the DC.
-                        if (!clipRgn.IsInfinite(g))
-                        {
-                            wr = WindowsRegion.FromRegion(clipRgn, g); // WindowsRegion will take ownership of the hRegion.
-                        }
-                    }
+                    // We have to create the WindowsRegion and dipose the Region object before locking the Graphics object,
+                    // in case of an unlikely exception before releasing the WindowsRegion, the finalizer will do it for us.
+                    // (no try-finally block since this method is used frequently - perf).
 
-                    clipRgn.Dispose(); // Disposing the Region object doesn't destroy the hRegion.
+                    // If clipping has not been set (Region.IsInfinite) GetContextInfo will return a null Region.
+
+                    wr = WindowsRegion.FromRegion(clip, g); // WindowsRegion will take ownership of the hRegion.
+                    clip.Dispose(); // Disposing the Region object doesn't destroy the hRegion.
                 }
             }
 
@@ -99,7 +103,7 @@ namespace System.Drawing.Internal
             wg._graphics = g;
 
             // Apply transform and clip
-            if (wr != null)
+            if (wr is not null)
             {
                 using (wr)
                 {
@@ -110,10 +114,10 @@ namespace System.Drawing.Internal
                 }
             }
 
-            if (elements != null)
+            if (offset != default)
             {
                 // elements (XFORM) = [eM11, eM12, eM21, eM22, eDx, eDy], eDx/eDy specify the translation offset.
-                wg.DeviceContext.TranslateTransform((int)elements[4], (int)elements[5]);
+                wg.DeviceContext.TranslateTransform((int)offset.X, (int)offset.Y);
             }
 
             return wg;

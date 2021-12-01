@@ -249,20 +249,16 @@ namespace System.IO
                 ReadAsync(array.Array!, array.Offset, array.Count) :
                 Task<int>.Factory.StartNew(static state =>
                 {
-                    var t = (Tuple<TextReader, Memory<char>>)state!;
+                    var t = (TupleSlim<TextReader, Memory<char>>)state!;
                     return t.Item1.Read(t.Item2.Span);
-                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+                }, new TupleSlim<TextReader, Memory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
-        internal virtual ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken)
-        {
-            var tuple = new Tuple<TextReader, Memory<char>>(this, buffer);
-            return new ValueTask<int>(Task<int>.Factory.StartNew(static state =>
+        internal virtual ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken) =>
+            new ValueTask<int>(Task<int>.Factory.StartNew(static state =>
             {
-                var t = (Tuple<TextReader, Memory<char>>)state!;
+                var t = (TupleSlim<TextReader, Memory<char>>)state!;
                 return t.Item1.Read(t.Item2.Span);
-            },
-            tuple, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
-        }
+            }, new TupleSlim<TextReader, Memory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
@@ -287,9 +283,9 @@ namespace System.IO
                 ReadBlockAsync(array.Array!, array.Offset, array.Count) :
                 Task<int>.Factory.StartNew(static state =>
                 {
-                    var t = (Tuple<TextReader, Memory<char>>)state!;
+                    var t = (TupleSlim<TextReader, Memory<char>>)state!;
                     return t.Item1.ReadBlock(t.Item2.Span);
-                }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+                }, new TupleSlim<TextReader, Memory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
         internal async ValueTask<int> ReadBlockAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken)
         {

@@ -235,7 +235,7 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 	if (type->has_cmods) {
 		mono_custom_modifiers_get_desc (res, type, include_namespace);
 	}
-	if (type->byref)
+	if (m_type_is_byref (type))
 		g_string_append_c (res, '&');
 }
 
@@ -470,6 +470,13 @@ mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method)
 	char *sig;
 	gboolean name_match;
 
+	if (desc->name_glob && !strcmp (desc->name, "*"))
+		return TRUE;
+#if 0
+	/* FIXME: implement g_pattern_match_simple in eglib */
+	if (desc->name_glob && g_pattern_match_simple (desc->name, method->name))
+		return TRUE;
+#endif
 	name_match = strcmp (desc->name, method->name) == 0;
 	if (!name_match)
 		return FALSE;
@@ -1203,7 +1210,7 @@ mono_class_describe_statics (MonoClass* klass)
 	MonoClassField *field;
 	MonoClass *p;
 	const char *field_ptr;
-	MonoVTable *vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 	const char *addr;
 
 	if (!vtable || !is_ok (error)) {

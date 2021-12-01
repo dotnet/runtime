@@ -630,4 +630,5 @@ CannotSealType : Type 'System.Xml.Schema.XmlSchemaGroupBase' is effectively (has
 MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
-Total Issues: 617
+TypesMustExist : Type 'System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>' does not exist in the implementation but it does exist in the contract.
+Total Issues: 618

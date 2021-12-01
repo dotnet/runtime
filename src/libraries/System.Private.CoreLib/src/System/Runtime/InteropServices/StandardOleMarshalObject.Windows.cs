@@ -21,6 +21,7 @@ namespace System.Runtime.InteropServices
 
         private IntPtr GetStdMarshaler(ref Guid riid, int dwDestContext, int mshlflags)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             IntPtr pUnknown = Marshal.GetIUnknownForObject(this);
             if (pUnknown != IntPtr.Zero)
             {
@@ -30,7 +31,7 @@ namespace System.Runtime.InteropServices
                     int hr = Interop.Ole32.CoGetStandardMarshal(ref riid, pUnknown, dwDestContext, IntPtr.Zero, mshlflags, out pStandardMarshal);
                     if (hr == HResults.S_OK)
                     {
-                        Debug.Assert(pStandardMarshal != IntPtr.Zero, "Failed to get marshaler for interface '" + riid.ToString() + "', CoGetStandardMarshal returned S_OK");
+                        Debug.Assert(pStandardMarshal != IntPtr.Zero, $"Failed to get marshaler for interface '{riid}', CoGetStandardMarshal returned S_OK");
                         return pStandardMarshal;
                     }
                 }
@@ -69,6 +70,7 @@ namespace System.Runtime.InteropServices
             }
             finally
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.Release(pStandardMarshal);
             }
         }
@@ -91,6 +93,7 @@ namespace System.Runtime.InteropServices
             }
             finally
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.Release(pStandardMarshal);
             }
         }

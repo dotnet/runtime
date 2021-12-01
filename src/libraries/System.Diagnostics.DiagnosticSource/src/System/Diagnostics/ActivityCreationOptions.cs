@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
@@ -10,6 +11,9 @@ namespace System.Diagnostics
     /// </summary>
     public readonly struct ActivityCreationOptions<T>
     {
+        private readonly ActivityTagsCollection? _samplerTags;
+        private readonly ActivityContext _context;
+
         /// <summary>
         /// Construct a new <see cref="ActivityCreationOptions{T}"/> object.
         /// </summary>
@@ -19,7 +23,8 @@ namespace System.Diagnostics
         /// <param name="kind"><see cref="ActivityKind"/> to create the Activity object with.</param>
         /// <param name="tags">Key-value pairs list for the tags to create the Activity object with.<see cref="ActivityContext"/></param>
         /// <param name="links"><see cref="ActivityLink"/> list to create the Activity object with.</param>
-        internal ActivityCreationOptions(ActivitySource source, string name, T parent, ActivityKind kind, IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links)
+        /// <param name="idFormat">The default Id format to use.</param>
+        internal ActivityCreationOptions(ActivitySource source, string name, T parent, ActivityKind kind, IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, ActivityIdFormat idFormat)
         {
             Source = source;
             Name = name;
@@ -27,6 +32,50 @@ namespace System.Diagnostics
             Parent = parent;
             Tags = tags;
             Links = links;
+            IdFormat = idFormat;
+
+            if (IdFormat == ActivityIdFormat.Unknown && Activity.ForceDefaultIdFormat)
+            {
+                IdFormat = Activity.DefaultIdFormat;
+            }
+
+            _samplerTags = null;
+
+            if (parent is ActivityContext ac && ac != default)
+            {
+                _context = ac;
+                if (IdFormat == ActivityIdFormat.Unknown)
+                {
+                    IdFormat = ActivityIdFormat.W3C;
+                }
+            }
+            else if (parent is string p && p != null)
+            {
+                if (IdFormat != ActivityIdFormat.Hierarchical)
+                {
+                    if (ActivityContext.TryParse(p, null, out _context))
+                    {
+                        IdFormat = ActivityIdFormat.W3C;
+                    }
+
+                    if (IdFormat == ActivityIdFormat.Unknown)
+                    {
+                        IdFormat =ActivityIdFormat.Hierarchical;
+                    }
+                }
+                else
+                {
+                    _context = default;
+                }
+            }
+            else
+            {
+                _context = default;
+                if (IdFormat == ActivityIdFormat.Unknown)
+                {
+                    IdFormat = Activity.Current != null ? Activity.Current.IdFormat : Activity.DefaultIdFormat;
+                }
+            }
         }
 
         /// <summary>
@@ -58,5 +107,52 @@ namespace System.Diagnostics
         /// Retrieve the list of <see cref="ActivityLink"/> which requested to create the Activity object with.
         /// </summary>
         public IEnumerable<ActivityLink>? Links { get; }
+
+        public ActivityTagsCollection SamplingTags
+        {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
+            get
+            {
+                if (_samplerTags == null)
+                {
+                    // Because the struct is readonly, we cannot directly assign _samplerTags. We have to workaround it by calling Unsafe.AsRef
+                    Unsafe.AsRef(in _samplerTags) = new ActivityTagsCollection();
+                }
+
+                return _samplerTags!;
+            }
+        }
+
+        public ActivityTraceId TraceId
+        {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
+            get
+            {
+                if (Parent is ActivityContext && IdFormat == ActivityIdFormat.W3C && _context == default)
+                {
+                    Func<ActivityTraceId>? traceIdGenerator = Activity.TraceIdGenerator;
+                    ActivityTraceId id = traceIdGenerator == null ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+
+                    // Because the struct is readonly, we cannot directly assign _context. We have to workaround it by calling Unsafe.AsRef
+                    Unsafe.AsRef(in _context) = new ActivityContext(id, default, ActivityTraceFlags.None);
+                }
+
+                return _context.TraceId;
+            }
+        }
+
+        /// <summary>
+        /// Retrieve Id format of to use for the Activity we may create.
+        /// </summary>
+        internal ActivityIdFormat IdFormat { get; }
+
+        // Helper to access the sampling tags. The SamplingTags Getter can allocate when not necessary.
+        internal ActivityTagsCollection? GetSamplingTags() => _samplerTags;
+
+        internal ActivityContext GetContext() => _context;
     }
 }

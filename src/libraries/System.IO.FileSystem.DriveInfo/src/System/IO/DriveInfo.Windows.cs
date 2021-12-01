@@ -139,7 +139,7 @@ namespace System.IO
 
                 return new string(volumeName);
             }
-            [MinimumOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 uint oldMode;
@@ -149,7 +149,7 @@ namespace System.IO
                     bool r = Interop.Kernel32.SetVolumeLabel(Name, value);
                     if (!r)
                     {
-                        int errorCode = Marshal.GetLastWin32Error();
+                        int errorCode = Marshal.GetLastPInvokeError();
                         // Provide better message
                         if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
                             throw new UnauthorizedAccessException(SR.InvalidOperation_SetVolumeLabelFailed);

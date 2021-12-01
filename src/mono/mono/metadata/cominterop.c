@@ -45,8 +45,11 @@
 #include <errno.h>
 #include <mono/utils/w32api.h>
 #if defined (HOST_WIN32)
+MONO_PRAGMA_WARNING_PUSH()
+MONO_PRAGMA_WARNING_DISABLE (4115) // warning C4115: 'IRpcStubBuffer': named type definition in parentheses
 #include <oleauto.h>
-#include "mono/metadata/cominterop-win32-internals.h"
+MONO_PRAGMA_WARNING_POP()
+#include <mono/utils/w32subset.h>
 #endif
 #include "icall-decl.h"
 #include "icall-signatures.h"
@@ -92,8 +95,14 @@ Code shared between the DISABLE_COM and !DISABLE_COM
 // The name of func must be linkable for AOT, for example g_free does not work (monoeg_g_free instead),
 // nor does the C++ overload fmod (mono_fmod instead). These functions therefore
 // must be extern "C".
-#define register_icall(func, sig, save) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (save), #func))
+#ifndef DISABLE_JIT
+#define register_icall(func, sig, no_wrapper) \
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), #func))
+#else
+/* No need for the name/C symbol */
+#define register_icall(func, sig, no_wrapper) \
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (no_wrapper), NULL))
+#endif
 
 mono_bstr
 mono_string_to_bstr_impl (MonoStringHandle s, MonoError *error)
@@ -147,7 +156,6 @@ GENERATE_GET_CLASS_WITH_CACHE (com_object, "System", "__ComObject")
 GENERATE_GET_CLASS_WITH_CACHE (variant,    "System", "Variant")
 
 static GENERATE_GET_CLASS_WITH_CACHE (interface_type_attribute, "System.Runtime.InteropServices", "InterfaceTypeAttribute")
-static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, "System.Runtime.InteropServices", "GuidAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (com_visible_attribute, "System.Runtime.InteropServices", "ComVisibleAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (com_default_interface_attribute, "System.Runtime.InteropServices", "ComDefaultInterfaceAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (class_interface_attribute, "System.Runtime.InteropServices", "ClassInterfaceAttribute")
@@ -294,7 +302,7 @@ cominterop_method_signature (MonoMethod* method)
 		// last arg is return type
 		if (!MONO_TYPE_IS_VOID (sig->ret)) {
 			res->params[param_count-1] = mono_metadata_type_dup (image, sig->ret);
-			res->params[param_count-1]->byref = 1;
+			res->params[param_count-1]->byref__ = 1;
 			res->params[param_count-1]->attrs = PARAM_ATTRIBUTE_OUT;
 		}
 
@@ -350,7 +358,6 @@ cominterop_object_is_rcw_handle (MonoObjectHandle obj, MonoRealProxyHandle *real
 
 	return  !MONO_HANDLE_IS_NULL (obj)
 		&& (klass = mono_handle_class (obj))
-		&& mono_class_is_transparent_proxy (klass)
 		&& !MONO_HANDLE_IS_NULL (*real_proxy = MONO_HANDLE_NEW_GET (MonoRealProxy, MONO_HANDLE_CAST (MonoTransparentProxy, obj), rp))
 		&& (klass = mono_handle_class (*real_proxy))
 		&& klass == mono_class_get_interop_proxy_class ();
@@ -484,30 +491,13 @@ cominterop_get_com_slot_for_method (MonoMethod* method, MonoError* error)
 	return slot + cominterop_get_com_slot_begin (ic);
 }
 
-static void
-cominterop_mono_string_to_guid (MonoString* string, guint8 *guid);
-
 static gboolean
 cominterop_class_guid (MonoClass* klass, guint8* guid)
 {
 	ERROR_DECL (error);
-	MonoCustomAttrInfo *cinfo;
-
-	cinfo = mono_custom_attrs_from_class_checked (klass, error);
-	mono_error_assert_ok (error);
-	if (cinfo) {
-		MonoReflectionGuidAttribute *attr = (MonoReflectionGuidAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_guid_attribute_class (), error);
-		mono_error_assert_ok (error); /*FIXME proper error handling*/
-
-		if (!attr)
-			return FALSE;
-		if (!cinfo->cached)
-			mono_custom_attrs_free (cinfo);
-
-		cominterop_mono_string_to_guid (attr->guid, guid);
-		return TRUE;
-	}
-	return FALSE;
+	mono_metadata_get_class_guid (klass, guid, error);
+	mono_error_assert_ok (error); /*FIXME proper error handling*/
+	return TRUE;
 }
 
 static gboolean
@@ -549,8 +539,8 @@ cominterop_com_visible (MonoClass* klass)
 
 }
 
-static gboolean
-cominterop_method_com_visible (MonoMethod *method)
+gboolean
+mono_cominterop_method_com_visible (MonoMethod *method)
 {
 	ERROR_DECL (error);
 	MonoCustomAttrInfo *cinfo;
@@ -718,12 +708,6 @@ mono_cominterop_init (void)
 #ifndef DISABLE_COM
 
 void
-mono_cominterop_cleanup (void)
-{
-	mono_os_mutex_destroy (&cominterop_mutex);
-}
-
-void
 mono_mb_emit_cominterop_get_function_pointer (MonoMethodBuilder *mb, MonoMethod *method)
 {
 #ifndef DISABLE_JIT
@@ -805,17 +789,7 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 
 		MONO_STATIC_POINTER_INIT_END (MonoMethod, com_interop_proxy_get_proxy)
 
-#ifndef DISABLE_REMOTING
-		MONO_STATIC_POINTER_INIT (MonoMethod, get_transparent_proxy)
-
-			ERROR_DECL (error);
-			get_transparent_proxy = mono_class_get_method_from_name_checked (mono_defaults.real_proxy_class, "GetTransparentProxy", 0, 0, error);
-			mono_error_assert_ok (error);
-
-		MONO_STATIC_POINTER_INIT_END (MonoMethod, get_transparent_proxy)
-#else
 		static MonoMethod* const get_transparent_proxy = NULL; // FIXME?
-#endif
 
 		mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_get_interop_proxy_class ()));
 
@@ -1038,7 +1012,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 		}
 	}
 
-	mono_marshal_emit_native_wrapper (m_class_get_image (method->klass), mb_native, sig_native, piinfo, mspecs, piinfo->addr, FALSE, TRUE, FALSE, FALSE);
+	mono_marshal_emit_native_wrapper (m_class_get_image (method->klass), mb_native, sig_native, piinfo, mspecs, piinfo->addr, EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS);
 
 	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
 
@@ -1363,17 +1337,17 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 		mono_mb_emit_stloc (mb, conv_arg);	
 
 		/* we dont need any conversions for out parameters */
-		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
+		if (m_type_is_byref (t) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
 
 		mono_mb_emit_ldarg (mb, argnum);	
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		/* if null just break, conv arg was already inited to 0 */
 		pos_null = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 
 		if (klass && klass != mono_defaults.object_class) {
@@ -1395,7 +1369,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	}
 
 	case MARSHAL_ACTION_CONV_OUT: {
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
+		if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			int ccw_obj;
 			guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
 			ccw_obj = mono_mb_add_local (mb, mono_get_object_type ());
@@ -1446,7 +1420,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 		break;
 	}
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -1515,12 +1489,12 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 			break;
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		pos_null = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_icon (mb, TRUE);
 		mono_mb_emit_icall (mb, cominterop_get_ccw_object);
@@ -1530,7 +1504,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_managed_call (mb, get_object_for_iunknown, NULL);
 
@@ -1553,7 +1527,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
-		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT) {
+		if (m_type_is_byref (t) && t->attrs & PARAM_ATTRIBUTE_OUT) {
 			guint32 pos_null = 0;
 
 			mono_mb_emit_ldarg (mb, argnum);
@@ -1815,7 +1789,7 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionTypeHandle ref_type, MonoErr
 	 * is called by the corresponding real proxy to create the real RCW.
 	 * Constructor does not need to be called. Will be called later.
 	 */
-	MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 	return_val_if_nok (error, NULL_HANDLE);
 	return mono_object_new_alloc_by_vtable (vtable, error);
 }
@@ -1855,48 +1829,6 @@ ves_icall_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj, MonoError
 	mono_System_ComObject_ReleaseInterfaces (obj);
 }
 
-static gboolean    
-cominterop_rcw_finalizer (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoGCHandle gchandle = NULL;
-
-	gchandle = (MonoGCHandle)value;
-	if (gchandle) {
-		MonoComInteropProxy* proxy = (MonoComInteropProxy*)mono_gchandle_get_target_internal (gchandle);
-
-		if (proxy) {
-			if (proxy->com_object->itf_hash) {
-				g_hash_table_foreach_remove (proxy->com_object->itf_hash, cominterop_rcw_interface_finalizer, NULL);
-				g_hash_table_destroy (proxy->com_object->itf_hash);
-			}
-			mono_IUnknown_Release (proxy->com_object->iunknown);
-			proxy->com_object->iunknown = NULL;
-			proxy->com_object->itf_hash = NULL;
-		}
-		
-		mono_gchandle_free_internal (gchandle);
-	}
-
-	return TRUE;
-}
-
-void
-mono_cominterop_release_all_rcws (void)
-{
-#ifndef DISABLE_COM
-	if (!rcw_hash)
-		return;
-
-	mono_cominterop_lock ();
-
-	g_hash_table_foreach_remove (rcw_hash, cominterop_rcw_finalizer, NULL);
-	g_hash_table_destroy (rcw_hash);
-	rcw_hash = NULL;
-
-	mono_cominterop_unlock ();
-#endif
-}
-
 gpointer
 ves_icall_System_ComObject_GetInterfaceInternal (MonoComObjectHandle obj, MonoReflectionTypeHandle ref_type, MonoBoolean throw_exception, MonoError *error)
 {
@@ -1912,53 +1844,6 @@ ves_icall_System_ComObject_GetInterfaceInternal (MonoComObjectHandle obj, MonoRe
 	return itf;
 #else
 	g_assert_not_reached ();
-#endif
-}
-
-void
-ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxy *volatile* proxy_handle)
-{
-#ifndef DISABLE_COM
-	MonoGCHandle gchandle = mono_gchandle_new_weakref_internal ((MonoObject*)*proxy_handle, FALSE);
-
-	mono_cominterop_lock ();
-	if (!rcw_hash)
-		rcw_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	g_hash_table_insert (rcw_hash, pUnk, gchandle);
-	mono_cominterop_unlock ();
-#else
-	g_assert_not_reached ();
-#endif
-}
-
-void
-ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoComInteropProxy *volatile* proxy_handle)
-{
-	*proxy_handle = NULL;
-
-#ifndef DISABLE_COM
-
-	MonoGCHandle gchandle = NULL;
-
-	mono_cominterop_lock ();
-	if (rcw_hash)
-		gchandle = (MonoGCHandle)g_hash_table_lookup (rcw_hash, pUnk);
-	mono_cominterop_unlock ();
-	if (!gchandle)
-		return;
-
-	MonoComInteropProxy *proxy = (MonoComInteropProxy*)mono_gchandle_get_target_internal (gchandle);
-	// proxy_handle is assumed to be on the stack, so no barrier is needed.
-	*proxy_handle = proxy;
-	/* proxy is null means we need to free up old RCW */
-	if (!proxy) {
-		mono_gchandle_free_internal (gchandle);
-		g_hash_table_remove (rcw_hash, pUnk);
-	}
-
-#else
-	g_assert_not_reached ();
-
 #endif
 }
 
@@ -2154,7 +2039,7 @@ cominterop_class_method_is_visible (MonoMethod *method)
 	if (flags & METHOD_ATTRIBUTE_RT_SPECIAL_NAME)
 		return FALSE;
 
-	if (!cominterop_method_com_visible (method))
+	if (!mono_cominterop_method_com_visible (method))
 		return FALSE;
 
 	/* if the method is an override, ignore it and use the original definition */
@@ -2672,7 +2557,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	/* handler code */
 	main_clause->handler_offset = mono_mb_get_label (mb);
 	
-	if (!preserve_sig || (sig->ret && !sig->ret->byref && (sig->ret->type == MONO_TYPE_U4 || sig->ret->type == MONO_TYPE_I4))) {
+	if (!preserve_sig || (sig->ret && !m_type_is_byref (sig->ret) && (sig->ret->type == MONO_TYPE_U4 || sig->ret->type == MONO_TYPE_I4))) {
 		mono_mb_emit_managed_call (mb, get_hr_for_exception, NULL);
 		mono_mb_emit_stloc (mb, hr);
 	}
@@ -2708,22 +2593,6 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	g_free (mspecs);
 
 	return res;
-}
-
-/**
- * cominterop_mono_string_to_guid:
- *
- * Converts the standard string representation of a GUID 
- * to a 16 byte Microsoft GUID.
- */
-static void
-cominterop_mono_string_to_guid (MonoString* string, guint8 *guid) {
-	gunichar2 * chars = mono_string_chars_internal (string);
-	int i = 0;
-	static const guint8 indexes[16] = {7, 5, 3, 1, 12, 10, 17, 15, 20, 22, 25, 27, 29, 31, 33, 35};
-
-	for (i = 0; i < sizeof(indexes); i++)
-		guid [i] = g_unichar_xdigit_value (chars [indexes [i]]) + (g_unichar_xdigit_value (chars [indexes [i] - 1]) << 4);
 }
 
 static gboolean
@@ -2856,7 +2725,7 @@ cominterop_ccw_queryinterface_impl (MonoCCWInterface* ccwe, const guint8* riid, 
 		*ppv = NULL;
 
 	if (!mono_domain_get ())
-		mono_thread_attach (mono_get_root_domain ());
+		mono_thread_attach_external_native_thread (mono_get_root_domain (), FALSE);
 
 	/* handle IUnknown special */
 	if (cominterop_class_guid_equal (riid, mono_class_get_iunknown_class ())) {
@@ -2987,7 +2856,7 @@ cominterop_ccw_get_ids_of_names_impl (MonoCCWInterface* ccwe, gpointer riid,
 	klass = mono_object_class (object);
 
 	if (!mono_domain_get ())
-		 mono_thread_attach (mono_get_root_domain ());
+		mono_thread_attach_external_native_thread (mono_get_root_domain (), FALSE);
 
 	for (i=0; i < cNames; i++) {
 		methodname = mono_unicode_to_external (rgszNames[i]);
@@ -3182,38 +3051,41 @@ mono_bstr_set_length (gunichar2 *bstr, int slen)
 	*((guint32 *)bstr - 1) = slen * sizeof (gunichar2);
 }
 
+static mono_bstr
+default_ptr_to_bstr (const gunichar2* ptr, int slen)
+{
+	// In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform.
+	// Presumably this is due to the BStr documentation page, which indicates that behavior and then directs you to call
+	// SysAllocString on Windows to handle the allocation for you. Unfortunately, this is not actually how it works:
+	// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
+	// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
+	// netcore moving forward.
+	mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
+	if (s == NULL)
+		return NULL;
+
+	mono_bstr_set_length (s, slen);
+	if (ptr)
+		memcpy (s, ptr, slen * sizeof (gunichar2));
+	s [slen] = 0;
+	return s;
+}
+
 /* PTR can be NULL */
 mono_bstr
 mono_ptr_to_bstr (const gunichar2* ptr, int slen)
 {
 #ifdef HOST_WIN32
+#if HAVE_API_SUPPORT_WIN32_BSTR
 	return SysAllocStringLen (ptr, slen);
+#else
+	return default_ptr_to_bstr (ptr, slen);
+#endif
 #else
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
-		// In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform.
-		// Presumably this is due to the BStr documentation page, which indicates that behavior and then directs you to call
-		// SysAllocString on Windows to handle the allocation for you. Unfortunately, this is not actually how it works:
-		// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
-		// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
-		// netcore moving forward.
-#ifdef ENABLE_NETCORE
-		mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
-		if (s == NULL)
-			return NULL;
-#else
-		/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
-		guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + sizeof (guint32));
-		if (ret == NULL)
-			return NULL;
-		mono_bstr const s = (mono_bstr)(ret + 1);
-#endif
-		mono_bstr_set_length (s, slen);
-		if (ptr)
-			memcpy (s, ptr, slen * sizeof (gunichar2));
-		s [slen] = 0;
-		return s;
+		return default_ptr_to_bstr (ptr, slen);
 #ifndef DISABLE_COM
 	}
 	else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
@@ -3250,18 +3122,22 @@ mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error)
 	if (!bstr)
 		return NULL_HANDLE_STRING;
 #ifdef HOST_WIN32
-	return mono_string_new_utf16_handle (mono_domain_get (), bstr, SysStringLen ((BSTR)bstr), error);
+#if HAVE_API_SUPPORT_WIN32_BSTR
+	return mono_string_new_utf16_handle (bstr, SysStringLen ((BSTR)bstr), error);
+#else
+	return mono_string_new_utf16_handle (bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
+#endif /* HAVE_API_SUPPORT_WIN32_BSTR */
 #else
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT)
 #endif
-		return mono_string_new_utf16_handle (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
+		return mono_string_new_utf16_handle (bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
 #ifndef DISABLE_COM
 	else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		glong written = 0;
 		// FIXME mono_string_new_utf32_handle to combine g_ucs4_to_utf16 and mono_string_new_utf16_handle.
 		gunichar2* utf16 = g_ucs4_to_utf16 ((const gunichar *)bstr, sys_string_len_ms (bstr), NULL, &written, NULL);
-		MonoStringHandle res = mono_string_new_utf16_handle (mono_domain_get (), utf16, written, error);
+		MonoStringHandle res = mono_string_new_utf16_handle (utf16, written, error);
 		g_free (utf16);
 		return res;
 	} else {
@@ -3294,16 +3170,16 @@ mono_free_bstr (/*mono_bstr_const*/gpointer bstr)
 	if (!bstr)
 		return;
 #ifdef HOST_WIN32
+#if HAVE_API_SUPPORT_WIN32_BSTR
 	SysFreeString ((BSTR)bstr);
+#else
+	g_free (((char *)bstr) - 4);
+#endif /* HAVE_API_SUPPORT_WIN32_BSTR */
 #else
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
-#ifdef ENABLE_NETCORE
 		g_free (((char *)bstr) - SIZEOF_VOID_P);
-#else // In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform
-		g_free (((char *)bstr) - 4);
-#endif
 #ifndef DISABLE_COM
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		sys_free_string_ms ((mono_bstr_const)bstr);
@@ -3424,7 +3300,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 		indices_var = mono_mb_add_local (mb, int_type);
 		empty_var = mono_mb_add_local (mb, int_type);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		} else
@@ -3457,7 +3333,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 		g_assert (get_value_impl);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		} else
@@ -3497,7 +3373,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 	}
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -3510,7 +3386,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 					Array result;   // result_var
 					IntPtr indices; // indices_var
 					int empty;      // empty_var
-					bool byValue = !t->byref && (t->attrs & PARAM_ATTRIBUTE_IN);
+					bool byValue = !m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_IN);
 					if (mono_marshal_safearray_begin(safearray, out result, out indices, out empty, parameter, byValue)) {
 						if (!empty) {
 							int index=0; // index_var
@@ -3531,7 +3407,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 			int result_var, indices_var, empty_var, elem_var, index_var;
 			guint32 label1 = 0, label2 = 0, label3 = 0, label4 = 0;
-			gboolean byValue = !t->byref && (t->attrs & PARAM_ATTRIBUTE_IN);
+			gboolean byValue = !m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_IN);
 
 			MonoType *object_type = mono_get_object_type ();
 			MonoType *int_type = mono_get_int_type ();
@@ -3704,13 +3580,21 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 }
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static guint32
 mono_marshal_win_safearray_get_dim (gpointer safearray)
 {
 	return SafeArrayGetDim ((SAFEARRAY*)safearray);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static guint32
+mono_marshal_win_safearray_get_dim (gpointer safearray)
+{
+	g_unsupported_api ("SafeArrayGetDim");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static guint32
 mono_marshal_safearray_get_dim (gpointer safearray)
@@ -3734,13 +3618,21 @@ mono_marshal_safearray_get_dim (gpointer safearray)
 #endif /* HOST_WIN32 */
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static int
 mono_marshal_win_safe_array_get_lbound (gpointer psa, guint nDim, glong* plLbound)
 {
 	return SafeArrayGetLBound ((SAFEARRAY*)psa, nDim, plLbound);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static int
+mono_marshal_win_safe_array_get_lbound (gpointer psa, guint nDim, glong* plLbound)
+{
+	g_unsupported_api ("SafeArrayGetLBound");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static int
 mono_marshal_safe_array_get_lbound (gpointer psa, guint nDim, glong* plLbound)
@@ -3764,13 +3656,21 @@ mono_marshal_safe_array_get_lbound (gpointer psa, guint nDim, glong* plLbound)
 #endif /* HOST_WIN32 */
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static int
 mono_marshal_win_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUbound)
 {
 	return SafeArrayGetUBound ((SAFEARRAY*)psa, nDim, plUbound);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static int
+mono_marshal_win_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUbound)
+{
+	g_unsupported_api ("SafeArrayGetUBound");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static int
 mono_marshal_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUbound)
@@ -3873,13 +3773,24 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 
 /* This is an icall */
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static int
 mono_marshal_win_safearray_get_value (gpointer safearray, gpointer indices, gpointer *result)
 {
 	return SafeArrayPtrOfIndex ((SAFEARRAY*)safearray, (LONG*)indices, result);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static int
+mono_marshal_win_safearray_get_value (gpointer safearray, gpointer indices, gpointer *result)
+{
+	ERROR_DECL (error);
+	g_unsupported_api ("SafeArrayPtrOfIndex");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SafeArrayPtrOfIndex");
+	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static gpointer
 mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
@@ -3961,14 +3872,22 @@ gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 }
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static void
 mono_marshal_win_safearray_end (gpointer safearray, gpointer indices)
 {
 	g_free(indices);
 	SafeArrayDestroy ((SAFEARRAY*)safearray);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static void
+mono_marshal_win_safearray_end (gpointer safearray, gpointer indices)
+{
+	g_free(indices);
+	g_unsupported_api ("SafeArrayDestroy");
+	SetLastError (ERROR_NOT_SUPPORTED);
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static void
 mono_marshal_safearray_end (gpointer safearray, gpointer indices)
@@ -3991,14 +3910,23 @@ mono_marshal_safearray_end (gpointer safearray, gpointer indices)
 #endif /* HOST_WIN32 */
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static gboolean
 mono_marshal_win_safearray_create_internal (UINT cDims, SAFEARRAYBOUND *rgsabound, gpointer *newsafearray)
 {
 	*newsafearray = SafeArrayCreate (VT_VARIANT, cDims, rgsabound);
 	return TRUE;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static gboolean
+mono_marshal_win_safearray_create_internal (UINT cDims, SAFEARRAYBOUND *rgsabound, gpointer *newsafearray)
+{
+	g_unsupported_api ("SafeArrayCreate");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	*newsafearray = NULL;
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static gboolean
 mono_marshal_safearray_create_internal (UINT cDims, SAFEARRAYBOUND *rgsabound, gpointer *newsafearray)
@@ -4054,13 +3982,24 @@ mono_marshal_safearray_create (MonoArray *input, gpointer *newsafearray, gpointe
 
 /* This is an icall */
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static int
 mono_marshal_win_safearray_set_value (gpointer safearray, gpointer indices, gpointer value)
 {
 	return SafeArrayPutElement ((SAFEARRAY*)safearray, (LONG*)indices, value);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static int
+mono_marshal_win_safearray_set_value (gpointer safearray, gpointer indices, gpointer value)
+{
+	ERROR_DECL (error);
+	g_unsupported_api ("SafeArrayPutElement");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SafeArrayPutElement");
+	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 #endif /* HOST_WIN32 */
 
@@ -4090,16 +4029,6 @@ void mono_marshal_safearray_free_indices (gpointer indices)
 }
 
 #else /* DISABLE_COM */
-
-void
-mono_cominterop_cleanup (void)
-{
-}
-
-void
-mono_cominterop_release_all_rcws (void)
-{
-}
 
 gboolean
 mono_marshal_free_ccw (MonoObject* object)
@@ -4155,16 +4084,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUn
 #endif /* HOST_WIN32 */
 #endif /* DISABLE_COM */
 
-MonoStringHandle
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (mono_bstr_const ptr, MonoError *error)
-{
-	if (ptr == NULL) {
-		mono_error_set_argument_null (error, "ptr", NULL);
-		return NULL_HANDLE_STRING;
-	}
-	return mono_string_from_bstr_checked (ptr, error);
-}
-
 mono_bstr
 ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2* ptr, int len)
 {
@@ -4201,7 +4120,7 @@ mono_cominterop_get_com_interface_internal (gboolean icall, MonoObjectHandle obj
 	if (cominterop_object_is_rcw_handle (object, &real_proxy)) {
 		MonoClass *klass = NULL;
 		klass = mono_handle_class (object);
-		if (!mono_class_is_transparent_proxy (klass)) {
+		if (TRUE) {
 			g_assertf (!icall, "Class is not transparent");
 			mono_error_set_invalid_operation (error, "Class is not transparent");
 			return NULL;

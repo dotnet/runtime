@@ -7,6 +7,7 @@
 
 #include "mini.h"
 #include "aot-runtime.h"
+#include "mini-runtime.h"
 
 /* LLVM backend */
 
@@ -19,7 +20,6 @@ typedef enum {
 } LLVMModuleFlags;
 
 void mono_llvm_init                     (gboolean enable_jit);
-void mono_llvm_cleanup                  (void);
 void mono_llvm_emit_method              (MonoCompile *cfg);
 void mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *call);
 void mono_llvm_create_aot_module        (MonoAssembly *assembly, const char *global_prefix, int initial_got_size, LLVMModuleFlags flags);
@@ -28,7 +28,7 @@ void mono_llvm_emit_aot_file_info       (MonoAotFileInfo *info, gboolean has_jit
 gpointer mono_llvm_emit_aot_data        (const char *symbol, guint8 *data, int data_len);
 gpointer mono_llvm_emit_aot_data_aligned (const char *symbol, guint8 *data, int data_len, int align);
 void mono_llvm_check_method_supported   (MonoCompile *cfg);
-void mono_llvm_free_domain_info         (MonoDomain *domain);
+void mono_llvm_free_mem_manager         (MonoJitMemoryManager *mem_manager);
 MONO_API void mono_personality              (void);
 void     mono_llvm_create_vars (MonoCompile *cfg);
 void     mono_llvm_fixup_aot_module         (void);

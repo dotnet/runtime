@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -27,7 +27,7 @@ namespace System.Xml
 
         public virtual bool TryAdd(XmlDictionaryString value, out int key)
         {
-            IntArray keys;
+            IntArray? keys;
             if (value == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
 
@@ -75,7 +75,7 @@ namespace System.Xml
 
         internal bool TryLookup(XmlDictionaryString s, out int key)
         {
-            IntArray keys;
+            IntArray? keys;
             if (_maps.TryGetValue(s.Dictionary, out keys))
             {
                 key = (keys[s.Key] - 1);
@@ -101,9 +101,9 @@ namespace System.Xml
             return false;
         }
 
-        private class PriorityDictionary<K, V> where K : class
+        private sealed class PriorityDictionary<K, V> where K : class
         {
-            private Dictionary<K, V> _dictionary;
+            private Dictionary<K, V>? _dictionary;
             private readonly Entry[] _list;
             private int _listCount;
             private int _now;
@@ -117,12 +117,12 @@ namespace System.Xml
             {
                 _now = 0;
                 _listCount = 0;
-                Array.Clear(_list, 0, _list.Length);
+                Array.Clear(_list);
                 if (_dictionary != null)
                     _dictionary.Clear();
             }
 
-            public bool TryGetValue(K key, out V value)
+            public bool TryGetValue(K key, [MaybeNullWhen(false)] out V value)
             {
                 for (int i = 0; i < _listCount; i++)
                 {
@@ -226,7 +226,7 @@ namespace System.Xml
             }
         }
 
-        private class IntArray
+        private sealed class IntArray
         {
             private int[] _array;
 

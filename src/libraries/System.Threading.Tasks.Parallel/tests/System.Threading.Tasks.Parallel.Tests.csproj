@@ -7,13 +7,13 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
-             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="BreakTests.cs" />
     <Compile Include="EtwTests.cs" />
     <Compile Include="ParallelFor.cs" />
     <Compile Include="ParallelForBoundary.cs" />
     <Compile Include="ParallelForeachPartitioner.cs" />
+    <Compile Include="ParallelForEachAsyncTests.cs" />
     <Compile Include="ParallelForTest.cs" />
     <Compile Include="ParallelForTests.cs" />
     <Compile Include="ParallelInvokeTest.cs" />
@@ -24,7 +24,6 @@
     <Compile Include="RangePartitionerThreadSafetyTests.cs" />
     <Compile Include="RespectParentCancellationTest.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs"
-             Link="CommonTest\System\Threading\ThreadPoolHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs" Link="CommonTest\System\Threading\ThreadPoolHelpers.cs" />
   </ItemGroup>
 </Project>

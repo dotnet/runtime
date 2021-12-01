@@ -10,8 +10,6 @@ namespace System.Linq.Expressions.Tests
 {
     public static class ArrayBoundsTests
     {
-        private const int MaxArraySize = 0X7FEFFFFF;
-
         private class BogusCollection<T> : IList<T>
         {
             public T this[int index]
@@ -168,7 +166,7 @@ namespace System.Linq.Expressions.Tests
             {
                 Assert.Throws<OverflowException>(() => func());
             }
-            else if (size > MaxArraySize)
+            else if (size > Array.MaxLength)
             {
                 Assert.Throws<OutOfMemoryException>(() => func());
             }

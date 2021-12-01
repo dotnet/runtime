@@ -16,6 +16,7 @@
 namespace App {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Runtime.CompilerServices;
 
@@ -64,6 +65,7 @@ namespace App {
         class CreateObj
         {
             private Object[] v;
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             private Type myClass;
             private Type [] rtype;
             private ConstructorInfo CInfo;

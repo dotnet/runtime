@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -18,18 +17,18 @@ namespace System.Net
     /// </devdoc>
     public class IPAddress
     {
-        public static readonly IPAddress Any = new ReadOnlyIPAddress(0x0000000000000000);
-        public static readonly IPAddress Loopback = new ReadOnlyIPAddress(0x000000000100007F);
-        public static readonly IPAddress Broadcast = new ReadOnlyIPAddress(0x00000000FFFFFFFF);
+        public static readonly IPAddress Any = new ReadOnlyIPAddress(new byte[] { 0, 0, 0, 0 });
+        public static readonly IPAddress Loopback = new ReadOnlyIPAddress(new byte[] { 127, 0, 0, 1 });
+        public static readonly IPAddress Broadcast = new ReadOnlyIPAddress(new byte[] { 255, 255, 255, 255 });
         public static readonly IPAddress None = Broadcast;
 
-        internal const long LoopbackMask = 0x00000000000000FF;
+        internal const uint LoopbackMaskHostOrder = 0xFF000000;
 
-        public static readonly IPAddress IPv6Any = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
-        public static readonly IPAddress IPv6Loopback = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 0);
-        public static readonly IPAddress IPv6None = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
+        public static readonly IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
+        public static readonly IPAddress IPv6Loopback = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 0);
+        public static readonly IPAddress IPv6None = IPv6Any;
 
-        private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1 }, 0);
+        private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress((ReadOnlySpan<byte>) new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1 }, 0);
 
         /// <summary>
         /// For IPv4 addresses, this field stores the Address.
@@ -185,7 +184,7 @@ namespace System.Net
         {
             if (address.Length == IPAddressParserStatics.IPv4AddressBytes)
             {
-                PrivateAddress = (uint)((address[3] << 24 | address[2] << 16 | address[1] << 8 | address[0]) & 0x0FFFFFFFF);
+                PrivateAddress = MemoryMarshal.Read<uint>(address);
             }
             else if (address.Length == IPAddressParserStatics.IPv6AddressBytes)
             {
@@ -291,10 +290,7 @@ namespace System.Net
         private void WriteIPv4Bytes(Span<byte> destination)
         {
             uint address = PrivateAddress;
-            destination[0] = (byte)(address);
-            destination[1] = (byte)(address >> 8);
-            destination[2] = (byte)(address >> 16);
-            destination[3] = (byte)(address >> 24);
+            MemoryMarshal.Write(destination, ref address);
         }
 
         /// <devdoc>
@@ -432,6 +428,7 @@ namespace System.Net
             }
             else
             {
+                long LoopbackMask = (uint)HostToNetworkOrder(unchecked((int)LoopbackMaskHostOrder));
                 return ((address.PrivateAddress & LoopbackMask) == (Loopback.PrivateAddress & LoopbackMask));
             }
         }
@@ -485,6 +482,15 @@ namespace System.Net
             }
         }
 
+        /// <summary>Gets whether the address is an IPv6 Unique Local address.</summary>
+        public bool IsIPv6UniqueLocal
+        {
+            get
+            {
+                return IsIPv6 && ((_numbers![0] & 0xFE00) == 0xFC00);
+            }
+        }
+
         // 0:0:0:0:0:FFFF:x.x.x.x
         public bool IsIPv4MappedToIPv6
         {
@@ -505,7 +511,7 @@ namespace System.Net
             }
         }
 
-        [Obsolete("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("IPAddress.Address is address family dependent and has been deprecated. Use IPAddress.Equals to perform comparisons instead.")]
         public long Address
         {
             get
@@ -546,7 +552,7 @@ namespace System.Net
         }
 
         /// <summary>Compares two IP addresses.</summary>
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             return comparand is IPAddress address && Equals(address);
         }
@@ -580,37 +586,26 @@ namespace System.Net
 
         public override int GetHashCode()
         {
-            if (_hashCode != 0)
+            if (_hashCode == 0)
             {
-                return _hashCode;
+                // For IPv4 addresses, we calculate the hashcode based on address bytes.
+                // For IPv6 addresses, we also factor in scope ID.
+                if (IsIPv6)
+                {
+                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers);
+                    _hashCode = HashCode.Combine(
+                        MemoryMarshal.Read<uint>(numbers),
+                        MemoryMarshal.Read<uint>(numbers.Slice(4)),
+                        MemoryMarshal.Read<uint>(numbers.Slice(8)),
+                        MemoryMarshal.Read<uint>(numbers.Slice(12)),
+                        _addressOrScopeId);
+                }
+                else
+                {
+                    _hashCode = HashCode.Combine(_addressOrScopeId);
+                }
             }
 
-            // For IPv6 addresses, we calculate the hashcode by using Marvin
-            // on a stack-allocated array containing the Address bytes and ScopeId.
-            int hashCode;
-            if (IsIPv6)
-            {
-                const int AddressAndScopeIdLength = IPAddressParserStatics.IPv6AddressBytes + sizeof(uint);
-                Span<byte> addressAndScopeIdSpan = stackalloc byte[AddressAndScopeIdLength];
-
-                MemoryMarshal.AsBytes(new ReadOnlySpan<ushort>(_numbers)).CopyTo(addressAndScopeIdSpan);
-                Span<byte> scopeIdSpan = addressAndScopeIdSpan.Slice(IPAddressParserStatics.IPv6AddressBytes);
-                bool scopeWritten = BitConverter.TryWriteBytes(scopeIdSpan, _addressOrScopeId);
-                Debug.Assert(scopeWritten);
-
-                hashCode = Marvin.ComputeHash32(
-                    addressAndScopeIdSpan,
-                    Marvin.DefaultSeed);
-            }
-            else
-            {
-                // For IPv4 addresses, we use Marvin on the integer representation of the Address.
-                hashCode = Marvin.ComputeHash32(
-                    MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref _addressOrScopeId, 1)),
-                    Marvin.DefaultSeed);
-            }
-
-            _hashCode = hashCode;
             return _hashCode;
         }
 
@@ -622,11 +617,11 @@ namespace System.Net
                 return this;
             }
 
-            uint address = PrivateAddress;
+            uint address = (uint)NetworkToHostOrder(unchecked((int)PrivateAddress));
             ushort[] labels = new ushort[NumberOfLabels];
             labels[5] = 0xFFFF;
-            labels[6] = (ushort)(((address & 0x0000FF00) >> 8) | ((address & 0x000000FF) << 8));
-            labels[7] = (ushort)(((address & 0xFF000000) >> 24) | ((address & 0x00FF0000) >> 8));
+            labels[6] = (ushort)(address >> 16);
+            labels[7] = (ushort)address;
             return new IPAddress(labels, 0);
         }
 
@@ -640,13 +635,8 @@ namespace System.Net
                 return this;
             }
 
-            // Cast the ushort values to a uint and mask with unsigned literal before bit shifting.
-            // Otherwise, we can end up getting a negative value for any IPv4 address that ends with
-            // a byte higher than 127 due to sign extension of the most significant 1 bit.
-            long address = ((((uint)_numbers![6] & 0x0000FF00u) >> 8) | (((uint)_numbers[6] & 0x000000FFu) << 8)) |
-                    (((((uint)_numbers[7] & 0x0000FF00u) >> 8) | (((uint)_numbers[7] & 0x000000FFu) << 8)) << 16);
-
-            return new IPAddress(address);
+            uint address = (uint)_numbers![6] << 16 | (uint)_numbers[7];
+            return new IPAddress((uint)HostToNetworkOrder(unchecked((int)address)));
         }
 
         [DoesNotReturn]
@@ -654,7 +644,7 @@ namespace System.Net
 
         private sealed class ReadOnlyIPAddress : IPAddress
         {
-            public ReadOnlyIPAddress(long newAddress) : base(newAddress)
+            public ReadOnlyIPAddress(ReadOnlySpan<byte> newAddress) : base(newAddress)
             { }
         }
     }

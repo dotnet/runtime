@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class DSASignatureDescription : SignatureDescription
+    internal sealed class DSASignatureDescription : SignatureDescription
     {
         private const string HashAlgorithm = "SHA1";
 

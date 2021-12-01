@@ -13,7 +13,7 @@ namespace System.Net.Mime
     /// buffer as the data being encoded will most likely grow.
     /// Encoding and decoding is done transparently to the caller.
     /// </summary>
-    internal class QEncodedStream : DelegatedStream, IEncodableStream
+    internal sealed class QEncodedStream : DelegatedStream, IEncodableStream
     {
 
         private static ReadOnlySpan<byte> HexDecodeMap => new byte[] // rely on C# compiler optimization to eliminate allocation
@@ -53,18 +53,7 @@ namespace System.Net.Mime
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             WriteAsyncResult result = new WriteAsyncResult(this, buffer, offset, count, callback, state);
             result.Write();
@@ -220,18 +209,7 @@ namespace System.Net.Mime
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             int written = 0;
             while (true)
@@ -254,7 +232,7 @@ namespace System.Net.Mime
             internal short Byte { get; set; } = -1;
         }
 
-        private class WriteAsyncResult : LazyAsyncResult
+        private sealed class WriteAsyncResult : LazyAsyncResult
         {
             private static readonly AsyncCallback s_onWrite = OnWrite;
 

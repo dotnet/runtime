@@ -1,0 +1,83 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
+    <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <MonoForceInterpreter>true</MonoForceInterpreter>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="ChangeablePart.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeltaHelper\DeltaHelper.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <DeltaScript>deltascript.json</DeltaScript>
+    <DeltaCount>1</DeltaCount>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
+    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
+  </PropertyGroup>
+
+  <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
+  <UsingTask TaskName="AppleAppBuilderTask"
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+
+  <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
+    <PropertyGroup>
+      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
+      <IosSimulator Condition="'$(TargetsiOSSimulator)' == 'true'">iPhone 11</IosSimulator>
+      <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+      <RunAOTCompilation Condition="('$(TargetsMacCatalyst)' == 'false' and '$(IosSimulator)' == '') or '$(ForceAOT)' == 'true'">true</RunAOTCompilation>
+    </PropertyGroup>
+
+    <Error Condition="'$(TargetOS)' == ''" Text="The TargetOS property must be set outside the project file" />
+
+    <RemoveDir Directories="$(AppDir)" />
+
+    <ItemGroup>
+      <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
+    </ItemGroup>
+
+    <AppleAppBuilderTask
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="AppleDelta"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\native\include\mono-2.0"
+        Assemblies="@(BundleAssemblies)"
+	NativeMainSource="$(MSBuildThisFileDirectory)\main.m"
+        MainLibraryFileName="AppleDelta.dll"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(AppDir)"
+        Optimized="$(Optimized)"
+        ForceAOT="$(ForceAOT)"
+        ForceInterpreter="$(MonoForceInterpreter)"
+        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
+    <Message Importance="High" Text="App:   $(AppBundlePath)"/>
+
+    <Exec Condition="'$(TargetOS)' == 'iOSSimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
+
+    <!-- run on MacCatalyst -->
+    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=maccatalyst --output-directory=/tmp/out" />
+
+  </Target>
+
+  <!-- Set RoslynILDiffFullPath property to the path of roslynildiff -->
+  <Import Project="..\DeltaHelper.targets" />
+
+</Project>

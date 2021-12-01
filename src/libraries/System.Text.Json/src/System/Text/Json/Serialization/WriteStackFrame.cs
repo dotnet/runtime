@@ -4,10 +4,11 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("ClassType.{JsonClassInfo.ClassType}, {JsonClassInfo.Type.Name}")]
+    [DebuggerDisplay("ConverterStrategy.{JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo.Type.Name}")]
     internal struct WriteStackFrame
     {
         /// <summary>
@@ -16,23 +17,34 @@ namespace System.Text.Json
         public IEnumerator? CollectionEnumerator;
 
         /// <summary>
+        /// The enumerator for resumable async disposables.
+        /// </summary>
+        public IAsyncDisposable? AsyncDisposable;
+
+        /// <summary>
+        /// The current stackframe has suspended serialization due to a pending task,
+        /// stored in the <see cref="WriteStack.PendingTask"/> property.
+        /// </summary>
+        public bool AsyncEnumeratorIsPendingCompletion;
+
+        /// <summary>
         /// The original JsonPropertyInfo that is not changed. It contains all properties.
         /// </summary>
         /// <remarks>
-        /// For objects, it is either the actual (real) JsonPropertyInfo or the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class.
-        /// For collections, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current element.
+        /// For objects, it is either the actual (real) JsonPropertyInfo or the <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> for the class.
+        /// For collections, it is the <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> for the class and current element.
         /// </remarks>
         public JsonPropertyInfo? DeclaredJsonPropertyInfo;
 
         /// <summary>
         /// Used when processing extension data dictionaries.
         /// </summary>
-        public bool IgnoreDictionaryKeyPolicy;
+        public bool IsWritingExtensionDataProperty;
 
         /// <summary>
         /// The class (POCO or IEnumerable) that is being populated.
         /// </summary>
-        public JsonClassInfo JsonClassInfo;
+        public JsonTypeInfo JsonTypeInfo;
 
         /// <summary>
         /// Validation state for a class.
@@ -60,13 +72,13 @@ namespace System.Text.Json
         public MetadataPropertyName MetadataPropertyName;
 
         /// <summary>
-        /// The run-time JsonPropertyInfo that contains the ClassInfo and ConverterBase for polymorphic scenarios.
+        /// The run-time JsonPropertyInfo that contains the TypeInfo and ConverterBase for polymorphic scenarios.
         /// </summary>
         /// <remarks>
-        /// For objects, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current property.
-        /// For collections, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current element.
+        /// For objects, it is the <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> for the class and current property.
+        /// For collections, it is the <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> for the class and current element.
         /// </remarks>
-        public JsonPropertyInfo? PolymorphicJsonPropertyInfo;
+        private JsonPropertyInfo? PolymorphicJsonPropertyInfo;
 
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
@@ -86,7 +98,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Return the property that contains the correct polymorphic properties including
-        /// the ClassType and ConverterBase.
+        /// the ConverterStrategy and ConverterBase.
         /// </summary>
         public JsonPropertyInfo GetPolymorphicJsonPropertyInfo()
         {
@@ -94,30 +106,19 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Initializes the state for polymorphic or re-entry cases.
+        /// Initializes the state for polymorphic cases and returns the appropriate converter.
         /// </summary>
-        public JsonConverter InitializeReEntry(Type type, JsonSerializerOptions options, string? propertyName = null)
+        public JsonConverter InitializeReEntry(Type type, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = options.GetOrAddClass(type);
+            // For perf, avoid the dictionary lookup in GetOrAddClass() for every element of a collection
+            // if the current element is the same type as the previous element.
+            if (PolymorphicJsonPropertyInfo?.RuntimePropertyType != type)
+            {
+                JsonTypeInfo typeInfo = options.GetOrAddClass(type);
+                PolymorphicJsonPropertyInfo = typeInfo.PropertyInfoForTypeInfo;
+            }
 
-            // Set for exception handling calculation of JsonPath.
-            JsonPropertyNameAsString = propertyName;
-
-            PolymorphicJsonPropertyInfo = classInfo.PropertyInfoForClassInfo;
             return PolymorphicJsonPropertyInfo.ConverterBase;
-        }
-
-        public void Reset()
-        {
-            CollectionEnumerator = null;
-            EnumeratorIndex = 0;
-            IgnoreDictionaryKeyPolicy = false;
-            JsonClassInfo = null!;
-            OriginalDepth = 0;
-            ProcessedStartToken = false;
-            ProcessedEndToken = false;
-
-            EndProperty();
         }
     }
 }

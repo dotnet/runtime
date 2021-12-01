@@ -6,15 +6,14 @@ using System.Diagnostics;
 
 namespace System.IO.MemoryMappedFiles
 {
-    internal partial class MemoryMappedView : IDisposable
+    internal sealed partial class MemoryMappedView : IDisposable
     {
         private readonly SafeMemoryMappedViewHandle _viewHandle;
         private readonly long _pointerOffset;
         private readonly long _size;
         private readonly MemoryMappedFileAccess _access;
 
-        private unsafe MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset,
-                                        long size, MemoryMappedFileAccess access)
+        private MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset, long size, MemoryMappedFileAccess access)
         {
             Debug.Assert(viewHandle != null);
 
@@ -44,7 +43,7 @@ namespace System.IO.MemoryMappedFiles
             get { return _access; }
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!_viewHandle.IsClosed)
             {

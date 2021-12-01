@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNetCore.Testing;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceProvider = CreateTestServiceProvider(0);
 
             // Act + Assert
-            ExceptionAssert.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService<IFoo>(),
+            AssertExtensions.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService<IFoo>(),
                 $"No service for type '{typeof(IFoo)}' has been registered.");
         }
 
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceProvider = new RequiredServiceSupportingProvider();
 
             // Act + Assert
-            ExceptionAssert.Throws<RankException>(() => serviceProvider.GetRequiredService<IFoo>());
+            AssertExtensions.Throws<RankException>(() => serviceProvider.GetRequiredService<IFoo>());
         }
 
         [Fact]
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceProvider = CreateTestServiceProvider(0);
 
             // Act + Assert
-            ExceptionAssert.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService(typeof(IFoo)),
+            AssertExtensions.Throws<InvalidOperationException>(() => serviceProvider.GetRequiredService(typeof(IFoo)),
                 $"No service for type '{typeof(IFoo)}' has been registered.");
         }
 
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceProvider = new RequiredServiceSupportingProvider();
 
             // Act + Assert
-            ExceptionAssert.Throws<RankException>(() => serviceProvider.GetRequiredService(typeof(IFoo)));
+            AssertExtensions.Throws<RankException>(() => serviceProvider.GetRequiredService(typeof(IFoo)));
         }
 
         [Fact]
@@ -212,6 +212,41 @@ namespace Microsoft.Extensions.DependencyInjection
             // Assert
             Assert.Empty(services);
             Assert.IsType<List<IFoo>>(services);
+        }
+
+        [Fact]
+        public async Task CreateAsyncScope_Returns_AsyncServiceScope_Wrapping_ServiceScope()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IFoo, Foo1>();
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            await using var scope = serviceProvider.CreateAsyncScope();
+
+            // Act
+            var service = scope.ServiceProvider.GetService<IFoo>();
+
+            // Assert
+            Assert.IsType<Foo1>(service);
+        }
+
+        [Fact]
+        public async Task CreateAsyncScope_Returns_AsyncServiceScope_Wrapping_ServiceScope_For_IServiceScopeFactory()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IFoo, Foo1>();
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var factory = serviceProvider.GetService<IServiceScopeFactory>();
+
+            await using var scope = factory.CreateAsyncScope();
+
+            // Act
+            var service = scope.ServiceProvider.GetService<IFoo>();
+
+            // Assert
+            Assert.IsType<Foo1>(service);
         }
 
         private static IServiceProvider CreateTestServiceProvider(int count)

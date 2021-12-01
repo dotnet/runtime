@@ -72,6 +72,8 @@ namespace System.Linq.Parallel
             PartitionedStream<TSource, TKey> inputStream, IPartitionedStreamRecipient<TSource> recipient, QuerySettings settings)
         {
             int partitionCount = inputStream.PartitionCount;
+            if (ParallelEnumerable.SinglePartitionMode)
+                Debug.Assert(partitionCount == 1);
 
             // Generate the shared data.
             FirstQueryOperatorState<TKey> operatorState = new FirstQueryOperatorState<TKey>();
@@ -116,7 +118,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the first operation.
         //
 
-        private class FirstQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
+        private sealed class FirstQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
         {
             private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
             private readonly Func<TSource, bool>? _predicate; // The optional predicate used during the search.
@@ -176,7 +178,7 @@ namespace System.Linq.Parallel
                     while (_source.MoveNext(ref value!, ref key))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         // If the predicate is null or the current element satisfies it, we have found the
                         // current partition's "candidate" for the first element.  Note it.
@@ -200,9 +202,11 @@ namespace System.Linq.Parallel
                 }
                 finally
                 {
-                    // No matter whether we exit due to an exception or normal completion, we must ensure
-                    // that we signal other partitions that we have completed.  Otherwise, we can cause deadlocks.
-                    _sharedBarrier.Signal();
+                    if (!ParallelEnumerable.SinglePartitionMode) {
+                        // No matter whether we exit due to an exception or normal completion, we must ensure
+                        // that we signal other partitions that we have completed.  Otherwise, we can cause deadlocks.
+                        _sharedBarrier.Signal();
+                    }
                 }
 
                 _alreadySearched = true;
@@ -210,7 +214,8 @@ namespace System.Linq.Parallel
                 // Wait only if we may have the result
                 if (_partitionId == _operatorState._partitionId)
                 {
-                    _sharedBarrier.Wait(_cancellationToken);
+                    if (!ParallelEnumerable.SinglePartitionMode)
+                        _sharedBarrier.Wait(_cancellationToken);
 
                     // Now re-read the shared index. If it's the same as ours, we won and return true.
                     if (_partitionId == _operatorState._partitionId)
@@ -231,7 +236,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        private class FirstQueryOperatorState<TKey>
+        private sealed class FirstQueryOperatorState<TKey>
         {
             internal TKey _key = default!;
             internal int _partitionId = -1;

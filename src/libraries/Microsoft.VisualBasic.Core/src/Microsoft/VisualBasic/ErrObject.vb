@@ -3,13 +3,12 @@
 
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.Utils
-Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 
 Imports System
 Imports System.Runtime.InteropServices
 
 Namespace Microsoft.VisualBasic
-    
+
     Public NotInheritable Class ErrObject
 
         ' Error object private values
@@ -432,7 +431,7 @@ Namespace Microsoft.VisualBasic
         Friend Function MapErrorNumber(ByVal Number As Integer) As Integer
             If Number > 65535 Then
                 ' Number cannot be greater than 65535.
-                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1), "Number")
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1), NameOf(Number))
             End If
 
             If Number >= 0 Then

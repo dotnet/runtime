@@ -64,9 +64,9 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Clears the specified stack.  For empty stacks, it avoids the call to <see cref="Stack{T}.Clear"/>, which
-        /// avoids a call into the runtime's implementation of <see cref="Array.Clear"/>, helping performance,
+        /// avoids a call into the runtime's implementation of <see cref="Array.Clear(Array, int, int)"/>, helping performance,
         /// in particular around inlining.  <see cref="Stack{T}.Count"/> typically gets inlined by today's JIT, while
-        /// <see cref="Stack{T}.Clear"/> and <see cref="Array.Clear"/> typically don't.
+        /// <see cref="Stack{T}.Clear"/> and <see cref="Array.Clear(Array, int, int)"/> typically don't.
         /// </summary>
         /// <typeparam name="T">Specifies the type of data in the stack to be cleared.</typeparam>
         /// <param name="stack">The stack to clear.</param>
@@ -108,7 +108,7 @@ namespace System.Collections.Immutable
         /// Wraps a <see cref="IList{T}"/> as an ordered collection.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
-        private class ListOfTWrapper<T> : IOrderedCollection<T>
+        private sealed class ListOfTWrapper<T> : IOrderedCollection<T>
         {
             /// <summary>
             /// The list being exposed.
@@ -168,7 +168,7 @@ namespace System.Collections.Immutable
         /// Wraps any <see cref="IEnumerable{T}"/> as an ordered, indexable list.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
-        private class FallbackWrapper<T> : IOrderedCollection<T>
+        private sealed class FallbackWrapper<T> : IOrderedCollection<T>
         {
             /// <summary>
             /// The original sequence.

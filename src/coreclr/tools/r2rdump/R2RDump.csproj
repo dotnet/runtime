@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>R2RDump</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <Platforms>x64;x86;arm64;arm</Platforms>
+    <AssemblyKey>Open</AssemblyKey>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <CLSCompliant>false</CLSCompliant>
+    <NoWarn>8002,NU1701</NoWarn>
+    <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
+    <OutputPath>$(RuntimeBinDir)/R2RDump</OutputPath>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" />
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine">
+      <Version>$(SystemCommandLineVersion)</Version>
+    </PackageReference>
+    <ProjectReference Include="..\aot\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
+    <ProjectReference Include="..\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
+    <Content Include="$(CoreDisToolsLibrary)" Condition="Exists('$(CoreDisToolsLibrary)')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

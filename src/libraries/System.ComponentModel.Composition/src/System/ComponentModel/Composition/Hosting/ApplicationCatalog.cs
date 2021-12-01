@@ -173,14 +173,8 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private string GetDisplayName()
-        {
-            return string.Format(CultureInfo.CurrentCulture,
-                                "{0} (Path=\"{1}\") (PrivateProbingPath=\"{2}\")",   // NOLOC
-                                GetType().Name,
-                                AppDomain.CurrentDomain.BaseDirectory,
-                                AppDomain.CurrentDomain.RelativeSearchPath);
-        }
+        private string GetDisplayName() =>
+            $"{GetType().Name} (Path=\"{AppDomain.CurrentDomain.BaseDirectory}\") (PrivateProbingPath=\"{AppDomain.CurrentDomain.RelativeSearchPath}\")";   // NOLOC
 
         /// <summary>
         ///     Returns a string representation of the directory catalog.

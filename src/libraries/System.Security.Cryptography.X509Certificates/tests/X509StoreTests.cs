@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -94,9 +95,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)] // API not supported via OpenSSL
+        [PlatformSpecific(PlatformSupport.OpenSSL)] // API not supported via OpenSSL
         [Fact]
-        public static void Constructor_StoreHandle_Unix()
+        public static void Constructor_StoreHandle_OpenSSL()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             {
@@ -404,6 +405,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         [InlineData(OpenFlags.ReadOnly, false)]
         [InlineData(OpenFlags.MaxAllowed, false)]
         [InlineData(OpenFlags.ReadWrite, true)]
@@ -426,6 +428,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         public static void MachineRootStore_NonEmpty()
         {
             // This test will fail on systems where the administrator has gone out of their

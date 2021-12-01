@@ -255,7 +255,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void Ctor_AllPrimitives()
         {
             ConstructorInfo con = typeof(Primitives).GetConstructors()[0];

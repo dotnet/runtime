@@ -8,6 +8,6 @@ public class Extended : Base {
 
 public class Driver {
 	public static int Main () {
-		return new Generic<Extended>().Run(new Extended());;
+		return new Generic<Extended>().Run(new Extended());
 	}
 }

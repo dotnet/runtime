@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -12,7 +14,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.ProvidePropertyAttribute'/> class.
         /// </summary>
-        public ProvidePropertyAttribute(string propertyName, Type receiverType)
+        public ProvidePropertyAttribute(
+            string propertyName,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type receiverType)
         {
             if (receiverType == null)
             {
@@ -20,13 +24,15 @@ namespace System.ComponentModel
             }
 
             PropertyName = propertyName;
-            ReceiverTypeName = receiverType.AssemblyQualifiedName;
+            ReceiverTypeName = receiverType.AssemblyQualifiedName!;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.ProvidePropertyAttribute'/> class.
         /// </summary>
-        public ProvidePropertyAttribute(string propertyName, string receiverTypeName)
+        public ProvidePropertyAttribute(
+            string propertyName,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string receiverTypeName)
         {
             PropertyName = propertyName;
             ReceiverTypeName = receiverTypeName;
@@ -40,9 +46,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the name of the data type this property can extend
         /// </summary>
+        // Using PublicParameterlessConstructor to preserve the type. See https://github.com/mono/linker/issues/1878
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string ReceiverTypeName { get; }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == this)
             {

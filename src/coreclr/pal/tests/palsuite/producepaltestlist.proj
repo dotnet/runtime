@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<Project DefaultTargets = "ProducePALTestList" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="../../../Directory.Build.props" />
+    <Import Project="issues.targets" />
+    <Target Name="ProducePALTestList">
+        <ReadLinesFromFile File="paltestlist.txt">
+            <Output TaskParameter="Lines" ItemName="PALTestListFromFile"/>
+        </ReadLinesFromFile>
+
+        <ItemGroup>
+            <InitialTrimTestList Include="@(PALTestListFromFile->Trim())" />
+            <FilteredTestList Include="@(InitialTrimTestList)" Condition="'%(Identity)' != '' and !@(InitialTrimTestList->StartsWith('#'))"/>
+            <FilteredTestList Remove="@(ExcludeList)" />
+        </ItemGroup>
+
+        <WriteLinesToFile File="$(RuntimeBinDir)paltests/paltestlist.txt"
+                          Lines="@(FilteredTestList)"
+                          Overwrite="true"
+                          WriteOnlyWhenDifferent="true"/>
+    </Target>
+</Project>

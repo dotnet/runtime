@@ -252,6 +252,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51949", TestPlatforms.tvOS)]
         public static void Call_InstanceNullInside_ThrowsNullReferenceExceptionOnInvocation(bool useInterpreter)
         {
             Expression call = Expression.Call(Expression.Constant(null, typeof(NonGenericClass)), typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.InstanceMethod)));
@@ -290,7 +291,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [PerCompilationType(nameof(Call_NoParameters_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39771", TestPlatforms.Browser)]
         public static void Call_NoParameters(Expression instance, MethodInfo method, object expected, bool useInterpreter)
         {
             Expression call = Expression.Call(instance, method);

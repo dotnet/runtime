@@ -10,7 +10,7 @@ using System.Runtime.Serialization;
 namespace System.Net.Http
 {
     [Serializable]
-    internal class WinHttpException : Win32Exception
+    internal sealed class WinHttpException : Win32Exception
     {
         public WinHttpException(int error, string message) : base(error, message)
         {

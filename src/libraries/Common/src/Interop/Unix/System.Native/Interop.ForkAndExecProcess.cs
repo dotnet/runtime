@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -42,8 +40,8 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ForkAndExecProcess", SetLastError = true)]
-        private static extern unsafe int ForkAndExecProcess(
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ForkAndExecProcess", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static unsafe partial int ForkAndExecProcess(
             string filename, byte** argv, byte** envp, string? cwd,
             int redirectStdin, int redirectStdout, int redirectStderr,
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,

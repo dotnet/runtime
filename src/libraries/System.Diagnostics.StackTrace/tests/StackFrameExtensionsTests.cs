@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/39223", TestPlatforms.Browser)]
     public class StackFrameExtensionsTests
     {
         public static IEnumerable<object[]> StackFrame_TestData()
@@ -44,6 +44,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [MemberData(nameof(HasMethod_TestData))]
         public void HasILOffset_Invoke_ReturnsExpected(StackFrame stackFrame, bool expected)
         {
@@ -57,6 +58,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [MemberData(nameof(HasMethod_TestData))]
         public void HasMethod_Invoke_ReturnsExpected(StackFrame stackFrame, bool expected)
         {

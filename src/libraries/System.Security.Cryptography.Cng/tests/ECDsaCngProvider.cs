@@ -15,12 +15,10 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return new ECDsaCng(keySize);
         }
 
-#if NETCOREAPP
         public ECDsa Create(ECCurve curve)
         {
             return new ECDsaCng(curve);
         }
-#endif
 
         public bool IsCurveValid(Oid oid)
         {

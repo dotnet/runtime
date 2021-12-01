@@ -8,10 +8,16 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// RuntimeEventSource is an EventSource that represents events emitted by the managed runtime.
     /// </summary>
-    [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = "System.Runtime")]
-    internal sealed class RuntimeEventSource : EventSource
+    [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = EventSourceName)]
+    [EventSourceAutoGenerate]
+    internal sealed partial class RuntimeEventSource : EventSource
     {
         internal const string EventSourceName = "System.Runtime";
+
+        public static class Keywords
+        {
+            public const EventKeywords AppContext = (EventKeywords)0x1;
+        }
 
         private static RuntimeEventSource? s_RuntimeEventSource;
         private PollingCounter? _gcHeapSizeCounter;
@@ -26,8 +32,8 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _completedItemsCounter;
         private IncrementingPollingCounter? _allocRateCounter;
         private PollingCounter? _timerCounter;
-
-#if !MONO
+        private PollingCounter? _fragmentationCounter;
+        private PollingCounter? _committedCounter;
         private IncrementingPollingCounter? _exceptionCounter;
         private PollingCounter? _gcTimeCounter;
         private PollingCounter? _gen0SizeCounter;
@@ -38,15 +44,26 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _assemblyCounter;
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
-#endif
+        private IncrementingPollingCounter? _jitTimeCounter;
 
         public static void Initialize()
         {
             s_RuntimeEventSource = new RuntimeEventSource();
         }
 
-        private RuntimeEventSource() : base(new Guid(0x49592C0F, 0x5A05, 0x516D, 0xAA, 0x4B, 0xA6, 0x4E, 0x02, 0x02, 0x6C, 0x89), EventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
+        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
+        // as you can't make a constructor partial.
+        private RuntimeEventSource(int _) { }
+
+        private enum EventId : int
         {
+            AppContextSwitch = 1
+        }
+
+        [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational, Keywords = Keywords.AppContext)]
+        internal void LogAppContextSwitch(string switchName, int value)
+        {
+            base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
@@ -59,8 +76,8 @@ namespace System.Diagnostics.Tracing
 
                 // On disable, PollingCounters will stop polling for values so it should be fine to leave them around.
                 _cpuTimeCounter ??= new PollingCounter("cpu-usage", this, () => RuntimeEventSourceHelper.GetCpuUsage()) { DisplayName = "CPU Usage", DisplayUnits = "%" };
-                _workingSetCounter ??= new PollingCounter("working-set", this, () => (double)(Environment.WorkingSet / 1000000)) { DisplayName = "Working Set", DisplayUnits = "MB" };
-                _gcHeapSizeCounter ??= new PollingCounter("gc-heap-size", this, () => (double)(GC.GetTotalMemory(false) / 1000000)) { DisplayName = "GC Heap Size", DisplayUnits = "MB" };
+                _workingSetCounter ??= new PollingCounter("working-set", this, () => (double)(Environment.WorkingSet / 1_000_000)) { DisplayName = "Working Set", DisplayUnits = "MB" };
+                _gcHeapSizeCounter ??= new PollingCounter("gc-heap-size", this, () => (double)(GC.GetTotalMemory(false) / 1_000_000)) { DisplayName = "GC Heap Size", DisplayUnits = "MB" };
                 _gen0GCCounter ??= new IncrementingPollingCounter("gen-0-gc-count", this, () => GC.CollectionCount(0)) { DisplayName = "Gen 0 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
                 _gen1GCCounter ??= new IncrementingPollingCounter("gen-1-gc-count", this, () => GC.CollectionCount(1)) { DisplayName = "Gen 1 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
                 _gen2GCCounter ??= new IncrementingPollingCounter("gen-2-gc-count", this, () => GC.CollectionCount(2)) { DisplayName = "Gen 2 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
@@ -70,7 +87,11 @@ namespace System.Diagnostics.Tracing
                 _completedItemsCounter ??= new IncrementingPollingCounter("threadpool-completed-items-count", this, () => ThreadPool.CompletedWorkItemCount) { DisplayName = "ThreadPool Completed Work Item Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _allocRateCounter ??= new IncrementingPollingCounter("alloc-rate", this, () => GC.GetTotalAllocatedBytes()) { DisplayName = "Allocation Rate", DisplayUnits = "B", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _timerCounter ??= new PollingCounter("active-timer-count", this, () => Timer.ActiveCount) { DisplayName = "Number of Active Timers" };
-#if !MONO
+                _fragmentationCounter ??= new PollingCounter("gc-fragmentation", this, () => {
+                    var gcInfo = GC.GetGCMemoryInfo();
+                    return gcInfo.HeapSizeBytes != 0 ? gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes : 0;
+                 }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
+                _committedCounter ??= new PollingCounter("gc-committed", this, () => (double)(GC.GetGCMemoryInfo().TotalCommittedBytes / 1_000_000)) { DisplayName = "GC Committed Bytes", DisplayUnits = "MB" };
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
                 _gen0SizeCounter ??= new PollingCounter("gen-0-size", this, () => GC.GetGenerationSize(0)) { DisplayName = "Gen 0 Size", DisplayUnits = "B" };
@@ -79,9 +100,11 @@ namespace System.Diagnostics.Tracing
                 _lohSizeCounter ??= new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size", DisplayUnits = "B" };
                 _pohSizeCounter ??= new PollingCounter("poh-size", this, () => GC.GetGenerationSize(4)) { DisplayName = "POH (Pinned Object Heap) Size", DisplayUnits = "B" };
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
-                _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetILBytesJitted()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
-                _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.CompilerServices.RuntimeHelpers.GetMethodsJittedCount()) { DisplayName = "Number of Methods Jitted" };
-#endif
+                _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.JitInfo.GetCompiledILBytes()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
+                _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.JitInfo.GetCompiledMethodCount()) { DisplayName = "Number of Methods Jitted" };
+                _jitTimeCounter ??= new IncrementingPollingCounter("time-in-jit", this, () => System.Runtime.JitInfo.GetCompilationTime().TotalMilliseconds) { DisplayName = "Time spent in JIT", DisplayUnits = "ms", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+
+                AppContext.LogSwitchValues(this);
             }
 
         }

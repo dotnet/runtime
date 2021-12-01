@@ -1,9 +1,9 @@
-#include "mono/eventpipe/ep.h"
-#include "mono/eventpipe/ep-block.h"
-#include "mono/eventpipe/ep-event.h"
-#include "mono/eventpipe/ep-event-instance.h"
-#include "mono/eventpipe/ep-stream.h"
-#include "eglib/test/test.h"
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-block.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-event-instance.h>
+#include <eventpipe/ep-stream.h>
+#include <eglib/test/test.h>
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 
@@ -331,8 +331,8 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-//TODO: Add perf test just doing write into fast serializer with different event types (no event alloc/instancing). Write into void
-//stream but still write into same memory buffer to do something.
+// TODO: Add perf test just doing write into fast serializer with different event types (no event alloc/instancing). Write into void
+// stream but still write into same memory buffer to do something.
 
 static Test ep_fastserializer_tests [] = {
 	{"fast_serializer_object_fast_serialize", test_fast_serializer_object_fast_serialize},

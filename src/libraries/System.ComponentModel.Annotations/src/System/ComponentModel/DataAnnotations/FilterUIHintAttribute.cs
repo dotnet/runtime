@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -9,7 +10,7 @@ namespace System.ComponentModel.DataAnnotations
     /// An attribute used to specify the filtering behavior for a column.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
-    [Obsolete("This attribute is no longer in use and will be ignored if applied.")]
+    [Obsolete("FilterUIHintAttribute has been deprecated and is not supported.")]
     public sealed class FilterUIHintAttribute : Attribute
     {
         private readonly UIHintAttribute.UIHintImplementation _implementation;
@@ -82,7 +83,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="obj">An System.Object.</param>
         /// <returns>true if obj is a FilterUIHintAttribute and its value is the same
         /// as this instance; otherwise, false.</returns>
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is FilterUIHintAttribute otherAttribute && _implementation.Equals(otherAttribute._implementation);
     }
 }

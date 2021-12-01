@@ -10,6 +10,7 @@ using Microsoft.Win32.SafeHandles;
 using CFStringRef = System.IntPtr;
 using CFArrayRef = System.IntPtr;
 using FSEventStreamRef = System.IntPtr;
+using CFIndex = System.IntPtr;
 using size_t = System.IntPtr;
 using FSEventStreamEventId = System.UInt64;
 using CFTimeInterval = System.Double;
@@ -72,30 +73,22 @@ internal static partial class Interop
             kFSEventStreamCreateFlagFileEvents  = 0x00000010
         }
 
-        /// <summary>
-        /// The EventStream callback that will be called for every event batch.
-        /// </summary>
-        /// <param name="streamReference">The stream that was created for this callback.</param>
-        /// <param name="clientCallBackInfo">A pointer to optional context info; otherwise, IntPtr.Zero.</param>
-        /// <param name="numEvents">The number of paths, events, and IDs. Path[2] corresponds to Event[2] and ID[2], etc.</param>
-        /// <param name="eventPaths">The paths that have changed somehow, according to their corresponding event.</param>
-        /// <param name="eventFlags">The events for the corresponding path.</param>
-        /// <param name="eventIds">The machine-and-disk-drive-unique Event ID for the specific event.</param>
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal unsafe delegate void FSEventStreamCallback(
-            FSEventStreamRef streamReference,
-            IntPtr clientCallBackInfo,
-            size_t numEvents,
-            byte** eventPaths,
-            FSEventStreamEventFlags* eventFlags,
-            FSEventStreamEventId* eventIds);
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct FSEventStreamContext
+        {
+            public CFIndex version;
+            public IntPtr info;
+            public IntPtr retain;
+            public IntPtr release;
+            public IntPtr copyDescription;
+        }
 
         /// <summary>
         /// Internal wrapper to create a new EventStream to listen to events from the core OS (such as File System events).
         /// </summary>
         /// <param name="allocator">Should be IntPtr.Zero</param>
-        /// <param name="cb">A callback instance that will be called for every event batch.</param>
-        /// <param name="context">Should be IntPtr.Zero</param>
+        /// <param name="callback">A callback instance that will be called for every event batch.</param>
+        /// <param name="context">FSEventStreamContext structure to associate with this stream.</param>
         /// <param name="pathsToWatch">A CFArray of the path(s) to watch for events.</param>
         /// <param name="sinceWhen">
         /// The start point to receive events from. This can be to retrieve historical events or only new events.
@@ -106,38 +99,15 @@ internal static partial class Interop
         /// <param name="flags">Flags to say what kind of events should be sent through this stream.</param>
         /// <returns>On success, returns a pointer to an FSEventStream object; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
-        [DllImport(Interop.Libraries.CoreServicesLibrary, CharSet = CharSet.Ansi)]
-        private static extern SafeEventStreamHandle FSEventStreamCreate(
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary, CharSet = CharSet.Ansi)]
+        internal static unsafe partial SafeEventStreamHandle FSEventStreamCreate(
             IntPtr                      allocator,
-            FSEventStreamCallback       cb,
-            IntPtr                      context,
+            delegate* unmanaged<FSEventStreamRef, IntPtr, size_t, byte**, FSEventStreamEventFlags*, FSEventStreamEventId*, void> callback,
+            FSEventStreamContext*       context,
             SafeCreateHandle            pathsToWatch,
             FSEventStreamEventId        sinceWhen,
             CFTimeInterval              latency,
             FSEventStreamCreateFlags    flags);
-
-        /// <summary>
-        /// Creates a new EventStream to listen to events from the core OS (such as File System events).
-        /// </summary>
-        /// <param name="cb">A callback instance that will be called for every event batch.</param>
-        /// <param name="pathsToWatch">A CFArray of the path(s) to watch for events.</param>
-        /// <param name="sinceWhen">
-        /// The start point to receive events from. This can be to retrieve historical events or only new events.
-        /// To get historical events, pass in the corresponding ID of the event you want to start from.
-        /// To get only new events, pass in kFSEventStreamEventIdSinceNow.
-        /// </param>
-        /// <param name="latency">Coalescing period to wait before sending events.</param>
-        /// <param name="flags">Flags to say what kind of events should be sent through this stream.</param>
-        /// <returns>On success, returns a valid SafeCreateHandle to an FSEventStream object; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static SafeEventStreamHandle FSEventStreamCreate(
-            FSEventStreamCallback       cb,
-            SafeCreateHandle            pathsToWatch,
-            FSEventStreamEventId        sinceWhen,
-            CFTimeInterval              latency,
-            FSEventStreamCreateFlags    flags)
-        {
-            return FSEventStreamCreate(IntPtr.Zero, cb, IntPtr.Zero, pathsToWatch, sinceWhen, latency, flags);
-        }
 
         /// <summary>
         /// Attaches an EventStream to a RunLoop so events can be received. This should usually be the current thread's RunLoop.
@@ -145,8 +115,8 @@ internal static partial class Interop
         /// <param name="streamRef">The stream to attach to the RunLoop</param>
         /// <param name="runLoop">The RunLoop to attach the stream to</param>
         /// <param name="runLoopMode">The mode of the RunLoop; this should usually be kCFRunLoopDefaultMode. See the documentation for RunLoops for more info.</param>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern void FSEventStreamScheduleWithRunLoop(
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial void FSEventStreamScheduleWithRunLoop(
             SafeEventStreamHandle   streamRef,
             CFRunLoopRef            runLoop,
             SafeCreateHandle        runLoopMode);
@@ -156,30 +126,30 @@ internal static partial class Interop
         /// </summary>
         /// <param name="streamRef">The stream to receive events on.</param>
         /// <returns>Returns true if the stream was started; otherwise, returns false and no events will be received.</returns>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern bool FSEventStreamStart(SafeEventStreamHandle streamRef);
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial bool FSEventStreamStart(SafeEventStreamHandle streamRef);
 
         /// <summary>
         /// Stops receiving events on the specified stream. The stream can be restarted and not miss any events.
         /// </summary>
         /// <param name="streamRef">The stream to stop receiving events on.</param>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern void FSEventStreamStop(SafeEventStreamHandle streamRef);
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial void FSEventStreamStop(SafeEventStreamHandle streamRef);
 
         /// <summary>
         /// Stops receiving events on the specified stream. The stream can be restarted and not miss any events.
         /// </summary>
         /// <param name="streamRef">The stream to stop receiving events on.</param>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern void FSEventStreamStop(IntPtr streamRef);
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial void FSEventStreamStop(IntPtr streamRef);
 
         /// <summary>
         /// Invalidates an EventStream and removes it from any RunLoops.
         /// </summary>
         /// <param name="streamRef">The FSEventStream to invalidate</param>
         /// <remarks>This can only be called after FSEventStreamScheduleWithRunLoop has be called</remarks>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern void FSEventStreamInvalidate(IntPtr streamRef);
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial void FSEventStreamInvalidate(IntPtr streamRef);
 
         /// <summary>
         /// Removes the event stream from the RunLoop.
@@ -187,8 +157,8 @@ internal static partial class Interop
         /// <param name="streamRef">The stream to remove from the RunLoop</param>
         /// <param name="runLoop">The RunLoop to remove the stream from.</param>
         /// <param name="runLoopMode">The mode of the RunLoop; this should usually be kCFRunLoopDefaultMode. See the documentation for RunLoops for more info.</param>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern void FSEventStreamUnscheduleFromRunLoop(
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial void FSEventStreamUnscheduleFromRunLoop(
             SafeEventStreamHandle   streamRef,
             CFRunLoopRef            runLoop,
             SafeCreateHandle        runLoopMode);
@@ -197,7 +167,7 @@ internal static partial class Interop
         /// Releases a reference count on the specified EventStream and, if necessary, cleans the stream up.
         /// </summary>
         /// <param name="streamRef">The stream on which to decrement the reference count.</param>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern void FSEventStreamRelease(IntPtr streamRef);
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial void FSEventStreamRelease(IntPtr streamRef);
     }
 }

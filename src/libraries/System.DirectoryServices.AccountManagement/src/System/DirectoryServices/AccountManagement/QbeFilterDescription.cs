@@ -10,7 +10,7 @@ namespace System.DirectoryServices.AccountManagement
     //
     // A collection of individual property filters
     //
-    internal class QbeFilterDescription
+    internal sealed class QbeFilterDescription
     {
         private readonly ArrayList _filtersToApply = new ArrayList();
 
@@ -31,11 +31,8 @@ namespace System.DirectoryServices.AccountManagement
     //
     // Constructs individual property filters, given the name of the property
     //
-    internal class FilterFactory
+    internal static class FilterFactory
     {
-        // Put a private constructor because this class should only be used as static methods
-        private FilterFactory() { }
-
         private static readonly Hashtable s_subclasses = new Hashtable();
 
         static FilterFactory()
@@ -123,236 +120,236 @@ namespace System.DirectoryServices.AccountManagement
 
     // The derived classes
 
-    internal class DescriptionFilter : FilterBase
+    internal sealed class DescriptionFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalDescription;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class SidFilter : FilterBase
+    internal sealed class SidFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalSid;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class SamAccountNameFilter : FilterBase
+    internal sealed class SamAccountNameFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalSamAccountName;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class DistinguishedNameFilter : FilterBase
+    internal sealed class DistinguishedNameFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalDistinguishedName;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
-    internal class GuidFilter : FilterBase
+    internal sealed class GuidFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalGuid;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
-    internal class IdentityClaimFilter : FilterBase
+    internal sealed class IdentityClaimFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalIdentityClaims;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class UserPrincipalNameFilter : FilterBase
+    internal sealed class UserPrincipalNameFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalUserPrincipalName;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
-    internal class StructuralObjectClassFilter : FilterBase
+    internal sealed class StructuralObjectClassFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalStructuralObjectClass;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
-    internal class NameFilter : FilterBase
+    internal sealed class NameFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalName;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class DisplayNameFilter : FilterBase
+    internal sealed class DisplayNameFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalDisplayName;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
-    internal class CertificateFilter : FilterBase
+    internal sealed class CertificateFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AuthenticablePrincipalCertificates;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class AuthPrincEnabledFilter : FilterBase
+    internal sealed class AuthPrincEnabledFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AuthenticablePrincipalEnabled;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class PermittedWorkstationFilter : FilterBase
+    internal sealed class PermittedWorkstationFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoPermittedWorkstations;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class PermittedLogonTimesFilter : FilterBase
+    internal sealed class PermittedLogonTimesFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoPermittedLogonTimes;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class ExpirationDateFilter : FilterBase
+    internal sealed class ExpirationDateFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoExpirationDate;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class SmartcardLogonRequiredFilter : FilterBase
+    internal sealed class SmartcardLogonRequiredFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoSmartcardRequired;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class DelegationPermittedFilter : FilterBase
+    internal sealed class DelegationPermittedFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoDelegationPermitted;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class HomeDirectoryFilter : FilterBase
+    internal sealed class HomeDirectoryFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoHomeDirectory;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class HomeDriveFilter : FilterBase
+    internal sealed class HomeDriveFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoHomeDrive;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class ScriptPathFilter : FilterBase
+    internal sealed class ScriptPathFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoScriptPath;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class PasswordNotRequiredFilter : FilterBase
+    internal sealed class PasswordNotRequiredFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PwdInfoPasswordNotRequired;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class PasswordNeverExpiresFilter : FilterBase
+    internal sealed class PasswordNeverExpiresFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PwdInfoPasswordNeverExpires;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class CannotChangePasswordFilter : FilterBase
+    internal sealed class CannotChangePasswordFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PwdInfoCannotChangePassword;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class AllowReversiblePasswordEncryptionFilter : FilterBase
+    internal sealed class AllowReversiblePasswordEncryptionFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PwdInfoAllowReversiblePasswordEncryption;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class GivenNameFilter : FilterBase
+    internal sealed class GivenNameFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.UserGivenName;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class MiddleNameFilter : FilterBase
+    internal sealed class MiddleNameFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.UserMiddleName;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class SurnameFilter : FilterBase
+    internal sealed class SurnameFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.UserSurname;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class EmailAddressFilter : FilterBase
+    internal sealed class EmailAddressFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.UserEmailAddress;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class VoiceTelephoneNumberFilter : FilterBase
+    internal sealed class VoiceTelephoneNumberFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.UserVoiceTelephoneNumber;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class EmployeeIDFilter : FilterBase
+    internal sealed class EmployeeIDFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.UserEmployeeID;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class GroupIsSecurityGroupFilter : FilterBase
+    internal sealed class GroupIsSecurityGroupFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.GroupIsSecurityGroup;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class GroupScopeFilter : FilterBase
+    internal sealed class GroupScopeFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.GroupGroupScope;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class ServicePrincipalNameFilter : FilterBase
+    internal sealed class ServicePrincipalNameFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.ComputerServicePrincipalNames;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class ExtensionCacheFilter : FilterBase
+    internal sealed class ExtensionCacheFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PrincipalExtensionCache;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class BadPasswordAttemptFilter : FilterBase
+    internal sealed class BadPasswordAttemptFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PwdInfoLastBadPasswordAttempt;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class LastLogonTimeFilter : FilterBase
+    internal sealed class LastLogonTimeFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoLastLogon;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class LockoutTimeFilter : FilterBase
+    internal sealed class LockoutTimeFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoAcctLockoutTime;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class ExpiredAccountFilter : FilterBase
+    internal sealed class ExpiredAccountFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoExpiredAccount;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class PasswordSetTimeFilter : FilterBase
+    internal sealed class PasswordSetTimeFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.PwdInfoLastPasswordSet;
         public override string PropertyName { get { return PropertyNameStatic; } }
     }
 
-    internal class BadLogonCountFilter : FilterBase
+    internal sealed class BadLogonCountFilter : FilterBase
     {
         public const string PropertyNameStatic = PropertyNames.AcctInfoBadLogonCount;
         public override string PropertyName { get { return PropertyNameStatic; } }

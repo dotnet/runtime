@@ -2,83 +2,132 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         /// <summary>
         /// Tracks information on the number of threads we want/have in different states in our thread pool.
         /// </summary>
-        [StructLayout(LayoutKind.Explicit)]
         private struct ThreadCounts
         {
-            /// <summary>
-            /// Max possible thread pool threads we want to have.
-            /// </summary>
-            [FieldOffset(0)]
-            public short numThreadsGoal;
+            // SOS's ThreadPool command depends on this layout
+            private const byte NumProcessingWorkShift = 0;
+            private const byte NumExistingThreadsShift = 16;
+            private const byte NumThreadsGoalShift = 32;
 
-            /// <summary>
-            /// Number of thread pool threads that currently exist.
-            /// </summary>
-            [FieldOffset(2)]
-            public short numExistingThreads;
+            private ulong _data; // SOS's ThreadPool command depends on this name
+
+            private ThreadCounts(ulong data) => _data = data;
+
+            private short GetInt16Value(byte shift) => (short)(_data >> shift);
+            private void SetInt16Value(short value, byte shift) =>
+                _data = (_data & ~((ulong)ushort.MaxValue << shift)) | ((ulong)(ushort)value << shift);
 
             /// <summary>
             /// Number of threads processing work items.
             /// </summary>
-            [FieldOffset(4)]
-            public short numProcessingWork;
-
-            [FieldOffset(0)]
-            private long _asLong;
-
-            public static ThreadCounts VolatileReadCounts(ref ThreadCounts counts)
+            public short NumProcessingWork
             {
-                return new ThreadCounts
+                get => GetInt16Value(NumProcessingWorkShift);
+                set
                 {
-                    _asLong = Volatile.Read(ref counts._asLong)
-                };
-            }
-
-            public static ThreadCounts CompareExchangeCounts(ref ThreadCounts location, ThreadCounts newCounts, ThreadCounts oldCounts)
-            {
-                ThreadCounts result = new ThreadCounts
-                {
-                    _asLong = Interlocked.CompareExchange(ref location._asLong, newCounts._asLong, oldCounts._asLong)
-                };
-
-                if (result == oldCounts)
-                {
-                    result.Validate();
-                    newCounts.Validate();
+                    Debug.Assert(value >= 0);
+                    SetInt16Value(value, NumProcessingWorkShift);
                 }
-                return result;
             }
 
-            public static bool operator ==(ThreadCounts lhs, ThreadCounts rhs) => lhs._asLong == rhs._asLong;
-
-            public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs._asLong != rhs._asLong;
-
-            public override bool Equals(object? obj)
+            public void SubtractNumProcessingWork(short value)
             {
-                return obj is ThreadCounts counts && this._asLong == counts._asLong;
+                Debug.Assert(value >= 0);
+                Debug.Assert(value <= NumProcessingWork);
+
+                _data -= (ulong)(ushort)value << NumProcessingWorkShift;
             }
 
-            public override int GetHashCode()
+            public void InterlockedDecrementNumProcessingWork()
             {
-                return (int)(_asLong >> 8) + numThreadsGoal;
+                Debug.Assert(NumProcessingWorkShift == 0);
+
+                ThreadCounts counts = new ThreadCounts(Interlocked.Decrement(ref _data));
+                Debug.Assert(counts.NumProcessingWork >= 0);
             }
 
-            private void Validate()
+            /// <summary>
+            /// Number of thread pool threads that currently exist.
+            /// </summary>
+            public short NumExistingThreads
             {
-                Debug.Assert(numThreadsGoal > 0, "Goal must be positive");
-                Debug.Assert(numExistingThreads >= 0, "Number of existing threads must be non-zero");
-                Debug.Assert(numProcessingWork >= 0, "Number of threads processing work must be non-zero");
-                Debug.Assert(numProcessingWork <= numExistingThreads, $"Num processing work ({numProcessingWork}) must be less than or equal to Num existing threads ({numExistingThreads})");
+                get => GetInt16Value(NumExistingThreadsShift);
+                set
+                {
+                    Debug.Assert(value >= 0);
+                    SetInt16Value(value, NumExistingThreadsShift);
+                }
             }
+
+            public void SubtractNumExistingThreads(short value)
+            {
+                Debug.Assert(value >= 0);
+                Debug.Assert(value <= NumExistingThreads);
+
+                _data -= (ulong)(ushort)value << NumExistingThreadsShift;
+            }
+
+            /// <summary>
+            /// Max possible thread pool threads we want to have.
+            /// </summary>
+            public short NumThreadsGoal
+            {
+                get => GetInt16Value(NumThreadsGoalShift);
+                set
+                {
+                    Debug.Assert(value > 0);
+                    SetInt16Value(value, NumThreadsGoalShift);
+                }
+            }
+
+            public ThreadCounts InterlockedSetNumThreadsGoal(short value)
+            {
+                ThreadPoolInstance._threadAdjustmentLock.VerifyIsLocked();
+
+                ThreadCounts counts = this;
+                while (true)
+                {
+                    ThreadCounts newCounts = counts;
+                    newCounts.NumThreadsGoal = value;
+
+                    ThreadCounts countsBeforeUpdate = InterlockedCompareExchange(newCounts, counts);
+                    if (countsBeforeUpdate == counts)
+                    {
+                        return newCounts;
+                    }
+
+                    counts = countsBeforeUpdate;
+                }
+            }
+
+            public ThreadCounts VolatileRead() => new ThreadCounts(Volatile.Read(ref _data));
+
+            public ThreadCounts InterlockedCompareExchange(ThreadCounts newCounts, ThreadCounts oldCounts)
+            {
+#if DEBUG
+                if (newCounts.NumThreadsGoal != oldCounts.NumThreadsGoal)
+                {
+                    ThreadPoolInstance._threadAdjustmentLock.VerifyIsLocked();
+                }
+#endif
+
+                return new ThreadCounts(Interlocked.CompareExchange(ref _data, newCounts._data, oldCounts._data));
+            }
+
+            public static bool operator ==(ThreadCounts lhs, ThreadCounts rhs) => lhs._data == rhs._data;
+            public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs._data != rhs._data;
+
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is ThreadCounts other && _data == other._data;
+            public override int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
     }
 }

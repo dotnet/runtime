@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
@@ -9,6 +9,10 @@
     <DefineConstants Condition="'$(EnableComBinder)'=='true'">$(DefineConstants);ENABLECOMBINDER</DefineConstants>
     <AllowUnsafeBlocks Condition="'$(EnableComBinder)'=='true'">true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />
+    <ILLinkDescriptorsXmls Condition="'$(TargetsWindows)' == 'true'" Include="$(ILLinkDirectory)ILLink.Descriptors.Windows.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Binder.cs" />
@@ -243,6 +247,7 @@
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Resources.ResourceManager" />

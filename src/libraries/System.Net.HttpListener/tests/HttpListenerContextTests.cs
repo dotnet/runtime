@@ -108,7 +108,6 @@ namespace System.Net.Tests
             Assert.Equal("user", context.User.Identity.Name);
 
             HttpListenerWebSocketContext webSocketContext = await context.AcceptWebSocketAsync(null);
-            IPrincipal user = webSocketContext.User;
 
             // Should be copied as User gets disposed when HttpListenerContext is closed.
             Assert.NotSame(context.User, webSocketContext.User);

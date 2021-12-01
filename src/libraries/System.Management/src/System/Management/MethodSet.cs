@@ -49,7 +49,7 @@ namespace System.Management
     {
         private readonly ManagementObject parent;
 
-        private class enumLock
+        private sealed class enumLock
         {
         } //used to lock usage of BeginMethodEnum/NextMethod
 

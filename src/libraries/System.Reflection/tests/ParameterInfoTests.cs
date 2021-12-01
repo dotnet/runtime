@@ -173,6 +173,15 @@ namespace System.Reflection.Tests
             Assert.Equal(Missing.Value, parameterInfo.DefaultValue);
         }
 
+        [Fact]
+        public void DefaultValue_ForByRefLikeArg_ReturnsNull()
+        {
+            ParameterInfo parameterInfo = GetParameterInfo(typeof(ParameterInfoMetadata), nameof(ParameterInfoMetadata.MethodWithByRefLikeArgWithDefault), 0);
+            Assert.True(parameterInfo.HasDefaultValue);
+            Assert.Null(parameterInfo.DefaultValue);
+            Assert.Null(parameterInfo.RawDefaultValue);
+        }
+
         [Theory]
         [InlineData(typeof(ParameterInfoMetadata), "Method1", 1, false)]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithOutParameter", 1, false)]
@@ -218,6 +227,22 @@ namespace System.Reflection.Tests
             Assert.NotNull(prov.GetCustomAttributes(true).SingleOrDefault(a => a.GetType().Equals(attrType)));
             Assert.True(prov.IsDefined(attrType, false));
             Assert.True(prov.IsDefined(attrType, true));
+        }
+
+        [Theory]
+        [InlineData(0, true, 30)]
+        [InlineData(1, false, -1)]
+        [InlineData(2, true, 50)]
+        public void CustomAttributesInheritanceTest(int paramIndex, bool exists, int expectedMyAttributeValue)
+        {
+            ParameterInfo parameterInfo = GetParameterInfo(typeof(DerivedParameterInfoMetadata), "VirtualMethodWithCustomAttributes", paramIndex);
+            CustomAttributeData attribute = parameterInfo.CustomAttributes.SingleOrDefault(a => a.AttributeType.Equals(typeof(MyAttribute)));
+            Assert.Equal(exists, attribute != null);
+
+            ICustomAttributeProvider prov = parameterInfo as ICustomAttributeProvider;
+            MyAttribute myAttribute = prov.GetCustomAttributes(typeof(MyAttribute), true).SingleOrDefault() as MyAttribute;
+            Assert.Equal(exists, myAttribute != null);
+            Assert.Equal(expectedMyAttributeValue, exists ? myAttribute.Value : expectedMyAttributeValue);
         }
 
         [Fact]
@@ -336,6 +361,7 @@ namespace System.Reflection.Tests
             public void Foo3([CustomBindingFlags(Value = BindingFlags.DeclaredOnly)] BindingFlags bf = BindingFlags.FlattenHierarchy ) { }
 
             public void MethodWithCustomAttribute([My(2)]string str, int iValue, long lValue) { }
+            public virtual void VirtualMethodWithCustomAttributes([My(3)]int val1, [My(4)]int val2, int val3) { }
 
             public void Method1(string str, int iValue, long lValue) { }
             public void Method2() { }
@@ -354,11 +380,18 @@ namespace System.Reflection.Tests
             public void MethodWithDefaultDateTime(DateTime arg = default(DateTime)) { }
             public void MethodWithDefaultNullableDateTime(DateTime? arg = default(DateTime?)) { }
 
+            public void MethodWithByRefLikeArgWithDefault(MyByRefLikeStruct arg = default) { }
+
             public void MethodWithEnum(AttributeTargets arg = AttributeTargets.All) { }
             public void MethodWithNullableEnum(AttributeTargets? arg = AttributeTargets.All) { }
 
             public int MethodWithOptionalAndNoDefault([Optional] object o) { return 1; }
             public int MethodWithOptionalDefaultOutInMarshalParam([MarshalAs(UnmanagedType.LPWStr)][Out][In] string str = "") { return 1; }
+        }
+
+        public class DerivedParameterInfoMetadata : ParameterInfoMetadata
+        {
+            override public void VirtualMethodWithCustomAttributes([My(30)]int val1, int val2, [My(50)]int val3) { }
         }
 
         public class GenericClass<T>
@@ -369,7 +402,8 @@ namespace System.Reflection.Tests
 
         private class MyAttribute : Attribute
         {
-            internal MyAttribute(int i) { }
+            public int Value {get; private set;}
+            internal MyAttribute(int i) { Value = i;}
         }
 
         internal sealed class CustomBindingFlagsAttribute : UsableCustomConstantAttribute
@@ -399,6 +433,11 @@ namespace System.Reflection.Tests
                 MemberImpl = pretendMember;
                 PositionImpl = pretendPosition;
             }
+        }
+
+        public ref struct MyByRefLikeStruct
+        {
+            public int MyInt;
         }
     }
 }

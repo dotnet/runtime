@@ -4,8 +4,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.NameResolution.Tests
@@ -19,8 +21,16 @@ namespace System.Net.NameResolution.Tests
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+
+        public static bool GetHostEntryWorks =
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+            PlatformDetection.IsNotArmNorArm64Process &&
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
+            !PlatformDetection.IsOSX &&
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+            !PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst;
+
+        [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
@@ -68,12 +78,13 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
-        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName) =>
+        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)    
+        {
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
+        }
 
         [Fact]
         public async Task Dns_GetHostEntryAsync_IPString_Ok() =>
@@ -92,6 +103,44 @@ namespace System.Net.NameResolution.Tests
             Assert.NotNull(list1);
             Assert.NotNull(list2);
             Assert.Equal<IPAddress>(list1, list2);
+        }
+
+        public static bool GetHostEntry_DisableIPv6_Condition = GetHostEntryWorks && RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(nameof(GetHostEntry_DisableIPv6_Condition))]
+        [InlineData("")]
+        [InlineData(TestSettings.LocalHost)]
+        public void Dns_GetHostEntry_DisableIPv6_ExcludesIPv6Addresses(string hostnameOuter)
+        {
+            RemoteExecutor.Invoke(RunTest, hostnameOuter).Dispose();
+
+            static void RunTest(string hostnameInner)
+            {
+                AppContext.SetSwitch("System.Net.DisableIPv6", true);
+                IPHostEntry entry = Dns.GetHostEntry(hostnameInner);
+                foreach (IPAddress address in entry.AddressList)
+                {
+                    Assert.NotEqual(AddressFamily.InterNetworkV6, address.AddressFamily);
+                }
+            }   
+        }
+
+        [ConditionalTheory(nameof(GetHostEntry_DisableIPv6_Condition))]
+        [InlineData("")]
+        [InlineData(TestSettings.LocalHost)]
+        public void Dns_GetHostEntryAsync_DisableIPv6_ExcludesIPv6Addresses(string hostnameOuter)
+        {
+            RemoteExecutor.Invoke(RunTest, hostnameOuter).Dispose();
+
+            static async Task RunTest(string hostnameInner)
+            {
+                AppContext.SetSwitch("System.Net.DisableIPv6", true);
+                IPHostEntry entry = await Dns.GetHostEntryAsync(hostnameInner);
+                foreach (IPAddress address in entry.AddressList)
+                {
+                    Assert.NotEqual(AddressFamily.InterNetworkV6, address.AddressFamily);
+                }
+            }
         }
 
         [Fact]
@@ -227,6 +276,56 @@ namespace System.Net.NameResolution.Tests
 
             Assert.Equal(ipEntry.HostName, stringEntry.HostName);
             Assert.Equal(ipEntry.AddressList, stringEntry.AddressList);
+        }
+
+        [OuterLoop]
+        [Theory]
+        [MemberData(nameof(AddressFamilySpecificTestData))]
+        public async Task DnsGetHostEntry_LocalHost_AddressFamilySpecific(bool useAsync, string host, AddressFamily addressFamily)
+        {
+            IPHostEntry entry =
+                useAsync ? await Dns.GetHostEntryAsync(host, addressFamily) :
+                Dns.GetHostEntry(host, addressFamily);
+
+            Assert.All(entry.AddressList, address => Assert.Equal(addressFamily, address.AddressFamily));
+        }
+
+        public static TheoryData<bool, string, AddressFamily> AddressFamilySpecificTestData =>
+            new TheoryData<bool, string, AddressFamily>()
+            {
+                // async, hostname, af
+                { false, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { false, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 },
+                { true, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { true, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 }
+            };
+
+        [Fact]
+        public async Task DnsGetHostEntry_PreCancelledToken_Throws()
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Dns.GetHostEntryAsync(TestSettings.LocalHost, cts.Token));
+            Assert.Equal(cts.Token, oce.CancellationToken);
+        }
+
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
+        [Fact]
+        public async Task DnsGetHostEntry_PostCancelledToken_Throws()
+        {
+            using var cts = new CancellationTokenSource();
+
+            Task task = Dns.GetHostEntryAsync(TestSettings.UncachedHost, cts.Token);
+
+            // This test might flake if the cancellation token takes too long to trigger:
+            // It's a race between the DNS server getting back to us and the cancellation processing.
+            cts.Cancel();
+
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
         }
     }
 }

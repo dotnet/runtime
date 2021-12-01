@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.IO;
 using System.Diagnostics;
 using System.Globalization;
@@ -11,7 +10,7 @@ using System.Xml.Schema;
 
 namespace System.Xml
 {
-    internal class XmlLoader
+    internal sealed class XmlLoader
     {
         private XmlDocument? _doc;
         private XmlReader? _reader;
@@ -866,7 +865,7 @@ namespace System.Xml
 
         private string EntitizeName(string name)
         {
-            return "&" + name + ";";
+            return $"&{name};";
         }
 
         //The function is called when expanding the entity when its children being asked

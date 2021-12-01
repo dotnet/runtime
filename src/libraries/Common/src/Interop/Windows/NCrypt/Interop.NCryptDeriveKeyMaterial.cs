@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -16,14 +15,14 @@ internal static partial class Interop
         /// <summary>
         ///     Generate a key from a secret agreement
         /// </summary>
-        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        private static extern ErrorCode NCryptDeriveKey(
+        [GeneratedDllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        private static partial ErrorCode NCryptDeriveKey(
             SafeNCryptSecretHandle hSharedSecret,
             string pwszKDF,
-            [In] ref NCryptBufferDesc pParameterList,
-            [Out, MarshalAs(UnmanagedType.LPArray)] byte[]? pbDerivedKey,
+            ref NCryptBufferDesc pParameterList,
+            [MarshalAs(UnmanagedType.LPArray)] byte[]? pbDerivedKey,
             int cbDerivedKey,
-            [Out] out int pcbResult,
+            out int pcbResult,
             SecretAgreementFlags dwFlags);
 
         /// <summary>
@@ -213,7 +212,7 @@ internal static partial class Interop
         /// <summary>
         ///     Derive key material from a secret agreement using the TLS KDF
         /// </summary>
-        internal static byte[] DeriveKeyMaterialTls(
+        internal static unsafe byte[] DeriveKeyMaterialTls(
             SafeNCryptSecretHandle secretAgreement,
             byte[] label,
             byte[] seed,
@@ -221,28 +220,25 @@ internal static partial class Interop
         {
             Span<NCryptBuffer> buffers = stackalloc NCryptBuffer[2];
 
-            unsafe
+            fixed (byte* pLabel = label, pSeed = seed)
             {
-                fixed (byte* pLabel = label, pSeed = seed)
-                {
-                    NCryptBuffer labelBuffer = default;
-                    labelBuffer.cbBuffer = label.Length;
-                    labelBuffer.BufferType = BufferType.KdfTlsLabel;
-                    labelBuffer.pvBuffer = new IntPtr(pLabel);
-                    buffers[0] = labelBuffer;
+                NCryptBuffer labelBuffer = default;
+                labelBuffer.cbBuffer = label.Length;
+                labelBuffer.BufferType = BufferType.KdfTlsLabel;
+                labelBuffer.pvBuffer = new IntPtr(pLabel);
+                buffers[0] = labelBuffer;
 
-                    NCryptBuffer seedBuffer = default;
-                    seedBuffer.cbBuffer = seed.Length;
-                    seedBuffer.BufferType = BufferType.KdfTlsSeed;
-                    seedBuffer.pvBuffer = new IntPtr(pSeed);
-                    buffers[1] = seedBuffer;
+                NCryptBuffer seedBuffer = default;
+                seedBuffer.cbBuffer = seed.Length;
+                seedBuffer.BufferType = BufferType.KdfTlsSeed;
+                seedBuffer.pvBuffer = new IntPtr(pSeed);
+                buffers[1] = seedBuffer;
 
-                    return DeriveKeyMaterial(
-                        secretAgreement,
-                        BCryptNative.KeyDerivationFunction.Tls,
-                        buffers,
-                        flags);
-                }
+                return DeriveKeyMaterial(
+                    secretAgreement,
+                    BCryptNative.KeyDerivationFunction.Tls,
+                    buffers,
+                    flags);
             }
         }
     }

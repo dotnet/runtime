@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'tvOS'">true</IgnoreForCI>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -22,6 +25,7 @@
     <Compile Include="FileSystemWatcher.File.NotifyFilter.cs" />
     <Compile Include="FileSystemWatcher.InternalBufferSize.cs" />
     <Compile Include="FileSystemWatcher.MultipleWatchers.cs" />
+    <Compile Include="FileSystemWatcher.SymbolicLink.cs" />
     <Compile Include="FileSystemWatcher.WaitForChanged.cs" />
     <Compile Include="FileSystemWatcher.unit.cs" />
     <!-- Helpers -->
@@ -31,6 +35,8 @@
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
              Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="FileSystemWatcher.Unix.cs" />

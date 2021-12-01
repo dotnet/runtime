@@ -14,7 +14,7 @@ namespace System.Text.Json
             private byte[] _rentedBuffer;
             private int _topOfStack;
 
-            internal StackRowStack(int initialSize)
+            public StackRowStack(int initialSize)
             {
                 _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialSize);
                 _topOfStack = _rentedBuffer.Length;
@@ -48,7 +48,9 @@ namespace System.Text.Json
 
             internal StackRow Pop()
             {
-                Debug.Assert(_topOfStack <= _rentedBuffer.Length - StackRow.Size);
+                Debug.Assert(_rentedBuffer != null);
+                Debug.Assert(_topOfStack <= _rentedBuffer!.Length - StackRow.Size);
+
                 StackRow row = MemoryMarshal.Read<StackRow>(_rentedBuffer.AsSpan(_topOfStack));
                 _topOfStack += StackRow.Size;
                 return row;

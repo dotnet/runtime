@@ -1,87 +1,41 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <DefineConstants Condition="'$(TargetsWindows)'=='true'">$(DefineConstants);TargetsWindows</DefineConstants>
+    <DefineConstants Condition="'$(TargetsBrowser)'=='true'">$(DefineConstants);TARGETS_BROWSER</DefineConstants>
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL;HTTP3</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="true" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <Scenario>WasmTestOnBrowser</Scenario>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+  </PropertyGroup>
+
+  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
+
+  <!-- Browser specific files -->
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false"/>
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
+             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\NetEventSource.Common.cs"
-             Link="Common\System\Net\Http\aspnetcore\NetEventSource.Common.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicConnection.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicConnection.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicListener.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicListener.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicStream.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicStream.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicImplementationProvider.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicImplementationProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicListenerProvider.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicListenerProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicConnectionProvider.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicConnectionProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicStreamProvider.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicStreamProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockImplementationProvider.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockImplementationProvider.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockListener.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockListener.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockConnection.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockConnection.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockStream.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockStream.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusCodes.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusCodes.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusHelper.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\NetEventSource.Quic.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\NetEventSource.Quic.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicClientConnectionOptions.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicClientConnectionOptions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicImplementationProviders.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicImplementationProviders.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicConnection.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicConnection.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicListener.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicListener.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicListenerOptions.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicListenerOptions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicOperationAbortedException.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicOperationAbortedException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicStream.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicStream.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicException.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicConnectionAbortedException.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicConnectionAbortedException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicStreamAbortedException.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\QuicStreamAbortedException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\Interop.MsQuic.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\Interop.MsQuic.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicEnums.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicEnums.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs" 
-             Link="Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="System\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'"
@@ -92,10 +46,18 @@
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\ConsoleEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\ConsoleEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ByteLoggingStream.cs"
+             Link="Common\System\IO\ByteLoggingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs"
+             Link="CommonTest\System\IO\DelegateDelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
              Link="Common\System\IO\DelegateStream.cs" />
+    <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
+             Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\RemoteServerQuery.cs"
              Link="Common\System\Net\RemoteServerQuery.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
              Link="Common\System\Net\Configuration.Certificates.cs" />
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
@@ -120,6 +82,8 @@
              Link="Common\System\Net\TestWebProxies.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"
              Link="Common\System\Net\VerboseTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpAgnosticLoopbackServer.cs"
+             Link="Common\System\Net\Http\HttpAgnosticLoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs"
              Link="Common\System\Net\Http\LoopbackProxyServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs"
@@ -130,6 +94,8 @@
              Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTestBase.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
+             Link="Common\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
              Link="Common\System\Net\Http\TestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs"
@@ -167,8 +133,12 @@
              Link="Common\System\Net\Http\HttpClientHandlerTest.Cookies.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
-    <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
+    <Compile Include="SocketsHttpHandlerTest.Cancellation.cs" />
+    <Compile Include="SocketsHttpHandlerTest.Http2FlowControl.cs" />
+    <Compile Include="SocketsHttpHandlerTest.Http2KeepAlivePing.cs" />
     <Compile Include="HttpClientHandlerTest.Connect.cs" />
     <Compile Include="HttpClientHandlerTest.Finalization.cs" />
     <Compile Include="HttpClientHandlerTest.Headers.cs" />
@@ -179,6 +149,9 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Proxy.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.Proxy.cs" />
     <Compile Include="HttpClientHandlerTest.Http3.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.RemoteServer.cs"
+             Link="Common\System\Net\Http\HttpClientHandlerTest.RemoteServer.cs" />
+    <Compile Include="HttpClientHandlerTest.RequestRetry.cs" />
     <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs" />
@@ -187,7 +160,7 @@
     <Compile Include="HttpClientHandlerTestBase.SocketsHttpHandler.cs" />
     <Compile Include="DiagnosticsTests.cs" />
     <Compile Include="HttpClientTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs"
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs" Condition="'$(TargetsBrowser)' != 'true'"
              Link="Common\System\Net\Http\HttpClientEKUTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClient.SelectedSitesTest.cs"
              Link="Common\System\Net\Http\HttpClient.SelectedSitesTest.cs" />
@@ -195,33 +168,27 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpMessageInvokerTest.cs" />
     <Compile Include="HttpMethodTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpRetryProtocolTests.cs"
-             Link="Common\System\Net\Http\HttpRetryProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\IdnaProtocolTests.cs"
              Link="Common\System\Net\Http\IdnaProtocolTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpProtocolTests.cs"
              Link="Common\System\Net\Http\HttpProtocolTests.cs" />
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
-    <Compile Include="MsQuicTestBase.cs" />
-    <Compile Include="MsQuicTests.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\PostScenarioTest.cs"
              Link="Common\System\Net\Http\PostScenarioTest.cs" />
-    <Compile Include="QuicConnectionTests.cs" />
-    <Compile Include="QuicListenerTests.cs" />
-    <Compile Include="QuicStreamTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\RepeatedFlushContent.cs"
              Link="Common\System\Net\Http\RepeatedFlushContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ResponseStreamTest.cs"
              Link="Common\System\Net\Http\ResponseStreamTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\SchSendAuxRecordHttpTest.cs"
-             Link="Common\System\Net\Http\SchSendAuxRecordHttpTest.cs" />
     <Compile Include="SyncHttpHandlerTest.cs" />
+    <Compile Include="TelemetryTest.cs" />
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />
+    <Compile Include="ResponseStreamConformanceTests.cs" />
+    <Compile Include="ResponseStreamZeroByteReadTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs"
              Link="Common\System\Net\Http\SyncBlockingContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\DefaultCredentialsTest.cs"
@@ -230,14 +197,123 @@
              Link="Common\System\Net\Http\ThrowingContent.cs" />
     <Compile Include="ThrowingContent.netcore.cs" />
     <Compile Include="Watchdog.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetwork.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetwork.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkConnectionListenerFactory.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetworkConnectionListenerFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs"
+             Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
+             Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs"
+             Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
+             Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
+             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
+             Link="Common\System\Net\DebugSafeHandle.cs" />
+    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
+             Link="Common\System\Net\InternalException.cs" />
+    <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
+             Link="Common\System\Net\ExceptionCheck.cs" />
+    <!-- Add NTAuthentication -->
+    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
+             Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
+             Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
+             Link="Common\System\Collections\Generic\BidirectionalDictionary.cs" />
+    <Compile Include="$(CommonPath)System\NotImplemented.cs"
+             Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
+             Link="Common\System\Net\ContextFlagsPal.cs" />
+    <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
+             Link="Common\System\Net\NegotiationInfoClass.cs" />
+    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
+             Link="Common\System\Net\NTAuthentication.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs"
+             Link="Common\System\Net\SecurityStatusPal.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs"
+             Link="Common\System\Net\Security\SecurityBuffer.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs"
+             Link="Common\System\Net\Security\SecurityBufferType.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"
+             Link="Common\System\Net\Security\SafeCredentialReference.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
+             Link="Common\System\Net\Security\SSPIHandleCache.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
+             Link="Common\System\Net\Security\NetEventSource.Security.cs" />
+    <!-- Windows specific NTAuthentication -->
+    <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs"
+             Link="Common\System\Net\Security\SecurityContextTokenHandle.cs" />
+    <Compile Include="$(CommonPath)System\Net\SecurityStatusAdapterPal.Windows.cs"
+             Link="Common\System\Net\SecurityStatusAdapterPal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextFlagsAdapterPal.Windows.cs"
+             Link="Common\System\Net\ContextFlagsAdapterPal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Windows.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.Windows.cs"
+             Link="Common\System\Net\Security\NetEventSource.Security.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CertFreeCertificateContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_ALGORITHM_IDENTIFIER.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_BIT_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Bindings.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_Bindings.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs"
+             Link="Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\NegotiationInfoClass.cs"
+             Link="Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs"
+             Link="Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs"
+             Link="Common\Interop\Windows\SChannel\SecPkgContext_CipherInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPISecureChannelType.cs"
+             Link="Common\Interop\Windows\SspiCli\SSPISecureChannelType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\ISSPIInterface.cs"
+             Link="Common\Interop\Windows\SspiCli\ISSPIInterface.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIAuthType.cs"
+             Link="Common\Interop\Windows\SspiCli\SSPIAuthType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfoClass.cs"
+             Link="Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfo.cs"
+             Link="Common\Interop\Windows\SspiCli\SecurityPackageInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Sizes.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SafeDeleteContext.cs"
+         Link="Common\Interop\Windows\SspiCli\SafeDeleteContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\GlobalSSPI.cs"
+             Link="Common\Interop\Windows\SspiCli\GlobalSSPI.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SSPI.cs"
+             Link="Common\Interop\Windows\SspiCli\Interop.SSPI.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecuritySafeHandles.cs"
+             Link="Common\Interop\Windows\SspiCli\SecuritySafeHandles.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs"
+             Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
+    <Compile Include="NtAuthTests.Windows.cs" />
+    <Compile Include="ImpersonatedAuthTests.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsBrowser)' == 'true'">
@@ -284,6 +360,8 @@
              Link="Common\System\Net\Http\HuffmanDecoder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs"
              Link="Common\System\Net\Http\HuffmanEncoder.cs" />
+    <Compile Include="LoopbackSocksServer.cs" />
+    <Compile Include="SocksProxyTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="SelectedSitesTest.txt">
@@ -293,5 +371,9 @@
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

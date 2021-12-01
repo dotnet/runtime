@@ -28,7 +28,7 @@ namespace System.Threading
 
             SafeWaitHandle handle = Interop.Kernel32.CreateEventEx(IntPtr.Zero, name, eventFlags, AccessRights);
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (handle.IsInvalid)
             {
                 handle.SetHandleAsInvalid();
@@ -54,13 +54,13 @@ namespace System.Threading
 
             if (myHandle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_INVALID_NAME)
                     return OpenExistingResult.NameNotFound;
                 if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND)
                     return OpenExistingResult.PathNotFound;
-                if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+                if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     return OpenExistingResult.NameInvalid;
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);

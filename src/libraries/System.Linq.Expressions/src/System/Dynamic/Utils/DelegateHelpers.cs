@@ -1,33 +1,49 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-
-#if !FEATURE_DYNAMIC_DELEGATE
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
-#endif
 
 namespace System.Dynamic.Utils
 {
     internal static class DelegateHelpers
     {
-        internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> handler)
+        // This can be flipped to true using feature switches at publishing time
+        internal static bool CanEmitObjectArrayDelegate => true;
+
+        // Separate class so that the it can be trimmed away and doesn't get conflated
+        // with the Reflection.Emit statics below.
+        private static class DynamicDelegateLightup
         {
-#if !FEATURE_DYNAMIC_DELEGATE
-            return CreateObjectArrayDelegateRefEmit(delegateType, handler);
-#else
-            return Internal.Runtime.Augments.DynamicDelegateAugments.CreateObjectArrayDelegate(delegateType, handler);
-#endif
+            public static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegate { get; }
+                = CreateObjectArrayDelegateInternal();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                Justification = "Works around https://github.com/dotnet/linker/issues/2392")]
+            private static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegateInternal()
+                => Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments")!
+                    .GetMethod("CreateObjectArrayDelegate")!
+                    .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
         }
 
-
-#if !FEATURE_DYNAMIC_DELEGATE
+        internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> handler)
+        {
+            if (CanEmitObjectArrayDelegate)
+            {
+                return CreateObjectArrayDelegateRefEmit(delegateType, handler);
+            }
+            else
+            {
+                return DynamicDelegateLightup.CreateObjectArrayDelegate(delegateType, handler);
+            }
+        }
 
         private static readonly CacheDict<Type, MethodInfo> s_thunks = new CacheDict<Type, MethodInfo>(256);
         private static readonly MethodInfo s_FuncInvoke = typeof(Func<object?[], object?>).GetMethod("Invoke")!;
-        private static readonly MethodInfo s_ArrayEmpty = typeof(Array).GetMethod(nameof(Array.Empty))!.MakeGenericMethod(typeof(object));
+        private static readonly MethodInfo s_ArrayEmpty = GetEmptyObjectArrayMethod();
         private static readonly MethodInfo[] s_ActionThunks = GetActionThunks();
         private static readonly MethodInfo[] s_FuncThunks = GetFuncThunks();
         private static int s_ThunksCreated;
@@ -62,6 +78,9 @@ namespace System.Dynamic.Utils
             return (TReturn)handler(new object?[]{t1, t2});
         }
 
+        private static MethodInfo GetEmptyObjectArrayMethod() =>
+            typeof(Array).GetMethod(nameof(Array.Empty))!.MakeGenericMethod(typeof(object));
+
         private static MethodInfo[] GetActionThunks()
         {
             Type delHelpers = typeof(DelegateHelpers);
@@ -78,6 +97,8 @@ namespace System.Dynamic.Utils
                                     delHelpers.GetMethod("FuncThunk2")!};
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "The above ActionThunk and FuncThunk methods don't have trimming annotations.")]
         private static MethodInfo? GetCSharpThunk(Type returnType, bool hasReturnValue, ParameterInfo[] parameters)
         {
             try
@@ -284,7 +305,5 @@ namespace System.Dynamic.Utils
         {
             return (t.IsPointer) ? typeof(IntPtr) : t;
         }
-
-#endif
     }
 }

@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -12,7 +11,7 @@ using Xunit;
 public class WindowAndCursorProps
 {
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
+    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS)]  // Expected behavior specific to Unix
     public static void BufferWidth_GetUnix_ReturnsWindowWidth()
     {
         Assert.Equal(Console.WindowWidth, Console.BufferWidth);
@@ -26,7 +25,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
+    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS)]  // Expected behavior specific to Unix
     public static void BufferHeight_GetUnix_ReturnsWindowHeight()
     {
         Assert.Equal(Console.WindowHeight, Console.BufferHeight);
@@ -63,7 +62,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
+    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS)]  // Expected behavior specific to Unix
     public static void WindowWidth_GetUnix_Success()
     {
         // Validate that Console.WindowWidth returns some value in a non-redirected o/p.
@@ -95,7 +94,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
+    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS)]  // Expected behavior specific to Unix
     public static void WindowHeight_GetUnix_Success()
     {
         // Validate that Console.WindowHeight returns some value in a non-redirected o/p.
@@ -111,7 +110,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
+    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS)]  // Expected behavior specific to Unix
     public static void LargestWindowWidth_UnixGet_ReturnsExpected()
     {
         Helpers.RunInNonRedirectedOutput((data) => Assert.Equal(Console.WindowWidth, Console.LargestWindowWidth));
@@ -119,7 +118,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
+    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS)]  // Expected behavior specific to Unix
     public static void LargestWindowHeight_UnixGet_ReturnsExpected()
     {
         Helpers.RunInNonRedirectedOutput((data) => Assert.Equal(Console.WindowHeight, Console.LargestWindowHeight));
@@ -192,7 +191,7 @@ public class WindowAndCursorProps
     }
 
     [Theory]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
+    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS )]  // Expected behavior specific to Unix
     [InlineData(true)]
     [InlineData(false)]
     public static void CursorVisible_SetUnixRedirected_Nop(bool value)
@@ -227,7 +226,7 @@ public class WindowAndCursorProps
         Assert.NotNull(Console.Title);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void Title_Get_Windows_NoNulls()
     {
@@ -236,9 +235,9 @@ public class WindowAndCursorProps
         Assert.Equal(trimmedTitle, title);
     }
 
-    private static bool IsNotWindowsNanoServerAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+    private static bool IsNotWindowsNanoServerAndNotServerCoreAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsNanoNorServerCore && RemoteExecutor.IsSupported;
 
-    [ConditionalTheory(nameof(IsNotWindowsNanoServerAndRemoteExecutorSupported))] // Nano currently ignores set title
+    [ConditionalTheory(nameof(IsNotWindowsNanoServerAndNotServerCoreAndRemoteExecutorSupported))] // Nano and Server Core currently ignore set title
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34454", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [InlineData(0)]
     [InlineData(1)]
@@ -277,7 +276,7 @@ public class WindowAndCursorProps
         AssertExtensions.Throws<ArgumentNullException>("value", () => Console.Title = null);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     [OuterLoop] // makes noise, not very inner-loop friendly
     public static void Beep_Invoke_Success()
     {
@@ -323,7 +322,7 @@ public class WindowAndCursorProps
     [OuterLoop] // clears the screen, not very inner-loop friendly
     public static void Clear_Invoke_Success()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
+        if (!OperatingSystem.IsWindows() || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
         {
             // Nothing to verify; just run the code.
             Console.Clear();
@@ -338,10 +337,10 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void SetCursorPosition_Invoke_Success()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
+        if (!OperatingSystem.IsWindows() || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
         {
             int origLeft = Console.CursorLeft;
             int origTop = Console.CursorTop;
@@ -365,7 +364,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void GetCursorPosition_Invoke_ReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
@@ -383,7 +382,7 @@ public class WindowAndCursorProps
             Assert.Equal(origTop, Console.CursorTop);
             Assert.Equal(origTuple, Console.GetCursorPosition());
         }
-        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(0, Console.CursorLeft);
             Assert.Equal(0, Console.CursorTop);
@@ -392,7 +391,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void CursorLeft_Set_GetReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
@@ -405,7 +404,7 @@ public class WindowAndCursorProps
             Console.CursorLeft = origLeft;
             Assert.Equal(origLeft, Console.CursorLeft);
         }
-        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(0, Console.CursorLeft);
         }
@@ -414,7 +413,7 @@ public class WindowAndCursorProps
     [Theory]
     [InlineData(-1)]
     [InlineData(short.MaxValue + 1)]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void CursorLeft_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
         if (PlatformDetection.IsWindows && Console.IsOutputRedirected)
@@ -435,7 +434,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void CursorTop_Set_GetReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
@@ -448,7 +447,7 @@ public class WindowAndCursorProps
             Console.CursorTop = origTop;
             Assert.Equal(origTop, Console.CursorTop);
         }
-        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(0, Console.CursorTop);
         }
@@ -457,7 +456,7 @@ public class WindowAndCursorProps
     [Theory]
     [InlineData(-1)]
     [InlineData(short.MaxValue + 1)]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void CursorTop_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
         if (PlatformDetection.IsWindows & Console.IsOutputRedirected)
@@ -506,7 +505,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS)]
     public void CursorSize_GetUnix_ReturnsExpected()
     {
         Assert.Equal(100, Console.CursorSize);
@@ -561,7 +560,7 @@ public class WindowAndCursorProps
     }
 
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     public void SetWindowSize_GetWindowSize_ReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)

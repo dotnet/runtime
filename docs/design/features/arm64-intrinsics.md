@@ -173,7 +173,7 @@ It is also worth noting `System.Runtime.Intrinsics.X86` naming conventions will 
 operations which take vector argument(s), but contain an implicit cast(s) to the base type and therefore operate only
 on the first item of the argument vector(s).
 
-### Intinsic Method Argument and Return Types
+### Intrinsic Method Argument and Return Types
 
 Intrinsic methods will typically use a standard set of argument and return types:
 
@@ -289,7 +289,7 @@ This document will refer to half precision floating point as `Half`.
 + CoreCLR and `CIL` in general do not have general support for a `Half` type
 + There is an open request to expose `Half` intrinsics
 + There is an outstanding proposal to add `System.Half` to support this request
-https://github.com/dotnet/corefx/issues/25702
+https://github.com/dotnet/runtime/issues/936
 + Implementation of `Half` features will be adjusted based on
   + Implementation of the `System.Half` proposal
   + Availability of supporting hardware (extensions)

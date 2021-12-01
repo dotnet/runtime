@@ -21,11 +21,11 @@ namespace System.Security.Cryptography
         private const int StatusUnsuccessfulRetryCount = 1;
 
         /// <summary>Encrypts data using the public key.</summary>
-        public override unsafe byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) =>
+        public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) =>
             EncryptOrDecrypt(data, padding, encrypt: true);
 
         /// <summary>Decrypts data using the private key.</summary>
-        public override unsafe byte[] Decrypt(byte[] data, RSAEncryptionPadding padding) =>
+        public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding) =>
             EncryptOrDecrypt(data, padding, encrypt: false);
 
         /// <summary>Encrypts data using the public key.</summary>

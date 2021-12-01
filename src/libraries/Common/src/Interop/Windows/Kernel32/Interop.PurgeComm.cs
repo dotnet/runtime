@@ -4,9 +4,9 @@
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         internal static class PurgeFlags
         {
@@ -16,8 +16,8 @@ internal partial class Interop
             internal const uint PURGE_RXCLEAR = 0x0008;  // Kill the typeahead buffer if there.
         }
 
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool PurgeComm(
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static partial bool PurgeComm(
             SafeFileHandle hFile,
             uint dwFlags);
     }

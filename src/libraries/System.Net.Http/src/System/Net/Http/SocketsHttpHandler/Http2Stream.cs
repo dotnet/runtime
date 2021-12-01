@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
@@ -34,10 +35,11 @@ namespace System.Net.Http
             /// <summary>Stores any trailers received after returning the response content to the caller.</summary>
             private HttpResponseHeaders? _trailers;
 
-            private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
-            private int _pendingWindowUpdate;
-            private CancelableCreditWaiter? _creditWaiter;
+            private MultiArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
+            private Http2StreamWindowManager _windowManager;
+            private CreditWaiter? _creditWaiter;
             private int _availableCredit;
+            private readonly object _creditSyncObject = new object(); // split from SyncObject to avoid lock ordering problems with Http2Connection.SyncObject
 
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
@@ -83,10 +85,7 @@ namespace System.Net.Http
 
             private int _headerBudgetRemaining;
 
-            private const int StreamWindowSize = DefaultInitialWindowSize;
-
-            // See comment on ConnectionWindowThreshold.
-            private const int StreamWindowThreshold = StreamWindowSize / 8;
+            private bool _sendRstOnResponseClose;
 
             public Http2Stream(HttpRequestMessage request, Http2Connection connection)
             {
@@ -98,9 +97,10 @@ namespace System.Net.Http
 
                 _responseProtocolState = ResponseProtocolState.ExpectingStatus;
 
-                _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
+                _responseBuffer = new MultiArrayBuffer(InitialStreamBufferSize);
 
-                _pendingWindowUpdate = 0;
+                _windowManager = new Http2StreamWindowManager(connection, this);
+
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
                 if (_request.Content == null)
@@ -140,12 +140,16 @@ namespace System.Net.Http
             {
                 StreamId = streamId;
                 _availableCredit = initialWindowSize;
-                if (NetEventSource.Log.IsEnabled()) Trace($"{_request}, {nameof(initialWindowSize)}={initialWindowSize}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(initialWindowSize)}={initialWindowSize}");
             }
 
             public int StreamId { get; private set; }
 
             public bool SendRequestFinished => _requestCompletionState != StreamCompletionState.InProgress;
+
+            public bool ExpectResponseData => _responseProtocolState == ResponseProtocolState.ExpectingData;
+
+            public Http2Connection Connection => _connection;
 
             public HttpResponseMessage GetAndClearResponse()
             {
@@ -180,9 +184,9 @@ namespace System.Net.Http
                 // either we know we need to do a Expect: 100-continue send or until we know that the copying of our
                 // content completed asynchronously.
                 CancellationTokenRegistration linkedRegistration = default;
+                bool sendRequestContent = true;
                 try
                 {
-                    bool sendRequestContent = true;
                     if (_expect100ContinueWaiter != null)
                     {
                         linkedRegistration = RegisterRequestBodyCancellation(cancellationToken);
@@ -192,6 +196,8 @@ namespace System.Net.Http
                     if (sendRequestContent)
                     {
                         using var writeStream = new Http2WriteStream(this);
+
+                        if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
 
                         ValueTask vt = _request.Content.InternalCopyToAsync(writeStream, context: null, _requestBodyCancellationSource.Token);
                         if (vt.IsCompleted)
@@ -207,6 +213,8 @@ namespace System.Net.Http
 
                             await vt.ConfigureAwait(false);
                         }
+
+                        if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
                     }
 
                     if (NetEventSource.Log.IsEnabled()) Trace($"Finished sending request body.");
@@ -238,10 +246,10 @@ namespace System.Net.Http
                         Debug.Assert(!sendReset);
 
                         _requestCompletionState = StreamCompletionState.Failed;
+                        SendReset();
                         Complete();
                     }
 
-                    SendReset();
                     if (signalWaiter)
                     {
                         _waitSource.SetResult(true);
@@ -263,23 +271,36 @@ namespace System.Net.Http
                         Debug.Assert(_requestCompletionState == StreamCompletionState.InProgress, $"Request already completed with state={_requestCompletionState}");
                         _requestCompletionState = StreamCompletionState.Completed;
 
+                        bool complete = false;
                         if (_responseCompletionState != StreamCompletionState.InProgress)
                         {
                             // Note, we can reach this point if the response stream failed but cancellation didn't propagate before we finished.
                             sendReset = _responseCompletionState == StreamCompletionState.Failed;
+                            complete = true;
+                        }
+
+                        if (sendReset)
+                        {
+                            SendReset();
+                        }
+                        else if (!sendRequestContent)
+                        {
+                            // Request body hasn't been sent, so we need to notify the server that it won't
+                            // get the body. However, we cannot do it right here because the server can
+                            // reset the whole stream before we will have a chance to read the response body.
+                            _sendRstOnResponseClose = true;
+                        }
+                        else
+                        {
+                            // Send EndStream asynchronously and without cancellation.
+                            // If this fails, it means that the connection is aborting and we will be reset.
+                            _connection.LogExceptions(_connection.SendEndStreamAsync(StreamId));
+                        }
+
+                        if (complete)
+                        {
                             Complete();
                         }
-                    }
-
-                    if (sendReset)
-                    {
-                        SendReset();
-                    }
-                    else
-                    {
-                        // Send EndStream asynchronously and without cancellation.
-                        // If this fails, it means that the connection is aborting and we will be reset.
-                        _connection.LogExceptions(_connection.SendEndStreamAsync(StreamId));
                     }
                 }
             }
@@ -319,7 +340,7 @@ namespace System.Net.Http
 
             private void SendReset()
             {
-                Debug.Assert(!Monitor.IsEntered(SyncObject));
+                Debug.Assert(Monitor.IsEntered(SyncObject));
                 Debug.Assert(_requestCompletionState != StreamCompletionState.InProgress);
                 Debug.Assert(_responseCompletionState != StreamCompletionState.InProgress);
                 Debug.Assert(_requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed,
@@ -330,6 +351,8 @@ namespace System.Net.Http
                 // Don't send a RST_STREAM if we've already received one from the server.
                 if (_resetException == null)
                 {
+                    // If execution reached this line, it's guaranteed that
+                    // _requestCompletionState == StreamCompletionState.Failed or _responseCompletionState == StreamCompletionState.Failed
                     _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
                 }
             }
@@ -344,14 +367,15 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                CreditWaiter? w = _creditWaiter;
-                if (w != null)
+                lock (_creditSyncObject)
                 {
-                    w.Dispose();
-                    _creditWaiter = null;
+                    CreditWaiter? waiter = _creditWaiter;
+                    if (waiter != null)
+                    {
+                        waiter.Dispose();
+                        _creditWaiter = null;
+                    }
                 }
-
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestStop();
             }
 
             private void Cancel()
@@ -377,17 +401,19 @@ namespace System.Net.Http
                 // When cancellation propagates, SendRequestBodyAsync will set _requestCompletionState to Failed
                 requestBodyCancellationSource?.Cancel();
 
-                if (sendReset)
+                lock (SyncObject)
                 {
-                    SendReset();
+                    if (sendReset)
+                    {
+                        SendReset();
+                        Complete();
+                    }
                 }
 
                 if (signalWaiter)
                 {
                     _waitSource.SetResult(true);
                 }
-
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestAborted();
             }
 
             // Returns whether the waiter should be signalled or not.
@@ -395,7 +421,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(Monitor.IsEntered(SyncObject));
 
-                bool sendReset = false;
+                bool sendReset = _sendRstOnResponseClose;
 
                 if (_responseCompletionState == StreamCompletionState.InProgress)
                 {
@@ -403,15 +429,11 @@ namespace System.Net.Http
                     if (_requestCompletionState != StreamCompletionState.InProgress)
                     {
                         sendReset = true;
-                        Complete();
                     }
                 }
 
                 // Discard any remaining buffered response data
-                if (_responseBuffer.ActiveLength != 0)
-                {
-                    _responseBuffer.Discard(_responseBuffer.ActiveLength);
-                }
+                _responseBuffer.DiscardAll();
 
                 _responseProtocolState = ResponseProtocolState.Aborted;
 
@@ -423,10 +445,10 @@ namespace System.Net.Http
 
             public void OnWindowUpdate(int amount)
             {
-                lock (SyncObject)
+                lock (_creditSyncObject)
                 {
                     _availableCredit = checked(_availableCredit + amount);
-                    if (_availableCredit > 0 && _creditWaiter != null && _creditWaiter.IsPending)
+                    if (_availableCredit > 0 && _creditWaiter != null)
                     {
                         int granted = Math.Min(_availableCredit, _creditWaiter.Amount);
                         if (_creditWaiter.TrySetResult(granted))
@@ -437,28 +459,126 @@ namespace System.Net.Http
                 }
             }
 
+            private const int FirstHPackRequestPseudoHeaderId = 1;
+            private const int LastHPackRequestPseudoHeaderId = 7;
+            private const int FirstHPackStatusPseudoHeaderId = 8;
+            private const int LastHPackStatusPseudoHeaderId = 14;
+            private const int FirstHPackNormalHeaderId = 15;
+            private const int LastHPackNormalHeaderId = 61;
+
+            private static readonly int[] s_hpackStaticStatusCodeTable = new int[LastHPackStatusPseudoHeaderId - FirstHPackStatusPseudoHeaderId + 1] { 200, 204, 206, 304, 400, 404, 500 };
+
+            private static readonly (HeaderDescriptor descriptor, byte[] value)[] s_hpackStaticHeaderTable = new (HeaderDescriptor, byte[])[LastHPackNormalHeaderId - FirstHPackNormalHeaderId + 1]
+            {
+                (KnownHeaders.AcceptCharset.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.AcceptEncoding.Descriptor, Encoding.ASCII.GetBytes("gzip, deflate")),
+                (KnownHeaders.AcceptLanguage.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.AcceptRanges.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Accept.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.AccessControlAllowOrigin.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Age.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Allow.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Authorization.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.CacheControl.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ContentDisposition.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ContentEncoding.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ContentLanguage.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ContentLength.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ContentLocation.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ContentRange.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ContentType.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Cookie.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Date.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ETag.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Expect.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Expires.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.From.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Host.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.IfMatch.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.IfModifiedSince.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.IfNoneMatch.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.IfRange.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.IfUnmodifiedSince.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.LastModified.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Link.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Location.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.MaxForwards.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ProxyAuthenticate.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.ProxyAuthorization.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Range.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Referer.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Refresh.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.RetryAfter.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Server.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.SetCookie.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.StrictTransportSecurity.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.TransferEncoding.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.UserAgent.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Vary.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.Via.Descriptor, Array.Empty<byte>()),
+                (KnownHeaders.WWWAuthenticate.Descriptor, Array.Empty<byte>()),
+            };
+
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
             {
-                // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                Debug.Assert(index >= FirstHPackRequestPseudoHeaderId && index <= LastHPackNormalHeaderId);
+
+                if (index <= LastHPackRequestPseudoHeaderId)
+                {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Invalid request pseudo-header ID {index}.");
+                    throw new HttpRequestException(SR.net_http_invalid_response);
+                }
+                else if (index <= LastHPackStatusPseudoHeaderId)
+                {
+                    int statusCode = s_hpackStaticStatusCodeTable[index - FirstHPackStatusPseudoHeaderId];
+
+                    OnStatus(statusCode);
+                }
+                else
+                {
+                    (HeaderDescriptor descriptor, byte[] value) = s_hpackStaticHeaderTable[index - FirstHPackNormalHeaderId];
+
+                    OnHeader(descriptor, value);
+                }
             }
 
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
             {
-                // TODO: https://github.com/dotnet/runtime/issues/1505
-                Debug.Fail("Currently unused by HPACK, this should never be called.");
+                Debug.Assert(index >= FirstHPackRequestPseudoHeaderId && index <= LastHPackNormalHeaderId);
+
+                if (index <= LastHPackRequestPseudoHeaderId)
+                {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Invalid request pseudo-header ID {index}.");
+                    throw new HttpRequestException(SR.net_http_invalid_response);
+                }
+                else if (index <= LastHPackStatusPseudoHeaderId)
+                {
+                    int statusCode = ParseStatusCode(value);
+
+                    OnStatus(statusCode);
+                }
+                else
+                {
+                    (HeaderDescriptor descriptor, _) = s_hpackStaticHeaderTable[index - FirstHPackNormalHeaderId];
+
+                    OnHeader(descriptor, value);
+                }
             }
 
-            public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+            private void AdjustHeaderBudget(int amount)
             {
-                if (NetEventSource.Log.IsEnabled()) Trace($"{Encoding.ASCII.GetString(name)}: {Encoding.ASCII.GetString(value)}");
-                Debug.Assert(name.Length > 0);
-
-                _headerBudgetRemaining -= name.Length + value.Length;
+                _headerBudgetRemaining -= amount;
                 if (_headerBudgetRemaining < 0)
                 {
                     throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength * 1024L));
                 }
+            }
+
+            private void OnStatus(int statusCode)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"Status code is {statusCode}");
+
+                AdjustHeaderBudget(10); // for ":status" plus 3-digit status code
 
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
@@ -469,100 +589,131 @@ namespace System.Net.Http
                         return;
                     }
 
-                    if (name[0] == (byte)':')
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders)
                     {
-                        if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingStatus)
+                        if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
+                        throw new HttpRequestException(SR.net_http_invalid_response_multiple_status_codes);
+                    }
+
+                    if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
+                    {
+                        // Pseudo-headers are allowed only in header block
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Status pseudo-header received in {_responseProtocolState} state.");
+                        throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
+                    }
+
+                    Debug.Assert(_response != null);
+                    _response.StatusCode = (HttpStatusCode)statusCode;
+
+                    if (statusCode < 200)
+                    {
+                        // We do not process headers from 1xx responses.
+                        _responseProtocolState = ResponseProtocolState.ExpectingIgnoredHeaders;
+
+                        if (_response.StatusCode == HttpStatusCode.Continue && _expect100ContinueWaiter != null)
                         {
-                            // Pseudo-headers are allowed only in header block
-                            if (NetEventSource.Log.IsEnabled()) Trace($"Pseudo-header received in {_responseProtocolState} state.");
-                            throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
-                        }
-
-                        if (name.SequenceEqual(StatusHeaderName))
-                        {
-                            if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
-                            {
-                                if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
-                                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, "duplicate status"));
-                            }
-
-                            int statusValue = ParseStatusCode(value);
-                            Debug.Assert(_response != null);
-                            _response.StatusCode = (HttpStatusCode)statusValue;
-
-                            if (statusValue < 200)
-                            {
-                                // We do not process headers from 1xx responses.
-                                _responseProtocolState = ResponseProtocolState.ExpectingIgnoredHeaders;
-
-                                if (_response.StatusCode == HttpStatusCode.Continue && _expect100ContinueWaiter != null)
-                                {
-                                    if (NetEventSource.Log.IsEnabled()) Trace("Received 100-Continue status.");
-                                    _expect100ContinueWaiter.TrySetResult(true);
-                                }
-                            }
-                            else
-                            {
-                                _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
-
-                                // If we are waiting for a 100-continue response, signal the waiter now.
-                                if (_expect100ContinueWaiter != null)
-                                {
-                                    // If the final status code is >= 300, skip sending the body.
-                                    bool shouldSendBody = (statusValue < 300);
-
-                                    if (NetEventSource.Log.IsEnabled()) Trace($"Expecting 100 Continue but received final status {statusValue}.");
-                                    _expect100ContinueWaiter.TrySetResult(shouldSendBody);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (NetEventSource.Log.IsEnabled()) Trace($"Invalid response pseudo-header '{Encoding.ASCII.GetString(name)}'.");
-                            throw new HttpRequestException(SR.net_http_invalid_response);
+                            if (NetEventSource.Log.IsEnabled()) Trace("Received 100-Continue status.");
+                            _expect100ContinueWaiter.TrySetResult(true);
                         }
                     }
                     else
                     {
-                        if (_responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders)
-                        {
-                            // for 1xx response we ignore all headers.
-                            return;
-                        }
+                        _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
 
-                        if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingTrailingHeaders)
+                        // If we are waiting for a 100-continue response, signal the waiter now.
+                        if (_expect100ContinueWaiter != null)
                         {
-                            if (NetEventSource.Log.IsEnabled()) Trace("Received header before status.");
-                            throw new HttpRequestException(SR.net_http_invalid_response);
-                        }
+                            // If the final status code is >= 300, skip sending the body.
+                            bool shouldSendBody = (statusCode < 300);
 
-                        if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
-                        {
-                            // Invalid header name
-                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
-                        }
-
-                        // Note we ignore the return value from TryAddWithoutValidation;
-                        // if the header can't be added, we silently drop it.
-                        if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
-                        {
-                            Debug.Assert(_trailers != null);
-                            string headerValue = descriptor.GetHeaderValue(value);
-                            _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
-                        }
-                        else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
-                        {
-                            Debug.Assert(_response != null && _response.Content != null);
-                            string headerValue = descriptor.GetHeaderValue(value);
-                            _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
-                        }
-                        else
-                        {
-                            Debug.Assert(_response != null);
-                            string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value);
-                            _response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                            if (NetEventSource.Log.IsEnabled()) Trace($"Expecting 100 Continue but received final status {statusCode}.");
+                            _expect100ContinueWaiter.TrySetResult(shouldSendBody);
                         }
                     }
+                }
+            }
+
+            private void OnHeader(HeaderDescriptor descriptor, ReadOnlySpan<byte> value)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"{descriptor.Name}: {Encoding.ASCII.GetString(value)}");
+
+                AdjustHeaderBudget(descriptor.Name.Length + value.Length);
+
+                Debug.Assert(!Monitor.IsEntered(SyncObject));
+                lock (SyncObject)
+                {
+                    if (_responseProtocolState == ResponseProtocolState.Aborted)
+                    {
+                        // We could have aborted while processing the header block.
+                        return;
+                    }
+
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders)
+                    {
+                        // for 1xx response we ignore all headers.
+                        return;
+                    }
+
+                    if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingTrailingHeaders)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) Trace("Received header before status.");
+                        throw new HttpRequestException(SR.net_http_invalid_response);
+                    }
+
+                    Encoding? valueEncoding = _connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _request);
+
+                    // Note we ignore the return value from TryAddWithoutValidation;
+                    // if the header can't be added, we silently drop it.
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
+                    {
+                        Debug.Assert(_trailers != null);
+                        string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
+                        _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                    }
+                    else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
+                    {
+                        Debug.Assert(_response != null && _response.Content != null);
+                        string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
+                        _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                    }
+                    else
+                    {
+                        Debug.Assert(_response != null);
+                        string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
+                        _response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
+                    }
+                }
+            }
+
+            public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+            {
+                Debug.Assert(name.Length > 0);
+
+                if (name[0] == (byte)':')
+                {
+                    // Pseudo-header
+                    if (name.SequenceEqual(StatusHeaderName))
+                    {
+                        int statusCode = ParseStatusCode(value);
+
+                        OnStatus(statusCode);
+                    }
+                    else
+                    {
+                        if (NetEventSource.Log.IsEnabled()) Trace($"Invalid response pseudo-header '{Encoding.ASCII.GetString(name)}'.");
+                        throw new HttpRequestException(SR.net_http_invalid_response);
+                    }
+                }
+                else
+                {
+                    // Regular header
+                    if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
+                    {
+                        // Invalid header name
+                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                    }
+
+                    OnHeader(descriptor, value);
                 }
             }
 
@@ -644,6 +795,10 @@ namespace System.Net.Http
                         Debug.Assert(_requestCompletionState != StreamCompletionState.Failed);
                     }
 
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingData)
+                    {
+                        _windowManager.Start();
+                    }
                     signalWaiter = _hasWaiter;
                     _hasWaiter = false;
                 }
@@ -674,14 +829,14 @@ namespace System.Net.Http
                             break;
                     }
 
-                    if (_responseBuffer.ActiveLength + buffer.Length > StreamWindowSize)
+                    if (_responseBuffer.ActiveMemory.Length + buffer.Length > _windowManager.StreamWindowSize)
                     {
                         // Window size exceeded.
                         ThrowProtocolError(Http2ProtocolErrorCode.FlowControlError);
                     }
 
                     _responseBuffer.EnsureAvailableSpace(buffer.Length);
-                    buffer.CopyTo(_responseBuffer.AvailableSpan);
+                    _responseBuffer.AvailableMemory.CopyFrom(buffer);
                     _responseBuffer.Commit(buffer.Length);
 
                     if (endStream)
@@ -827,7 +982,7 @@ namespace System.Net.Http
                     else
                     {
                         Debug.Assert(_responseProtocolState == ResponseProtocolState.Complete);
-                        return (false, _responseBuffer.ActiveLength == 0);
+                        return (false, _responseBuffer.IsEmpty);
                     }
                 }
             }
@@ -837,6 +992,8 @@ namespace System.Net.Http
                 bool emptyResponse;
                 try
                 {
+                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStart();
+
                     // Wait for response headers to be read.
                     bool wait;
 
@@ -849,6 +1006,8 @@ namespace System.Net.Http
                         (wait, emptyResponse) = TryEnsureHeaders();
                         Debug.Assert(!wait);
                     }
+
+                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
                 }
                 catch
                 {
@@ -870,6 +1029,7 @@ namespace System.Net.Http
                 {
                     responseContent.SetStream(new Http2ReadStream(this));
                 }
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received response: {_response}");
 
                 // Process Set-Cookie headers.
                 if (_connection._pool.Settings._useCookies)
@@ -878,43 +1038,18 @@ namespace System.Net.Http
                 }
             }
 
-            private void ExtendWindow(int amount)
-            {
-                Debug.Assert(amount > 0);
-                Debug.Assert(_pendingWindowUpdate < StreamWindowThreshold);
-
-                if (_responseProtocolState != ResponseProtocolState.ExpectingData)
-                {
-                    // We are not expecting any more data (because we've either completed or aborted).
-                    // So no need to send any more WINDOW_UPDATEs.
-                    return;
-                }
-
-                _pendingWindowUpdate += amount;
-                if (_pendingWindowUpdate < StreamWindowThreshold)
-                {
-                    return;
-                }
-
-                int windowUpdateSize = _pendingWindowUpdate;
-                _pendingWindowUpdate = 0;
-
-                _connection.LogExceptions(_connection.SendWindowUpdateAsync(StreamId, windowUpdateSize));
-            }
-
             private (bool wait, int bytesRead) TryReadFromBuffer(Span<byte> buffer, bool partOfSyncRead = false)
             {
-                Debug.Assert(buffer.Length > 0);
-
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
                     CheckResponseBodyState();
 
-                    if (_responseBuffer.ActiveLength > 0)
+                    if (!_responseBuffer.IsEmpty)
                     {
-                        int bytesRead = Math.Min(buffer.Length, _responseBuffer.ActiveLength);
-                        _responseBuffer.ActiveSpan.Slice(0, bytesRead).CopyTo(buffer);
+                        MultiMemory activeBuffer = _responseBuffer.ActiveMemory;
+                        int bytesRead = Math.Min(buffer.Length, activeBuffer.Length);
+                        activeBuffer.Slice(0, bytesRead).CopyTo(buffer);
                         _responseBuffer.Discard(bytesRead);
 
                         return (false, bytesRead);
@@ -936,11 +1071,6 @@ namespace System.Net.Http
 
             public int ReadData(Span<byte> buffer, HttpResponseMessage responseMessage)
             {
-                if (buffer.Length == 0)
-                {
-                    return 0;
-                }
-
                 (bool wait, int bytesRead) = TryReadFromBuffer(buffer, partOfSyncRead: true);
                 if (wait)
                 {
@@ -953,9 +1083,9 @@ namespace System.Net.Http
 
                 if (bytesRead != 0)
                 {
-                    ExtendWindow(bytesRead);
+                    _windowManager.AdjustWindow(bytesRead, this);
                 }
-                else
+                else if (buffer.Length != 0)
                 {
                     // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
                     MoveTrailersToResponseMessage(responseMessage);
@@ -966,11 +1096,6 @@ namespace System.Net.Http
 
             public async ValueTask<int> ReadDataAsync(Memory<byte> buffer, HttpResponseMessage responseMessage, CancellationToken cancellationToken)
             {
-                if (buffer.Length == 0)
-                {
-                    return 0;
-                }
-
                 (bool wait, int bytesRead) = TryReadFromBuffer(buffer.Span);
                 if (wait)
                 {
@@ -982,9 +1107,9 @@ namespace System.Net.Http
 
                 if (bytesRead != 0)
                 {
-                    ExtendWindow(bytesRead);
+                    _windowManager.AdjustWindow(bytesRead, this);
                 }
-                else
+                else if (buffer.Length != 0)
                 {
                     // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
                     MoveTrailersToResponseMessage(responseMessage);
@@ -1012,7 +1137,7 @@ namespace System.Net.Http
 
                         if (bytesRead != 0)
                         {
-                            ExtendWindow(bytesRead);
+                            _windowManager.AdjustWindow(bytesRead, this);
                             destination.Write(new ReadOnlySpan<byte>(buffer, 0, bytesRead));
                         }
                         else
@@ -1048,7 +1173,7 @@ namespace System.Net.Http
 
                         if (bytesRead != 0)
                         {
-                            ExtendWindow(bytesRead);
+                            _windowManager.AdjustWindow(bytesRead, this);
                             await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
                         }
                         else
@@ -1087,22 +1212,28 @@ namespace System.Net.Http
                     while (buffer.Length > 0)
                     {
                         int sendSize = -1;
-                        lock (SyncObject)
+                        bool flush = false;
+                        lock (_creditSyncObject)
                         {
                             if (_availableCredit > 0)
                             {
                                 sendSize = Math.Min(buffer.Length, _availableCredit);
                                 _availableCredit -= sendSize;
+
+                                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
+                                if (_availableCredit == 0)
+                                {
+                                    flush = true;
+                                }
                             }
                             else
                             {
                                 if (_creditWaiter is null)
                                 {
-                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, _requestBodyCancellationSource.Token);
+                                    _creditWaiter = new CreditWaiter(_requestBodyCancellationSource.Token);
                                 }
                                 else
                                 {
-                                    Debug.Assert(!_creditWaiter.IsPending);
                                     _creditWaiter.ResetForAwait(_requestBodyCancellationSource.Token);
                                 }
                                 _creditWaiter.Amount = buffer.Length;
@@ -1111,16 +1242,44 @@ namespace System.Net.Http
 
                         if (sendSize == -1)
                         {
+                            // Logically this is part of the else block above, but we can't await while holding the lock.
                             Debug.Assert(_creditWaiter != null);
                             sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
-                            _creditWaiter.CleanUp();
+
+                            lock (_creditSyncObject)
+                            {
+                                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
+                                if (_availableCredit == 0)
+                                {
+                                    flush = true;
+                                }
+                            }
                         }
+
+                        Debug.Assert(sendSize > 0);
 
                         ReadOnlyMemory<byte> current;
                         (current, buffer) = SplitBuffer(buffer, sendSize);
 
-                        await _connection.SendStreamDataAsync(StreamId, current, _requestBodyCancellationSource.Token).ConfigureAwait(false);
+                        await _connection.SendStreamDataAsync(StreamId, current, flush, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                     }
+                }
+                catch (OperationCanceledException e) when (e.CancellationToken == _requestBodyCancellationSource.Token)
+                {
+                    lock (SyncObject)
+                    {
+                        if (_resetException is Exception resetException)
+                        {
+                            if (_canRetry)
+                            {
+                                ThrowRetry(SR.net_http_request_aborted, resetException);
+                            }
+
+                            ThrowRequestAborted(resetException);
+                        }
+                    }
+
+                    throw;
                 }
                 finally
                 {
@@ -1135,7 +1294,7 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
-                    if (_responseBuffer.ActiveLength == 0 && _responseProtocolState == ResponseProtocolState.Complete)
+                    if (_responseBuffer.IsEmpty && _responseProtocolState == ResponseProtocolState.Complete)
                     {
                         fullyConsumed = true;
                     }
@@ -1146,8 +1305,18 @@ namespace System.Net.Http
                 {
                     Cancel();
                 }
+                else if (_sendRstOnResponseClose)
+                {
+                    // Send RST_STREAM with CANCEL to notify the server that it shouldn't
+                    // expect the request body.
+                    // If this fails, it means that the connection is aborting and we will be reset.
+                    _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
+                }
 
-                _responseBuffer.Dispose();
+                lock (SyncObject)
+                {
+                    _responseBuffer.Dispose();
+                }
             }
 
             private CancellationTokenRegistration RegisterRequestBodyCancellation(CancellationToken cancellationToken) =>
@@ -1193,7 +1362,7 @@ namespace System.Net.Http
                 // However, this could still be non-cancelable if HttpMessageInvoker was used, at which point this will only be
                 // cancelable if the caller's token was cancelable.
 
-                _waitSourceCancellation = cancellationToken.UnsafeRegister(static s =>
+                _waitSourceCancellation = cancellationToken.UnsafeRegister(static (s, cancellationToken) =>
                 {
                     var thisRef = (Http2Stream)s!;
 
@@ -1209,17 +1378,9 @@ namespace System.Net.Http
                     {
                         // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
                         thisRef._waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(
-                            CancellationHelper.CreateOperationCanceledException(null, thisRef._waitSourceCancellation.Token)));
+                            CancellationHelper.CreateOperationCanceledException(null, cancellationToken)));
                     }
                 }, this);
-
-                // There's a race condition in UnsafeRegister above.  If cancellation is requested prior to UnsafeRegister,
-                // the delegate may be invoked synchronously as part of the UnsafeRegister call.  In that case, it will execute
-                // before _waitSourceCancellation has been set, which means UnsafeRegister will have set a cancellation
-                // exception into the wait source with a default token rather than the ideal one.  To handle that,
-                // we check for cancellation again, and throw here with the right token.  Worst case, if cancellation is
-                // requested prior to here, we end up allocating an extra OCE object.
-                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 return new ValueTask(this, _waitSource.Version);
             }
@@ -1290,7 +1451,7 @@ namespace System.Net.Http
                     base.Dispose(disposing);
                 }
 
-                public override bool CanRead => true;
+                public override bool CanRead => _http2Stream != null;
                 public override bool CanWrite => false;
 
                 public override int Read(Span<byte> destination)
@@ -1319,14 +1480,14 @@ namespace System.Net.Http
 
                 public override void CopyTo(Stream destination, int bufferSize)
                 {
-                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    ValidateCopyToArguments(destination, bufferSize);
                     Http2Stream http2Stream = _http2Stream ?? throw ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)));
                     http2Stream.CopyTo(_responseMessage, destination, bufferSize);
                 }
 
                 public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
                 {
-                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    ValidateCopyToArguments(destination, bufferSize);
                     Http2Stream? http2Stream = _http2Stream;
                     return
                         http2Stream is null ? Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))) :
@@ -1342,6 +1503,8 @@ namespace System.Net.Http
             private sealed class Http2WriteStream : HttpBaseStream
             {
                 private Http2Stream? _http2Stream;
+
+                public long BytesWritten { get; private set; }
 
                 public Http2WriteStream(Http2Stream http2Stream)
                 {
@@ -1361,7 +1524,7 @@ namespace System.Net.Http
                 }
 
                 public override bool CanRead => false;
-                public override bool CanWrite => true;
+                public override bool CanWrite => _http2Stream != null;
 
                 public override int Read(Span<byte> buffer) => throw new NotSupportedException();
 
@@ -1369,6 +1532,8 @@ namespace System.Net.Http
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
+                    BytesWritten += buffer.Length;
+
                     Http2Stream? http2Stream = _http2Stream;
 
                     if (http2Stream == null)

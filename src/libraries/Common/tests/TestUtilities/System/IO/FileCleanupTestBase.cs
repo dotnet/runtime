@@ -18,8 +18,10 @@ namespace System.IO
         protected static bool IsProcessElevated => s_isElevated.Value;
 
         /// <summary>Initialize the test class base.  This creates the associated test directory.</summary>
-        protected FileCleanupTestBase()
+        protected FileCleanupTestBase(string tempDirectory = null)
         {
+            tempDirectory ??= Path.GetTempPath();
+
             // Use a unique test directory per test class.  The test directory lives in the user's temp directory,
             // and includes both the name of the test class and a random string.  The test class name is included
             // so that it can be easily correlated if necessary, and the random string to helps avoid conflicts if
@@ -31,7 +33,7 @@ namespace System.IO
             string failure = string.Empty;
             for (int i = 0; i <= 2; i++)
             {
-                TestDirectory = Path.Combine(Path.GetTempPath(), GetType().Name + "_" + Path.GetRandomFileName());
+                TestDirectory = Path.Combine(tempDirectory, GetType().Name + "_" + Path.GetRandomFileName());
                 try
                 {
                     Directory.CreateDirectory(TestDirectory);
@@ -79,7 +81,7 @@ namespace System.IO
         /// <param name="index">An optional index value to use as a suffix on the file name.  Typically a loop index.</param>
         /// <param name="memberName">The member name of the function calling this method.</param>
         /// <param name="lineNumber">The line number of the function calling this method.</param>
-        protected string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) =>
+        protected virtual string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) =>
             Path.Combine(TestDirectory, GetTestFileName(index, memberName, lineNumber));
 
         /// <summary>Gets a test file name that is associated with the call site.</summary>
@@ -102,7 +104,9 @@ namespace System.IO
                 if (excessLength < memberName.Length + "...".Length)
                 {
                     // Take a chunk out of the middle as perhaps it's the least interesting part of the name
-                    memberName = memberName.Substring(0, memberName.Length / 2 - excessLength / 2) + "..." + memberName.Substring(memberName.Length / 2 + excessLength / 2);
+                    int halfMemberNameLength = (int)Math.Floor((double)memberName.Length / 2);
+                    int halfExcessLength = (int)Math.Ceiling((double)excessLength / 2);
+                    memberName = memberName.Substring(0, halfMemberNameLength - halfExcessLength) + "..." + memberName.Substring(halfMemberNameLength + halfExcessLength);
 
                     testFileName = GenerateTestFileName(index, memberName, lineNumber);
                     testFilePath = Path.Combine(TestDirectory, testFileName);
@@ -125,5 +129,63 @@ namespace System.IO
                 lineNumber,
                 index.GetValueOrDefault(),
                 Guid.NewGuid().ToString("N").Substring(0, 8)); // randomness to avoid collisions between derived test classes using same base method concurrently
+
+        /// <summary>
+        /// In some cases (such as when running without elevated privileges),
+        /// the symbolic link may fail to create. Only run this test if it creates
+        /// links successfully.
+        /// </summary>
+        protected static bool CanCreateSymbolicLinks => s_canCreateSymbolicLinks.Value;
+
+        private static readonly Lazy<bool> s_canCreateSymbolicLinks = new Lazy<bool>(() =>
+        {
+            bool success = true;
+
+            // Verify file symlink creation
+            string path = Path.GetTempFileName();
+            string linkPath = path + ".link";
+            success = CreateSymLink(path, linkPath, isDirectory: false);
+            try { File.Delete(path); } catch { }
+            try { File.Delete(linkPath); } catch { }
+
+            // Verify directory symlink creation
+            path = Path.GetTempFileName();
+            linkPath = path + ".link";
+            success = success && CreateSymLink(path, linkPath, isDirectory: true);
+            try { Directory.Delete(path); } catch { }
+            try { Directory.Delete(linkPath); } catch { }
+
+            return success;
+        });
+
+        protected static bool CreateSymLink(string targetPath, string linkPath, bool isDirectory)
+        {
+#if NETFRAMEWORK
+            bool isWindows = true;
+#else
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsBrowser()) // OSes that don't support Process.Start()
+            {
+                return false;
+            }
+            bool isWindows = OperatingSystem.IsWindows();
+#endif
+            Process symLinkProcess = new Process();
+            if (isWindows)
+            {
+                symLinkProcess.StartInfo.FileName = "cmd";
+                symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", Path.GetFullPath(linkPath), Path.GetFullPath(targetPath));
+            }
+            else
+            {
+                symLinkProcess.StartInfo.FileName = "/bin/ln";
+                symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", Path.GetFullPath(targetPath), Path.GetFullPath(linkPath));
+            }
+            symLinkProcess.StartInfo.RedirectStandardOutput = true;
+            symLinkProcess.Start();
+
+            symLinkProcess.WaitForExit();
+            return (0 == symLinkProcess.ExitCode);
+        }
+
     }
 }

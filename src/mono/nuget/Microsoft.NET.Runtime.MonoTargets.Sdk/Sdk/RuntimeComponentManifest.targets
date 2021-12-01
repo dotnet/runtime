@@ -1,0 +1,118 @@
+<Project>
+  <Target Name="_MonoReadAvailableComponentsManifest">
+    <Error Condition="'%(ResolvedFrameworkReference.Identity)' == 'Microsoft.NETCore.App' and '%(ResolvedFrameworkReference.RuntimePackPath)' == '' and '$(_MonoRuntimeComponentManifestJsonFilePath)' == ''"
+           Text="Empty ResolveFrameworkReference.RuntimePackPath while trying to read runtime components manifest. ResolvedFrameworkReference available: @(ResolvedFrameworkReference -> '{ %(Identity), RuntimePackPath: %(RuntimePackPath) }')" />
+
+    <PropertyGroup>
+      <_MonoRuntimeComponentManifestJsonFilePath 
+        Condition="'$(_MonoRuntimeComponentManifestJsonFilePath)' == '' and '%(ResolvedFrameworkReference.Identity)' == 'Microsoft.NETCore.App'">$([MSBuild]::NormalizePath('%(RuntimePackPath)', 'runtimes', '$(RuntimeIdentifier)', 'build', 'RuntimeComponentManifest.json'))</_MonoRuntimeComponentManifestJsonFilePath>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(_MonoRuntimeComponentManifestJsonFilePath)')"
+           Text="Unable to read the runtime components manifest as the path: $(_MonoRuntimeComponentManifestJsonFilePath) does not exist" />
+
+    <MonoRuntimeComponentManifestReadTask JsonFilePath="$(_MonoRuntimeComponentManifestJsonFilePath)">
+      <Output TaskParameter="_MonoRuntimeComponentSharedLibExt" ItemName="_MonoRuntimeComponentSharedLibExt" />
+      <Output TaskParameter="_MonoRuntimeComponentStaticLibExt" ItemName="_MonoRuntimeComponentStaticLibExt" />
+      <Output TaskParameter="_MonoRuntimeComponentLinking" ItemName="_MonoRuntimeComponentLinking" />
+      <Output TaskParameter="_MonoRuntimeAvailableComponents" ItemName="_MonoRuntimeAvailableComponents" />
+    </MonoRuntimeComponentManifestReadTask>
+  </Target>
+
+  <Target Name="_MonoComputeAvailableComponentDefinitions" DependsOnTargets="_MonoReadAvailableComponentsManifest">
+    <!-- Input: _MonoRuntimeAvailableComponents item list: the components provided by the runtime -->
+    <!-- Input: _MonoRuntimeComponentLinking property: either 'dynamic' or 'static'.  Are the components static or shared libraries. -->
+    <!-- Output: _MonoRuntimeComponentName item list: the components provided by the runtime, with ComponentLib and ComponentStubLib metadata that gives the filenames of the components relative to the runtime pack native subdirectory -->
+    <PropertyGroup>
+      <_MonoRuntimeComponentCurrentSharedLibExt>@(_MonoRuntimeComponentSharedLibExt->WithMetadataValue('RuntimeIdentifier', '$(RuntimeIdentifier)'))</_MonoRuntimeComponentCurrentSharedLibExt>
+      <_MonoRuntimeComponentCurrentStaticLibExt>@(_MonoRuntimeComponentStaticLibExt->WithMetadataValue('RuntimeIdentifier', '$(RuntimeIdentifier)'))</_MonoRuntimeComponentCurrentStaticLibExt>
+      <_MonoRuntimeComponentCurrentLinking>@(_MonoRuntimeComponentLinking->WithMetadataValue('RuntimeIdentifier', '$(RuntimeIdentifier)'))</_MonoRuntimeComponentCurrentLinking>
+    </PropertyGroup>
+    <Error Condition="'$(_MonoRuntimeComponentCurrentSharedLibExt)' == '' or '$(_MonoRuntimeComponentCurrentStaticLibExt)' == ''"
+           Text="No _MonoRuntimeComponentSharedLibExt or _MonoRuntimeComponentStaticLibExt for '$(RuntimeIdentifier)'. Malformed runtime pack?" />
+    <Error Condition="'$(_MonoRuntimeComponentCurrentLinking)' != 'dynamic' and '$(_MonoRuntimeComponentCurrentLinking)' != 'static'"
+           Text="Value of _MonoRuntimeComponentLinking for '$(RuntimeIdentifier)' must be 'dynamic' or 'static' it is '$(_MonoRuntimeComponentCurrentLinking)'. Malformed runtime pack?" />
+    <ItemGroup Condition="'$(_MonoRuntimeComponentCurrentLinking)' == 'dynamic'">
+      <_MonoRuntimeComponentName Include="@(_MonoRuntimeAvailableComponents)" Condition="'%(RuntimeIdentifier)' == '$(RuntimeIdentifier)'">
+        <ComponentLib>libmono-component-%(Identity)$(_MonoRuntimeComponentCurrentSharedLibExt)</ComponentLib>
+      </_MonoRuntimeComponentName>
+    </ItemGroup>
+    <ItemGroup Condition="'$(_MonoRuntimeComponentCurrentLinking)' == 'static'">
+      <_MonoRuntimeComponentName Include="@(_MonoRuntimeAvailableComponents)" Condition="'%(RuntimeIdentifier)' == '$(RuntimeIdentifier)'">
+        <ComponentLib>libmono-component-%(Identity)-static$(_MonoRuntimeComponentCurrentStaticLibExt)</ComponentLib>
+        <ComponentStubLib>libmono-component-%(Identity)-stub-static$(_MonoRuntimeComponentCurrentStaticLibExt)</ComponentStubLib>
+      </_MonoRuntimeComponentName>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_MonoSelectRuntimeComponents" DependsOnTargets="_MonoComputeAvailableComponentDefinitions">
+    <!-- Input: _MonoComponent item list of names of components that will be enabled (to be defined
+         by the workload) -->
+    <!-- Output: _MonoRuntimeSelectedComponents subset of _MonoRuntimeComponentName items that were
+         in _MonoComponent -->
+    <!-- Output: _MonoRuntimeSelectedStubComponents (static linking only) subset of
+         _MonoRuntimeComponentName items that were not in _MonoComponent -->
+    <!-- Output: _MonoRuntimeUnSelectedComponents subset of _MonoRuntimeComponentName items that were not in _MonoComponent. That is, the components that are available but that weren't selected. -->
+    <!-- Output: _MonoRuntimeUnSelectedStubComponents (static linking only) subset of _MonoRuntimeComponentName items that were in _MonoComponent.  That is, components that were selected - so their stubs should not be linked. -->
+    <!-- Output: _MonoRuntimeComponentLink item list of the filenames to link (relative paths
+         relative to the native/ directory of the runtime pack). For dynamic linking, this is only
+         the enabled components.  For static linking, it also includes stubs for the non-selected
+         components -->
+    <!-- Output: _MonoRuntimeComponentDontLink item list of the filename to exclude from linking
+         (relative paths relative to the native/ directory of the runtime pack). For static linking,
+         this is stubs or components that must not be passed to the native linker. For dynamic
+         linking, this is copmonent shared libraries that must not be bundled with the app
+         -->
+    <!-- Generally the workload should only use one of _MonoRuntimeComponentLink or
+         _MonoRuntimeComponentDontLink.  For example, a workload that doesn't understand the
+         contents of native/ in details will generally bundle every native library from native/.
+         Such a workload should then use DontLink to exclude the disabled components.  On the other
+         hand a workload that explicitly picks the native libraries from native/ should use
+         _MonoRuntimeComponentLink to pick just the needed runtime component artifacts. -->
+   
+    <!-- The target also depends on the following items that are provided by the component-manifest.props from the runtime pack -->
+    <!-- _MonoRuntimeComponentLinking item list: either 'dynamic' or 'static' (defined by the runtime for each possible RuntimeIdentifier) -->
+    <!-- _MonoRuntimeComponentName item list: the components for the current RuntimeIdentifier (defined by _MonoComputeAvailableComponentDefinitions above ) -->
+
+    <ItemGroup Condition="'$(_MonoRuntimeComponentCurrentLinking)' == 'dynamic' or '$(_MonoRuntimeComponentCurrentLinking)' == 'static'">
+      <!-- take the intersection of the two item lists. -->
+      <!-- n.b. copies the metadata from _MonoRuntimeComponentName to _MonoRuntimeSelectedComponents -->
+      <_MonoRuntimeComponentNameForRid Include="@(_MonoRuntimeComponentName)" Condition="'%(RuntimeIdentifier)' == '$(RuntimeIdentifier)'" />
+      <_MonoRuntimeSelectedComponents Include="@(_MonoRuntimeComponentNameForRid)" Condition="'@(_MonoRuntimeComponentNameForRid)' == '@(_MonoComponent)' and '%(Identity)' != ''" />
+      <_MonoRuntimeUnSelectedComponents Include="@(_MonoRuntimeComponentNameForRid)" Exclude="@(_MonoComponent)" />
+      <_MonoRuntimeComponentLink Include="%(_MonoRuntimeSelectedComponents.ComponentLib)">
+        <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
+        <IsStub>false</IsStub>
+        <ComponentName>%(_MonoRuntimeSelectedComponents.Identity)</ComponentName>
+      </_MonoRuntimeComponentLink>
+      <_MonoRuntimeComponentDontLink Include="%(_MonoRuntimeUnSelectedComponents.ComponentLib)">
+        <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
+        <IsStub>false</IsStub>
+        <ComponentName>%(_MonoRuntimeUnSelectedComponents.Identity)</ComponentName>
+      </_MonoRuntimeComponentDontLink>
+      <!-- non-empty if any unknown components are specified -->
+      <_MonoRuntimeSelectedMissingComponents Include="@(_MonoComponent)" Exclude="@(_MonoRuntimeComponentNameForRid)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_MonoRuntimeComponentCurrentLinking)' == 'static'">
+      <!-- Take difference _MonoRuntimeComponentName - _MonoComponent.  The remaining components are stubbed out -->
+      <_MonoRuntimeSelectedStubComponents Include="@(_MonoRuntimeComponentNameForRid)" Exclude="@(_MonoComponent)" />
+      <_MonoRuntimeUnSelectedStubComponents Include="@(_MonoRuntimeComponentNameForRid)" Condition="'@(_MonoRuntimeComponentNameForRid)' == '@(_MonoComponent)' and '%(Identity)' != ''" />
+      <_MonoRuntimeComponentLink Include="%(_MonoRuntimeSelectedStubComponents.ComponentStubLib)">
+        <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
+        <IsStub>true</IsStub>
+        <ComponentName>%(_MonoRuntimeSelectedStubComponents.Identity)</ComponentName>
+      </_MonoRuntimeComponentLink>
+      <_MonoRuntimeComponentDontLink Include="%(_MonoRuntimeUnSelectedStubComponents.ComponentStubLib)">
+        <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
+        <IsStub>true</IsStub>
+        <ComponentName>%(_MonoRuntimeUnSelectedStubComponents.Identity)</ComponentName>
+      </_MonoRuntimeComponentDontLink>
+    </ItemGroup>
+
+    <Error Condition="'$(_MonoRuntimeComponentCurrentLinking)' != 'dynamic' and '$(_MonoRuntimeComponentCurrentLinking)' != 'static'" Text="_MonoRuntimeComponentCurrentLinking is not dynamic or static.  It is '$(_MonoRuntimeComponentCurrentLinking)'.  RuntimeIdentifier is '$(RuntimeIdentifier)'." />
+    <Error Condition="@(_MonoRuntimeSelectedMissingComponents->Count()) != 0"
+             Text="_MonoComponent item list includes components '@(_MonoRuntimeSelectedMissingComponents)' which are not defined in the runtime pack. Runtime pack includes '@(_MonoRuntimeComponentNameForRid)'" />
+
+  </Target>
+</Project>

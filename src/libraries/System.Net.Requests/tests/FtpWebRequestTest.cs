@@ -61,7 +61,7 @@ namespace System.Net.Tests
         {
             string serverUrl = string.Format("ftp://www.{0}.com/", Guid.NewGuid().ToString());
             FtpWebRequest request = (FtpWebRequest)WebRequest.Create(serverUrl);
-            WebException ex = Assert.Throws<WebException>(() => request.GetResponse());
+            Assert.Throws<WebException>(() => request.GetResponse());
         }
 
         [OuterLoop]

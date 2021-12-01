@@ -8,7 +8,7 @@ namespace System.DirectoryServices.AccountManagement
     using System.Collections;
     using System.DirectoryServices;
 
-    internal class ExtensionCacheValue
+    internal sealed class ExtensionCacheValue
     {
         internal ExtensionCacheValue(object[] value)
         {
@@ -47,7 +47,7 @@ namespace System.DirectoryServices.AccountManagement
         private readonly MatchType _matchType;
     }
 
-    internal class ExtensionCache
+    internal sealed class ExtensionCache
     {
         private readonly Dictionary<string, ExtensionCacheValue> _cache = new Dictionary<string, ExtensionCacheValue>();
 

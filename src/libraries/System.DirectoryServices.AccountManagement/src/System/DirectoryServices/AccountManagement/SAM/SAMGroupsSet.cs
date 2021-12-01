@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class SAMGroupsSet : ResultSet
+    internal sealed class SAMGroupsSet : ResultSet
     {
         internal SAMGroupsSet(UnsafeNativeMethods.IADsMembers iADsMembers, SAMStoreCtx storeCtx, DirectoryEntry ctxBase)
         {

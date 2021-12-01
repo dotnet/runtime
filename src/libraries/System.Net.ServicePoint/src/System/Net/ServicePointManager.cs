@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Net
@@ -102,12 +103,16 @@ namespace System.Net
 
         public static bool CheckCertificateRevocationList { get; set; }
 
+        [UnsupportedOSPlatform("browser")]
         public static EncryptionPolicy EncryptionPolicy { get; } = EncryptionPolicy.RequireEncryption;
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(Uri address) => FindServicePoint(address, null);
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(string uriString, IWebProxy? proxy) => FindServicePoint(new Uri(uriString), proxy);
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(Uri address, IWebProxy? proxy)
         {
             if (address == null)

@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerProcessor : IDisposable
     {
         private const int _maxQueuedMessages = 1024;

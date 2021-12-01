@@ -1,0 +1,35 @@
+# Only run on changes to the JIT directory. Don't run if the JIT-EE GUID has changed,
+# since there won't be any SuperPMI collections with the new GUID until the collection
+# pipeline completes.
+trigger:
+  batch: false
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/coreclr/jit/*
+    exclude:
+    - src/coreclr/inc/jiteeversionguid.h
+
+jobs:
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+    buildConfig: checked
+    platforms:
+    - windows_x64
+    - windows_x86
+    jobParameters:
+      uploadAs: 'pipelineArtifacts'
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-replay-job.yml
+    buildConfig: checked
+    platforms:
+    - windows_x64
+    - windows_x86
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

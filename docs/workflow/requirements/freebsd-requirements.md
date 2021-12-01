@@ -11,7 +11,7 @@ Since there is no official build and FreeBSD package, native build on FreeBSD is
 Environment
 ===========
 
-These instructions were validated for and on FreeBSD 11.3 and 12.1.
+These instructions were validated for and on FreeBSD 12.2.
 
 Build using Docker on Linux
 ---------------------------
@@ -20,8 +20,8 @@ This is similar to [Linux](linux-requirements.md) instructions. https://github.c
 with all needed prerequisites to build. As the example bellow may become stale, https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json offers list of latest Docker tags.
 
 ```sh
-TAG=mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-11-20200430154008-a84b0d2
-docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti  $TAG ./build.sh -cross -FreeBSD
+TAG=mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e
+docker run --rm --volume $(pwd):$(pwd) --workdir $(pwd) --env ROOTFS_DIR=/crossrootfs/x64 -ti  $TAG ./build.sh -cross -os FreeBSD
 ```
 
 Build using Toolchain Setup
@@ -49,19 +49,17 @@ Building dotnet/runtime depends on several tools to be installed.
 Install the following packages:
 
 - cmake
-- autoconf
-- automake
-- libtool
 - icu
 - libunwind
 - lttng-ust
 - krb5
 - openssl (optional)
+- ninja (optional, enables building native code with ninja instead of make)
 
 The lines to install all the packages above using package manager.
 
 ```sh
-sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 cmake autoconf automake openssl
+sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 cmake openssl ninja
 ```
 
 Additionally, working dotnet cli with SDK is needed. On other platforms this would be downloaded automatically during build but it is not currently available for FreeBSD.

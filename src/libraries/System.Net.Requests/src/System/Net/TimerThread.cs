@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -160,7 +161,7 @@ namespace System.Net
         /// <summary>
         /// <para>Represents a queue of timers of fixed duration.</para>
         /// </summary>
-        private class TimerQueue : Queue
+        private sealed class TimerQueue : Queue
         {
             // This is a GCHandle that holds onto the TimerQueue when active timers are in it.
             // The TimerThread only holds WeakReferences to it so that it can be collected when the user lets go of it.
@@ -199,10 +200,7 @@ namespace System.Net
                 bool needProd = false;
                 lock (_timers)
                 {
-                    if (!(_timers.Prev!.Next == _timers))
-                    {
-                        NetEventSource.Fail(this, $"Tail corruption.");
-                    }
+                    Debug.Assert(_timers.Prev!.Next == _timers, $"Tail corruption.");
 
                     // If this is the first timer in the list, we need to create a queue handle and prod the timer thread.
                     if (_timers.Next == _timers)
@@ -271,7 +269,7 @@ namespace System.Net
         /// <summary>
         /// <para>A special dummy implementation for a queue of timers of infinite duration.</para>
         /// </summary>
-        private class InfiniteTimerQueue : Queue
+        private sealed class InfiniteTimerQueue : Queue
         {
             internal InfiniteTimerQueue() : base(Timeout.Infinite) { }
 
@@ -284,7 +282,7 @@ namespace System.Net
         /// <summary>
         /// <para>Internal representation of an individual timer.</para>
         /// </summary>
-        private class TimerNode : Timer
+        private sealed class TimerNode : Timer
         {
             private TimerState _timerState;
             private Callback? _callback;
@@ -446,7 +444,7 @@ namespace System.Net
         /// <summary>
         /// <para>A dummy infinite timer.</para>
         /// </summary>
-        private class InfiniteTimer : Timer
+        private sealed class InfiniteTimer : Timer
         {
             internal InfiniteTimer() : base(Timeout.Infinite) { }
 
@@ -473,7 +471,11 @@ namespace System.Net
 
             if (oldState == TimerThreadState.Idle)
             {
-                new Thread(new ThreadStart(ThreadProc)).Start();
+                new Thread(new ThreadStart(ThreadProc))
+                {
+                    IsBackground = true,
+                    Name = ".NET Network Timer"
+                }.Start();
             }
         }
 
@@ -483,9 +485,6 @@ namespace System.Net
         /// </summary>
         private static void ThreadProc()
         {
-            // Set this thread as a background thread.  On AppDomain/Process shutdown, the thread will just be killed.
-            Thread.CurrentThread.IsBackground = true;
-
             // Keep a permanent lock on s_Queues.  This lets for example Shutdown() know when this thread isn't running.
             lock (s_queues)
             {

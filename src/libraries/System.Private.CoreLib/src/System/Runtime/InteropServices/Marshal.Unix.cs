@@ -61,5 +61,138 @@ namespace System.Runtime.InteropServices
             int actualByteLength = Encoding.UTF8.GetBytes(chars, bytes);
             bytes[actualByteLength] = 0;
         }
+
+        public static unsafe IntPtr AllocHGlobal(IntPtr cb)
+        {
+            return (nint)NativeMemory.Alloc((nuint)(nint)cb);
+        }
+
+        public static unsafe void FreeHGlobal(IntPtr hglobal)
+        {
+            NativeMemory.Free((void*)(nint)hglobal);
+        }
+
+        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        {
+            return (nint)NativeMemory.Realloc((void*)(nint)pv, (nuint)(nint)cb);
+        }
+
+        public static IntPtr AllocCoTaskMem(int cb) => AllocHGlobal((nint)(uint)cb);
+
+        public static void FreeCoTaskMem(IntPtr ptr) => FreeHGlobal(ptr);
+
+        public static unsafe IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
+        {
+            nuint cbNative = (nuint)(uint)cb;
+            void* pvNative = (void*)(nint)pv;
+
+            if ((cbNative == 0) && (pvNative != null))
+            {
+                Interop.Sys.Free(pvNative);
+                return IntPtr.Zero;
+            }
+
+            return (nint)NativeMemory.Realloc((void*)(nint)pv, cbNative);
+        }
+
+        internal static unsafe IntPtr AllocBSTR(int length)
+        {
+            // SysAllocString on Windows aligns the memory block size up
+            const nuint WIN32_ALLOC_ALIGN = 15;
+
+            ulong cbNative = 2 * (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+
+            if (cbNative > uint.MaxValue)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            void* p = Interop.Sys.Malloc((nuint)cbNative & ~WIN32_ALLOC_ALIGN);
+
+            if (p == null)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            void* s = (byte*)p + sizeof(nuint);
+            *(((uint*)s) - 1) = (uint)(length * sizeof(char));
+            ((char*)s)[length] = '\0';
+
+            return (nint)s;
+        }
+
+        internal static unsafe IntPtr AllocBSTRByteLen(uint length)
+        {
+            // SysAllocString on Windows aligns the memory block size up
+            const nuint WIN32_ALLOC_ALIGN = 15;
+
+            ulong cbNative = (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+
+            if (cbNative > uint.MaxValue)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            void* p = Interop.Sys.Malloc((nuint)cbNative & ~WIN32_ALLOC_ALIGN);
+
+            if (p == null)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            void* s = (byte*)p + sizeof(nuint);
+            *(((uint*)s) - 1) = (uint)length;
+
+            // NULL-terminate with both a narrow and wide zero.
+            *(byte*)((byte*)s + length) = (byte)'\0';
+            *(short*)((byte*)s + ((length + 1) & ~1)) = 0;
+
+            return (nint)s;
+        }
+
+        public static unsafe void FreeBSTR(IntPtr ptr)
+        {
+            void* ptrNative = (void*)(nint)ptr;
+
+            if (ptrNative != null)
+            {
+                Interop.Sys.Free((byte*)ptr - sizeof(nuint));
+            }
+        }
+
+        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
+        {
+            if (progID == null)
+                throw new ArgumentNullException(nameof(progID));
+
+            if (throwOnError)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+
+            return null;
+        }
+
+        /// <summary>
+        /// Get the last system error on the current thread
+        /// </summary>
+        /// <returns>The last system error</returns>
+        /// <remarks>
+        /// The error is that for the current operating system (e.g. errno on Unix, GetLastError on Windows)
+        /// </remarks>
+        public static int GetLastSystemError()
+        {
+            return Interop.Sys.GetErrNo();
+        }
+
+        /// <summary>
+        /// Set the last system error on the current thread
+        /// </summary>
+        /// <param name="error">Error to set</param>
+        /// <remarks>
+        /// The error is that for the current operating system (e.g. errno on Unix, SetLastError on Windows)
+        /// </remarks>
+        public static void SetLastSystemError(int error)
+        {
+            Interop.Sys.SetErrNo(error);
+        }
     }
 }

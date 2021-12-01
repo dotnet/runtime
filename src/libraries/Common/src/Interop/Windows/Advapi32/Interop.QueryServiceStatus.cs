@@ -5,12 +5,11 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe bool QueryServiceStatus(SafeServiceHandle serviceHandle, SERVICE_STATUS* pStatus);
-
+        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        internal static unsafe partial bool QueryServiceStatus(SafeServiceHandle serviceHandle, SERVICE_STATUS* pStatus);
     }
 }

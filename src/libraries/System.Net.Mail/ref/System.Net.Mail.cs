@@ -43,7 +43,7 @@ namespace System.Net.Mail
         public System.Text.Encoding? NameEncoding { get { throw null; } set { } }
         public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, System.Net.Mime.ContentType contentType) { throw null; }
         public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string? name) { throw null; }
-        public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string? name, System.Text.Encoding? contentEncoding, string mediaType) { throw null; }
+        public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string? name, System.Text.Encoding? contentEncoding, string? mediaType) { throw null; }
     }
     public abstract partial class AttachmentBase : System.IDisposable
     {
@@ -110,11 +110,11 @@ namespace System.Net.Mail
         public string DisplayName { get { throw null; } }
         public string Host { get { throw null; } }
         public string User { get { throw null; } }
-        public override bool Equals(object? value) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool TryCreate(string address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
         public static bool TryCreate(string address, string? displayName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
-        public static bool TryCreate(string address, string? displayName, System.Text.Encoding displayNameEncoding, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate(string address, string? displayName, System.Text.Encoding? displayNameEncoding, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class MailAddressCollection : System.Collections.ObjectModel.Collection<System.Net.Mail.MailAddress>
@@ -146,7 +146,7 @@ namespace System.Net.Mail
         public System.Text.Encoding? HeadersEncoding { get { throw null; } set { } }
         public bool IsBodyHtml { get { throw null; } set { } }
         public System.Net.Mail.MailPriority Priority { get { throw null; } set { } }
-        [System.ObsoleteAttribute("ReplyTo is obsoleted for this type.  Please use ReplyToList instead which can accept multiple addresses. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("ReplyTo has been deprecated. Use ReplyToList instead, which can accept multiple addresses.")]
         public System.Net.Mail.MailAddress? ReplyTo { get { throw null; } set { } }
         public System.Net.Mail.MailAddressCollection ReplyToList { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
@@ -165,6 +165,7 @@ namespace System.Net.Mail
         High = 2,
     }
     public delegate void SendCompletedEventHandler(object sender, System.ComponentModel.AsyncCompletedEventArgs e);
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class SmtpClient : System.IDisposable
     {
         public SmtpClient() { }
@@ -287,7 +288,7 @@ namespace System.Net.Mime
         public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
         public System.DateTime ReadDate { get { throw null; } set { } }
         public long Size { get { throw null; } set { } }
-        public override bool Equals(object? rparam) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? rparam) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -301,7 +302,7 @@ namespace System.Net.Mime
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
         public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
-        public override bool Equals(object? rparam) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? rparam) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }

@@ -14,24 +14,22 @@ namespace System.Runtime.Serialization
     using System.Security;
     using System.Linq;
     using System.Runtime.CompilerServices;
+    using System.Diagnostics.CodeAnalysis;
 
     internal delegate IXmlSerializable CreateXmlSerializableDelegate();
     internal sealed class XmlDataContract : DataContract
     {
         private readonly XmlDataContractCriticalHelper _helper;
 
-        public XmlDataContract() : base(new XmlDataContractCriticalHelper())
-        {
-            _helper = base.Helper as XmlDataContractCriticalHelper;
-        }
-
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal XmlDataContract(Type type) : base(new XmlDataContractCriticalHelper(type))
         {
-            _helper = base.Helper as XmlDataContractCriticalHelper;
+            _helper = (base.Helper as XmlDataContractCriticalHelper)!;
         }
 
-        public override DataContractDictionary KnownDataContracts
+        public override DataContractDictionary? KnownDataContracts
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             { return _helper.KnownDataContracts; }
 
@@ -39,7 +37,7 @@ namespace System.Runtime.Serialization
             { _helper.KnownDataContracts = value; }
         }
 
-        internal XmlSchemaType XsdType
+        internal XmlSchemaType? XsdType
         {
             get { return _helper.XsdType; }
             set { _helper.XsdType = value; }
@@ -61,7 +59,7 @@ namespace System.Runtime.Serialization
             { _helper.HasRoot = value; }
         }
 
-        public override XmlDictionaryString TopLevelElementName
+        public override XmlDictionaryString? TopLevelElementName
         {
             get
             { return _helper.TopLevelElementName; }
@@ -70,7 +68,7 @@ namespace System.Runtime.Serialization
             { _helper.TopLevelElementName = value; }
         }
 
-        public override XmlDictionaryString TopLevelElementNamespace
+        public override XmlDictionaryString? TopLevelElementNamespace
         {
             get
             { return _helper.TopLevelElementNamespace; }
@@ -87,6 +85,7 @@ namespace System.Runtime.Serialization
 
         internal CreateXmlSerializableDelegate CreateXmlSerializableDelegate
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 // We create XmlSerializableDelegate via CodeGen when CodeGen is enabled;
@@ -116,28 +115,27 @@ namespace System.Runtime.Serialization
 
         public override bool IsBuiltInDataContract => UnderlyingType == Globals.TypeOfXmlElement || UnderlyingType == Globals.TypeOfXmlNodeArray;
 
-        private class XmlDataContractCriticalHelper : DataContract.DataContractCriticalHelper
+        private sealed class XmlDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
-            private DataContractDictionary _knownDataContracts;
+            private DataContractDictionary? _knownDataContracts;
             private bool _isKnownTypeAttributeChecked;
-            private XmlDictionaryString _topLevelElementName;
-            private XmlDictionaryString _topLevelElementNamespace;
+            private XmlDictionaryString? _topLevelElementName;
+            private XmlDictionaryString? _topLevelElementNamespace;
             private bool _isTopLevelElementNullable;
             private bool _hasRoot;
-            private CreateXmlSerializableDelegate _createXmlSerializable;
-            private XmlSchemaType _xsdType;
+            private CreateXmlSerializableDelegate? _createXmlSerializable;
+            private XmlSchemaType? _xsdType;
 
-            internal XmlDataContractCriticalHelper()
-            {
-            }
-
-            internal XmlDataContractCriticalHelper(Type type) : base(type)
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            internal XmlDataContractCriticalHelper(
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
+                Type type) : base(type)
             {
                 if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type))));
                 if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveCollectionDataContract, DataContract.GetClrTypeFullName(type))));
-                XmlSchemaType xsdType;
+                XmlSchemaType? xsdType;
                 bool hasRoot;
                 XmlQualifiedName stableName;
                 SchemaExporter.GetXmlTypeInfo(type, out stableName, out xsdType, out hasRoot);
@@ -146,7 +144,7 @@ namespace System.Runtime.Serialization
                 XmlDictionary dictionary = new XmlDictionary();
                 this.Name = dictionary.Add(StableName.Name);
                 this.Namespace = dictionary.Add(StableName.Namespace);
-                object[] xmlRootAttributes = (UnderlyingType == null) ? null : UnderlyingType.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
+                object[]? xmlRootAttributes = (UnderlyingType == null) ? null : UnderlyingType.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
                 if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
                 {
                     if (hasRoot)
@@ -164,18 +162,19 @@ namespace System.Runtime.Serialization
                         _isTopLevelElementNullable = xmlRootAttribute.IsNullable;
                         string elementName = xmlRootAttribute.ElementName;
                         _topLevelElementName = (elementName == null || elementName.Length == 0) ? Name : dictionary.Add(DataContract.EncodeLocalName(elementName));
-                        string elementNs = xmlRootAttribute.Namespace;
+                        string? elementNs = xmlRootAttribute.Namespace;
                         _topLevelElementNamespace = (elementNs == null || elementNs.Length == 0) ? DictionaryGlobals.EmptyString : dictionary.Add(elementNs);
                     }
                     else
                     {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IsAnyCannotHaveXmlRoot, DataContract.GetClrTypeFullName(UnderlyingType))));
+                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IsAnyCannotHaveXmlRoot, DataContract.GetClrTypeFullName(UnderlyingType!))));
                     }
                 }
             }
 
-            internal override DataContractDictionary KnownDataContracts
+            internal override DataContractDictionary? KnownDataContracts
             {
+                [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get
                 {
                     if (!_isKnownTypeAttributeChecked && UnderlyingType != null)
@@ -197,7 +196,7 @@ namespace System.Runtime.Serialization
                 { _knownDataContracts = value; }
             }
 
-            internal XmlSchemaType XsdType
+            internal XmlSchemaType? XsdType
             {
                 get { return _xsdType; }
                 set { _xsdType = value; }
@@ -214,7 +213,7 @@ namespace System.Runtime.Serialization
                 { _hasRoot = value; }
             }
 
-            internal override XmlDictionaryString TopLevelElementName
+            internal override XmlDictionaryString? TopLevelElementName
             {
                 get
                 { return _topLevelElementName; }
@@ -222,7 +221,7 @@ namespace System.Runtime.Serialization
                 { _topLevelElementName = value; }
             }
 
-            internal override XmlDictionaryString TopLevelElementNamespace
+            internal override XmlDictionaryString? TopLevelElementNamespace
             {
                 get
                 { return _topLevelElementNamespace; }
@@ -236,27 +235,26 @@ namespace System.Runtime.Serialization
                 set { _isTopLevelElementNullable = value; }
             }
 
-            internal CreateXmlSerializableDelegate CreateXmlSerializableDelegate
+            internal CreateXmlSerializableDelegate? CreateXmlSerializableDelegate
             {
                 get { return _createXmlSerializable; }
                 set { _createXmlSerializable = value; }
             }
         }
 
-        private ConstructorInfo GetConstructor()
+        private ConstructorInfo? GetConstructor()
         {
-            Type type = UnderlyingType;
-
-            if (type.IsValueType)
+            if (UnderlyingType.IsValueType)
                 return null;
 
-            ConstructorInfo ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Array.Empty<Type>());
+            ConstructorInfo? ctor = UnderlyingType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Type.EmptyTypes);
             if (ctor == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableMustHaveDefaultConstructor, DataContract.GetClrTypeFullName(type))));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableMustHaveDefaultConstructor, DataContract.GetClrTypeFullName(UnderlyingType))));
 
             return ctor;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal CreateXmlSerializableDelegate GenerateCreateXmlSerializableDelegate()
         {
             Type type = this.UnderlyingType;
@@ -288,18 +286,18 @@ namespace System.Runtime.Serialization
             {
                 // Special case XElement
                 // codegen the same as 'internal XElement : this("default") { }'
-                ConstructorInfo ctor = GetConstructor();
+                ConstructorInfo ctor = GetConstructor()!;
                 if (!ctor.IsPublic && type.FullName == "System.Xml.Linq.XElement")
                 {
-                    Type xName = type.Assembly.GetType("System.Xml.Linq.XName");
+                    Type? xName = type.Assembly.GetType("System.Xml.Linq.XName");
                     if (xName != null)
                     {
-                        MethodInfo XName_op_Implicit = xName.GetMethod(
+                        MethodInfo? XName_op_Implicit = xName.GetMethod(
                             "op_Implicit",
                             BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public,
                             new Type[] { typeof(string) }
                             );
-                        ConstructorInfo XElement_ctor = type.GetConstructor(
+                        ConstructorInfo? XElement_ctor = type.GetConstructor(
                             BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
                             new Type[] { xName }
                             );
@@ -323,7 +321,7 @@ namespace System.Runtime.Serialization
         ///          since this information is used to determine whether to give the generated code access
         ///          permissions to private members, any changes to the logic should be reviewed.
         /// </SecurityNote>
-        private bool RequiresMemberAccessForCreate(SecurityException securityException)
+        private bool RequiresMemberAccessForCreate(SecurityException? securityException)
         {
             if (!IsTypeVisible(UnderlyingType))
             {
@@ -358,14 +356,14 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                object o = null;
+                object? o = null;
                 if (type == typeof(System.Xml.Linq.XElement))
                 {
                     o = new System.Xml.Linq.XElement("default");
                 }
                 else
                 {
-                    ConstructorInfo ctor = GetConstructor();
+                    ConstructorInfo ctor = GetConstructor()!;
                     o = ctor.Invoke(Array.Empty<object>());
                 }
 
@@ -373,7 +371,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             if (context == null)
                 XmlObjectSerializerWriteContext.WriteRootIXmlSerializable(xmlWriter, obj);
@@ -381,9 +380,10 @@ namespace System.Runtime.Serialization
                 context.WriteIXmlSerializable(xmlWriter, obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
-            object o;
+            object? o;
             if (context == null)
             {
                 o = XmlObjectSerializerReadContext.ReadRootIXmlSerializable(xmlReader, this, true /*isMemberType*/);

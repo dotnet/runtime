@@ -106,12 +106,11 @@ namespace System.Text.RegularExpressions
         /// Either returns a weakly cached RegexReplacement helper or creates one and caches it.
         /// </summary>
         /// <returns></returns>
-        public static RegexReplacement GetOrCreate(WeakReference<RegexReplacement> replRef, string replacement, Hashtable caps,
+        public static RegexReplacement GetOrCreate(WeakReference<RegexReplacement?> replRef, string replacement, Hashtable caps,
             int capsize, Hashtable capnames, RegexOptions roptions)
         {
-            RegexReplacement? repl;
 
-            if (!replRef.TryGetTarget(out repl) || !repl.Pattern.Equals(replacement))
+            if (!replRef.TryGetTarget(out RegexReplacement? repl) || !repl.Pattern.Equals(replacement))
             {
                 repl = RegexParser.ParseReplacement(replacement, roptions, caps, capsize, capnames);
                 replRef.SetTarget(repl);
@@ -211,7 +210,7 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            var state = (replacement: this, segments: new SegmentStringBuilder(256), inputMemory: input.AsMemory(), prevat: 0, count);
+            var state = (replacement: this, segments: SegmentStringBuilder.Create(), inputMemory: input.AsMemory(), prevat: 0, count);
 
             if (!regex.RightToLeft)
             {
@@ -221,7 +220,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index + match.Length;
                     state.thisRef.ReplacementImpl(ref state.segments, match);
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: true);
 
                 if (state.segments.Count == 0)
                 {
@@ -240,7 +239,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index;
                     state.thisRef.ReplacementImplRTL(ref state.segments, match);
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: true);
 
                 if (state.segments.Count == 0)
                 {

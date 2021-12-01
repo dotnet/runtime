@@ -41,7 +41,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         [Description("Verifies CompositionServices.SatisfyImportsOne with Scoped ExportFactories")]
         public void ComposeAppInNewScopeChildrenInRoot_ShouldSucceed()
         {
@@ -66,7 +65,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         [Description("Verifies CompositionServices.SatisfyImportsOne with Scoped ExportFactories")]
         public void ComposeAppInNewScopeChildrenInScope_ShouldSucceed()
         {
@@ -91,7 +89,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         [Description("Verifies CompositionServices.SatisfyImportsOne with Scoped ExportFactories")]
         public void ComposeAppInNewScopeChildrenInBoth_ShouldSucceed()
         {
@@ -116,7 +113,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         [Description("Verifies CompositionServices.SatisfyImportsOne with NonScoped ExportFactories")]
         public void ComposeAppInRootScope_ShouldSucceed()
         {

@@ -6,7 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-using TestLibrary;
+using Xunit;
 
 unsafe class Program
 {
@@ -16,13 +16,13 @@ unsafe class Program
 
         public static string GetFileName()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return $"{Name}.dll";
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (OperatingSystem.IsLinux())
                 return $"lib{Name}.so";
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsMacOS())
                 return $"lib{Name}.dylib";
 
             throw new PlatformNotSupportedException();
@@ -52,65 +52,64 @@ unsafe class Program
             // No modopt
             Console.WriteLine($" -- unmanaged");
             int b = CallFunctionPointers.CallUnmanagedIntInt(cbDefault, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged cdecl");
             int b = CallFunctionPointers.CallUnmanagedCdeclIntInt(cbCdecl, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged stdcall");
             int b = CallFunctionPointers.CallUnmanagedStdcallIntInt(cbStdcall, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged modopt(cdecl)");
             int b = CallFunctionPointers.CallUnmanagedIntInt_ModOptCdecl(cbCdecl, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged modopt(stdcall)");
             int b = CallFunctionPointers.CallUnmanagedIntInt_ModOptStdcall(cbStdcall, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             // Value in modopt is not a recognized calling convention
             Console.WriteLine($" -- unmanaged modopt unrecognized");
             int b = CallFunctionPointers.CallUnmanagedIntInt_ModOptUnknown(cbDefault, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             // Multiple modopts with calling conventions
             Console.WriteLine($" -- unmanaged modopt(stdcall) modopt(cdecl)");
             var ex = Assert.Throws<InvalidProgramException>(
-                () => CallFunctionPointers.CallUnmanagedIntInt_ModOptStdcall_ModOptCdecl(cbCdecl, a),
-                "Multiple modopts with calling conventions should fail");
-            Assert.AreEqual("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.", ex.Message);
+                () => CallFunctionPointers.CallUnmanagedIntInt_ModOptStdcall_ModOptCdecl(cbCdecl, a));
+            Assert.Equal("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.", ex.Message);
         }
 
         {
             Console.WriteLine($" -- unmanaged modopt(stdcall) modopt(unrecognized)");
             int b = CallFunctionPointers.CallUnmanagedIntInt_ModOptStdcall_ModOptUnknown(cbStdcall, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged cdecl modopt(stdcall)");
             int b = CallFunctionPointers.CallUnmanagedCdeclIntInt_ModOptStdcall(cbCdecl, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged stdcall modopt(cdecl)");
             int b = CallFunctionPointers.CallUnmanagedStdcallIntInt_ModOptCdecl(cbStdcall, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
     }
 
@@ -130,65 +129,64 @@ unsafe class Program
             // No modopt
             Console.WriteLine($" -- unmanaged");
             var b = CallFunctionPointers.CallUnmanagedCharChar(cbDefault, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged cdecl");
             var b = CallFunctionPointers.CallUnmanagedCdeclCharChar(cbCdecl, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged stdcall");
             var b = CallFunctionPointers.CallUnmanagedStdcallCharChar(cbStdcall, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged modopt(cdecl)");
             var b = CallFunctionPointers.CallUnmanagedCharChar_ModOptCdecl(cbCdecl, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged modopt(stdcall)");
             var b = CallFunctionPointers.CallUnmanagedCharChar_ModOptStdcall(cbStdcall, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             // Value in modopt is not a recognized calling convention
             Console.WriteLine($" -- unmanaged modopt(unrecognized)");
             var b = CallFunctionPointers.CallUnmanagedCharChar_ModOptUnknown(cbDefault, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             // Multiple modopts with calling conventions
             Console.WriteLine($" -- unmanaged modopt(stdcall) modopt(cdecl)");
             var ex = Assert.Throws<InvalidProgramException>(
-                () => CallFunctionPointers.CallUnmanagedCharChar_ModOptStdcall_ModOptCdecl(cbCdecl, a),
-                "Multiple modopts with calling conventions should fail");
-            Assert.AreEqual("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.", ex.Message);
+                () => CallFunctionPointers.CallUnmanagedCharChar_ModOptStdcall_ModOptCdecl(cbCdecl, a));
+            Assert.Equal("Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.", ex.Message);
         }
 
         {
             Console.WriteLine($" -- unmanaged modopt(stdcall) modopt(unrecognized)");
             var b = CallFunctionPointers.CallUnmanagedCharChar_ModOptStdcall_ModOptUnknown(cbStdcall, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged cdecl modopt(stdcall)");
             var b = CallFunctionPointers.CallUnmanagedCdeclCharChar_ModOptStdcall(cbCdecl, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
 
         {
             Console.WriteLine($" -- unmanaged stdcall modopt(cdecl)");
             var b = CallFunctionPointers.CallUnmanagedStdcallCharChar_ModOptCdecl(cbStdcall, a);
-            Assert.AreEqual(expected, b);
+            Assert.Equal(expected, b);
         }
     }
 

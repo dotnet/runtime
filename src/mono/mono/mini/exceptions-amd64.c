@@ -27,7 +27,6 @@
 
 #include <mono/arch/amd64/amd64-codegen.h>
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
@@ -35,14 +34,14 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-state.h>
+#include <mono/utils/w32subset.h>
 
 #include "mini.h"
 #include "mini-amd64.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
-#include "tasklets.h"
 #include "mono/utils/mono-tls-inline.h"
 
 #ifdef TARGET_WIN32
@@ -65,13 +64,12 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 	}
 #endif
 
-	if (mono_dump_start ())
-		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL, NULL);
+	mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_RESET_STKOFLW
 static gpointer
 get_win32_restore_stack (void)
 {
@@ -124,7 +122,7 @@ get_win32_restore_stack (void)
 	// _resetstkoflw unsupported on none desktop Windows platforms.
 	return NULL;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#endif /* HAVE_API_SUPPORT_WIN32_RESET_STKOFLW */
 
 /*
  * Unhandled Exception Filter
@@ -136,7 +134,6 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 	CONTEXT* ctx;
 	LONG res;
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	MonoDomain* domain = mono_domain_get ();
 	MonoWindowsSigHandlerInfo info = { TRUE, ep };
 
 	/* If the thread is not managed by the runtime return early */
@@ -151,7 +148,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 	switch (er->ExceptionCode) {
 	case EXCEPTION_STACK_OVERFLOW:
 		if (!mono_aot_only && restore_stack) {
-			if (mono_arch_handle_exception (ctx, domain->stack_overflow_ex)) {
+			if (mono_arch_handle_exception (ctx, mini_get_stack_overflow_ex ())) {
 				/* need to restore stack protection once stack is unwound
 				 * restore_stack will restore stack protection and then
 				 * resume control to the saved stack_restore_ctx */
@@ -292,7 +289,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
  * mono_arch_get_call_filter:
  *
  * Returns a pointer to a method which calls an exception filter. We
- * also use this function to call finally handlers (we pass NULL as 
+ * also use this function to call finally handlers (we pass NULL as
  * @exc object in this case).
  */
 gpointer
@@ -377,7 +374,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 }
 #endif /* !DISABLE_JIT */
 
-/* 
+/*
  * The first few arguments are dummy, to force the other arguments to be passed on
  * the stack, this avoids overwriting the argument registers in the throw trampoline.
  */
@@ -567,9 +564,9 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 /**
  * mono_arch_get_throw_exception:
- * \returns a function pointer which can be used to raise 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * \returns a function pointer which can be used to raise
+ * exceptions. The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  */
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
@@ -577,13 +574,13 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 	return get_throw_trampoline (info, FALSE, FALSE, FALSE, FALSE, "throw_exception", aot, FALSE);
 }
 
-gpointer 
+gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, TRUE, FALSE, FALSE, FALSE, "rethrow_exception", aot, FALSE);
 }
 
-gpointer 
+gpointer
 mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, TRUE, FALSE, FALSE, FALSE, "rethrow_preserve_exception", aot, TRUE);
@@ -592,14 +589,14 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 /**
  * mono_arch_get_throw_corlib_exception:
  *
- * Returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (guint32 ex_token, guint32 offset); 
- * Here, offset is the offset which needs to be substracted from the caller IP 
- * to get the IP of the throw. Passing the offset has the advantage that it 
+ * Returns a function pointer which can be used to raise
+ * corlib exceptions. The returned function has the following
+ * signature: void (*func) (guint32 ex_token, guint32 offset);
+ * Here, offset is the offset which needs to be substracted from the caller IP
+ * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  */
-gpointer 
+gpointer
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, FALSE, TRUE, FALSE, FALSE, "throw_corlib_exception", aot, FALSE);
@@ -615,11 +612,11 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
  * Returns TRUE on success, FALSE otherwise.
  */
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf,
-							 host_mgreg_t **save_locations,
-							 StackFrameInfo *frame)
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
+						MonoJitInfo *ji, MonoContext *ctx,
+						MonoContext *new_ctx, MonoLMF **lmf,
+						host_mgreg_t **save_locations,
+						StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 	int i;
@@ -653,7 +650,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* LLVM compiled code doesn't have this info */
 		if (ji->has_arch_eh_info)
 			epilog = (guint8*)ji->code_start + ji->code_size - mono_jinfo_get_epilog_size (ji);
- 
+
 		for (i = 0; i < AMD64_NREG; ++i)
 			regs [i] = new_ctx->gregs [i];
 
@@ -667,7 +664,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		for (i = 0; i < AMD64_NREG; ++i)
 			new_ctx->gregs [i] = regs [i];
- 
+
 		/* The CFA becomes the new SP value */
 		new_ctx->gregs [AMD64_RSP] = (host_mgreg_t)(gsize)cfa;
 
@@ -688,14 +685,14 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			/* Top LMF entry */
 			return FALSE;
 		} else {
-			/* 
-			 * The rsp field is set just before the call which transitioned to native 
+			/*
+			 * The rsp field is set just before the call which transitioned to native
 			 * code. Obtain the rip from the stack.
 			 */
 			rip = *(guint64*)((*lmf)->rsp - sizeof(host_mgreg_t));
 		}
 
-		ji = mini_jit_info_table_find (domain, (char *)rip, NULL);
+		ji = mini_jit_info_table_find ((char *)rip);
 		/*
 		 * FIXME: ji == NULL can happen when a managed-to-native wrapper is interrupted
 		 * in the soft debugger suspend code, since (*lmf)->rsp no longer points to the
@@ -829,7 +826,7 @@ mono_arch_ip_from_context (void *sigctx)
 #else
 	MonoContext *ctx = (MonoContext*)sigctx;
 	return (gpointer)ctx->gregs [AMD64_RIP];
-#endif	
+#endif
 }
 
 static MonoObject*
@@ -840,15 +837,14 @@ restore_soft_guard_pages (void)
 		mono_mprotect (jit_tls->stack_ovf_guard_base, jit_tls->stack_ovf_guard_size, MONO_MMAP_NONE);
 
 	if (jit_tls->stack_ovf_pending) {
-		MonoDomain *domain = mono_domain_get ();
 		jit_tls->stack_ovf_pending = 0;
-		return (MonoObject *) domain->stack_overflow_ex;
+		return (MonoObject *)mini_get_stack_overflow_ex ();
 	}
 
 	return NULL;
 }
 
-/* 
+/*
  * this function modifies mctx so that when it is restored, it
  * won't execcute starting at mctx.eip, but in a function that
  * will restore the protection on the soft-guard pages and return back to
@@ -870,13 +866,12 @@ static void
 altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 {
 	MonoContext mctx;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (ctx));
 	gboolean stack_ovf = (flags & 1) != 0;
 	gboolean nullref = (flags & 2) != 0;
 
 	if (!ji || (!stack_ovf && !nullref)) {
-		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL, NULL);
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL);
 		// if couldn't dump or if mono_handle_native_crash returns, abort
 		abort ();
 	}
@@ -918,7 +913,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		nullref = FALSE;
 
 	if (stack_ovf)
-		exc = mono_domain_get ()->stack_overflow_ex;
+		exc = mini_get_stack_overflow_ex ();
 
 	/* setup the call frame on the application stack so that control is
 	 * returned there and exception handling can continue. we want the call
@@ -1905,59 +1900,6 @@ void mono_arch_code_chunk_destroy (void *chunk)
 }
 #endif /* MONO_ARCH_HAVE_UNWIND_TABLE */
 
-#if MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT)
-MonoContinuationRestore
-mono_tasklets_arch_restore (void)
-{
-	static guint8* saved = NULL;
-	guint8 *code, *start;
-	int cont_reg = AMD64_R9; /* register usable on both call conventions */
-	const int kMaxCodeSize = 64;
-
-	if (saved)
-		return (MonoContinuationRestore)saved;
-	code = start = (guint8 *)mono_global_codeman_reserve (kMaxCodeSize);
-	/* the signature is: restore (MonoContinuation *cont, int state, MonoLMF **lmf_addr) */
-	/* cont is in AMD64_ARG_REG1 ($rcx or $rdi)
-	 * state is in AMD64_ARG_REG2 ($rdx or $rsi)
-	 * lmf_addr is in AMD64_ARG_REG3 ($r8 or $rdx)
-	 * We move cont to cont_reg since we need both rcx and rdi for the copy
-	 * state is moved to $rax so it's setup as the return value and we can overwrite $rsi
- 	 */
-	amd64_mov_reg_reg (code, cont_reg, MONO_AMD64_ARG_REG1, 8);
-	amd64_mov_reg_reg (code, AMD64_RAX, MONO_AMD64_ARG_REG2, 8);
-	/* setup the copy of the stack */
-	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, stack_used_size), sizeof (int));
-	amd64_shift_reg_imm (code, X86_SHR, AMD64_RCX, 3);
-	x86_cld (code);
-	amd64_mov_reg_membase (code, AMD64_RSI, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, saved_stack), sizeof (gpointer));
-	amd64_mov_reg_membase (code, AMD64_RDI, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, return_sp), sizeof (gpointer));
-	amd64_prefix (code, X86_REP_PREFIX);
-	amd64_movsl (code);
-
-	/* now restore the registers from the LMF */
-	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, lmf), 8);
-	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_RCX, MONO_STRUCT_OFFSET (MonoLMF, rbp), 8);
-	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_RCX, MONO_STRUCT_OFFSET (MonoLMF, rsp), 8);
-
-#ifdef WIN32
-	amd64_mov_reg_reg (code, AMD64_R14, AMD64_ARG_REG3, 8);
-#else
-	amd64_mov_reg_reg (code, AMD64_R12, AMD64_ARG_REG3, 8);
-#endif
-
-	/* state is already in rax */
-	amd64_jump_membase (code, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, return_ip));
-	g_assertf ((code - start) <= kMaxCodeSize, "%d %d", (int)(code - start), kMaxCodeSize);
-
-	mono_arch_flush_icache (start, code - start);
-	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
-
-	saved = start;
-	return (MonoContinuationRestore)saved;
-}
-#endif /* MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) */
-
 /*
  * mono_arch_setup_resume_sighandler_ctx:
  *
@@ -1966,7 +1908,7 @@ mono_tasklets_arch_restore (void)
 void
 mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 {
-	/* 
+	/*
 	 * When resuming from a signal handler, the stack should be misaligned, just like right after
 	 * a call.
 	 */
@@ -1974,15 +1916,6 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 		MONO_CONTEXT_SET_SP (ctx, (guint64)MONO_CONTEXT_GET_SP (ctx) - 8);
 	MONO_CONTEXT_SET_IP (ctx, func);
 }
-
-#if !MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)
-MonoContinuationRestore
-mono_tasklets_arch_restore (void)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-#endif /* !MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT) */
 
 void
 mono_arch_undo_ip_adjustment (MonoContext *ctx)

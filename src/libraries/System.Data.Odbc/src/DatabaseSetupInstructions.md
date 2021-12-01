@@ -1,4 +1,4 @@
-﻿# Instructions on how to setup database
+# Instructions on how to setup database
 
 ## In Fedora 24 container:
 - `docker ps` shows _id of existing Fedora 24 container
@@ -17,15 +17,15 @@
 - followed [dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/master/src/debian/8.2/Dockerfile) instructions for debian 8.2
 - dependencies: libkrb5-dev, cmake
 
-Get the tag name from https://hub.docker.com/r/microsoft/dotnet-buildtools-prereqs/tags/ and use in docker run below
-- `docker run -it microsoft/dotnet-buildtools-prereqs:debian-8.2-SHA-YMD.. /bin/sh`
+Get the tag name from https://mcr.microsoft.com/v2/dotnet-buildtools/prereqs/tags/list and use in docker run below
+- `docker run -it mcr.microsoft.com/dotnet-buildtools/prereqs:debian-8.2-SHA-YMD.. /bin/sh`
 - `docker images` shows _id for Debian 8.2 to use in command below
 - `docker exec -it _id /bin/sh`
 
 ## Notes on commands used in Linux 14.04
 This section describes the process to install unixODBC libraries and SQLite/MSSQL driver for Ubuntu 14.04.
 
-- `sudo su` 
+- `sudo su`
 - `curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -`
 - `curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list > /etc/apt/sources.list.d/mssql-release.list`
 - `sudo apt-get update`
@@ -106,7 +106,7 @@ Setup=/usr/local/lib/libsqlite3odbc.so
 Threading=4
 ```
 
-## Notes on commands used in Mac 
+## Notes on commands used in Mac
 - `gunzip unixODBC-2.3.4.tar.gz` download unixodbc
 - `tar xvf unixODBC-2.3.4.tar`
 - `cd unix...`

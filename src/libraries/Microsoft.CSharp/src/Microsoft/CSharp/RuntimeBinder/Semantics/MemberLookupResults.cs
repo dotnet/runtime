@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // to get at the inaccessible symbols, bogus symbols, and validly bound symbols.
     // ----------------------------------------------------------------------------
 
-    internal partial class CMemberLookupResults
+    internal sealed partial class CMemberLookupResults
     {
         private TypeArray ContainingTypes { get; }// Types that contain the member we're looking for.
 

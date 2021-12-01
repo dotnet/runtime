@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+    <DeltaScript>deltascript.json</DeltaScript>
+    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="LambdaCapturesThis.cs" />
+  </ItemGroup>
+</Project>

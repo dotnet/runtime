@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
@@ -80,7 +79,7 @@ internal static partial class Interop
 
         internal sealed class SafeCloseIcmpHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
-            private SafeCloseIcmpHandle() : base(true)
+            public SafeCloseIcmpHandle() : base(true)
             {
             }
 
@@ -90,21 +89,21 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal static extern SafeCloseIcmpHandle IcmpCreateFile();
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
+        internal static partial SafeCloseIcmpHandle IcmpCreateFile();
 
-        [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal static extern SafeCloseIcmpHandle Icmp6CreateFile();
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
+        internal static partial SafeCloseIcmpHandle Icmp6CreateFile();
 
-        [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal static extern bool IcmpCloseHandle(IntPtr handle);
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
+        internal static partial bool IcmpCloseHandle(IntPtr handle);
 
-        [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal static extern uint IcmpSendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
-            uint ipAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
+        internal static partial uint IcmpSendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
+            uint ipAddress, SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
 
-        [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal static extern uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
-            byte[] sourceSocketAddress, byte[] destSocketAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
+        internal static partial uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
+            byte[] sourceSocketAddress, byte[] destSocketAddress, SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
     }
 }

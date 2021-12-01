@@ -14,6 +14,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             _impl = RSA.Create();
         }
 
+        public override int KeySize
+        {
+            get => _impl.KeySize;
+            set => _impl.KeySize = value;
+        }
+
         public override KeySizes[] LegalKeySizes => _impl.LegalKeySizes;
 
         public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding) => _impl.Decrypt(data, padding);

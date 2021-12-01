@@ -15,7 +15,7 @@ namespace Internal.Cryptography
     internal struct CngAlgorithmCore
     {
         private readonly string _disposedName;
-        public CngAlgorithm DefaultKeyType;
+        public CngAlgorithm? DefaultKeyType;
         private CngKey? _lazyKey;
         private bool _disposed;
 

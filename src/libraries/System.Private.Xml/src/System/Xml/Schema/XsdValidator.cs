@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -934,7 +933,7 @@ namespace System.Xml.Schema
                     {
                         // selector selects new node, activate a new set of fields
                         Debug.WriteLine("Selector Match!");
-                        Debug.WriteLine("Name: " + reader.LocalName + "\t|\tURI: " + reader.NamespaceURI + "\n");
+                        Debug.WriteLine($"Name: {reader.LocalName}\t|\tURI: {reader.NamespaceURI}\n");
                         // in which axisFields got updated
                         constraints[j].axisSelector.PushKS(PositionInfo.LineNumber, PositionInfo.LinePosition);
                     }
@@ -996,7 +995,7 @@ namespace System.Xml.Schema
                             //attribute is only simpletype, so needn't checking...
                             // can fill value here, yeah!!
                             Debug.WriteLine("Attribute Field Filling Value!");
-                            Debug.WriteLine("Name: " + name + "\t|\tURI: " + ns + "\t|\tValue: " + obj + "\n");
+                            Debug.WriteLine($"Name: {name}\t|\tURI: {ns}\t|\tValue: {obj}\n");
                             if (laxis.Ks[laxis.Column] != null)
                             {
                                 // should be evaluated to either an empty node-set or a node-set with exactly one member
@@ -1048,7 +1047,7 @@ namespace System.Xml.Schema
                         if (laxis.isMatched)
                         {
                             Debug.WriteLine("Element Field Filling Value!");
-                            Debug.WriteLine("Name: " + reader.LocalName + "\t|\tURI: " + reader.NamespaceURI + "\t|\tValue: " + reader.TypedValueObject + "\n");
+                            Debug.WriteLine($"Name: {reader.LocalName}\t|\tURI: {reader.NamespaceURI}\t|\tValue: {reader.TypedValueObject}\n");
                             // fill value
                             laxis.isMatched = false;
                             if (laxis.Ks[laxis.Column] != null)

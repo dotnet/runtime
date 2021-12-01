@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class TypeLibMetaObject : DynamicMetaObject {
+    internal sealed class TypeLibMetaObject : DynamicMetaObject {
         private readonly ComTypeLibDesc _lib;
 
         internal TypeLibMetaObject(Expression expression, ComTypeLibDesc lib)

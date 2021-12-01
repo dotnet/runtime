@@ -64,7 +64,7 @@ namespace System.Diagnostics
         public void Close() { }
         public static void CreateEventSource(System.Diagnostics.EventSourceCreationData sourceData) { }
         public static void CreateEventSource(string source, string logName) { }
-        [System.ObsoleteAttribute("This method has been deprecated.  Please use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("EventLog.CreateEventSource has been deprecated. Use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.")]
         public static void CreateEventSource(string source, string logName, string machineName) { }
         public static void Delete(string logName) { }
         public static void Delete(string logName, string machineName) { }
@@ -105,11 +105,12 @@ namespace System.Diagnostics
         public short CategoryNumber { get { throw null; } }
         public byte[] Data { get { throw null; } }
         public System.Diagnostics.EventLogEntryType EntryType { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.EventLogEntry.InstanceId instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("EventLogEntry.EventID has been deprecated. Use System.Diagnostics.EventLogEntry.InstanceId instead.")]
         public int EventID { get { throw null; } }
         public int Index { get { throw null; } }
         public long InstanceId { get { throw null; } }
         public string MachineName { get { throw null; } }
+        [System.ComponentModel.EditorAttribute("System.ComponentModel.Design.BinaryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string Message { get { throw null; } }
         public string[] ReplacementStrings { get { throw null; } }
         public string Source { get { throw null; } }
@@ -513,7 +514,7 @@ namespace System.Diagnostics.Eventing.Reader
         WdiDiagnostic = (long)1125899906842624,
         Sqm = (long)2251799813685248,
         AuditFailure = (long)4503599627370496,
-        [System.ObsoleteAttribute("Incorrect value: use CorrelationHint2 instead", false)]
+        [System.ObsoleteAttribute("StandardEventKeywords.CorrelationHint has an incorrect value and has been deprecated. Use CorrelationHint2 instead.")]
         CorrelationHint = (long)4503599627370496,
         AuditSuccess = (long)9007199254740992,
         CorrelationHint2 = (long)18014398509481984,

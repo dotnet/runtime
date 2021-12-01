@@ -4,14 +4,14 @@
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         internal const int MAXDWORD = -1; // This is 0xfffffff, or UInt32.MaxValue, here used as an int
 
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool SetCommTimeouts(
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static partial bool SetCommTimeouts(
             SafeFileHandle hFile,
             ref COMMTIMEOUTS lpCommTimeouts);
     }

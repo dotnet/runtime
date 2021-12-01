@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -252,7 +253,7 @@ namespace System.Data.OleDb
             return irow;
         }
 
-        public override DataTable GetSchemaTable()
+        public override DataTable? GetSchemaTable()
         {
             DataTable? schemaTable = _dbSchemaTable;
             if (null == schemaTable)
@@ -273,10 +274,7 @@ namespace System.Data.OleDb
                 //GetSchemaTable() is defined to return null after NextResult returns false
                 //throw ADP.DataReaderNoData();
             }
-// TODO-NULLABLE: Behavior change (https://github.com/dotnet/runtime/issues/509)
-#nullable disable
             return schemaTable;
-#nullable enable
         }
 
         internal void BuildMetaInfo()
@@ -332,7 +330,7 @@ namespace System.Data.OleDb
             DataColumn precision = new DataColumn("NumericPrecision", typeof(short));
             DataColumn scale = new DataColumn("NumericScale", typeof(short));
 
-            DataColumn dataType = new DataColumn("DataType", typeof(System.Type));
+            DataColumn dataType = new DataColumn(SchemaTableColumn.DataType, typeof(Type));
             DataColumn providerType = new DataColumn("ProviderType", typeof(int));
 
             DataColumn isLong = new DataColumn("IsLong", typeof(bool));
@@ -587,7 +585,7 @@ namespace System.Data.OleDb
 #if DEBUG
                 if (AdapterSwitches.DataSchema.TraceVerbose)
                 {
-                    Debug.WriteLine("OleDbDataReader[" + info.ordinal.ToInt64().ToString(CultureInfo.InvariantCulture) + ", " + dbColumnInfo.pwszName + "]=" + dbType.enumOleDbType.ToString() + "," + dbType.dataSourceType + ", " + dbType.wType);
+                    Debug.WriteLine($"OleDbDataReader[{info.ordinal}, {dbColumnInfo.pwszName}]={dbType.enumOleDbType},{dbType.dataSourceType}, {dbType.wType}");
                 }
 #endif
                 rowCount++;
@@ -954,12 +952,12 @@ namespace System.Data.OleDb
             return GetData(ordinal);
         }
 
-        internal OleDbDataReader? ResetChapter(int bindingIndex, int index, RowBinding rowbinding, int valueOffset)
+        internal OleDbDataReader ResetChapter(int bindingIndex, int index, RowBinding rowbinding, int valueOffset)
         {
             return GetDataForReader(_metadata![bindingIndex + index].ordinal, rowbinding, valueOffset);
         }
 
-        private OleDbDataReader? GetDataForReader(IntPtr ordinal, RowBinding rowbinding, int valueOffset)
+        private OleDbDataReader GetDataForReader(IntPtr ordinal, RowBinding rowbinding, int valueOffset)
         {
             UnsafeNativeMethods.IRowsetInfo rowsetInfo = IRowsetInfo();
             UnsafeNativeMethods.IRowset? result;
@@ -967,10 +965,11 @@ namespace System.Data.OleDb
             hr = rowsetInfo.GetReferencedRowset((IntPtr)ordinal, ref ODB.IID_IRowset, out result);
 
             ProcessResults(hr);
+            // Per docs result can be null only when hr is DB_E_NOTAREFERENCECOLUMN which in most of the cases will cause the exception in ProcessResult
 
             OleDbDataReader? reader = null;
-            // TODO: Not sure if GetReferenceRowset above actually returns null, calling code seems to assume it doesn't
-            if (null != result)
+
+            if (result != null)
             {
                 // only when the first datareader is closed will the connection close
                 ChapterHandle chapterHandle = ChapterHandle.CreateChapterHandle(result, rowbinding, valueOffset);
@@ -979,14 +978,15 @@ namespace System.Data.OleDb
                 reader.BuildMetaInfo();
                 reader.HasRowsRead();
 
-                if (null != _connection)
+                if (_connection != null)
                 {
                     // connection tracks all readers to prevent cmd from executing
                     // until all readers (including nested) are closed
                     _connection.AddWeakReference(reader, OleDbReferenceCollection.DataReaderTag);
                 }
             }
-            return reader;
+
+            return reader!;
         }
 
         public override string GetDataTypeName(int index)
@@ -1025,8 +1025,9 @@ namespace System.Data.OleDb
         {
             if (null != _metadata)
             {
-                // TODO-NULLABLE: Should throw if null (empty), though it probably doesn't happen
-                return _metadata[index].type.dataType!;
+                Type? fieldType = _metadata[index].type.dataType;
+                Debug.Assert(fieldType != null);
+                return fieldType;
             }
             throw ADP.DataReaderNoData();
         }
@@ -1730,7 +1731,6 @@ namespace System.Data.OleDb
 
             RowHandleBuffer rowHandleBuffer = _rowHandleNativeBuffer!;
             bool mustRelease = false;
-
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
@@ -1881,7 +1881,6 @@ namespace System.Data.OleDb
             bool mustReleaseBinding = false;
             bool[] mustRelease = new bool[columnBindings.Length];
             StringMemHandle?[] sptr = new StringMemHandle[columnBindings.Length];
-
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
@@ -2110,7 +2109,7 @@ namespace System.Data.OleDb
 #if DEBUG
                             if (AdapterSwitches.DataSchema.TraceVerbose)
                             {
-                                Debug.WriteLine("PartialKeyColumn detected: <" + name + "> metaindex=" + metaindex);
+                                Debug.WriteLine($"PartialKeyColumn detected: <{name}> metaindex={metaindex}");
                             }
 #endif
                             partialPrimaryKey = true;
@@ -2201,7 +2200,7 @@ namespace System.Data.OleDb
 #if DEBUG
                                         if (AdapterSwitches.DataSchema.TraceVerbose)
                                         {
-                                            Debug.WriteLine("MultipleUniqueIndexes detected: <" + uniqueIndexName + "> <" + indexname + ">");
+                                            Debug.WriteLine($"MultipleUniqueIndexes detected: <{uniqueIndexName}> <{indexname}>");
                                         }
 #endif
                                         uniq = null;
@@ -2213,7 +2212,7 @@ namespace System.Data.OleDb
 #if DEBUG
                                 if (AdapterSwitches.DataSchema.TraceVerbose)
                                 {
-                                    Debug.WriteLine("PartialKeyColumn detected: " + name);
+                                    Debug.WriteLine($"PartialKeyColumn detected: {name}");
                                 }
 #endif
                                 partialPrimaryKey = true;
@@ -2228,7 +2227,7 @@ namespace System.Data.OleDb
 #if DEBUG
                                     if (AdapterSwitches.DataSchema.TraceVerbose)
                                     {
-                                        Debug.WriteLine("PartialUniqueIndexes detected: <" + uniqueIndexName + "> <" + indexname + ">");
+                                        Debug.WriteLine($"PartialUniqueIndexes detected: <{uniqueIndexName}> <{indexname}>");
                                     }
 #endif
                                     uniq = null;
@@ -2249,7 +2248,7 @@ namespace System.Data.OleDb
 #if DEBUG
                         if (AdapterSwitches.DataSchema.TraceVerbose)
                         {
-                            Debug.WriteLine("upgrade single unique index to be a key: <" + uniqueIndexName + ">");
+                            Debug.WriteLine($"upgrade single unique index to be a key: <{uniqueIndexName}>");
                         }
 #endif
                         // upgrade single unique index to be a key
@@ -2276,7 +2275,6 @@ namespace System.Data.OleDb
             using (OleDbDataReader dataReader = new OleDbDataReader(_connection, _command, int.MinValue, 0))
             {
                 dataReader.InitializeIRowset(rowset, ChapterHandle.DB_NULL_HCHAPTER, IntPtr.Zero);
-                // TODO-NULLABLE: BuildSchemaTableInfo asserts that rowset isn't null, but doesn't do anything with it
                 dataReader.BuildSchemaTableInfo(rowset!, true, false);
 
                 hiddenColumns = GetPropertyValue(ODB.DBPROP_HIDDENCOLUMNS);
@@ -2501,7 +2499,7 @@ namespace System.Data.OleDb
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
-                        Debug.WriteLine("Filtered Column: DBCOLUMN_GUID=DBCOL_SPECIALCOL DBCOLUMN_NAME=" + info.columnName + " DBCOLUMN_KEYCOLUMN=" + info.isKeyColumn);
+                        Debug.WriteLine($"Filtered Column: DBCOLUMN_GUID=DBCOL_SPECIALCOL DBCOLUMN_NAME={info.columnName} DBCOLUMN_KEYCOLUMN={info.isKeyColumn}");
                     }
 #endif
                     info.isHidden = true;
@@ -2512,7 +2510,7 @@ namespace System.Data.OleDb
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
-                        Debug.WriteLine("Filtered Column: DBCOLUMN_NUMBER=" + info.ordinal.ToInt64().ToString(CultureInfo.InvariantCulture) + " DBCOLUMN_NAME=" + info.columnName);
+                        Debug.WriteLine($"Filtered Column: DBCOLUMN_NUMBER={info.ordinal} DBCOLUMN_NAME={info.columnName}");
                     }
 #endif
                     info.isHidden = true;
@@ -2523,7 +2521,7 @@ namespace System.Data.OleDb
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
-                        Debug.WriteLine("Filtered Column: DBCOLUMN_FLAGS=" + info.flags.ToString("X8", null) + " DBCOLUMN_NAME=" + info.columnName);
+                        Debug.WriteLine($"Filtered Column: DBCOLUMN_FLAGS={info.flags:X8} DBCOLUMN_NAME={info.columnName}");
                     }
 #endif
                     info.isHidden = true;

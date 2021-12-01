@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -13,7 +12,7 @@ using System.Collections.Generic;
 
 namespace System.Xml
 {
-    internal partial class XmlWellFormedWriter : XmlWriter
+    internal sealed partial class XmlWellFormedWriter : XmlWriter
     {
         //
         // Private types used by the XmlWellFormedWriter are defined in XmlWellFormedWriterHelpers.cs
@@ -62,9 +61,6 @@ namespace System.Xml
         // flags
         private bool _dtdWritten;
         private bool _xmlDeclFollows;
-
-        // char type tables
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         //
         // Constants
@@ -395,21 +391,21 @@ namespace System.Xml
                 {
                     if (pubid != null)
                     {
-                        if ((i = _xmlCharType.IsPublicId(pubid)) >= 0)
+                        if ((i = XmlCharType.IsPublicId(pubid)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(pubid, i)), nameof(pubid));
                         }
                     }
                     if (sysid != null)
                     {
-                        if ((i = _xmlCharType.IsOnlyCharData(sysid)) >= 0)
+                        if ((i = XmlCharType.IsOnlyCharData(sysid)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(sysid, i)), nameof(sysid));
                         }
                     }
                     if (subset != null)
                     {
-                        if ((i = _xmlCharType.IsOnlyCharData(subset)) >= 0)
+                        if ((i = XmlCharType.IsOnlyCharData(subset)) >= 0)
                         {
                             throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(subset, i)), nameof(subset));
                         }
@@ -1048,7 +1044,7 @@ namespace System.Xml
                 {
                     ws = string.Empty;
                 }
-                if (!XmlCharType.Instance.IsOnlyWhitespace(ws))
+                if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }
@@ -2078,7 +2074,7 @@ namespace System.Xml
         {
             if (state >= State.Error)
             {
-                Debug.Fail("We should never get to this point. State = " + state);
+                Debug.Fail($"We should never get to this point. State = {state}");
                 return "Error";
             }
             else
@@ -2113,7 +2109,7 @@ namespace System.Xml
 
         private string GeneratePrefix()
         {
-            string genPrefix = "p" + (_nsTop - 2).ToString("d", CultureInfo.InvariantCulture);
+            string genPrefix = string.Create(CultureInfo.InvariantCulture, $"p{_nsTop - 2:d}");
             if (LookupNamespace(genPrefix) == null)
             {
                 return genPrefix;
@@ -2123,7 +2119,7 @@ namespace System.Xml
             string s;
             do
             {
-                s = string.Concat(genPrefix, i.ToString(CultureInfo.InvariantCulture));
+                s = string.Create(CultureInfo.InvariantCulture, $"{genPrefix}{i}");
                 i++;
             } while (LookupNamespace(s) != null);
             return s;
@@ -2137,7 +2133,7 @@ namespace System.Xml
             int endPos = ncname.Length;
 
             // Check if first character is StartNCName (inc. surrogates)
-            if (_xmlCharType.IsStartNCNameSingleChar(ncname[0]))
+            if (XmlCharType.IsStartNCNameSingleChar(ncname[0]))
             {
                 i = 1;
             }
@@ -2149,7 +2145,7 @@ namespace System.Xml
             // Check if following characters are NCName (inc. surrogates)
             while (i < endPos)
             {
-                if (_xmlCharType.IsNCNameSingleChar(ncname[i]))
+                if (XmlCharType.IsNCNameSingleChar(ncname[i]))
                 {
                     i++;
                 }
@@ -2180,7 +2176,7 @@ namespace System.Xml
                 case State.Start:
                     if (_conformanceLevel == ConformanceLevel.Document)
                     {
-                        throw new InvalidOperationException(wrongTokenMessage + ' ' + SR.Xml_ConformanceLevelFragment);
+                        throw new InvalidOperationException($"{wrongTokenMessage} {SR.Xml_ConformanceLevelFragment}");
                     }
                     break;
             }

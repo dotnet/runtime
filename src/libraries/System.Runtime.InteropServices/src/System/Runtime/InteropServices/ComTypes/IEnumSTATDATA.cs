@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.ComTypes
     /// interfaces: Next, Skip, Reset, and Clone.
     /// </summary>
     [ComImport]
-    [Guid("00000103-0000-0000-C000-000000000046")]
+    [Guid("00000105-0000-0000-C000-000000000046")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IEnumSTATDATA
     {

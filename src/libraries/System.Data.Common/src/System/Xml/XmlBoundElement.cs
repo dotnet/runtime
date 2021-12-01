@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
-
 using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 #pragma warning disable 618 // ignore obsolete warning about XmlDataDocument
@@ -24,9 +22,10 @@ namespace System.Xml
 
     internal sealed class XmlBoundElement : XmlElement
     {
-        private DataRow _row;
+        private DataRow? _row;
         private ElementState _state;
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlBoundElement(string prefix, string localName, string namespaceURI, XmlDocument doc) : base(prefix, localName, namespaceURI, doc)
         {
             _state = ElementState.None;
@@ -34,6 +33,8 @@ namespace System.Xml
 
         public override XmlAttributeCollection Attributes
         {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
                 AutoFoliate();
@@ -43,8 +44,10 @@ namespace System.Xml
 
         public override bool HasAttributes => Attributes.Count > 0;
 
-        public override XmlNode FirstChild
+        public override XmlNode? FirstChild
         {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
                 AutoFoliate();
@@ -52,10 +55,12 @@ namespace System.Xml
             }
         }
 
-        internal XmlNode SafeFirstChild => base.FirstChild;
+        internal XmlNode? SafeFirstChild => base.FirstChild;
 
-        public override XmlNode LastChild
+        public override XmlNode? LastChild
         {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
                 AutoFoliate();
@@ -63,14 +68,16 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode PreviousSibling
+        public override XmlNode? PreviousSibling
         {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
-                XmlNode prev = base.PreviousSibling;
+                XmlNode? prev = base.PreviousSibling;
                 if (prev == null)
                 {
-                    XmlBoundElement parent = ParentNode as XmlBoundElement;
+                    XmlBoundElement? parent = ParentNode as XmlBoundElement;
                     if (parent != null)
                     {
                         parent.AutoFoliate();
@@ -81,16 +88,18 @@ namespace System.Xml
             }
         }
 
-        internal XmlNode SafePreviousSibling => base.PreviousSibling;
+        internal XmlNode? SafePreviousSibling => base.PreviousSibling;
 
-        public override XmlNode NextSibling
+        public override XmlNode? NextSibling
         {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
-                XmlNode next = base.NextSibling;
+                XmlNode? next = base.NextSibling;
                 if (next == null)
                 {
-                    XmlBoundElement parent = ParentNode as XmlBoundElement;
+                    XmlBoundElement? parent = ParentNode as XmlBoundElement;
                     if (parent != null)
                     {
                         parent.AutoFoliate();
@@ -101,10 +110,12 @@ namespace System.Xml
             }
         }
 
-        internal XmlNode SafeNextSibling => base.NextSibling;
+        internal XmlNode? SafeNextSibling => base.NextSibling;
 
         public override bool HasChildNodes
         {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
                 AutoFoliate();
@@ -112,25 +123,33 @@ namespace System.Xml
             }
         }
 
-        public override XmlNode InsertBefore(XmlNode newChild, XmlNode refChild)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
+        public override XmlNode? InsertBefore(XmlNode newChild, XmlNode? refChild)
         {
             AutoFoliate();
             return base.InsertBefore(newChild, refChild);
         }
 
-        public override XmlNode InsertAfter(XmlNode newChild, XmlNode refChild)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
+        public override XmlNode? InsertAfter(XmlNode newChild, XmlNode? refChild)
         {
             AutoFoliate();
             return base.InsertAfter(newChild, refChild);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XmlNode ReplaceChild(XmlNode newChild, XmlNode oldChild)
         {
             AutoFoliate();
             return base.ReplaceChild(newChild, oldChild);
         }
 
-        public override XmlNode AppendChild(XmlNode newChild)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
+        public override XmlNode? AppendChild(XmlNode newChild)
         {
             AutoFoliate();
             return base.AppendChild(newChild);
@@ -138,8 +157,8 @@ namespace System.Xml
 
         internal void RemoveAllChildren()
         {
-            XmlNode child = FirstChild;
-            XmlNode sibling = null;
+            XmlNode? child = FirstChild;
+            XmlNode? sibling = null;
 
             while (child != null)
             {
@@ -152,6 +171,8 @@ namespace System.Xml
         public override string InnerXml
         {
             get { return base.InnerXml; }
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "This whole class is unsafe. Constructors are marked as such.")]
             set
             {
                 RemoveAllChildren();
@@ -173,7 +194,7 @@ namespace System.Xml
             }
         }
 
-        internal DataRow Row
+        internal DataRow? Row
         {
             get { return _row; }
             set { _row = value; }
@@ -199,6 +220,8 @@ namespace System.Xml
             set { _state = value; }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         internal void Foliate(ElementState newState)
         {
             XmlDataDocument doc = (XmlDataDocument)OwnerDocument;
@@ -209,6 +232,7 @@ namespace System.Xml
         }
 
         // Foliate the node as a side effect of user calling functions on this node (like NextSibling) OR as a side effect of DataDocNav using nodes to do editing
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void AutoFoliate()
         {
             XmlDataDocument doc = (XmlDataDocument)OwnerDocument;
@@ -240,6 +264,8 @@ namespace System.Xml
             return element;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override void WriteContentTo(XmlWriter w)
         {
             DataPointer dp = new DataPointer((XmlDataDocument)OwnerDocument, this);
@@ -254,6 +280,8 @@ namespace System.Xml
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override void WriteTo(XmlWriter w)
         {
             DataPointer dp = new DataPointer((XmlDataDocument)OwnerDocument, this);
@@ -268,6 +296,7 @@ namespace System.Xml
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void WriteRootBoundElementTo(DataPointer dp, XmlWriter w)
         {
             Debug.Assert(dp.NodeType == XmlNodeType.Element);
@@ -308,6 +337,7 @@ namespace System.Xml
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static void WriteBoundElementTo(DataPointer dp, XmlWriter w)
         {
             Debug.Assert(dp.NodeType == XmlNodeType.Element);
@@ -336,6 +366,7 @@ namespace System.Xml
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static void WriteBoundElementContentTo(DataPointer dp, XmlWriter w)
         {
             if (!dp.IsEmptyElement && dp.MoveToFirstChild())
@@ -350,6 +381,7 @@ namespace System.Xml
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private static void WriteTo(DataPointer dp, XmlWriter w)
         {
             switch (dp.NodeType)

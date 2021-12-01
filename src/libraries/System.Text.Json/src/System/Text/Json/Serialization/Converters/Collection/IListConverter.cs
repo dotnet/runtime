@@ -3,22 +3,28 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     /// Converter for <cref>System.Collections.IList</cref>.
     internal sealed class IListConverter<TCollection>
-        : IEnumerableDefaultConverter<TCollection, object?>
+        : JsonCollectionConverter<TCollection, object?>
         where TCollection : IList
     {
         protected override void Add(in object? value, ref ReadStack state)
         {
-            ((IList)state.Current.ReturnValue!).Add(value);
+            TCollection collection = (TCollection)state.Current.ReturnValue!;
+            collection.Add(value);
+            if (IsValueType)
+            {
+                state.Current.ReturnValue = collection;
+            };
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
@@ -31,12 +37,12 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                if (classInfo.CreateObject == null)
+                if (typeInfo.CreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
 
-                TCollection returnValue = (TCollection)classInfo.CreateObject()!;
+                TCollection returnValue = (TCollection)typeInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {

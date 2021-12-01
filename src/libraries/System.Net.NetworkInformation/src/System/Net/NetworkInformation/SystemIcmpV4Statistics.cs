@@ -4,13 +4,15 @@
 namespace System.Net.NetworkInformation
 {
     // ICMP statistics for IPv4.
-    internal class SystemIcmpV4Statistics : IcmpV4Statistics
+    internal sealed class SystemIcmpV4Statistics : IcmpV4Statistics
     {
         private readonly Interop.IpHlpApi.MibIcmpInfo _stats;
 
-        internal SystemIcmpV4Statistics()
+        internal unsafe SystemIcmpV4Statistics()
         {
-            uint result = Interop.IpHlpApi.GetIcmpStatistics(out _stats);
+            uint result;
+            fixed (Interop.IpHlpApi.MibIcmpInfo* pStats = &_stats)
+                result = Interop.IpHlpApi.GetIcmpStatistics(pStats);
 
             if (result != Interop.IpHlpApi.ERROR_SUCCESS)
             {

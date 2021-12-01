@@ -4,11 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Microsoft.Extensions.DependencyInjection.Tests.Fakes;
+using Microsoft.Extensions.Internal;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
@@ -78,6 +82,70 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        public void MultipleServicesAreOrdered(int numberOfServices)
+        {
+            // Arrange
+            var collection = new ServiceCollection();
+
+            var serviceDescriptors = new[] {
+                ServiceDescriptor.Singleton<ICustomService, CustomService1>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService2>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService3>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService4>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService5>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService6>()
+            };
+
+            var serviceTypes = new[]
+            {
+                typeof(CustomService1),
+                typeof(CustomService2),
+                typeof(CustomService3),
+                typeof(CustomService4),
+                typeof(CustomService5),
+                typeof(CustomService6),
+            };
+
+            foreach (var sd in serviceDescriptors.Take(numberOfServices))
+            {
+                collection.Add(sd);
+            }
+
+            var provider = collection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateOnBuild = true
+            });
+
+            // Act and Assert
+            var customServices = provider.GetService<IEnumerable<ICustomService>>().ToArray();
+
+            Assert.Equal(numberOfServices, customServices.Length);
+
+            for (int i = 0; i < numberOfServices; i++)
+            {
+                Assert.IsAssignableFrom(serviceTypes[i], customServices[i]);
+            }
+        }
+
+        interface ICustomService
+        {
+
+        }
+
+        class CustomService1 : ICustomService { }
+        class CustomService2 : ICustomService { }
+        class CustomService3 : ICustomService { }
+        class CustomService4 : ICustomService { }
+        class CustomService5 : ICustomService { }
+        class CustomService6 : ICustomService { }
+
+        [Theory]
         // GenericTypeDefintion, Abstract GenericTypeDefintion
         [InlineData(typeof(IFakeOpenGenericService<>), typeof(AbstractFakeOpenGenericService<>))]
         // GenericTypeDefintion, Interface GenericTypeDefintion
@@ -95,10 +163,35 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             serviceCollection.AddTransient(serviceType, implementationType);
 
             // Act and Assert
-            var exception = Assert.Throws<ArgumentException>(() => serviceCollection.BuildServiceProvider());
+            var exception = Assert.Throws<ArgumentException>(() => CreateServiceProvider(serviceCollection));
             Assert.Equal(
                 $"Cannot instantiate implementation type '{implementationType}' for service type '{serviceType}'.",
                 exception.Message);
+        }
+
+        [Theory]
+        [MemberData(nameof(FailedOpenGenericTypeTestData))]
+        public void CreatingServiceProviderWithUnresolvableOpenGenericTypesThrows(Type serviceType, Type implementationType, string errorMessage)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient(serviceType, implementationType);
+
+            // Act and Assert
+            var exception = Assert.Throws<ArgumentException>(() => CreateServiceProvider(serviceCollection));
+            Assert.StartsWith(errorMessage, exception.Message);
+        }
+
+        public static IEnumerable<object[]> FailedOpenGenericTypeTestData
+        {
+            get
+            {
+                Type serviceType = typeof(IFakeOpenGenericService<>);
+                // Service type is GenericTypeDefintion, implementation type is ConstructedGenericType
+                yield return new object[] { serviceType, typeof(ClassWithNoConstraints<string>), $"Open generic service type '{serviceType}' requires registering an open generic implementation type." };
+                // Service type is GenericTypeDefintion, implementation type has different generic type definition arity
+                yield return new object[] { serviceType, typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>), $"Arity of open generic service type '{serviceType}' does not equal arity of open generic implementation type '{typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>)}'." };
+            }
         }
 
         [Fact]
@@ -156,6 +249,63 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
+        public enum TheEnum
+        {
+            HelloWorld = -1,
+            NiceWorld = 0,
+            GoodByeWorld = 1,
+        }
+
+        [Theory]
+        [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void ResolvesConstantValueTypeServicesCorrectly(ServiceLifetime lifetime)
+        {
+            var serviceCollection = new ServiceCollection();
+            if (lifetime == ServiceLifetime.Transient)
+            {
+                serviceCollection.AddTransient(typeof(int), _ => 4);
+                serviceCollection.AddTransient(typeof(DateTime), _ => new DateTime());
+                serviceCollection.AddTransient(typeof(TheEnum), _ => TheEnum.HelloWorld);
+
+                serviceCollection.AddTransient(typeof(TimeSpan), _ => TimeSpan.Zero);
+                serviceCollection.AddTransient(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
+            }
+            else if (lifetime == ServiceLifetime.Scoped)
+            {
+                serviceCollection.AddScoped(typeof(int), _ => 4);
+                serviceCollection.AddScoped(typeof(DateTime), _ => new DateTime());
+                serviceCollection.AddScoped(typeof(TheEnum), _ => TheEnum.HelloWorld);
+
+                serviceCollection.AddScoped(typeof(TimeSpan), _ => TimeSpan.Zero);
+                serviceCollection.AddScoped(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
+            }
+            else if (lifetime == ServiceLifetime.Singleton)
+            {
+                serviceCollection.AddSingleton(typeof(int), 4);
+                serviceCollection.AddSingleton(typeof(DateTime), new DateTime());
+                serviceCollection.AddSingleton(typeof(TheEnum), TheEnum.HelloWorld);
+
+                serviceCollection.AddSingleton(typeof(TimeSpan), TimeSpan.Zero);
+                serviceCollection.AddSingleton(typeof(TimeSpan), _ => new TimeSpan(1, 2, 3));
+            }
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            int i = provider.GetService<int>();
+            Assert.Equal(4, i);
+
+            DateTime d = provider.GetService<DateTime>();
+            Assert.Equal(new DateTime(), d);
+
+            TheEnum e = provider.GetService<TheEnum>();
+            Assert.Equal(TheEnum.HelloWorld, e);
+
+            IEnumerable<TimeSpan> times = provider.GetServices<TimeSpan>();
+            Assert.Equal(new[] { TimeSpan.Zero, new TimeSpan(1, 2, 3) }, times);
+        }
+
         [Fact]
         public void RootProviderDispose_PreventsServiceResolution()
         {
@@ -208,7 +358,444 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(provider.CreateScope());
         }
 
-        [Theory(Skip = "We don't support value task services currently")]
+        [Fact]
+        public void GetService_DisposeOnSameThread_Throws()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<DisposeServiceProviderInCtor>();
+            IServiceProvider sp = CreateServiceProvider(services);
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                // ctor disposes ServiceProvider
+                var service = sp.GetRequiredService<DisposeServiceProviderInCtor>();
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void GetAsyncService_DisposeAsyncOnSameThread_ThrowsAndDoesNotHangAndDisposeAsyncGetsCalled()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            var asyncDisposableResource = new AsyncDisposable();
+            services.AddSingleton<DisposeServiceProviderInCtorAsyncDisposable>(sp =>
+                new DisposeServiceProviderInCtorAsyncDisposable(asyncDisposableResource, sp));
+
+            var sp = CreateServiceProvider(services);
+            bool doesNotHang = Task.Run(() =>
+            {
+                SingleThreadedSynchronizationContext.Run(() =>
+                {
+                    // Act
+                    Assert.Throws<ObjectDisposedException>(() =>
+                    {
+                        // ctor disposes ServiceProvider
+                        var service = sp.GetRequiredService<DisposeServiceProviderInCtorAsyncDisposable>();
+                    });
+                });
+            }).Wait(TimeSpan.FromSeconds(10));
+
+            Assert.True(doesNotHang);
+            Assert.True(asyncDisposableResource.DisposeAsyncCalled);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void GetService_DisposeOnSameThread_ThrowsAndDoesNotHangAndDisposeGetsCalled()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            var disposableResource = new Disposable();
+            services.AddSingleton<DisposeServiceProviderInCtorDisposable>(sp =>
+                new DisposeServiceProviderInCtorDisposable(disposableResource, sp));
+
+            var sp = CreateServiceProvider(services);
+            bool doesNotHang = Task.Run(() =>
+            {
+                SingleThreadedSynchronizationContext.Run(() =>
+                {
+                    // Act
+                    Assert.Throws<ObjectDisposedException>(() =>
+                    {
+                        // ctor disposes ServiceProvider
+                        var service = sp.GetRequiredService<DisposeServiceProviderInCtorDisposable>();
+                    });
+                });
+            }).Wait(TimeSpan.FromSeconds(10));
+
+            Assert.True(doesNotHang);
+            Assert.True(disposableResource.Disposed);
+        }
+
+        private class DisposeServiceProviderInCtor : IDisposable
+        {
+            public DisposeServiceProviderInCtor(IServiceProvider sp)
+            {
+                (sp as IDisposable).Dispose();
+            }
+            public void Dispose() { }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task AddDisposablesAndAsyncDisposables_DisposeAsync_AllDisposed(bool includeDelayedAsyncDisposable)
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<AsyncDisposable>();
+            services.AddSingleton<Disposable>();
+            if (includeDelayedAsyncDisposable)
+            {
+                //forces Dispose ValueTask to be asynchronous and not be immediately completed
+                services.AddSingleton<DelayedAsyncDisposableService>();
+            }
+            ServiceProvider sp = (ServiceProvider)CreateServiceProvider(services);
+
+            var disposable = sp.GetRequiredService<Disposable>();
+            var asyncDisposable = sp.GetRequiredService<AsyncDisposable>();
+            DelayedAsyncDisposableService delayedAsyncDisposableService = null;
+            if (includeDelayedAsyncDisposable)
+            {
+                delayedAsyncDisposableService = sp.GetRequiredService<DelayedAsyncDisposableService>();
+            }
+
+            await sp.DisposeAsync();
+
+            Assert.True(disposable.Disposed);
+            Assert.True(asyncDisposable.DisposeAsyncCalled);
+            if (includeDelayedAsyncDisposable)
+            {
+                Assert.Equal(1, delayedAsyncDisposableService.DisposeCount);
+            }
+        }
+
+        private class DisposeServiceProviderInCtorAsyncDisposable : IFakeService, IAsyncDisposable
+        {
+            private readonly AsyncDisposable _asyncDisposable;
+
+            public DisposeServiceProviderInCtorAsyncDisposable(AsyncDisposable asyncDisposable, IServiceProvider sp)
+            {
+                _asyncDisposable = asyncDisposable;
+                (sp as IAsyncDisposable).DisposeAsync();
+            }
+            public async ValueTask DisposeAsync()
+            {
+                await _asyncDisposable.DisposeAsync();
+                await Task.Yield();
+            }
+        }
+
+        private class DisposeServiceProviderInCtorDisposable : IFakeService, IDisposable
+        {
+            private readonly Disposable _disposable;
+
+            public DisposeServiceProviderInCtorDisposable(Disposable disposable, IServiceProvider sp)
+            {
+                _disposable = disposable;
+                (sp as IDisposable).Dispose();
+            }
+            public void Dispose()
+            {
+                _disposable.Dispose();
+            }
+        }
+
+        [ThreadStatic]
+        public static int ThreadId;
+
+        private class OuterSingleton
+        {
+            public InnerSingleton InnerSingleton;
+            public OuterSingleton(InnerSingleton innerSingleton)
+            {
+                InnerSingleton = innerSingleton;
+            }
+        }
+
+        private class InnerSingleton
+        {
+            public InnerSingleton(ManualResetEvent mre1, ManualResetEvent mre2)
+            {
+                // Making sure ctor gets called only once
+                Assert.True(!mre1.WaitOne(0) && !mre2.WaitOne(0));
+
+                // Then use mre2 to signal execution reached this ctor call
+                mre2.Set();
+
+                // Wait until it's OK to leave ctor
+                mre1.WaitOne();
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task GetRequiredService_ResolvingSameSingletonInTwoThreads_SameServiceReturned()
+        {
+            using (var mreForThread1 = new ManualResetEvent(false))
+            using (var mreForThread2 = new ManualResetEvent(false))
+            using (var mreForThread3 = new ManualResetEvent(false))
+            {
+                InnerSingleton innerSingleton = null;
+                OuterSingleton outerSingleton = null;
+                IServiceProvider sp = null;
+
+                // Arrange
+                var services = new ServiceCollection();
+
+                services.AddSingleton<OuterSingleton>();
+                services.AddSingleton(sp => new InnerSingleton(mreForThread1, mreForThread2));
+
+                sp = CreateServiceProvider(services);
+
+                var t1 = Task.Run(() =>
+                {
+                    outerSingleton = sp.GetRequiredService<OuterSingleton>();
+                });
+
+                // Wait until mre2 gets set in InnerSingleton ctor
+                mreForThread2.WaitOne();
+
+                var t2 = Task.Run(() =>
+                {
+                    mreForThread3.Set();
+
+                    // This waits on InnerSingleton singleton lock that is taken in thread 1
+                    innerSingleton = sp.GetRequiredService<InnerSingleton>();
+                });
+
+                mreForThread3.WaitOne();
+
+                // Set a timeout before unblocking execution of both thread1 and thread2 via mre1:
+                Assert.False(mreForThread1.WaitOne(10));
+
+                // By this time thread 1 has already reached InnerSingleton ctor and is waiting for mre1.
+                // within the GetRequiredService call, thread 2 should be waiting on a singleton lock for InnerSingleton
+                // (rather than trying to instantiating InnerSingleton twice).
+                mreForThread1.Set();
+
+                // Act
+                await t1;
+                await t2;
+
+                // Assert
+                Assert.NotNull(outerSingleton);
+                Assert.NotNull(innerSingleton);
+                Assert.Same(outerSingleton.InnerSingleton, innerSingleton);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock()
+        {
+            using (var mreForThread1 = new ManualResetEvent(false))
+            using (var mreForThread2 = new ManualResetEvent(false))
+            {
+                // Thread 1: Thing1 (transient) -> Thing0 (singleton)
+                // Thread 2: Thing2 (singleton) -> Thing1 (transient) -> Thing0 (singleton)
+
+                // 1. Thread 1 resolves the Thing1 which is a transient service
+                // 2. In parallel, Thread 2 resolves Thing2 which is a singleton
+                // 3. Thread 1 enters the factory callback for Thing1 and takes the lazy lock
+                // 4. Thread 2 takes callsite for Thing2 as a singleton lock when it resolves Thing2
+                // 5. Thread 2 enters the factory callback for Thing1 and waits on the lazy lock
+                // 6. Thread 1 calls GetRequiredService<Thing0> on the service provider, takes callsite for Thing0 causing no deadlock
+                // (rather than taking the locks that are already taken - either the lazy lock or the Thing2 callsite lock)
+
+                Thing0 thing0 = null;
+                Thing1 thing1 = null;
+                Thing2 thing2 = null;
+                IServiceProvider sp = null;
+                var sb = new StringBuilder();
+
+                // Arrange
+                var services = new ServiceCollection();
+
+                var lazy = new Lazy<Thing1>(() =>
+                {
+                    sb.Append("3");
+                    mreForThread2.Set();   // Now that thread 1 holds lazy lock, allow thread 2 to continue
+
+                    // by this time, Thread 2 is holding a singleton lock for Thing2,
+                    // and Thread one holds the lazy lock
+                    // the call below to resolve Thing0 does not hang
+                    // since singletons do not share the same lock upon resolve anymore.
+                    thing0 = sp.GetRequiredService<Thing0>();
+                    return new Thing1(thing0);
+                });
+
+                services.AddSingleton<Thing0>();
+                services.AddTransient(sp =>
+                {
+                    if (ThreadId == 2)
+                    {
+                        sb.Append("1");
+                        mreForThread1.Set();   // [b] Allow thread 1 to continue execution and take the lazy lock
+                        mreForThread2.WaitOne();   // [c] Wait until thread 1 takes the lazy lock
+
+                        sb.Append("4");
+                    }
+
+                    // Let Thread 1 over take Thread 2
+                    Thing1 value = lazy.Value;
+                    return value;
+                });
+                services.AddSingleton<Thing2>();
+
+                sp = CreateServiceProvider(services);
+
+                var t1 = Task.Run(() =>
+                {
+                    ThreadId = 1;
+                    using var scope1 = sp.CreateScope();
+                    mreForThread1.WaitOne(); // [a] Waits until thread 2 reaches the transient call to ensure it holds Thing2 singleton lock
+
+                    sb.Append("2");
+                    thing1 = scope1.ServiceProvider.GetRequiredService<Thing1>();
+                });
+
+                var t2 = Task.Run(() =>
+                {
+                    ThreadId = 2;
+                    using var scope2 = sp.CreateScope();
+                    thing2 = scope2.ServiceProvider.GetRequiredService<Thing2>();
+                });
+
+                // Act
+                await t1;
+                await t2;
+
+                // Assert
+                Assert.NotNull(thing0);
+                Assert.NotNull(thing1);
+                Assert.NotNull(thing2);
+                Assert.Equal("1234", sb.ToString()); // Expected order of execution
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task GetRequiredService_BiggerObjectGraphWithOpenGenerics_NoDeadlock()
+        {
+            // Test is similar to GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock (but for open generics and a larger object graph)
+            using (var mreForThread1 = new ManualResetEvent(false))
+            using (var mreForThread2 = new ManualResetEvent(false))
+            {
+                // Arrange
+                List<IFakeOpenGenericService<Thing4>> constrainedThing4Services = null;
+                List<IFakeOpenGenericService<Thing5>> constrainedThing5Services = null;
+
+                Thing3 thing3 = null;
+                IServiceProvider sp = null;
+                var sb = new StringBuilder();
+
+                var services = new ServiceCollection();
+
+                services.AddSingleton<Thing0>();
+                services.AddSingleton<Thing1>();
+                services.AddSingleton<Thing2>();
+                services.AddSingleton<Thing3>();
+                services.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+
+                var lazy = new Lazy<Thing4>(() =>
+                {
+                    sb.Append("3");
+                    mreForThread2.Set();   // Now that thread 1 holds lazy lock, allow thread 2 to continue
+
+                    thing3 = sp.GetRequiredService<Thing3>();
+                    return new Thing4(thing3);
+                });
+
+                services.AddTransient(sp =>
+                {
+                    if (ThreadId == 2)
+                    {
+                        sb.Append("1");
+                        mreForThread1.Set();   // [b] Allow thread 1 to continue execution and take the lazy lock
+                        mreForThread2.WaitOne();   // [c] Wait until thread 1 takes the lazy lock
+
+                        sb.Append("4");
+                    }
+
+                    // Let Thread 1 over take Thread 2
+                    Thing4 value = lazy.Value;
+                    return value;
+                });
+                services.AddSingleton<Thing5>();
+
+                sp = CreateServiceProvider(services);
+
+                // Act
+                var t1 = Task.Run(() =>
+                {
+                    ThreadId = 1;
+                    using var scope1 = sp.CreateScope();
+                    mreForThread1.WaitOne(); // Waits until thread 2 reaches the transient call to ensure it holds Thing4 singleton lock
+
+                    sb.Append("2");
+                    constrainedThing4Services = sp.GetServices<IFakeOpenGenericService<Thing4>>().ToList();
+                });
+
+                var t2 = Task.Run(() =>
+                {
+                    ThreadId = 2;
+                    using var scope2 = sp.CreateScope();
+                    constrainedThing5Services = sp.GetServices<IFakeOpenGenericService<Thing5>>().ToList();
+                });
+
+                // Act
+                await t1;
+                await t2;
+
+                Assert.Equal("1234", sb.ToString()); // Expected order of execution
+
+                var thing4 = sp.GetRequiredService<Thing4>();
+                var thing5 = sp.GetRequiredService<Thing5>();
+
+                // Assert
+                Assert.NotNull(thing3);
+                Assert.NotNull(thing4);
+                Assert.NotNull(thing5);
+                Assert.Equal(1, constrainedThing4Services.Count);
+                Assert.Equal(1, constrainedThing5Services.Count);
+                Assert.Same(thing4, constrainedThing4Services[0].Value);
+                Assert.Same(thing5, constrainedThing5Services[0].Value);
+            }
+        }
+
+        private class Thing5
+        {
+            public Thing5(Thing4 thing)
+            {
+            }
+        }
+
+        private class Thing4
+        {
+            public Thing4(Thing3 thing)
+            {
+            }
+        }
+
+        private class Thing3
+        {
+            public Thing3(Thing2 thing)
+            {
+            }
+        }
+
+        private class Thing2
+        {
+            public Thing2(Thing1 thing1)
+            {
+            }
+        }
+
+        private class Thing1
+        {
+            public Thing1(Thing0 thing0)
+            {
+            }
+        }
+
+        private class Thing0 { }
+
+        [Theory]
         [InlineData(ServiceLifetime.Transient)]
         [InlineData(ServiceLifetime.Scoped)]
         [InlineData(ServiceLifetime.Singleton)]
@@ -221,7 +808,62 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var provider = CreateServiceProvider(serviceCollection);
             var service = provider.GetService<IFakeMultipleService>();
+
             Assert.NotNull(service);
+            Assert.IsType<StructFakeMultipleService>(service);
+        }
+
+        [Theory]
+        [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void WorksWithFactoryStructServices(ServiceLifetime lifetime)
+        {
+            IServiceCollection serviceCollection = new ServiceCollection();
+            serviceCollection.Add(new ServiceDescriptor(typeof(IFakeService), _ => new StructServiceWithNoDependencies(), lifetime));
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var service = provider.GetService<IFakeService>();
+
+            Assert.NotNull(service);
+            Assert.IsType<StructServiceWithNoDependencies>(service);
+        }
+
+        [Theory]
+        [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void WorksWithFactoryStructServicesAsDependencies(ServiceLifetime lifetime)
+        {
+            IServiceCollection serviceCollection = new ServiceCollection();
+            serviceCollection.Add(new ServiceDescriptor(typeof(IFakeService), _ => new StructServiceWithNoDependencies(), lifetime));
+            serviceCollection.Add(new ServiceDescriptor(typeof(StructService), typeof(StructService), lifetime));
+            serviceCollection.Add(new ServiceDescriptor(typeof(IFakeMultipleService), typeof(StructFakeMultipleService), lifetime));
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var service = provider.GetService<IFakeMultipleService>();
+
+            Assert.NotNull(service);
+            Assert.IsType<StructFakeMultipleService>(service);
+        }
+
+        [Theory]
+        [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void WorksWithIEnumerableStructServices(ServiceLifetime lifetime)
+        {
+            IServiceCollection serviceCollection = new ServiceCollection();
+            for (int i = 0; i < 10; i++)
+            {
+                serviceCollection.Add(new ServiceDescriptor(typeof(IFakeService), typeof(StructServiceWithNoDependencies), lifetime));
+            }
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var services = provider.GetService<IEnumerable<IFakeService>>();
+
+            Assert.Equal(10, services.Count());
+            Assert.All(services, service => Assert.IsType<StructServiceWithNoDependencies>(service));
         }
 
         [Fact]
@@ -234,8 +876,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 serviceCollection.AddScoped<IFakeMultipleService, FakeMultipleServiceWithIEnumerableDependency>();
                 serviceCollection.AddScoped<IFakeService, FakeService>();
             }
+            var serviceProvider = CreateServiceProvider(serviceCollection);
 
-            var service = CreateServiceProvider(serviceCollection).GetService<IEnumerable<IFakeOuterService>>();
+            var services = serviceProvider.GetService<IEnumerable<IFakeOuterService>>();
+
+            Assert.Equal(20, services.Count());
         }
 
         [Fact]
@@ -247,14 +892,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Doesn't matter what this services is, we just want something in the collection after generic registration
             services.AddSingleton<FakeService>();
 
-            var serviceProvider = services.BuildServiceProvider();
+            var serviceProvider = CreateServiceProvider(services);
 
             var serviceRef1 = serviceProvider.GetRequiredService<IFakeOpenGenericService<PocoClass>>();
             var servicesRef1 = serviceProvider.GetServices<IFakeOpenGenericService<PocoClass>>().Single();
 
             Assert.Same(serviceRef1, servicesRef1);
         }
-
 
         [Fact]
         public async Task ProviderDisposeAsyncCallsDisposeAsyncOnServices()
@@ -375,6 +1019,67 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public async Task ProviderAsyncScopeDisposeAsyncCallsDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateAsyncScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            await scope.DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public async Task ProviderAsyncScopeDisposeAsyncPrefersDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateAsyncScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            await scope.DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public void ProviderAsyncScopeDisposePrefersServiceDispose()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            scope.Dispose();
+
+            Assert.True(disposable.DisposeCalled);
+        }
+
+        [Fact]
+        public void ProviderAsyncScopeDisposeThrowsWhenOnlyDisposeAsyncImplemented()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            var exception = Assert.Throws<InvalidOperationException>(() => scope.Dispose());
+            Assert.Equal(
+                "'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderContainerTests+AsyncDisposable' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.",
+                exception.Message);
+        }
+
+        [Fact]
         public void SingletonServiceCreatedFromFactoryIsDisposedWhenContainerIsDisposed()
         {
             // Arrange
@@ -406,6 +1111,20 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.False(service.IsDisposed);
         }
 
+        [Fact]
+        public async Task ProviderDisposeAsyncCallsDisposeAsyncOnceOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<DelayedAsyncDisposableService>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var disposable = serviceProvider.GetService<DelayedAsyncDisposableService>();
+
+            await (serviceProvider as IAsyncDisposable).DisposeAsync();
+
+            Assert.Equal(1, disposable.DisposeCount);
+        }
+
         private class FakeDisposable : IDisposable
         {
             public bool IsDisposed { get; private set; }
@@ -416,7 +1135,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        private class FakeMultipleServiceWithIEnumerableDependency: IFakeMultipleService
+        private class FakeMultipleServiceWithIEnumerableDependency : IFakeMultipleService
         {
             public FakeMultipleServiceWithIEnumerableDependency(IEnumerable<IFakeService> fakeServices)
             {
@@ -426,6 +1145,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private abstract class AbstractFakeOpenGenericService<T> : IFakeOpenGenericService<T>
         {
             public abstract T Value { get; }
+        }
+
+        private class FakeOpenGenericServiceWithTwoTypeArguments<TVal1, TVal2> : IFakeOpenGenericService<TVal1>
+        {
+            public TVal1 Value { get; }
+            public TVal2 Value2 { get; }
         }
 
         private class Disposable : IDisposable
@@ -464,6 +1189,135 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 DisposeAsyncCalled = true;
                 return new ValueTask(Task.CompletedTask);
             }
+        }
+
+        private class DelayedAsyncDisposableService : IAsyncDisposable
+        {
+            public int DisposeCount { get; private set; }
+            public async ValueTask DisposeAsync()
+            {
+                //forces ValueTask to be asynchronous and not be immediately completed
+                await Task.Yield();
+                DisposeCount++;
+            }
+        }
+
+        [Fact]
+        public async Task GetRequiredService_ResolveUniqueServicesConcurrently_StressTestSuccessful()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.True(await ResolveUniqueServicesConcurrently());
+            }
+        }
+
+        [Fact]
+        public void ScopedServiceResolvedFromSingletonAfterCompilation()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<A>();
+            var sp = CreateServiceProvider(serviceCollection);
+
+            var singleton = sp.GetRequiredService<A>();
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.Same(singleton, sp.GetRequiredService<A>());
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+        }
+
+        [Fact]
+        public void ScopedServiceResolvedFromSingletonAfterCompilation2()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<A>()
+                             .AddSingleton<IFakeOpenGenericService<A>, FakeOpenGenericService<A>>();
+            var sp = CreateServiceProvider(serviceCollection);
+
+            var scope = sp.CreateScope();
+            for (int i = 0; i < 50; i++)
+            {
+                scope.ServiceProvider.GetRequiredService<A>();
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+
+            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<A>>().Value, sp.GetRequiredService<A>());
+        }
+
+        [Fact]
+        public void ScopedServiceResolvedFromSingletonAfterCompilation3()
+        {
+            // Singleton IFakeX<A> -> Scoped A -> Scoped Aa
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<Aa>()
+                             .AddScoped<A>()
+                             .AddSingleton<IFakeOpenGenericService<Aa>, FakeOpenGenericService<Aa>>();
+            var sp = CreateServiceProvider(serviceCollection);
+
+            var scope = sp.CreateScope();
+            for (int i = 0; i < 50; i++)
+            {
+                scope.ServiceProvider.GetRequiredService<A>();
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+
+            Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
+        }
+
+        private async Task<bool> ResolveUniqueServicesConcurrently()
+        {
+            var types = new Type[]
+            {
+                typeof(A), typeof(B), typeof(C), typeof(D), typeof(E),
+                typeof(F), typeof(G), typeof(H), typeof(I), typeof(J)
+            };
+
+            IServiceProvider sp = null;
+            var services = new ServiceCollection();
+            foreach (var type in types)
+            {
+                services.AddSingleton(type);
+            }
+
+            sp = services.BuildServiceProvider();
+            var tasks = new List<Task<bool>>();
+            foreach (var type in types)
+            {
+                tasks.Add(Task.Run(() =>
+                    sp.GetRequiredService(type) != null)
+                );
+            }
+
+            await Task<bool>.WhenAll(tasks);
+            bool succeeded = true;
+            foreach (var task in tasks)
+            {
+                if (!task.Result)
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+            return succeeded;
+        }
+
+        private class A { }
+        private class B { }
+        private class C { }
+        private class D { }
+        private class E { }
+        private class F { }
+        private class G { }
+        private class H { }
+        private class I { }
+        private class J { }
+        private class Aa
+        {
+            public Aa(A a)
+            {
+                PropertyA = a;
+            }
+            public A PropertyA { get; }
         }
     }
 }

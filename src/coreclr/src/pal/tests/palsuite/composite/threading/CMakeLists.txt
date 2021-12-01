@@ -1,3 +1,0 @@
-add_subdirectory(threadsuspension)
-add_subdirectory(threadsuspension_switchthread)
-

@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
-    public struct ArrayWithOffset
+    public readonly struct ArrayWithOffset
     {
         private readonly object? m_array;
         private readonly int m_offset;
@@ -24,7 +25,7 @@ namespace System.Runtime.InteropServices
                     throw new ArgumentException(SR.ArgumentException_NotIsomorphic);
                 }
 
-                nuint nativeTotalSize = (nuint)arrayObj.LongLength * (nuint)arrayObj.GetElementSize();
+                nuint nativeTotalSize = arrayObj.NativeLength * (nuint)arrayObj.GetElementSize();
                 if (nativeTotalSize > MaxSizeForInterop)
                 {
                     throw new ArgumentException(SR.Argument_StructArrayTooLarge);
@@ -49,7 +50,7 @@ namespace System.Runtime.InteropServices
 
         public override int GetHashCode() => m_count + m_offset;
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ArrayWithOffset && Equals((ArrayWithOffset)obj);
         }

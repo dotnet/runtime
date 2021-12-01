@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.XUnitExtensions;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -53,12 +54,6 @@ namespace System.Net.NetworkInformation.Tests
 
         private static void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses, ITestOutputHelper output)
         {
-            if (pingReply.Status == IPStatus.TimedOut && pingReply.Address.AddressFamily == AddressFamily.InterNetworkV6 && PlatformDetection.IsOSXLike)
-            {
-                // Workaround OSX ping6 bug, see https://github.com/dotnet/runtime/issues/19861
-                return;
-            }
-
             Assert.Equal(IPStatus.Success, pingReply.Status);
             if (localIpAddresses.Any(addr => pingReply.Address.Equals(addr)))
             {
@@ -271,7 +266,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -296,7 +291,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -364,7 +359,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -396,7 +391,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddress);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily))
+                    if (Capability.CanUseRawSockets(localIpAddress.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -505,7 +500,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -530,7 +525,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -589,7 +584,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -614,7 +609,7 @@ namespace System.Net.NetworkInformation.Tests
                     PingResultValidator(pingReply, localIpAddresses);
 
                     // Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily))
+                    if (Capability.CanUseRawSockets(pingReply.Address.AddressFamily) || PlatformDetection.IsOSXLike)
                     {
                         Assert.Equal(buffer, pingReply.Buffer);
                     }
@@ -623,6 +618,30 @@ namespace System.Net.NetworkInformation.Tests
                         Assert.Equal(Array.Empty<byte>(), pingReply.Buffer);
                     }
                 });
+        }
+
+        [Fact]
+        public async Task SendPingWithIPAddressAndBigSize()
+        {
+            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
+
+            using (Ping p = new Ping())
+            {
+                // Assert.DoesNotThrow
+                PingReply pingReply = await p.SendPingAsync(localIpAddress, TestSettings.PingTimeout, new byte[10001]);
+
+                // Depending on platform the call may either succeed, report timeout or report too big packet. It
+                // should not throw wrapped SocketException though which is what this test guards.
+                //
+                // On Windows 10 the maximum ping size seems essentially limited to 65500 bytes and thus any buffer
+                // size on the loopback ping succeeds. On macOS anything bigger than 8184 will report packet too
+                // big error. On Linux/Unix the result differs for privileged and unprivileged processes and may
+                // change with different platform versions.
+                if (OperatingSystem.IsMacOS())
+                {
+                    Assert.Equal(IPStatus.PacketTooBig, pingReply.Status);
+                }
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -835,7 +854,8 @@ namespace System.Net.NetworkInformation.Tests
             options.Ttl = 1;
             // This should always fail unless host is one IP hop away.
             pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, TestSettings.PayloadAsBytesShort, options);
-            Assert.NotEqual(IPStatus.Success, pingReply.Status);
+            Assert.Equal(IPStatus.TimeExceeded, pingReply.Status);
+            Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
 
         [Fact]
@@ -914,6 +934,74 @@ namespace System.Net.NetworkInformation.Tests
                         Assert.Equal(buffer, pingReply.Buffer);
                     });
             }, localIpAddress.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(AddressFamily.InterNetwork, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", null, "ja_JP.UTF8")]
+        [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
+        public void SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        {
+            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
+            if (localIpAddress == null)
+            {
+                // No local address for given address family.
+                return;
+            }
+
+            var remoteInvokeStartInfo = new ProcessStartInfo();
+
+            remoteInvokeStartInfo.EnvironmentVariables["LANG"] = envVar_LANG;
+            remoteInvokeStartInfo.EnvironmentVariables["LC_MESSAGES"] = envVar_LC_MESSAGES;
+            remoteInvokeStartInfo.EnvironmentVariables["LC_ALL"] = envVar_LC_ALL;
+
+            RemoteExecutor.Invoke(address =>
+            {
+                SendBatchPing(
+                    (ping) => ping.Send(address, TestSettings.PingTimeout),
+                    (pingReply) =>
+                    {
+                        PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
+                    });
+            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(AddressFamily.InterNetwork, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetwork, "en_US.UTF8", null, "ja_JP.UTF8")]
+        [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
+        [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
+        public void SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        {
+            IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
+            if (localIpAddress == null)
+            {
+                // No local address for given address family.
+                return;
+            }
+
+            var remoteInvokeStartInfo = new ProcessStartInfo();
+
+            remoteInvokeStartInfo.EnvironmentVariables["LANG"] = envVar_LANG;
+            remoteInvokeStartInfo.EnvironmentVariables["LC_MESSAGES"] = envVar_LC_MESSAGES;
+            remoteInvokeStartInfo.EnvironmentVariables["LC_ALL"] = envVar_LC_ALL;
+
+            RemoteExecutor.Invoke(async address =>
+            {
+                await SendBatchPingAsync(
+                    (ping) => ping.SendPingAsync(address),
+                    (pingReply) =>
+                    {
+                        PingResultValidator(pingReply, new IPAddress[] { IPAddress.Parse(address) }, null);
+                    });
+            }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).Dispose();
         }
     }
 }

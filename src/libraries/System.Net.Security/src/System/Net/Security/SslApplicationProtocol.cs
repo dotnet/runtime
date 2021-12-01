@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Net.Security
@@ -15,11 +15,11 @@ namespace System.Net.Security
         private static readonly byte[] s_http11Utf8 = new byte[] { 0x68, 0x74, 0x74, 0x70, 0x2f, 0x31, 0x2e, 0x31 }; // "http/1.1"
 
         // Refer to IANA on ApplicationProtocols: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
-        // h3
+        /// <summary>Defines a <see cref="SslApplicationProtocol"/> instance for HTTP 3.0.</summary>
         public static readonly SslApplicationProtocol Http3 = new SslApplicationProtocol(s_http3Utf8, copy: false);
-        // h2
+        /// <summary>Defines a <see cref="SslApplicationProtocol"/> instance for HTTP 2.0.</summary>
         public static readonly SslApplicationProtocol Http2 = new SslApplicationProtocol(s_http2Utf8, copy: false);
-        // http/1.1
+        /// <summary>Defines a <see cref="SslApplicationProtocol"/> instance for HTTP 1.1.</summary>
         public static readonly SslApplicationProtocol Http11 = new SslApplicationProtocol(s_http11Utf8, copy: false);
 
         private readonly byte[] _readOnlyProtocol;
@@ -54,7 +54,7 @@ namespace System.Net.Security
         public bool Equals(SslApplicationProtocol other) =>
             ((ReadOnlySpan<byte>)_readOnlyProtocol).SequenceEqual(other._readOnlyProtocol);
 
-        public override bool Equals(object? obj) => obj is SslApplicationProtocol protocol && Equals(protocol);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is SslApplicationProtocol protocol && Equals(protocol);
 
         public override int GetHashCode()
         {
@@ -80,6 +80,7 @@ namespace System.Net.Security
             {
                 return
                     arr is null ? string.Empty :
+                    ReferenceEquals(arr, s_http3Utf8) ? "h3" :
                     ReferenceEquals(arr, s_http2Utf8) ? "h2" :
                     ReferenceEquals(arr, s_http11Utf8) ? "http/1.1" :
                     s_utf8.GetString(arr);

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
@@ -14,8 +14,8 @@ namespace System.Xml.Serialization
     {
         private bool _includeInSchema = true;
         private bool _anonymousType;
-        private string _ns;
-        private string _typeName;
+        private string? _ns;
+        private string? _typeName;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -27,7 +27,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlTypeAttribute(string typeName)
+        public XmlTypeAttribute(string? typeName)
         {
             _typeName = typeName;
         }
@@ -53,6 +53,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [AllowNull]
         public string TypeName
         {
             get { return _typeName == null ? string.Empty : _typeName; }
@@ -62,7 +63,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Namespace
+        public string? Namespace
         {
             get { return _ns; }
             set { _ns = value; }

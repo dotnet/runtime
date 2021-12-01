@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
@@ -37,9 +38,9 @@ namespace System.Security.Cryptography
 
         public static bool operator ==(CngAlgorithm? left, CngAlgorithm? right)
         {
-            if (object.ReferenceEquals(left, null))
+            if (left is null)
             {
-                return object.ReferenceEquals(right, null);
+                return right is null;
             }
 
             return left.Equals(right);
@@ -47,24 +48,24 @@ namespace System.Security.Cryptography
 
         public static bool operator !=(CngAlgorithm? left, CngAlgorithm? right)
         {
-            if (object.ReferenceEquals(left, null))
+            if (left is null)
             {
-                return !object.ReferenceEquals(right, null);
+                return right is not null;
             }
 
             return !left.Equals(right);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             Debug.Assert(_algorithm != null);
 
             return Equals(obj as CngAlgorithm);
         }
 
-        public bool Equals(CngAlgorithm? other)
+        public bool Equals([NotNullWhen(true)] CngAlgorithm? other)
         {
-            if (object.ReferenceEquals(other, null))
+            if (other is null)
             {
                 return false;
             }

@@ -15,7 +15,7 @@ namespace System.Net.Mail
         High = 2
     }
 
-    internal class Message
+    internal sealed class Message
     {
         #region Fields
 
@@ -235,7 +235,7 @@ namespace System.Net.Mail
         }
 
         [DisallowNull]
-        internal virtual MimeBasePart? Content
+        internal MimeBasePart? Content
         {
             get
             {
@@ -277,7 +277,7 @@ namespace System.Net.Mail
             context._result.InvokeCallback(e);
         }
 
-        internal class EmptySendContext
+        internal sealed class EmptySendContext
         {
             internal EmptySendContext(BaseWriter writer, LazyAsyncResult result)
             {
@@ -289,7 +289,7 @@ namespace System.Net.Mail
             internal BaseWriter _writer;
         }
 
-        internal virtual IAsyncResult BeginSend(BaseWriter writer, bool sendEnvelope, bool allowUnicode,
+        internal IAsyncResult BeginSend(BaseWriter writer, bool sendEnvelope, bool allowUnicode,
             AsyncCallback? callback, object? state)
         {
             PrepareHeaders(sendEnvelope, allowUnicode);
@@ -312,7 +312,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal virtual void EndSend(IAsyncResult asyncResult)
+        internal void EndSend(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
             {
@@ -346,7 +346,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal virtual void Send(BaseWriter writer, bool sendEnvelope, bool allowUnicode)
+        internal void Send(BaseWriter writer, bool sendEnvelope, bool allowUnicode)
         {
             if (sendEnvelope)
             {

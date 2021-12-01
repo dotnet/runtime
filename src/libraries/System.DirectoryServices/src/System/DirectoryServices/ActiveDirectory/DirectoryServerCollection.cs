@@ -3,19 +3,20 @@
 
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
     public class DirectoryServerCollection : CollectionBase
     {
-        internal readonly string siteDN;
-        internal readonly string transportDN;
+        internal readonly string? siteDN;
+        internal readonly string? transportDN;
         internal readonly DirectoryContext context;
         internal bool initialized;
-        internal readonly Hashtable changeList;
-        private readonly ArrayList _copyList = new ArrayList();
-        private readonly DirectoryEntry _crossRefEntry;
+        internal readonly Hashtable? changeList;
+        private readonly List<object> _copyList = new();
+        private readonly DirectoryEntry? _crossRefEntry;
         private readonly bool _isADAM;
         private readonly bool _isForNC;
 
@@ -29,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory
             this.transportDN = transportName;
         }
 
-        internal DirectoryServerCollection(DirectoryContext context, DirectoryEntry crossRefEntry, bool isADAM, ReadOnlyDirectoryServerCollection servers)
+        internal DirectoryServerCollection(DirectoryContext context, DirectoryEntry? crossRefEntry, bool isADAM, ReadOnlyDirectoryServerCollection servers)
         {
             this.context = context;
             _crossRefEntry = crossRefEntry;
@@ -44,7 +45,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryServer this[int index]
         {
-            get => (DirectoryServer)InnerList[index];
+            get => (DirectoryServer)InnerList[index]!;
             set
             {
                 DirectoryServer server = (DirectoryServer)value;
@@ -129,7 +130,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                DirectoryServer tmp = (DirectoryServer)InnerList[i];
+                DirectoryServer tmp = (DirectoryServer)InnerList[i]!;
 
                 if (Utils.Compare(tmp.Name, server.Name) == 0)
                 {
@@ -151,7 +152,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                DirectoryServer tmp = (DirectoryServer)InnerList[i];
+                DirectoryServer tmp = (DirectoryServer)InnerList[i]!;
 
                 if (Utils.Compare(tmp.Name, server.Name) == 0)
                 {
@@ -214,7 +215,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                DirectoryServer tmp = (DirectoryServer)InnerList[i];
+                DirectoryServer tmp = (DirectoryServer)InnerList[i]!;
 
                 if (Utils.Compare(tmp.Name, server.Name) == 0)
                 {
@@ -268,7 +269,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
         protected override void OnInsertComplete(int index, object value)
+#pragma warning restore CS8765
         {
             if (_isForNC)
             {
@@ -294,9 +297,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    if (changeList.Contains(name))
+                    if (changeList!.Contains(name))
                     {
-                        ((DirectoryEntry)changeList[name]).Properties["bridgeheadTransportList"].Value = this.transportDN;
+                        ((DirectoryEntry)changeList[name]!).Properties["bridgeheadTransportList"].Value = this.transportDN;
                     }
                     else
                     {
@@ -313,7 +316,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
         protected override void OnRemoveComplete(int index, object value)
+#pragma warning restore CS8765
         {
             if (_isForNC)
             {
@@ -338,9 +343,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    if (changeList.Contains(name))
+                    if (changeList!.Contains(name))
                     {
-                        ((DirectoryEntry)changeList[name]).Properties["bridgeheadTransportList"].Clear();
+                        ((DirectoryEntry)changeList[name]!).Properties["bridgeheadTransportList"].Clear();
                     }
                     else
                     {
@@ -357,7 +362,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
         protected override void OnSetComplete(int index, object oldValue, object newValue)
+#pragma warning restore CS8765
         {
             OnRemoveComplete(index, oldValue);
             OnInsertComplete(index, newValue);
@@ -391,15 +398,15 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal string[] GetMultiValuedProperty()
         {
-            ArrayList values = new ArrayList();
+            var values = new List<string>();
             for (int i = 0; i < InnerList.Count; i++)
             {
-                DirectoryServer ds = (DirectoryServer)InnerList[i];
+                DirectoryServer ds = (DirectoryServer)InnerList[i]!;
 
                 string ntdsaName = (ds is DomainController) ? ((DomainController)ds).NtdsaObjectName : ((AdamInstance)ds).NtdsaObjectName;
                 values.Add(ntdsaName);
             }
-            return (string[])values.ToArray(typeof(string));
+            return values.ToArray();
         }
     }
 }

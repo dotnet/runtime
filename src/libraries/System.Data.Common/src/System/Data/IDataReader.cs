@@ -9,7 +9,7 @@ namespace System.Data
         bool IsClosed { get; }
         int RecordsAffected { get; }
         void Close();
-        DataTable GetSchemaTable();
+        DataTable? GetSchemaTable();
         bool NextResult();
         bool Read();
     }

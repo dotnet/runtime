@@ -2,7 +2,7 @@
 
 This concept is not new to .NET Core but has existed since the days of .NET Framework (see [this](https://blogs.msdn.microsoft.com/suzcook/2003/05/29/choosing-a-binding-context/) for details) where it operated behind the scenes and not exposed for the developer to interact with, aside from loading your assembly in one based upon the API used to perform the load.
 
-In .NET Core, we have exposed a [managed API surface](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Runtime.Loader/ref/System.Runtime.Loader.cs) that developers can use to interact with it - to inspect loaded assemblies or create their own **LoadContext** instance. Here are some of the scenarios that motivated this work:
+In .NET Core, we have exposed a [managed API surface](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Runtime.Loader/ref/System.Runtime.Loader.cs) that developers can use to interact with it - to inspect loaded assemblies or create their own **LoadContext** instance. Here are some of the scenarios that motivated this work:
 
 * Ability to load multiple versions of the same assembly within a given process (e.g. for plugin frameworks)
 * Ability to load assemblies explicitly in a context isolated from that of the application.
@@ -48,15 +48,15 @@ If the *Default LoadContext* fallback also did not resolve the load (or was not 
 
 * **System.Private.CoreLib.dll** is only loaded once, and into the **Default LoadContext**, during the .NET Runtime startup as it is a logical extension of the same. It cannot be loaded into **Custom LoadContext**.
 * Currently, custom **LoadContext** cannot be unloaded once created. This is a feature we are looking into for a future release.
-* If an attempt is made to load a [Ready-To-Run (R2R)](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/readytorun-overview.md) image from the same location in multiple load context's, then precompiled code can only be used from the first image that got loaded. The subsequent images will have their code JITted. This happens because subsequent loading binaries from the same location results in OS mapping them to the same memory as the previous one was mapped to and thus, could corrupt internal state information required for use precompiled code.
+* If an attempt is made to load a [Ready-To-Run (R2R)](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/readytorun-overview.md) image from the same location in multiple load context's, then precompiled code can only be used from the first image that got loaded. The subsequent images will have their code JITted. This happens because subsequent loading binaries from the same location results in OS mapping them to the same memory as the previous one was mapped to and thus, could corrupt internal state information required for use precompiled code.
 
 ## Tests
 
-Tests are present [here](https://github.com/dotnet/runtime/tree/master/src/libraries/System.Runtime.Loader/tests).
+Tests are present [here](https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.Loader/tests).
 
 ## API Surface
 
-Most of the **AssemblyLoadContext** [API surface](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Runtime.Loader/ref/System.Runtime.Loader.cs) is self-explanatory. Key APIs/Properties, though, are described below:
+Most of the **AssemblyLoadContext** [API surface](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Runtime.Loader/ref/System.Runtime.Loader.cs) is self-explanatory. Key APIs/Properties, though, are described below:
 
 ### Default
 
@@ -89,4 +89,4 @@ As part of .NET Standard 2.0 effort, certain assembly load APIs off the **Assemb
 * Assembly.LoadFile - creates a new (anonymous) load context to load the assembly into.
 * Assembly.Load(byte[]) - creates a new (anonymous) load context to load the assembly into.
 
-If you need to influence the load process or the load context in which assemblies are loaded, please look at the various Load* APIs exposed by **AssemblyLoadContext** [API surface](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Runtime.Loader/ref/System.Runtime.Loader.cs).
+If you need to influence the load process or the load context in which assemblies are loaded, please look at the various Load* APIs exposed by **AssemblyLoadContext** [API surface](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Runtime.Loader/ref/System.Runtime.Loader.cs).

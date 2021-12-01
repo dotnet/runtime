@@ -8,7 +8,7 @@ using System.Reflection.Context.Delegation;
 namespace System.Reflection.Context.Projection
 {
     // Recursively 'projects' any assemblies, modules, types and members returned by a given method body
-    internal class ProjectingMethodBody : DelegatingMethodBody
+    internal sealed class ProjectingMethodBody : DelegatingMethodBody
     {
         private readonly Projector _projector;
 

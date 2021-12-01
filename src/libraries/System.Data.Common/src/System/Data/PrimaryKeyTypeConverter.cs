@@ -13,13 +13,13 @@ namespace System.Data
         {
         }
 
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => false;
+        public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => false;
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) =>
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) =>
             destinationType == typeof(string) ||
             base.CanConvertTo(context, destinationType);
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {

@@ -1,0 +1,33 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <PackageType>DotnetTool</PackageType>
+    <PackageDescription>ILVerify tool.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\ILVerify\ILVerify.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageFile Include="DotnetToolSettings.xml">
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\DotnetToolSettings.xml</TargetPath>
+    </PackageFile>
+    <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\ILVerify.dll">
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\ILVerify.dll</TargetPath>
+    </PackageFile>
+    <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\System.CommandLine.dll">
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\System.CommandLine.dll</TargetPath>
+    </PackageFile>
+    <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\ILVerify.deps.json">
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\ILVerify.deps.json</TargetPath>
+    </PackageFile>
+    <PackageFile Include="$(ArtifactsDir)bin\ILVerify\$(TargetArchitecture)\$(Configuration)\ILVerify.runtimeconfig.json">
+       <TargetPath>tools\$(NetCoreAppToolCurrent)\any\ILVerify.runtimeconfig.json</TargetPath>
+    </PackageFile>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

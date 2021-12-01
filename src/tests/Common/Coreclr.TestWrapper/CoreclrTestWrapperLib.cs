@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
+#nullable disable
 
 using System;
 using System.Collections.Generic;
@@ -78,15 +79,15 @@ namespace CoreclrTestLib
         public unsafe static IEnumerable<Process> GetChildren(this Process process)
         {
             var children = new List<Process>();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return Windows_GetChildren(process);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (OperatingSystem.IsLinux())
             {
                 return Linux_GetChildren(process);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 return MacOS_GetChildren(process);
             }
@@ -196,7 +197,7 @@ namespace CoreclrTestLib
     {
         public const int EXIT_SUCCESS_CODE = 0;
         public const string TIMEOUT_ENVIRONMENT_VAR = "__TestTimeout";
-        
+
         // Default timeout set to 10 minutes
         public const int DEFAULT_TIMEOUT_MS = 1000 * 60 * 10;
 
@@ -205,21 +206,21 @@ namespace CoreclrTestLib
 
         static bool CollectCrashDump(Process process, string path)
         {
-            ProcessStartInfo createdumpInfo = null;
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string createdumpPath = Path.Combine(coreRoot, "createdump");
             string arguments = $"--name \"{path}\" {process.Id} --withheap";
             Process createdump = new Process();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 createdump.StartInfo.FileName = createdumpPath + ".exe";
                 createdump.StartInfo.Arguments = arguments;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 createdump.StartInfo.FileName = "sudo";
                 createdump.StartInfo.Arguments = $"{createdumpPath} " + arguments;
+                createdump.StartInfo.EnvironmentVariables.Add("COMPlus_DbgEnableElfDumpOnMacOS", "1");
             }
 
             createdump.StartInfo.UseShellExecute = false;
@@ -284,12 +285,12 @@ namespace CoreclrTestLib
             return children;
         }
 
-        public int RunTest(string executable, string outputFile, string errorFile)
+        public int RunTest(string executable, string outputFile, string errorFile, string category, string testBinaryBase, string outputDir)
         {
             Debug.Assert(outputFile != errorFile);
 
             int exitCode = -100;
-            
+
             // If a timeout was given to us by an environment variable, use it instead of the default
             // timeout.
             string environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
@@ -305,7 +306,7 @@ namespace CoreclrTestLib
             using (Process process = new Process())
             {
                 // Windows can run the executable implicitly
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     process.StartInfo.FileName = executable;
                 }
@@ -319,6 +320,9 @@ namespace CoreclrTestLib
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.EnvironmentVariables.Add("__Category", category);
+                process.StartInfo.EnvironmentVariables.Add("__TestBinaryBase", testBinaryBase);
+                process.StartInfo.EnvironmentVariables.Add("__OutputDir", outputDir);
 
                 DateTime startTime = DateTime.Now;
                 process.Start();
@@ -384,7 +388,5 @@ namespace CoreclrTestLib
 
             return exitCode;
         }
-
-        
     }
 }

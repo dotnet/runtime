@@ -39,7 +39,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     Prefix = "NSbook",
                     Value = "\n\t\t\tA Brief History Of Time\n\t\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
         }
@@ -69,7 +68,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     Prefix = "NSbook",
                     Value = "\n\t\t\tA Brief History Of Time\n\t\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
         }
@@ -98,7 +96,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Prefix = "prefix2"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
         }
@@ -116,8 +113,6 @@ namespace XPathTests.FunctionalTests.Expressions
 
             namespaceManager.AddNamespace("NSbook", "http://notbook.htm");
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
@@ -145,7 +140,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "\n\t\t\tNewton's Time Machine\n\t\t"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
         }

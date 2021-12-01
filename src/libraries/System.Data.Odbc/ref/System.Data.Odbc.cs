@@ -6,17 +6,21 @@
 
 namespace System.Data.Odbc
 {
+    [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.OdbcCommandDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.ToolboxItemAttribute(true)]
     public sealed partial class OdbcCommand : System.Data.Common.DbCommand, System.ICloneable
     {
         public OdbcCommand() { }
         public OdbcCommand(string? cmdText) { }
         public OdbcCommand(string? cmdText, System.Data.Odbc.OdbcConnection? connection) { }
         public OdbcCommand(string? cmdText, System.Data.Odbc.OdbcConnection? connection, System.Data.Odbc.OdbcTransaction? transaction) { }
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Odbc.Design.OdbcCommandTextEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string CommandText { get { throw null; } set { } }
         public override int CommandTimeout { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.CommandType.Text)]
         public override System.Data.CommandType CommandType { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DbConnectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.Odbc.OdbcConnection? Connection { get { throw null; } set { } }
         protected override System.Data.Common.DbConnection? DbConnection { get { throw null; } set { } }
         protected override System.Data.Common.DbParameterCollection DbParameterCollection { get { throw null; } }
@@ -63,16 +67,18 @@ namespace System.Data.Odbc
         public new System.Data.Odbc.OdbcCommand GetUpdateCommand() { throw null; }
         public new System.Data.Odbc.OdbcCommand GetUpdateCommand(bool useColumnsForParameterNames) { throw null; }
         public override string QuoteIdentifier(string unquotedIdentifier) { throw null; }
-        public string QuoteIdentifier(string unquotedIdentifier, System.Data.Odbc.OdbcConnection connection) { throw null; }
+        public string QuoteIdentifier(string unquotedIdentifier, System.Data.Odbc.OdbcConnection? connection) { throw null; }
         protected override void SetRowUpdatingHandler(System.Data.Common.DbDataAdapter adapter) { }
         public override string UnquoteIdentifier(string quotedIdentifier) { throw null; }
-        public string UnquoteIdentifier(string quotedIdentifier, System.Data.Odbc.OdbcConnection connection) { throw null; }
+        public string UnquoteIdentifier(string quotedIdentifier, System.Data.Odbc.OdbcConnection? connection) { throw null; }
     }
     public sealed partial class OdbcConnection : System.Data.Common.DbConnection, System.ICloneable
     {
         public OdbcConnection() { }
         public OdbcConnection(string? connectionString) { }
-        public override string? ConnectionString { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Odbc.Design.OdbcConnectionStringEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
+        public override string ConnectionString { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(15)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public new int ConnectionTimeout { get { throw null; } set { } }
@@ -120,21 +126,27 @@ namespace System.Data.Odbc
         public override void Clear() { }
         public override bool ContainsKey(string keyword) { throw null; }
         public override bool Remove(string keyword) { throw null; }
-        public override bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) { throw null; }
+        public override bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? value) { throw null; }
     }
+    [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.OdbcDataAdapterDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.ToolboxItemAttribute("Microsoft.VSDesigner.Data.VS.OdbcDataAdapterToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class OdbcDataAdapter : System.Data.Common.DbDataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
         public OdbcDataAdapter() { }
         public OdbcDataAdapter(System.Data.Odbc.OdbcCommand? selectCommand) { }
         public OdbcDataAdapter(string? selectCommandText, System.Data.Odbc.OdbcConnection? selectConnection) { }
         public OdbcDataAdapter(string? selectCommandText, string? selectConnectionString) { }
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.Odbc.OdbcCommand? DeleteCommand { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.Odbc.OdbcCommand? InsertCommand { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.Odbc.OdbcCommand? SelectCommand { get { throw null; } set { } }
         System.Data.IDbCommand? System.Data.IDbDataAdapter.DeleteCommand { get { throw null; } set { } }
         System.Data.IDbCommand? System.Data.IDbDataAdapter.InsertCommand { get { throw null; } set { } }
         System.Data.IDbCommand? System.Data.IDbDataAdapter.SelectCommand { get { throw null; } set { } }
         System.Data.IDbCommand? System.Data.IDbDataAdapter.UpdateCommand { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBCommandEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public new System.Data.Odbc.OdbcCommand? UpdateCommand { get { throw null; } set { } }
         public event System.Data.Odbc.OdbcRowUpdatedEventHandler? RowUpdated { add { } remove { } }
         public event System.Data.Odbc.OdbcRowUpdatingEventHandler? RowUpdating { add { } remove { } }
@@ -175,7 +187,7 @@ namespace System.Data.Odbc
         public override long GetInt64(int i) { throw null; }
         public override string GetName(int i) { throw null; }
         public override int GetOrdinal(string value) { throw null; }
-        public override System.Data.DataTable GetSchemaTable() { throw null; }
+        public override System.Data.DataTable? GetSchemaTable() { throw null; }
         public override string GetString(int i) { throw null; }
         public System.TimeSpan GetTime(int i) { throw null; }
         public override object GetValue(int i) { throw null; }
@@ -252,7 +264,7 @@ namespace System.Data.Odbc
         public OdbcParameter(string? name, System.Data.Odbc.OdbcType type) { }
         public OdbcParameter(string? name, System.Data.Odbc.OdbcType type, int size) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public OdbcParameter(string? parameterName, System.Data.Odbc.OdbcType odbcType, int size, System.Data.ParameterDirection parameterDirection, bool isNullable, byte precision, byte scale, string srcColumn, System.Data.DataRowVersion srcVersion, object? value) { }
+        public OdbcParameter(string? parameterName, System.Data.Odbc.OdbcType odbcType, int size, System.Data.ParameterDirection parameterDirection, bool isNullable, byte precision, byte scale, string? srcColumn, System.Data.DataRowVersion srcVersion, object? value) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public OdbcParameter(string? parameterName, System.Data.Odbc.OdbcType odbcType, int size, System.Data.ParameterDirection parameterDirection, byte precision, byte scale, string? sourceColumn, System.Data.DataRowVersion sourceVersion, bool sourceColumnNullMapping, object? value) { }
         public OdbcParameter(string? name, System.Data.Odbc.OdbcType type, int size, string? sourcecolumn) { }
@@ -278,6 +290,7 @@ namespace System.Data.Odbc
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
+    [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBParametersEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class OdbcParameterCollection : System.Data.Common.DbParameterCollection
     {
         internal OdbcParameterCollection() { }
@@ -298,7 +311,7 @@ namespace System.Data.Odbc
         public System.Data.Odbc.OdbcParameter Add(string? parameterName, System.Data.Odbc.OdbcType odbcType, int size) { throw null; }
         public System.Data.Odbc.OdbcParameter Add(string? parameterName, System.Data.Odbc.OdbcType odbcType, int size, string? sourceColumn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated.  Use AddWithValue(String parameterName, Object value).  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated. Use AddWithValue(String parameterName, Object value) instead.")]
         public System.Data.Odbc.OdbcParameter Add(string? parameterName, object? value) { throw null; }
         public override void AddRange(System.Array values) { }
         public void AddRange(System.Data.Odbc.OdbcParameter[] values) { }

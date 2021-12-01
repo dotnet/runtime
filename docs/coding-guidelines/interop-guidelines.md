@@ -13,6 +13,12 @@ We have the following goals related to interop code being used in dotnet/runtime
 - Ensure maximal managed code reuse across different OS flavors which have  the same API but not the same ABI.
    - This is the case for UNIX and addressing it is a work-in-progress (see issue #2137 and section on "shims" below.)
 
+## Submitting Changes
+
+Interop code implicitly defines the native platform dependencies that .NET has. These dependencies are tracked and modeled according to the [Tracking Platform Dependencies design](https://github.com/dotnet/designs/blob/main/accepted/2021/platform-dependencies/platform-dependencies.md). Whenever a PR is submitted that changes interop code, it needs to be reviewed to determine whether a change to the platform dependencies model is required.
+
+By default, any change to `src/libraries/Common/src/Interop` folder will add @dotnet/platform-deps-team as a reviewer. If necessary, update the corresponding `https://github.com/dotnet/core/blob/main/release-notes/<product-version>/runtime-deps.json` file to reflect the dependency change. The scope of dependencies is at the file/package level, not individual functions, so interop changes rarely require an update to the model.
+
 ## Approach
 
 ### Interop type
@@ -41,7 +47,7 @@ internal static partial class Interop
 ### File organization
 
 - The Interop partial class definitions should live in Interop.*.cs files. These Interop.*.cs files should all live under Common rather than within a given assembly's folder.
- - The only exception to this should be when an assembly P/Invokes to its own native library that isn't available to or consumed by anyone else, e.g. System.IO.Compression P/Invoking to clrcompression.dll. In such cases, System.IO.Compression should have its own Interop folder which follows a similar scheme as outlined in this proposal, but just for these private P/Invokes.
+ - The only exception to this should be when an assembly P/Invokes to its own native library that isn't available to or consumed by anyone else, e.g. System.IO.Compression P/Invoking to System.IO.Compression.Native.dll. In such cases, System.IO.Compression should have its own Interop folder which follows a similar scheme as outlined in this proposal, but just for these private P/Invokes.
 - Under Common\src\Interop, we'll have a folder for each target platform, and within each platform, for each library from which functionality is being consumed. The Interop.*.cs files will live within those library folders, e.g.
 
 ```
@@ -49,7 +55,7 @@ internal static partial class Interop
     \Windows
         \mincore
             ... interop files
-	\Unix
+    \Unix
         \libc
             ... interop files
     \Linux
@@ -58,7 +64,7 @@ internal static partial class Interop
 ```
 
 As shown above, platforms may be additive, in that an assembly may use functionality from multiple folders, e.g. System.IO.FileSystem's Linux build will use functionality both from Unix (common across all Unix systems) and from Linux (specific to Linux and not available across non-Linux Unix systems).
-			 
+
 - Interop.*.cs files are created in a way such that every assembly consuming the file will need every DllImport it contains.
   - If multiple related DllImports will all be needed by every consumer, they may be declared in the same file, named for the functionality grouping, e.g. Interop.IOErrors.cs.
   - Otherwise, in the limit (and the expected case for most situations) each Interop.*.cs file will contain a single DllImport and associated interop types (e.g. the structs used with that signature) and helper wrappers, e.g. Interop.strerror.cs.
@@ -104,7 +110,7 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 
 ```
 (Note that this will likely result in some extra constants defined in each assembly that uses interop, which minimally violates one of the goals, but it's very minimal.)
-			 
+
 - .csproj project files then include the interop code they need, e.g.
 ```XML
 <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -120,7 +126,7 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 ```
 
 ### Build System
-When building dotnet/runtime, we use the "TargetOS" property to control what target platform we are building for. The valid values for this property are Windows_NT (which is the default value from MSBuild when running on Windows), Linux and OSX.
+When building dotnet/runtime, we use the "TargetOS" property to control what target platform we are building for. The valid values for this property are windows (which is the default value from MSBuild when running on Windows), Linux and OSX.
 
 #### Project Files
 Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux. A property can be passed to dotnet build to control which flavor is built, e.g. `dotnet build /p:TargetOS=OSX System.Console.csproj`.
@@ -170,10 +176,10 @@ To address this, we're moving to a model where all UNIX interop from dotnet/runt
 
 Guidelines for shim C++ API:
 
-- Keep them as "thin"/1:1 as possible. 
-  - We want to write the majority of code in C#. 
+- Keep them as "thin"/1:1 as possible.
+  - We want to write the majority of code in C#.
 - Never skip the shim and P/Invoke directly to the underlying platform API. It's easy to assume something is safe/guaranteed when it isn't.
-- Don't cheat and take advantage of coincidental agreement between one flavor's ABI and the shim's ABI. 
+- Don't cheat and take advantage of coincidental agreement between one flavor's ABI and the shim's ABI.
 - Use PascalCase in a style closer to Win32 than libc.
   - If an export point has a 1:1 correspondence to the platform API, then name it after the platform API in PascalCase (e.g. stat -> Stat, fstat -> FStat).
   - If an export is not 1:1, then spell things out as we typically would in dotnet/runtime code (i.e. don't use abbreviations unless they come from the underlying API.

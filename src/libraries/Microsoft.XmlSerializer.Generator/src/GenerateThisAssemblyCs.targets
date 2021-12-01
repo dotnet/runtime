@@ -1,12 +1,15 @@
 <Project>
   <ItemGroup>
-    <Compile Include="$(IntermediateOutputPath)\ThisAssembly.cs"/>
+    <Compile Include="$(IntermediateOutputPath)ThisAssembly.cs"/>
   </ItemGroup>
 
   <Target Name="GenerateThisAssemblyCs"
           BeforeTargets="CoreCompile">
     <PropertyGroup>
       <ThisAssemblyCsContents>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System%3B
 namespace Microsoft.XmlSerializer.Generator
 {
@@ -38,7 +41,7 @@ namespace Microsoft.XmlSerializer.Generator
 
     <!-- Write ThisAssembly.cs if this is a new version number, or it is missing -->
     <WriteLinesToFile
-      File="$(IntermediateOutputPath)\ThisAssembly.cs"
+      File="$(IntermediateOutputPath)ThisAssembly.cs"
       Lines="$(ThisAssemblyCsContents)"
       Overwrite="true"
       Encoding="Unicode"/>

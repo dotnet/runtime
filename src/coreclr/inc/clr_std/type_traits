@@ -1,0 +1,627 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+//
+// clr_std/utility
+//
+// Copy of some key Standard Template Library functionality.
+// See http://msdn.microsoft.com/en-us/library/bb982077.aspx for documentation.
+//
+
+#ifdef _MSC_VER
+#pragma once
+#endif
+
+#ifndef __clr_std_type_traits_h__
+#define __clr_std_type_traits_h__
+
+#ifdef USE_STL
+
+#include <type_traits>
+
+#else
+
+namespace std
+{
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS remove_const
+    template<class _Ty>
+    struct remove_const
+    {   // remove top level const qualifier
+        typedef _Ty type;
+    };
+
+    template<class _Ty>
+    struct remove_const<const _Ty>
+    {   // remove top level const qualifier
+        typedef _Ty type;
+    };
+
+    template<class _Ty>
+    struct remove_const<const _Ty[]>
+    {   // remove top level const qualifier
+        typedef _Ty type[];
+    };
+
+    template<class _Ty, unsigned int _Nx>
+    struct remove_const<const _Ty[_Nx]>
+    {   // remove top level const qualifier
+        typedef _Ty type[_Nx];
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS remove_volatile
+    template<class _Ty>
+    struct remove_volatile
+    {   // remove top level volatile qualifier
+        typedef _Ty type;
+    };
+
+    template<class _Ty>
+    struct remove_volatile<volatile _Ty>
+    {   // remove top level volatile qualifier
+        typedef _Ty type;
+    };
+
+    template<class _Ty>
+    struct remove_volatile<volatile _Ty[]>
+    {   // remove top level volatile qualifier
+        typedef _Ty type[];
+    };
+
+    template<class _Ty, unsigned int _Nx>
+    struct remove_volatile<volatile _Ty[_Nx]>
+    {   // remove top level volatile qualifier
+        typedef _Ty type[_Nx];
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS remove_cv
+    template<class _Ty>
+    struct remove_cv
+    {   // remove top level const and volatile qualifiers
+        typedef typename remove_const<typename remove_volatile<_Ty>::type>::type type;
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE remove_reference
+    template<class T>
+    struct remove_reference
+    {   // remove reference
+        typedef T type;
+    };
+
+    template<class T>
+    struct remove_reference<T&>
+    {   // remove reference
+        typedef T type;
+    };
+
+    template<class T>
+    struct remove_reference<T&&>
+    {   // remove rvalue reference
+        typedef T type;
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE remove_pointer
+    template<class T>
+    struct remove_pointer
+    {   // remove pointer
+        typedef T type;
+    };
+
+    template<class T>
+    struct remove_pointer<T*>
+    {   // remove pointer
+        typedef T type;
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE FUNCTION identity
+    template<class T>
+    struct identity
+    {   // map T to type unchanged
+        typedef T type;
+
+        inline
+        const T& operator()(const T& left) const
+        {   // apply identity operator to operand
+            return (left);
+        }
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS integral_constant
+    template<class _Ty, _Ty _Val>
+    struct integral_constant
+    {   // convenient template for integral constant types
+        static const _Ty value = _Val;
+
+        typedef _Ty value_type;
+        typedef integral_constant<_Ty, _Val> type;
+    };
+
+    typedef integral_constant<bool, true> true_type;
+    typedef integral_constant<bool, false> false_type;
+
+    // TEMPLATE CLASS _Cat_base
+    template<bool>
+    struct _Cat_base
+        : false_type
+    {    // base class for type predicates
+    };
+
+    template<>
+    struct _Cat_base<true>
+        : true_type
+    {    // base class for type predicates
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS enable_if
+    template<bool _Test, class _Type = void>
+    struct enable_if
+    {   // type is undefined for assumed !_Test
+    };
+
+    template<class _Type>
+    struct enable_if<true, _Type>
+    {   // type is _Type for _Test
+        typedef _Type type;
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS conditional
+    template<bool _Test, class _Ty1, class _Ty2>
+    struct conditional
+    {   // type is _Ty2 for assumed !_Test
+        typedef _Ty2 type;
+    };
+
+    template<class _Ty1, class _Ty2>
+    struct conditional<true, _Ty1, _Ty2>
+    {   // type is _Ty1 for _Test
+        typedef _Ty1 type;
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS make_unsigned
+    template<typename Type1>
+    struct make_unsigned
+    {
+    };
+
+    template<>
+    struct make_unsigned<int>
+    {
+        typedef unsigned int type;
+    };
+
+#ifndef HOST_UNIX
+
+    template<>
+    struct make_unsigned<long>
+    {
+        typedef unsigned long type;
+    };
+
+#endif // !HOST_UNIX
+
+    template<>
+    struct make_unsigned<__int64>
+    {
+        typedef unsigned __int64 type;
+    };
+
+    template<>
+    struct make_unsigned<size_t>
+    {
+        typedef size_t type;
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS make_signed
+    template<typename Type1>
+    struct make_signed
+    {
+    };
+
+    template<>
+    struct make_signed<unsigned int>
+    {
+        typedef signed int type;
+    };
+
+#ifndef HOST_UNIX
+
+    template<>
+    struct make_signed<unsigned long>
+    {
+        typedef signed long type;
+    };
+
+#endif // !HOST_UNIX
+
+    template<>
+    struct make_signed<unsigned __int64>
+    {
+        typedef signed __int64 type;
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS is_lvalue_reference
+    template<class _Ty>
+    struct is_lvalue_reference
+        : false_type
+    {   // determine whether _Ty is an lvalue reference
+    };
+
+    template<class _Ty>
+    struct is_lvalue_reference<_Ty&>
+        : true_type
+    {   // determine whether _Ty is an lvalue reference
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS is_rvalue_reference
+    template<class _Ty>
+    struct is_rvalue_reference
+        : false_type
+    {   // determine whether _Ty is an rvalue reference
+    };
+
+    template<class _Ty>
+    struct is_rvalue_reference<_Ty&&>
+        : true_type
+    {   // determine whether _Ty is an rvalue reference
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS is_reference
+    template<class _Ty>
+    struct is_reference
+        : conditional<
+            is_lvalue_reference<_Ty>::value || is_rvalue_reference<_Ty>::value,
+            true_type,
+            false_type>::type
+    {   // determine whether _Ty is a reference
+    };
+
+    // TEMPLATE CLASS is_pointer
+    template<class _Ty>
+    struct is_pointer
+        : false_type
+    {   // determine whether _Ty is a pointer
+    };
+
+    template<class _Ty>
+    struct is_pointer<_Ty *>
+        : true_type
+    {   // determine whether _Ty is a pointer
+    };
+
+    // TEMPLATE CLASS _Is_integral
+    template<class _Ty>
+    struct _Is_integral
+        : false_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<bool>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<char>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<unsigned char>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<signed char>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<unsigned short>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<signed short>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<unsigned int>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<signed int>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+// On Unix 'long' is a 64-bit type (same as __int64) and the following two definitions
+// conflict with _Is_integral<unsigned __int64> and _Is_integral<signed __int64>.
+#ifndef HOST_UNIX
+    template<>
+    struct _Is_integral<unsigned long>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<signed long>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+#endif /* HOST_UNIX */
+
+ #if _HAS_CHAR16_T_LANGUAGE_SUPPORT
+    template<>
+    struct _Is_integral<char16_t>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<char32_t>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+ #endif /* _HAS_CHAR16_T_LANGUAGE_SUPPORT */
+
+    template<>
+    struct _Is_integral<unsigned __int64>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    template<>
+    struct _Is_integral<signed __int64>
+        : true_type
+    {    // determine whether _Ty is integral
+    };
+
+    // TEMPLATE CLASS is_integral
+    template<class _Ty>
+    struct is_integral
+        : _Is_integral<typename remove_cv<_Ty>::type>
+    {    // determine whether _Ty is integral
+    };
+
+    // TEMPLATE CLASS _Is_floating_point
+    template<class _Ty>
+    struct _Is_floating_point
+        : false_type
+    {    // determine whether _Ty is floating point
+    };
+
+    template<>
+    struct _Is_floating_point<float>
+        : true_type
+    {    // determine whether _Ty is floating point
+    };
+
+    template<>
+    struct _Is_floating_point<double>
+        : true_type
+    {    // determine whether _Ty is floating point
+    };
+
+// In PAL, we define long as int and so this becomes int double,
+// which is a nonsense
+#ifndef HOST_UNIX
+    template<>
+    struct _Is_floating_point<long double>
+        : true_type
+    {    // determine whether _Ty is floating point
+    };
+#endif
+
+    // TEMPLATE CLASS is_floating_point
+    template<class _Ty>
+    struct is_floating_point
+        : _Is_floating_point<typename remove_cv<_Ty>::type>
+    {    // determine whether _Ty is floating point
+    };
+
+    // TEMPLATE CLASS is_arithmetic
+    template<class _Ty>
+    struct is_arithmetic
+    : _Cat_base<is_integral<_Ty>::value
+        || is_floating_point<_Ty>::value>
+    {    // determine whether _Ty is an arithmetic type
+    };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS is_signed
+    template <typename T>
+    struct is_signed : conditional<
+        static_cast<typename remove_const<T>::type>(-1) < 0, true_type, false_type>::type {};
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS is_same
+    template<class T1, class T2>
+    struct is_same : false_type { };
+
+    //-----------------------------------------------------------------------------------------
+    template<class T1>
+    struct is_same<T1, T1> : true_type { };
+
+    //-----------------------------------------------------------------------------------------
+    // TEMPLATE CLASS is_base_of
+#ifdef _MSC_VER
+
+    template <typename TBase, typename TDerived>
+    struct is_base_of :
+        conditional<__is_base_of( TBase, TDerived), true_type, false_type>::type {};
+
+#else
+    namespace detail
+    {
+        //-------------------------------------------------------------------------------------
+        // Helper types Small and Big - guarantee that sizeof(Small) < sizeof(Big)
+        //
+
+        template <class T, class U>
+        struct conversion_helper
+        {
+            typedef char Small;
+            struct Big { char dummy[2]; };
+            static Big   Test(...);
+            static Small Test(U);
+            static T MakeT();
+        };
+
+        //-------------------------------------------------------------------------------------
+        // class template conversion
+        // Figures out the conversion relationships between two types
+        // Invocations (T and U are types):
+        // a) conversion<T, U>::exists
+        // returns (at compile time) true if there is an implicit conversion from T
+        // to U (example: Derived to Base)
+        // b) conversion<T, U>::exists2Way
+        // returns (at compile time) true if there are both conversions from T
+        // to U and from U to T (example: int to char and back)
+        // c) conversion<T, U>::sameType
+        // returns (at compile time) true if T and U represent the same type
+        //
+        // NOTE: might not work if T and U are in a private inheritance hierarchy.
+        //
+
+        template <class T, class U>
+        struct conversion
+        {
+            typedef detail::conversion_helper<T, U> H;
+            static const bool exists = sizeof(typename H::Small) == sizeof((H::Test(H::MakeT())));
+            static const bool exists2Way = exists && conversion<U, T>::exists;
+            static const bool sameType = false;
+        };
+
+        template <class T>
+        struct conversion<T, T>
+        {
+            static const bool exists = true;
+            static const bool exists2Way = true;
+            static const bool sameType = true;
+        };
+
+        template <class T>
+        struct conversion<void, T>
+        {
+            static const bool exists = false;
+            static const bool exists2Way = false;
+            static const bool sameType = false;
+        };
+
+        template <class T>
+        struct conversion<T, void>
+        {
+            static const bool exists = false;
+            static const bool exists2Way = false;
+            static const bool sameType = false;
+        };
+
+        template <>
+        struct conversion<void, void>
+        {
+            static const bool exists = true;
+            static const bool exists2Way = true;
+            static const bool sameType = true;
+        };
+    } // detail
+
+    // Note that we need to compare pointer types here, since conversion of types by-value
+    // just tells us whether or not an implicit conversion constructor exists. We handle
+    // type parameters that are already pointers specially; see below.
+    template <typename TBase, typename TDerived>
+    struct is_base_of :
+        conditional<detail::conversion<TDerived *, TBase *>::exists, true_type, false_type>::type {};
+
+    // Specialization to handle type parameters that are already pointers.
+    template <typename TBase, typename TDerived>
+    struct is_base_of<TBase *, TDerived *> :
+        conditional<detail::conversion<TDerived *, TBase *>::exists, true_type, false_type>::type {};
+
+    // Specialization to handle invalid mixing of pointer types.
+    template <typename TBase, typename TDerived>
+    struct is_base_of<TBase *, TDerived> :
+        false_type {};
+
+    // Specialization to handle invalid mixing of pointer types.
+    template <typename TBase, typename TDerived>
+    struct is_base_of<TBase, TDerived *> :
+        false_type {};
+
+#endif
+
+    namespace detail
+    {
+        template <typename...>
+        using void_t = void;
+    }
+    // Always false dependent-value for static_asserts.
+    template <typename...>
+    struct _Always_false
+    {
+        const bool value = false;
+    };
+
+    template <class _Ty, class = void>
+    struct _Add_reference { // add reference (non-referenceable type)
+        using _Lvalue = _Ty;
+        using _Rvalue = _Ty;
+    };
+
+    template <class _Ty>
+    struct _Add_reference<_Ty, detail::void_t<_Ty&>> { // (referenceable type)
+        using _Lvalue = _Ty&;
+        using _Rvalue = _Ty&&;
+    };
+
+    template <class _Ty>
+    struct add_lvalue_reference {
+        using type = typename _Add_reference<_Ty>::_Lvalue;
+    };
+
+    template <class _Ty>
+    struct add_rvalue_reference {
+        using type = typename _Add_reference<_Ty>::_Rvalue;
+    };
+
+    template<typename _Ty>
+    typename add_rvalue_reference<_Ty>::type declval() noexcept
+    {
+        static_assert(_Always_false<_Ty>::value, "Calling declval is ill-formed, see N4892 [declval]/2.");
+    }
+} // namespace std
+
+#endif // !USE_STL
+
+#define REM_CONST(T)    typename std::remove_const< T >::type
+#define REM_CV(T)       typename std::remove_cv< T >::type
+#define REM_REF(T)      typename std::remove_reference< T >::type
+
+#define REF_T(T)        REM_REF(T) &
+#define REF_CT(T)       REM_REF(REM_CONST(T)) const &
+
+#endif // __clr_std_type_traits_h__
+
+// Help the VIM editor figure out what kind of file this no-extension file is.
+// vim: filetype=cpp

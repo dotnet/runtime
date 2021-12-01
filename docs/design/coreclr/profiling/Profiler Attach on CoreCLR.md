@@ -13,7 +13,7 @@ Attaching a profiler to a running CoreCLR process involves sending a message fro
 2) `uint attachTimeout`     - (Required) A timeout that informs the runtime how long to wait while attempting to attach. This does not impact the timeout of trying to send the attach message.
 3) `Guid profilerGuid`      - (Required) The profiler's GUID to use when initializing.
 4) `string profilerPath`    - (Required) The path to the profiler on disk.
-5) `byte[] additionalData`  - (Optional) A data blob that will be passed to `ICorProfilerCallback3::InitializeForAttach` as `pvClientData`. 
+5) `byte[] additionalData`  - (Optional) A data blob that will be passed to `ICorProfilerCallback3::InitializeForAttach` as `pvClientData`.
 
 This method returns a status HR following the usual convention, 0 (S_OK) means a profiler was successfully attached and any other value is an error indicating what went wrong.
 

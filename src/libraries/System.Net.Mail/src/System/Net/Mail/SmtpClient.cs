@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.NetworkInformation;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -31,6 +32,7 @@ namespace System.Net.Mail
         International = 1, // SMTPUTF8 - Email Address Internationalization (EAI)
     }
 
+    [UnsupportedOSPlatform("browser")]
     public class SmtpClient : IDisposable
     {
         private string? _host;
@@ -287,7 +289,9 @@ namespace System.Net.Mail
                 // This has some subtle impact on behavior, e.g. the returned ServicePoint's Address property will
                 // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
                 // protocols that do not use URI."
+#pragma warning disable SYSLIB0014
                 return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
+#pragma warning restore SYSLIB0014
             }
         }
 
@@ -389,7 +393,7 @@ namespace System.Net.Mail
             string pathAndFilename;
             while (true)
             {
-                filename = Guid.NewGuid().ToString() + ".eml";
+                filename = $"{Guid.NewGuid()}.eml";
                 pathAndFilename = Path.Combine(pickupDirectory, filename);
                 if (!File.Exists(pathAndFilename))
                     break;
@@ -411,10 +415,7 @@ namespace System.Net.Mail
 
         public void Send(string from, string recipients, string? subject, string? body)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
             //validation happends in MailMessage constructor
             MailMessage mailMessage = new MailMessage(from, recipients, subject, body);
             Send(mailMessage);
@@ -422,10 +423,7 @@ namespace System.Net.Mail
 
         public void Send(MailMessage message)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -565,19 +563,13 @@ namespace System.Net.Mail
 
         public void SendAsync(string from, string recipients, string? subject, string? body, object? userToken)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
             SendAsync(new MailMessage(from, recipients, subject, body), userToken);
         }
 
         public void SendAsync(MailMessage message, object? userToken)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
 
             try
@@ -718,10 +710,7 @@ namespace System.Net.Mail
 
         public void SendAsyncCancel()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!InCall || _cancelled)
             {

@@ -417,9 +417,8 @@ typedef union {
 
 #define amd64_mov_reg_imm(inst,reg,imm)	\
 	do {	\
-		int _amd64_width_temp = ((guint64)(imm) == (guint64)(int)(guint64)(imm)); \
 		amd64_codegen_pre(inst); \
-		amd64_mov_reg_imm_size ((inst), (reg), (imm), (_amd64_width_temp ? 4 : 8)); \
+		amd64_mov_reg_imm_size ((inst), (reg), (imm), (amd64_is_imm32 (((gint64)imm)) ? 4 : 8)); \
 		amd64_codegen_post(inst); \
 	} while (0)
 

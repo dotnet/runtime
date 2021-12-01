@@ -194,23 +194,26 @@ namespace System
             //
             for (int i = 0; i < formats.Length; i++)
             {
-                if (formats[i] == null || formats[i]!.Length == 0) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                string? format = formats[i];
+                if (string.IsNullOrEmpty(format))
                 {
                     result.SetBadFormatSpecifierFailure();
                     return false;
                 }
+
                 // Create a new result each time to ensure the runs are independent. Carry through
                 // flags from the caller and return the result.
                 DateTimeResult innerResult = default;       // The buffer to store the parsing result.
                 innerResult.Init(s);
                 innerResult.flags = result.flags;
-                if (TryParseExact(s, formats[i], dtfi, style, ref innerResult))
+                if (TryParseExact(s, format, dtfi, style, ref innerResult))
                 {
                     result.parsedDate = innerResult.parsedDate;
                     result.timeZoneOffset = innerResult.timeZoneOffset;
                     return true;
                 }
             }
+
             result.SetBadDateTimeFailure();
             return false;
         }
@@ -1047,6 +1050,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     }
                     break;
                 case TokenType.JapaneseEraToken:
+                    if (GlobalizationMode.Invariant)
+                    {
+                        Debug.Fail("Should never be reached");
+                        return false;
+                    }
+
                     // Special case for Japanese.  We allow Japanese era name to be used even if the calendar is not Japanese Calendar.
                     result.calendar = JapaneseCalendar.GetDefaultInstance();
                     dtfi = DateTimeFormatInfo.GetJapaneseCalendarDTFI();
@@ -1063,6 +1072,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     }
                     break;
                 case TokenType.TEraToken:
+                    if (GlobalizationMode.Invariant)
+                    {
+                        Debug.Fail("Should never be reached");
+                        return false;
+                    }
+
                     result.calendar = TaiwanCalendar.GetDefaultInstance();
                     dtfi = DateTimeFormatInfo.GetTaiwanCalendarDTFI();
                     if (result.era != -1)
@@ -2999,6 +3014,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         result.SetBadDateTimeFailure();
                         return false;
                     }
+                    str.Index--;
                 }
                 else if (ch == 'Z' || ch == 'z')
                 {
@@ -5197,7 +5213,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 if (str[i] <= '\x007f')
                     buffer.Append(str[i]);
                 else
-                    buffer.Append("\\u").Append(((int)str[i]).ToString("x4", CultureInfo.InvariantCulture));
+                    buffer.Append($"\\u{(int)str[i]:x4}");
             }
             buffer.Append('"');
             return buffer.ToString();
@@ -5899,6 +5915,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         FormatWithFormatSpecifier = 5,
         FormatWithOriginalDateTimeAndParameter = 6,
         FormatBadDateTimeCalendar = 7,  // FormatException when ArgumentOutOfRange is thrown by a Calendar.TryToDateTime().
+        WrongParts = 8,  // DateOnly and TimeOnly specific value. Unrelated date parts when parsing DateOnly or Unrelated time parts when parsing TimeOnly
     }
 
     [Flags]

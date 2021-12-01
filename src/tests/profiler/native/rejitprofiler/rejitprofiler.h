@@ -29,7 +29,7 @@ public:
     ReJITProfiler();
     virtual ~ReJITProfiler() = default;
 
-	virtual GUID GetClsid();
+	static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
 
@@ -51,7 +51,6 @@ private:
     FunctionID GetFunctionIDFromToken(ModuleID module, mdMethodDef token);
     mdMethodDef GetMethodDefForFunction(FunctionID functionId);
     ModuleID GetModuleIDForFunction(FunctionID functionId);
-    bool EndsWith(const String &lhs, const String &rhs);
 
     ICorProfilerInfo10 *_profInfo10;
     std::atomic<int> _failures;

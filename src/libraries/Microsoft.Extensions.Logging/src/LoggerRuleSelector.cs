@@ -5,11 +5,9 @@ using System;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class LoggerRuleSelector
+    internal static class LoggerRuleSelector
     {
-        private static readonly char[] WildcardChar = { '*' };
-
-        public void Select(LoggerFilterOptions options, Type providerType, string category, out LogLevel? minLevel, out Func<string, string, LogLevel, bool> filter)
+        public static void Select(LoggerFilterOptions options, Type providerType, string category, out LogLevel? minLevel, out Func<string, string, LogLevel, bool> filter)
         {
             filter = null;
             minLevel = options.MinLevel;
@@ -24,7 +22,7 @@ namespace Microsoft.Extensions.Logging
 
             string providerAlias = ProviderAliasUtilities.GetAlias(providerType);
             LoggerFilterRule current = null;
-            foreach (LoggerFilterRule rule in options.Rules)
+            foreach (LoggerFilterRule rule in options.RulesInternal)
             {
                 if (IsBetter(rule, current, providerType.FullName, category)
                     || (!string.IsNullOrEmpty(providerAlias) && IsBetter(rule, current, providerAlias, category)))
@@ -40,7 +38,6 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-
         private static bool IsBetter(LoggerFilterRule rule, LoggerFilterRule current, string logger, string category)
         {
             // Skip rules with inapplicable type or category
@@ -49,19 +46,32 @@ namespace Microsoft.Extensions.Logging
                 return false;
             }
 
-            if (rule.CategoryName != null)
+            string categoryName = rule.CategoryName;
+            if (categoryName != null)
             {
-                string[] categoryParts = rule.CategoryName.Split(WildcardChar);
-                if (categoryParts.Length > 2)
+                const char WildcardChar = '*';
+
+                int wildcardIndex = categoryName.IndexOf(WildcardChar);
+                if (wildcardIndex != -1 &&
+                    categoryName.IndexOf(WildcardChar, wildcardIndex + 1) != -1)
                 {
-                    throw new InvalidOperationException("Only one wildcard character is allowed in category name.");
+                    throw new InvalidOperationException(SR.MoreThanOneWildcard);
                 }
 
-                string prefix = categoryParts[0];
-                string suffix = categoryParts.Length > 1 ? categoryParts[1] : string.Empty;
+                ReadOnlySpan<char> prefix, suffix;
+                if (wildcardIndex == -1)
+                {
+                    prefix = categoryName.AsSpan();
+                    suffix = default;
+                }
+                else
+                {
+                    prefix = categoryName.AsSpan(0, wildcardIndex);
+                    suffix = categoryName.AsSpan(wildcardIndex + 1);
+                }
 
-                if (!category.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
-                    !category.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                if (!category.AsSpan().StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+                    !category.AsSpan().EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
                 {
                     return false;
                 }

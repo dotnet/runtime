@@ -67,7 +67,7 @@ namespace System.Text.Json
         private void WriteStringValueIndented(Guid value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             // 2 quotes, and optionally, 1 list separator and 1-2 bytes for new line
             int maxRequired = indent + JsonConstants.MaximumFormatGuidLength + 3 + s_newLineLength;

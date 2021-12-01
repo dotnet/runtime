@@ -130,8 +130,8 @@ storei2_membase_imm: dest:b len:20
 storei2_membase_reg: dest:b src1:i len:12
 storei4_membase_imm: dest:b len:20
 storei4_membase_reg: dest:b src1:i len:20
-storei8_membase_imm: dest:b 
-storei8_membase_reg: dest:b src1:i 
+storei8_membase_imm: dest:b
+storei8_membase_reg: dest:b src1:i
 storer4_membase_reg: dest:b src1:f len:60
 storer8_membase_reg: dest:b src1:f len:24
 store_memindex: dest:b src1:i src2:i len:4
@@ -227,6 +227,7 @@ rmove: dest:f src1:f len:4
 r4_conv_to_i1: dest:i src1:f len:88
 r4_conv_to_i2: dest:i src1:f len:88
 r4_conv_to_i4: dest:i src1:f len:88
+r4_conv_to_i: dest:i src1:f len:88
 r4_conv_to_u1: dest:i src1:f len:88
 r4_conv_to_u2: dest:i src1:f len:88
 r4_conv_to_u4: dest:i src1:f len:88

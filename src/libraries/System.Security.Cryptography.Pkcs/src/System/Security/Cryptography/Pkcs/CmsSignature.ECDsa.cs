@@ -20,10 +20,12 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.EcPublicKey, new ECDsaCmsSignature(null, default));
         }
 
-        private partial class ECDsaCmsSignature : CmsSignature
+        private sealed partial class ECDsaCmsSignature : CmsSignature
         {
             private readonly HashAlgorithmName _expectedDigest;
             private readonly string? _signatureAlgorithm;
+
+            internal override RSASignaturePadding? SignaturePadding => null;
 
             internal ECDsaCmsSignature(string? signatureAlgorithm, HashAlgorithmName expectedDigest)
             {
@@ -108,8 +110,10 @@ namespace System.Security.Cryptography.Pkcs
                 AsymmetricAlgorithm? certKey,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
-                [NotNullWhen(true)] out byte[]? signatureValue)
+                [NotNullWhen(true)] out byte[]? signatureValue,
+                out byte[]? signatureParameters)
             {
+                signatureParameters = null;
                 // If there's no private key, fall back to the public key for a "no private key" exception.
                 ECDsa? key = certKey as ECDsa ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<ECDsa>(certificate, silent) ??

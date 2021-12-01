@@ -19,7 +19,7 @@ namespace Microsoft.Win32.SystemEventsTests
             SendMessage(User32.WM_REFLECT + User32.WM_DISPLAYCHANGE, IntPtr.Zero, IntPtr.Zero);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SignalsDisplayEventsAsynchronouslyOnDISPLAYCHANGE()
         {
             var changing = new AutoResetEvent(false);
@@ -45,7 +45,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SignalsDisplayEventsSynchronouslyOnREFLECTDISPLAYCHANGE()
         {
             bool changing = false, changed = false;

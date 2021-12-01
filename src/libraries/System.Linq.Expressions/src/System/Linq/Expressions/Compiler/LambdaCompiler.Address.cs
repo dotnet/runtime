@@ -8,7 +8,7 @@ using System.Reflection.Emit;
 
 namespace System.Linq.Expressions.Compiler
 {
-    internal partial class LambdaCompiler
+    internal sealed partial class LambdaCompiler
     {
         private void EmitAddress(Expression node, Type type)
         {
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitMemberAddress(MemberInfo member, Type? objectType)
         {
             FieldInfo? field = member as FieldInfo;
-            if ((object?)field != null)
+            if (field is not null)
             {
                 // Verifiable code may not take the address of an init-only field.
                 // If we are asked to do so then get the value out of the field, stuff it
@@ -162,7 +162,6 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Ldloca, temp);
         }
 
-
         private void AddressOf(MethodCallExpression node, Type type)
         {
             // An array index of a multi-dimensional array is represented by a call to Array.Get,
@@ -172,9 +171,9 @@ namespace System.Linq.Expressions.Compiler
             // this situation and replace it with a call to the Address method.
             if (!node.Method.IsStatic &&
                 node.Object!.Type.IsArray &&
-                node.Method == node.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance))
+                node.Method == TypeUtils.GetArrayGetMethod(node.Object.Type))
             {
-                MethodInfo mi = node.Object.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance)!;
+                MethodInfo mi = TypeUtils.GetArrayAddressMethod(node.Object.Type);
 
                 EmitMethodCall(node.Object, mi, node);
             }
@@ -200,7 +199,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                MethodInfo address = node.Object!.Type.GetMethod("Address", BindingFlags.Public | BindingFlags.Instance)!;
+                MethodInfo address = TypeUtils.GetArrayAddressMethod(node.Object!.Type);
                 EmitMethodCall(node.Object, address, node);
             }
         }
@@ -260,7 +259,7 @@ namespace System.Linq.Expressions.Compiler
         private WriteBack? AddressOfWriteBack(MemberExpression node)
         {
             var property = node.Member as PropertyInfo;
-            if ((object?)property == null || !property.CanWrite)
+            if (property is null || !property.CanWrite)
             {
                 return null;
             }

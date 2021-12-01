@@ -1,21 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
+using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class JsonXmlDataContract : JsonDataContract
+    internal sealed class JsonXmlDataContract : JsonDataContract
     {
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonXmlDataContract(XmlDataContract traditionalXmlDataContract)
             : base(traditionalXmlDataContract)
         {
         }
 
-        public override object ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson context)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             string xmlContent = jsonReader.ReadElementContentAsString();
 
@@ -23,8 +26,8 @@ namespace System.Runtime.Serialization.Json
                 GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
             MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
-            object xmlValue;
-            XmlDictionaryReaderQuotas quotas = ((JsonReaderDelegator)jsonReader).ReaderQuotas;
+            object? xmlValue;
+            XmlDictionaryReaderQuotas? quotas = ((JsonReaderDelegator)jsonReader).ReaderQuotas;
             if (quotas == null)
             {
                 xmlValue = dataContractSerializer.ReadObject(memoryStream);
@@ -40,9 +43,10 @@ namespace System.Runtime.Serialization.Json
             return xmlValue;
         }
 
-        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, RuntimeTypeHandle declaredTypeHandle)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
-            DataContractSerializer dataContractSerializer = new DataContractSerializer(Type.GetTypeFromHandle(declaredTypeHandle),
+            DataContractSerializer dataContractSerializer = new DataContractSerializer(Type.GetTypeFromHandle(declaredTypeHandle)!,
                 GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
             MemoryStream memoryStream = new MemoryStream();
@@ -52,7 +56,7 @@ namespace System.Runtime.Serialization.Json
             jsonWriter.WriteString(serialized);
         }
 
-        private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext context, IList<Type> serializerKnownTypeList)
+        private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext? context, IList<Type>? serializerKnownTypeList)
         {
             List<Type> knownTypesList = new List<Type>();
             if (context != null)

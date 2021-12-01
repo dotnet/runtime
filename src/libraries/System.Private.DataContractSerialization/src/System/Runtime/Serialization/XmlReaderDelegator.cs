@@ -5,18 +5,14 @@ using System.Xml;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Xml.Serialization;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public class XmlReaderDelegator
-#else
     internal class XmlReaderDelegator
-#endif
     {
         protected XmlReader reader;
-        protected XmlDictionaryReader dictionaryReader;
+        protected XmlDictionaryReader? dictionaryReader;
         protected bool isEndOfEmptyElement;
 
         public XmlReaderDelegator(XmlReader reader)
@@ -31,7 +27,7 @@ namespace System.Runtime.Serialization
             get { return reader; }
         }
 
-        internal ExtensionDataReader UnderlyingExtensionDataReader
+        internal ExtensionDataReader? UnderlyingExtensionDataReader
         {
             get { return reader as ExtensionDataReader; }
         }
@@ -41,12 +37,12 @@ namespace System.Runtime.Serialization
             get { return isEndOfEmptyElement ? 0 : reader.AttributeCount; }
         }
 
-        internal string GetAttribute(string name)
+        internal string? GetAttribute(string name)
         {
             return isEndOfEmptyElement ? null : reader.GetAttribute(name);
         }
 
-        internal string GetAttribute(string name, string namespaceUri)
+        internal string? GetAttribute(string name, string namespaceUri)
         {
             return isEndOfEmptyElement ? null : reader.GetAttribute(name, namespaceUri);
         }
@@ -115,11 +111,7 @@ namespace System.Runtime.Serialization
             return -1;
         }
 
-#if USE_REFEMIT
-        public bool IsStartElement()
-#else
         internal bool IsStartElement()
-#endif
         {
             return !isEndOfEmptyElement && reader.IsStartElement();
         }
@@ -129,11 +121,7 @@ namespace System.Runtime.Serialization
             return !isEndOfEmptyElement && reader.IsStartElement(localname, ns);
         }
 
-#if USE_REFEMIT
-        public bool IsStartElement(XmlDictionaryString localname, XmlDictionaryString ns)
-#else
         internal bool IsStartElement(XmlDictionaryString localname, XmlDictionaryString ns)
-#endif
         {
             if (dictionaryReader == null)
                 return !isEndOfEmptyElement && reader.IsStartElement(localname.Value, ns.Value);
@@ -173,11 +161,7 @@ namespace System.Runtime.Serialization
             return isEndOfEmptyElement ? false : reader.MoveToNextAttribute();
         }
 
-#if USE_REFEMIT
-        public XmlNodeType NodeType
-#else
         internal XmlNodeType NodeType
-#endif
         {
             get { return isEndOfEmptyElement ? XmlNodeType.EndElement : reader.NodeType; }
         }
@@ -211,11 +195,7 @@ namespace System.Runtime.Serialization
             return isEndOfEmptyElement ? false : reader.ReadAttributeValue();
         }
 
-#if USE_REFEMIT
-        public void ReadEndElement()
-#else
         internal void ReadEndElement()
-#endif
         {
             if (isEndOfEmptyElement)
                 Read();
@@ -349,21 +329,19 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidPrimitiveTypeException(valueType));
         }
 
+        [DoesNotReturn]
         private void ThrowConversionException(string value, string type)
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(XmlObjectSerializer.TryAddLineInfo(this, SR.Format(SR.XmlInvalidConversion, value, type))));
         }
 
+        [DoesNotReturn]
         private void ThrowNotAtElement()
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.XmlStartElementExpected, "EndElement")));
         }
 
-#if USE_REFEMIT
-        public virtual char ReadElementContentAsChar()
-#else
         internal virtual char ReadElementContentAsChar()
-#endif
         {
             return ToChar(ReadElementContentAsInt());
         }
@@ -382,11 +360,7 @@ namespace System.Runtime.Serialization
             return (char)value;
         }
 
-#if USE_REFEMIT
-        public string ReadElementContentAsString()
-#else
         internal string ReadElementContentAsString()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -399,11 +373,7 @@ namespace System.Runtime.Serialization
             return isEndOfEmptyElement ? string.Empty : reader.ReadContentAsString();
         }
 
-#if USE_REFEMIT
-        public bool ReadElementContentAsBoolean()
-#else
         internal bool ReadElementContentAsBoolean()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -419,11 +389,7 @@ namespace System.Runtime.Serialization
             return reader.ReadContentAsBoolean();
         }
 
-#if USE_REFEMIT
-        public float ReadElementContentAsFloat()
-#else
         internal float ReadElementContentAsFloat()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -439,11 +405,7 @@ namespace System.Runtime.Serialization
             return reader.ReadContentAsFloat();
         }
 
-#if USE_REFEMIT
-        public double ReadElementContentAsDouble()
-#else
         internal double ReadElementContentAsDouble()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -459,11 +421,7 @@ namespace System.Runtime.Serialization
             return reader.ReadContentAsDouble();
         }
 
-#if USE_REFEMIT
-        public decimal ReadElementContentAsDecimal()
-#else
         internal decimal ReadElementContentAsDecimal()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -479,11 +437,7 @@ namespace System.Runtime.Serialization
             return reader.ReadContentAsDecimal();
         }
 
-#if USE_REFEMIT
-        public virtual byte[] ReadElementContentAsBase64()
-#else
         internal virtual byte[] ReadElementContentAsBase64()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -513,7 +467,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal byte[] ReadContentAsBase64(string str)
+        [return: NotNullIfNotNull("str")]
+        internal byte[]? ReadContentAsBase64(string? str)
         {
             if (str == null)
                 return null;
@@ -535,11 +490,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public virtual DateTime ReadElementContentAsDateTime()
-#else
         internal virtual DateTime ReadElementContentAsDateTime()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -555,11 +506,7 @@ namespace System.Runtime.Serialization
             return reader.ReadContentAsDateTime();
         }
 
-#if USE_REFEMIT
-        public int ReadElementContentAsInt()
-#else
         internal int ReadElementContentAsInt()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -575,11 +522,7 @@ namespace System.Runtime.Serialization
             return reader.ReadContentAsInt();
         }
 
-#if USE_REFEMIT
-        public long ReadElementContentAsLong()
-#else
         internal long ReadElementContentAsLong()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -595,11 +538,7 @@ namespace System.Runtime.Serialization
             return reader.ReadContentAsLong();
         }
 
-#if USE_REFEMIT
-        public short ReadElementContentAsShort()
-#else
         internal short ReadElementContentAsShort()
-#endif
         {
             return ToShort(ReadElementContentAsInt());
         }
@@ -618,11 +557,7 @@ namespace System.Runtime.Serialization
             return (short)value;
         }
 
-#if USE_REFEMIT
-        public byte ReadElementContentAsUnsignedByte()
-#else
         internal byte ReadElementContentAsUnsignedByte()
-#endif
         {
             return ToByte(ReadElementContentAsInt());
         }
@@ -641,12 +576,7 @@ namespace System.Runtime.Serialization
             return (byte)value;
         }
 
-#if USE_REFEMIT
-        [CLSCompliant(false)]
-        public SByte ReadElementContentAsSignedByte()
-#else
         internal sbyte ReadElementContentAsSignedByte()
-#endif
         {
             return ToSByte(ReadElementContentAsInt());
         }
@@ -665,12 +595,7 @@ namespace System.Runtime.Serialization
             return (sbyte)value;
         }
 
-#if USE_REFEMIT
-        [CLSCompliant(false)]
-        public UInt32 ReadElementContentAsUnsignedInt()
-#else
         internal uint ReadElementContentAsUnsignedInt()
-#endif
         {
             return ToUInt32(ReadElementContentAsLong());
         }
@@ -689,12 +614,7 @@ namespace System.Runtime.Serialization
             return (uint)value;
         }
 
-#if USE_REFEMIT
-        [CLSCompliant(false)]
-        public virtual UInt64 ReadElementContentAsUnsignedLong()
-#else
         internal virtual ulong ReadElementContentAsUnsignedLong()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -717,12 +637,7 @@ namespace System.Runtime.Serialization
             return XmlConverter.ToUInt64(str);
         }
 
-#if USE_REFEMIT
-        [CLSCompliant(false)]
-        public UInt16 ReadElementContentAsUnsignedShort()
-#else
         internal ushort ReadElementContentAsUnsignedShort()
-#endif
         {
             return ToUInt16(ReadElementContentAsInt());
         }
@@ -741,11 +656,7 @@ namespace System.Runtime.Serialization
             return (ushort)value;
         }
 
-#if USE_REFEMIT
-        public TimeSpan ReadElementContentAsTimeSpan()
-#else
         internal TimeSpan ReadElementContentAsTimeSpan()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -760,11 +671,7 @@ namespace System.Runtime.Serialization
             return XmlConverter.ToTimeSpan(str);
         }
 
-#if USE_REFEMIT
-        public Guid ReadElementContentAsGuid()
-#else
         internal Guid ReadElementContentAsGuid()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -809,11 +716,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public Uri ReadElementContentAsUri()
-#else
         internal Uri ReadElementContentAsUri()
-#endif
         {
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
@@ -850,11 +753,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT
-        public XmlQualifiedName ReadElementContentAsQName()
-#else
         internal XmlQualifiedName ReadElementContentAsQName()
-#endif
         {
             Read();
             XmlQualifiedName obj = ReadContentAsQName();
@@ -869,7 +768,8 @@ namespace System.Runtime.Serialization
 
         private XmlQualifiedName ParseQualifiedName(string str)
         {
-            string name, ns, prefix;
+            string name, prefix;
+            string? ns;
             if (str == null || str.Length == 0)
                 name = ns = string.Empty;
             else
@@ -893,13 +793,9 @@ namespace System.Runtime.Serialization
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayExceededSizeAttribute, expectedLength, itemName.Value, itemNamespace.Value)));
         }
 
-#if USE_REFEMIT
-        public bool TryReadBooleanArray(XmlObjectSerializerReadContext context,
-#else
         internal bool TryReadBooleanArray(XmlObjectSerializerReadContext context,
-#endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out bool[] array)
+            int arrayLength, [NotNullWhen(true)] out bool[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -927,13 +823,9 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-#if USE_REFEMIT
-        public virtual bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
-#else
         internal virtual bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
-#endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out DateTime[] array)
+            int arrayLength, [NotNullWhen(true)] out DateTime[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -961,13 +853,9 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-#if USE_REFEMIT
-        public bool TryReadDecimalArray(XmlObjectSerializerReadContext context,
-#else
         internal bool TryReadDecimalArray(XmlObjectSerializerReadContext context,
-#endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out decimal[] array)
+            int arrayLength, [NotNullWhen(true)] out decimal[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -995,13 +883,9 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-#if USE_REFEMIT
-        public bool TryReadInt32Array(XmlObjectSerializerReadContext context,
-#else
         internal bool TryReadInt32Array(XmlObjectSerializerReadContext context,
-#endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out int[] array)
+            int arrayLength, [NotNullWhen(true)] out int[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -1029,13 +913,9 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-#if USE_REFEMIT
-        public bool TryReadInt64Array(XmlObjectSerializerReadContext context,
-#else
         internal bool TryReadInt64Array(XmlObjectSerializerReadContext context,
-#endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out long[] array)
+            int arrayLength, [NotNullWhen(true)] out long[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -1063,13 +943,9 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-#if USE_REFEMIT
-        public bool TryReadSingleArray(XmlObjectSerializerReadContext context,
-#else
         internal bool TryReadSingleArray(XmlObjectSerializerReadContext context,
-#endif
-        XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out float[] array)
+            XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
+            int arrayLength, [NotNullWhen(true)] out float[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -1097,13 +973,9 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-#if USE_REFEMIT
-        public bool TryReadDoubleArray(XmlObjectSerializerReadContext context,
-#else
         internal bool TryReadDoubleArray(XmlObjectSerializerReadContext context,
-#endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out double[] array)
+            int arrayLength, [NotNullWhen(true)] out double[]? array)
         {
             if (dictionaryReader == null)
             {
@@ -1131,7 +1003,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        internal IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
+        internal IDictionary<string, string>? GetNamespacesInScope(XmlNamespaceScope scope)
         {
             return (reader is IXmlNamespaceResolver) ? ((IXmlNamespaceResolver)reader).GetNamespacesInScope(scope) : null;
         }
@@ -1139,7 +1011,7 @@ namespace System.Runtime.Serialization
         // IXmlLineInfo members
         internal bool HasLineInfo()
         {
-            IXmlLineInfo iXmlLineInfo = reader as IXmlLineInfo;
+            IXmlLineInfo? iXmlLineInfo = reader as IXmlLineInfo;
             return (iXmlLineInfo == null) ? false : iXmlLineInfo.HasLineInfo();
         }
 
@@ -1147,7 +1019,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                IXmlLineInfo iXmlLineInfo = reader as IXmlLineInfo;
+                IXmlLineInfo? iXmlLineInfo = reader as IXmlLineInfo;
                 return (iXmlLineInfo == null) ? 0 : iXmlLineInfo.LineNumber;
             }
         }
@@ -1156,7 +1028,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                IXmlLineInfo iXmlLineInfo = reader as IXmlLineInfo;
+                IXmlLineInfo? iXmlLineInfo = reader as IXmlLineInfo;
                 return (iXmlLineInfo == null) ? 0 : iXmlLineInfo.LinePosition;
             }
         }
@@ -1166,10 +1038,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                XmlTextReader? xmlTextReader = reader as XmlTextReader;
                 if (xmlTextReader == null)
                 {
-                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     return (xmlTextParser == null) ? false : xmlTextParser.Normalized;
                 }
                 else
@@ -1177,10 +1049,10 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                XmlTextReader? xmlTextReader = reader as XmlTextReader;
                 if (xmlTextReader == null)
                 {
-                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     if (xmlTextParser != null)
                         xmlTextParser.Normalized = value;
                 }
@@ -1193,10 +1065,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                XmlTextReader? xmlTextReader = reader as XmlTextReader;
                 if (xmlTextReader == null)
                 {
-                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     return (xmlTextParser == null) ? WhitespaceHandling.None : xmlTextParser.WhitespaceHandling;
                 }
                 else
@@ -1204,10 +1076,10 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                XmlTextReader xmlTextReader = reader as XmlTextReader;
+                XmlTextReader? xmlTextReader = reader as XmlTextReader;
                 if (xmlTextReader == null)
                 {
-                    IXmlTextParser xmlTextParser = reader as IXmlTextParser;
+                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     if (xmlTextParser != null)
                         xmlTextParser.WhitespaceHandling = value;
                 }
@@ -1223,7 +1095,7 @@ namespace System.Runtime.Serialization
         internal string Value { get { return reader.Value; } }
         internal Type ValueType { get { return reader.ValueType; } }
         internal int Depth { get { return reader.Depth; } }
-        internal string LookupNamespace(string prefix) { return reader.LookupNamespace(prefix); }
+        internal string? LookupNamespace(string prefix) { return reader.LookupNamespace(prefix); }
         internal bool EOF { get { return reader.EOF; } }
 
         internal void Skip()

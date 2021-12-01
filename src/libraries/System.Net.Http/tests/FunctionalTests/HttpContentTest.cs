@@ -298,6 +298,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(before, after);
         }
 
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support Synchronous reads")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -470,7 +471,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Dispose_GetReadStreamThenDispose_ReadStreamGetsDisposed(bool readStreamAsync)
         {
             var content = new MockContent();
-            MockMemoryStream s = (MockMemoryStream)await content.ReadAsStreamAsync(readStreamAsync);;
+            MockMemoryStream s = (MockMemoryStream)await content.ReadAsStreamAsync(readStreamAsync);
             Assert.Equal(1, content.CreateContentReadStreamCount);
 
             Assert.Equal(0, s.DisposeCount);
@@ -822,6 +823,11 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ReadAsStreamAsync_Unbuffered_IgnoresCancellationToken(bool readStreamAsync)
         {
+            if(PlatformDetection.IsBrowser && !readStreamAsync)
+            {
+                // syncronous operations are not supported on Browser
+                return;
+            }
             string content = Guid.NewGuid().ToString();
 
             await LoopbackServer.CreateClientAndServerAsync(

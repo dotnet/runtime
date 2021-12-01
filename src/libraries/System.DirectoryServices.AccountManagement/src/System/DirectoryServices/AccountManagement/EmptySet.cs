@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class EmptySet : BookmarkableResultSet
+    internal sealed class EmptySet : BookmarkableResultSet
     {
         internal EmptySet()
         {
@@ -43,7 +43,7 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 
-    internal class EmptySetBookmark : ResultSetBookmark
+    internal sealed class EmptySetBookmark : ResultSetBookmark
     {
     }
 }

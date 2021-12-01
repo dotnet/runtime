@@ -11,7 +11,7 @@ namespace System.Xml.Xsl.Qil
     /// <summary>
     /// A function invocation node which represents a call to a Qil functions.
     /// </summary>
-    internal class QilInvoke : QilBinary
+    internal sealed class QilInvoke : QilBinary
     {
         //-----------------------------------------------
         // Constructor

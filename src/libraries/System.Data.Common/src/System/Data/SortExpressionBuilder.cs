@@ -12,7 +12,7 @@ namespace System.Data
     /// This class represents a combined sort expression build using multiple sort expressions.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class SortExpressionBuilder<T> : IComparer<List<object>>
+    internal sealed class SortExpressionBuilder<T> : IComparer<List<object>>
     {
         /**
          *  This class ensures multiple orderby/thenbys are handled correctly. Its semantics is as follows:
@@ -92,7 +92,7 @@ namespace System.Data
         /// Note: Comparison is done in the order it was Added.
         /// </summary>
         /// <returns>Comparison result of the combined Sort comparer expression</returns>
-        public int Compare([AllowNull] List<object> a, [AllowNull] List<object> b)
+        public int Compare(List<object>? a, List<object>? b)
         {
             Debug.Assert(a != null && b != null && a.Count == Count);
 

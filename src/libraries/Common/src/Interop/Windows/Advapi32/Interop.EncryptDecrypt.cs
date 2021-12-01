@@ -4,15 +4,15 @@
 using System.IO;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use EncryptFile.
         /// </summary>
-        [DllImport(Libraries.Advapi32, EntryPoint = "EncryptFileW", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern bool EncryptFilePrivate(string lpFileName);
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "EncryptFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static partial bool EncryptFilePrivate(string lpFileName);
 
         internal static bool EncryptFile(string path)
         {
@@ -23,8 +23,10 @@ internal partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use DecryptFile.
         /// </summary>
-        [DllImport(Libraries.Advapi32, EntryPoint = "DecryptFileW", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern bool DecryptFileFilePrivate(string lpFileName, int dwReserved);
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "DecryptFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static partial bool DecryptFileFilePrivate(
+            string lpFileName,
+            int dwReserved);
 
         internal static bool DecryptFile(string path)
         {

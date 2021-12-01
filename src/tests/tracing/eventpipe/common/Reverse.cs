@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Tracing.Tests.Common
@@ -40,21 +41,23 @@ namespace Tracing.Tests.Common
         /// <returns> (pid, clrInstanceId) </returns>
         public static IpcAdvertise Parse(Stream stream)
         {
-            var binaryReader = new BinaryReader(stream);
-            var advertise = new IpcAdvertise()
+            using (var binaryReader = new BinaryReader(stream, Encoding.UTF8, true))
             {
-                Magic = binaryReader.ReadBytes(Magic_V1.Length),
-                RuntimeInstanceCookie = new Guid(binaryReader.ReadBytes(16)),
-                ProcessId = binaryReader.ReadUInt64(),
-                Unused = binaryReader.ReadUInt16()
-            };
+                var advertise = new IpcAdvertise()
+                {
+                    Magic = binaryReader.ReadBytes(Magic_V1.Length),
+                    RuntimeInstanceCookie = new Guid(binaryReader.ReadBytes(16)),
+                    ProcessId = binaryReader.ReadUInt64(),
+                    Unused = binaryReader.ReadUInt16()
+                };
 
-            for (int i = 0; i < Magic_V1.Length; i++)
-                if (advertise.Magic[i] != Magic_V1[i])
-                    throw new Exception("Invalid advertise message from client connection");
+                for (int i = 0; i < Magic_V1.Length; i++)
+                    if (advertise.Magic[i] != Magic_V1[i])
+                        throw new Exception("Invalid advertise message from client connection");
 
-            // FUTURE: switch on incoming magic and change if version ever increments
-            return advertise;
+                // FUTURE: switch on incoming magic and change if version ever increments
+                return advertise;
+            }
         }
 
         override public string ToString()
@@ -67,7 +70,7 @@ namespace Tracing.Tests.Common
     {
         public static string MakeServerAddress()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return "DOTNET_TRACE_TESTS_" + Path.GetRandomFileName();
             }
@@ -86,7 +89,7 @@ namespace Tracing.Tests.Common
         {
             _serverAddress = serverAddress;
             _bufferSize = bufferSize;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 _server = GetNewNamedPipeServer();
             }
@@ -102,7 +105,6 @@ namespace Tracing.Tests.Common
                 socket.ReceiveBufferSize = Math.Max(bufferSize, 128);
                 socket.Bind(remoteEP);
                 socket.Listen(255);
-                socket.LingerState.Enabled = false;
                 _server = socket;
             }
         }
@@ -133,7 +135,7 @@ namespace Tracing.Tests.Common
 
         private NamedPipeServerStream GetNewNamedPipeServer()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return new NamedPipeServerStream(
                     _serverAddress,
@@ -152,6 +154,7 @@ namespace Tracing.Tests.Common
 
         public void Shutdown()
         {
+            Logger.logger.Log($"Shutting down Reverse Server at {_serverAddress}");
             switch (_server)
             {
                 case NamedPipeServerStream serverStream:
@@ -166,20 +169,13 @@ namespace Tracing.Tests.Common
                     }
                     break;
                 case Socket socket:
-                    try
-                    {
-                        socket.Shutdown(SocketShutdown.Both);
-                    }
-                    catch {}
-                    finally
-                    {
-                        _clientSocket?.Close();
-                        socket.Close();
-                        socket.Dispose();
-                        _clientSocket?.Dispose();
-                        if (File.Exists(_serverAddress))
-                            File.Delete(_serverAddress);
-                    }
+                    if (File.Exists(_serverAddress))
+                        File.Delete(_serverAddress);
+                    socket.Close();
+                    socket.Dispose();
+                    _clientSocket?.Shutdown(SocketShutdown.Both);
+                    _clientSocket?.Close();
+                    _clientSocket?.Dispose();
                     break;
                 default:
                     throw new ArgumentException("Invalid server type");

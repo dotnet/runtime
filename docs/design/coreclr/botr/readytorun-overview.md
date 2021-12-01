@@ -67,7 +67,7 @@ Some of this information can be omitted or stored in more efficient form, e.g.:
 
 Even for IL or unmanaged native code, there are limits to what compatible changes can be made. For example, deleting a public method is sure to be an incompatible change for any extern code using that method.
 
-Since CIL already has a set of [compatibility rules](https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/breaking-changes.md), ideally the native format would have the same set of compatibility rules as CIL. Unfortunately, that is difficult to do efficiently in all cases. In those cases we have multiple choices:
+Since CIL already has a set of [compatibility rules](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/breaking-changes.md), ideally the native format would have the same set of compatibility rules as CIL. Unfortunately, that is difficult to do efficiently in all cases. In those cases we have multiple choices:
 
 1. Change the compatibility rules to disallow some changes
 2. Never generate native structures for the problematic cases (fall back to CIL techniques)

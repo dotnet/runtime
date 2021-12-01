@@ -10,7 +10,7 @@ There should be no more than **1** project type per folder (i.e. a folder can co
 
 Ancillary source assets for all tests should be located in `Interop/common` and can be easily added to all managed tests via the `Interop.settings.targets` file or native tests via `Interop.cmake`.
 
-A common pattern for testing is using the `Assert` utilities. This class is part of the `CoreCLRTestLibrary` which is included in all test projects by the `Interop.settings.targets` import. In order to use, add the following `using TestLibrary;` in the relevant test file.
+A common pattern for testing is using xUnit's `Assert` utilities. These utilities can be referenced via `CoreCLRTestLibrary` which is included in all test projects by `Directory.Build.targets` in this directory. In order to use, add the following `using Xunit;` in the relevant test file.
 
 ### Managed
 
@@ -51,16 +51,16 @@ Testing P/Invoke has two aspects:
 
 ### Marshal API
 
-The Marshal API surface area testing is traditionally done via unit testing and far better suited in the [library test folder](https://github.com/dotnet/runtime/tree/master/src/libraries/System.Runtime.InteropServices/tests). Cases where testing the API surface area requires native tests assets will be performed in the [coreclr test folder](https://github.com/dotnet/runtime/tree/master/src/coreclr/tests/src/Interop) repo.
+The Marshal API surface area testing is traditionally done via unit testing and far better suited in the [library test folder](https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/tests). Cases where testing the API surface area requires native tests assets will be performed in the [coreclr test folder](https://github.com/dotnet/runtime/tree/main/src/tests/Interop) repo.
 
-### NativeLibrary 
+### NativeLibrary
 
 This series has unit tests corresponding to `System.Runtime.NativeLibrary` APIs and related events in `System.Runtime.Loader.AssemblyLoadContext`.
 
 ## Common Task steps
 
 ### Adding new native project
-1) Update `coreclr/tests/src/Interop/CMakeLists.txt` to include new test asset directory.
+1) Update `src/tests/Interop/CMakeLists.txt` to include new test asset directory.
 1) Verify project builds by running `build-tests.cmd`/`build-tests.sh` from repo root.
 
 ### Adding new managed project

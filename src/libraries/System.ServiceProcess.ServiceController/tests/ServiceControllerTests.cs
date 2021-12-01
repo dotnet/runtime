@@ -7,7 +7,7 @@ namespace System.ServiceProcess.Tests
 {
     [OuterLoop(/* Modifies machine state */)]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Persistent issues starting test service on NETFX")]
-    public class ServiceControllerTests : IDisposable
+    public partial class ServiceControllerTests : IDisposable
     {
         private const int connectionTimeout = 30000;
         private readonly TestServiceProvider _testService;
@@ -15,7 +15,6 @@ namespace System.ServiceProcess.Tests
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
         protected static bool IsProcessElevated => s_isElevated.Value;
 
-        private const int ExpectedDependentServiceCount = 3;
         private bool _disposed;
 
         public ServiceControllerTests()
@@ -58,7 +57,7 @@ namespace System.ServiceProcess.Tests
             var controller = new ServiceController(_testService.TestServiceName, _testService.TestMachineName);
             AssertExpectedProperties(controller);
 
-            AssertExtensions.Throws<ArgumentException>(null, () => { var c = new ServiceController(_testService.TestServiceName, ""); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { new ServiceController(_testService.TestServiceName, ""); });
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
@@ -149,18 +148,16 @@ namespace System.ServiceProcess.Tests
         [ConditionalFact(nameof(IsProcessElevated))]
         public void Dependencies()
         {
-            // The test service creates a number of dependent services, each of which is depended on
-            // by all the services created after it.
             var controller = new ServiceController(_testService.TestServiceName);
             Assert.Equal(0, controller.DependentServices.Length);
             Assert.Equal(1, controller.ServicesDependedOn.Length);
 
-            var dependentController = new ServiceController(_testService.TestServiceName + ".Dependent");
-            Assert.Equal(1, dependentController.DependentServices.Length);
-            Assert.Equal(0, dependentController.ServicesDependedOn.Length);
+            var prerequisiteServiceController = new ServiceController(_testService.TestServiceName + ".Prerequisite");
+            Assert.Equal(1, prerequisiteServiceController.DependentServices.Length);
+            Assert.Equal(0, prerequisiteServiceController.ServicesDependedOn.Length);
 
-            Assert.Equal(controller.ServicesDependedOn[0].ServiceName, dependentController.ServiceName);
-            Assert.Equal(dependentController.DependentServices[0].ServiceName, controller.ServiceName);
+            Assert.Equal(controller.ServicesDependedOn[0].ServiceName, prerequisiteServiceController.ServiceName);
+            Assert.Equal(prerequisiteServiceController.DependentServices[0].ServiceName, controller.ServiceName);
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
@@ -169,7 +166,7 @@ namespace System.ServiceProcess.Tests
             var controller = new ServiceController(_testService.TestServiceName);
             Assert.Equal(ServiceStartMode.Manual, controller.StartType);
 
-            // Check for the startType of the dependent services.
+            // Check for the startType of the services that depend on the test service
             for (int i = 0; i < controller.DependentServices.Length; i++)
             {
                 Assert.Equal(ServiceStartMode.Disabled, controller.DependentServices[i].StartType);
@@ -183,35 +180,6 @@ namespace System.ServiceProcess.Tests
                 _testService.DeleteTestServices();
                 _disposed = true;
             }
-        }
-
-        private static ServiceController AssertHasDependent(ServiceController controller, string serviceName, string displayName)
-        {
-            var dependent = FindService(controller.DependentServices, serviceName, displayName);
-            Assert.NotNull(dependent);
-
-            return dependent;
-        }
-
-        private static ServiceController AssertDependsOn(ServiceController controller, string serviceName, string displayName)
-        {
-            var dependency = FindService(controller.ServicesDependedOn, serviceName, displayName);
-            Assert.NotNull(dependency);
-
-            return dependency;
-        }
-
-        private static ServiceController FindService(ServiceController[] services, string serviceName, string displayName)
-        {
-            foreach (ServiceController service in services)
-            {
-                if (service.ServiceName == serviceName && service.DisplayName == displayName)
-                {
-                    return service;
-                }
-            }
-
-            return null;
         }
     }
 }

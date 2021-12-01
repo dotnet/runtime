@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.Collections;
@@ -26,7 +25,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class XmlSchemaSubstitutionGroupV1Compat : XmlSchemaSubstitutionGroup
+    internal sealed class XmlSchemaSubstitutionGroupV1Compat : XmlSchemaSubstitutionGroup
     {
         private readonly XmlSchemaChoice _choice = new XmlSchemaChoice();
 

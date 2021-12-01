@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -15,11 +14,11 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern CFIndex CFErrorGetCode(SafeCFErrorHandle cfError);
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static partial CFIndex CFErrorGetCode(SafeCFErrorHandle cfError);
 
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern SafeCFStringHandle CFErrorCopyDescription(SafeCFErrorHandle cfError);
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static partial SafeCFStringHandle CFErrorCopyDescription(SafeCFErrorHandle cfError);
 
         internal static int GetErrorCode(SafeCFErrorHandle cfError)
         {
@@ -52,7 +51,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeCFErrorHandle : SafeHandle
     {
-        internal SafeCFErrorHandle()
+        public SafeCFErrorHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

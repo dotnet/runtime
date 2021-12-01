@@ -65,7 +65,7 @@ public class Test22888
 
     public static int Main()
     {
-        string currentAssemblyDirectory = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).AbsolutePath);
+        string currentAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         string testAssemblyFullPath = Path.Combine(currentAssemblyDirectory, "test22888resources.dll");
 
         WeakReference alcWeakRef;

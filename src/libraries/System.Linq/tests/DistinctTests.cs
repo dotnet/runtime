@@ -267,5 +267,104 @@ namespace System.Linq.Tests
 
             Assert.Equal(result, result);
         }
+
+        [Fact]
+        public void DistinctBy_SourceNull_ThrowsArgumentNullException()
+        {
+            string[] first = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("source", () => first.DistinctBy(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => first.DistinctBy(x => x, new AnagramEqualityComparer()));
+        }
+
+        [Fact]
+        public void DistinctBy_KeySelectorNull_ThrowsArgumentNullException()
+        {
+            string[] source = { "Bob", "Tim", "Robert", "Chris" };
+            Func<string, string> keySelector = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.DistinctBy(keySelector));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.DistinctBy(keySelector, new AnagramEqualityComparer()));
+        }
+
+        [Theory]
+        [MemberData(nameof(DistinctBy_TestData))]
+        public static void DistinctBy_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<TSource> expected)
+        {
+            Assert.Equal(expected, source.DistinctBy(keySelector, comparer));
+        }
+
+        [Theory]
+        [MemberData(nameof(DistinctBy_TestData))]
+        public static void DistinctBy_RunOnce_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<TSource> expected)
+        {
+            Assert.Equal(expected, source.RunOnce().DistinctBy(keySelector, comparer));
+        }
+
+        public static IEnumerable<object[]> DistinctBy_TestData()
+        {
+            yield return WrapArgs(
+                source: Enumerable.Range(0, 10),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Range(0, 10));
+
+            yield return WrapArgs(
+                source: Enumerable.Range(5, 10),
+                keySelector: x => true,
+                comparer: null,
+                expected: new int[] { 5 });
+
+            yield return WrapArgs(
+                source: Enumerable.Range(0, 20),
+                keySelector: x => x % 5,
+                comparer: null,
+                expected: Enumerable.Range(0, 5));
+
+            yield return WrapArgs(
+                source: Enumerable.Repeat(5, 20),
+                keySelector: x => x,
+                comparer: null,
+                expected: Enumerable.Repeat(5, 1));
+
+            yield return WrapArgs(
+                source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
+                keySelector: x => x,
+                null,
+                expected: new string[] { "Bob", "bob", "tim", "Tim" });
+
+            yield return WrapArgs(
+                source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
+                keySelector: x => x,
+                StringComparer.OrdinalIgnoreCase,
+                expected: new string[] { "Bob", "tim" });
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40) },
+                keySelector: x => x.Age,
+                comparer: null,
+                expected: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40) });
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 20), ("Harry", 40) },
+                keySelector: x => x.Age,
+                comparer: null,
+                expected: new (string Name, int Age)[] { ("Tom", 20), ("Harry", 40) });
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { ("Bob", 20), ("bob", 30), ("Harry", 40) },
+                keySelector: x => x.Name,
+                comparer: null,
+                expected: new (string Name, int Age)[] { ("Bob", 20), ("bob", 30), ("Harry", 40) });
+
+            yield return WrapArgs(
+                source: new (string Name, int Age)[] { ("Bob", 20), ("bob", 30), ("Harry", 40) },
+                keySelector: x => x.Name,
+                comparer: StringComparer.OrdinalIgnoreCase,
+                expected: new (string Name, int Age)[] { ("Bob", 20), ("Harry", 40) });
+
+            object[] WrapArgs<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer, IEnumerable<TSource> expected)
+                => new object[] { source, keySelector, comparer, expected };
+        }
     }
 }

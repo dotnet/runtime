@@ -10,14 +10,14 @@ This is meant to contain useful utilities for IO related work in ReparsePoints
 #define DEBUG
 
 using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
-using System.ComponentModel;
-using System.Threading;
+using System.Text;
 using System.Threading.Tasks;
+
 public static class MountHelper
 {
     [DllImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
@@ -28,13 +28,11 @@ public static class MountHelper
     [DllImport("kernel32.dll", EntryPoint = "DeleteVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
     private static extern bool DeleteVolumeMountPoint(string mountPoint);
 
-    /// <summary>Creates a symbolic link using command line tools</summary>
-    /// <param name="linkPath">The existing file</param>
-    /// <param name="targetPath"></param>
+    /// <summary>Creates a symbolic link using command line tools.</summary>
     public static bool CreateSymbolicLink(string linkPath, string targetPath, bool isDirectory)
     {
         Process symLinkProcess = new Process();
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             symLinkProcess.StartInfo.FileName = "cmd";
             symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", linkPath, targetPath);
@@ -48,20 +46,23 @@ public static class MountHelper
         symLinkProcess.StartInfo.RedirectStandardOutput = true;
         symLinkProcess.Start();
 
-        if (symLinkProcess != null)
+        symLinkProcess.WaitForExit();
+        return symLinkProcess.ExitCode == 0;
+    }
+
+    /// <summary>On Windows, creates a junction using command line tools.</summary>
+    public static bool CreateJunction(string junctionPath, string targetPath)
+    {
+        if (!OperatingSystem.IsWindows())
         {
-            symLinkProcess.WaitForExit();
-            return (0 == symLinkProcess.ExitCode);
+            throw new PlatformNotSupportedException();
         }
-        else
-        {
-            return false;
-        }
+
+        return RunProcess(CreateProcessStartInfo("cmd", "/c", "mklink", "/J", junctionPath, targetPath));
     }
 
     public static void Mount(string volumeName, string mountPoint)
     {
-
         if (volumeName[volumeName.Length - 1] != Path.DirectorySeparatorChar)
             volumeName += Path.DirectorySeparatorChar;
         if (mountPoint[mountPoint.Length - 1] != Path.DirectorySeparatorChar)
@@ -72,13 +73,13 @@ public static class MountHelper
         StringBuilder sb = new StringBuilder(1024);
         r = GetVolumeNameForVolumeMountPoint(volumeName, sb, sb.Capacity);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
 
         string uniqueName = sb.ToString();
         Console.WriteLine(string.Format("uniqueName: <{0}>", uniqueName));
         r = SetVolumeMountPoint(mountPoint, uniqueName);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
         Task.Delay(100).Wait(); // adding sleep for the file system to settle down so that reparse point mounting works
     }
 
@@ -90,11 +91,35 @@ public static class MountHelper
 
         bool r = DeleteVolumeMountPoint(mountPoint);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
+    }
+
+    private static ProcessStartInfo CreateProcessStartInfo(string fileName, params string[] arguments)
+    {
+        var info = new ProcessStartInfo
+        {
+            FileName = fileName,
+            UseShellExecute = false,
+            RedirectStandardOutput = true
+        };
+
+        foreach (var argument in arguments)
+        {
+            info.ArgumentList.Add(argument);
+        }
+
+        return info;
+    }
+
+    private static bool RunProcess(ProcessStartInfo startInfo)
+    {
+        var process = Process.Start(startInfo);
+        process.WaitForExit();
+        return process.ExitCode == 0;
     }
 
     /// For standalone debugging help. Change Main0 to Main
-     public static void Main0(string[] args)
+    public static void Main0(string[] args)
     {
          try
         {

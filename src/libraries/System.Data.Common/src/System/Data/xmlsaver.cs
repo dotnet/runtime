@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Data.SqlTypes;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -105,6 +106,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void AddXdoProperties(object? instance, XmlElement root, XmlDocument xd)
         {
             if (instance == null)
@@ -126,6 +128,7 @@ namespace System.Data
             return;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void AddXdoProperty(PropertyDescriptor pd, object instance, XmlElement root, XmlDocument xd)
         {
             Type type = pd.PropertyType;
@@ -154,12 +157,12 @@ namespace System.Data
                 return;
             }
 
-            if ((!pd.ShouldSerializeValue(instance) || !pd.Attributes.Contains(DesignerSerializationVisibilityAttribute.Visible)) && (bIsSqlType == false))
+            if ((!pd.ShouldSerializeValue(instance) || !ContainsDesignerSerializationVisibleAttribute(pd)) && (bIsSqlType == false))
             {
                 return;
             }
 
-            object propInst = pd.GetValue(instance);
+            object? propInst = pd.GetValue(instance);
 
             if (propInst is InternalDataCollectionBase)
                 return;
@@ -214,10 +217,14 @@ namespace System.Data
                 }
             }
 
-            string textValue = pd.Converter.ConvertToString(propInst);
+            string? textValue = pd.Converter.ConvertToString(propInst);
             root.SetAttribute(pd.Name, Keywords.MSDNS, textValue);
             return;
         }
+
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(DesignerSerializationVisibilityAttribute))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The DynamicDependency ensures the correct members are preserved.")]
+        private bool ContainsDesignerSerializationVisibleAttribute(PropertyDescriptor pd) => pd.Attributes.Contains(DesignerSerializationVisibilityAttribute.Visible);
 
         internal static string XmlDataTypeName(Type type)
         {
@@ -533,6 +540,7 @@ namespace System.Data
 
         // SxS: this method can generate XSD files if the input xmlWriter is XmlTextWriter or DataTextWriter and its underlying stream is FileStream
         // These XSDs are located in the same folder as the underlying stream's file path (see SetPath method).
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SchemaTree(XmlDocument xd, XmlWriter xmlWriter, DataSet? ds, DataTable? dt, bool writeHierarchy)
         {
             _constraintNames = new ArrayList();
@@ -929,6 +937,7 @@ namespace System.Data
             return; // rootSchema;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlElement SchemaTree(XmlDocument xd, DataTable dt)
         {
             _dsElement = xd.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_ELEMENT, Keywords.XSDNS);
@@ -1087,11 +1096,13 @@ namespace System.Data
                 _filePath = _filePath + "\\";
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataSet ds, XmlWriter xw)
         {
             Save(ds, null, xw);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataTable dt, XmlWriter xw)
         {
             XmlDocument doc = new XmlDocument();
@@ -1104,16 +1115,19 @@ namespace System.Data
             doc.Save(xw);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataSet ds, DataTable? dt, XmlWriter xw)
         {
             Save(ds, dt, xw, false);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataSet? ds, DataTable? dt, XmlWriter xw, bool writeHierarchy)
         {
             Save(ds, dt, xw, writeHierarchy, null);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(DataSet? ds, DataTable? dt, XmlWriter xw, bool writeHierarchy, Converter<Type, string>? multipleTargetConverter)
         {
             _targetConverter = multipleTargetConverter;
@@ -1188,7 +1202,7 @@ namespace System.Data
 
         private static XmlElement? FindSimpleType(XmlElement schema, string name)
         {
-            for (XmlNode n = schema.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode? n = schema.FirstChild; n != null; n = n.NextSibling)
             {
                 if (n is XmlElement)
                 {
@@ -1281,7 +1295,7 @@ namespace System.Data
                         {
 #if DEBUG
                             // enzol: TO DO: replace the constructor with IsEqual(XmlElement)
-                            //                        Debug.Assert(col.SimpleType.IsEqual(new SimpleType(elmSimpeType)), "simpleTypes with the same name have to be the same: "+name);
+                            //                        Debug.Assert(col.SimpleType.IsEqual(new SimpleType(elmSimpeType)), $"simpleTypes with the same name have to be the same: {name}");
 #endif
                         }
                     }
@@ -1401,6 +1415,7 @@ namespace System.Data
             return tgNamespace;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlElement HandleColumn(DataColumn col, XmlDocument dc, XmlElement schema, bool fWriteOrdinal)
         {
             Debug.Assert(_prefixes != null);
@@ -1557,7 +1572,7 @@ namespace System.Data
             if (node == null)
                 return null;
 
-            for (XmlNode n = node.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode? n = node.FirstChild; n != null; n = n.NextSibling)
             {
                 if (!(n is XmlElement))
                     continue;
@@ -1576,6 +1591,7 @@ namespace System.Data
             return null;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlElement HandleTable(DataTable table, XmlDocument dc, XmlElement schema)
         {
             return HandleTable(table, dc, schema, true);
@@ -1705,6 +1721,7 @@ namespace System.Data
             return false;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal XmlElement HandleTable(DataTable table, XmlDocument dc, XmlElement schema, bool genNested)
         {
             Debug.Assert(_prefixes != null);
@@ -2250,7 +2267,7 @@ namespace System.Data
         internal XmlWriter _xmlw = default!; // Late-initialized
         private bool _fBefore;
         private bool _fErrors;
-        internal Hashtable _rowsOrder = default!; // Always initialized in DoAssignments
+        internal Hashtable _rowsOrder;
         private readonly ArrayList _tables = new ArrayList();
         private readonly bool _writeHierarchy;
 
@@ -2297,7 +2314,7 @@ namespace System.Data
             }
         }
 
-
+        [MemberNotNull(nameof(_rowsOrder))]
         private void DoAssignments(ArrayList tables)
         {
             int rows = 0;
@@ -2326,11 +2343,13 @@ namespace System.Data
             return true;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(XmlWriter xmlw)
         {
             Save(xmlw, null);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(XmlWriter xmlw, DataTable? table)
         {
             _xmlw = DataTextWriter.CreateWriter(xmlw);
@@ -2390,6 +2409,7 @@ namespace System.Data
             _xmlw.Flush();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void GenerateTable(DataTable table)
         {
             int rowCount = table.Rows.Count;
@@ -2465,6 +2485,7 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void GenerateRow(DataRow row)
         {
             DataRowState state = row.RowState;
@@ -2521,6 +2542,7 @@ namespace System.Data
             _xmlw.WriteEndElement();  //old row
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void GenerateColumn(DataRow row, DataColumn col, DataRowVersion version)
         {
             string? value = null;
@@ -2771,6 +2793,7 @@ namespace System.Data
         // the following line writes the data part
         // for the new diffgram format
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SaveDiffgramData(XmlWriter xw, Hashtable rowsOrder)
         {
             Debug.Assert(_ds != null || _dt != null);
@@ -2813,7 +2836,7 @@ namespace System.Data
             _xmlw.Flush();
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void Save(XmlWriter xw, bool writeSchema)
         {
             Debug.Assert(_ds != null || _dt != null);
@@ -2905,7 +2928,7 @@ namespace System.Data
             return list;
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void XmlDataRowWriter(DataRow row, string encodedTableName)
         {
             Debug.Assert(_xmlw != null);
@@ -3133,12 +3156,12 @@ namespace System.Data
             _xmltextWriter.WriteEndDocument();
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             _xmltextWriter.WriteDocType(name, pubid, sysid, subset);
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             _xmltextWriter.WriteStartElement(prefix, localName, ns);
         }
@@ -3153,7 +3176,7 @@ namespace System.Data
             _xmltextWriter.WriteFullEndElement();
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             _xmltextWriter.WriteStartAttribute(prefix, localName, ns);
         }
@@ -3163,17 +3186,17 @@ namespace System.Data
             _xmltextWriter.WriteEndAttribute();
         }
 
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             _xmltextWriter.WriteCData(text);
         }
 
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             _xmltextWriter.WriteComment(text);
         }
 
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             _xmltextWriter.WriteProcessingInstruction(name, text);
         }
@@ -3188,12 +3211,12 @@ namespace System.Data
             _xmltextWriter.WriteCharEntity(ch);
         }
 
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             _xmltextWriter.WriteWhitespace(ws);
         }
 
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             _xmltextWriter.WriteString(text);
         }
@@ -3251,12 +3274,12 @@ namespace System.Data
             _xmltextWriter.WriteName(name);
         }
 
-        public override void WriteQualifiedName(string localName, string ns)
+        public override void WriteQualifiedName(string localName, string? ns)
         {
             _xmltextWriter.WriteQualifiedName(localName, ns);
         }
 
-        public override string LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns)
         {
             return _xmltextWriter.LookupPrefix(ns);
         }
@@ -3269,7 +3292,7 @@ namespace System.Data
             }
         }
 
-        public override string XmlLang
+        public override string? XmlLang
         {
             get
             {
@@ -3299,7 +3322,7 @@ namespace System.Data
             _xmlreader = input;
         }
 
-        public override XmlReaderSettings Settings
+        public override XmlReaderSettings? Settings
         {
             get
             {
@@ -3391,12 +3414,12 @@ namespace System.Data
 
         public override int AttributeCount { get { return _xmlreader.AttributeCount; } }
 
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             return _xmlreader.GetAttribute(name);
         }
 
-        public override string GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             return _xmlreader.GetAttribute(localName, namespaceURI);
         }
@@ -3411,7 +3434,7 @@ namespace System.Data
             return _xmlreader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             return _xmlreader.MoveToAttribute(localName, namespaceURI);
         }
@@ -3471,7 +3494,7 @@ namespace System.Data
             get { return _xmlreader.NameTable; }
         }
 
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             return _xmlreader.LookupNamespace(prefix);
         }

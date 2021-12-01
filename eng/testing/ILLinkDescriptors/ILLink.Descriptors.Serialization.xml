@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="System.Private.Xml.Linq">
+    <type fullname="System.Xml.Linq.XElement" />
+  </assembly>
+</linker>

@@ -8,6 +8,15 @@ namespace System.Text
     internal static class UnicodeDebug
     {
         [Conditional("DEBUG")]
+        internal static void AssertIsBmpCodePoint(uint codePoint)
+        {
+            if (!UnicodeUtility.IsBmpCodePoint(codePoint))
+            {
+                Debug.Fail($"The value {ToHexString(codePoint)} is not a valid BMP code point.");
+            }
+        }
+
+        [Conditional("DEBUG")]
         internal static void AssertIsHighSurrogateCodePoint(uint codePoint)
         {
             if (!UnicodeUtility.IsHighSurrogateCodePoint(codePoint))

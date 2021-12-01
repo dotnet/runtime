@@ -43,7 +43,7 @@ namespace System.Reflection.Tests
         //
         public static T CallUsingReflection<T>(this object _this, string name, Type[] parameterTypes = null, object[] arguments = null)
         {
-            parameterTypes = parameterTypes ?? Array.Empty<Type>();
+            parameterTypes = parameterTypes ?? Type.EmptyTypes;
             arguments = arguments ?? Array.Empty<object>();
             Type implementationType = _this.GetType();
             MethodInfo m = implementationType.GetMethod(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.ExactBinding, null, parameterTypes, null);

@@ -177,7 +177,7 @@ namespace System.Net.Security.Tests
                 string clientName = Configuration.Security.NegotiateClient.Host;
                 int clientPort = Configuration.Security.NegotiateClient.Port;
                 await controlClient.ConnectAsync(clientName, clientPort)
-                    .TimeoutAfter(TimeSpan.FromSeconds(15));
+                    .WaitAsync(TimeSpan.FromSeconds(15));
                 var serverStream = controlClient.GetStream();
 
                 using (var serverAuth = new NegotiateStream(serverStream, leaveInnerStreamOpen: false))
@@ -186,7 +186,7 @@ namespace System.Net.Security.Tests
                         CredentialCache.DefaultNetworkCredentials,
                         ProtectionLevel.EncryptAndSign,
                         TokenImpersonationLevel.Identification)
-                        .TimeoutAfter(TimeSpan.FromSeconds(15));
+                        .WaitAsync(TimeSpan.FromSeconds(15));
 
                     Assert.True(serverAuth.IsAuthenticated, "IsAuthenticated");
                     Assert.True(serverAuth.IsEncrypted, "IsEncrypted");
@@ -200,7 +200,7 @@ namespace System.Net.Security.Tests
                     var message = "Hello from the client.";
                     using (var reader = new StreamReader(serverAuth))
                     {
-                        var response = await reader.ReadToEndAsync().TimeoutAfter(TimeSpan.FromSeconds(15));
+                        var response = await reader.ReadToEndAsync().WaitAsync(TimeSpan.FromSeconds(15));
                         Assert.Equal(message, response);
                     }
                 }

@@ -204,18 +204,17 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30107")]
         //[Variation(Desc = "v5.2- Test Default value of ProhibitDTD for Add(TextReader) for schema with DTD", Priority = 1, Params = new object[] { "bug356711_a.xsd", 0 })]
         [InlineData("bug356711_a.xsd", 0)]
         //[Variation(Desc = "v5.1- Test Default value of ProhibitDTD for Add(TextReader) with an xs:import for schema with DTD", Priority = 1, Params = new object[] { "bug356711.xsd", 0 })]
-        [InlineData("bug356711.xsd", 0)]
-        public void v5(object param0, object param1)
+        [InlineData("bug356711.xsd", 2)]
+        public void v5(string fileName, int expectedWarnings)
         {
             Initialize();
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
-            XmlSchema schema = XmlSchema.Read(new StreamReader(new FileStream(Path.Combine(TestData._Root, param0.ToString()), FileMode.Open, FileAccess.Read)), ValidationCallback);
+            XmlSchema schema = XmlSchema.Read(new StreamReader(new FileStream(Path.Combine(TestData._Root, fileName), FileMode.Open, FileAccess.Read)), ValidationCallback);
 #pragma warning disable 0618
             schema.Compile(ValidationCallback, new XmlUrlResolver());
 #pragma warning restore 0618
@@ -227,23 +226,22 @@ namespace System.Xml.Tests
             {
                 Assert.True(false); //expect a validation warning for unresolvable schema location
             }
-            CError.Compare(warningCount, (int)param1, "Warning Count mismatch");
+            CError.Compare(warningCount, expectedWarnings, "Warning Count mismatch");
             CError.Compare(errorCount, 0, "Error Count mismatch");
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30107")]
         //[Variation(Desc = "v6.2- Test Default value of ProhibitDTD for Add(XmlTextReader) for schema with DTD", Priority = 1, Params = new object[] { "bug356711_a.xsd" })]
-        [InlineData("bug356711_a.xsd")]
+        [InlineData("bug356711_a.xsd", 0)]
         //[Variation(Desc = "v6.1- Test Default value of ProhibitDTD for Add(XmlTextReader) with an xs:import for schema with DTD", Priority = 1, Params = new object[] { "bug356711.xsd" })]
-        [InlineData("bug356711.xsd")]
-        public void v6(object param0)
+        [InlineData("bug356711.xsd", 1)]
+        public void v6(string fileName, int expectedWarnings)
         {
             Initialize();
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
             xss.ValidationEventHandler += ValidationCallback;
-            var reader = new XmlTextReader(Path.Combine(TestData._Root, param0.ToString()));
+            var reader = new XmlTextReader(Path.Combine(TestData._Root, fileName));
             reader.XmlResolver = new XmlUrlResolver();
             XmlSchema schema = XmlSchema.Read(reader, ValidationCallback);
 #pragma warning disable 0618
@@ -253,7 +251,7 @@ namespace System.Xml.Tests
             xss.Add(schema);
 
             // expect a validation warning for unresolvable schema location
-            CError.Compare(warningCount, 0, "Warning Count mismatch");
+            CError.Compare(warningCount, expectedWarnings, "Warning Count mismatch");
             CError.Compare(errorCount, 0, "Error Count mismatch");
         }
 

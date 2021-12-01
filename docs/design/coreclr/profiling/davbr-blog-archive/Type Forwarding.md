@@ -9,14 +9,12 @@ Type forwarding is nothing new.  However, in CLR V4, we are enabling type forwar
 
 The example I’ll use where the .NET Framework uses type forwarding is the TimeZoneInfo class.  In CLR V4, TimeZoneInfo is now forwarded from System.Core.dll to mscorlib.dll.  If you open the CLR V4 copy of System.Core.dll in ildasm and choose Dump, you'll see the following:
 
-| 
 ```
 .class extern /*27000004*/ forwarder System.TimeZoneInfo
  {
- .assembly extern mscorlib /*23000001*/ 
+ .assembly extern mscorlib /*23000001*/
  }
 ```
- |
 
 In each assembly’s metadata is an exported types table.  The above means that System.Core.dll's exported types table includes an entry for System.TimeZoneInfo (indexed by token 27000004).  What's significant is that System.Core.dll no longer has a typeDef for System.TimeZoneInfo, only an exported type.  The fact that the token begins at the left with 0x27 tells you that it's an mdtExportedType (not a mdtTypeDef, which begins at the left with 0x02).
 
@@ -28,15 +26,15 @@ This walkthrough assumes you have .NET 4.0 or later installed **and** an older r
 
 Code up a simple C# app that uses System.TimeZoneInfo:
 ```
-namespace test 
-{ 
-    class Class1 
-    { 
-        static void Main(string[] args) 
-        { 
-            System.TimeZoneInfo ti = null; 
-        } 
-    } 
+namespace test
+{
+    class Class1
+    {
+        static void Main(string[] args)
+        {
+            System.TimeZoneInfo ti = null;
+        }
+    }
 }
 ```
 
@@ -49,7 +47,7 @@ csc /debug+ /o- /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framew
 Again, be sure you’re using an old csc.exe from, say, a NET 3.5 installation.  To verify, open up Class1.exe in ildasm, and take a look at Main().  It should look something like this:
 
 ```
-.method /*06000001*/ private hidebysig static 
+.method /*06000001*/ private hidebysig static
  void Main(string[] args) cil managed
  {
  .entrypoint
@@ -70,11 +68,11 @@ Note that, if you were to build the above C# code using the .NET 4.0 C# compiler
 Ok, so how do we run this pre-.NET 4.0 executable against .NET 4.0?  A config file, of course.  Paste the following into a file named Class1.exe.config that sits next to Class1.exe:
 
 ```
-<configuration\>
- <startup\>
- <supportedRuntime version="v4.0.20506"/>
- </startup\>
- </configuration\>
+<configuration>
+ <startup>
+  <supportedRuntime version="v4.0.20506"/>
+ </startup>
+ </configuration>
 ```
 
 The above will force Class1.exe to bind against .NET 4.0 Beta 1.  And when it comes time to look for TimeZoneInfo, the CLR will first look in System.Core.dll, find the exported types table entry, and then hop over to mscorlib.dll to load the type.  What does that look like to your profiler?  Make your guess and hold that thought.  First, another walkthrough…
@@ -83,14 +81,14 @@ The above will force Class1.exe to bind against .NET 4.0 Beta 1.  And when it co
 
 To experiment with forwarding your own types, the process is:
 
-- Create Version 1 of your library 
- 
-  - Create version 1 of your library assembly that defines your type (MyLibAssemblyA.dll) 
-  - Create an app that references your type in MyLibAssemblyA.dll (MyClient.exe) 
-- Create version 2 of your library 
- 
-  - Recompile MyLibAssemblyA.dll to forward your type elsewhere (MyLibAssemblyB.dll) 
-  - Don’t recompile MyClient.exe.  Let it still think the type is defined in MyLibAssemblyA.dll. 
+- Create Version 1 of your library
+
+  - Create version 1 of your library assembly that defines your type (MyLibAssemblyA.dll)
+  - Create an app that references your type in MyLibAssemblyA.dll (MyClient.exe)
+- Create version 2 of your library
+
+  - Recompile MyLibAssemblyA.dll to forward your type elsewhere (MyLibAssemblyB.dll)
+  - Don’t recompile MyClient.exe.  Let it still think the type is defined in MyLibAssemblyA.dll.
 
 ### Version 1
 
@@ -140,9 +138,9 @@ Ok, time to upgrade!
 ### Version 2
 Time goes by, your library is growing, and its time to split it into two DLLs.  Gotta move Foo into the new DLL.  Save this into MyLibAssemblyB.cs
 ```
-using System; 
-public class Foo 
-{ 
+using System;
+public class Foo
+{
 }
 ```
 
@@ -170,7 +168,7 @@ Foo, MyLibAssemblyB, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
 
 And this all despite the fact that MyClient.exe still believes that Foo lives in MyLibAssemblyA:
 ```
-.method /*06000001*/ public hidebysig static 
+.method /*06000001*/ public hidebysig static
  void Main() cil managed
  {
  .entrypoint
@@ -188,7 +186,6 @@ And this all despite the fact that MyClient.exe still believes that Foo lives in
  IL\_001c: ret
  } // end of method Test::Main
 ```
- |
 
 ## Profilers
 
@@ -199,5 +196,3 @@ This should make life easy for profilers, since they generally expect to be able
 However, type forwarding is important to understand if your profiler needs to follow metadata references directly.  More generally, if your profiler is reading through metadata and expects to come across a typeDef (e.g., perhaps a metadata reference points to a type in that module, or perhaps your profiler expects certain known types to be in certain modules), then your profiler should be prepared to find an mdtExportedType instead, and to deal gracefully with it rather than doing something silly like crashing.
 
 In any case, whether you think your profiler will be affected by type forwarding, be sure to test, test, test!
-
-  

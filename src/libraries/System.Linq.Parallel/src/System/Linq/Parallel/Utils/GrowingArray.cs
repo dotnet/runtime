@@ -15,7 +15,7 @@ namespace System.Linq.Parallel
     /// A growing array. Unlike List{T}, it makes the internal array available to its user.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class GrowingArray<T>
+    internal sealed class GrowingArray<T>
     {
         private T[] _array;
         private int _count;

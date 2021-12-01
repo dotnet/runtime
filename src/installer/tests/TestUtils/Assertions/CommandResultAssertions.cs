@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 $"Arguments: {Result.StartInfo.Arguments}{Environment.NewLine}" +
                 $"Exit Code: {Result.ExitCode}{Environment.NewLine}" +
                 $"StdOut:{Environment.NewLine}{Result.StdOut}{Environment.NewLine}" +
-                $"StdErr:{Environment.NewLine}{Result.StdErr}{Environment.NewLine}"; ;
+                $"StdErr:{Environment.NewLine}{Result.StdErr}{Environment.NewLine}";
         }
 
         public AndConstraint<CommandResultAssertions> HaveSkippedProjectCompilation(string skippedProject, string frameworkFullName)

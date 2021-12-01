@@ -34,6 +34,9 @@ namespace System.Net.Http
 
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
+        private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
+        // flag to determine if the _allowAutoRedirect was explicitly set or not.
+        private bool _isAllowAutoRedirectTouched;
 
         /// <summary>
         /// Gets whether the current Browser supports streaming responses
@@ -95,8 +98,12 @@ namespace System.Net.Http
 
         public bool AllowAutoRedirect
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get => _allowAutoRedirect;
+            set
+            {
+                _allowAutoRedirect = value;
+                _isAllowAutoRedirectTouched = true;
+            }
         }
 
         public int MaxAutomaticRedirections
@@ -123,15 +130,25 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public bool SupportsAutomaticDecompression => false;
-        public bool SupportsProxy => false;
-        public bool SupportsRedirectConfiguration => false;
+        public const bool SupportsAutomaticDecompression = false;
+        public const bool SupportsProxy = false;
+        public const bool SupportsRedirectConfiguration = true;
 
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
 
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
             try
             {
                 var requestObject = new JSObject();
@@ -145,6 +162,22 @@ namespace System.Net.Http
                 }
 
                 requestObject.SetObjectProperty("method", request.Method.Method);
+
+                // Only set if property was specifically modified and is not default value
+                if (_isAllowAutoRedirectTouched)
+                {
+                    // Allowing or Disallowing redirects.
+                    // Here we will set redirect to `manual` instead of error if AllowAutoRedirect is
+                    // false so there is no exception thrown
+                    //
+                    // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                    //
+                    // other issues from whatwg/fetch:
+                    //
+                    // https://github.com/whatwg/fetch/issues/763
+                    // https://github.com/whatwg/fetch/issues/601
+                    requestObject.SetObjectProperty("redirect", AllowAutoRedirect ? "follow" : "manual");
+                }
 
                 // We need to check for body content
                 if (request.Content != null)
@@ -219,13 +252,25 @@ namespace System.Net.Http
                 var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
                 args.Dispose();
                 if (response == null)
-                    throw new Exception("Internal error marshalling the response Promise from `fetch`.");
+                    throw new Exception(SR.net_http_marshalling_response_promise_from_fetch);
 
                 JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
 
                 var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
-
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
+                httpResponse.RequestMessage = request;
+
+                // Here we will set the ReasonPhrase so that it can be evaluated later.
+                // We do not have a status code but this will signal some type of what happened
+                // after interrogating the status code for success or not i.e. IsSuccessStatusCode
+                //
+                // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                // opaqueredirect: The fetch request was made with redirect: "manual".
+                // The Response's status is 0, headers are empty, body is null and trailer is empty.
+                if (status.ResponseType == "opaqueredirect")
+                {
+                    httpResponse.SetReasonPhraseWithoutValidation(status.ResponseType);
+                }
 
                 bool streamingEnabled = false;
                 if (StreamingSupported)
@@ -278,13 +323,30 @@ namespace System.Net.Http
                 return httpResponse;
 
             }
-            catch (JSException jsExc)
+            catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
             {
-                throw new System.Net.Http.HttpRequestException(jsExc.Message);
+                throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+            }
+            catch (JSException jse)
+            {
+                throw TranslateJSException(jse, cancellationToken);
             }
         }
 
-        private class WasmFetchResponse : IDisposable
+        private static Exception TranslateJSException(JSException jse, CancellationToken cancellationToken)
+        {
+            if (jse.Message.StartsWith("AbortError", StringComparison.Ordinal))
+            {
+                return CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+            }
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
+            }
+            return new HttpRequestException(jse.Message, jse);
+        }
+
+        private sealed class WasmFetchResponse : IDisposable
         {
             private readonly JSObject _fetchResponse;
             private readonly JSObject _abortController;
@@ -316,28 +378,17 @@ namespace System.Net.Http
 
             public void Dispose()
             {
-                // Dispose of unmanaged resources.
-                Dispose(true);
-            }
-
-            // Protected implementation of Dispose pattern.
-            protected virtual void Dispose(bool disposing)
-            {
                 if (_isDisposed)
                     return;
 
                 _isDisposed = true;
-                if (disposing)
-                {
-                    _abortCts.Cancel();
-                    _abortCts.Dispose();
-                    _abortRegistration.Dispose();
-                }
+
+                _abortCts.Dispose();
+                _abortRegistration.Dispose();
 
                 _fetchResponse?.Dispose();
                 _abortController?.Dispose();
             }
-
         }
 
         private sealed class BrowserHttpContent : HttpContent
@@ -350,20 +401,26 @@ namespace System.Net.Http
                 _status = status ?? throw new ArgumentNullException(nameof(status));
             }
 
-            private async Task<byte[]> GetResponseData()
+            private async Task<byte[]> GetResponseData(CancellationToken cancellationToken)
             {
                 if (_data != null)
                 {
                     return _data;
                 }
-
-                using (System.Runtime.InteropServices.JavaScript.ArrayBuffer dataBuffer = (System.Runtime.InteropServices.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(continueOnCapturedContext: true))
+                try
                 {
-                    using (Uint8Array dataBinView = new Uint8Array(dataBuffer))
+                    using (System.Runtime.InteropServices.JavaScript.ArrayBuffer dataBuffer = (System.Runtime.InteropServices.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(continueOnCapturedContext: true))
                     {
-                        _data = dataBinView.ToArray();
-                        _status.Dispose();
+                        using (Uint8Array dataBinView = new Uint8Array(dataBuffer))
+                        {
+                            _data = dataBinView.ToArray();
+                            _status.Dispose();
+                        }
                     }
+                }
+                catch (JSException jse)
+                {
+                    throw TranslateJSException(jse, cancellationToken);
                 }
 
                 return _data;
@@ -371,7 +428,7 @@ namespace System.Net.Http
 
             protected override async Task<Stream> CreateContentReadStreamAsync()
             {
-                byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
+                byte[] data = await GetResponseData(CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
                 return new MemoryStream(data, writable: false);
             }
 
@@ -379,7 +436,7 @@ namespace System.Net.Http
                 SerializeToStreamAsync(stream, context, CancellationToken.None);
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
-                byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
+                byte[] data = await GetResponseData(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
                 await stream.WriteAsync(data, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
             }
             protected internal override bool TryComputeLength(out long length)
@@ -424,21 +481,14 @@ namespace System.Net.Http
                 set => throw new NotSupportedException();
             }
 
-            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
-                if (offset < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset));
-                }
-                if (count < 0 || buffer.Length - offset < count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ValidateBufferArguments(buffer, offset, count);
+                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            }
 
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+            {
                 if (_reader == null)
                 {
                     // If we've read everything, then _reader and _status will be null
@@ -454,10 +504,13 @@ namespace System.Net.Http
                             _reader = (JSObject)body.Invoke("getReader");
                         }
                     }
-                    catch (JSException)
+                    catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        throw;
+                        throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                    }
+                    catch (JSException jse)
+                    {
+                        throw TranslateJSException(jse, cancellationToken);
                     }
                 }
 
@@ -487,23 +540,26 @@ namespace System.Net.Http
                             _bufferedBytes = binValue.ToArray();
                     }
                 }
-                catch (JSException)
+                catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    throw;
+                    throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                }
+                catch (JSException jse)
+                {
+                    throw TranslateJSException(jse, cancellationToken);
                 }
 
                 return ReadBuffered();
 
                 int ReadBuffered()
                 {
-                    int n = _bufferedBytes.Length - _position;
-                    if (n > count)
-                        n = count;
+                    int n = Math.Min(_bufferedBytes.Length - _position, buffer.Length);
                     if (n <= 0)
+                    {
                         return 0;
+                    }
 
-                    Buffer.BlockCopy(_bufferedBytes, _position, buffer, offset, n);
+                    _bufferedBytes.AsSpan(_position, n).CopyTo(buffer.Span);
                     _position += n;
 
                     return n;
@@ -522,7 +578,7 @@ namespace System.Net.Http
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                throw new NotSupportedException("Synchronous reads are not supported, use ReadAsync instead");
+                throw new NotSupportedException(SR.net_http_synchronous_reads_not_supported);
             }
 
             public override long Seek(long offset, SeekOrigin origin)

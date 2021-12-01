@@ -10,27 +10,31 @@ namespace System.DirectoryServices.Protocols
     {
         IsLeaf = 0x23,
         InvalidCredentials = 49,
-        ServerDown = 0x51,
-        LocalError = 0x52,
-        EncodingError = 0x53,
-        DecodingError = 0x54,
-        TimeOut = 0x55,
-        AuthUnknown = 0x56,
-        FilterError = 0x57,
-        UserCancelled = 0x58,
-        ParameterError = 0x59,
-        NoMemory = 0x5a,
-        ConnectError = 0x5b,
-        NotSupported = 0x5c,
-        NoResultsReturned = 0x5e,
-        ControlNotFound = 0x5d,
-        MoreResults = 0x5f,
-        ClientLoop = 0x60,
-        ReferralLimitExceeded = 0x61,
+        // The following values are defined in the LDAP C API standard, and are used in Windows Winldap.h.
+        // See https://tools.ietf.org/html/draft-ietf-ldapext-ldap-c-api-05
+        // Servers built from OpenLDAP headers use negative numbers for some, as shown below.
+        // See https://github.com/openldap/openldap/blob/70488c22bf69be2a2c84127692413b815d8f9044/include/ldap.h#L724-L749
+        ServerDown = 0x51,            // -1 from OpenLDAP servers
+        LocalError = 0x52,            // -2
+        EncodingError = 0x53,         // -3
+        DecodingError = 0x54,         // -4
+        TimeOut = 0x55,               // -5
+        AuthUnknown = 0x56,           // -6
+        FilterError = 0x57,           // -7
+        UserCancelled = 0x58,         // -8
+        ParameterError = 0x59,        // -9
+        NoMemory = 0x5a,              // -10
+        ConnectError = 0x5b,          // -11
+        NotSupported = 0x5c,          // -12
+        NoResultsReturned = 0x5e,     // -13
+        ControlNotFound = 0x5d,       // -14
+        MoreResults = 0x5f,           // -15
+        ClientLoop = 0x60,            // -16
+        ReferralLimitExceeded = 0x61, // -17
         SendTimeOut = 0x70
     }
 
-    internal class LdapErrorMappings
+    internal static class LdapErrorMappings
     {
         private static readonly Dictionary<LdapError, string> s_resultCodeMapping = new Dictionary<LdapError, string>(capacity: 20)
         {
@@ -56,10 +60,29 @@ namespace System.DirectoryServices.Protocols
             { LdapError.SendTimeOut, SR.LDAP_SEND_TIMEOUT }
         };
 
+        internal static int NormalizeResultCode(int errorCode)
+        {
+            // OpenLDAP codes -1 to -17 should map to 81 to 97 respectively;
+            // See note above.
+            return (errorCode <= -1 && errorCode >= -17) ? 80 - errorCode : errorCode;
+        }
+
         public static string MapResultCode(int errorCode)
         {
+            errorCode = NormalizeResultCode(errorCode);
             s_resultCodeMapping.TryGetValue((LdapError)errorCode, out string errorMessage);
             return errorMessage;
+        }
+
+        internal static bool IsLdapError(int errorCode)
+        {
+            LdapError error = (LdapError)NormalizeResultCode(errorCode);
+            if (error == LdapError.IsLeaf || error == LdapError.InvalidCredentials || error == LdapError.SendTimeOut)
+            {
+                return true;
+            }
+
+            return (error >= LdapError.ServerDown && error <= LdapError.ReferralLimitExceeded);
         }
     }
 
@@ -67,6 +90,8 @@ namespace System.DirectoryServices.Protocols
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices.Protocols, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class LdapException : DirectoryException, ISerializable
     {
+        private int _errorCode;
+
         protected LdapException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         public LdapException() : base() { }
@@ -75,7 +100,8 @@ namespace System.DirectoryServices.Protocols
 
         public LdapException(string message, Exception inner) : base(message, inner) { }
 
-        public LdapException(int errorCode) : base(SR.DefaultLdapError)
+        public LdapException(int errorCode)
+                : base(SR.Format(SR.DefaultLdapError, LdapErrorMappings.NormalizeResultCode(errorCode)))
         {
             ErrorCode = errorCode;
         }
@@ -96,7 +122,14 @@ namespace System.DirectoryServices.Protocols
             ErrorCode = errorCode;
         }
 
-        public int ErrorCode { get; }
+        public int ErrorCode
+        {
+            get => _errorCode;
+            private set
+            {
+                _errorCode = LdapErrorMappings.NormalizeResultCode(value);
+            }
+        }
 
         public string ServerErrorMessage { get; }
 
@@ -128,7 +161,7 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    internal class ErrorChecking
+    internal static class ErrorChecking
     {
         public static void CheckAndSetLdapError(int error)
         {
@@ -139,7 +172,7 @@ namespace System.DirectoryServices.Protocols
                     string errorMessage = OperationErrorMappings.MapResultCode(error);
                     throw new DirectoryOperationException(null, errorMessage);
                 }
-                else if (Utility.IsLdapError((LdapError)error))
+                else if (LdapErrorMappings.IsLdapError(error))
                 {
                     string errorMessage = LdapErrorMappings.MapResultCode(error);
                     throw new LdapException(error, errorMessage);

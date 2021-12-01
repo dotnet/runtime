@@ -84,8 +84,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
             backgroundWorker.RunWorkerAsync();
 
-            await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(10))); // Usually takes 100th of a sec
-            Assert.True(tcs.Task.IsCompleted);
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10)); // Usually takes 100th of a sec
         }
 
         #region TestCancelAsync
@@ -327,7 +326,6 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38283", TestPlatforms.Browser)]
         public void TestFinalization()
         {
             // BackgroundWorker has a finalizer that exists purely for backwards compatibility

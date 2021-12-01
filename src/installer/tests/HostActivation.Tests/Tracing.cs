@@ -165,7 +165,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Entry point projects
                 PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .EnsureRestored()
                     .PublishProject();
             }
 

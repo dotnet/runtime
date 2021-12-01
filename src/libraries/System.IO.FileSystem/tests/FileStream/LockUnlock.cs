@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -59,7 +58,7 @@ namespace System.IO.Tests
         [InlineData(200, 50, 150)]
         [InlineData(200, 100, 100)]
         [InlineData(20, 2000, 1000)]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
         public void Lock_Unlock_Successful(long fileLength, long position, long length)
         {
             string path = GetTestFilePath();
@@ -73,8 +72,24 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [InlineData(FileAccess.Read)]
+        [InlineData(FileAccess.Write)]
+        [InlineData(FileAccess.ReadWrite)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
+        public void Lock_Unlock_Successful_AlternateFileAccess(FileAccess fileAccess)
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[100]);
+
+            using FileStream fs = File.Open(path, FileMode.Open, fileAccess);
+
+            fs.Lock(0, 100);
+            fs.Unlock(0, 100);
+        }
+
+        [Theory]
         [InlineData(10, 0, 2, 3, 5)]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
         public void NonOverlappingRegions_Success(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
@@ -153,9 +168,7 @@ namespace System.IO.Tests
             }
         }
 
-        private static bool IsNotWindowsSubsystemForLinuxAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsSubsystemForLinux && RemoteExecutor.IsSupported;
-
-        [ConditionalTheory(nameof(IsNotWindowsSubsystemForLinuxAndRemoteExecutorSupported))] // https://github.com/dotnet/runtime/issues/28330
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(10, 0, 10, 1, 2)]
         [InlineData(10, 3, 5, 3, 5)]
         [InlineData(10, 3, 5, 3, 4)]
@@ -163,7 +176,7 @@ namespace System.IO.Tests
         [InlineData(10, 3, 5, 2, 6)]
         [InlineData(10, 3, 5, 2, 4)]
         [InlineData(10, 3, 5, 4, 6)]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
         public void OverlappingRegionsFromOtherProcess_ThrowsException(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
@@ -191,6 +204,58 @@ namespace System.IO.Tests
                     }
                 }, path, secondPosition.ToString(), secondLength.ToString()).Dispose();
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void OverlappingRegionsFromOtherProcess_With_ReadLock_AllowedOnLinux()
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[100]);
+
+            using FileStream fs1 = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            fs1.Lock(0, 100);
+
+            RemoteExecutor.Invoke((path) =>
+            {
+                using FileStream fs2 = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                fs2.Lock(0, 100);
+                fs2.Unlock(0, 100);
+
+            }, path).Dispose();
+
+            fs1.Unlock(0, 100);            
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(FileAccess.Read)]
+        [InlineData(FileAccess.Write)]
+        [InlineData(FileAccess.ReadWrite)]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
+        public void OverlappingRegionsFromOtherProcess_With_WriteLock_ThrowsException(FileAccess fileAccess)
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[100]);
+
+            using FileStream fs1 = File.Open(path, FileMode.Open, fileAccess, FileShare.ReadWrite);
+            fs1.Lock(0, 100);
+
+            RemoteExecutor.Invoke((path) =>
+            {
+                using FileStream fs2 = File.Open(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+                Assert.Throws<IOException>(() => fs2.Lock(0, 100));
+
+            }, path).Dispose();
+
+            fs1.Unlock(0, 100);
+
+            RemoteExecutor.Invoke((path) =>
+            {
+                using FileStream fs2 = File.Open(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+                fs2.Lock(0, 100);
+                fs2.Unlock(0, 100);
+
+            }, path).Dispose();
         }
     }
 }

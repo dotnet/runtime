@@ -26,13 +26,14 @@ namespace System.Linq.Parallel
     ///
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     internal sealed class AsynchronousChannelMergeEnumerator<T> : MergeEnumerator<T>
     {
         private readonly AsynchronousChannel<T>[] _channels; // The channels being enumerated.
         private IntValueEvent? _consumerEvent; // The consumer event.
         private readonly bool[] _done;       // Tracks which channels are done.
         private int _channelIndex;  // The next channel from which we'll dequeue.
-        [MaybeNull, AllowNull] private T _currentElement = default;  // The remembered element from the previous MoveNext.
+        private T? _currentElement;  // The remembered element from the previous MoveNext.
 
         //-----------------------------------------------------------------------------------
         // Allocates a new enumerator over a set of one-to-one channels.
@@ -220,6 +221,7 @@ namespace System.Linq.Parallel
                                 break;
                             }
 
+                            Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                             Debug.Assert(_consumerEvent != null);
                             //This Wait() does not require cancellation support as it will wake up when all the producers into the
                             //channel have finished.  Hence, if all the producers wake up on cancellation, so will this.

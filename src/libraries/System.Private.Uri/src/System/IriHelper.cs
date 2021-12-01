@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System
@@ -14,10 +15,10 @@ namespace System
         //
         internal static bool CheckIriUnicodeRange(char unicode, bool isQuery)
         {
-            return ((unicode >= '\u00A0' && unicode <= '\uD7FF') ||
-               (unicode >= '\uF900' && unicode <= '\uFDCF') ||
-               (unicode >= '\uFDF0' && unicode <= '\uFFEF') ||
-               (isQuery && unicode >= '\uE000' && unicode <= '\uF8FF'));
+            return IsInInclusiveRange(unicode, '\u00A0', '\uD7FF')
+                || IsInInclusiveRange(unicode, '\uF900', '\uFDCF')
+                || IsInInclusiveRange(unicode, '\uFDF0', '\uFFEF')
+                || (isQuery && IsInInclusiveRange(unicode, '\uE000', '\uF8FF'));
         }
 
         //
@@ -47,6 +48,27 @@ namespace System
             return false;
         }
 
+        internal static bool CheckIriUnicodeRange(uint value, bool isQuery)
+        {
+            if (value <= 0xFFFF)
+            {
+                return IsInInclusiveRange(value, '\u00A0', '\uD7FF')
+                    || IsInInclusiveRange(value, '\uF900', '\uFDCF')
+                    || IsInInclusiveRange(value, '\uFDF0', '\uFFEF')
+                    || (isQuery && IsInInclusiveRange(value, '\uE000', '\uF8FF'));
+            }
+            else
+            {
+                return ((value & 0xFFFF) < 0xFFFE)
+                    && !IsInInclusiveRange(value, 0xE0000, 0xE0FFF)
+                    && (isQuery || value < 0xF0000);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsInInclusiveRange(uint value, uint min, uint max)
+            => (value - min) <= (max - min);
+
         //
         // Check reserved chars according to RFC 3987 in a specific component
         //
@@ -67,29 +89,28 @@ namespace System
         internal static unsafe string EscapeUnescapeIri(char* pInput, int start, int end, UriComponents component)
         {
             int size = end - start;
-            ValueStringBuilder dest = new ValueStringBuilder(size);
-            byte[]? bytes = null;
-
-            int next = start;
-            char ch;
+            var dest = size <= Uri.StackallocThreshold
+                ? new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold])
+                : new ValueStringBuilder(size);
 
             Span<byte> maxUtf8EncodedSpan = stackalloc byte[4];
 
-            for (; next < end; ++next)
+            for (int i = start; i < end; ++i)
             {
-                if ((ch = pInput[next]) == '%')
+                char ch = pInput[i];
+                if (ch == '%')
                 {
-                    if (next + 2 < end)
+                    if (end - i > 2)
                     {
-                        ch = UriHelper.DecodeHexChars(pInput[next + 1], pInput[next + 2]);
+                        ch = UriHelper.DecodeHexChars(pInput[i + 1], pInput[i + 2]);
 
                         // Do not unescape a reserved char
                         if (ch == Uri.c_DummyChar || ch == '%' || CheckIsReserved(ch, component) || UriHelper.IsNotSafeForUnescape(ch))
                         {
                             // keep as is
-                            dest.Append(pInput[next++]);
-                            dest.Append(pInput[next++]);
-                            dest.Append(pInput[next]);
+                            dest.Append(pInput[i++]);
+                            dest.Append(pInput[i++]);
+                            dest.Append(pInput[i]);
                             continue;
                         }
                         else if (ch <= '\x7F')
@@ -97,84 +118,26 @@ namespace System
                             Debug.Assert(ch < 0xFF, "Expecting ASCII character.");
                             //ASCII
                             dest.Append(ch);
-                            next += 2;
+                            i += 2;
                             continue;
                         }
                         else
                         {
                             // possibly utf8 encoded sequence of unicode
+                            int charactersRead = PercentEncodingHelper.UnescapePercentEncodedUTF8Sequence(
+                                pInput + i,
+                                end - i,
+                                ref dest,
+                                component == UriComponents.Query,
+                                iriParsing: true);
 
-                            // check if safe to unescape according to Iri rules
-
-                            Debug.Assert(ch < 0xFF, "Expecting ASCII character.");
-
-                            int startSeq = next;
-                            int byteCount = 1;
-                            // lazy initialization of max size, will reuse the array for next sequences
-                            if (bytes is null)
-                                bytes = new byte[end - next];
-
-                            bytes[0] = (byte)ch;
-                            next += 3;
-                            while (next < end)
-                            {
-                                // Check on exit criterion
-                                if ((ch = pInput[next]) != '%' || next + 2 >= end)
-                                    break;
-
-                                // already made sure we have 3 characters in str
-                                ch = UriHelper.DecodeHexChars(pInput[next + 1], pInput[next + 2]);
-
-                                //invalid hex sequence ?
-                                if (ch == Uri.c_DummyChar)
-                                    break;
-                                // character is not part of a UTF-8 sequence ?
-                                else if (ch < '\x80')
-                                    break;
-                                else
-                                {
-                                    //a UTF-8 sequence
-                                    bytes[byteCount++] = (byte)ch;
-                                    next += 3;
-                                }
-
-                                Debug.Assert(ch < 0xFF, "Expecting ASCII character.");
-                            }
-                            next--; // for loop will increment
-
-
-                            // Using encoder with no replacement fall-back will skip all invalid UTF-8 sequences.
-                            Encoding noFallbackCharUTF8 = Encoding.GetEncoding(
-                                                                                Encoding.UTF8.CodePage,
-                                                                                new EncoderReplacementFallback(""),
-                                                                                new DecoderReplacementFallback(""));
-
-                            char[] unescapedChars = new char[bytes.Length];
-                            int charCount = noFallbackCharUTF8.GetChars(bytes, 0, byteCount, unescapedChars, 0);
-
-
-                            if (charCount != 0)
-                            {
-                                // If invalid sequences were present in the original escaped string, we need to
-                                // copy the escaped versions of those sequences.
-                                // Decoded Unicode values will be kept only when they are allowed by the URI/IRI RFC
-                                // rules.
-                                UriHelper.MatchUTF8Sequence(ref dest, unescapedChars, charCount, bytes,
-                                    byteCount, component == UriComponents.Query, true);
-                            }
-                            else
-                            {
-                                // copy escaped sequence as is
-                                for (int i = startSeq; i <= next; ++i)
-                                {
-                                    dest.Append(pInput[i]);
-                                }
-                            }
+                            Debug.Assert(charactersRead > 0);
+                            i += charactersRead - 1; // -1 as i will be incremented in the loop
                         }
                     }
                     else
                     {
-                        dest.Append(pInput[next]);
+                        dest.Append(pInput[i]);
                     }
                 }
                 else if (ch > '\x7f')
@@ -186,9 +149,9 @@ namespace System
 
                     char ch2 = '\0';
 
-                    if ((char.IsHighSurrogate(ch)) && (next + 1 < end))
+                    if ((char.IsHighSurrogate(ch)) && (i + 1 < end))
                     {
-                        ch2 = pInput[next + 1];
+                        ch2 = pInput[i + 1];
                         isInIriUnicodeRange = CheckIriUnicodeRange(ch, ch2, out surrogatePair, component == UriComponents.Query);
                     }
                     else
@@ -227,18 +190,17 @@ namespace System
 
                     if (surrogatePair)
                     {
-                        next++;
+                        i++;
                     }
                 }
                 else
                 {
                     // just copy the character
-                    dest.Append(pInput[next]);
+                    dest.Append(pInput[i]);
                 }
             }
 
-            string result = dest.ToString();
-            return result;
+            return dest.ToString();
         }
     }
 }

@@ -7,6 +7,7 @@ using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class DESCryptoServiceProvider : DES
     {
@@ -32,9 +33,7 @@ namespace System.Security.Cryptography
 
         public override void GenerateIV()
         {
-            var iv = new byte[8];
-            RandomNumberGenerator.Fill(iv);
-            IVValue = iv;
+            IVValue = RandomNumberGenerator.GetBytes(8);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of DES")]
@@ -82,8 +81,7 @@ namespace System.Security.Cryptography
             {
                 if (Mode.UsesIv())
                 {
-                    rgbIV = new byte[8];
-                    RandomNumberGenerator.Fill(rgbIV);
+                    rgbIV = RandomNumberGenerator.GetBytes(8);
                 }
             }
             else
@@ -97,7 +95,16 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_InvalidIVSize);
             }
 
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(CapiHelper.CALG_DES, Mode, BlockSize / BitsPerByte, rgbKey, 0, false, rgbIV, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(
+                CapiHelper.CALG_DES,
+                Mode,
+                BlockSize / BitsPerByte,
+                rgbKey,
+                addNoSaltFlag: false,
+                rgbIV,
+                encrypting,
+                FeedbackSize,
+                this.GetPaddingSize(Mode, FeedbackSize));
             return UniversalCryptoTransform.Create(Padding, cipher, encrypting);
         }
     }

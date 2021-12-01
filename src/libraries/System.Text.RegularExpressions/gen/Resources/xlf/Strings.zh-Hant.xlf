@@ -1,0 +1,322 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="zh-Hant" original="../Strings.resx">
+    <body>
+      <trans-unit id="AlternationHasComment">
+        <source>Alternation conditions cannot be comments.</source>
+        <target state="translated">替代條件不能為註解。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasMalformedCondition">
+        <source>Illegal conditional (?(...)) expression.</source>
+        <target state="translated">不合法的條件 (?(...)) 運算式。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasMalformedReference">
+        <source>(?({0}) ) malformed.</source>
+        <target state="translated">(?({0}) ) 格式錯誤。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasMalformedReferenceNoPlaceholder">
+        <source>Alternation has malformed reference.</source>
+        <target state="translated">替代具有格式錯誤的參考。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasNamedCapture">
+        <source>Alternation conditions do not capture and cannot be named.</source>
+        <target state="translated">替代條件無法擷取且無法命名。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasTooManyConditions">
+        <source>Too many | in (?()|).</source>
+        <target state="translated">太多 | 符號於 (?()|)。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasUndefinedReference">
+        <source>(?({0}) ) reference to undefined group.</source>
+        <target state="translated">(?({0}) ) 參考到未定義的群組。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AlternationHasUndefinedReferenceNoPlaceholder">
+        <source>Alternation has a reference to undefined group.</source>
+        <target state="translated">替代具有未定義之群組的參考。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Arg_ArrayPlusOffTooSmall">
+        <source>Destination array is not long enough to copy all the items in the collection. Check array index and length.</source>
+        <target state="translated">目的地陣列的長度不足以複製集合中的所有項目。請檢查陣列索引以及長度。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ArgumentNull_ArrayWithNullElements">
+        <source>The array cannot contain null elements.</source>
+        <target state="translated">陣列不可包含 null 元素。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BeginIndexNotNegative">
+        <source>Start index cannot be less than 0 or greater than input length.</source>
+        <target state="translated">起始索引不能小於 0 或大於輸入長度。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CaptureGroupNameInvalid">
+        <source>Invalid group name: Group names must begin with a word character.</source>
+        <target state="translated">無效的群組名稱: 群組名稱必須以文字字元為開頭。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CaptureGroupOfZero">
+        <source>Capture number cannot be zero.</source>
+        <target state="translated">擷取的數字不能為零。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CountTooSmall">
+        <source>Count cannot be less than -1.</source>
+        <target state="translated">計數不能小於 -1。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EnumNotStarted">
+        <source>Enumeration has either not started or has already finished.</source>
+        <target state="translated">列舉尚未啟動或已經完成。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExclusionGroupNotLast">
+        <source>A subtraction must be the last element in a character class.</source>
+        <target state="translated">減法必須是字元類別中的最後一個項目。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Generic">
+        <source>Regular expression parser error '{0}' at offset {1}.</source>
+        <target state="translated">規則運算式剖析器錯誤 '{0}' 位於位移 {1}。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IllegalDefaultRegexMatchTimeoutInAppDomain">
+        <source>AppDomain data '{0}' contains the invalid value or object '{1}' for specifying a default matching timeout for System.Text.RegularExpressions.Regex.</source>
+        <target state="translated">AppDomain 資料 '{0}' 包含用於為 System.Text.RegularExpressions.Regex 指定預設相符逾時的無效值或物件 '{1}'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InsufficientClosingParentheses">
+        <source>Not enough )'s.</source>
+        <target state="translated">沒有足夠的 ) 符號。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InsufficientOpeningParentheses">
+        <source>Too many )'s.</source>
+        <target state="translated">太多 ) 符號。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InsufficientOrInvalidHexDigits">
+        <source>Insufficient hexadecimal digits.</source>
+        <target state="translated">十六進位數字不足。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InternalError_ScanRegex">
+        <source>Internal error in ScanRegex.</source>
+        <target state="translated">ScanRegex 發生內部錯誤。</target>
+        <note>{Locked="ScanRegex"}</note>
+      </trans-unit>
+      <trans-unit id="InvalidEmptyArgument">
+        <source>Argument {0} cannot be zero-length.</source>
+        <target state="translated">引數 {0} 長度不可以為零。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGroupingConstruct">
+        <source>Unrecognized grouping construct.</source>
+        <target state="translated">無法識別的分組建構。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLangVersionMessage">
+        <source>C# LangVersion of 10 or greater is required</source>
+        <target state="translated">需要 10 或更大的 C# LangVersion</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidRegexArgumentsMessage">
+        <source>The specified regex is invalid. '{0}'</source>
+        <target state="translated">指定的 RegEx 無效。'{0}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidRegexGeneratorAttributeMessage">
+        <source>The RegexGeneratorAttribute is malformed</source>
+        <target state="translated">RegexGeneratorAttribute 格式錯誤</target>
+        <note>{Locked="RegexGeneratorAttribute"}</note>
+      </trans-unit>
+      <trans-unit id="InvalidRegexGeneratorAttributeTitle">
+        <source>Invalid RegexGenerator usage</source>
+        <target state="translated">無效的 RegexGenerator 使用方式</target>
+        <note>{Locked="RegexGenerator"}</note>
+      </trans-unit>
+      <trans-unit id="InvalidUnicodePropertyEscape">
+        <source>Incomplete \\p{X} character escape.</source>
+        <target state="translated">不完整的 \\p{X} 逸出字元。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LengthNotNegative">
+        <source>Length cannot be less than 0 or exceed input length.</source>
+        <target state="translated">長度不能小於零或超過輸入長度。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MakeException">
+        <source>Invalid pattern '{0}' at offset {1}. {2}</source>
+        <target state="translated">位移 {1} 的模式 '{0}' 無效。{2}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedNamedReference">
+        <source>Malformed \\k&lt;...&gt; named back reference.</source>
+        <target state="translated">格式錯誤 \\k&lt;...&gt; 命名的反向參考。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedUnicodePropertyEscape">
+        <source>Malformed \\p{X} character escape.</source>
+        <target state="translated">格式錯誤的 \\p{X} 逸出字元。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingControlCharacter">
+        <source>Missing control character.</source>
+        <target state="translated">缺少控制字元。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleRegexGeneratorAttributesMessage">
+        <source>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</source>
+        <target state="translated">已將多個 RegexGeneratorAttributes 套用到同一個方法，但只允許一個</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NestedQuantifiersNotParenthesized">
+        <source>Nested quantifier '{0}'.</source>
+        <target state="translated">巢狀數量詞 '{0}'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NestedQuantifiersNotParenthesizedNoPlaceholder">
+        <source>Nested quantifier no parenthesized.</source>
+        <target state="translated">巢狀數量詞沒有小括號。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NoResultOnFailed">
+        <source>Result cannot be called on a failed Match.</source>
+        <target state="translated">無法在已失敗的對應 (Match) 上呼叫結果。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
+        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
+        <target state="translated">RegexOptions.NonBacktracking 不支援以替代群組取代 Regex。</target>
+        <note>{Locked="RegexOptions.NonBacktracking"}</note>
+      </trans-unit>
+      <trans-unit id="NotSupported_ReadOnlyCollection">
+        <source>Collection is read-only.</source>
+        <target state="translated">集合是唯讀的。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OnlyAllowedOnce">
+        <source>This operation is only allowed once per object.</source>
+        <target state="translated">每一個物件只允許執行此項作業一次。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PlatformNotSupported_CompileToAssembly">
+        <source>This platform does not support writing compiled regular expressions to an assembly.</source>
+        <target state="translated">此平台不支援將已編譯的規則運算式寫入組件。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="QuantifierAfterNothing">
+        <source>Quantifier {x,y} following nothing.</source>
+        <target state="translated">數量詞 {x,y} 之後沒有東西。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
+        <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
+        <target state="translated">擷取的群組數目必須小於或等於 Int32.MaxValue。</target>
+        <note>{Locked="Int32.MaxValue"}</note>
+      </trans-unit>
+      <trans-unit id="RegexMatchTimeoutException_Occurred">
+        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">嘗試將模式對應至輸入字串時，RegEx 引擎發生逾時。有很多原因會導致這個情形，其中包括巢狀數量詞、反向參考及其他因素所造成的極大量輸入或過度使用回溯法。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
+        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
+        <target state="translated">Regex 方法必須是部分、無參數、非泛型，並且傳回 Regex</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReplacementError">
+        <source>Replacement pattern error.</source>
+        <target state="translated">取代模式錯誤。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReversedCharacterRange">
+        <source>[x-y] range in reverse order.</source>
+        <target state="translated">相反順序的 [x-y] 範圍。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReversedQuantifierRange">
+        <source>Illegal {x,y} with x &gt; y.</source>
+        <target state="translated">不合法的 {x,y}，因為 x &gt; y。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShorthandClassInCharacterRange">
+        <source>Cannot include class \\{0} in character range.</source>
+        <target state="translated">無法在字元範圍內包含類別 \\{0}。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShorthandClassInCharacterRangeNoPlaceholder">
+        <source>Cannot include class in character range.</source>
+        <target state="translated">無法在字元範圍內包含類別。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UndefinedNamedReference">
+        <source>Reference to undefined group name '{0}'.</source>
+        <target state="translated">未定義群組名稱 '{0}' 的參考。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UndefinedNamedReferenceNoPlaceholder">
+        <source>Reference to undefined group name.</source>
+        <target state="translated">未定義群組名稱的參考。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UndefinedNumberedReference">
+        <source>Reference to undefined group number {0}.</source>
+        <target state="translated">參考到未定義的群組編號 {0}。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UndefinedNumberedReferenceNoPlaceholder">
+        <source>Reference to undefined group number.</source>
+        <target state="translated">參考未定義的群組號碼。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnescapedEndingBackslash">
+        <source>Illegal \\ at end of pattern.</source>
+        <target state="translated">模式結尾有不合法的 \\。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnexpectedOpcode">
+        <source>Unexpected opcode in regular expression generation: {0}.</source>
+        <target state="translated">在規則運算式產生中發生未預期的作業碼: {0}。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedControlCharacter">
+        <source>Unrecognized control character.</source>
+        <target state="translated">無法識別的控制字元。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedEscape">
+        <source>Unrecognized escape sequence \\{0}.</source>
+        <target state="translated">無法識別的逸出序列 \\{0}。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedUnicodeProperty">
+        <source>Unknown property '{0}'.</source>
+        <target state="translated">未知的屬性 '{0}'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnrecognizedUnicodePropertyNoPlaceholder">
+        <source>Unknown property Unicode property.</source>
+        <target state="translated">未知屬性 Unicode 屬性。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnterminatedBracket">
+        <source>Unterminated [] set.</source>
+        <target state="translated">未結束的 [] 集合。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnterminatedComment">
+        <source>Unterminated (?#...) comment.</source>
+        <target state="translated">未結束的 (?#...) 註解。</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

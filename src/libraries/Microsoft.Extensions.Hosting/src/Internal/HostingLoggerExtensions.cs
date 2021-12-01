@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 
@@ -14,8 +11,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     {
         public static void ApplicationError(this ILogger logger, EventId eventId, string message, Exception exception)
         {
-            var reflectionTypeLoadException = exception as ReflectionTypeLoadException;
-            if (reflectionTypeLoadException != null)
+            if (exception is ReflectionTypeLoadException reflectionTypeLoadException)
             {
                 foreach (Exception ex in reflectionTypeLoadException.LoaderExceptions)
                 {
@@ -77,6 +73,28 @@ namespace Microsoft.Extensions.Hosting.Internal
                     eventId: LoggerEventIds.StoppedWithException,
                     exception: ex,
                     message: "Hosting shutdown exception");
+            }
+        }
+
+        public static void BackgroundServiceFaulted(this ILogger logger, Exception ex)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.LogError(
+                    eventId: LoggerEventIds.BackgroundServiceFaulted,
+                    exception: ex,
+                    message: "BackgroundService failed");
+            }
+        }
+
+        public static void BackgroundServiceStoppingHost(this ILogger logger, Exception ex)
+        {
+            if (logger.IsEnabled(LogLevel.Critical))
+            {
+                logger.LogCritical(
+                    eventId: LoggerEventIds.BackgroundServiceStoppingHost,
+                    exception: ex,
+                    message: SR.BackgroundServiceExceptionStoppedHost);
             }
         }
     }

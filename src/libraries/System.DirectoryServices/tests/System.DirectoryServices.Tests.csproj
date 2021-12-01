@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- SYSLIB0003: CAS is obsolete, but we still have tests referencing it -->
     <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net48</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurityTests.cs" />
@@ -23,7 +23,7 @@
              Link="Common\DirectoryServices\LdapConfiguration.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="LDAP.Configuration.xml">
+    <Content Include="$(CommonTestPath)System\DirectoryServices\LDAP.Configuration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -31,10 +31,10 @@
     <Compile Include="System\DirectoryServices\DirectoryServicesTests.Windows.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectoryComInterop.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="..\src\System.DirectoryServices.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.DirectoryServices" />
   </ItemGroup>
 </Project>

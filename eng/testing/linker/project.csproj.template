@@ -1,31 +1,47 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>{TargetFramework}</TargetFramework>
     <OutputType>Exe</OutputType>
-    <TargetFramework>{NetCoreAppCurrent}</TargetFramework>
+    <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
+    <UseMonoRuntime>{UseMonoRuntime}</UseMonoRuntime>
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
-    <RuntimePackDir>{RuntimePackDir}</RuntimePackDir>
-    <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
+
+    <!-- wasm specific -->
+    <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
+    <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
+    <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
+    <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
+    <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
+
+    <!-- Needed for targetingpacks.targets -->
+    <ProductVersion>{ProductVersion}</ProductVersion>
+    <NetCoreAppCurrent>{NetCoreAppCurrent}</NetCoreAppCurrent>
+    <NetCoreAppCurrentVersion>{NetCoreAppCurrentVersion}</NetCoreAppCurrentVersion>
+    <MicrosoftNetCoreAppFrameworkName>{MicrosoftNetCoreAppFrameworkName}</MicrosoftNetCoreAppFrameworkName>
+    <MicrosoftNetCoreAppRefPackDir>{MicrosoftNetCoreAppRefPackDir}</MicrosoftNetCoreAppRefPackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>{MicrosoftNetCoreAppRuntimePackDir}</MicrosoftNetCoreAppRuntimePackDir>
+
+    <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
   </PropertyGroup>
 
+  <ItemGroup>
+    {RuntimeHostConfigurationOptions}
+  </ItemGroup>
+
+  <ItemGroup>
+    {AdditionalProjectReferences}
+  </ItemGroup>
+
   <!-- Logic to override the default IlLink tasks that come from the SDK and use the one
   we use in dotnet/runtime repo -->
-
-  <PropertyGroup>
-    <_ILLinkTasksDirectoryRoot>$(PkgMicrosoft_NET_ILLink_Tasks)\tools\</_ILLinkTasksDirectoryRoot>
-    <_ILLinkTasksTFM>netcoreapp3.0</_ILLinkTasksTFM>
-    <_ILLinkTasksDirectory>$(_ILLinkTasksDirectoryRoot)$(_ILLinkTasksTFM)\</_ILLinkTasksDirectory>
-    <ILLinkTasksAssembly>$(_ILLinkTasksDirectory)ILLink.Tasks.dll</ILLinkTasksAssembly>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.ILLink.Tasks"
                       Version="{MicrosoftNETILLinkTasksVersion}"
                       PrivateAssets="all"
-                      IsImplicitlyDefined="true"
-                      ExcludeAssets="build"
-                      GeneratePathProperty="true" />
+                      IsImplicitlyDefined="true" />
   </ItemGroup>
 
 </Project>

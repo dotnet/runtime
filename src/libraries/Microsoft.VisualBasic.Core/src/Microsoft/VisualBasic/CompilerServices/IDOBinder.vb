@@ -3,11 +3,11 @@
 
 Imports System
 Imports System.Collections.Generic
-Imports System.Collections.ObjectModel
-Imports System.Diagnostics
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Dynamic
 Imports System.Linq.Expressions
 Imports System.Reflection
+Imports System.Reflection.Emit
 Imports System.Runtime.CompilerServices
 
 Imports Microsoft.VisualBasic.CompilerServices.NewLateBinding
@@ -16,7 +16,10 @@ Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements VB late binder for IDynamicMetaObjectProvider.
-    Friend Class IDOBinder
+    Friend NotInheritable Class IDOBinder
+
+        Friend Const UnsafeSubclassCtorMessage As String = "This subclass is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe."
+        Friend Const SuppressionJustification As String = "The constructor of this subclass has been annotated."
 
         Private Sub New()
             Throw New InternalErrorException()
@@ -60,6 +63,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return SaveCopyBack.GetCopyBack()
         End Function
 
+        <RequiresUnreferencedCode("Calls VBCallBinder.ctor")>
         Friend Shared Function IDOCall(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal memberName As String,
@@ -83,6 +87,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Function
 
+        <RequiresUnreferencedCode("Calls VBGetBinder.ctor")>
         Friend Shared Function IDOGet(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal memberName As String,
@@ -105,6 +110,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Function
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateRefCallSiteAndInvoke")>
         Friend Shared Function IDOInvokeDefault(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal arguments As Object(),
@@ -127,6 +133,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Function
 
+        <RequiresUnreferencedCode("Calls VBInvokeDefaultFallbackBinder.ctor")>
         Friend Shared Function IDOFallbackInvokeDefault(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal arguments As Object(),
@@ -150,6 +157,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
+        <RequiresUnreferencedCode("Calls LateIndexSet")>
         Friend Shared Sub IDOSet(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal memberName As String,
@@ -176,6 +184,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Sub
 
+        <RequiresUnreferencedCode("Calls LateIndexSetComplex")>
         Friend Shared Sub IDOSetComplex(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal memberName As String,
@@ -206,6 +215,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Sub
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateFuncCallSiteAndInvoke")>
         Friend Shared Sub IDOIndexSet(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal arguments As Object(),
@@ -222,6 +232,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Sub
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateFuncCallSiteAndInvoke")>
         Friend Shared Sub IDOIndexSetComplex(
                 ByVal instance As IDynamicMetaObjectProvider,
                 ByVal arguments As Object(),
@@ -240,6 +251,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Using
         End Sub
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateConvertCallSiteAndInvoke")>
         Friend Shared Function UserDefinedConversion(
                 ByVal expression As IDynamicMetaObjectProvider,
                 ByVal targetType As System.Type) As Object
@@ -249,6 +261,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 expression)
         End Function
 
+        <RequiresUnreferencedCode("Calls IDOUtils.CreateFuncCallSiteAndInvoke")>
         Friend Shared Function InvokeUserDefinedOperator(
                 ByVal op As UserDefinedOperator,
                 ByVal arguments As Object()) As Object
@@ -272,11 +285,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBCallBinder
+    Friend NotInheritable Class VBCallBinder
         Inherits InvokeMemberBinder
 
         Private ReadOnly _ignoreReturn As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String,
                 ByVal callInfo As CallInfo,
                 ByVal ignoreReturn As Boolean)
@@ -285,6 +299,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             _ignoreReturn = ignoreReturn
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvokeMember(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -330,6 +346,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             )
         End Function
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -351,14 +369,17 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBGetBinder
+    Friend NotInheritable Class VBGetBinder
         Inherits InvokeMemberBinder
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String,
                 ByVal callInfo As CallInfo)
             MyBase.New(memberName, True, callInfo)
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvokeMember(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -403,6 +424,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
             )
         End Function
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -426,17 +449,20 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
 
     ' Implements FallbackInvoke for VBCallBinder and VBGetBinder
-    Friend Class VBInvokeBinder
+    Friend NotInheritable Class VBInvokeBinder
         Inherits InvokeBinder
 
         ' True if this is coming from LateCall, false if it's for LateGet
         Private ReadOnly _lateCall As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal lateCall As Boolean)
             MyBase.New(callInfo)
             _lateCall = lateCall
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs() As DynamicMetaObject,
@@ -498,16 +524,19 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBInvokeDefaultBinder
+    Friend NotInheritable Class VBInvokeDefaultBinder
         Inherits InvokeBinder
 
         Private ReadOnly _reportErrors As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal reportErrors As Boolean)
             MyBase.New(callInfo)
             Me._reportErrors = reportErrors
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackInvoke(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs As DynamicMetaObject(),
@@ -564,16 +593,19 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBInvokeDefaultFallbackBinder
+    Friend NotInheritable Class VBInvokeDefaultFallbackBinder
         Inherits GetIndexBinder
 
         Private ReadOnly _reportErrors As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal reportErrors As Boolean)
             MyBase.New(callInfo)
             Me._reportErrors = reportErrors
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackGetIndex(
                 ByVal target As DynamicMetaObject,
                 ByVal packedArgs As DynamicMetaObject(),
@@ -630,13 +662,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBSetBinder
+    Friend NotInheritable Class VBSetBinder
         Inherits SetMemberBinder
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String)
             MyBase.New(name:=memberName, ignoreCase:=True)
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackSetMember(
                     ByVal target As DynamicMetaObject,
                     ByVal value As DynamicMetaObject,
@@ -679,18 +714,21 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBSetComplexBinder
+    Friend NotInheritable Class VBSetComplexBinder
         Inherits SetMemberBinder
 
         Private ReadOnly _optimisticSet As Boolean
         Private ReadOnly _rValueBase As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal memberName As String, ByVal optimisticSet As Boolean, ByVal rValueBase As Boolean)
             MyBase.New(name:=memberName, ignoreCase:=True)
             Me._optimisticSet = optimisticSet
             Me._rValueBase = rValueBase
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overloads Overrides Function FallbackSetMember(
                     ByVal target As DynamicMetaObject,
                     ByVal value As DynamicMetaObject,
@@ -736,7 +774,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
     End Class
 
     ' Used to fetch a DLR field
-    Friend Class VBGetMemberBinder
+    Friend NotInheritable Class VBGetMemberBinder
         Inherits GetMemberBinder
         Implements IInvokeOnGetBinder
         Public Sub New(ByVal name As String)
@@ -776,13 +814,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Property
     End Class
 
-    Friend Class VBConversionBinder
+    Friend NotInheritable Class VBConversionBinder
         Inherits ConvertBinder
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal t As Type)
             MyBase.New(t, True)
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackConvert(
                 ByVal target As DynamicMetaObject,
                 ByVal errorSuggestion As DynamicMetaObject) As DynamicMetaObject
@@ -819,16 +862,19 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBUnaryOperatorBinder
+    Friend NotInheritable Class VBUnaryOperatorBinder
         Inherits UnaryOperationBinder
 
         Private ReadOnly _Op As UserDefinedOperator
 
+        <RequiresUnreferencedCode("This subclass of BinaryOperationBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Public Sub New(ByVal op As UserDefinedOperator, ByVal linqOp As ExpressionType)
             MyBase.New(linqOp)
             _Op = op
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackUnaryOperation(
                 ByVal target As DynamicMetaObject,
                 ByVal errorSuggestion As DynamicMetaObject) As DynamicMetaObject
@@ -864,16 +910,19 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBBinaryOperatorBinder
+    Friend NotInheritable Class VBBinaryOperatorBinder
         Inherits BinaryOperationBinder
 
         Private ReadOnly _Op As UserDefinedOperator
 
+        <RequiresUnreferencedCode("This subclass of BinaryOperationBinder is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Public Sub New(ByVal op As UserDefinedOperator, ByVal linqOp As ExpressionType)
             MyBase.New(linqOp)
             _Op = op
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackBinaryOperation(
                 ByVal target As DynamicMetaObject,
                 ByVal arg As DynamicMetaObject,
@@ -912,13 +961,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBIndexSetBinder
+    Friend NotInheritable Class VBIndexSetBinder
         Inherits SetIndexBinder
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo)
             MyBase.New(callInfo)
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackSetIndex(
                 ByVal target As DynamicMetaObject,
                 ByVal packedIndexes As DynamicMetaObject(),
@@ -977,18 +1029,21 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Friend Class VBIndexSetComplexBinder
+    Friend NotInheritable Class VBIndexSetComplexBinder
         Inherits SetIndexBinder
 
         Private ReadOnly _optimisticSet As Boolean
         Private ReadOnly _rValueBase As Boolean
 
+        <RequiresUnreferencedCode(IDOBinder.UnsafeSubclassCtorMessage)>
         Public Sub New(ByVal callInfo As CallInfo, ByVal optimisticSet As Boolean, ByVal rValueBase As Boolean)
             MyBase.New(callInfo)
             Me._optimisticSet = optimisticSet
             Me._rValueBase = rValueBase
         End Sub
 
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackSetIndex(
                 ByVal target As DynamicMetaObject,
                 ByVal packedIndexes As DynamicMetaObject(),
@@ -1049,16 +1104,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
     End Class
 
-    Public Delegate Function SiteDelegate0(ByVal site As CallSite, ByVal instance As Object) As Object
-    Public Delegate Function SiteDelegate1(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object) As Object
-    Public Delegate Function SiteDelegate2(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object) As Object
-    Public Delegate Function SiteDelegate3(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object) As Object
-    Public Delegate Function SiteDelegate4(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object) As Object
-    Public Delegate Function SiteDelegate5(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object) As Object
-    Public Delegate Function SiteDelegate6(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object, ByRef arg5 As Object) As Object
-    Public Delegate Function SiteDelegate7(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object, ByRef arg3 As Object, ByRef arg4 As Object, ByRef arg5 As Object, ByRef arg6 As Object) As Object
-
-    Friend Class IDOUtils
+    Friend NotInheritable Class IDOUtils
 
         Private Sub New()
             Throw New InternalErrorException()
@@ -1189,7 +1235,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             'There is some inconsistency in the handling of argNames, sometimes it
             'has been normalized to non-null by this point, sometimes not.
             If argNames Is Nothing Then
-                argNames = New String(-1) {}
+                argNames = Array.Empty(Of String)()
             End If
 
             callInfo = New CallInfo(args.Length - valueArgs, argNames)
@@ -1280,6 +1326,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return If(valueExpression.Type.Equals(GetType(Object)), valueExpression, Expression.Convert(valueExpression, GetType(Object)))
         End Function
 
+        ' MRU Dictionary of invoker delegates. We keep 16 most recently used ones, rest is GC'd
+        Private Shared Invokers As New CacheDict(Of Integer, Func(Of CallSiteBinder, Object, Object(), Object))(16)
+
+        <RequiresUnreferencedCode("Calls CreateInvoker")>
         Public Shared Function CreateRefCallSiteAndInvoke(
                 ByVal action As CallSiteBinder,
                 ByVal instance As Object,
@@ -1287,57 +1337,75 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             action = GetCachedBinder(action)
 
-            Select Case arguments.Length
-                Case 0
-                    Dim c As CallSite(Of SiteDelegate0) = CallSite(Of SiteDelegate0).Create(action)
-                    Return c.Target.Invoke(c, instance)
-                Case 1
-                    Dim c As CallSite(Of SiteDelegate1) = CallSite(Of SiteDelegate1).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0))
-                Case 2
-                    Dim c As CallSite(Of SiteDelegate2) = CallSite(Of SiteDelegate2).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1))
-                Case 3
-                    Dim c As CallSite(Of SiteDelegate3) = CallSite(Of SiteDelegate3).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2))
-                Case 4
-                    Dim c As CallSite(Of SiteDelegate4) = CallSite(Of SiteDelegate4).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2), arguments(3))
-                Case 5
-                    Dim c As CallSite(Of SiteDelegate5) = CallSite(Of SiteDelegate5).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2), arguments(3), arguments(4))
-                Case 6
-                    Dim c As CallSite(Of SiteDelegate6) = CallSite(Of SiteDelegate6).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2), arguments(3), arguments(4), arguments(5))
-                Case 7
-                    Dim c As CallSite(Of SiteDelegate7) = CallSite(Of SiteDelegate7).Create(action)
-                    Return c.Target.Invoke(c, instance, arguments(0), arguments(1), arguments(2), arguments(3), arguments(4), arguments(5), arguments(6))
-                Case Else
-                    Dim signature(arguments.Length + 2) As Type
-                    Dim refObject As Type = GetType(Object).MakeByRefType()
-                    signature(0) = GetType(CallSite)                    ' First argument is a call site
-                    signature(1) = GetType(Object)                      ' Second is the instance (ByVal)
-                    signature(signature.Length - 1) = GetType(Object)   ' Last type is the return type
-                    For i As Integer = 2 To signature.Length - 2        ' All arguments are ByRef
-                        signature(i) = refObject
-                    Next
+            Dim Invoker As Func(Of CallSiteBinder, Object, Object(), Object) = Nothing
 
-                    Dim c As CallSite = CallSite.Create(Expression.GetDelegateType(signature), action)
-                    Dim args(arguments.Length + 1) As Object
-                    args(0) = c
-                    args(1) = instance
-                    arguments.CopyTo(args, 2)
-                    Dim siteTarget As System.Delegate = DirectCast(c.GetType().GetField("Target").GetValue(c), System.Delegate)
-                    Try
-                        Dim result As Object = siteTarget.DynamicInvoke(args)
-                        Array.Copy(args, 2, arguments, 0, arguments.Length)
-                        Return result
-                    Catch ie As TargetInvocationException
-                        Throw ie.InnerException
-                    End Try
-            End Select
+            SyncLock Invokers
+                If Not Invokers.TryGetValue(arguments.Length, Invoker) Then
+                    Invoker = CreateInvoker(arguments.Length)
+                    Invokers.Add(arguments.Length, Invoker)
+                End If
+            End SyncLock
+
+            Return Invoker.Invoke(action, instance, arguments)
         End Function
 
+        ''' Creates an invoker, a function such as:
+        ''' 
+        ''' Delegate Function InvokerDelegate3(ByVal site As CallSite, ByVal instance As Object, ByRef arg0 As Object, ByRef arg1 As Object, ByRef arg2 As Object) As Object
+        ''' 
+        ''' Function Invoker3(action as CallSiteBinder, instance as Object, args as Object()) as Object
+        '''     Dim site as CallSite(Of InvokerDelegate3)
+        '''     site = CallSite(Of Func(Of InvokerDelegate3).Create(action)
+        '''     ' args(0), args(1) and args(2) are passed ByRef
+        '''     return site.Target.Invoke(site, instance, args(0), args(1), args(2))
+        ''' End Function
+        <RequiresUnreferencedCode("Calls Type.GetMethod() that cannot be statically analyzed")>
+        Private Shared Function CreateInvoker(ByVal ArgLength As Integer) As Func(Of CallSiteBinder, Object, Object(), Object)
+            ' Useful Types
+            Dim ObjectType As Type = GetType(Object)
+            Dim ObjectRefType As Type = ObjectType.MakeByRefType()
+            Dim CallSiteBinderType As Type = GetType(CallSiteBinder)
+
+            ' Call Site Delegate Signature
+            Dim CallSiteSignature(ArgLength + 2) As Type
+            CallSiteSignature(0) = GetType(CallSite)                        ' CallSite must go first
+            CallSiteSignature(1) = ObjectType                               ' Instance: Object
+            For i As Integer = 2 To CallSiteSignature.Length - 2            ' Arguments: Object&
+                CallSiteSignature(i) = ObjectRefType
+            Next
+            CallSiteSignature(CallSiteSignature.Length - 1) = ObjectType    ' Result: Object
+
+            ' Call Site Delegate
+            Dim CallSiteDelegate As Type = Expression.GetDelegateType(CallSiteSignature)
+            Dim CallSiteType As Type = GetType(CallSite(Of )).MakeGenericType(CallSiteDelegate)
+
+            ' Invoker(CallSiteBinder, Instance as Object, Args as Object())
+            Dim InvokerMethod As New DynamicMethod("Invoker", ObjectType, {CallSiteBinderType, ObjectType, GetType(Object())}, True)
+
+            ' Dim cs as CallSite(Of delegateType) = CallSite(Of delegateType).Create(Action)
+            Dim il As ILGenerator = InvokerMethod.GetILGenerator()
+            Dim site As LocalBuilder = il.DeclareLocal(CallSiteType)
+            il.Emit(OpCodes.Ldarg_0)
+            il.Emit(OpCodes.Call, CallSiteType.GetMethod("Create", {CallSiteBinderType}))
+            il.Emit(OpCodes.Stloc, site)
+
+            ' return site.Target.Invoke(site, Instance, ref args(0), ref args(1), ...)
+            il.Emit(OpCodes.Ldloc, site)
+            il.Emit(OpCodes.Ldfld, CallSiteType.GetField("Target"))
+            il.Emit(OpCodes.Ldloc, site)
+            il.Emit(OpCodes.Ldarg_1)                    'Instance
+            For i As Integer = 0 To ArgLength - 1
+                il.Emit(OpCodes.Ldarg_2)
+                il.Emit(OpCodes.Ldc_I4, i)
+                il.Emit(OpCodes.Ldelema, ObjectType)    ' ref arg(i)
+            Next
+            il.Emit(OpCodes.Callvirt, CallSiteDelegate.GetMethod("Invoke"))
+            il.Emit(OpCodes.Ret)
+
+            Return DirectCast(InvokerMethod.CreateDelegate(GetType(Func(Of CallSiteBinder, Object, Object(), Object))), Func(Of CallSiteBinder, Object, Object(), Object))
+        End Function
+
+        <RequiresUnreferencedCode("Calls Object.GetType().GetField()")>
         Public Shared Function CreateFuncCallSiteAndInvoke(
                        ByVal action As CallSiteBinder,
                        ByVal instance As Object,
@@ -1400,6 +1468,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         ' The type of the Convert call site must match the type we are converting to
+        <RequiresUnreferencedCode("Calls Object.GetType().GetField()")>
         Public Shared Function CreateConvertCallSiteAndInvoke(
                 ByVal action As ConvertBinder,
                 ByVal instance As Object) As Object

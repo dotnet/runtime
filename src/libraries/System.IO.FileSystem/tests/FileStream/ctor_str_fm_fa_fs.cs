@@ -18,7 +18,9 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidShareThrows()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("share", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, ~FileShare.None));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                GetExpectedParamName("share"),
+                () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, ~FileShare.None));
         }
 
         private static readonly FileShare[] s_shares =
@@ -118,9 +120,9 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.Truncate)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void NoTruncateOnFileShareViolation(FileMode fileMode)
         {
             string fileName = GetTestFilePath();

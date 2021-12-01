@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
@@ -10,11 +9,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     internal static partial class FileSystem
     {
@@ -65,19 +60,7 @@ namespace System.IO
                 {
                     errorCode = Marshal.GetLastWin32Error();
 
-                    if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND
-                        && errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND
-                        && errorCode != Interop.Errors.ERROR_NOT_READY
-                        && errorCode != Interop.Errors.ERROR_INVALID_NAME
-                        && errorCode != Interop.Errors.ERROR_BAD_PATHNAME
-                        && errorCode != Interop.Errors.ERROR_BAD_NETPATH
-                        && errorCode != Interop.Errors.ERROR_BAD_NET_NAME
-                        && errorCode != Interop.Errors.ERROR_INVALID_PARAMETER
-                        && errorCode != Interop.Errors.ERROR_NETWORK_UNREACHABLE
-                        && errorCode != Interop.Errors.ERROR_NETWORK_ACCESS_DENIED
-                        && errorCode != Interop.Errors.ERROR_INVALID_HANDLE         // eg from \\.\CON
-                        && errorCode != Interop.Errors.ERROR_FILENAME_EXCED_RANGE   // Path is too long
-                        )
+                    if (!IsPathUnreachableError(errorCode))
                     {
                         // Assert so we can track down other cases (if any) to add to our test suite
                         Debug.Assert(errorCode == Interop.Errors.ERROR_ACCESS_DENIED || errorCode == Interop.Errors.ERROR_SHARING_VIOLATION || errorCode == Interop.Errors.ERROR_SEM_TIMEOUT,
@@ -127,6 +110,28 @@ namespace System.IO
             }
 
             return errorCode;
+        }
+
+        internal static bool IsPathUnreachableError(int errorCode)
+        {
+            switch (errorCode)
+            {
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
+                case Interop.Errors.ERROR_PATH_NOT_FOUND:
+                case Interop.Errors.ERROR_NOT_READY:
+                case Interop.Errors.ERROR_INVALID_NAME:
+                case Interop.Errors.ERROR_BAD_PATHNAME:
+                case Interop.Errors.ERROR_BAD_NETPATH:
+                case Interop.Errors.ERROR_BAD_NET_NAME:
+                case Interop.Errors.ERROR_INVALID_PARAMETER:
+                case Interop.Errors.ERROR_NETWORK_UNREACHABLE:
+                case Interop.Errors.ERROR_NETWORK_ACCESS_DENIED:
+                case Interop.Errors.ERROR_INVALID_HANDLE:           // eg from \\.\CON
+                case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:     // Path is too long
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ namespace System.Xml.Xsl
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Xml.XPath;
     using System.Xml.Xsl.XsltOld;
@@ -12,9 +13,9 @@ namespace System.Xml.Xsl
 
     public sealed class XslTransform
     {
-        private XmlResolver _documentResolver;
+        private XmlResolver? _documentResolver;
         private bool _isDocumentResolverSet;
-        private XmlResolver _DocumentResolver
+        private XmlResolver? _DocumentResolver
         {
             get
             {
@@ -31,13 +32,13 @@ namespace System.Xml.Xsl
         //
         // Compiled stylesheet state
         //
-        private Stylesheet _CompiledStylesheet;
-        private List<TheQuery> _QueryStore;
-        private RootAction _RootAction;
+        private Stylesheet? _CompiledStylesheet;
+        private List<TheQuery>? _QueryStore;
+        private RootAction? _RootAction;
 
         public XslTransform() { }
 
-        public XmlResolver XmlResolver
+        public XmlResolver? XmlResolver
         {
             set
             {
@@ -50,7 +51,7 @@ namespace System.Xml.Xsl
         {
             Load(stylesheet, CreateDefaultResolver());
         }
-        public void Load(XmlReader stylesheet, XmlResolver resolver)
+        public void Load(XmlReader stylesheet, XmlResolver? resolver)
         {
             if (stylesheet == null)
             {
@@ -63,13 +64,13 @@ namespace System.Xml.Xsl
         {
             Load(stylesheet, CreateDefaultResolver());
         }
-        public void Load(IXPathNavigable stylesheet, XmlResolver resolver)
+        public void Load(IXPathNavigable stylesheet, XmlResolver? resolver)
         {
             if (stylesheet == null)
             {
                 throw new ArgumentNullException(nameof(stylesheet));
             }
-            Load(stylesheet.CreateNavigator(), resolver);
+            Load(stylesheet.CreateNavigator()!, resolver);
         }
 
         public void Load(XPathNavigator stylesheet)
@@ -81,7 +82,7 @@ namespace System.Xml.Xsl
             Load(stylesheet, CreateDefaultResolver());
         }
 
-        public void Load(XPathNavigator stylesheet, XmlResolver resolver)
+        public void Load(XPathNavigator stylesheet, XmlResolver? resolver)
         {
             if (stylesheet == null)
             {
@@ -96,7 +97,7 @@ namespace System.Xml.Xsl
             Compile(Compiler.LoadDocument(tr).CreateNavigator(), CreateDefaultResolver());
         }
 
-        public void Load(string url, XmlResolver resolver)
+        public void Load(string url, XmlResolver? resolver)
         {
             XmlTextReaderImpl tr = new XmlTextReaderImpl(url);
             {
@@ -106,138 +107,143 @@ namespace System.Xml.Xsl
         }
 
         // ------------------------------------ Transform() ------------------------------------ //
-
+        [MemberNotNull(nameof(_CompiledStylesheet))]
+        [MemberNotNull(nameof(_QueryStore))]
+        [MemberNotNull(nameof(_RootAction))]
         private void CheckCommand()
         {
             if (_CompiledStylesheet == null)
             {
                 throw new InvalidOperationException(SR.Xslt_NoStylesheetLoaded);
             }
+
+            Debug.Assert(_QueryStore != null);
+            Debug.Assert(_RootAction != null);
         }
 
-        public XmlReader Transform(XPathNavigator input, XsltArgumentList args, XmlResolver resolver)
+        public XmlReader Transform(XPathNavigator input, XsltArgumentList? args, XmlResolver? resolver)
         {
             CheckCommand();
             Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             return processor.StartReader();
         }
 
-        public XmlReader Transform(XPathNavigator input, XsltArgumentList args)
+        public XmlReader Transform(XPathNavigator input, XsltArgumentList? args)
         {
             return Transform(input, args, _DocumentResolver);
         }
 
-        public void Transform(XPathNavigator input, XsltArgumentList args, XmlWriter output, XmlResolver resolver)
+        public void Transform(XPathNavigator input, XsltArgumentList? args, XmlWriter output, XmlResolver? resolver)
         {
             CheckCommand();
             Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
-        public void Transform(XPathNavigator input, XsltArgumentList args, XmlWriter output)
+        public void Transform(XPathNavigator input, XsltArgumentList? args, XmlWriter output)
         {
             Transform(input, args, output, _DocumentResolver);
         }
-        public void Transform(XPathNavigator input, XsltArgumentList args, Stream output, XmlResolver resolver)
+        public void Transform(XPathNavigator input, XsltArgumentList? args, Stream output, XmlResolver? resolver)
         {
             CheckCommand();
             Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
-        public void Transform(XPathNavigator input, XsltArgumentList args, Stream output)
+        public void Transform(XPathNavigator input, XsltArgumentList? args, Stream output)
         {
             Transform(input, args, output, _DocumentResolver);
         }
 
-        public void Transform(XPathNavigator input, XsltArgumentList args, TextWriter output, XmlResolver resolver)
+        public void Transform(XPathNavigator input, XsltArgumentList? args, TextWriter output, XmlResolver? resolver)
         {
             CheckCommand();
             Processor processor = new Processor(input, args, resolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
-        public void Transform(XPathNavigator input, XsltArgumentList args, TextWriter output)
+        public void Transform(XPathNavigator input, XsltArgumentList? args, TextWriter output)
         {
             CheckCommand();
             Processor processor = new Processor(input, args, _DocumentResolver, _CompiledStylesheet, _QueryStore, _RootAction, null);
             processor.Execute(output);
         }
 
-        public XmlReader Transform(IXPathNavigable input, XsltArgumentList args, XmlResolver resolver)
+        public XmlReader Transform(IXPathNavigable input, XsltArgumentList? args, XmlResolver? resolver)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
-            return Transform(input.CreateNavigator(), args, resolver);
+            return Transform(input.CreateNavigator()!, args, resolver);
         }
 
-        public XmlReader Transform(IXPathNavigable input, XsltArgumentList args)
+        public XmlReader Transform(IXPathNavigable input, XsltArgumentList? args)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
-            return Transform(input.CreateNavigator(), args, _DocumentResolver);
+            return Transform(input.CreateNavigator()!, args, _DocumentResolver);
         }
-        public void Transform(IXPathNavigable input, XsltArgumentList args, TextWriter output, XmlResolver resolver)
+        public void Transform(IXPathNavigable input, XsltArgumentList? args, TextWriter output, XmlResolver? resolver)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
-            Transform(input.CreateNavigator(), args, output, resolver);
-        }
-
-        public void Transform(IXPathNavigable input, XsltArgumentList args, TextWriter output)
-        {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-            Transform(input.CreateNavigator(), args, output, _DocumentResolver);
+            Transform(input.CreateNavigator()!, args, output, resolver);
         }
 
-        public void Transform(IXPathNavigable input, XsltArgumentList args, Stream output, XmlResolver resolver)
+        public void Transform(IXPathNavigable input, XsltArgumentList? args, TextWriter output)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
-            Transform(input.CreateNavigator(), args, output, resolver);
+            Transform(input.CreateNavigator()!, args, output, _DocumentResolver);
         }
 
-        public void Transform(IXPathNavigable input, XsltArgumentList args, Stream output)
+        public void Transform(IXPathNavigable input, XsltArgumentList? args, Stream output, XmlResolver? resolver)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
-            Transform(input.CreateNavigator(), args, output, _DocumentResolver);
+            Transform(input.CreateNavigator()!, args, output, resolver);
         }
 
-        public void Transform(IXPathNavigable input, XsltArgumentList args, XmlWriter output, XmlResolver resolver)
+        public void Transform(IXPathNavigable input, XsltArgumentList? args, Stream output)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
-            Transform(input.CreateNavigator(), args, output, resolver);
+            Transform(input.CreateNavigator()!, args, output, _DocumentResolver);
         }
 
-        public void Transform(IXPathNavigable input, XsltArgumentList args, XmlWriter output)
+        public void Transform(IXPathNavigable input, XsltArgumentList? args, XmlWriter output, XmlResolver? resolver)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
-            Transform(input.CreateNavigator(), args, output, _DocumentResolver);
+            Transform(input.CreateNavigator()!, args, output, resolver);
         }
 
-        public void Transform(string inputfile, string outputfile, XmlResolver resolver)
+        public void Transform(IXPathNavigable input, XsltArgumentList? args, XmlWriter output)
         {
-            FileStream fs = null;
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+            Transform(input.CreateNavigator()!, args, output, _DocumentResolver);
+        }
+
+        public void Transform(string inputfile, string outputfile, XmlResolver? resolver)
+        {
+            FileStream? fs = null;
             try
             {
                 // We should read doc before creating output file in case they are the same
@@ -261,7 +267,7 @@ namespace System.Xml.Xsl
 
         // Implementation
 
-        private void Compile(XPathNavigator stylesheet, XmlResolver resolver)
+        private void Compile(XPathNavigator stylesheet, XmlResolver? resolver)
         {
             Debug.Assert(stylesheet != null);
 
@@ -271,7 +277,7 @@ namespace System.Xml.Xsl
 
             Debug.Assert(compiler.CompiledStylesheet != null);
             Debug.Assert(compiler.QueryStore != null);
-            Debug.Assert(compiler.QueryStore != null);
+            Debug.Assert(compiler.RootAction != null);
             _CompiledStylesheet = compiler.CompiledStylesheet;
             _QueryStore = compiler.QueryStore;
             _RootAction = compiler.RootAction;

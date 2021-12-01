@@ -2,16 +2,12 @@
   <PropertyGroup>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
-             Link="Common\System\StringBuilderCache.cs" />
-    <Compile Include="$(CommonPath)System\Marvin.cs"
-             Link="Common\System\Marvin.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs" Link="Common\System\StringBuilderCache.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
     <Compile Include="System\Xml\BinaryXml\BinXmlToken.cs" />
     <Compile Include="System\Xml\BinaryXml\SqlUtils.cs" />
@@ -250,11 +246,6 @@
     <Compile Include="System\Xml\Cache\XPathNode.cs" />
     <Compile Include="System\Xml\Cache\XPathNodeHelper.cs" />
     <Compile Include="System\Xml\Cache\XPathNodeInfoAtom.cs" />
-    <Compile Include="System\Xml\Cache\Shape.cs" />
-    <Compile Include="System\Xml\Cache\ShapeGenerator.cs" />
-    <Compile Include="System\Xml\Cache\XPathDocumentView.cs" />
-    <Compile Include="System\Xml\Cache\XPathNodeView.cs" />
-    <Compile Include="System\Xml\Cache\XPathNodeViewPropertyDescriptor.cs" />
     <Compile Include="System\Xml\Resolvers\XmlKnownDtds.cs" />
     <Compile Include="System\Xml\Resolvers\XmlPreloadedResolver.cs" />
     <Compile Include="System\Xml\Resolvers\XmlPreloadedResolverAsync.cs" />
@@ -442,7 +433,6 @@
     <Compile Include="System\Xml\Schema\XmlTokenizedType.cs" />
     <Compile Include="System\Xml\Schema\XmlTypeCode.cs" />
     <Compile Include="System\Xml\Schema\XmlValueConverter.cs" />
-    <Compile Include="System\Xml\Schema\XmlUntypedStringConverter.cs" />
     <Compile Include="System\Xml\Schema\XsdBuilder.cs" />
     <Compile Include="System\Xml\Schema\XsdDateTime.cs" />
     <Compile Include="System\Xml\Schema\XsdDuration.cs" />
@@ -455,6 +445,7 @@
     <Compile Include="System\Xml\Serialization\CodeIdentifiers.cs" />
     <Compile Include="System\Xml\Serialization\Compilation.cs" />
     <Compile Include="System\Xml\Serialization\Compiler.cs" />
+    <Compile Include="System\Xml\Serialization\ContextAwareTables.cs" />
     <Compile Include="System\Xml\Serialization\ImportContext.cs" />
     <Compile Include="System\Xml\Serialization\indentedWriter.cs" />
     <Compile Include="System\Xml\Serialization\IXmlSerializable.cs" />
@@ -525,7 +516,6 @@
     <Compile Include="System\Xml\Serialization\Configuration\DateTimeSerializationSection.cs" />
     <Compile Include="System\Xml\Extensions\ExtensionMethods.cs" />
     <Compile Include="System\Xml\Serialization\Globals.cs" />
-    <Compile Include="System\Xml\Serialization\TypeCode.cs" />
   </ItemGroup>
   <!-- Embedded DTD files -->
   <ItemGroup>
@@ -552,11 +542,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="System\Xml\XmlCharType.bin">
-      <LogicalName>XmlCharType.bin</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Reflection.Emit" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
@@ -570,7 +555,6 @@
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
@@ -578,8 +562,11 @@
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Loader" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />
@@ -789,8 +776,7 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
-             Link="System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs" Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
   </ItemGroup>

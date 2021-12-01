@@ -6,7 +6,7 @@ using System.Text;
 
 namespace System.Globalization
 {
-    internal partial class FormatProvider
+    internal static partial class FormatProvider
     {
         internal static void FormatBigInteger(ref ValueStringBuilder sb, int precision, int scale, bool sign, ReadOnlySpan<char> format, NumberFormatInfo numberFormatInfo, char[] digits, int startIndex)
         {

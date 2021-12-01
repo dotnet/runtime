@@ -26,6 +26,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Serilog;
 
 namespace HttpStress
 {
@@ -34,18 +35,19 @@ namespace HttpStress
         // Header indicating expected response content length to be returned by the server
         public const string ExpectedResponseContentLength = "Expected-Response-Content-Length";
 
-        private EventListener? _eventListener;
         private readonly IWebHost _webHost;
 
         public string ServerUri { get; }
 
         public StressServer(Configuration configuration)
         {
+            WorkaroundAssemblyResolutionIssues();
+
             ServerUri = configuration.ServerUri;
             (string scheme, string hostname, int port) = ParseServerUri(configuration.ServerUri);
             IWebHostBuilder host = WebHost.CreateDefaultBuilder();
 
-            if (configuration.UseHttpSys)
+            if (configuration.UseHttpSys && OperatingSystem.IsWindows())
             {
                 // Use http.sys.  This requires additional manual configuration ahead of time;
                 // see https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/httpsys?view=aspnetcore-2.2#configure-windows-server.
@@ -67,7 +69,7 @@ namespace HttpStress
                 // Use Kestrel, and configure it for HTTPS with a self-signed test certificate.
                 host = host.UseKestrel(ko =>
                 {
-                    // conservative estimation based on https://github.com/aspnet/AspNetCore/blob/caa910ceeba5f2b2c02c47a23ead0ca31caea6f0/src/Servers/Kestrel/Core/src/Internal/Http2/Http2Stream.cs#L204
+                    // conservative estimation based on https://github.com/dotnet/aspnetcore/blob/caa910ceeba5f2b2c02c47a23ead0ca31caea6f0/src/Servers/Kestrel/Core/src/Internal/Http2/Http2Stream.cs#L204
                     ko.Limits.MaxRequestLineSize = Math.Max(ko.Limits.MaxRequestLineSize, configuration.MaxRequestUriSize + 100);
                     ko.Limits.MaxRequestHeaderCount = Math.Max(ko.Limits.MaxRequestHeaderCount, configuration.MaxRequestHeaderCount);
                     ko.Limits.MaxRequestHeadersTotalSize = Math.Max(ko.Limits.MaxRequestHeadersTotalSize, configuration.MaxRequestHeaderTotalSize);
@@ -102,17 +104,21 @@ namespace HttpStress
                                 certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false));
                                 certReq.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
                                 X509Certificate2 cert = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
-                                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                                if (OperatingSystem.IsWindows())
                                 {
                                     cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
                                 }
                                 listenOptions.UseHttps(cert);
                             }
+                            if (configuration.HttpVersion == HttpVersion.Version30)
+                            {
+                                listenOptions.Protocols = HttpProtocols.Http3;
+                            }
                         }
                         else
                         {
-                            listenOptions.Protocols = 
-                                configuration.HttpVersion == new Version(2,0) ?
+                            listenOptions.Protocols =
+                                configuration.HttpVersion ==  HttpVersion.Version20 ?
                                 HttpProtocols.Http2 :
                                 HttpProtocols.Http1 ;
                         }
@@ -120,9 +126,37 @@ namespace HttpStress
                 });
             };
 
-            // Output only warnings and errors from Kestrel
+            LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
+            if (configuration.Trace)
+            {
+                if (!Directory.Exists(LogHttpEventListener.LogDirectory))
+                {
+                    Directory.CreateDirectory(LogHttpEventListener.LogDirectory);
+                }
+                // Clear existing logs first.
+                foreach (var filename in Directory.GetFiles(LogHttpEventListener.LogDirectory, "server*.log"))
+                {
+                    try
+                    {
+                        File.Delete(filename);
+                    } catch {}
+                }
+
+                loggerConfiguration = loggerConfiguration
+                    // Output diagnostics to the file
+                    .WriteTo.File(Path.Combine(LogHttpEventListener.LogDirectory, "server.log"), fileSizeLimitBytes: 100 << 20, rollOnFileSizeLimit: true)
+                    .MinimumLevel.Debug();
+            }
+            if (configuration.LogAspNet)
+            {
+                loggerConfiguration = loggerConfiguration
+                    // Output only warnings and errors
+                    .WriteTo.Console(Serilog.Events.LogEventLevel.Warning);
+            }
+            Log.Logger = loggerConfiguration.CreateLogger();
+
             host = host
-                .ConfigureLogging(log => log.AddFilter("Microsoft.AspNetCore", level => configuration.LogAspNet ? level >= LogLevel.Warning : false))
+                .UseSerilog()
                 // Set up how each request should be handled by the server.
                 .Configure(app =>
                 {
@@ -130,19 +164,14 @@ namespace HttpStress
                     app.UseEndpoints(MapRoutes);
                 });
 
-            // Handle command-line arguments.
-            _eventListener =
-                configuration.LogPath == null ? null :
-                new HttpEventListener(configuration.LogPath != "console" ? new StreamWriter(configuration.LogPath) { AutoFlush = true } : null);
-
-            SetUpJustInTimeLogging();
-
             _webHost = host.Build();
             _webHost.Start();
         }
 
         private static void MapRoutes(IEndpointRouteBuilder endpoints)
         {
+            var loggerFactory = endpoints.ServiceProvider.GetService<ILoggerFactory>();
+            var logger = loggerFactory?.CreateLogger<StressServer>();
             var head = new[] { "HEAD" };
 
             endpoints.MapGet("/", async context =>
@@ -198,8 +227,7 @@ namespace HttpStress
             });
             endpoints.MapGet("/variables", async context =>
             {
-                string queryString = context.Request.QueryString.Value;
-                NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(queryString);
+                NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(context.Request.QueryString.Value!);
 
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < nameValueCollection.Count; i++)
@@ -221,7 +249,7 @@ namespace HttpStress
                 // Post echos back the requested content, first buffering it all server-side, then sending it all back.
                 var s = new MemoryStream();
                 await context.Request.Body.CopyToAsync(s);
-                
+
                 ulong checksum = CRC.CalculateCRC(s.ToArray());
                 AppendChecksumHeader(context.Response.Headers, checksum);
 
@@ -289,6 +317,13 @@ namespace HttpStress
             });
         }
 
+        private static void WorkaroundAssemblyResolutionIssues()
+        {
+            // For some reason, System.Security.Cryptography.Encoding.dll fails to resolve when being loaded on-demand by AspNetCore.
+            // Enforce early-loading to workaround this issue.
+            _ = new Oid();
+        }
+
         private static void AppendChecksumHeader(IHeaderDictionary headers, ulong checksum)
         {
             headers.Add("crc32", checksum.ToString());
@@ -296,29 +331,7 @@ namespace HttpStress
 
         public void Dispose()
         {
-            _webHost.Dispose(); _eventListener?.Dispose();
-        }
-
-        private void SetUpJustInTimeLogging()
-        {
-            if (_eventListener == null && !Console.IsInputRedirected)
-            {
-                // If no command-line requested logging, enable the user to press 'L' to enable logging to the console
-                // during execution, so that it can be done just-in-time when something goes awry.
-                new Thread(() =>
-                {
-                    while (true)
-                    {
-                        if (Console.ReadKey(intercept: true).Key == ConsoleKey.L)
-                        {
-                            Console.WriteLine("Enabling console event logger");
-                            _eventListener = new HttpEventListener();
-                            break;
-                        }
-                    }
-                })
-                { IsBackground = true }.Start();
-            }
+            _webHost.Dispose();
         }
 
         private static (string scheme, string hostname, int port) ParseServerUri(string serverUri)
@@ -327,7 +340,7 @@ namespace HttpStress
             {
                 var uri = new Uri(serverUri);
                 return (uri.Scheme, uri.Host, uri.Port);
-            } 
+            }
             catch (UriFormatException)
             {
                 // Simple uri parser: used to parse values valid in Kestrel
@@ -343,61 +356,13 @@ namespace HttpStress
             }
         }
 
-        /// <summary>EventListener that dumps HTTP events out to either the console or a stream writer.</summary>
-        private sealed class HttpEventListener : EventListener
-        {
-            private readonly StreamWriter? _writer;
-
-            public HttpEventListener(StreamWriter? writer = null) => _writer = writer;
-
-            protected override void OnEventSourceCreated(EventSource eventSource)
-            {
-                if (eventSource.Name == "Microsoft-System-Net-Http")
-                    EnableEvents(eventSource, EventLevel.LogAlways);
-            }
-
-            protected override void OnEventWritten(EventWrittenEventArgs eventData)
-            {
-                lock (Console.Out)
-                {
-                    if (_writer != null)
-                    {
-                        var sb = new StringBuilder().Append($"[{eventData.EventName}] ");
-                        for (int i = 0; i < eventData.Payload?.Count; i++)
-                        {
-                            if (i > 0)
-                                sb.Append(", ");
-                            sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
-                        }
-                        _writer.WriteLine(sb);
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        Console.Write($"[{eventData.EventName}] ");
-                        Console.ResetColor();
-                        for (int i = 0; i < eventData.Payload?.Count; i++)
-                        {
-                            if (i > 0)
-                                Console.Write(", ");
-                            Console.ForegroundColor = ConsoleColor.DarkGray;
-                            Console.Write(eventData.PayloadNames?[i] + ": ");
-                            Console.ResetColor();
-                            Console.Write(eventData.Payload[i]);
-                        }
-                        Console.WriteLine();
-                    }
-                }
-            }
-        }
-
         private static string CreateResponseContent(HttpContext ctx)
         {
             return ServerContentUtils.CreateStringContent(GetExpectedContentLength());
 
             int GetExpectedContentLength()
             {
-                if (ctx.Request.Headers.TryGetValue(ExpectedResponseContentLength, out StringValues values) && 
+                if (ctx.Request.Headers.TryGetValue(ExpectedResponseContentLength, out StringValues values) &&
                     values.Count == 1 &&
                     int.TryParse(values[0], out int result))
                 {

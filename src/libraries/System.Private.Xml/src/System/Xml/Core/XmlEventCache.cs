@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -243,7 +242,7 @@ namespace System.Xml
                             break;
 
                         default:
-                            Debug.Fail("Unknown event: " + page[idxEvent].EventType);
+                            Debug.Fail($"Unknown event: {page[idxEvent].EventType}");
                             break;
                     }
                 }

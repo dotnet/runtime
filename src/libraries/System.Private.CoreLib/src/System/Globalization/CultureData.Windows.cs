@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Globalization
 {
-    internal partial class CultureData
+    internal sealed partial class CultureData
     {
         /// <summary>
         /// Check with the OS to see if this is a valid culture.
@@ -42,11 +42,17 @@ namespace System.Globalization
         /// </summary>
         private unsafe bool InitCultureDataCore()
         {
+            char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
+            if (!GlobalizationMode.UseNls)
+            {
+                return InitIcuCultureDataCore() &&
+                       GetLocaleInfoEx(_sRealName, Interop.Kernel32.LOCALE_SNAME, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH) != 0; // Ensure the culture name is supported by Windows.
+            }
+
             Debug.Assert(!GlobalizationMode.Invariant);
 
             int result;
             string realNameBuffer = _sRealName;
-            char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
 
             result = GetLocaleInfoEx(realNameBuffer, Interop.Kernel32.LOCALE_SNAME, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
 
@@ -63,8 +69,6 @@ namespace System.Globalization
             realNameBuffer = _sRealName;
 
             // Check for neutrality, don't expect to fail
-            // (buffer has our name in it, so we don't have to do the gc. stuff)
-
             result = GetLocaleInfoEx(realNameBuffer, Interop.Kernel32.LOCALE_INEUTRAL | Interop.Kernel32.LOCALE_RETURN_NUMBER, pBuffer, sizeof(int) / sizeof(char));
             if (result == 0)
             {
@@ -117,7 +121,7 @@ namespace System.Globalization
                 // We need the IETF name (sname)
                 // If we aren't an alt sort locale then this is the same as the windows name.
                 // If we are an alt sort locale then this is the same as the part before the _ in the windows name
-                // This is for like de-DE_phoneb and es-ES_tradnl that hsouldn't have the _ part
+                // This is for like de-DE_phoneb and es-ES_tradnl that shouldn't have the _ part
 
                 result = GetLocaleInfoEx(realNameBuffer, Interop.Kernel32.LOCALE_ILANGUAGE | Interop.Kernel32.LOCALE_RETURN_NUMBER, pBuffer, sizeof(int) / sizeof(char));
                 if (result == 0)

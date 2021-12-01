@@ -356,16 +356,17 @@ mini_profiler_context_get_local (MonoProfilerCallContext *ctx, guint32 pos)
 	if (!info)
 		return NULL;
 
-	return get_variable_buffer (info, &info->locals [pos], &ctx->context);
+	gpointer variable_buffer = get_variable_buffer (info, &info->locals [pos], &ctx->context);
+
+	mono_debug_free_method_jit_info (info);
+
+	return variable_buffer;
 }
 
 gpointer
 mini_profiler_context_get_result (MonoProfilerCallContext *ctx)
 {
 	MonoType *ret = mono_method_signature_internal (ctx->method)->ret;
-
-	if (ctx->interp_frame)
-		ctx->return_value = mini_get_interp_callbacks ()->frame_get_res (ctx->interp_frame);
 
 	if (!ctx->return_value)
 		return NULL;

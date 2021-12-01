@@ -8,9 +8,15 @@
 
 #if defined(TARGET_XARCH)
     #include <immintrin.h>
-
-    typedef __m256 Vector256F;
 #elif defined(TARGET_ARMARCH)
+    // Intentionally empty
+#else
+    #error Unsupported target architecture
+#endif
+
+#if defined(TARGET_XARCH)
+    typedef __m256 Vector256F;
+#else
     typedef struct {
         float e00;
         float e01;
@@ -21,13 +27,11 @@
         float e06;
         float e07;
     } Vector256F;
-#else
-    #error Unsupported target architecture
 #endif
 
 static Vector256F Vector256FValue = { };
 
-extern "C" DLL_EXPORT Vector256F STDMETHODCALLTYPE GetVector256F(float e00, float e01, float e02, float e03, float e04, float e05, float e06, float e07)
+extern "C" DLL_EXPORT Vector256F STDMETHODCALLTYPE ENABLE_AVX GetVector256F(float e00, float e01, float e02, float e03, float e04, float e05, float e06, float e07)
 {
     union {
         float value[8];
@@ -46,7 +50,7 @@ extern "C" DLL_EXPORT Vector256F STDMETHODCALLTYPE GetVector256F(float e00, floa
     return result;
 }
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector256FOut(float e00, float e01, float e02, float e03, float e04, float e05, float e06, float e07, Vector256F* pValue)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE ENABLE_AVX GetVector256FOut(float e00, float e01, float e02, float e03, float e04, float e05, float e06, float e07, Vector256F* pValue)
 {
     Vector256F value = GetVector256F(e00, e01, e02, e03, e04, e05, e06, e07);
 
@@ -58,18 +62,18 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector256FOut(float e00, float e
 #endif
 }
 
-extern "C" DLL_EXPORT const Vector256F* STDMETHODCALLTYPE GetVector256FPtr(float e00, float e01, float e02, float e03, float e04, float e05, float e06, float e07)
+extern "C" DLL_EXPORT const Vector256F* STDMETHODCALLTYPE ENABLE_AVX GetVector256FPtr(float e00, float e01, float e02, float e03, float e04, float e05, float e06, float e07)
 {
     GetVector256FOut(e00, e01, e02, e03, e04, e05, e06, e07, &Vector256FValue);
     return &Vector256FValue;
 }
 
-extern "C" DLL_EXPORT Vector256F STDMETHODCALLTYPE AddVector256F(Vector256F lhs, Vector256F rhs)
+extern "C" DLL_EXPORT Vector256F STDMETHODCALLTYPE ENABLE_AVX AddVector256F(Vector256F lhs, Vector256F rhs)
 {
     throw "P/Invoke for Vector256<float> should be unsupported.";
 }
 
-extern "C" DLL_EXPORT Vector256F STDMETHODCALLTYPE AddVector256Fs(const Vector256F* pValues, uint32_t count)
+extern "C" DLL_EXPORT Vector256F STDMETHODCALLTYPE ENABLE_AVX AddVector256Fs(const Vector256F* pValues, uint32_t count)
 {
     throw "P/Invoke for Vector256<float> should be unsupported.";
 }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml
 {
     using System;
@@ -13,7 +12,7 @@ namespace System.Xml
     using System.Xml.Schema;
     using System.Globalization;
 
-    internal class XmlNodeReaderNavigator
+    internal sealed class XmlNodeReaderNavigator
     {
         private XmlNode _curNode;
         private XmlNode? _elemNode;
@@ -248,7 +247,7 @@ namespace System.Xml
                         InitDecAttr();
                     for (int i = 0; i < _nDeclarationAttrCount; i++)
                     {
-                        strb.Append(decNodeAttributes[i].name + "=\"" + decNodeAttributes[i].value + "\"");
+                        strb.Append($"{decNodeAttributes[i].name}=\"{decNodeAttributes[i].value}\"");
                         if (i != (_nDeclarationAttrCount - 1))
                             strb.Append(' ');
                     }
@@ -860,7 +859,7 @@ namespace System.Xml
             if (prefix.Length == 0)
                 attrName = "xmlns";
             else
-                attrName = "xmlns:" + prefix;
+                attrName = $"xmlns:{prefix}";
 
             // walk up the XmlNode parent chain, looking for the xmlns attribute
             XmlNode? node = _curNode;
@@ -1024,7 +1023,7 @@ namespace System.Xml
                 }
 
                 node = node.ParentNode;
-            };
+            }
 
             if (scope != XmlNamespaceScope.Local)
             {
@@ -1772,7 +1771,7 @@ namespace System.Xml
         {
             if (!IsInReadingStates() || (_nodeType != XmlNodeType.EntityReference))
                 throw new InvalidOperationException(SR.Xnr_ResolveEntity);
-            _bResolveEntity = true; ;
+            _bResolveEntity = true;
         }
 
         // Parses the attribute value into one or more Text and/or

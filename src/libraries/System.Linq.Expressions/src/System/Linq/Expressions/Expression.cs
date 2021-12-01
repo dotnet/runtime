@@ -17,6 +17,10 @@ namespace System.Linq.Expressions
     /// </summary>
     public abstract partial class Expression
     {
+        internal const string ExpressionRequiresUnreferencedCode = "Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.";
+        internal const string PropertyFromAccessorRequiresUnreferencedCode = "The Property metadata or other accessor may be trimmed.";
+        internal const string GenericMethodRequiresUnreferencedCode = "Calling a generic method cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method. This can be suppressed if the method is not generic.";
+
         private static readonly CacheDict<Type, MethodInfo> s_lambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
         private static volatile CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? s_lambdaFactories;
 
@@ -27,7 +31,7 @@ namespace System.Linq.Expressions
         // To support the 3.5 protected constructor, we store the fields that
         // used to be here in a ConditionalWeakTable.
 
-        private class ExtensionInfo
+        private sealed class ExtensionInfo
         {
             public ExtensionInfo(ExpressionType nodeType, Type type)
             {
@@ -46,7 +50,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="nodeType">The <see ctype="ExpressionType"/> of the <see cref="Expression"/>.</param>
         /// <param name="type">The <see cref="Type"/> of the <see cref="Expression"/>.</param>
-        [Obsolete("use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
+        [Obsolete("This constructor has been deprecated. Use a different constructor that does not take ExpressionType. Then override NodeType and Type properties to provide the values that would be specified to this constructor.")]
         protected Expression(ExpressionType nodeType, Type type)
         {
             // Can't enforce anything that V1 didn't

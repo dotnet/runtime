@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
@@ -18,6 +18,9 @@
              Link="tests\DI.Common\Common\src\TestLogger.cs" />
     <Compile Include="..\DI.Common\Common\src\TestLoggerFactory.cs"
              Link="tests\DI.Common\Common\src\TestLoggerFactory.cs" />
+
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)..\ILLink.Descriptors.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,7 +34,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.TraceSource\src\Microsoft.Extensions.Logging.TraceSource.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\src\System.Diagnostics.DiagnosticSource.csproj" />
   </ItemGroup>
 

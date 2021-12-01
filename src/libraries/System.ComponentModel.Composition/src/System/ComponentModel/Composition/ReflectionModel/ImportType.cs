@@ -9,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.ComponentModel.Composition.ReflectionModel
 {
     // Describes the import type of a Reflection-based import definition
-    internal class ImportType
+    internal sealed class ImportType
     {
         private static readonly Type LazyOfTType = typeof(Lazy<>);
         private static readonly Type LazyOfTMType = typeof(Lazy<,>);

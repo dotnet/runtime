@@ -8,7 +8,7 @@ namespace System.Net
 {
     internal sealed class HttpRequestQueueV2Handle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private HttpRequestQueueV2Handle() : base(true)
+        public HttpRequestQueueV2Handle() : base(true)
         {
         }
 

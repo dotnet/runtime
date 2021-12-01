@@ -3,9 +3,9 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Version
+    internal static partial class Version
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct VS_FIXEDFILEINFO

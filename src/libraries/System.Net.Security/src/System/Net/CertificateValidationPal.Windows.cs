@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -20,60 +21,7 @@ namespace System.Net
             bool isServer,
             string? hostName)
         {
-            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
-
-            bool chainBuildResult = chain.Build(remoteCertificate);
-            if (!chainBuildResult       // Build failed on handle or on policy.
-                && chain.SafeHandle!.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
-            {
-                throw new CryptographicException(Marshal.GetLastWin32Error());
-            }
-
-            if (checkCertName)
-            {
-                unsafe
-                {
-                    uint status = 0;
-
-                    var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA()
-                    {
-                        cbSize = (uint)sizeof(Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA),
-                        // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
-                        dwAuthType = isServer ? Interop.Crypt32.AuthType.AUTHTYPE_CLIENT : Interop.Crypt32.AuthType.AUTHTYPE_SERVER,
-                        fdwChecks = 0,
-                        pwszServerName = null
-                    };
-
-                    var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA()
-                    {
-                        cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_PARA),
-                        dwFlags = 0,
-                        pvExtraPolicyPara = &eppStruct
-                    };
-
-                    fixed (char* namePtr = hostName)
-                    {
-                        eppStruct.pwszServerName = namePtr;
-                        cppStruct.dwFlags |=
-                            (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
-                             ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);
-
-                        SafeX509ChainHandle chainContext = chain.SafeHandle!;
-                        status = Verify(chainContext, ref cppStruct);
-                        if (status == Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH)
-                        {
-                            sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
-                        }
-                    }
-                }
-            }
-
-            if (!chainBuildResult)
-            {
-                sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-            }
-
-            return sslPolicyErrors;
+            return CertificateValidation.BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName);
         }
 
         //
@@ -142,10 +90,7 @@ namespace System.Net
                         var elements = new Span<Interop.SspiCli.CERT_CHAIN_ELEMENT>((void*)sspiHandle!.DangerousGetHandle(), issuers.Length);
                         for (int i = 0; i < elements.Length; ++i)
                         {
-                            if (elements[i].cbSize <= 0)
-                            {
-                                NetEventSource.Fail(securityContext, $"Interop.SspiCli._CERT_CHAIN_ELEMENT size is not positive: {elements[i].cbSize}");
-                            }
+                            Debug.Assert(elements[i].cbSize > 0, $"Interop.SspiCli._CERT_CHAIN_ELEMENT size is not positive: {elements[i].cbSize}");
                             if (elements[i].cbSize > 0)
                             {
                                 byte[] x = new Span<byte>((byte*)elements[i].pCertContext, checked((int)elements[i].cbSize)).ToArray();
@@ -186,22 +131,6 @@ namespace System.Net
             }
 
             return store;
-        }
-
-        private static unsafe uint Verify(SafeX509ChainHandle chainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA cpp)
-        {
-            Interop.Crypt32.CERT_CHAIN_POLICY_STATUS status = default;
-            status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
-
-            bool errorCode =
-                Interop.Crypt32.CertVerifyCertificateChainPolicy(
-                    (IntPtr)Interop.Crypt32.CertChainPolicy.CERT_CHAIN_POLICY_SSL,
-                    chainContext,
-                    ref cpp,
-                    ref status);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(chainContext, $"CertVerifyCertificateChainPolicy returned: {errorCode}. Status: {status.dwError}");
-            return status.dwError;
         }
     }
 }

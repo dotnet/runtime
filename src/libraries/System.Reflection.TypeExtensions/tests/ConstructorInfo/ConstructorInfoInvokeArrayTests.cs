@@ -70,7 +70,7 @@ namespace System.Reflection.Tests
                             int[] invalidLowerBounds = new int[] { -20, 0, 20 };
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(invalidLowerBounds, 0, invalidLowerBounds.Length);
+                                Array.Clear(invalidLowerBounds);
                             }
                             int[] invalidLengths = new int[] { -100, -9, -1 };
                             for (int j = 0; j < invalidLengths.Length; j++)
@@ -81,7 +81,7 @@ namespace System.Reflection.Tests
                             int[] validLowerBounds = new int[] { 0, 1, -1, 2, -3, 5, -10, 99, 100 };
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(validLowerBounds, 0, validLowerBounds.Length);
+                                Array.Clear(validLowerBounds);
                             }
                             int[] validLengths = new int[] { 0, 1, 3, 2, 3, 5, 10, 99, 0 };
                             for (int j = 0; j < validLengths.Length; j++)
@@ -144,8 +144,8 @@ namespace System.Reflection.Tests
 
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(invalidLowerBounds1, 0, invalidLowerBounds1.Length);
-                                Array.Clear(invalidLowerBounds2, 0, invalidLowerBounds2.Length);
+                                Array.Clear(invalidLowerBounds1);
+                                Array.Clear(invalidLowerBounds2);
                             }
 
                             for (int j = 0; j < invalidLengths3.Length; j++)
@@ -179,8 +179,8 @@ namespace System.Reflection.Tests
 
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(validLowerBounds1, 0, validLowerBounds1.Length);
-                                Array.Clear(validLowerBounds2, 0, validLowerBounds2.Length);
+                                Array.Clear(validLowerBounds1);
+                                Array.Clear(validLowerBounds2);
                             }
 
                             for (int j = 0; j < validLengths1.Length; j++)
@@ -201,8 +201,8 @@ namespace System.Reflection.Tests
 
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(validLowerBounds1, 0, validLowerBounds1.Length);
-                                Array.Clear(validLowerBounds2, 0, validLowerBounds2.Length);
+                                Array.Clear(validLowerBounds1);
+                                Array.Clear(validLowerBounds2);
                             }
 
                             for (int j = 0; j < validLengths1.Length; j++)

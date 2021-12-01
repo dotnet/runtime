@@ -11,7 +11,7 @@ using Microsoft.Internal.Collections;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal class ReflectionComposablePartDefinition : ComposablePartDefinition, ICompositionElement
+    internal sealed class ReflectionComposablePartDefinition : ComposablePartDefinition, ICompositionElement
     {
         private readonly IReflectionPartCreationInfo _creationInfo;
 

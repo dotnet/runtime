@@ -3,14 +3,15 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Context.Projection;
 using System.Reflection.Context.Virtual;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomType : ProjectingType
+    internal sealed class CustomType : ProjectingType
     {
-        private IEnumerable<PropertyInfo> _newProperties;
+        private IEnumerable<PropertyInfo>? _newProperties;
 
         public CustomType(Type template, CustomReflectionContext context)
             : base(template, context.Projector)
@@ -37,9 +38,9 @@ namespace System.Reflection.Context.Custom
             return AttributeUtils.IsDefined(this, attributeType, inherit);
         }
 
-        public override bool IsInstanceOfType(object o)
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o)
         {
-            Type objectType = ReflectionContext.GetTypeForObject(o);
+            Type objectType = ReflectionContext.GetTypeForObject(o!);
             return IsAssignableFrom(objectType);
         }
 
@@ -64,7 +65,7 @@ namespace System.Reflection.Context.Custom
             // adding new properties declared on base types
             if (!getDeclaredOnly)
             {
-                CustomType baseType = BaseType as CustomType;
+                CustomType? baseType = BaseType as CustomType;
                 while (baseType != null)
                 {
                     IEnumerable<PropertyInfo> newProperties = baseType.NewProperties;
@@ -81,9 +82,9 @@ namespace System.Reflection.Context.Custom
             return results.ToArray();
         }
 
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
+        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            PropertyInfo property = base.GetPropertyImpl(name, bindingAttr, binder, returnType, types, modifiers);
+            PropertyInfo? property = base.GetPropertyImpl(name, bindingAttr, binder, returnType, types, modifiers);
 
             bool getIgnoreCase = (bindingAttr & BindingFlags.IgnoreCase) == BindingFlags.IgnoreCase;
             bool getDeclaredOnly = (bindingAttr & BindingFlags.DeclaredOnly) == BindingFlags.DeclaredOnly;
@@ -111,7 +112,7 @@ namespace System.Reflection.Context.Custom
 
             StringComparison comparison = getIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
-            CustomType type = this;
+            CustomType? type = this;
             foreach (PropertyInfo newDeclaredProperty in type.NewProperties)
             {
                 if (string.Equals(newDeclaredProperty.Name, name, comparison))
@@ -163,7 +164,7 @@ namespace System.Reflection.Context.Custom
             // adding new methods declared on base types
             if (!getDeclaredOnly)
             {
-                CustomType baseType = BaseType as CustomType;
+                CustomType? baseType = BaseType as CustomType;
                 while (baseType != null)
                 {
                     // We shouldn't add a base type method directly on a subtype.
@@ -181,9 +182,9 @@ namespace System.Reflection.Context.Custom
             return results.ToArray();
         }
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
-            MethodInfo method = base.GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
+            MethodInfo? method = base.GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
 
             bool getIgnoreCase = (bindingAttr & BindingFlags.IgnoreCase) == BindingFlags.IgnoreCase;
             bool getDeclaredOnly = (bindingAttr & BindingFlags.DeclaredOnly) == BindingFlags.DeclaredOnly;
@@ -226,7 +227,7 @@ namespace System.Reflection.Context.Custom
             {
                 if (string.Equals(newDeclaredProperty.Name, targetPropertyName, comparison))
                 {
-                    MethodInfo accessor = getPropertyGetter ? newDeclaredProperty.GetGetMethod() : newDeclaredProperty.GetSetMethod();
+                    MethodInfo? accessor = getPropertyGetter ? newDeclaredProperty.GetGetMethod() : newDeclaredProperty.GetSetMethod();
                     if (accessor != null)
                         matchingMethods.Add(accessor);
                 }
@@ -235,7 +236,7 @@ namespace System.Reflection.Context.Custom
             // adding new methods declared on base types
             if (!getDeclaredOnly)
             {
-                CustomType baseType = BaseType as CustomType;
+                CustomType? baseType = BaseType as CustomType;
 
                 while (baseType != null)
                 {
@@ -247,7 +248,7 @@ namespace System.Reflection.Context.Custom
                         {
                             PropertyInfo inheritedProperty = new InheritedPropertyInfo(newBaseProperty, this);
 
-                            MethodInfo accessor = getPropertyGetter ? inheritedProperty.GetGetMethod() : inheritedProperty.GetSetMethod();
+                            MethodInfo? accessor = getPropertyGetter ? inheritedProperty.GetGetMethod() : inheritedProperty.GetSetMethod();
                             if (accessor != null)
                                 matchingMethods.Add(accessor);
                         }
@@ -278,7 +279,7 @@ namespace System.Reflection.Context.Custom
                 if (binder == null)
                     binder = Type.DefaultBinder;
 
-                return (MethodInfo)binder.SelectMethod(bindingAttr, matchingMethods.ToArray(), types, modifiers);
+                return (MethodInfo?)binder.SelectMethod(bindingAttr, matchingMethods.ToArray(), types, modifiers);
             }
         }
 

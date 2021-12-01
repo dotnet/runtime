@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Reflection.Metadata.Ecma335;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
@@ -53,9 +54,9 @@ namespace System.Reflection.Metadata
             get { return _heapOffset == 0; }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is DocumentNameBlobHandle && Equals((DocumentNameBlobHandle)obj);
+            return obj is DocumentNameBlobHandle documentHandle && Equals(documentHandle);
         }
 
         public bool Equals(DocumentNameBlobHandle other)

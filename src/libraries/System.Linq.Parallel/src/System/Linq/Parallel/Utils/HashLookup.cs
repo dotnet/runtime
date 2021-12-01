@@ -17,7 +17,7 @@ namespace System.Linq.Parallel
     /// </summary>
     /// <typeparam name="TKey">The kind of keys contained within.</typeparam>
     /// <typeparam name="TValue">The kind of values contained within.</typeparam>
-    internal class HashLookup<TKey, TValue>
+    internal sealed class HashLookup<TKey, TValue>
     {
         private int[] buckets;
         private Slot[] slots;
@@ -42,7 +42,7 @@ namespace System.Linq.Parallel
         // If value is not in set, add it and return true; otherwise return false
         internal bool Add(TKey key, TValue value)
         {
-            return !Find(key, true, false, ref value);
+            return !Find(key, true, false, ref value!);
         }
 
         // Check whether value is in set
@@ -55,7 +55,7 @@ namespace System.Linq.Parallel
         {
             set
             {
-                TValue v = value;
+                TValue? v = value;
                 Find(key, false, true, ref v);
             }
         }

@@ -3,7 +3,7 @@
 if [ $# -eq 0 ]; then
     echo "Script for enabling CLang sanitizers for debug builds."
     echo "*Only tested on Ubuntu x64."
-    echo "*This script must be 'sourced' (via dot+space) so that changes to environment variables are preserved. Run like this:"    
+    echo "*This script must be 'sourced' (via dot+space) so that changes to environment variables are preserved. Run like this:"
     if [ "$(dirname $0)" = "." ]; then
         echo " . enablesanitizers.sh [options]"
     else
@@ -30,7 +30,7 @@ else
 
     for i in "$@"
         do
-            lowerI="$(echo $i | awk '{print tolower($0)}')"
+            lowerI="$(echo $i | tr "[:upper:]" "[:lower:]")"
             case $lowerI in
             asan)
                 __EnableASan=1
@@ -79,7 +79,7 @@ else
         esac
     done
 
-    if [ $__TurnOff == 1 ]; then
+    if [[ "$__TurnOff" == 1 ]]; then
         unset DEBUG_SANITIZERS
         echo "Setting DEBUG_SANITIZERS="
     else
@@ -89,13 +89,13 @@ else
         # when Clang 3.8 available, add: suppressions=$(readlink -f sanitizersuppressions.txt)
         UBSAN_OPTIONS="print_stacktrace=1"
 
-        if [ $__EnableASan == 1 ]; then
+        if [[ "$__EnableASan" == 1 ]]; then
             __Options="$__Options asan"
         fi
-        if [ $__EnableUBSan == 1 ]; then
+        if [[ "$__EnableUBSan" == 1 ]]; then
             __Options="$__Options ubsan"
         fi
-        if [ $__EnableLSan == 1 ]; then
+        if [[ "$__EnableLSan" == 1 ]]; then
             ASAN_OPTIONS="$ASAN_OPTIONS detect_leaks=1"
         else
             ASAN_OPTIONS="$ASAN_OPTIONS detect_leaks=0"
@@ -115,7 +115,7 @@ else
 
         # for compiler-rt > 3.6 Asan check that binary name is 'llvm-symbolizer', 'addr2line' or
         # 'atos' (for Darwin) otherwise it returns error
-        if [ $__ExportSymbolizerPath == 1 ]; then
+        if [[ "$__ExportSymbolizerPath" == 1 ]]; then
             # used by ASan at run-time
             ASAN_SYMBOLIZER_PATH="/usr/bin/llvm-symbolizer-$__ClangMajorVersion.$__ClangMinorVersion"
             export ASAN_SYMBOLIZER_PATH

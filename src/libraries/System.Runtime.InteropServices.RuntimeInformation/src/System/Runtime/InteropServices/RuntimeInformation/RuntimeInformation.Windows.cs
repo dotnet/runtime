@@ -11,8 +11,6 @@ namespace System.Runtime.InteropServices
         private static volatile int s_osArch = -1;
         private static volatile int s_processArch = -1;
 
-        internal static bool IsCurrentOSPlatform(string osPlatform) => osPlatform.Equals("WINDOWS", StringComparison.OrdinalIgnoreCase);
-
         public static string OSDescription
         {
             get
@@ -23,10 +21,11 @@ namespace System.Runtime.InteropServices
                     OperatingSystem os = Environment.OSVersion;
                     Version v = os.Version;
 
+                    Span<char> stackBuffer = stackalloc char[256];
                     const string Version = "Microsoft Windows";
                     s_osDescription = osDescription = string.IsNullOrEmpty(os.ServicePack) ?
-                        $"{Version} {(uint)v.Major}.{(uint)v.Minor}.{(uint)v.Build}" :
-                        $"{Version} {(uint)v.Major}.{(uint)v.Minor}.{(uint)v.Build} {os.ServicePack}";
+                        string.Create(null, stackBuffer, $"{Version} {(uint)v.Major}.{(uint)v.Minor}.{(uint)v.Build}") :
+                        string.Create(null, stackBuffer, $"{Version} {(uint)v.Major}.{(uint)v.Minor}.{(uint)v.Build} {os.ServicePack}");
                 }
 
                 return osDescription;
@@ -43,7 +42,12 @@ namespace System.Runtime.InteropServices
 
                 if (osArch == -1)
                 {
-                    Interop.Kernel32.GetNativeSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                    Interop.Kernel32.SYSTEM_INFO sysInfo;
+                    unsafe
+                    {
+                        Interop.Kernel32.GetNativeSystemInfo(&sysInfo);
+                    }
+
                     osArch = s_osArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                 }
 
@@ -61,7 +65,12 @@ namespace System.Runtime.InteropServices
 
                 if (processArch == -1)
                 {
-                    Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                    Interop.Kernel32.SYSTEM_INFO sysInfo;
+                    unsafe
+                    {
+                        Interop.Kernel32.GetSystemInfo(&sysInfo);
+                    }
+
                     processArch = s_processArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                 }
 

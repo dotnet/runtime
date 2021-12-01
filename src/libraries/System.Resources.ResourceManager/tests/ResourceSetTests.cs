@@ -5,6 +5,7 @@ using Xunit;
 using System.IO;
 using System.Reflection;
 using System.Globalization;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace System.Resources.Tests
@@ -98,6 +99,87 @@ namespace System.Resources.Tests
             var set = GetSet(StaticResources.WithData);
             Assert.Equal("message", set.GetString("String"));
             Assert.Equal("message", set.GetString("string", true));
+        }
+    }
+
+    public class ResourceSetTests_IResourceReader
+    {
+        class SimpleResourceReader : IResourceReader
+        {
+            Hashtable data;
+            public SimpleResourceReader()
+            {
+                data = new Hashtable();
+                data.Add(1, "invalid");
+                data.Add("String", "message");
+                data.Add("Int32", 5);
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                throw new NotSupportedException();
+            }
+
+            public IDictionaryEnumerator GetEnumerator()
+            {
+                return data.GetEnumerator();
+            }
+
+            public void Close()
+            {
+            }
+
+            public void Dispose()
+            {
+            }
+        }
+
+        [Fact]
+        public void Empty_Ctor()
+        {
+            Assert.Throws<ArgumentNullException>(() => new ResourceSet(null as IResourceReader));
+        }
+
+        [Fact]
+        public void GetObject()
+        {
+            var rs = new ResourceSet(new SimpleResourceReader());
+
+            Assert.Null(rs.GetObject("DoesNotExist"));
+            Assert.Null(rs.GetObject("1"));
+
+            Assert.Equal(5, rs.GetObject("Int32"));
+            Assert.Equal(5, rs.GetObject("int32", true));
+        }
+
+        [Fact]
+        public void GetString()
+        {
+            var rs = new ResourceSet(new SimpleResourceReader());
+
+            Assert.Null(rs.GetString("DoesNotExist"));
+            Assert.Null(rs.GetString("1"));
+
+            Assert.Equal("message", rs.GetString("String"));
+            Assert.Equal("message", rs.GetString("string", true));
+        }
+
+        [Fact]
+        public void GetEnumerator()
+        {
+            var rs = new ResourceSet(new SimpleResourceReader());
+
+            var expected = new HashSet<object>() {
+                1, "String", "Int32"
+            };
+
+            foreach (DictionaryEntry entry in rs)
+            {
+                Assert.Contains(entry.Key, expected);
+                expected.Remove(entry.Key);
+            }
+
+            Assert.Equal(0, expected.Count);
         }
     }
 

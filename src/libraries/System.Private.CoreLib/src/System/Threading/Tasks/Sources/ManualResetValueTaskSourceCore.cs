@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
@@ -31,7 +30,7 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Whether the current operation has completed.</summary>
         private bool _completed;
         /// <summary>The result with which the operation succeeded, or the default value if it hasn't yet completed or failed.</summary>
-        [AllowNull, MaybeNull] private TResult _result;
+        private TResult? _result;
         /// <summary>The exception with which the operation failed, or null if it hasn't yet completed or completed successfully.</summary>
         private ExceptionDispatchInfo? _error;
         /// <summary>The current version of this value, used to help prevent misuse.</summary>
@@ -91,14 +90,24 @@ namespace System.Threading.Tasks.Sources
         [StackTraceHidden]
         public TResult GetResult(short token)
         {
-            ValidateToken(token);
-            if (!_completed)
+            if (token != _version || !_completed || _error is not null)
+            {
+                ThrowForFailedGetResult(token);
+            }
+
+            return _result!;
+        }
+
+        [StackTraceHidden]
+        private void ThrowForFailedGetResult(short token)
+        {
+            if (token != _version || !_completed)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
             _error?.Throw();
-            return _result;
+            Debug.Fail($"{nameof(ThrowForFailedGetResult)} should never get here");
         }
 
         /// <summary>Schedules the continuation action for this operation.</summary>
@@ -175,9 +184,9 @@ namespace System.Threading.Tasks.Sources
                     case SynchronizationContext sc:
                         sc.Post(static s =>
                         {
-                            var tuple = (Tuple<Action<object?>, object?>)s!;
+                            var tuple = (TupleSlim<Action<object?>, object?>)s!;
                             tuple.Item1(tuple.Item2);
-                        }, Tuple.Create(continuation, state));
+                        }, new TupleSlim<Action<object?>, object?>(continuation, state));
                         break;
 
                     case TaskScheduler ts:
@@ -241,10 +250,10 @@ namespace System.Threading.Tasks.Sources
             // for the surrounding code to become less efficent (stack spills etc)
             // and it is an uncommon path.
 
-            Debug.Assert(_continuation != null);
-            Debug.Assert(_executionContext != null);
+            Debug.Assert(_continuation != null, $"Null {nameof(_continuation)}");
+            Debug.Assert(_executionContext != null, $"Null {nameof(_executionContext)}");
 
-            ExecutionContext? currentContext = ExecutionContext.Capture();
+            ExecutionContext? currentContext = ExecutionContext.CaptureForRestore();
             // Restore the captured ExecutionContext before executing anything.
             ExecutionContext.Restore(_executionContext);
 
@@ -259,7 +268,7 @@ namespace System.Threading.Tasks.Sources
                     finally
                     {
                         // Restore the current ExecutionContext.
-                        ExecutionContext.Restore(currentContext);
+                        ExecutionContext.RestoreInternal(currentContext);
                     }
                 }
                 else
@@ -284,7 +293,7 @@ namespace System.Threading.Tasks.Sources
                         // Set sync context back to what it was prior to coming in
                         SynchronizationContext.SetSynchronizationContext(syncContext);
                         // Restore the current ExecutionContext.
-                        ExecutionContext.Restore(currentContext);
+                        ExecutionContext.RestoreInternal(currentContext);
                     }
 
                     // Now rethrow the exception; if there is one.
@@ -301,7 +310,7 @@ namespace System.Threading.Tasks.Sources
             finally
             {
                 // Restore the current ExecutionContext.
-                ExecutionContext.Restore(currentContext);
+                ExecutionContext.RestoreInternal(currentContext);
             }
         }
 
@@ -312,17 +321,17 @@ namespace System.Threading.Tasks.Sources
         /// </summary>
         private void InvokeSchedulerContinuation()
         {
-            Debug.Assert(_capturedContext != null);
-            Debug.Assert(_continuation != null);
+            Debug.Assert(_capturedContext != null, $"Null {nameof(_capturedContext)}");
+            Debug.Assert(_continuation != null, $"Null {nameof(_continuation)}");
 
             switch (_capturedContext)
             {
                 case SynchronizationContext sc:
                     sc.Post(static s =>
                     {
-                        var state = (Tuple<Action<object?>, object?>)s!;
+                        var state = (TupleSlim<Action<object?>, object?>)s!;
                         state.Item1(state.Item2);
-                    }, Tuple.Create(_continuation, _continuationState));
+                    }, new TupleSlim<Action<object?>, object?>(_continuation, _continuationState));
                     break;
 
                 case TaskScheduler ts:

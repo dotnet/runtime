@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// <summary>
     /// For consoles which understand the ANSI escape code sequences to represent color
     /// </summary>
-    internal class AnsiLogConsole : IConsole
+    internal sealed class AnsiLogConsole : IConsole
     {
         private readonly TextWriter _textWriter;
 

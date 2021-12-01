@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -30,6 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// Gets a <see cref="ComObject"/> that wraps the runtime-callable-wrapper, or creates one if none currently exists.
         /// </summary>
         /// <returns></returns>
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static ComObject ObjectToComObject(object rcw)
         {
             Debug.Assert(ComBinder.IsComObject(rcw));
@@ -70,6 +72,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         // Expression that finds or creates a ComObject that corresponds to given Rcw
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static MethodCallExpression RcwToComObject(Expression rcw)
         {
             return Expression.Call(
@@ -78,6 +81,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             );
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ComObject CreateComObject(object rcw)
         {
             if (rcw is IDispatch dispatchObject)
@@ -90,11 +94,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return new ComObject(rcw);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal virtual IList<string> GetMemberNames(bool dataOnly)
         {
             return Array.Empty<string>();
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal virtual IList<KeyValuePair<string, object>> GetMembers(IEnumerable<string> names)
         {
             return Array.Empty<KeyValuePair<string, object>>();

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
@@ -23,22 +23,28 @@
     <Compile Include="IPPacketInformationTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LingerStateTest.cs" />
+    <Compile Include="LocalEndPointTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
+    <Compile Include="ReceiveFrom.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />
-    <Compile Include="ReceiveMessageFromAsync.cs" />
     <Compile Include="SafeHandleTest.cs" />
     <Compile Include="SelectTest.cs" />
     <Compile Include="SendPacketsAsync.cs" />
     <Compile Include="SendPacketsElementTest.cs" />
     <Compile Include="SendFile.cs" />
     <Compile Include="OSSupport.cs" />
-    <Compile Include="SendReceive.cs" />
+    <Compile Include="SendReceive\SendReceive.cs" />
+    <Compile Include="SendReceive\SendReceiveMisc.cs" />
+    <Compile Include="SendReceive\SendReceiveNonParallel.cs" />
+    <Compile Include="SendReceive\SendReceiveTcpClient.cs" />
+    <Compile Include="SendReceive\SendReceiveUdpClient.cs" />
     <Compile Include="SendTo.cs" />
     <Compile Include="SocketDuplicationTests.cs" />
     <Compile Include="SocketTestHelper.cs" />
     <Compile Include="SelectAndPollTests.cs" />
     <Compile Include="SocketInformationTest.cs" />
+    <Compile Include="StartupTests.Windows.cs" />
     <Compile Include="TcpListenerTest.cs" />
     <Compile Include="TelemetryTest.cs" />
     <Compile Include="TimeoutTest.cs" />
@@ -46,6 +52,7 @@
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAsyncEventArgsTest.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
+    <Compile Include="SocketTaskExtensionsTest.cs" />
     <Compile Include="MulticastOptionTest.cs" />
     <Compile Include="UdpClientTest.cs" />
     <Compile Include="UnixDomainSocketTest.cs" />
@@ -89,5 +96,11 @@
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
 </Project>

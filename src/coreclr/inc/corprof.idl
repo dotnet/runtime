@@ -1,0 +1,4294 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/**************************************************************************************
+ **                                                                                  **
+ ** Corprof.idl - CLR Profiling interfaces.                                          **
+ **                                                                                  **
+ **************************************************************************************/
+
+/* -------------------------------------------------------------------------- *
+ * Imported types
+ * -------------------------------------------------------------------------- */
+
+#if !DEFINITIONS_FROM_NON_IMPORTABLE_PLACES
+
+cpp_quote("#define CorDB_CONTROL_Profiling         \"Cor_Enable_Profiling\"")
+cpp_quote("#define CorDB_CONTROL_ProfilingL       L\"Cor_Enable_Profiling\"")
+
+cpp_quote("#if 0")
+
+
+import "unknwn.idl";
+
+typedef LONG32  mdToken;
+typedef mdToken mdModule;
+typedef mdToken mdTypeDef;
+typedef mdToken mdMethodDef;
+typedef mdToken mdFieldDef;
+typedef ULONG CorElementType;
+
+// Forward declaration of enum in CorHdr.h
+enum    CorElementType;
+
+// Forward declaration of structs in Cor.h
+
+typedef struct
+{
+    DWORD       dwOSPlatformId;         // Operating system platform.
+    DWORD       dwOSMajorVersion;       // OS Major version.
+    DWORD       dwOSMinorVersion;       // OS Minor version.
+} OSINFO;
+
+typedef struct
+{
+    USHORT      usMajorVersion;         // Major Version.
+    USHORT      usMinorVersion;         // Minor Version.
+    USHORT      usBuildNumber;          // Build Number.
+    USHORT      usRevisionNumber;       // Revision Number.
+    LPWSTR      szLocale;               // Locale.
+    ULONG       cbLocale;               // [IN/OUT] Size of the buffer in wide chars/Actual size.
+    DWORD       *rProcessor;            // Processor ID array.
+    ULONG       ulProcessor;            // [IN/OUT] Size of the Processor ID array/Actual # of entries filled in.
+    OSINFO      *rOS;                   // OSINFO array.
+    ULONG       ulOS;                   // [IN/OUT]Size of the OSINFO array/Actual # of entries filled in.
+} ASSEMBLYMETADATA;
+
+cpp_quote("#endif")
+
+typedef const BYTE *LPCBYTE;
+typedef BYTE *LPBYTE;
+
+typedef BYTE COR_SIGNATURE;
+typedef COR_SIGNATURE* PCOR_SIGNATURE;
+typedef const COR_SIGNATURE* PCCOR_SIGNATURE;
+
+#endif
+
+
+cpp_quote("#ifndef _COR_IL_MAP")
+cpp_quote("#define _COR_IL_MAP")
+
+#ifdef INTERNAL_DOCS
+// Note that this structure is also defined in CorDebug.idl - PROPAGATE CHANGES
+// BOTH WAYS, or this'll become a really insidious bug some day.
+#endif
+typedef struct _COR_IL_MAP
+{
+    ULONG32 oldOffset;        // Old IL offset relative to beginning of function
+    ULONG32 newOffset;        // New IL offset relative to beginning of function
+    BOOL    fAccurate; //put here for compatibility with the Debugger structure.
+} COR_IL_MAP;
+
+cpp_quote("#endif //_COR_IL_MAP")
+
+cpp_quote("#ifndef _COR_DEBUG_IL_TO_NATIVE_MAP_")
+cpp_quote("#define _COR_DEBUG_IL_TO_NATIVE_MAP_")
+
+/* ICorProfilerInfo:: GetILToNativeMapping returns an array of
+ * COR_DEBUG_IL_TO_NATIVE_MAP structures.  In order to convey that certain
+ * ranges of native instructions correspond to special regions of code (for
+ * example, the prolog), an entry in the array may have it's ilOffset field set
+ * to one of these values.
+ */
+typedef enum CorDebugIlToNativeMappingTypes
+{
+    NO_MAPPING = -1,
+    PROLOG     = -2,
+    EPILOG     = -3
+} CorDebugIlToNativeMappingTypes;
+
+typedef struct COR_DEBUG_IL_TO_NATIVE_MAP
+{
+    ULONG32 ilOffset;
+    ULONG32 nativeStartOffset;
+    ULONG32 nativeEndOffset;
+} COR_DEBUG_IL_TO_NATIVE_MAP;
+
+cpp_quote("#endif // _COR_DEBUG_IL_TO_NATIVE_MAP_")
+
+cpp_quote("#ifndef _COR_FIELD_OFFSET_")
+cpp_quote("#define _COR_FIELD_OFFSET_")
+
+typedef struct _COR_FIELD_OFFSET
+{
+    mdFieldDef ridOfField;  // fieldDef token of the field
+    ULONG      ulOffset;      // offset (from the ObjectID pointer) of the field
+} COR_FIELD_OFFSET;
+
+cpp_quote("#endif // _COR_FIELD_OFFSET_")
+
+
+#ifndef DO_NO_IMPORTS
+import "wtypes.idl";
+import "unknwn.idl";
+#endif
+
+#define STDMETHODCALLTYPE
+
+typedef UINT_PTR ProcessID;
+typedef UINT_PTR AssemblyID;
+typedef UINT_PTR AppDomainID;
+typedef UINT_PTR ModuleID;
+typedef UINT_PTR ClassID;
+typedef UINT_PTR ThreadID;
+typedef UINT_PTR ContextID;
+typedef UINT_PTR FunctionID;
+typedef UINT_PTR ObjectID;
+typedef UINT_PTR GCHandleID;
+typedef UINT_PTR COR_PRF_ELT_INFO;
+typedef UINT_PTR ReJITID;
+
+typedef union {FunctionID functionID; UINT_PTR clientID;} FunctionIDOrClientID;
+
+/*
+ * The FunctionIDMapper type definition is used by the
+ * ICorProfilerInfo::SetFunctionIDMapper method to specify
+ * a function that will be called to map FunctionIDs to alternative
+ * values that will be passed to the function entry and function exit
+ * callbacks supplied to the ICorProfilerInfo::SetEnterLeaveFunctionHooks
+ * method. The mapper can be set only once and it is recommended to do so
+ * in the Initialize callback.
+ *
+ * NOTE: There is a known bug in this API that must be worked around.
+ * The return value of FunctionIDMapper cannot be NULL (unless the boolean
+ * value in pbHookTheFunction is FALSE).  All other values are treated as
+ * opaque data to be passed to the entry/exit callback functions.  The use
+ * of a NULL return value will produce unpredictable results, including
+ * possibly halting the process.
+ *
+ * NOTE: Profilers should be tolerant of cases where multiple threads of
+ * a profiled app are calling the same method simultaneously.  In such
+ * cases, the profiler may receive multiple FunctionIDMapper callbacks
+ * for the same functionId.  The profiler should be certain to return
+ * the same values from this callback when it is called multiple times
+ * with the same functionId.
+ *
+ */
+typedef UINT_PTR __stdcall FunctionIDMapper(
+                FunctionID funcId,
+                BOOL *pbHookFunction);
+
+typedef UINT_PTR __stdcall FunctionIDMapper2(
+                FunctionID funcId,
+                void *clientData,
+                BOOL *pbHookFunction);
+
+/*
+ * Enum for specifying how much data to pass back with a stack snapshot
+ */
+typedef enum _COR_PRF_SNAPSHOT_INFO
+{
+    COR_PRF_SNAPSHOT_DEFAULT            = 0x0,
+
+    // Return a register context for each frame
+    COR_PRF_SNAPSHOT_REGISTER_CONTEXT   = 0x1,
+
+    // Use a quicker stack walk algorithm based on the EBP frame chain. This is available
+    // on x86 only.
+    COR_PRF_SNAPSHOT_X86_OPTIMIZED      = 0x2,
+} COR_PRF_SNAPSHOT_INFO;
+
+/*
+ * Opaque handle that represents information about a given stack frame. It is only
+ * valid during the callback to which it is passed.
+ */
+typedef UINT_PTR COR_PRF_FRAME_INFO;
+
+/*
+ * Describes a range of function arguments stored contiguously in left-to-right
+ * order in memory.
+ */
+typedef struct _COR_PRF_FUNCTION_ARGUMENT_RANGE
+{
+    UINT_PTR startAddress;          // start address of the range
+    ULONG length;                         // contiguous length of the range
+} COR_PRF_FUNCTION_ARGUMENT_RANGE;
+
+/*
+ * Describes the locations in memory of a function's arguments, in
+ * left-to-right order. Note that arguments stored in registers are
+ * spilled to memory to build these structures.
+ */
+typedef struct _COR_PRF_FUNCTION_ARGUMENT_INFO
+{
+    ULONG numRanges;                // number of chunks of arguments
+    ULONG totalArgumentSize;    // total size of arguments
+    COR_PRF_FUNCTION_ARGUMENT_RANGE ranges[1];  // chunks
+} COR_PRF_FUNCTION_ARGUMENT_INFO;
+
+/*
+ * Represents one contiguous chunk of native code
+ */
+typedef struct _COR_PRF_CODE_INFO
+{
+    UINT_PTR startAddress;
+    SIZE_T size;
+} COR_PRF_CODE_INFO;
+
+/*
+ * Enum for describing the type of static a field is.  These may be bit-wise
+ * or'ed with each other if the field is multiple types.
+ */
+typedef enum
+{
+    COR_PRF_FIELD_NOT_A_STATIC = 0x0,
+    COR_PRF_FIELD_APP_DOMAIN_STATIC = 0x1,
+    COR_PRF_FIELD_THREAD_STATIC = 0x2,
+    COR_PRF_FIELD_CONTEXT_STATIC = 0x4,
+    COR_PRF_FIELD_RVA_STATIC = 0x8
+} COR_PRF_STATIC_TYPE;
+
+/*
+ * Represents a function uniquely by combining the FunctionID
+ * with a ReJITID.
+ */
+typedef struct _COR_PRF_FUNCTION
+{
+    FunctionID functionId;
+    ReJITID    reJitId;
+} COR_PRF_FUNCTION;
+
+
+/*
+ * Structure populated by profiler when declaring additional assembly references
+ * that the CLR should consider when performing an assembly reference closure
+ * walk.  See ICorProfilerCallback6::GetAssemblyReferences and
+ * ICorProfilerAssemblyReferenceProvider::AddAssemblyReference
+ */
+typedef struct _COR_PRF_ASSEMBLY_REFERENCE_INFO
+{
+    void  *pbPublicKeyOrToken;          // Public key or token of the assembly.
+    ULONG       cbPublicKeyOrToken;     // Count of bytes in the public key or token.
+    LPCWSTR     szName;                 // Name of the assembly being referenced.
+    ASSEMBLYMETADATA * pMetaData;       // Assembly MetaData, as defined in cor.h
+    void  *pbHashValue;                 // Hash Blob.
+    ULONG       cbHashValue;            // Count of bytes in the Hash Blob.
+    DWORD       dwAssemblyRefFlags;     // Flags.
+} COR_PRF_ASSEMBLY_REFERENCE_INFO;
+
+
+/*
+ * Represents a IL methods uniquely by combining the module ID and method token.
+ */
+typedef struct _COR_PRF_METHOD
+{
+    ModuleID    moduleId;
+    mdMethodDef methodId;
+} COR_PRF_METHOD;
+
+/*
+ * NOTE!!!
+ *
+ * The following applies to ALL FunctionEnter[2,3], FunctionLeave[2,3],
+ * FunctionTailcall[2,3] hooks below:
+ *
+ * It is VERY IMPORTANT to note that these function implementations must be
+ * __declspec(naked), since the EE is not saving any registers before calling
+ * any of them.  YOU MUST SAVE ALL REGISTERS YOU USE, INCLUDING FPU REGISTERS
+ * IF THE FPU STACK IS NOT EMPTY AND YOU INTEND TO USE IT.
+ *
+ * NOTE: The profiler should not block here, since the stack may not be in a
+ *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+ *       profiler blocks here and a GC is attempted, the runtime will block
+ *       until this callback returns.  Also, the profiler may NOT call into
+ *       managed code or in any way cause a managed memory allocation.
+ */
+
+ /*
+ * NOTE: DEPRECATED IN V2
+ *
+ * These functions are considered deprecated in V2 and higher.  They will
+ * continue to work, but incur a performance penalty for usage.  For equivalent
+ * functionality, use the FunctionEnter3/Leave3/Tailcall3 callbacks with
+ * bits cleared for COR_PRF_ENABLE_FRAME_INFO, COR_PRF_ENABLE_FUNCTION_RETVAL
+ * and COR_PRF_ENABLE_FUNCTION_ARGS.
+ */
+typedef void STDMETHODCALLTYPE FunctionEnter(
+                FunctionID funcID);
+
+typedef void STDMETHODCALLTYPE FunctionLeave(
+                FunctionID funcID);
+
+typedef void STDMETHODCALLTYPE FunctionTailcall(
+                FunctionID funcID);
+
+/*
+ * NOTE: DEPRECATED IN V4
+ *
+ * These functions are considered deprecated in V4 and higher.  They will
+ * continue to work, but incur a performance penalty for usage.  For equivalent
+ * functionality, use the FunctionEnter3/Leave3/Tailcall3 callbacks.
+ */
+
+typedef void STDMETHODCALLTYPE FunctionEnter2(
+                FunctionID funcId,
+                UINT_PTR clientData,
+                COR_PRF_FRAME_INFO func,
+                COR_PRF_FUNCTION_ARGUMENT_INFO *argumentInfo);
+
+typedef void STDMETHODCALLTYPE FunctionLeave2(
+                FunctionID funcId,
+                UINT_PTR clientData,
+                COR_PRF_FRAME_INFO func,
+                COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange);
+
+typedef void STDMETHODCALLTYPE FunctionTailcall2(
+                FunctionID funcId,
+                UINT_PTR clientData,
+                COR_PRF_FRAME_INFO func);
+
+/*
+ * When you are not interested in inspecting arguments or return values, then
+ * use these to be notified as functions are called and return.  Use
+ * SetEnterLeaveFunctionHooks3 to register your implementations of these
+ * functions.
+ *
+ * functionIDOrClientID: if the profiler returned a remapped value from
+ * FunctionIDMapper[2], then this is that remapped value; else it is the
+ * true FunctionID of the function.
+ */
+
+typedef void STDMETHODCALLTYPE FunctionEnter3(
+                FunctionIDOrClientID functionIDOrClientID);
+
+typedef void STDMETHODCALLTYPE FunctionLeave3(
+                FunctionIDOrClientID functionIDOrClientID);
+
+typedef void STDMETHODCALLTYPE FunctionTailcall3(
+                FunctionIDOrClientID functionIDOrClientID);
+
+/*
+ * When you are interested in inspecting arguments and return values, then
+ * use these to be notified as functions are called and return.  Use
+ * SetEnterLeaveFunctionHooks3WithInfo to register your implementations of these
+ * functions.
+ *
+ * functionIDOrClientID: if the profiler returned a remapped value from
+ * FunctionIDMapper[2], then this is that remapped value; else it is the
+ * true FunctionID of the function.
+ *
+ * eltInfo is an opaque handle that represents information about a given stack frame.
+ * It is only valid during the callback to which it is passed.
+ */
+
+typedef void STDMETHODCALLTYPE FunctionEnter3WithInfo(
+                FunctionIDOrClientID functionIDOrClientID,
+                COR_PRF_ELT_INFO eltInfo);
+
+typedef void STDMETHODCALLTYPE FunctionLeave3WithInfo(
+                FunctionIDOrClientID functionIDOrClientID,
+                COR_PRF_ELT_INFO eltInfo);
+
+typedef void STDMETHODCALLTYPE FunctionTailcall3WithInfo(
+                FunctionIDOrClientID functionIDOrClientID,
+                COR_PRF_ELT_INFO eltInfo);
+
+/*
+ * Stack snapshot callback definition.
+ *
+ * This callback is called once per managed frame or run of unmanaged frames.
+ *
+ * funcID is the FunctionID of the managed function. If funcID == 0, the callback is
+ * for a run of unmanaged frames. The profiler may either ignore the frame, or use
+ * the register context to perform its own unmanaged stackwalk.
+ *
+ * ip is the native IP in the frame
+ *
+ * frameInfo is the COR_PRF_FRAME_INFO for this frame. It is only valid for
+ * use during this callback.
+ *
+ * context is a Win32 CONTEXT struct for the current platform (size given in
+ * contextSize). It will only be valid if the COR_PRF_SNAPSHOT_CONTEXT flag
+ * was passed to DoStackSnapshot.
+ *
+ * clientData is a void* passed straight through from DoStackSnapshot
+ *
+ * NOTE: One must limit the complexity of work done in StackSnapshotCallback.
+ * For example, particularly when using DoStackSnapshot in an asynchronous manner,
+ * the target thread may be holding locks. Executing code within StackSnapshotCallback
+ * that requires the same locks could lead to deadlock.
+ */
+typedef HRESULT __stdcall StackSnapshotCallback(
+                FunctionID funcId,
+                UINT_PTR ip,
+                COR_PRF_FRAME_INFO frameInfo,
+                ULONG32 contextSize,
+                BYTE context[],
+                void *clientData);
+
+/* Callback for each object reference */
+typedef BOOL STDMETHODCALLTYPE ObjectReferenceCallback(ObjectID root, ObjectID* reference, void *clientData);
+
+typedef enum
+{
+    // These flags represent classes of callback events
+    COR_PRF_MONITOR_NONE                = 0x00000000,
+
+    // MONITOR_FUNCTION_UNLOADS controls the
+    // FunctionUnloadStarted callback.
+    COR_PRF_MONITOR_FUNCTION_UNLOADS    = 0x00000001,
+
+    // MONITOR_CLASS_LOADS controls the ClassLoad*
+    // and ClassUnload* callbacks.
+    // See the comments on those callbacks for important
+    // behavior changes in V2.
+    COR_PRF_MONITOR_CLASS_LOADS         = 0x00000002,
+
+    // MONITOR_MODULE_LOADS controls the
+    // ModuleLoad*, ModuleUnload*, and ModuleAttachedToAssembly
+    // callbacks.
+    COR_PRF_MONITOR_MODULE_LOADS        = 0x00000004,
+
+    // MONITOR_ASSEMBLY_LOADS controls the
+    // AssemblyLoad* and AssemblyUnload* callbacks
+    COR_PRF_MONITOR_ASSEMBLY_LOADS      = 0x00000008,
+
+    // MONITOR_APPDOMAIN_LOADS controls the
+    // AppDomainCreation* and AppDomainShutdown* callbacks
+    COR_PRF_MONITOR_APPDOMAIN_LOADS     = 0x00000010,
+
+    // MONITOR_JIT_COMPILATION controls the
+    // JITCompilation*, JITFunctionPitched, and JITInlining
+    // callbacks.
+    COR_PRF_MONITOR_JIT_COMPILATION     = 0x00000020,
+
+
+    // MONITOR_EXCEPTIONS controls the ExceptionThrown,
+    // ExceptionSearch*, ExceptionOSHandler*, ExceptionUnwind*,
+    // and ExceptionCatcher* callbacks.
+    COR_PRF_MONITOR_EXCEPTIONS          = 0x00000040,
+
+    // MONITOR_GC controls the GarbageCollectionStarted/Finished,
+    // MovedReferences, SurvivingReferences,
+    // ObjectReferences, ObjectsAllocatedByClass,
+    // RootReferences*, HandleCreated/Destroyed, and FinalizeableObjectQueued
+    // callbacks.
+    COR_PRF_MONITOR_GC                  = 0x00000080,
+
+    // MONITOR_OBJECT_ALLOCATED controls the
+    // ObjectAllocated callback.
+    COR_PRF_MONITOR_OBJECT_ALLOCATED    = 0x00000100,
+
+    // MONITOR_THREADS controls the ThreadCreated,
+    // ThreadDestroyed, ThreadAssignedToOSThread,
+    // and ThreadNameChanged callbacks.
+    COR_PRF_MONITOR_THREADS             = 0x00000200,
+
+    // CORECLR DEPRECATION WARNING: Remoting no longer exists in coreclr
+    // MONITOR_REMOTING controls the Remoting*
+    // callbacks.
+    COR_PRF_MONITOR_REMOTING            = 0x00000400,
+
+    // MONITOR_CODE_TRANSITIONS controls the
+    // UnmanagedToManagedTransition and
+    // ManagedToUnmanagedTransition callbacks.
+    COR_PRF_MONITOR_CODE_TRANSITIONS    = 0x00000800,
+
+    // MONITOR_ENTERLEAVE controls the
+    // FunctionEnter*/Leave*/Tailcall* callbacks
+    COR_PRF_MONITOR_ENTERLEAVE          = 0x00001000,
+
+    // MONITOR_CCW controls the COMClassicVTable*
+    // callbacks.
+    COR_PRF_MONITOR_CCW                 = 0x00002000,
+
+    // CORECLR DEPRECATION WARNING: Remoting no longer exists in coreclr
+    // MONITOR_REMOTING_COOKIE controls whether
+    // a cookie will be passed to the Remoting* callbacks
+    COR_PRF_MONITOR_REMOTING_COOKIE     = 0x00004000 | COR_PRF_MONITOR_REMOTING,
+
+    // CORECLR DEPRECATION WARNING: Remoting no longer exists in coreclr
+    // MONITOR_REMOTING_ASYNC controls whether
+    // the Remoting* callbacks will monitor async events
+    COR_PRF_MONITOR_REMOTING_ASYNC      = 0x00008000 | COR_PRF_MONITOR_REMOTING,
+
+    // MONITOR_SUSPENDS controls the RuntimeSuspend*,
+    // RuntimeResume*, RuntimeThreadSuspended, and
+    // RuntimeThreadResumed callbacks.
+    COR_PRF_MONITOR_SUSPENDS            = 0x00010000,
+
+    // MONITOR_CACHE_SEARCHES controls the
+    // JITCachedFunctionSearch* callbacks.
+    // See the comments on those callbacks for important
+    // behavior changes in V2.
+    COR_PRF_MONITOR_CACHE_SEARCHES      = 0x00020000,
+
+    // NOTE: ReJIT is now supported again.  The profiler must set this flag on
+    // startup in order to use RequestReJIT or RequestRevert.  If the profiler specifies
+    // this flag, then the profiler must also specify COR_PRF_DISABLE_ALL_NGEN_IMAGES
+    COR_PRF_ENABLE_REJIT                = 0x00040000,
+
+    // V2 MIGRATION WARNING: DEPRECATED
+    // Inproc debugging is no longer supported. ENABLE_INPROC_DEBUGGING
+    // has no effect.
+    COR_PRF_ENABLE_INPROC_DEBUGGING     = 0x00080000,
+
+    // V2 MIGRATION NOTE: DEPRECATED
+    // The runtime now always tracks IL-native maps; this flag is thus always
+    // considered to be set.
+    COR_PRF_ENABLE_JIT_MAPS             = 0x00100000,
+
+    // DISABLE_INLINING tells the runtime to disable all inlining
+    COR_PRF_DISABLE_INLINING            = 0x00200000,
+
+    // DISABLE_OPTIMIZATIONS tells the runtime to disable all code optimizations
+    COR_PRF_DISABLE_OPTIMIZATIONS       = 0x00400000,
+
+    // ENABLE_OBJECT_ALLOCATED tells the runtime that the profiler may want
+    // object allocation notifications.  This must be set during initialization if the profiler
+    // ever wants object notifications (using COR_PRF_MONITOR_OBJECT_ALLOCATED)
+    COR_PRF_ENABLE_OBJECT_ALLOCATED     = 0x00800000,
+
+    // MONITOR_CLR_EXCEPTIONS controls the ExceptionCLRCatcher*
+    // callbacks.
+    COR_PRF_MONITOR_CLR_EXCEPTIONS      = 0x01000000,
+
+    // All callback events are enabled with this flag
+    COR_PRF_MONITOR_ALL                 = 0x0107FFFF,
+
+    // ENABLE_FUNCTION_ARGS enables argument tracing through FunctionEnter2.
+    COR_PRF_ENABLE_FUNCTION_ARGS        = 0X02000000,
+
+    // ENABLE_FUNCTION_RETVAL enables retval tracing through FunctionLeave2.
+    COR_PRF_ENABLE_FUNCTION_RETVAL      = 0X04000000,
+
+    // ENABLE_FRAME_INFO enables retrieval of exact ClassIDs for generic functions using
+    // GetFunctionInfo2 with a COR_PRF_FRAME_INFO obtained from FunctionEnter2.
+    COR_PRF_ENABLE_FRAME_INFO           = 0X08000000,
+
+    // ENABLE_STACK_SNAPSHOT enables the used of DoStackSnapshot calls.
+    COR_PRF_ENABLE_STACK_SNAPSHOT       = 0X10000000,
+
+    // USE_PROFILE_IMAGES causes the native image search to look for profiler-enhanced
+    // images.  If no profiler-enhanced image is found for a given assembly the
+    // runtime will fallback to JIT for that assembly.
+    COR_PRF_USE_PROFILE_IMAGES          = 0x20000000,
+
+    // COR_PRF_DISABLE_TRANSPARENCY_CHECKS_UNDER_FULL_TRUST will disable security
+    // transparency checks normally done during JIT compilation and class loading for
+    // full trust assemblies. This can make some instrumentation easier to perform.
+    COR_PRF_DISABLE_TRANSPARENCY_CHECKS_UNDER_FULL_TRUST
+                                        = 0x40000000,
+
+    // Prevents all NGEN images (including profiler-enhanced images) from loading.  If
+    // this and COR_PRF_USE_PROFILE_IMAGES are both specified,
+    // COR_PRF_DISABLE_ALL_NGEN_IMAGES wins.
+    COR_PRF_DISABLE_ALL_NGEN_IMAGES     = 0x80000000,
+
+    // The mask for valid mask bits
+    COR_PRF_ALL                         = 0x8FFFFFFF,
+
+    // COR_PRF_REQUIRE_PROFILE_IMAGE represents all flags that require profiler-enhanced
+    // images.
+    COR_PRF_REQUIRE_PROFILE_IMAGE       = COR_PRF_USE_PROFILE_IMAGES |
+                                          COR_PRF_MONITOR_CODE_TRANSITIONS |
+                                          COR_PRF_MONITOR_ENTERLEAVE,
+
+    COR_PRF_ALLOWABLE_AFTER_ATTACH      = COR_PRF_MONITOR_THREADS |
+                                          COR_PRF_MONITOR_MODULE_LOADS |
+                                          COR_PRF_MONITOR_ASSEMBLY_LOADS |
+                                          COR_PRF_MONITOR_APPDOMAIN_LOADS |
+                                          COR_PRF_ENABLE_STACK_SNAPSHOT |
+                                          COR_PRF_MONITOR_GC |
+                                          COR_PRF_MONITOR_SUSPENDS |
+                                          COR_PRF_MONITOR_CLASS_LOADS |
+                                          COR_PRF_MONITOR_EXCEPTIONS |
+                                          COR_PRF_MONITOR_JIT_COMPILATION |
+                                          COR_PRF_ENABLE_REJIT,
+
+    COR_PRF_ALLOWABLE_NOTIFICATION_PROFILER
+                                        =     COR_PRF_MONITOR_FUNCTION_UNLOADS |
+                                              COR_PRF_MONITOR_CLASS_LOADS |
+                                              COR_PRF_MONITOR_MODULE_LOADS |
+                                              COR_PRF_MONITOR_ASSEMBLY_LOADS |
+                                              COR_PRF_MONITOR_APPDOMAIN_LOADS |
+                                              COR_PRF_MONITOR_JIT_COMPILATION |
+                                              COR_PRF_MONITOR_EXCEPTIONS |
+                                              COR_PRF_MONITOR_OBJECT_ALLOCATED |
+                                              COR_PRF_MONITOR_THREADS |
+                                              COR_PRF_MONITOR_CODE_TRANSITIONS |
+                                              COR_PRF_MONITOR_CCW |
+                                              COR_PRF_MONITOR_SUSPENDS |
+                                              COR_PRF_MONITOR_CACHE_SEARCHES |
+                                              COR_PRF_DISABLE_INLINING |
+                                              COR_PRF_DISABLE_OPTIMIZATIONS |
+                                              COR_PRF_ENABLE_OBJECT_ALLOCATED |
+                                              COR_PRF_MONITOR_CLR_EXCEPTIONS |
+                                              COR_PRF_ENABLE_STACK_SNAPSHOT |
+                                              COR_PRF_USE_PROFILE_IMAGES |
+                                              COR_PRF_DISABLE_ALL_NGEN_IMAGES,
+
+    // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
+    // Trying to change any of these flags elsewhere will result in a
+    // failed HRESULT.
+    COR_PRF_MONITOR_IMMUTABLE           = COR_PRF_MONITOR_CODE_TRANSITIONS |
+                                          COR_PRF_MONITOR_REMOTING |
+                                          COR_PRF_MONITOR_REMOTING_COOKIE |
+                                          COR_PRF_MONITOR_REMOTING_ASYNC |
+                                          COR_PRF_ENABLE_INPROC_DEBUGGING |
+                                          COR_PRF_ENABLE_JIT_MAPS |
+                                          COR_PRF_DISABLE_OPTIMIZATIONS |
+                                          COR_PRF_DISABLE_INLINING |
+                                          COR_PRF_ENABLE_OBJECT_ALLOCATED |
+                                          COR_PRF_ENABLE_FUNCTION_ARGS |
+                                          COR_PRF_ENABLE_FUNCTION_RETVAL |
+                                          COR_PRF_ENABLE_FRAME_INFO |
+                                          COR_PRF_USE_PROFILE_IMAGES |
+                                          COR_PRF_DISABLE_TRANSPARENCY_CHECKS_UNDER_FULL_TRUST |
+                                          COR_PRF_DISABLE_ALL_NGEN_IMAGES
+} COR_PRF_MONITOR;
+
+/*
+ * Additional flags the profiler can specify via SetEventMask2 when loading
+ */
+typedef enum
+{
+    COR_PRF_HIGH_MONITOR_NONE                       = 0x00000000,
+
+    // CORECLR DEPRECATION WARNING: This flag is no longer checked by the runtime
+    COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES            = 0x00000001,
+
+    COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED          = 0x00000002,
+
+    COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS   = 0x00000004,
+
+    COR_PRF_HIGH_DISABLE_TIERED_COMPILATION         = 0x00000008,
+
+    COR_PRF_HIGH_BASIC_GC                           = 0x00000010,
+
+    // Enables the MovedReferences/MovedReferences2 callback for compacting GCs only.
+    COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS           = 0x00000020,
+
+    COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE              = 0,
+
+    // Enables the large object allocation monitoring according to the LOH threshold.
+    COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED      = 0x00000040,
+
+    COR_PRF_HIGH_MONITOR_EVENT_PIPE                 = 0x00000080,
+
+    // Enables the pinned object allocation monitoring.
+    COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED     = 0x00000100,
+
+    COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED |
+                                                      COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS |
+                                                      COR_PRF_HIGH_BASIC_GC |
+                                                      COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS |
+                                                      COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED |
+                                                      COR_PRF_HIGH_MONITOR_EVENT_PIPE,
+
+    COR_PRF_HIGH_ALLOWABLE_NOTIFICATION_PROFILER
+                                        =     COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED |
+                                              COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS |
+                                              COR_PRF_HIGH_DISABLE_TIERED_COMPILATION |
+                                              COR_PRF_HIGH_BASIC_GC |
+                                              COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS |
+                                              COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED |
+                                              COR_PRF_HIGH_MONITOR_EVENT_PIPE,
+
+    // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
+    // Trying to change any of these flags elsewhere will result in a
+    // failed HRESULT.
+    COR_PRF_HIGH_MONITOR_IMMUTABLE                  = COR_PRF_HIGH_DISABLE_TIERED_COMPILATION,
+
+} COR_PRF_HIGH_MONITOR;
+
+/*
+ * COR_PRF_MISC contains miscellaneous constant ID's used for special
+ * purposes.
+ */
+typedef enum
+{
+    // PROFILER_PARENT_UNKNOWN is the AssemblyID used by GetModuleInfo
+    // when a module has not yet been attached to an assembly.
+    PROFILER_PARENT_UNKNOWN             = 0xFFFFFFFD,
+
+    // PROFILER_GLOBAL_CLASS is a ClassID used for globals that belong to no class
+    PROFILER_GLOBAL_CLASS               = 0xFFFFFFFE,
+
+    // PROFILER_GLOBAL_MODULE is a ModuleID used for globals that belong
+    // to no module in particular
+    PROFILER_GLOBAL_MODULE              = 0xFFFFFFFF
+} COR_PRF_MISC;
+
+/*
+ * COR_PRF_JIT_CACHE contains values used to express the result of a
+ * cached function search. Note that FOUND is 0, and thus this is not truly
+ * a boolean.
+ */
+typedef enum
+{
+    COR_PRF_CACHED_FUNCTION_FOUND,
+    COR_PRF_CACHED_FUNCTION_NOT_FOUND
+} COR_PRF_JIT_CACHE;
+
+/*
+ * COR_PRF_TRANSITION_REASON contains values used to describe
+ * the reason for a ManagedToUnmanaged or UnmanagedToManagedTransition
+ * callback.
+ */
+typedef enum
+{
+    COR_PRF_TRANSITION_CALL,
+    COR_PRF_TRANSITION_RETURN
+} COR_PRF_TRANSITION_REASON;
+
+/*
+ * COR_PRF_SUSPEND_REASON contains values used to describe the
+ * reason for suspending the runtime. See the RuntimeSuspension*
+ * callbacks for detailed descriptions of each.
+ */
+typedef enum
+{
+    COR_PRF_SUSPEND_OTHER                   = 0,
+    COR_PRF_SUSPEND_FOR_GC                  = 1,
+    COR_PRF_SUSPEND_FOR_APPDOMAIN_SHUTDOWN  = 2,
+    COR_PRF_SUSPEND_FOR_CODE_PITCHING       = 3,
+    COR_PRF_SUSPEND_FOR_SHUTDOWN            = 4,
+    COR_PRF_SUSPEND_FOR_INPROC_DEBUGGER     = 6,
+    COR_PRF_SUSPEND_FOR_GC_PREP             = 7,
+    COR_PRF_SUSPEND_FOR_REJIT               = 8,
+    COR_PRF_SUSPEND_FOR_PROFILER            = 9,
+} COR_PRF_SUSPEND_REASON;
+
+/*
+ * COR_PRF_RUNTIME_TYPE contains values used to indicate the
+ * type of runtime.
+ */
+typedef enum
+{
+    COR_PRF_DESKTOP_CLR = 0x1,
+    COR_PRF_CORE_CLR    = 0x2,
+} COR_PRF_RUNTIME_TYPE;
+
+/*
+ * COR_PRF_REJIT_FLAGS contains values used to control the behavior of
+ * RequestReJITWithInliners.
+ */
+typedef enum
+{
+    // ReJITted methods will be prevented from being inlined
+    COR_PRF_REJIT_BLOCK_INLINING = 0x1,
+
+    // This flag controls whether the runtime will call GetReJITParameters
+    // on methods that are ReJITted because they inline a method that was requested
+    // for ReJIT
+    COR_PRF_REJIT_INLINING_CALLBACKS    = 0x2
+} COR_PRF_REJIT_FLAGS;
+
+typedef UINT_PTR EVENTPIPE_PROVIDER;
+typedef UINT_PTR EVENTPIPE_EVENT;
+typedef UINT64   EVENTPIPE_SESSION;
+
+typedef enum
+{
+    COR_PRF_EVENTPIPE_OBJECT = 1,         // Instance that isn't a value
+    COR_PRF_EVENTPIPE_BOOLEAN = 3,        // Boolean
+    COR_PRF_EVENTPIPE_CHAR = 4,           // Unicode character
+    COR_PRF_EVENTPIPE_SBYTE = 5,          // Signed 8-bit integer
+    COR_PRF_EVENTPIPE_BYTE = 6,           // Unsigned 8-bit integer
+    COR_PRF_EVENTPIPE_INT16 = 7,          // Signed 16-bit integer
+    COR_PRF_EVENTPIPE_UINT16 = 8,         // Unsigned 16-bit integer
+    COR_PRF_EVENTPIPE_INT32 = 9,          // Signed 32-bit integer
+    COR_PRF_EVENTPIPE_UINT32 = 10,        // Unsigned 32-bit integer
+    COR_PRF_EVENTPIPE_INT64 = 11,         // Signed 64-bit integer
+    COR_PRF_EVENTPIPE_UINT64 = 12,        // Unsigned 64-bit integer
+    COR_PRF_EVENTPIPE_SINGLE = 13,        // IEEE 32-bit float
+    COR_PRF_EVENTPIPE_DOUBLE = 14,        // IEEE 64-bit double
+    COR_PRF_EVENTPIPE_DECIMAL = 15,       // Decimal
+    COR_PRF_EVENTPIPE_DATETIME = 16,      // DateTime
+    COR_PRF_EVENTPIPE_GUID = 17,          // Guid
+    COR_PRF_EVENTPIPE_STRING = 18,        // Unicode character string
+    COR_PRF_EVENTPIPE_ARRAY = 19,         // Arbitrary length array
+} COR_PRF_EVENTPIPE_PARAM_TYPE;
+
+typedef enum
+{
+    COR_PRF_EVENTPIPE_LOGALWAYS = 0,
+    COR_PRF_EVENTPIPE_CRITICAL = 1,
+    COR_PRF_EVENTPIPE_ERROR = 2,
+    COR_PRF_EVENTPIPE_WARNING = 3,
+    COR_PRF_EVENTPIPE_INFORMATIONAL = 4,
+    COR_PRF_EVENTPIPE_VERBOSE = 5
+} COR_PRF_EVENTPIPE_LEVEL;
+
+typedef struct
+{
+    const WCHAR* providerName;
+    UINT64       keywords;
+    UINT32       loggingLevel;
+    // filterData expects a semicolon delimited string that defines key value pairs
+    // such as "key1=value1;key2=value2;". Quotes can be used to escape the '=' and ';'
+    // characters. These key value pairs will be passed in the enable callback to event
+    // providers
+    const WCHAR* filterData;
+} COR_PRF_EVENTPIPE_PROVIDER_CONFIG;
+
+typedef struct
+{
+    UINT32       type;
+    // Used if type == ArrayType
+    UINT32       elementType;
+    const WCHAR *name;
+} COR_PRF_EVENTPIPE_PARAM_DESC;
+
+typedef struct
+{
+    UINT64 ptr;
+    UINT32 size;
+    UINT32 reserved;
+} COR_PRF_EVENT_DATA;
+
+/* -------------------------------------------------------------------------- *
+ * Forward declarations
+ * -------------------------------------------------------------------------- */
+
+interface ICorProfilerCallback;
+interface ICorProfilerCallback2;
+interface ICorProfilerCallback3;
+interface ICorProfilerCallback4;
+interface ICorProfilerInfo;
+interface ICorProfilerInfo2;
+interface ICorProfilerInfo3;
+interface ICorProfilerInfo4;
+interface ICorProfilerObjectEnum;
+interface ICorProfilerFunctionEnum;
+interface ICorProfilerModuleEnum;
+interface ICorProfilerThreadEnum;
+interface ICorProfilerMethodEnum;
+interface IMethodMalloc;
+interface ICorProfilerFunctionControl;
+interface ICorProfilerAssemblyReferenceProvider;
+/* -------------------------------------------------------------------------- *
+ * User Callback interface
+ * -------------------------------------------------------------------------- */
+
+/*
+ * The ICorProfilerCallback interface is used by the CLR to notify a
+ * code profiler when events have occurred that the code profiler has registered
+ * an in interest in receiving. This is the primary callback interface through
+ * which the CLR communicates with the code profiler. A code profiler
+ * must register this callback interface in the Win32 registry. This object has
+ * several methods that receive notification from the runtime when an event is
+ * about to occur in an executing runtime process.
+ *
+ * The methods implemented on this interface return S_OK on success, or E_FAIL
+ * on failure.
+ */
+
+[
+    object,
+    uuid(176FBED1-A55C-4796-98CA-A9DA0EF883E7),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback : IUnknown
+{
+
+    /*
+     *
+     * STARTUP/SHUTDOWN EVENTS
+     *
+     */
+
+    /*
+     * The CLR calls Initialize to setup the code profiler
+     * whenever a new CLR application is started. The call provides
+     * an IUnknown interface pointer that should be QI'd for an ICorProfilerInfo
+     * interface pointer.
+     *
+     * NOTE: this is the only opportunity to enable callbacks that are a part
+     * of COR_PRF_MONITOR_IMMUTABLE, since they can no longer be changed after
+     * returning from this function.  This is done through SetEventMask on the
+     * ICorProfilerInfo object.
+     */
+    HRESULT Initialize(
+                [in] IUnknown     *pICorProfilerInfoUnk);
+
+    /*
+     * The CLR calls Shutdown to notify the code profiler that
+     * the application is exiting.  This is the profiler's last opportunity to
+     * safely call functions on the ICorProfilerInfo interface.  After returning
+     * from this function the runtime will proceed to unravel its internal data
+     * structures and any calls to ICorProfilerInfo are undefined in their
+     * behaviour.
+     *
+     * NOTE: Certain IMMUTABLE events may still occur after Shutdown.
+     *
+     * NOTE: Shutdown will only fire where the managed application that is being
+     * profiled was started running managed code (i.e., the initial frame on the
+     * process' stack is managed).  If the application being profiled started
+     * life as unmanaged code, which later 'jumped into' managed code (thereby
+     * creating an instance of the CLR), then Shutdown will not fire.  In these
+     * cases, the profiler should include a DllMain routine in their library that
+     * uses Win32's DLL_PROCESS_DETACH call to free any resources and perform tidy-up
+     * processing of its data (flush traces to disk, etc)
+     *
+     * NOTE: The profiler must in general cope with unexpected shutdowns, such as
+     * when the process is "killed" by Win32's TerminateProcess.
+     *
+     * NOTE: Sometimes the CLR will violently kill certain managed threads
+     * (background threads) without delivering orderly destruction messages for them.
+     */
+    HRESULT Shutdown();
+
+
+    /*
+     *
+     * APPLICATION DOMAIN EVENTS
+     *
+     */
+
+    /*
+     * Called when an application domain creation has begun and ended.
+     * The ID is not valid for any information request until the Finished
+     * event is called.
+     *
+     * Some parts of app domain loading may take place lazily at some time
+     * after the Finished callback. Therefore, while a failure HRESULT in
+     * hrStatus definitely indicates a failure, a success HRESULT only indicates
+     * that the first part of app domain creation succeeded.
+     */
+    HRESULT AppDomainCreationStarted(
+                [in] AppDomainID appDomainId);
+
+    HRESULT AppDomainCreationFinished(
+                [in] AppDomainID appDomainId,
+                [in] HRESULT     hrStatus);
+
+    /*
+     * Called before and after an app domain is unloaded from a process.
+     * The ID is no longer valid after the Started event returns.
+     *
+     * Some parts of app domain unloading may take place lazily at some time
+     * after the Finished callback. Therefore, while a failure HRESULT in
+     * hrStatus definitely indicates a failure, a success HRESULT only indicates
+     * that the first part of app domain unloading succeeded.
+     */
+    HRESULT AppDomainShutdownStarted(
+                [in] AppDomainID appDomainId);
+
+    HRESULT AppDomainShutdownFinished(
+                [in] AppDomainID appDomainId,
+                [in] HRESULT     hrStatus);
+
+    /*
+     *
+     * ASSEMBLY EVENTS
+     *
+     */
+
+    /*
+     * Called when an Assembly load has begun and ended. The ID is not valid
+     * for any information request until the Finished event is called.
+     *
+     * Some parts of assembly loading may take place lazily at some time
+     * after the Finished callback. Therefore, while a failure HRESULT in
+     * hrStatus definitely indicates a failure, a success HRESULT only indicates
+     * that the first part of assembly loading succeeded.
+     */
+    HRESULT AssemblyLoadStarted(
+                [in] AssemblyID assemblyId);
+
+    HRESULT AssemblyLoadFinished(
+                [in] AssemblyID assemblyId,
+                [in] HRESULT    hrStatus);
+
+    /*
+     * Called before and after an assembly is unloaded.
+     * The ID is no longer valid after the Started event returns.
+     *
+     * Some parts of assembly unloading may take place lazily at some time
+     * after the Finished callback. Therefore, while a failure HRESULT in
+     * hrStatus definitely indicates a failure, a success HRESULT only indicates
+     * that the first part of assembly unloading succeeded.
+     */
+    HRESULT AssemblyUnloadStarted(
+                [in] AssemblyID assemblyId);
+
+    HRESULT AssemblyUnloadFinished(
+                [in] AssemblyID assemblyId,
+                [in] HRESULT    hrStatus);
+
+
+    /*
+     *
+     * MODULE EVENTS
+     *
+     */
+
+    /*
+     * Called when a module load has begun and ended. The ID is not valid
+     * for any information request until the Finished event is called.
+     *
+     * Some parts of module loading may take place lazily at some time
+     * after the Finished callback. Therefore, while a failure HRESULT in
+     * hrStatus definitely indicates a failure, a success HRESULT only indicates
+     * that the first part of module loading succeeded.
+     *
+     * Note that when a module load is reported as finished this indicates
+     * that the load has completed but it has not yet returned to the caller.
+     * This is the opportunity for the profiler to note that other notifications regarding
+     * this module may start coming afterwards however internal safeguards
+     * protecting the runtime from recursive loading are still present and so it is
+     * a bad time to begin inquiries on this module.  The notification is informational
+     * only.
+     *
+     * Note: ModuleLoadFinished is a reasonable time to interrogate MetaData via API's
+     * like GetModuleMetadata, however APIs that create (e.g. ClassID's and FunctionID's)
+     * are not safe to use here.  Profiler writers are advised to stay in the universe of
+     * tokens.
+     *
+     */
+    HRESULT ModuleLoadStarted(
+                [in] ModuleID moduleId);
+
+    HRESULT ModuleLoadFinished(
+                [in] ModuleID moduleId,
+                [in] HRESULT  hrStatus);
+
+    /*
+     * Called before and after a module is unloaded.
+     * The ID is no longer valid after the Started event returns.
+     *
+     * Some parts of module unloading may take place lazily at some time
+     * after the Finished callback. Therefore, while a failure HRESULT in
+     * hrStatus definitely indicates a failure, a success HRESULT only indicates
+     * that the first part of module unloading succeeded.
+     */
+    HRESULT ModuleUnloadStarted(
+                [in] ModuleID moduleId);
+
+    HRESULT ModuleUnloadFinished(
+                [in] ModuleID moduleId,
+                [in] HRESULT  hrStatus);
+
+    /*
+     * A module can get loaded through legacy means (ie: IAT or LoadLibrary) or
+     * through a metadata reference.  The CLR loader therefore has many code
+     * paths for determining what assembly a module lives in.  It is therefore
+     * possible that after a ModuleLoadFinished event, the module does not
+     * know what assembly it is in and getting the parent AssemblyID is not possible.
+     * This event is fired when the module is officially attached to its parent
+     * assembly.  Calling GetModuleInfo after this function is called will return the
+     * proper parent assembly.
+     */
+    HRESULT ModuleAttachedToAssembly(
+                [in] ModuleID   moduleId,
+                [in] AssemblyID AssemblyId);
+
+
+    /*
+     *
+     *  CLASS EVENTS
+     *
+     */
+
+    /*
+     * Called when a class load has begun and ended. The ID is not valid
+     * for any information request until the Finished event is called.
+     *
+     * Some parts of class loading may take place lazily at some time
+     * after the Finished callback. Therefore, while a failure HRESULT in
+     * hrStatus definitely indicates a failure, a success HRESULT only indicates
+     * that the first part of class loading succeeded.
+     *
+     * Note that when a class load is reported as finished this indicates
+     * that the load has completed but it has not yet returned to the caller.
+     * This is the opportunity for the profiler to note that other notifications regarding
+     * this class may start coming afterwards however internal safeguards
+     * protecting the runtime from recursive loading are still present and so it is
+     * a bad time to begin inquiries on this class.  The notification is informational
+     * only.
+     *
+     */
+    HRESULT ClassLoadStarted(
+                [in] ClassID classId);
+
+    HRESULT ClassLoadFinished(
+                [in] ClassID classId,
+                [in] HRESULT hrStatus);
+
+    /*
+     * Called before and after a class is unloaded.
+     * The ID is no longer valid after the Started event returns.
+     *
+     * Some parts of class unloading may take place lazily at some time
+     * after the Finished callback. Therefore, while a failure HRESULT in
+     * hrStatus definitely indicates a failure, a success HRESULT only indicates
+     * that the first part of class unloading succeeded.
+     */
+    HRESULT ClassUnloadStarted(
+                [in] ClassID classId);
+
+    HRESULT ClassUnloadFinished(
+                [in] ClassID classId,
+                [in] HRESULT hrStatus);
+
+    /*
+     *
+     * JIT EVENTS
+     *
+     */
+
+    /*
+     * The CLR calls FunctionUnloadStarted to notify the code
+     * profiler that a function is being unloaded.  After returning from this
+     * call, the FunctionID is no longer valid.
+     */
+    HRESULT FunctionUnloadStarted(
+                [in] FunctionID functionId);
+
+
+    /*
+     * The CLR calls JITCompilationStarted to notify the code
+     * profiler that the JIT compiler is starting to compile a function.
+     *
+     * The fIsSafeToBlock argument tells the profiler whether or not blocking
+     * will affect the operation of the runtime.  If true, blocking may cause
+     * the runtime to wait for the calling thread to return from this callback.
+     * Although this will not harm the runtime, it will skew the profiling
+     * results.
+     *
+     * NOTE: It is possible to receive more than one JITCompilationStarted/
+     * JITCompilationFinished pair for each method.  This is because of how
+     * the runtime handles class constructors: method A starts to be JIT'd,
+     * then realizes that the class ctor for class B needs to be run, so
+     * JIT's it and runs it, and while it's running makes a call to original
+     * method A, which causes it to be JIT'd again, and causes the original
+     * (incomplete) JIT'ing of A to be aborted.  However, both attempts to
+     * JIT A are reported with JIT compilation events.  If the profiler is
+     * going to replace IL code for this method with SetILFunctionBody, then
+     * it must do so for both JITCompilationStarted events, but may use the
+     * same IL block for both.
+     *
+     * NOTE: A profiler should be tolerant of the sequence of JIT callbacks
+     * received in cases where two threads are simultaneously calling a
+     * method.  For example, thread A receives JITCompilationStarted.
+     * But before thread A receives JITCompilationFinished, thread B
+     * receives FunctionEnter with the functionId from thread A's
+     * JITCompilationStarted callback.  It may appear that functionId should
+     * not yet be valid because JITCompilationFinished had not yet been
+     * received.  But it is indeed valid in such a case.
+     */
+    HRESULT JITCompilationStarted(
+                [in] FunctionID functionId,
+                [in] BOOL       fIsSafeToBlock);
+
+    /*
+     * The CLR calls JITCompilationFinished to notify the code
+     * profiler that the JIT compiler has finished compiling a function.
+     *
+     * The fIsSafeToBlock argument tells the profiler whether or not blocking
+     * will affect the operation of the runtime.  If true, blocking may cause
+     * the runtime to wait for the calling thread to return from this callback.
+     * Although this will not harm the runtime, it will skew the profiling
+     * results.
+     *
+     * The FunctionID is now valid in ICorProfilerInfo APIs.
+     *
+     * The hrStatus provides the success or failure of the operation
+     */
+    HRESULT JITCompilationFinished(
+                [in] FunctionID functionId,
+                [in] HRESULT    hrStatus,
+                [in] BOOL       fIsSafeToBlock);
+
+    /*
+     * V2 MIGRATION WARNING: DOES NOT ALWAYS OCCUR
+     * The JITCachedFunctionSearchStarted/Finished callbacks
+     * will now occur only for some functions in regular NGEN images;
+     * only profiler-optimized NGEN images will generate callbacks for
+     * all functions in the image. Profilers which do not use these callbacks
+     * to force a function to be JIT-compiled should move to using a lazy
+     * strategy for gathering function information.
+     *
+     * This notifies the profiler when a search for a prejitted function is
+     * starting.
+     *
+     *    functionId: the function for which the search is being performed.
+     *    bUseCachedFunction: if true, the EE uses the cached function (if applicable)
+     *                        if false, the EE jits the function instead of
+     *                        using a pre-jitted version.
+     *
+     * NOTE: Profilers should be tolerant of cases where multiple threads of
+     * a profiled app are calling the same method simultaneously.  For example,
+     * thread A may receive JITCachedFunctionSearchStarted (and the
+     * profiler sets *pbUseCachedFunction=FALSE to force a JIT), thread A
+     * then receives JITCompilationStarted/JITCompilationFinished, then
+     * thread B receives another JITCachedFunctionSearchStarted for the same
+     * method.  It might appear odd to receive this final callback, since the
+     * profiler already stated its intention to JIT the method.  But this is
+     * occurring because the CLR in thread B decided to send this callback
+     * before thread A responded to JITCachedFunctionSearchStarted
+     * with *pbUseCachedFunction=FALSE, and the thread B callback
+     * hadn't actually been sent until now due how the threads
+     * happened to be scheduled.  In such cases where the profiler
+     * receives duplicate JITCachedFunctionSearchStarted callbacks for
+     * the same functionId, the profiler should be certain to set
+     * *pbUseCachedFunction to the same value from this callback
+     * when it is called multiple times with the same functionId.
+     */
+    HRESULT JITCachedFunctionSearchStarted(
+                [in] FunctionID functionId,
+                [out] BOOL      *pbUseCachedFunction);
+
+    /*
+     * V2 MIGRATION WARNING: DOES NOT ALWAYS OCCUR
+     * The JITCachedFunctionSearchStarted/Finished callbacks
+     * will now occur only for some functions in regular NGEN images;
+     * only profiler-optimized NGEN images will generate callbacks for
+     * all functions in the image. Profilers which do not use these callbacks
+     * to force a function to be JIT-compiled should move to using a lazy
+     * strategy for gathering function information.
+     *
+     * This notifies the profiler when a search for a cached function has been
+     * performed.
+     *
+     *    functionId: the function for which the search has been performed.
+     *    result: the result of the search.  There are two possible results:
+     *        COR_PRF_CACHED_FUNCTION_FOUND
+     *        COR_PRF_CACHED_FUNCTION_NOT_FOUND
+     *
+     */
+    HRESULT JITCachedFunctionSearchFinished(
+                [in] FunctionID        functionId,
+                [in] COR_PRF_JIT_CACHE result);
+
+    /*
+     * The CLR calls JITFunctionPitched to notify the profiler
+     * that a jitted function was removed from memory.  If the pitched
+     * function is called in the future, the profiler will receive new
+     * JIT compilation events as it is re-jitted.
+     *
+     * Currently the CLR JIT does not pitch functions, so this callback
+     * will not be received.
+     *
+     * NOTE: the FunctionID is not valid until it is re-jitted.  When it is
+     * re-jitted, it will use the same FunctionID value.
+     */
+    HRESULT JITFunctionPitched(
+                [in] FunctionID functionId);
+
+    /*
+     * The CLR calls JITInlining to notify the profiler that the jitter
+     * is about to inline calleeId into callerId.  Set pfShouldInline to FALSE
+     * to prevent the callee from being inlined into the caller, and set to
+     * TRUE to allow the inline to occur.
+     *
+     * NOTE: Inlined functions do not provide Enter/Leave events, so if you desire
+     *       an accurate callgraph, you should set FALSE.  Be aware that
+     *       setting FALSE will affect performance, since inlining typically
+     *       increases speed and reduces separate jitting events for the inlined
+     *       method.
+     *
+     * NOTE: It is also possible to globally disable inlining by setting the
+     *       COR_PRF_DISABLE_INLINING flag.
+     */
+    HRESULT JITInlining(
+                [in] FunctionID callerId,
+                [in] FunctionID calleeId,
+                [out] BOOL      *pfShouldInline);
+
+    /*
+     *
+     * THREAD EVENTS
+     *
+     */
+
+    /*
+     * The CLR calls ThreadCreated to notify the code profiler
+     * that a thread has been created.  The ThreadID is valid immediately.
+     */
+    HRESULT ThreadCreated(
+                [in] ThreadID threadId);
+
+    /*
+     * The CLR calls ThreadDestroyed to notify the code profiler
+     * that a thread has been destroyed.  The ThreadID is no longer valid
+     * at the time of this call.
+     */
+    HRESULT ThreadDestroyed(
+                [in] ThreadID threadId);
+
+    /*
+     * The CLR calls ThreadAssignedToOSThread to tell the profiler
+     * that a managed thread is being implemented via a particualr OS thread.
+     * This callback exists so that the profiler can maintain an accurate
+     * OS to Managed thread mapping across fibres.
+     */
+    HRESULT ThreadAssignedToOSThread(
+                [in] ThreadID managedThreadId,
+                [in] DWORD    osThreadId);
+
+    /*
+     *
+     * REMOTING EVENTS
+     *
+     */
+
+    //
+    // Client-side events
+    //
+
+    /*
+     * NOTE: each of the following pairs of callbacks will occur on the same
+     *       thread
+     *   RemotingClientInvocationStarted  & RemotingClientSendingMessage
+     *   RemotingClientReceivingReply     & RemotingClientInvocationFinished
+     *   RemotingServerInvocationReturned & RemotingServerSendingReply
+     *
+     * There are a few issues with the remoting callbacks that should be outlined.
+     * First, remoting function execution is not reflected by the profiler API, so
+     * the notifications for functions that are called from the client and executed
+     * to the server are not properly received. The actual invocation happens via a
+     * proxy object. That creates the illusion to the profiler that certain
+     * functions get jit-compiled but they never get used. Second, the profiler does
+     * not receive accurate notifications for asynchronous remoting events.
+     */
+
+    /*
+     * The CLR calls RemotingClientInvocationStarted to notify the profiler that
+     * a remoting call has begun.  This event is the same for synchronous and
+     * asynchronous calls.
+     */
+    HRESULT RemotingClientInvocationStarted();
+
+    /*
+     * The CLR calls RemotingClientSendingMessage to notify the profiler that
+     * a remoting call is requiring the the caller to send an invocation request through
+     * a remoting channel.
+     *
+     * pCookie  - if remoting GUID cookies are active, this value will correspond with the
+     *            the value provided in RemotingServerReceivingMessage, if the channel
+     *            succeeds in transmitting the message, and if GUID cookies are active on
+     *            the server-side process.  This allows easy pairing of remoting calls,
+     *            and the creation of a logical call stack.
+     * fIsAsync - is true if the call is asynchronous.
+     */
+    HRESULT RemotingClientSendingMessage(
+                [in] GUID *pCookie,
+                [in] BOOL fIsAsync);
+
+    /*
+     * The CLR calls RemotingClientReceivingReply to notify the profiler that
+     * the server-side portion of a remoting call has completed and that the client is
+     * now receiving and about to process the reply.
+     *
+     * pCookie  - if remoting GUID cookies are active, this value will correspond with the
+     *            the value provided in RemotingServerSendingReply, if the channel
+     *            succeeds in transmitting the message, and if GUID cookies are active on
+     *            the server-side process.  This allows easy pairing of remoting calls.
+     * fIsAsync - is true if the call is asynchronous.
+     */
+    HRESULT RemotingClientReceivingReply(
+                [in] GUID *pCookie,
+                [in] BOOL fIsAsync);
+
+    /*
+     * The CLR calls RemotingClientInvocationFinished to notify the profiler that
+     * a remoting invocation has run to completion on the client side.  If the call was
+     * synchronous, this means that it has also run to completion on the server side.  If
+     * the call was asynchronous, a reply may still be expected when the call is handled.
+     * If the call is asynchronous, and a reply is expected, then the reply will occur in
+     * the form of a call to RemotingClientReceivingReply and an additional call to
+     * RemotingClientInvocationFinished to indicate the required secondary processing of
+     * an asynchronous call.
+     */
+    HRESULT RemotingClientInvocationFinished();
+
+    //
+    // Server-side events
+    //
+
+    /*
+     * The CLR calls RemotingServerReceivingMessage to notify the profiler that
+     * the process has received a remote method invocation (or activation) request.  If
+     * the message request is asynchronous, then the request may be serviced by any
+     * arbitrary thread.
+     *
+     * pCookie  - if remoting GUID cookies are active, this value will correspond with the
+     *            the value provided in RemotingClientSendingMessage, if the channel
+     *            succeeds in transmitting the message, and if GUID cookies are active on
+     *            the client-side process.  This allows easy pairing of remoting calls.
+     * fIsAsync - is true if the call is asynchronous.
+     */
+    HRESULT RemotingServerReceivingMessage(
+                [in] GUID *pCookie,
+                [in] BOOL fIsAsync);
+
+    /*
+     * The CLR calls RemotingServerInvocationStarted to notify the profiler that
+     * the process is invoking a method due to a remote method invocation request.
+     */
+    HRESULT RemotingServerInvocationStarted();
+
+    /*
+     * The CLR calls RemotingServerInvocationReturned to notify the profiler that
+     * the process has finished invoking a method due to a remote method invocation request.
+     */
+    HRESULT RemotingServerInvocationReturned();
+
+    /*
+     * The CLR calls RemotingServerSendingReply to notify the profiler that
+     * the process has finished processing a remote method invocation request and is
+     * about to transmit the reply through a channel.
+     *
+     * pCookie  - if remoting GUID cookies are active, this value will correspond with the
+     *            the value provided in RemotingClientReceivingReply, if the channel
+     *            succeeds in transmitting the message, and if GUID cookies are active on
+     *            the client-side process.  This allows easy pairing of remoting calls.
+     * fIsAsync - is true if the call is asynchronous.
+     */
+    HRESULT RemotingServerSendingReply(
+                [in] GUID *pCookie,
+                [in] BOOL fIsAsync);
+
+    /*
+     *
+     * TRANSITION EVENTS
+     *
+     */
+
+    /*
+     * The CLR calls UnmanagedToManagedTransition to notify the
+     * code profiler that a transition from unmanaged code to managed code has
+     * occurred. functionId is always the ID of the callee, and reason
+     * indicates whether the transition was due to a call into managed code from
+     * unmanaged, or a return from an unmanaged function called by a managed one.
+     *
+     * Note that if the reason is COR_PRF_TRANSITION_RETURN and the functionId is
+     * non-NULL, then the functionId is that of the unmanaged function, and will
+     * never have been jitted. Unmanaged functions still have some basic
+     * information associated with them, such as a name, and some metadata.
+     *
+     * Note that if the reason is COR_PRF_TRANSITION_RETURN and the callee was
+     * a PInvoke call indirect, then the runtime does not know the destination
+     * of the call and functionId will be NULL.
+     *
+     * Note that if the reason is COR_PRF_TRANSITION_CALL then it may be possible
+     * that the callee has not yet been JIT-compiled.
+     */
+    HRESULT UnmanagedToManagedTransition(
+                [in] FunctionID                functionId,
+                [in] COR_PRF_TRANSITION_REASON reason);
+
+
+    /*
+     * The CLR calls ManagedToUnmanagedTransition to notify the
+     * code profiler that a transition from managed code to unmanaged code has
+     * occurred. functionId is always the ID of the callee, and reason
+     * indicates whether the transition was due to a call into unmanaged code from
+     * managed, or a return from an managed function called by an unmanaged one.
+     *
+     * Note that if the reason is COR_PRF_TRANSITION_CALL, then the functionId
+     * is that of the unmanaged function, and will never have been jitted.
+     * Unmanaged functions still have some basic information associated with
+     * them, such as a name, and some metadata.
+     *
+     * Note that if the reason is COR_PRF_TRANSITION_CALL and the callee is
+     * a PInvoke call indirect, then the runtime does not know the destination
+     * of the call and functionId will be NULL.
+     */
+    HRESULT ManagedToUnmanagedTransition(
+                [in] FunctionID                functionId,
+                [in] COR_PRF_TRANSITION_REASON reason);
+
+
+    /*
+     *
+     * RUNTIME SUSPENSION EVENTS
+     *
+     */
+
+    /*
+     * The CLR calls RuntimeSuspendStarted to notify the code profiler
+     * that the runtime is about to suspend all of the runtime threads.
+     * All runtime threads that are in unmanaged code are permitted to continue
+     * running until they try to re-enter the runtime, at which point they will
+     * also suspend until the runtime resumes.  This also applies to new threads
+     * that enter the runtime.  All threads within the runtime are either
+     * suspended immediately if they are in interruptible code, or asked to
+     * suspend when they do reach interruptible code.
+     *
+     * suspendReason make be any of the following values:
+     *  COR_PRF_SUSPEND_FOR_GC
+     *      the runtime is suspending to service a GC request.  The GC-related
+     *      callbacks will occur between the RuntimeSuspendFinished and
+     *      RuntimeResumeStarted events.
+     *  COR_PRF_SUSPEND_FOR_CODE_PITCHING
+     *      the runtime is suspending so that code pitching may occur.  This
+     *      only occurs when the EJit is active with code pitching enabled.
+     *      Code pitching callbacks will occur between the
+     *      RuntimeSuspendFinished and RuntimeResumeStarted events.
+     *  COR_PRF_SUSPEND_FOR_APPDOMAIN_SHUTDOWN
+     *      the runtime is suspending so that an AppDomain can be shut down.
+     *      While the runtime is suspended, the runtime will determine which
+     *      threads are in the AppDomain that is being shut down, set them to
+     *      abort when they resume, and then resumes the runtime.  There are
+     *      no AppDomain-specific callbacks during this suspension.
+     *  COR_PRF_SUSPEND_FOR_SHUTDOWN
+     *      the runtime is shutting down, and it must suspend all threads to
+     *      complete the operation.
+     *  COR_PRF_SUSPEND_FOR_GC_PREP
+     *      the runtime is preparing for a GC.
+     *  COR_PRF_SUSPEND_FOR_INPROC_DEBUGGER
+     *      the runtime is suspending for in-process debugging.
+     *  COR_PRF_SUSPEND_FOR_PROFILER
+     *      the runtime is suspending because of ICorProfilerInfo10::SuspendRuntime.
+     *  COR_PRF_SUSPEND_OTHER
+     *      the runtime is suspending for a reason other than those above.
+     */
+    HRESULT RuntimeSuspendStarted(
+            [in] COR_PRF_SUSPEND_REASON suspendReason);
+
+    /*
+     * The CLR calls RuntimeSuspendFinished to notify the code profiler
+     * that the runtime has suspended all threads needed for a runtime
+     * suspension.  Note that not all runtime threads are required to be
+     * suspended, as described in the comment for RuntimeSuspendStarted.
+     *
+     * NOTE: It is guaranteed that this event will occur on the same ThreadID
+     * as RuntimeSuspendStarted occurred on.
+     */
+    HRESULT RuntimeSuspendFinished();
+
+    /*
+     * The CLR calls RuntimeSuspendAborted to notify the code profiler
+     * that the runtime is aborting the runtime suspension that was occurring.
+     * This may occur if two threads simultaneously attempt to suspend the
+     * runtime.
+     *
+     * NOTE: It is guaranteed that this event will occur on the same ThreadID
+     * as the RuntimeSuspendStarted occurred on, and that only one of
+     * RuntimeSuspendFinished and RuntimeSuspendAborted may occur on a single
+     * thread following a RuntimeSuspendStarted event.
+     */
+    HRESULT RuntimeSuspendAborted();
+
+    /*
+     * The CLR calls RuntimeResumeStarted to notify the code profiler
+     * that the runtime is about to resume all of the runtime threads.
+     */
+    HRESULT RuntimeResumeStarted();
+
+    /*
+     * The CLR calls RuntimeResumeFinished to notify the code profiler
+     * that the runtime has finished resuming all of it's threads and is now
+     * back in normal operation.
+     *
+     * NOTE: It is *NOT* guaranteed that this event will occur on the same
+     * ThreadID as the RuntimeSuspendStarted occurred on, but is guaranteed
+     * to occur on the same ThreadID as the RuntimeResumeStarted occurred on.
+     */
+    HRESULT RuntimeResumeFinished();
+
+    /*
+     * The CLR calls RuntimeThreadSuspended to notify the code profiler
+     * that a particular thread has been suspended.
+     *
+     * This notification may occur any time between the RuntimeSuspendStarted
+     * and the associated RuntimeResumeStarted. Notifications that occur
+     * between RuntimeSuspendFinished and RuntimeResumeStarted are for
+     * threads that had been running in unmanaged code and were suspended
+     * upon entry to the runtime.
+     */
+    HRESULT RuntimeThreadSuspended(
+                    [in] ThreadID threadId);
+
+    /*
+     * The CLR calls RuntimeThreadResumed to notify the code profiler
+     * that a particular thread has been resumed after being suspended due to
+     * a runtime suspension.
+     */
+    HRESULT RuntimeThreadResumed(
+                    [in] ThreadID threadId);
+
+    /*
+     *
+     * GC EVENTS
+     *
+     * NOTE: All of these callbacks (except ObjectAllocated) are made while the
+     *       runtime is suspended, so none of the ObjectID values can change until
+     *       the runtime resumes and another GC occurs.
+     *
+     * NOTE: The profiler will receive GC-related events (except ObjectAllocated)
+     *       when the profiler has been suspended for COR_PRF_SUSPEND_FOR_GC *except*
+     *       for one special case.  When the runtime is shutting down, there is a
+     *       stage where it is suspended for COR_PRF_SUSPEND_FOR_SHUTDOWN reason and
+     *       is never resumed.  But after this suspension a garbage collection may
+     *       occur without a COR_PRF_SUSPEND_FOR_GC suspension notification, and
+     *       the profiler will thus receive GC-related callbacks.
+     *
+     * NOTE: All of these callbacks (except ObjectAllocated) may be called more than
+     *       once during the same GC. These calls should be considered multiple parts of
+     *       one long report; the profiler should simply aggregate the information provided
+     *       in all of them.
+     */
+
+    /*
+     * The CLR calls MovedReferences with information about
+     * object references that moved as a result of garbage collection.
+     *
+     * cMovedObjectIDRanges is a count of the number of ObjectID ranges that
+     *      were moved.
+     * oldObjectIDRangeStart is an array of elements, each of which is the start
+     *      value of a range of ObjectID values before being moved.
+     * newObjectIDRangeStart is an array of elements, each of which is the start
+     *      value of a range of ObjectID values after being moved.
+     * cObjectIDRangeLength is an array of elements, each of which states the
+     *      size of the moved ObjectID value range.
+     *
+     * The last three arguments of this function are parallel arrays.
+     *
+     * In other words, if an ObjectID value lies within the range
+     *      oldObjectIDRangeStart[i] <= ObjectID < oldObjectIDRangeStart[i] + cObjectIDRangeLength[i]
+     * for 0 <= i < cMovedObjectIDRanges, then the ObjectID value has changed to
+     *      ObjectID - oldObjectIDRangeStart[i] + newObjectIDRangeStart[i]
+     *
+     * NOTE: None of the objectIDs returned by MovedReferences are valid during the callback
+     * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
+     * should not attempt to inspect objects during a MovedReferences call. At
+     * GarbageCollectionFinished, all objects have been moved to their new locations, and
+     * inspection may be done.
+     *
+     * THIS CALLBACK IS OBSOLETE. It reports ranges for objects >4GB as UINT32_MAX
+     * on 64-bit platforms. Use ICorProfilerCallback4::MovedReferences2 instead.
+     */
+    HRESULT MovedReferences(
+                [in]                                ULONG    cMovedObjectIDRanges,
+                [in, size_is(cMovedObjectIDRanges)] ObjectID oldObjectIDRangeStart[] ,
+                [in, size_is(cMovedObjectIDRanges)] ObjectID newObjectIDRangeStart[] ,
+                [in, size_is(cMovedObjectIDRanges)] ULONG    cObjectIDRangeLength[] );
+
+    /*
+     * The CLR calls ObjectAllocated to notify the code profiler
+     * an object was allocated on the heap. This notification does not fire
+     * for allocations from the stack, nor from unmanaged memory.
+     *
+     * It is possible to receive a classId that corresponds to a regular class
+     * that has not been loaded yet. The profiler will receive a class load
+     * callback for that class immediately after the object creation callback.
+     */
+    HRESULT ObjectAllocated(
+                [in] ObjectID objectId,
+                [in] ClassID classId);
+
+    /*
+     * The CLR calls ObjectsAllocatedByClass to notify the code
+     * profiler about the number of objects of a particular class that were
+     * allocated since the previous garbage collection. The classes and the
+     * counts are passed in parallel arrays. (Classes for which no instances
+     * have been allocated since the previous GC are omitted entirely.)
+     *
+     * NOTE: This callback will not report objects allocated in the large
+     *       object heap.
+     *
+     * NOTE: The numbers here are only estimates. Use ObjectAllocated for
+     *       exact counts.
+     */
+    HRESULT ObjectsAllocatedByClass(
+                [in]                       ULONG   cClassCount,
+                [in, size_is(cClassCount)] ClassID classIds[] ,
+                [in, size_is(cClassCount)] ULONG   cObjects[] );
+
+    /*
+     * The CLR calls ObjectReferences to provide information
+     * about objects in memory referenced by a given object.  This function
+     * is called for each object remaining in the GC heap after a collection
+     * has completed.  If the profiler returns an error from this callback,
+     * the profiling services will discontinue invoking this callback until the
+     * next GC.  This callback can be used in conjunction with the
+     * RootReferences callback to create a complete object reference graph for
+     * the runtime.
+     *
+     * NOTE: The CLR will ensure that each object reference is reported only
+     * once by this function.
+     *
+     * NOTE: None of the objectIDs returned by ObjectReferences are valid during the callback
+     * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
+     * should not attempt to inspect objects during an ObjectReferences call. At
+     * GarbageCollectionFinished, all objects have been moved to their new locations, and
+     * inspection may be done.
+     */
+    HRESULT ObjectReferences(
+                [in]                       ObjectID objectId,
+                [in]                       ClassID  classId,
+                [in]                       ULONG    cObjectRefs,
+                [in, size_is(cObjectRefs)] ObjectID objectRefIds[] );
+
+    /*
+     * The CLR calls RootReferences with information about root
+     * references after a garbage collection has occurred. Static object
+     * references and references to objects on a stack are co-mingled in the
+     * arrays.
+     *
+     * NOTE: It is possible to get NULL ObjectIDs in the RootReferences callback.
+     * For example, all object references declared on the stack are treated as
+     * roots by the GC, and will always be reported.
+     *
+     * NOTE: None of the objectIDs returned by RootReferences are valid during the callback
+     * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
+     * should not attempt to inspect objects during a RootReferences call. At
+     * GarbageCollectionFinished, all objects have been moved to their new locations, and
+     * inspection may be done.
+     */
+    HRESULT RootReferences(
+                [in]                     ULONG    cRootRefs,
+                [in, size_is(cRootRefs)] ObjectID rootRefIds[] );
+
+
+    /*
+     *
+     * EXCEPTION EVENTS
+     *
+     */
+
+    //
+    // Exception creation
+    //
+
+    /*
+     * The CLR calls ExceptionThrown to notify the code
+     * profiler that an exception has been thrown.
+     *
+     * NOTE: This function is only called if the exception reaches
+     *       managed code.
+     *
+     * NOTE: The profiler should not block here, since the stack may not be in a
+     *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+     *       profiler blocks here and a GC is attempted, the runtime will block
+     *       until this callback returns.  Also, the profiler may NOT call into
+     *       managed code or in any way cause a managed memory allocation.
+     */
+    HRESULT ExceptionThrown(
+                [in] ObjectID thrownObjectId);
+
+    //
+    // Search phase
+    //
+
+    /*
+     * The CLR calls ExceptionSearchFunctionEnter to notify the profiler
+     * that the search phase of exception handling has entered a function.
+     */
+    HRESULT ExceptionSearchFunctionEnter(
+                [in] FunctionID functionId);
+
+    /*
+     * The CLR calls ExceptionSearchFunctionLeave to notify the profiler
+     * that the search phase of exception handling has left a function.
+     */
+    HRESULT ExceptionSearchFunctionLeave();
+
+    /*
+     * The CLR will call ExceptionSearchFilterEnter just before excecuting
+     * a user filter.  The functionID is that of the function containing the filter.
+     */
+    HRESULT ExceptionSearchFilterEnter(
+                [in] FunctionID functionId);
+
+    /*
+     * The CLR will call ExceptionSearchFilterLeave immediately after
+     * executing a user filter.
+     */
+    HRESULT ExceptionSearchFilterLeave();
+
+    /*
+     * The CLR will call ExceptionSearchCatcherFound when the search
+     * phase of exception handling has located a handler for the exception that
+     * was thrown.
+     */
+    HRESULT ExceptionSearchCatcherFound(
+                [in] FunctionID functionId);
+
+    /*
+     * DEPRECATED. It is the job of the unmanaged profiler to detect OS
+     * handling of exceptions.
+     */
+    HRESULT ExceptionOSHandlerEnter(
+                [in] UINT_PTR __unused);
+
+    /*
+     * DEPRECATED. It is the job of the unmanaged profiler to detect OS
+     * handling of exceptions.
+     */
+    HRESULT ExceptionOSHandlerLeave(
+                [in] UINT_PTR __unused);
+
+    //
+    // Unwind phase
+    //
+
+    /*
+     * The CLR calls ExceptionUnwindFunctionEnter to notify the profiler
+     * that the unwind phase of exception handling has entered a function.
+     *
+     * NOTE: The profiler should not block here, since the stack may not be in a
+     *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+     *       profiler blocks here and a GC is attempted, the runtime will block
+     *       until this callback returns.  Also, the profiler may NOT call into
+     *       managed code or in any way cause a managed memory allocation.
+     */
+    HRESULT ExceptionUnwindFunctionEnter(
+                [in] FunctionID functionId);
+
+    /*
+     * The CLR calls ExceptionUnwindFunctionLeave to notify the profiler
+     * that the unwind phase of exception handling has left a function.  The
+     * function instance and it's stack data has now been removed from the stack.
+     *
+     * NOTE: The profiler should not block here, since the stack may not be in a
+     *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+     *       profiler blocks here and a GC is attempted, the runtime will block
+     *       until this callback returns.  Also, the profiler may NOT call into
+     *       managed code or in any way cause a managed memory allocation.
+     */
+    HRESULT ExceptionUnwindFunctionLeave();
+
+    /*
+     * The CLR calls ExceptionUnwindFinallyEnter to notify the profiler
+     * that the unwind phase of exception is entering a finally clause contained
+     * in the specified function.
+     *
+     * NOTE: The profiler should not block here, since the stack may not be in a
+     *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+     *       profiler blocks here and a GC is attempted, the runtime will block
+     *       until this callback returns.  Also, the profiler may NOT call into
+     *       managed code or in any way cause a managed memory allocation.
+     */
+    HRESULT ExceptionUnwindFinallyEnter(
+                [in] FunctionID functionId);
+
+    /*
+     * The CLR calls ExceptionUnwindFinallyLeave to notify the profiler
+     * that the unwind phase of exception is leaving a finally clause.
+     *
+     * NOTE: The profiler should not block here, since the stack may not be in a
+     *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+     *       profiler blocks here and a GC is attempted, the runtime will block
+     *       until this callback returns.  Also, the profiler may NOT call into
+     *       managed code or in any way cause a managed memory allocation.
+     */
+    HRESULT ExceptionUnwindFinallyLeave();
+
+    /*
+     * The CLR calls this function just before passing control to
+     * the appropriate catch block.  Note that this is called only if the
+     * catch point is in JIT'ed code.  An exception that is caught in
+     * unmanaged code, or in the internal code of the CLR will
+     * not generate this notification.  The ObjectID is passed again since
+     * a GC could have moved the object since the ExceptionThrown
+     * notification.
+     *
+     * NOTE: The profiler should not block here, since the stack may not be in a
+     *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+     *       profiler blocks here and a GC is attempted, the runtime will block
+     *       until this callback returns.  Also, the profiler may NOT call into
+     *       managed code or in any way cause a managed memory allocation.
+     */
+    HRESULT ExceptionCatcherEnter(
+                [in] FunctionID functionId,
+                [in] ObjectID   objectId);
+
+    /*
+     * The CLR calls ExceptionCatcherLeave when the runtime leaves
+     * the catcher's code.
+     *
+     * NOTE: The profiler should not block here, since the stack may not be in a
+     *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+     *       profiler blocks here and a GC is attempted, the runtime will block
+     *       until this callback returns.  Also, the profiler may NOT call into
+     *       managed code or in any way cause a managed memory allocation.
+     */
+    HRESULT ExceptionCatcherLeave();
+
+    /*
+     *  CLR<->COM interop vtable creation/destruction.
+     */
+
+    /*
+     * The CLR calls this function when an CLR<->COM interop vtable
+     * for a particular IID and for a particular class has been created.
+     * This provides the ClassID of the class for which this vtable has been
+     * created, the IID it implements, the start of the vtable and how many
+     * slots are in it.
+     *
+     * NOTE: The profiler should not block here, since the stack may not be in a
+     *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+     *       profiler blocks here and a GC is attempted, the runtime will block
+     *       until this callback returns.  Also, the profiler may NOT call into
+     *       managed code or in any way cause a managed memory allocation.
+     *
+     * NOTE: It is possible to receive a NULL GUID if the interface is
+     *       internal only.
+     */
+    HRESULT COMClassicVTableCreated(
+               [in] ClassID wrappedClassId,
+               [in] REFGUID implementedIID,
+               [in] void    *pVTable,
+               [in] ULONG   cSlots);
+
+    /*
+     * The CLR calls this function when a CLR<->COM interop vtable is
+     * being destroyed.  Provided are the ClassID, IID and vtable pointer for
+     * the destroyed vtable.
+     *
+     * NOTE: The profiler should not block here, since the stack may not be in a
+     *       GC-friendly state and so preemptive GC cannot be enabled.  If the
+     *       profiler blocks here and a GC is attempted, the runtime will block
+     *       until this callback returns.  Also, the profiler may NOT call into
+     *       managed code or in any way cause a managed memory allocation.
+     *
+     * NOTE: It is possible to receive a NULL GUID if the interface is
+     *       internal only.
+     *
+     * NOTE: This callback is likely never to occur, since the destruction of
+     *       vtables occurs very close to Shutdown.
+     */
+    HRESULT COMClassicVTableDestroyed(
+               [in] ClassID wrappedClassId,
+               [in] REFGUID implementedIID,
+               [in] void    *pVTable);
+
+    /*
+     * DEPRECATED. These callbacks are no longer delivered.
+     */
+    HRESULT ExceptionCLRCatcherFound();
+
+    HRESULT ExceptionCLRCatcherExecute();
+}
+
+/*
+ * COR_PRF_GC_ROOT_KIND describes the kind of GC root exposed by
+ * the RootReferences2 callback.
+ */
+
+typedef enum
+{
+    COR_PRF_GC_ROOT_STACK = 1,        // Variables on the stack
+    COR_PRF_GC_ROOT_FINALIZER = 2,    // Entry in the finalizer queue
+    COR_PRF_GC_ROOT_HANDLE = 3,        // GC Handle
+    COR_PRF_GC_ROOT_OTHER = 0        //Misc. roots
+}   COR_PRF_GC_ROOT_KIND;
+
+
+/*
+ * COR_PRF_GC_ROOT_FLAGS describes properties of a GC root
+ * exposed by the RootReferences callback.
+ */
+
+typedef enum
+{
+    COR_PRF_GC_ROOT_PINNING = 0x1,    // Prevents GC from moving the object
+    COR_PRF_GC_ROOT_WEAKREF = 0x2,    // Does not prevent collection
+    COR_PRF_GC_ROOT_INTERIOR = 0x4,   // Refers to a field of the object rather than the object itself
+    COR_PRF_GC_ROOT_REFCOUNTED = 0x8, // Whether it prevents collection depends on a refcount - if not,
+                                      // COR_PRF_GC_ROOT_WEAKREF will be set also
+}   COR_PRF_GC_ROOT_FLAGS;
+
+
+/*
+ * COR_PRF_FINALIZER_FLAGS is used by FinalizableObjectQueued to describe
+ * the finalizer for the object.
+ */
+
+typedef enum
+{
+    COR_PRF_FINALIZER_CRITICAL = 0x1    // Critical finalizer
+}   COR_PRF_FINALIZER_FLAGS;
+
+
+/*
+ * COR_PRF_GC_GENERATION contains the numbers used to represent each GC generation
+ * in the GetGenerationBounds and GetObjectGeneration functions.
+ */
+
+typedef enum
+{
+    COR_PRF_GC_GEN_0 = 0,
+    COR_PRF_GC_GEN_1 = 1,
+    COR_PRF_GC_GEN_2 = 2,
+    COR_PRF_GC_LARGE_OBJECT_HEAP = 3,
+    COR_PRF_GC_PINNED_OBJECT_HEAP= 4
+}   COR_PRF_GC_GENERATION;
+
+
+/*
+ * COR_PRF_GC_GENERATION_RANGE describes a range of memory in the GetGenerationBounds and GetObjectGeneration functions.
+ * Note that the rangeLength member is only guaranteed to be accurate if GetGenerationBounds or GetObjectGeneration are
+ * called from a GarbageCollectionStarted or GarbageCollectionFinished notification
+ */
+typedef struct COR_PRF_GC_GENERATION_RANGE
+{
+    COR_PRF_GC_GENERATION   generation;             // what generation the range of memory belongs to
+    ObjectID                rangeStart;             // the start of the range
+    UINT_PTR                rangeLength;            // the used length of the range
+    UINT_PTR                rangeLengthReserved;    // the amount of memory reserved for the range (including rangeLength)
+
+}   COR_PRF_GC_GENERATION_RANGE;
+
+
+
+/*
+ * COR_PRF_CLAUSE_TYPE defines the various clause codes for the EX clauses
+ */
+typedef enum
+{
+    COR_PRF_CLAUSE_NONE = 0,  // not a real clause (only used in error cases)
+    COR_PRF_CLAUSE_FILTER = 1,
+    COR_PRF_CLAUSE_CATCH = 2,
+    COR_PRF_CLAUSE_FINALLY = 3,
+}   COR_PRF_CLAUSE_TYPE;
+
+/*
+ * COR_PRF_EX_CLAUSE_INFO identifies a specific exception clause instance and its associated frame.
+ * When an exception notification is received, GetNotifiedExceptionClauseInfo() may be used to get the
+ * native address and frame information for the exception clause (catch/finally/filter) that is
+ * about to be run (ExceptionCatchEnter, ExceptionUnwindFinallyEnter, ExceptionFilterEnter) or has just
+ * been run (ExceptionCatchLeave, ExceptionUnwindFinallyLeave, ExceptionFilterLeave).
+ */
+typedef struct COR_PRF_EX_CLAUSE_INFO
+{
+    COR_PRF_CLAUSE_TYPE  clauseType; // the type of clause we just entered or left
+    UINT_PTR  programCounter;   // the native entry point of the clause handler (e.g. EIP)
+    UINT_PTR framePointer;    // the logical frame pointer (e.g. EBP) for that clause handler
+    UINT_PTR shadowStackPointer;  // the shadow stack pointer (IA64 only, BSP)
+}   COR_PRF_EX_CLAUSE_INFO;
+
+/*
+ * COR_PRF_GC_REASON describes the reason for a given GC.
+ */
+typedef enum
+{
+    COR_PRF_GC_INDUCED = 1,     // Induced by GC.Collect
+    COR_PRF_GC_OTHER = 0        // Anything else
+}   COR_PRF_GC_REASON;
+
+/*
+ * Bits from COR_PRF_MODULE_FLAGS are returned to the profiler in GetModuleInfo2's
+ * pdwModuleFlags output parameter. Some combinations of 2 or more flags are possible,
+ * though not all combinations are possible.
+ */
+typedef enum
+{
+    // The module was loaded from disk
+    COR_PRF_MODULE_DISK             = 0x00000001,
+
+    // The module had been generated via NGEN
+    COR_PRF_MODULE_NGEN             = 0x00000002,
+
+    // The module was created via methods in the Reflection.Emit namespace
+    COR_PRF_MODULE_DYNAMIC          = 0x00000004,
+
+    // The module's lifetime is managed by the garbage collector.
+    COR_PRF_MODULE_COLLECTIBLE      = 0x00000008,
+
+    // The module contains no metadata and is used strictly as a resource.  The managed
+    // equivalent of this bit is the System.Reflection.Module.IsResource() method.
+    COR_PRF_MODULE_RESOURCE         = 0x00000010,
+
+    // The module's layout in memory is flat, as opposed to mapped. For modules that have
+    // this bit set, profilers that directly read information out of the PE header will
+    // need to be careful when interpreting RVAs present in the PE header.
+    COR_PRF_MODULE_FLAT_LAYOUT      = 0x00000020,
+
+    // The Windows Runtime content type flag is set in the metadata for this module's
+    // assembly
+    COR_PRF_MODULE_WINDOWS_RUNTIME  = 0x00000040,
+}   COR_PRF_MODULE_FLAGS;
+/*
+ * The ICorProfilerCallback2 interface is used by the CLR to notify a
+ * code profiler when events have occurred that the code profiler has registered
+ * an in interest in receiving.  These are new callbacks implemented in V2.0
+ * of the runtime.
+ *
+ * The methods implemented on this interface return S_OK on success, or E_FAIL
+ * on failure.
+ */
+
+[
+    object,
+    uuid(8A8CC829-CCF2-49fe-BBAE-0F022228071A),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback2 : ICorProfilerCallback
+{
+
+    /*
+     *
+     * THREAD EVENTS
+     *
+     */
+
+    /*
+     * The CLR calls ThreadNameChanged to notify the code profiler
+     * that a thread's name has changed.
+     *
+     * name is not NULL terminated.
+     *
+     */
+    HRESULT ThreadNameChanged(
+                [in] ThreadID threadId,
+                [in] ULONG cchName,
+                [in, annotation("_In_reads_opt_(cchName)")] WCHAR name[]);
+
+    /*
+     *
+     * GARBAGE COLLECTION EVENTS
+     *
+     */
+
+    /*
+     * The CLR calls GarbageCollectionStarted before beginning a
+     * garbage collection. All GC callbacks pertaining to this
+     * collection will occur between the GarbageCollectionStarted
+     * callback and the corresponding GarbageCollectionFinished
+     * callback. Corresponding GarbageCollectionStarted and
+     * GarbageCollectionFinished callbacks need not occur on the same thread.
+     *
+     *          cGenerations indicates the total number of entries in
+     *                the generationCollected array
+     *          generationCollected is an array of booleans, indexed
+     *                by COR_PRF_GC_GENERATIONS, indicating which
+     *                generations are being collected in this collection
+     *          reason indicates whether this GC was induced
+     *                by the application calling GC.Collect().
+     *
+     * NOTE: It is safe to inspect objects in their original locations
+     * during this callback. The GC will begin moving objects after
+     * the profiler returns from this callback. Therefore, after
+     * returning, the profiler should consider all ObjectIDs to be invalid
+     * until it receives a GarbageCollectionFinished callback.
+     */
+    HRESULT GarbageCollectionStarted(
+                [in] int cGenerations,
+                [in, size_is(cGenerations)] BOOL generationCollected[],
+                [in] COR_PRF_GC_REASON reason);
+
+    /*
+     * The CLR calls SurvivingReferences with information about
+     * object references that survived a garbage collection.
+     *
+     * Generally, the CLR calls SurvivingReferences for non-compacting garbage collections.
+     * For compacting garbage collections, MovedReferences is called instead.
+     *
+     * The exception to this rule is that the CLR always calls SurvivingReferences for objects
+     * in the large object heap, which is not compacted.
+     *
+     * Multiple calls to SurvivingReferences may be received during a particular
+     * garbage collection, due to limited internal buffering, multiple threads reporting
+     * in the case of server gc, and other reasons.
+     * In the case of multiple calls, the information is cumulative - all of the references
+     * reported in any SurvivingReferences call survive this collection.
+     *
+     * cSurvivingObjectIDRanges is a count of the number of ObjectID ranges that
+     *      survived.
+     * objectIDRangeStart is an array of elements, each of which is the start
+     *      value of a range of ObjectID values that survived the collection.
+     * cObjectIDRangeLength is an array of elements, each of which states the
+     *      size of the surviving ObjectID value range.
+     *
+     * The last two arguments of this function are parallel arrays.
+     *
+     * In other words, if an ObjectID value lies within the range
+     *      objectIDRangeStart[i] <= ObjectID < objectIDRangeStart[i] + cObjectIDRangeLength[i]
+     * for 0 <= i < cMovedObjectIDRanges, then the ObjectID has survived the collection
+     *
+     * THIS CALLBACK IS OBSOLETE. It reports ranges for objects >4GB as UINT32_MAX
+     * on 64-bit platforms. Use ICorProfilerCallback4::SurvivingReferences2 instead.
+     */
+    HRESULT SurvivingReferences(
+                [in]                                    ULONG    cSurvivingObjectIDRanges,
+                [in, size_is(cSurvivingObjectIDRanges)] ObjectID objectIDRangeStart[] ,
+                [in, size_is(cSurvivingObjectIDRanges)] ULONG    cObjectIDRangeLength[] );
+    /*
+     * The CLR calls GarbageCollectionFinished after a garbage
+     * collection has completed and all GC callbacks have been
+     * issued for it.
+     *
+     * NOTE: It is now safe to inspect objects in their
+     * final locations.
+     */
+    HRESULT GarbageCollectionFinished();
+
+    /*
+     * The CLR calls FinalizeableObjectQueued to notify the code profiler
+     * that an object with a finalizer (destructor in C# parlance) has
+     * just been queued to the finalizer thread for execution of its
+     * Finalize method.
+     *
+     * finalizerFlags describes aspects of the finalizer, and takes its
+     *     value from COR_PRF_FINALIZER_FLAGS.
+     *
+     */
+
+    HRESULT FinalizeableObjectQueued(
+                [in] DWORD finalizerFlags,
+                [in] ObjectID objectID);
+
+    /*
+     * The CLR calls RootReferences2 with information about root
+     * references after a garbage collection has occurred.
+     * For each root reference in rootRefIds, there is information in
+     * rootClassifications to classify it. Depending on the classification,
+     * rootsIds may contain additional information. The information in
+     * rootKinds and rootFlags contains information about the location and
+     * properties of the reference.
+     *
+     * If the profiler implements ICorProfilerCallback2, both
+     * ICorProfilerCallback::RootReferences and ICorProfilerCallback2::RootReferences2
+     * are called. As the information passed to RootReferences2 is a superset
+     * of the one passed to RootReferences, profilers will normally implement
+     * one or the other, but not both.
+     *
+     * If the root kind is STACK, the ID is the FunctionID of the
+     * function containing the variable. If the FunctionID is 0, the function
+     * is an unnamed function internal to the CLR.
+     *
+     * If the root kind is HANDLE, the ID is the GCHandleID.
+     *
+     * For the other root kinds, the ID is an opaque value and should
+     * be ignored.
+     *
+     * It's possible for entries in rootRefIds to be 0 - this just
+     * implies the corresponding root reference was null and thus did not
+     * refer to an object on the managed heap.
+     *
+     * NOTE: None of the objectIDs returned by RootReferences2 are valid during the callback
+     * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
+     * should not attempt to inspect objects during a RootReferences2 call. At
+     * GarbageCollectionFinished, all objects have been moved to their new locations, and
+     * inspection may be done.
+     */
+
+    HRESULT RootReferences2(
+                [in]                     ULONG    cRootRefs,
+                [in, size_is(cRootRefs)] ObjectID rootRefIds[],
+                [in, size_is(cRootRefs)] COR_PRF_GC_ROOT_KIND rootKinds[],
+                [in, size_is(cRootRefs)] COR_PRF_GC_ROOT_FLAGS rootFlags[],
+                [in, size_is(cRootRefs)] UINT_PTR rootIds[]);
+
+    /*
+     * The CLR calls HandleCreated when a gc handle has been created.
+     *
+     */
+
+    HRESULT HandleCreated(
+                [in] GCHandleID handleId,
+                [in] ObjectID initialObjectId);
+
+    /*
+     * The CLR calls HandleDestroyed when a gc handle has been destroyed.
+     *
+     */
+
+    HRESULT HandleDestroyed(
+                [in] GCHandleID handleId);
+}
+
+[
+    object,
+    uuid(4FD2ED52-7731-4b8d-9469-03D2CC3086C5),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback3 : ICorProfilerCallback2
+{
+    HRESULT InitializeForAttach(
+                [in] IUnknown * pCorProfilerInfoUnk,
+                [in] void * pvClientData,
+                [in] UINT cbClientData);
+
+    HRESULT ProfilerAttachComplete();
+
+    HRESULT ProfilerDetachSucceeded();
+};
+
+[
+    object,
+    uuid(7B63B2E3-107D-4d48-B2F6-F61E229470D2),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback4 : ICorProfilerCallback3
+{
+    /*
+     * Similar to JITCompilationStarted, except called when rejitting a method
+     */
+    HRESULT ReJITCompilationStarted(
+                [in] FunctionID functionId,
+                [in] ReJITID rejitId,
+                [in] BOOL fIsSafeToBlock);
+
+    /*
+     * This is called exactly once per method (which may represent more than
+     * one function id), to allow the code profiler to set alternate code
+     * generation flags or a new method body.
+     */
+    HRESULT GetReJITParameters(
+                [in] ModuleID moduleId,
+                [in] mdMethodDef methodId,
+                [in] ICorProfilerFunctionControl *pFunctionControl);
+
+    /*
+     * Similar to JITCompilationFinished, except called when rejitting a method
+     */
+    HRESULT ReJITCompilationFinished(
+                [in] FunctionID functionId,
+                [in] ReJITID rejitId,
+                [in] HRESULT hrStatus,
+                [in] BOOL fIsSafeToBlock);
+
+    /*
+     * This is called to report an error encountered while processing a ReJIT request.
+     * This may either be called from within the RequestReJIT call itself, or called after
+     * RequestReJIT returns, if the error was encountered later on.
+     */
+    HRESULT ReJITError(
+                [in] ModuleID moduleId,
+                [in] mdMethodDef methodId,
+                [in] FunctionID functionId,
+                [in] HRESULT hrStatus);
+
+    /*
+     * The CLR calls MovedReferences with information about
+     * object references that moved as a result of garbage collection.
+     *
+     * cMovedObjectIDRanges is a count of the number of ObjectID ranges that
+     *      were moved.
+     * oldObjectIDRangeStart is an array of elements, each of which is the start
+     *      value of a range of ObjectID values before being moved.
+     * newObjectIDRangeStart is an array of elements, each of which is the start
+     *      value of a range of ObjectID values after being moved.
+     * cObjectIDRangeLength is an array of elements, each of which states the
+     *      size of the moved ObjectID value range.
+     *
+     * The last three arguments of this function are parallel arrays.
+     *
+     * In other words, if an ObjectID value lies within the range
+     *      oldObjectIDRangeStart[i] <= ObjectID < oldObjectIDRangeStart[i] + cObjectIDRangeLength[i]
+     * for 0 <= i < cMovedObjectIDRanges, then the ObjectID value has changed to
+     *      ObjectID - oldObjectIDRangeStart[i] + newObjectIDRangeStart[i]
+     *
+     * NOTE: None of the objectIDs returned by MovedReferences are valid during the callback
+     * itself, as the GC may be in the middle of moving objects from old to new. Thus profilers
+     * should not attempt to inspect objects during a MovedReferences call. At
+     * GarbageCollectionFinished, all objects have been moved to their new locations, and
+     * inspection may be done.
+     *
+     * If the profiler implements ICorProfilerCallback4, ICorProfilerCallback4::MovedReferences2
+     * is called first and ICorProfilerCallback::MovedReferences is called second but only if
+     * ICorProfilerCallback4::MovedReferences2 returned success. Profilers can return failure
+     * from ICorProfilerCallback4::MovedReferences2 to save some chattiness.
+     */
+    HRESULT MovedReferences2(
+                [in]                                ULONG    cMovedObjectIDRanges,
+                [in, size_is(cMovedObjectIDRanges)] ObjectID oldObjectIDRangeStart[] ,
+                [in, size_is(cMovedObjectIDRanges)] ObjectID newObjectIDRangeStart[] ,
+                [in, size_is(cMovedObjectIDRanges)] SIZE_T   cObjectIDRangeLength[] );
+
+    /*
+     * The CLR calls SurvivingReferences with information about
+     * object references that survived a garbage collection.
+     *
+     * Generally, the CLR calls SurvivingReferences for non-compacting garbage collections.
+     * For compacting garbage collections, MovedReferences is called instead.
+     *
+     * The exception to this rule is that the CLR always calls SurvivingReferences for objects
+     * in the large object heap, which is not compacted.
+     *
+     * Multiple calls to SurvivingReferences may be received during a particular
+     * garbage collection, due to limited internal buffering, multiple threads reporting
+     * in the case of server gc, and other reasons.
+     * In the case of multiple calls, the information is cumulative - all of the references
+     * reported in any SurvivingReferences call survive this collection.
+     *
+     * cSurvivingObjectIDRanges is a count of the number of ObjectID ranges that
+     *      survived.
+     * objectIDRangeStart is an array of elements, each of which is the start
+     *      value of a range of ObjectID values that survived the collection.
+     * cObjectIDRangeLength is an array of elements, each of which states the
+     *      size of the surviving ObjectID value range.
+     *
+     * The last two arguments of this function are parallel arrays.
+     *
+     * In other words, if an ObjectID value lies within the range
+     *      objectIDRangeStart[i] <= ObjectID < objectIDRangeStart[i] + cObjectIDRangeLength[i]
+     * for 0 <= i < cMovedObjectIDRanges, then the ObjectID has survived the collection
+     *
+     * If the profiler implements ICorProfilerCallback4, ICorProfilerCallback4::SurvivingReferences2
+     * is called first and ICorProfilerCallback2::SurvivingReferences is called second but only if
+     * ICorProfilerCallback4::SurvivingReferences2 returned success. Profilers can return failure
+     * from ICorProfilerCallback4::SurvivingReferences2 to save some chattiness.
+     */
+    HRESULT SurvivingReferences2(
+                [in]                                    ULONG    cSurvivingObjectIDRanges,
+                [in, size_is(cSurvivingObjectIDRanges)] ObjectID objectIDRangeStart[] ,
+                [in, size_is(cSurvivingObjectIDRanges)] SIZE_T   cObjectIDRangeLength[] );
+
+};
+
+
+[
+    object,
+    uuid(8DFBA405-8C9F-45F8-BFFA-83B14CEF78B5),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback5 : ICorProfilerCallback4
+{
+    /*
+     * The CLR calls ConditionalWeakTableElementReferences with information
+     * about dependent handles after a garbage collection has occurred.
+     *
+     * For each root ID in rootIds, keyRefIds will contain the ObjectID for
+     * the primary element in the dependent handle pair, and valueRefIds will
+     * contain the ObjectID for the secondary element (keyRefIds[i] keeps
+     * valueRefIds[i] alive).
+     *
+     * NOTE: None of the objectIDs returned by ConditionalWeakTableElementReferences
+     * are valid during the callback itself, as the GC may be in the middle
+     * of moving objects from old to new. Thus profilers should not attempt
+     * to inspect objects during a ConditionalWeakTableElementReferences call.
+     * At GarbageCollectionFinished, all objects have been moved to their new
+     * locations, and inspection may be done.
+     */
+    HRESULT ConditionalWeakTableElementReferences(
+                [in]                     ULONG    cRootRefs,
+                [in, size_is(cRootRefs)] ObjectID keyRefIds[],
+                [in, size_is(cRootRefs)] ObjectID valueRefIds[],
+                [in, size_is(cRootRefs)] GCHandleID rootIds[]);
+};
+
+
+[
+    object,
+    uuid(FC13DF4B-4448-4F4F-950C-BA8D19D00C36),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback6 : ICorProfilerCallback5
+{
+    // CORECLR DEPRECATION WARNING: This callback does not occur on coreclr.
+    // Controlled by the COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES event mask flag.
+    // Notifies the profiler of a very early stage in the loading of an Assembly, where the CLR
+    // performs an assembly reference closure walk.  This is useful ONLY if the profiler will need
+    // to modify the metadata of the Assembly to add AssemblyRefs (later, in ModuleLoadFinished).  In
+    // such a case, the profiler should implement this callback as well, to inform the CLR that assembly references
+    // will be added once the module has loaded.  This is useful to ensure that assembly sharing decisions
+    // made by the CLR during this early stage remain valid even though the profiler plans to modify the metadata
+    // assembly references later on.  This can be used to avoid some instances where profiler metadata
+    // modifications can cause the SECURITY_E_INCOMPATIBLE_SHARE error to be thrown.
+    //
+    // The profiler uses the ICorProfilerAssemblyReferenceProvider provided to add assembly references
+    // to the CLR assembly reference closure walker.  The ICorProfilerAssemblyReferenceProvider
+    // should only be used from within this callback. The profiler will still need to explicitly add assembly
+    // references via IMetaDataAssemblyEmit, from within the ModuleLoadFinished callback for the referencing assembly,
+    // even though the profiler implements this GetAssemblyReferences callback.  This callback does not result in
+    // modified metadata; only in a modified assembly reference closure walk.
+    //
+    // The profiler should be prepared to receive duplicate calls to this callback for the same assembly,
+    // and should respond identically for each such duplicate call (by making the same set of
+    // ICorProfilerAssemblyReferenceProvider::AddAssemblyReference calls).
+    HRESULT GetAssemblyReferences(
+        [in, string] const WCHAR * wszAssemblyPath,
+        [in] ICorProfilerAssemblyReferenceProvider * pAsmRefProvider);
+};
+
+
+[
+    object,
+    uuid(F76A2DBA-1D52-4539-866C-2AA518F9EFC3),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback7 : ICorProfilerCallback6
+{
+    // This event is triggered whenever the symbol stream associated with an
+    // in-memory module is updated. Even when symbols are provided up-front in
+    // a call to the managed API Assembly.Load(byte[], byte[], ...) the runtime
+    // may not actually associate the symbolic data with the module until after
+    // the ModuleLoadFinished callback has occured. This event provides a later
+    // opportunity to collect symbols for such modules.
+    //
+    // This event is controlled by the COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED
+    // event mask flag.
+    //
+    // Note: This event is not currently raised for symbols implicitly created or
+    // modified via Reflection.Emit APIs.
+    HRESULT ModuleInMemorySymbolsUpdated(ModuleID moduleId);
+}
+
+
+[
+    object,
+    uuid(5BED9B15-C079-4D47-BFE2-215A140C07E0),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback8 : ICorProfilerCallback7
+{
+    // This event is triggered whenever a dynamic method is jit compiled.
+    // These include various IL Stubs and LCG Methods.
+    // The goal is to provide profiler writers with enough information to identify
+    // it to users as beyond unknown code addresses.
+    // Note: FunctionID's provided here cannot be used to resolve to their metadata
+    //       tokens since dynamic methods have no metadata.
+    //
+    // Documentation Note: pILHeader is only valid during the callback
+
+    HRESULT DynamicMethodJITCompilationStarted(
+        [in] FunctionID functionId,
+        [in] BOOL       fIsSafeToBlock,
+        [in] LPCBYTE    pILHeader,
+        [in] ULONG      cbILHeader);
+
+    HRESULT DynamicMethodJITCompilationFinished(
+        [in] FunctionID functionId,
+        [in] HRESULT    hrStatus,
+        [in] BOOL       fIsSafeToBlock);
+}
+
+[
+    object,
+    uuid(27583EC3-C8F5-482F-8052-194B8CE4705A),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback9 : ICorProfilerCallback8
+{
+    // This event is triggered whenever a dynamic method is garbage collected
+    // and subsequently unloaded.
+
+    HRESULT DynamicMethodUnloaded([in] FunctionID functionId);
+}
+
+[
+    object,
+    uuid(CEC5B60E-C69C-495F-87F6-84D28EE16FFB),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback10 : ICorProfilerCallback9
+{
+    // This event is triggered whenever an EventPipe event is configured to be delivered.
+    //
+    // Documentation Note: All pointers are only valid during the callback
+
+    HRESULT EventPipeEventDelivered(
+        [in] EVENTPIPE_PROVIDER provider,
+        [in] DWORD eventId,
+        [in] DWORD eventVersion,
+        [in] ULONG cbMetadataBlob,
+        [in, size_is(cbMetadataBlob)] LPCBYTE metadataBlob,
+        [in] ULONG cbEventData,
+        [in, size_is(cbEventData)] LPCBYTE eventData,
+        [in] LPCGUID pActivityId,
+        [in] LPCGUID pRelatedActivityId,
+        [in] ThreadID eventThread,
+        [in] ULONG numStackFrames,
+        [in, length_is(numStackFrames)] UINT_PTR stackFrames[]);
+
+    HRESULT EventPipeProviderCreated([in] EVENTPIPE_PROVIDER provider);
+}
+
+[
+    object,
+    uuid(42350846-AAED-47F7-B128-FD0C98881CDE),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback11 : ICorProfilerCallback10
+{
+    HRESULT LoadAsNotificationOnly(BOOL *pbNotificationOnly);
+}
+
+/*
+ * COR_PRF_CODEGEN_FLAGS controls various flags and hooks for a specific
+ * method.  A combination of COR_PRF_CODEGEN_FLAGS is provided by the
+ * profiler in its call to ICorProfilerFunctionControl::SetCodegenFlags()
+ * when rejitting a method.
+ */
+typedef enum
+{
+    COR_PRF_CODEGEN_DISABLE_INLINING =          0x0001,
+    COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS = 0x0002,
+} COR_PRF_CODEGEN_FLAGS;
+
+
+/*
+ * The CLR implements the ICorProfilerInfo interface. This interface is
+ * used by a code profiler to communicate with the CLR to control event
+ * monitoring and request information. The CLR passes an
+ * ICorProfilerInfo interface to each code profiler during initialization.
+ *
+ * A code profiler can call methods on the ICorProfilerInfo interface to get
+ * information about managed code being executed under the control of the CLR
+ *
+ * The ICorProfilerInfo interface implemented by the CLR uses the free
+ * threaded model.
+ *
+ * The methods implemented on this interface return S_OK on success, or E_FAIL
+ * on failure.
+ *
+ */
+
+[
+    object,
+    uuid(28B5557D-3F3F-48b4-90B2-5F9EEA2F6C48),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo : IUnknown
+{
+    /*
+     * The code profiler calls GetClassFromObject to obtain the ClassID of an
+     * object given its ObjectID.
+     */
+    HRESULT GetClassFromObject(
+                [in]  ObjectID objectId,
+                [out] ClassID *pClassId);
+
+    /*
+     * V2 MIGRATION WARNING - DOES NOT WORK FOR GENERIC TYPES
+     *
+     * This function will be removed in a future release, so
+     * use GetClassFromTokenAndTypeArgs for all types.
+     */
+    HRESULT GetClassFromToken(
+                [in]  ModuleID  moduleId,
+                [in]  mdTypeDef typeDef,
+                [out] ClassID   *pClassId);
+
+    /*
+     * V2 MIGRATION WARNING - WILL NOT WORK WITH .NET FRAMEWORK
+     * FUNCTIONS
+     *
+     * This function will be removed in a future release; use GetCodeInfo2
+     * in all cases.
+     */
+    HRESULT GetCodeInfo(
+                [in]  FunctionID functionId,
+                [out] LPCBYTE    *pStart,
+                [out] ULONG      *pcSize);
+
+    /*
+     * RECOMMENDATION: USE GetEventMask2 INSTEAD.  WHILE THIS METHOD CONTINUES TO
+     * TO WORK, GetEventMask2 PROVIDES MORE FUNCTIONALITY.
+     *
+     * The code profiler calls GetEventMask to obtain the current event
+     * categories for which it is to receive event notifications from the COM+
+     * Runtime.
+     */
+    HRESULT GetEventMask(
+                [out] DWORD *pdwEvents);
+
+    /*
+     * The code profiler calls GetFunctionFromIP to map an instruction pointer
+     * in managed code to a FunctionID.
+     */
+    HRESULT GetFunctionFromIP(
+                [in]  LPCBYTE    ip,
+                [out] FunctionID *pFunctionId);
+
+    /*
+     * V2 MIGRATION WARNING - WILL NOT WORK FOR GENERIC FUNCTIONS OR
+     * FUNCTIONS ON GENERIC TYPES
+     *
+     * This function will be removed in a future release, so use
+     * GetFunctionFromTokenAndTypeArgs for all functions.
+     */
+    HRESULT GetFunctionFromToken(
+                [in]  ModuleID   moduleId,
+                [in]  mdToken    token,
+                [out] FunctionID *pFunctionId);
+
+    /*
+     * The code profiler calls GetHandleFromThread to map a ThreadID to a Win32
+     * thread handle. The profiler must call DuplicateHandle on the handle
+     * before using it.
+     */
+    HRESULT GetHandleFromThread(
+                [in]  ThreadID threadId,
+                [out] HANDLE  *phThread);
+
+    /*
+     * The code profiler calls GetObjectSize to obtain the size of an object.
+     * Note that types like arrays and strings may have a different size for each object.
+     *
+     * THIS API IS OBSOLETE. It does not work for objects >4GB on 64-bit platforms.
+     * Use ICorProfilerInfo4::GetObjectSize2 instead.
+     */
+    HRESULT GetObjectSize(
+                [in]  ObjectID objectId,
+                [out] ULONG  *pcSize);
+
+    /*
+     * This will return S_OK if the ClassID provided is an array class, and will
+     * fill out the information for any non-null out params.  S_FALSE will be
+     * returned if the ClassID is not an array.
+     *
+     * classId       : the ClassID to return information about
+     * pBaseElemType : the array's base element type
+     * pBaseClassId  : the base ClassID if the element type == ELEMENT_TYPE_CLASS
+     * pcRank        : the number of dimensions of the array
+     */
+    HRESULT IsArrayClass(
+                [in]  ClassID        classId,
+                [out] CorElementType *pBaseElemType,
+                [out] ClassID        *pBaseClassId,
+                [out] ULONG          *pcRank);
+
+    /*
+     * The code profiler calls GetThreadInfo to obtain the current Win32 thread ID for
+     * the specified thread.
+     */
+    HRESULT GetThreadInfo(
+                [in]  ThreadID threadId,
+                [out] DWORD    *pdwWin32ThreadId);
+
+    /*
+     * The code profiler calls GetCurrentThreadID to get the managed thread ID
+     * for the current thread.
+     *
+     * NOTE: GetCurrentThreadID may return CORPROF_E_NOT_MANAGED_THREAD if the
+     * current thread is an internal runtime thread, and the returned value of
+     * pThreadId will be NULL.
+     */
+    HRESULT GetCurrentThreadID(
+                [out] ThreadID *pThreadId);
+
+    /*
+     * V2 MIGRATION NOTE - More information is available for generic types
+     * from GetClassIDInfo2.
+     *
+     * Returns the parent module a class is defined in, along with the
+     * metadata token for the class.  One can call GetModuleMetaData
+     * to obtain the metadata interface for a given module.  The token
+     * can then be used to access the metadata for this class.
+     */
+    HRESULT GetClassIDInfo(
+                [in]  ClassID   classId,
+                [out] ModuleID  *pModuleId,
+                [out] mdTypeDef *pTypeDefToken);
+
+    /*
+     * Return the parent class for a given function.  Also return the metadata
+     * token which can be used to read the metadata.
+     *
+     * V2 MIGRATION WARNING - LESS INFORMATION FOR GENERIC CLASSES
+     * The ClassID of a function on a generic class may not be obtainable without
+     * more context about the use of the function. In this case, *pClassId will be 0;
+     * try using GetFunctionInfo2 with a COR_PRF_FRAME_INFO to give more context.
+     */
+    HRESULT GetFunctionInfo(
+                [in]  FunctionID functionId,
+                [out] ClassID    *pClassId,
+                [out] ModuleID   *pModuleId,
+                [out] mdToken    *pToken);
+
+    /*
+     * RECOMMENDATION: USE SetEventMask2 INSTEAD.  WHILE THIS METHOD CONTINUES TO
+     * TO WORK, SetEventMask2 PROVIDES MORE FUNCTIONALITY.
+     *
+     * The code profiler calls SetEventMask to set the event categories for
+     * which it is set to receive notification from the CLR.
+     */
+    HRESULT SetEventMask(
+                [in] DWORD dwEvents);
+
+    /*
+     * The code profiler calls SetFunctionHooks to specify handlers
+     * for FunctionEnter, FunctionLeave, and FunctionTailcall.
+     *
+     * Note that only one set of callbacks may be active at a time. Thus,
+     * if a profiler calls SetEnterLeaveFunctionHooks, SetEnterLeaveFunctionHooks2
+     * and SetEnterLeaveFunctionHooks3(WithInfo), then SetEnterLeaveFunctionHooks3(WithInfo)
+     * wins.  SetEnterLeaveFunctionHooks2 takes precedence over SetEnterLeaveFunctionHooks
+     * when both are set.
+     *
+     * Each function pointer may be null to disable that callback.
+     *
+     * SetEnterLeaveFunctionHooks may only be called from the
+     * profiler's Initialize() callback.
+     */
+    HRESULT SetEnterLeaveFunctionHooks(
+                [in] FunctionEnter    *pFuncEnter,
+                [in] FunctionLeave    *pFuncLeave,
+                [in] FunctionTailcall *pFuncTailcall);
+
+    /*
+     * This is used for mapping FunctionIDs to alternative values that will be
+     * passed to the callbacks
+     */
+    HRESULT SetFunctionIDMapper(
+                [in] FunctionIDMapper *pFunc);
+
+    /*
+     * For a given function, retrieve the token value and an instance of the
+     * meta data interface which can be used against this token.
+     */
+    HRESULT GetTokenAndMetaDataFromFunction(
+                [in]  FunctionID functionId,
+                [in]  REFIID     riid,
+                [out] IUnknown   **ppImport,
+                [out] mdToken    *pToken);
+
+    /*
+     * Retrieve information about a given module.
+     *
+     * When the module is loaded from disk, the name returned will be the filename;
+     * otherwise, the name will be the name from the metadata Module table (i.e.,
+     * the same as the managed System.Reflection.Module.ScopeName).
+     *
+     * NOTE: While this function may be called as soon as the moduleId is alive,
+     * the AssemblyID of the containing assembly will not be available until the
+     * ModuleAttachedToAssembly callback.
+     *
+     * NOTE: More information is available by using ICorProfilerInfo3::GetModuleInfo2 instead.
+     */
+    HRESULT GetModuleInfo(
+                [in]  ModuleID   moduleId,
+                [out] LPCBYTE    *ppBaseLoadAddress,
+                [in]  ULONG      cchName,
+                [out] ULONG      *pcchName,
+                [out, annotation("_Out_writes_to_(cchName, *pcchName)")]
+                      WCHAR      szName[] ,
+                [out] AssemblyID *pAssemblyId);
+
+    /*
+     * Get a metadata interface instance which maps to the given module.
+     * One may ask for the metadata to be opened in read+write mode, but
+     * this will result in slower metadata execution of the program, because
+     * changes made to the metadata cannot be optimized as they were from
+     * the compiler.
+     *
+     * NOTE: Some modules (such as resource modules) have no metadata. In
+     * those cases, GetModuleMetaData will return S_FALSE, and a NULL
+     * IUnknown.
+     *
+     * NOTE: the only values valid for dwOpenFlags are ofRead and ofWrite.
+     */
+    HRESULT GetModuleMetaData(
+                [in]  ModuleID moduleId,
+                [in]  DWORD    dwOpenFlags,
+                [in]  REFIID   riid,
+                [out] IUnknown **ppOut);
+
+    /*
+     * Retrieve a pointer to the body of a method starting at it's header.
+     * A method is scoped by the module it lives in.  Because this function
+     * is designed to give a tool access to IL before it has been loaded
+     * by the Runtime, it uses the metadata token of the method to find
+     * the instance desired.
+     *
+     * GetILFunctionBody can return CORPROF_E_FUNCTION_NOT_IL if the methodId
+     * points to a method without any IL (such as an abstract method, or a
+     * P/Invoke method).
+     */
+    HRESULT GetILFunctionBody(
+                [in]  ModuleID    moduleId,
+                [in]  mdMethodDef methodId,
+                [out] LPCBYTE     *ppMethodHeader,
+                [out] ULONG       *pcbMethodSize);
+
+    /*
+     * IL method bodies must be located as RVA's to the loaded module, which
+     * means they come after the module within 4 gb.  In order to make it
+     * easier for a tool to swap out the body of a method, this allocator
+     * will ensure memory is allocated within that range.
+     */
+    HRESULT GetILFunctionBodyAllocator(
+                [in]  ModuleID      moduleId,
+                [out] IMethodMalloc **ppMalloc);
+
+    /*
+     * Replaces the method body for a function in a module.  This will replace
+     * the RVA of the method in the metadata to point to this new method body,
+     * and adjust any internal data structures as required.  This function can
+     * only be called on those methods which have never been compiled by a JITTER.
+     * Please use the GetILFunctionAllocator to allocate space for the new method to
+     * ensure the buffer is compatible.
+     */
+    HRESULT SetILFunctionBody(
+                [in] ModuleID    moduleId,
+                [in] mdMethodDef methodid,
+                [in] LPCBYTE     pbNewILMethodHeader);
+
+    /*
+     * Retrieve app domain information given its id.
+     */
+    HRESULT GetAppDomainInfo(
+                [in]  AppDomainID appDomainId,
+                [in]  ULONG       cchName,
+                [out] ULONG       *pcchName,
+                [out, annotation("_Out_writes_to_(cchName, *pcchName)")]
+                      WCHAR       szName[] ,
+                [out] ProcessID   *pProcessId);
+
+    /*
+     * Retrieve information about an assembly given its ID.
+     */
+    HRESULT GetAssemblyInfo(
+                [in]  AssemblyID  assemblyId,
+                [in]  ULONG       cchName,
+                [out] ULONG       *pcchName,
+                [out, annotation("_Out_writes_to_(cchName, *pcchName)")]
+                      WCHAR       szName[] ,
+                [out] AppDomainID *pAppDomainId,
+                [out] ModuleID    *pModuleId);
+
+
+    /*
+     * V2 MIGRATION WARNING: DEPRECATED.  Returns E_NOTIMPL always.
+     *
+     * See ICorProfilerInfo4::RequestReJIT instead
+     *
+     */
+    HRESULT SetFunctionReJIT(
+                [in] FunctionID functionId);
+
+    /*
+     * ForceGC forces a GC to occur within the runtime.
+     *
+     * NOTE: This method needs to be called from a thread that does not have any
+     * profiler callbacks on its stack. The most convenient way to implement this is
+     * to create a separate thread within the profiler and have it call ForceGC when
+     * signalled.
+     */
+    HRESULT ForceGC();
+
+    /*
+     *
+     * V2 MIGRATION NOTE - Calling SetILInstrumentedCodeMap on any one
+     * of the multiple FunctionIDs that represent a generic function in a given
+     * AppDomain will affect all instantiations of that function in the AppDomain.
+     *
+     * fStartJit should be set to true the first time this function is called for
+     * a given FunctionID, and false thereafter.
+     *
+     * The format of the map is as follows:
+     *      The debugger will assume that each oldOffset refers to an IL offset
+     *  within the original, unmodified IL code.  newOffset refers to the corresponding
+     *  IL offset within the new, instrumented code.
+     *
+     * The map should be sorted in increasing order. For stepping to work properly:
+     * - Instrumented IL should not be reordered (so both old & new are sorted)
+     * - original IL should not be removed
+     * - the map should include entries to map all of the sequence points from the pdb.
+     *
+     * The map does not interpolate missing entries. So given the following map:
+     * (0 old, 0  new)
+     * (5 old, 10 new)
+     * (9 old, 20 new)
+     * - An old offset of 0,1,2,3,4 will be mapped to a new offset of 0
+     * - An old offset of 5,6,7, or 8 will be mapped to new offset 10.
+     * - An old offset of 9 or higher will be mapped to new offset 20.
+     * - A new offset of 0, 1,...8,9 will be mapped to old offset 0
+     * - A new offset of 10,11,...18,19 will be mapped to old offset 5.
+     * - A new offset of 20 or higher will be mapped to old offset 9.
+     *
+     */
+    HRESULT SetILInstrumentedCodeMap(
+                [in]                         FunctionID functionId,
+                [in]                         BOOL       fStartJit,
+                [in]                         ULONG      cILMapEntries,
+                [in, size_is(cILMapEntries)] COR_IL_MAP rgILMapEntries[] );
+
+    /*
+     * DEPRECATED.
+     */
+    HRESULT GetInprocInspectionInterface(
+                [out] IUnknown **ppicd);
+
+    /*
+     * DEPRECATED.
+     */
+    HRESULT GetInprocInspectionIThisThread(
+                [out] IUnknown **ppicd);
+
+    /*
+     * This will return the ContextID currently associated with the calling
+     * runtime thread.  This will set pContextId to NULL if the calling thread
+     * is not a runtime thread.
+     */
+    HRESULT GetThreadContext(
+                [in]  ThreadID  threadId,
+                [out] ContextID *pContextId);
+
+    /*
+     * DEPRECATED.
+     */
+    HRESULT BeginInprocDebugging(
+                [in]  BOOL   fThisThreadOnly,
+                [out] DWORD *pdwProfilerContext);
+
+    /*
+     * DEPRECATED.
+     */
+    HRESULT EndInprocDebugging(
+                [in]  DWORD dwProfilerContext);
+
+    /*
+     * GetILToNativeMapping returns a map from IL offsets to native
+     * offsets for this code. An array of COR_PROF_IL_TO_NATIVE_MAP
+     * structs will be returned, and some of the ilOffsets in this array
+     * may be the values specified in CorDebugIlToNativeMappingTypes.
+     */
+    HRESULT GetILToNativeMapping(
+                [in] FunctionID functionId,
+                [in] ULONG32 cMap,
+                [out] ULONG32 *pcMap,
+                [out, size_is(cMap), length_is(*pcMap)]
+                    COR_DEBUG_IL_TO_NATIVE_MAP map[]);
+}
+
+/*
+ * The CLR implements the ICorProfilerInfo2 interface. This interface is
+ * used by a code profiler to communicate with the CLR to control event
+ * monitoring and request information. The CLR passes an
+ * ICorProfilerInfo2 interface to each code profiler during initialization.
+ *
+ * A code profiler can call methods on the ICorProfilerInfo2 interface to get
+  * information about managed code being executed under the control of the CLR
+ *
+ * The ICorProfilerInfo2 interface implemented by the CLR uses the free
+ * threaded model.
+ *
+ * The methods implemented on this interface return S_OK on success, or E_FAIL
+ * on failure.
+ *
+ */
+
+[
+    object,
+    uuid(CC0935CD-A518-487d-B0BB-A93214E65478),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo2 : ICorProfilerInfo
+{
+    /*
+     * The code profiler calls DoStackSnapshot to do sparse one-off stack snapshots.
+     *
+     * Passing NULL for thread yields a snapshot of the current thread. If a ThreadID
+     * of a different thread is passed, the runtime will suspend that thread, perform
+     * the snapshot, and resume.
+     *
+     * infoFlags come from the COR_PRF_SNAPSHOT_INFO enum.
+     *
+     * context is a platform-dependent CONTEXT structure, representing the complete
+     * register context that the profiling API will use to seed the stack walk.  If this
+     * is non-NULL, it must point to JITd or NGENd code, or else DoStackSnapshot
+     * will return CORPROF_E_STACKSNAPSHOT_UNMANAGED_CTX.  Contexts are
+     * only provided by profilers that hijack threads to force them to walk their
+     * own stacks; profilers should not attempt to provide a context when walking
+     * another thread's stack. If context is NULL, the stack walk will begin at the
+     * last available managed frame for the target thread.
+     *
+     * See the definition of StackSnapshotCallback for more information.
+     */
+    HRESULT DoStackSnapshot(
+                [in] ThreadID thread,
+                [in] StackSnapshotCallback *callback,
+                [in] ULONG32 infoFlags,
+                [in] void *clientData,
+                [in, size_is(contextSize)] BYTE context[],
+                [in] ULONG32 contextSize);
+
+    /*
+     * The code profiler calls SetFunctionHooks2 to specify handlers
+     * for FunctionEnter2, FunctionLeave2, and FunctionTailcall2
+     * callbacks.
+     *
+     * Note that only one set of callbacks may be active at a time. Thus,
+     * if a profiler calls SetEnterLeaveFunctionHooks, SetEnterLeaveFunctionHooks2
+     * and SetEnterLeaveFunctionHooks3(WithInfo), then SetEnterLeaveFunctionHooks3(WithInfo)
+     * wins.  SetEnterLeaveFunctionHooks2 takes precedence over SetEnterLeaveFunctionHooks
+     * when both are set.
+     *
+     * Each pointer may be null to disable that particular callback.
+     *
+     * SetEnterLeaveFunctionHooks2 may only be called from the
+     * profiler's Initialize() callback.
+     */
+    HRESULT SetEnterLeaveFunctionHooks2(
+                [in] FunctionEnter2    *pFuncEnter,
+                [in] FunctionLeave2    *pFuncLeave,
+                [in] FunctionTailcall2 *pFuncTailcall);
+
+    /*
+     * GetFunctionInfo2 returns the parent class of a function, plus the
+     * function's metadata token and the ClassIDs of its type arguments
+     * (if any).
+     *
+     * When a COR_PRF_FRAME_INFO obtained from a FunctionEnter2
+     * callback is passed, the ClassID and all type arguments will be exact.
+     *
+     * When a COR_PRF_FRAME_INFO from any other source is passed, or
+     * when 0 is passed as the frameInfo argument, exact ClassID and type
+     * arguments cannot always be determined.  The value returned in pClassId
+     * may be NULL and some type args will come back as System.Object.
+     *
+     */
+    HRESULT GetFunctionInfo2(
+                [in] FunctionID funcId,
+                [in] COR_PRF_FRAME_INFO frameInfo,
+                [out] ClassID *pClassId,
+                [out] ModuleID *pModuleId,
+                [out] mdToken *pToken,
+                [in] ULONG32 cTypeArgs,
+                [out] ULONG32 *pcTypeArgs,
+                [out] ClassID typeArgs[]);
+
+    /*
+     * GetStringLayout returns detailed information about how string objects are stored.
+     *
+     * *pBufferLengthOffset is the offset (from the ObjectID pointer) to a DWORD that
+     * stores the length of the string's buffer
+     *
+     * *pStringLengthOffset is the offset (from the ObjectID pointer) to a DWORD that
+     * stores the length of the string itself
+     *
+     * *pBufferOffset is the offset (from the ObjectID pointer) to the actual buffer
+     * of wide characters
+     *
+     * Strings may or may not be null-terminated.
+     */
+    HRESULT GetStringLayout(
+                [out] ULONG *pBufferLengthOffset,
+                [out] ULONG *pStringLengthOffset,
+                [out] ULONG *pBufferOffset);
+
+    /*
+     * GetClassLayout returns detailed information how a specific class is stored.
+     * It only returns the fields defined by the class itself; if the parent class
+     * defined fields as well, the profiler must call GetClassLayout on the parent class
+     * to obtain those fields.
+     *
+     * It will fail with E_INVALIDARG for string and array classes.
+     */
+    HRESULT GetClassLayout(
+                [in]  ClassID classID,
+                [in, out] COR_FIELD_OFFSET rFieldOffset[],
+                [in] ULONG cFieldOffset,
+                [out] ULONG *pcFieldOffset,
+                [out] ULONG *pulClassSize);
+
+    /*
+     * Returns the parent module a class is defined in, along with the
+     * metadata token for the class, the ClassID of its parent class, and the
+     * ClassIDs of its type arguments (if any).
+     *
+     * One can call GetModuleMetaData to obtain the metadata interface for
+     * a given module.  The token can then be used to access the metadata for this
+     * class.
+     */
+    HRESULT GetClassIDInfo2(
+                [in] ClassID classId,
+                [out] ModuleID *pModuleId,
+                [out] mdTypeDef *pTypeDefToken,
+                [out] ClassID *pParentClassId,
+                [in] ULONG32 cNumTypeArgs,
+                [out] ULONG32 *pcNumTypeArgs,
+                [out] ClassID typeArgs[]);
+
+    /*
+     * GetCodeInfo2 returns the extents of native code associated with the
+     * given FunctionID. These extents are returned sorted in order of increasing
+     * IL offset.
+     */
+    HRESULT GetCodeInfo2(
+                [in] FunctionID functionID,
+                [in] ULONG32 cCodeInfos,
+                [out] ULONG32 *pcCodeInfos,
+                [out, size_is(cCodeInfos), length_is(*pcCodeInfos)]
+                COR_PRF_CODE_INFO codeInfos[]);
+
+    /*
+     * GetClassFromTokenAndTypeArgs returns the ClassID of a type given its metadata
+     * token (typedef) and the ClassIDs of its type arguments (if any).
+     *
+     *      cTypeArgs must be equal to the number of type parameters for the given type
+     *          (0 for non-generic types)
+     *      typeArgs may be NULL if cTypeArgs == 0
+     *
+     * Calling this function with a TypeRef token can have unpredictable results; callers
+     * should resolve the TypeRef to a TypeDef and use that.
+     *
+     * If the type is not already loaded, calling this function will cause it to be.
+     * Loading is a dangerous operation in many contexts. For example, calling
+     * this function during loading of modules or other types could lead to an infinite
+     * loop as the runtime attempts to circularly load things.
+     *
+     * In general, use of this function is discouraged. If profilers are interested in
+     * events for a particular type, they should store the ModuleID and TypeDef of that type,
+     * and use GetClassIDInfo2 to check whether a given ClassID is the desired type.
+     */
+    HRESULT GetClassFromTokenAndTypeArgs(
+                    [in] ModuleID moduleID,
+                    [in] mdTypeDef typeDef,
+                    [in] ULONG32 cTypeArgs,
+                    [in, size_is(cTypeArgs)] ClassID typeArgs[],
+                    [out] ClassID* pClassID);
+
+    /*
+     * GetFunctionFromTokenAndTypeArgs returns the FunctionID of a function given
+     * its metadata token (methoddef), containing class, and type args (if any).
+     *
+     *      classID may be 0 if the containing class is not generic
+     *      typeArgs may be NULL if cTypeArgs == 0
+     *
+     * Calling this function with a MethodRef token can have unpredictable results; callers
+     * should resolve the MethodRef to a MethodDef and use that.
+     *
+     * If the function is not already loaded, calling this function will cause it to be.
+     * Loading is a dangerous operation in many contexts. For example, calling
+     * this function during loading of modules or types could lead to an infinite
+     * loop as the runtime attempts to circularly load things.
+     *
+     * In general, use of this function is discouraged. If profilers are interested in
+     * events for a particular function, they should store the ModuleID and MethodDef of that function,
+     * and use GetFunctionInfo2 to check whether a given FunctionID is the desired function.
+     */
+    HRESULT GetFunctionFromTokenAndTypeArgs(
+                    [in] ModuleID moduleID,
+                    [in] mdMethodDef funcDef,
+                    [in] ClassID classId,
+                    [in] ULONG32 cTypeArgs,
+                    [in, size_is(cTypeArgs)] ClassID typeArgs[],
+                    [out] FunctionID* pFunctionID);
+
+    /*
+     * Returns an enumerator over all frozen objects in the given module.
+     */
+    HRESULT EnumModuleFrozenObjects(
+                [in] ModuleID moduleID,
+                [out] ICorProfilerObjectEnum** ppEnum);
+
+
+
+    /*
+     * GetArrayObjectInfo returns detailed information about an array object.
+     * objectId is a valid array object.
+     * cDimensions is the rank (# of dimensions).
+     * On success:
+     *   pDimensionSizes, pDimensionLowerBounds are parallel arrays describing the size and lower bound for each dimension.
+     *   (*ppData) is a pointer to the raw buffer for the array, which is laid out according to the C++
+     *   convention
+     */
+    HRESULT GetArrayObjectInfo(
+                    [in] ObjectID objectId,
+                    [in] ULONG32 cDimensions,
+                    [out, size_is(cDimensions)] ULONG32 pDimensionSizes[],
+                    [out, size_is(cDimensions)] int pDimensionLowerBounds[],
+                    [out] BYTE **ppData);
+
+    /*
+     * GetBoxClassLayout returns information about how a particular value type is laid out
+     * when boxed.
+     *
+     *  *pBufferOffset is the offset (from the ObjectID pointer) to where the value type
+     *  is stored within the box. The value type's class layout may then be used to
+     *  interpret it.
+     */
+    HRESULT GetBoxClassLayout(
+                    [in] ClassID classId,
+                    [out] ULONG32 *pBufferOffset);
+
+
+    /*
+     * GetThreadAppDomain returns the AppDomainID currently associated with\
+     * the given ThreadID
+     */
+    HRESULT GetThreadAppDomain(
+                    [in] ThreadID threadId,
+                    [out] AppDomainID *pAppDomainId);
+
+
+    /*
+     * GetRVAStaticAddress gets the address of the home for the given
+     * RVA static. It must be called from a managed thread.  Otherwise,
+     * it will return CORPROF_E_NOT_MANAGED_THREAD.
+     */
+    HRESULT GetRVAStaticAddress(
+                    [in] ClassID classId,
+                    [in] mdFieldDef fieldToken,
+                    [out] void **ppAddress);
+
+    /*
+     * GetAppDomainStaticAddress gets the address of the home for the given
+     * AppDomain static in the given AppDomain.
+     *
+     * This function may return CORPROF_E_DATAINCOMPLETE if the given static
+     * has not been assigned a home in the given AppDomain.
+     */
+    HRESULT GetAppDomainStaticAddress(
+                    [in] ClassID classId,
+                    [in] mdFieldDef fieldToken,
+                    [in] AppDomainID appDomainId,
+                    [out] void **ppAddress);
+
+    /*
+     * GetThreadStaticAddress gets the address of the home for the given
+     * Thread static in the given Thread. threadId must be the current thread
+     * ID or NULL, which means using curernt thread ID.
+     *
+     * This function may return CORPROF_E_DATAINCOMPLETE if the given static
+     * has not been assigned a home in the given Thread.
+     */
+    HRESULT GetThreadStaticAddress(
+                    [in] ClassID classId,
+                    [in] mdFieldDef fieldToken,
+                    [in] ThreadID threadId,
+                    [out] void **ppAddress);
+
+    /*
+     * GetContextStaticAddress gets the address of the home for the given
+     * Context static in the given context.  It must be called from a managed
+     * thread.  Otherwise, it will return CORPROF_E_NOT_MANAGED_THREAD.
+     *
+     * This function may return CORPROF_E_DATAINCOMPLETE if the given static
+     * has not been assigned a home in the given Context.
+     */
+    HRESULT GetContextStaticAddress(
+                    [in] ClassID classId,
+                    [in] mdFieldDef fieldToken,
+                    [in] ContextID contextId,
+                    [out] void **ppAddress);
+
+    /*
+     * GetStaticFieldInfo gets COR_PRF_STATIC_TYPE for a specific
+     * field in a class. This information can be used to decide which
+     * function to call to get the address of the static.
+     *
+     * NOTE: One should still check the metadata for a static to ensure
+     * it is actually going to have an address. Statics that are literals
+     * (aka constants) exist only in the metadata and do not have an address.
+     *
+     */
+    HRESULT GetStaticFieldInfo(
+                    [in] ClassID classId,
+                    [in] mdFieldDef fieldToken,
+                    [out] COR_PRF_STATIC_TYPE *pFieldInfo);
+
+    /*
+     * GetGenerationBounds returns the memory regions that make up a given
+     * GC generation in memory. It may be called from any profiler callback as long
+     * as a GC is not in progress. (To be exact, it may be called from any callback
+     * except for those that occur between GarbageCollectionStarted and GarbageCollectionFinished.)
+     *
+     * Most shifting of generations takes place during garbage collections; between
+     * collections generations may grow, but generally do not move around. Therefore
+     * the most interesting places to call this function are in GarbageCollectionStarted
+     * and Finished.
+     *
+     * During program startup, some objects are allocated by the CLR itself, generally
+     * in generations 3 and 0. So by the time managed code starts executing, these
+     * generations will already contain objects. Generations 1 and 2 will be normally
+     * empty, except for dummy objects generated by the garbage collector (of size 12
+     * bytes in 32-bit implementations of the CLR, larger in 64-bit implementaions).
+     * You may also see generation 2 ranges that are inside modules generated by ngen.
+     * These are "frozen objects" generated at ngen time rather than allocated by the
+     * garbage collector.
+     *
+     * cObjectRanges is a count of the number of elements allocated by the caller for
+     *      the ranges array
+     * pcObjectRanges is an out param for the number of ranges in the given generation
+     * ranges is an array of elements of type COR_PRF_GC_GENERATION_RANGE, each of which
+     *      describes a range of memory used by the garbage collector
+     */
+
+    HRESULT GetGenerationBounds(
+                    [in] ULONG cObjectRanges,
+                    [out] ULONG *pcObjectRanges,
+                    [out, size_is(cObjectRanges), length_is(*pcObjectRanges)] COR_PRF_GC_GENERATION_RANGE ranges[]);
+
+    /*
+     * GetObjectGeneration returns which generation the given object is currently in, along
+     * with the start and length of the segment containing the object. It may be called
+     * at any time as long as a GC is not in progress.
+     */
+
+    HRESULT GetObjectGeneration(
+                    [in] ObjectID objectId,
+                    [out] COR_PRF_GC_GENERATION_RANGE *range);
+
+
+   /*
+     * When an exception notification is received, GetNotifiedExceptionClauseInfo() may be used
+     * to get the native address and frame information for the exception clause (catch/finally/filter)
+     * that is about to be run (ExceptionCatchEnter, ExceptionUnwindFinallyEnter, ExceptionFilterEnter)
+     * or has just been run (ExceptionCatchLeave, ExceptionUnwindFinallyLeave, ExceptionFilterLeave).
+     *
+     * This call may be made at any time after one of the Enter calls above until either the matching
+     * Leave call is received or until a nested exception throws out of the current clause in which case
+     * there will be no Leave notification for that clause.  Note it is not possible for a throw to escape
+     * a Filter so there is always a Leave in that case.
+     *
+     * Return values:
+     *   S_OK indicates success
+     *   S_FALSE indicates that no exception clause is active
+     *   CORPROF_E_NOT_MANAGED_THREAD indicates an unmanaged thread.
+     */
+
+    HRESULT GetNotifiedExceptionClauseInfo(
+                    [out] COR_PRF_EX_CLAUSE_INFO *pinfo);
+}
+
+/*
+ * The CLR implements the ICorProfilerInfo3 interface. This interface is
+ * used by a code profiler to communicate with the CLR to control event
+ * monitoring and request information. The CLR passes an
+ * ICorProfilerInfo3 interface to each code profiler during initialization.
+ *
+ * A code profiler can call methods on the ICorProfilerInfo3 interface to get
+  * information about managed code being executed under the control of the CLR
+ *
+ * The ICorProfilerInfo3 interface implemented by the CLR uses the free
+ * threaded model.
+ *
+ * The methods implemented on this interface return S_OK on success, or E_FAIL
+ * on failure.
+ *
+ */
+
+[
+    object,
+    uuid(B555ED4F-452A-4E54-8B39-B5360BAD32A0),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo3 : ICorProfilerInfo2
+{
+    /*
+     * Returns an enumerator for all previously jitted functions. May overlap with
+     * functions previously reported via CompilationStarted callbacks.
+     * NOTE: The returned enumeration will only include '0' for the value of the
+     * COR_PRF_FUNCTION::reJitId field.  If you require valid COR_PRF_FUNCTION::reJitId values, use
+     * ICorProfilerInfo4::EnumJITedFunctions2.
+     */
+    HRESULT EnumJITedFunctions([out] ICorProfilerFunctionEnum** ppEnum);
+
+    HRESULT RequestProfilerDetach([in] DWORD dwExpectedCompletionMilliseconds);
+
+    HRESULT SetFunctionIDMapper2(
+                [in] FunctionIDMapper2 *pFunc,
+                [in] void *clientData);
+
+    /*
+     * GetStringLayout2 returns detailed information about how string objects are stored.
+     *
+     * *pStringLengthOffset is the offset (from the ObjectID pointer) to a DWORD that
+     * stores the length of the string itself
+     *
+     * *pBufferOffset is the offset (from the ObjectID pointer) to the actual buffer
+     * of wide characters
+     *
+     * Strings may or may not be null-terminated.
+     */
+    HRESULT GetStringLayout2(
+                [out] ULONG *pStringLengthOffset,
+                [out] ULONG *pBufferOffset);
+
+    /*
+     * The code profiler calls SetFunctionHooks3 to specify handlers
+     * for FunctionEnter3, FunctionLeave3, and FunctionTailcall3, and calls
+     * SetFunctionHooks3WithInfo to specify handlers for FunctionEnter3WithInfo,
+     * FunctionLeave3WithInfo, and FunctionTailcall3WithInfo.
+     *
+     * Note that only one set of callbacks may be active at a time. Thus,
+     * if a profiler calls SetEnterLeaveFunctionHooks, SetEnterLeaveFunctionHooks2
+     * and SetEnterLeaveFunctionHooks3(WithInfo), then SetEnterLeaveFunctionHooks3(WithInfo)
+     * wins.  SetEnterLeaveFunctionHooks2 takes precedence over SetEnterLeaveFunctionHooks
+     * when both are set.
+     *
+     * Each function pointer may be null to disable that callback.
+     *
+     * SetEnterLeaveFunctionHooks3(WithInfo) may only be called from the
+     * profiler's Initialize() callback.
+     */
+    HRESULT SetEnterLeaveFunctionHooks3(
+                [in] FunctionEnter3    *pFuncEnter3,
+                [in] FunctionLeave3    *pFuncLeave3,
+                [in] FunctionTailcall3 *pFuncTailcall3);
+
+
+    HRESULT SetEnterLeaveFunctionHooks3WithInfo(
+                [in] FunctionEnter3WithInfo    *pFuncEnter3WithInfo,
+                [in] FunctionLeave3WithInfo    *pFuncLeave3WithInfo,
+                [in] FunctionTailcall3WithInfo *pFuncTailcall3WithInfo);
+
+    /*
+     * The profiler can call GetFunctionEnter3Info to gather frame info and argument info
+     * in FunctionEnter3WithInfo callback. The profiler needs to allocate sufficient space
+     * for COR_PRF_FUNCTION_ARGUMENT_INFO of the function it's inspecting and indicate the
+     * size in a ULONG pointed by pcbArgumentInfo.
+     */
+    HRESULT GetFunctionEnter3Info(
+                [in]  FunctionID functionId,
+                [in]  COR_PRF_ELT_INFO eltInfo,
+                [out] COR_PRF_FRAME_INFO *pFrameInfo,
+                [in, out] ULONG *pcbArgumentInfo,
+                [out, size_is(*pcbArgumentInfo)] COR_PRF_FUNCTION_ARGUMENT_INFO *pArgumentInfo);
+
+    /*
+     * The profiler can call GetFunctionLeave3Info to gather frame info and return value
+     * in FunctionLeave3WithInfo callback.
+     */
+    HRESULT GetFunctionLeave3Info(
+                [in]  FunctionID functionId,
+                [in]  COR_PRF_ELT_INFO eltInfo,
+                [out] COR_PRF_FRAME_INFO *pFrameInfo,
+                [out] COR_PRF_FUNCTION_ARGUMENT_RANGE *pRetvalRange);
+
+    /*
+     * The profiler can call GetFunctionTailcall3Info to gather frame info in
+     * FunctionTailcall3WithInfo callback.
+     */
+    HRESULT GetFunctionTailcall3Info(
+                [in]  FunctionID functionId,
+                [in]  COR_PRF_ELT_INFO eltInfo,
+                [out] COR_PRF_FRAME_INFO *pFrameInfo);
+
+    HRESULT EnumModules([out] ICorProfilerModuleEnum** ppEnum);
+
+    /*
+     * The profiler can call GetRuntimeInformation to query CLR version information.
+     * Passing NULL to any parameter is acceptable except pcchVersionString cannot
+     * be NULL if szVersionString is not NULL.
+     */
+    HRESULT GetRuntimeInformation([out] USHORT *pClrInstanceId,
+                                  [out] COR_PRF_RUNTIME_TYPE *pRuntimeType,
+                                  [out] USHORT *pMajorVersion,
+                                  [out] USHORT *pMinorVersion,
+                                  [out] USHORT *pBuildNumber,
+                                  [out] USHORT *pQFEVersion,
+                                  [in]  ULONG  cchVersionString,
+                                  [out] ULONG  *pcchVersionString,
+                                  [out, annotation("_Out_writes_to_(cchVersionString, *pcchVersionString)")]
+                                        WCHAR  szVersionString[]);
+
+    /*
+     * GetThreadStaticAddress2 gets the address of the home for the given
+     * Thread static in the given Thread.
+     *
+     * This function may return CORPROF_E_DATAINCOMPLETE if the given static
+     * has not been assigned a home in the given Thread.
+     */
+    HRESULT GetThreadStaticAddress2(
+                    [in] ClassID classId,
+                    [in] mdFieldDef fieldToken,
+                    [in] AppDomainID appDomainId,
+                    [in] ThreadID threadId,
+                    [out] void **ppAddress);
+
+    /*
+     * GetAppDomainsContainingModule returns the AppDomainIDs in which the
+     * given module has been loaded
+     */
+    HRESULT GetAppDomainsContainingModule(
+                [in] ModuleID moduleId,
+                [in] ULONG32 cAppDomainIds,
+                [out] ULONG32 *pcAppDomainIds,
+                [out, size_is(cAppDomainIds), length_is(*pcAppDomainIds)] AppDomainID appDomainIds[]);
+
+
+    /*
+     * Retrieve information about a given module.
+     *
+     * When the module is loaded from disk, the name returned will be the filename;
+     * otherwise, the name will be the name from the metadata Module table (i.e.,
+     * the same as the managed System.Reflection.Module.ScopeName).
+     *
+     * *pdwModuleFlags will be filled in with a bitmask of values from COR_PRF_MODULE_FLAGS
+     * that specify some properties of the module.
+     *
+     * NOTE: While this function may be called as soon as the moduleId is alive,
+     * the AssemblyID of the containing assembly will not be available until the
+     * ModuleAttachedToAssembly callback.
+     *
+     */
+    HRESULT GetModuleInfo2(
+                [in]  ModuleID              moduleId,
+                [out] LPCBYTE               *ppBaseLoadAddress,
+                [in]  ULONG                 cchName,
+                [out] ULONG                 *pcchName,
+                [out, annotation("_Out_writes_to_(cchName, *pcchName)")]
+                      WCHAR                 szName[],
+                [out] AssemblyID            *pAssemblyId,
+                [out] DWORD                 *pdwModuleFlags);
+
+
+}
+
+
+/*
+ * This interface lets you iterate over the frozen objects from ngen images.
+ */
+
+[
+    object,
+    uuid(2C6269BD-2D13-4321-AE12-6686365FD6AF),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerObjectEnum : IUnknown
+{
+    HRESULT Skip(
+                [in] ULONG celt);
+
+    HRESULT Reset();
+
+    HRESULT Clone(
+                    [out] ICorProfilerObjectEnum **ppEnum);
+
+    HRESULT GetCount(
+                    [out] ULONG *pcelt);
+
+    HRESULT Next(
+                    [in] ULONG celt,
+                    [out, size_is(celt), length_is(*pceltFetched)]  ObjectID objects[],
+                    [out] ULONG *pceltFetched);
+}
+
+
+/*
+ * This interface lets you iterate over functions in the runtime.
+ */
+
+[
+    object,
+    uuid(FF71301A-B994-429D-A10B-B345A65280EF),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerFunctionEnum : IUnknown
+{
+    HRESULT Skip([in] ULONG celt);
+
+    HRESULT Reset();
+
+    HRESULT Clone([out] ICorProfilerFunctionEnum **ppEnum);
+
+    HRESULT GetCount([out] ULONG *pcelt);
+
+    HRESULT Next([in]  ULONG            celt,
+                 [out, size_is(celt), length_is(*pceltFetched)]
+                       COR_PRF_FUNCTION ids[],
+                 [out] ULONG *          pceltFetched);
+};
+
+/*
+ * This interface lets you iterate over modules in the runtime.
+ */
+
+[
+    object,
+    uuid(b0266d75-2081-4493-af7f-028ba34db891),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerModuleEnum : IUnknown
+{
+    HRESULT Skip([in] ULONG celt);
+
+    HRESULT Reset();
+
+    HRESULT Clone([out] ICorProfilerModuleEnum **ppEnum);
+
+    HRESULT GetCount([out] ULONG *pcelt);
+
+    HRESULT Next([in]  ULONG            celt,
+                 [out, size_is(celt), length_is(*pceltFetched)]
+                       ModuleID         ids[],
+                 [out] ULONG *          pceltFetched);
+};
+
+/*
+ * NOTE: DEPRECATED, now you can use your any allocator.
+ *
+ * This is simple allocator that only allows you to allocate memory.
+ * You may not free it.  This was used in conjunction with
+ * ICorProfilerInfo::SetILFunctionBody.
+ */
+[
+    object,
+    uuid(A0EFB28B-6EE2-4d7b-B983-A75EF7BEEDB8),
+    pointer_default(unique),
+    local
+]
+interface IMethodMalloc : IUnknown
+{
+    /*
+     * Tries to allocate memory above the start address of the module from
+     * which it was created.  It is important to note that this method may
+     * fail to allocate the memory specified above the start address, and
+     * may as a result return NULL.
+     */
+    PVOID Alloc(
+                    [in] ULONG cb);
+}
+
+/*
+ * The CLR implements the ICorProfilerFunctionControl interface. This interface
+ * is used by a code profiler to communicate with the CLR to control how the
+ * JIT should generate code when rejitting a specific method.
+ *
+ * The ICorProfilerFunctionControl interface implemented by the CLR uses the
+ * free threaded model.
+ */
+
+[
+    object,
+    uuid(F0963021-E1EA-4732-8581-E01B0BD3C0C6),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerFunctionControl : IUnknown
+{
+    /*
+     * Set one or more flags from COR_PRF_CODEGEN_FLAGS to control code
+     * generation just for this method.
+     */
+    HRESULT SetCodegenFlags(
+                [in] DWORD flags);
+
+    /*
+     * Override the method body.
+     */
+    HRESULT SetILFunctionBody(
+                [in]                               ULONG   cbNewILMethodHeader,
+                [in, size_is(cbNewILMethodHeader)] LPCBYTE pbNewILMethodHeader);
+
+    /*
+     * This is not currently implemented, and will return E_NOTIMPL
+     */
+    HRESULT SetILInstrumentedCodeMap(
+                [in]                         ULONG      cILMapEntries,
+                [in, size_is(cILMapEntries)] COR_IL_MAP rgILMapEntries[]);
+
+}
+
+/*
+ * The CLR implements the ICorProfilerInfo4 interface. This interface is
+ * used by a code profiler to communicate with the CLR to control event
+ * monitoring and request information. The CLR passes an
+ * ICorProfilerInfo4 interface to each code profiler during initialization.
+ *
+ * A code profiler can call methods on the ICorProfilerInfo4 interface to get
+  * information about managed code being executed under the control of the CLR
+ *
+ * The ICorProfilerInfo4 interface implemented by the CLR uses the free
+ * threaded model.
+ *
+ * The methods implemented on this interface return S_OK on success, or E_FAIL
+ * on failure.
+ *
+ */
+
+[
+    object,
+    uuid(0d8fdcaa-6257-47bf-b1bf-94dac88466ee),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo4 : ICorProfilerInfo3
+{
+    HRESULT EnumThreads([out] ICorProfilerThreadEnum **ppEnum);
+    HRESULT InitializeCurrentThread();
+
+    /*
+     * Call RequestReJIT to have the runtime re-JIT a particular set of methods.
+     * A code profiler can then adjust the code generated when the method is
+     * re-JITed through the ICorProfilerFunctionControl interface.  This does
+     * not impact currently executing methods, only future invocations.
+     *
+     * A return code of S_OK indicates that all of the requested methods were
+     * attempted to be rejitted.   However, the profiler must implement
+     * ICorProfilerCallback4::ReJITError to determine which of the methods were
+     * successfully re-JITed.
+     *
+     * A failure return value (E_*) indicates some failure that prevents any
+     * re-JITs.
+     */
+    HRESULT RequestReJIT(
+                [in]                       ULONG       cFunctions,
+                [in, size_is(cFunctions)]  ModuleID    moduleIds[],
+                [in, size_is(cFunctions)]  mdMethodDef methodIds[]);
+
+    /*
+     * RequestRevert will instruct the runtime to revert to using/calling the
+     * original method (original IL and flags) rather than whatever was
+     * ReJITed.  This does not change any currently active methods, only future
+     * invocations.
+     *
+     */
+    HRESULT RequestRevert(
+                [in]                       ULONG       cFunctions,
+                [in, size_is(cFunctions)]  ModuleID    moduleIds[],
+                [in, size_is(cFunctions)]  mdMethodDef methodIds[],
+                [out, size_is(cFunctions)] HRESULT     status[]);
+
+    /*
+     * Same as GetCodeInfo2, except instead of always returning the code info
+     * associated with the original IL/function, you can request the code info
+     * for a particular re-JITed version of a function.
+     */
+    HRESULT GetCodeInfo3(
+                [in]  FunctionID           functionID,
+                [in]  ReJITID              reJitId,
+                [in]  ULONG32              cCodeInfos,
+                [out] ULONG32 *            pcCodeInfos,
+                [out, size_is(cCodeInfos), length_is(*pcCodeInfos)]
+                      COR_PRF_CODE_INFO    codeInfos[]);
+
+    /*
+     * Same as GetFunctionFromIP, but also returns which re-JITed version is
+     * associated with the IP address.
+     */
+    HRESULT GetFunctionFromIP2(
+                [in]  LPCBYTE      ip,
+                [out] FunctionID * pFunctionId,
+                [out] ReJITID *    pReJitId);
+
+    /*
+     * GetReJITIDs can be used to find all of the re-JITed versions of the
+     * given function.
+     */
+    HRESULT GetReJITIDs(
+                [in]  FunctionID          functionId,
+                [in]  ULONG               cReJitIds,
+                [out] ULONG *             pcReJitIds,
+                [out, size_is(cReJitIds), length_is(*pcReJitIds)]
+                      ReJITID             reJitIds[]);
+
+    /*
+     * Same as GetILToNativeMapping, but allows the code profiler to specify
+     * which re-JITed version it applies to.
+     */
+    HRESULT GetILToNativeMapping2(
+                [in]  FunctionID                       functionId,
+                [in]  ReJITID                          reJitId,
+                [in]  ULONG32                          cMap,
+                [out] ULONG32 *                        pcMap,
+                [out, size_is(cMap),length_is(*pcMap)]
+                      COR_DEBUG_IL_TO_NATIVE_MAP       map[]);
+
+    /*
+     * Returns an enumerator for all previously jitted functions. May overlap with
+     * functions previously reported via CompilationStarted callbacks.  The returned
+     * enumeration will include values for the COR_PRF_FUNCTION::reJitId field
+     */
+    HRESULT EnumJITedFunctions2([out] ICorProfilerFunctionEnum** ppEnum);
+
+    /*
+     * The code profiler calls GetObjectSize to obtain the size of an object.
+     * Note that types like arrays and strings may have a different size for each object.
+     */
+    HRESULT GetObjectSize2(
+                [in]  ObjectID objectId,
+                [out] SIZE_T *pcSize);
+
+}
+
+[
+    object,
+    uuid(07602928-CE38-4B83-81E7-74ADAF781214),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo5 : ICorProfilerInfo4
+{
+    /*
+     * The code profiler calls GetEventMask2 to obtain the current event
+     * categories for which it is to receive event notifications from the CLR
+     *
+     * *pdwEventsLow is a bitwise combination of values from COR_PRF_MONITOR
+     * *pdwEventsHigh is a bitwise combination of values from COR_PRF_HIGH_MONITOR
+     */
+    HRESULT GetEventMask2(
+            [out] DWORD *pdwEventsLow,
+            [out] DWORD *pdwEventsHigh);
+
+    /*
+     * The code profiler calls SetEventMask2 to set the event categories for
+     * which it is set to receive notification from the CLR.
+     *
+     * dwEventsLow is a bitwise combination of values from COR_PRF_MONITOR
+     * dwEventsHigh is a bitwise combination of values from COR_PRF_HIGH_MONITOR
+     */
+    HRESULT SetEventMask2(
+            [in] DWORD dwEventsLow,
+            [in] DWORD dwEventsHigh);
+};
+
+
+[
+    object,
+    uuid(F30A070D-BFFB-46A7-B1D8-8781EF7B698A),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo6 : ICorProfilerInfo5
+{
+    /*
+    * Returns an enumerator for all methods that
+    * - belong to a given NGen or R2R module (inlinersModuleId) and
+    * - inlined a body of a given method (inlineeModuleId / inlineeMethodId).
+    *
+    * If incompleteData is set to TRUE after function is called, it means that the methods enumerator
+    * doesn't contain all methods inlining a given method.
+    * It can happen when one or more direct or indirect dependencies of inliners module haven't been loaded yet.
+    * If profiler needs accurate data it should retry later when more modules are loaded (preferably on each module load).
+    *
+    * It can be used to lift limitation on inlining for ReJIT.
+    *
+    * NOTE: If the inlinee method is decorated with the System.Runtime.Versioning.NonVersionable attribute then
+    * then some inliners may not ever be reported. If you need to get a full accounting you can avoid the issue
+    * by disabling the use of all native images.
+    *
+    */
+    HRESULT EnumNgenModuleMethodsInliningThisMethod(
+        [in] ModuleID    inlinersModuleId,
+        [in] ModuleID    inlineeModuleId,
+        [in] mdMethodDef inlineeMethodId,
+        [out] BOOL        *incompleteData,
+        [out] ICorProfilerMethodEnum** ppEnum);
+};
+
+[
+    object,
+    uuid(9AEECC0D-63E0-4187-8C00-E312F503F663),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo7 : ICorProfilerInfo6
+{
+    /*
+    * Applies the newly emitted Metadata.
+    *
+    * This method can be used to apply the newly defined metadata by IMetadataEmit::Define* methods
+    * to the module.
+    *
+    * If metadata changes are made after ModuleLoadFinished callback,
+    * it is required to call this method before using the new metadata
+    */
+    HRESULT ApplyMetaData(
+        [in] ModuleID    moduleId);
+
+    /* Returns the length of an in-memory symbol stream
+    *
+    * If the module has in-memory symbols the length of the stream will
+    * be placed in pCountSymbolBytes. If the module doesn't have in-memory
+    * symbols, *pCountSymbolBytes = 0
+    *
+    * Returns S_OK if the length could be determined (even if it is 0)
+    *
+    * Note: The current implementation does not support reflection.emit.
+    * CORPROF_E_MODULE_IS_DYNAMIC will be returned in that case.
+    */
+    HRESULT GetInMemorySymbolsLength(
+        [in] ModuleID moduleId,
+        [out] DWORD* pCountSymbolBytes);
+
+    /* Reads bytes from an in-memory symbol stream
+    *
+    * This function attempts to read countSymbolBytes of data starting at offset
+    * symbolsReadOffset within the in-memory stream. The data will be copied into
+    * pSymbolBytes which is expected to have countSymbolBytes of space available.
+    * pCountSymbolsBytesRead contains the actual number of bytes read which
+    * may be less than countSymbolBytes if the end of the stream is reached.
+    *
+    * Returns S_OK if a non-zero number of bytes were read.
+    *
+    * Note: The current implementation does not support reflection.emit.
+    * CORPROF_E_MODULE_IS_DYNAMIC will be returned in that case.
+    */
+    HRESULT ReadInMemorySymbols(
+        [in] ModuleID moduleId,
+        [in] DWORD symbolsReadOffset,
+        [out] BYTE* pSymbolBytes,
+        [in] DWORD countSymbolBytes,
+        [out] DWORD* pCountSymbolBytesRead);
+
+};
+
+[
+    object,
+    uuid(C5AC80A6-782E-4716-8044-39598C60CFBF),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo8 : ICorProfilerInfo7
+{
+    /*
+    * Determines if a function has associated metadata
+    *
+    * Certain methods like IL Stubs or LCG Methods do not have
+    * associated metadata that can be retrieved using the IMetaDataImport APIs.
+    *
+    * Such methods can be encountered by profilers through instruction pointers
+    * or by listening to ICorProfilerCallback::DynamicMethodJITCompilationStarted
+    *
+    * This API can be used to determine whether a FunctionID is dynamic.
+    */
+    HRESULT IsFunctionDynamic( [in]  FunctionID  functionId,
+                               [out] BOOL        *isDynamic);
+
+    /*
+    * Maps a managed code instruction pointer to a FunctionID.
+    *
+    * GetFunctionFromIP2 fails for dynamic methods, this method works for
+    * both dynamic and non-dynamic methods. It is a superset of GetFunctionFromIP2
+    */
+    HRESULT GetFunctionFromIP3([in] LPCBYTE ip,
+                               [out] FunctionID *functionId,
+                               [out] ReJITID * pReJitId);
+
+    /*
+    * Retrieves informaiton about dynamic methods
+    *
+    * Certain methods like IL Stubs or LCG do not have
+    * associated metadata that can be retrieved using the IMetaDataImport APIs.
+    *
+    * Such methods can be encountered by profilers through instruction pointers
+    * or by listening to ICorProfilerCallback::DynamicMethodJITCompilationStarted
+    *
+    * This API can be used to retrieve information about dynamic methods
+    * including a friendly name if available.
+    */
+    HRESULT GetDynamicFunctionInfo( [in]  FunctionID              functionId,
+                                    [out] ModuleID                *moduleId,
+                                    [out] PCCOR_SIGNATURE         *ppvSig,
+                                    [out] ULONG                   *pbSig,
+                                    [in]  ULONG                   cchName,
+                                    [out] ULONG                   *pcchName,
+                                    [out] WCHAR                    wszName[]);
+};
+
+[
+    object,
+    uuid(008170DB-F8CC-4796-9A51-DC8AA0B47012),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo9 : ICorProfilerInfo8
+{
+    //Given functionId + rejitId, enumerate the native code start address of all jitted versions of this code that currently exist
+    HRESULT GetNativeCodeStartAddresses(FunctionID functionID, ReJITID reJitId, ULONG32 cCodeStartAddresses, ULONG32 *pcCodeStartAddresses, UINT_PTR codeStartAddresses[]);
+
+    //Given the native code start address, return the native->IL mapping information for this jitted version of the code
+    HRESULT GetILToNativeMapping3(UINT_PTR pNativeCodeStartAddress, ULONG32 cMap, ULONG32 *pcMap, COR_DEBUG_IL_TO_NATIVE_MAP map[]);
+
+    //Given the native code start address, return the the blocks of virtual memory that store this code (method code is not necessarily stored in a single contiguous memory region)
+    HRESULT GetCodeInfo4(UINT_PTR pNativeCodeStartAddress, ULONG32 cCodeInfos, ULONG32* pcCodeInfos, COR_PRF_CODE_INFO codeInfos[]);
+};
+
+[
+    object,
+    uuid(2F1B5152-C869-40C9-AA5F-3ABE026BD720),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo10 : ICorProfilerInfo9
+{
+    // Given an ObjectID, callback and clientData, enumerates each object reference (if any).
+    HRESULT EnumerateObjectReferences(ObjectID objectId, ObjectReferenceCallback callback, void* clientData);
+
+    // Given an ObjectID, determines whether it is in a read only segment.
+    HRESULT IsFrozenObject(ObjectID objectId, BOOL *pbFrozen);
+
+    // Gets the value of the configured LOH Threshold.
+    HRESULT GetLOHObjectSizeThreshold(DWORD *pThreshold);
+
+    /*
+     * This method will ReJIT the methods requested, as well as any inliners
+     * of the methods requested.
+     *
+     * RequestReJIT does not do any tracking of inlined methods. The profiler
+     * was expected to track inlining and call RequestReJIT for all inliners
+     * to make sure every instance of an inlined method was ReJITted.
+     * This poses a problem with ReJIT on attach, since the profiler was
+     * not present to monitor inlining. This method can be called to guarantee
+     * that the full set of inliners will be ReJITted as well.
+     */
+    HRESULT RequestReJITWithInliners(
+                [in]                       DWORD       dwRejitFlags,
+                [in]                       ULONG       cFunctions,
+                [in, size_is(cFunctions)]  ModuleID    moduleIds[],
+                [in, size_is(cFunctions)]  mdMethodDef methodIds[]);
+
+    // Suspend the runtime without performing a GC.
+    HRESULT SuspendRuntime();
+
+    // Restart the runtime from a previous suspension.
+    HRESULT ResumeRuntime();
+}
+
+[
+    object,
+    uuid(06398876-8987-4154-B621-40A00D6E4D04),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo11 : ICorProfilerInfo10
+{
+    /*
+     * Get environment variable for the running managed code.
+     */
+    HRESULT GetEnvironmentVariable(
+                [in, string] const WCHAR *szName,
+                [in]         ULONG cchValue,
+                [out]        ULONG *pcchValue,
+                [out, annotation("_Out_writes_to_(cchValue, *pcchValue)")]
+                             WCHAR szValue[]);
+
+    /*
+     * Set environment variable for the running managed code.
+     *
+     * The code profiler calls this function to modify environment variables of the
+     * current managed process. For example, it can be used in the profiler's Initialize()
+     * or InitializeForAttach() callbacks.
+     *
+     * szName is the name of the environment variable, should not be NULL.
+     *
+     * szValue is the contents of the environment variable, or NULL if the variable should be deleted.
+     */
+    HRESULT SetEnvironmentVariable(
+                [in, string] const WCHAR *szName,
+                [in, string] const WCHAR *szValue);
+}
+
+[
+    object,
+    uuid(27b24ccd-1cb1-47c5-96ee-98190dc30959),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo12 : ICorProfilerInfo11
+{
+    HRESULT EventPipeStartSession(
+        [in]  UINT32                            cProviderConfigs,
+        [in, size_is(cProviderConfigs)]
+              COR_PRF_EVENTPIPE_PROVIDER_CONFIG pProviderConfigs[],
+        [in]  BOOL                              requestRundown,
+        [out] EVENTPIPE_SESSION*                pSession);
+
+    HRESULT EventPipeAddProviderToSession(
+        [in] EVENTPIPE_SESSION                 session,
+        [in] COR_PRF_EVENTPIPE_PROVIDER_CONFIG providerConfig);
+
+    HRESULT EventPipeStopSession(
+        [in] EVENTPIPE_SESSION session);
+
+    HRESULT EventPipeCreateProvider(
+                [in, string] const WCHAR    *providerName,
+                [out] EVENTPIPE_PROVIDER    *pProvider);
+
+    HRESULT EventPipeGetProviderInfo(
+                [in] EVENTPIPE_PROVIDER provider,
+                [in]  ULONG      cchName,
+                [out] ULONG      *pcchName,
+                [out, annotation("_Out_writes_to_(cchName, *pcchName)")]
+                      WCHAR      providerName[]);
+
+    HRESULT EventPipeDefineEvent(
+                [in] EVENTPIPE_PROVIDER     provider,
+                [in, string] const WCHAR   *eventName,
+                [in] UINT32                 eventID,
+                [in] UINT64                 keywords,
+                [in] UINT32                 eventVersion,
+                [in] UINT32                 level,
+                [in] UINT8                  opcode,
+                [in] BOOL                   needStack,
+                [in] UINT32                 cParamDescs,
+                [in, size_is(cParamDescs)]
+                     COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
+                [out] EVENTPIPE_EVENT      *pEvent);
+
+    HRESULT EventPipeWriteEvent(
+                [in] EVENTPIPE_EVENT    event,
+                [in] UINT32             cData,
+                [in, size_is(cData)]
+                     COR_PRF_EVENT_DATA data[],
+                [in] LPCGUID            pActivityId,
+                [in] LPCGUID            pRelatedActivityId);
+}
+
+/*
+* This interface lets you iterate over methods in the runtime.
+*/
+
+[
+    object,
+    uuid(FCCEE788-0088-454B-A811-C99F298D1942),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerMethodEnum : IUnknown
+{
+    HRESULT Skip([in] ULONG celt);
+
+    HRESULT Reset();
+
+    HRESULT Clone([out] ICorProfilerMethodEnum **ppEnum);
+
+    HRESULT GetCount([out] ULONG *pcelt);
+
+    HRESULT Next([in]  ULONG   celt,
+        [out, size_is(celt), length_is(*pceltFetched)]
+        COR_PRF_METHOD         elements[],
+        [out] ULONG *          pceltFetched);
+}
+
+/*
+ * This interface lets you iterate over threads in the runtime.
+ */
+
+[
+    object,
+    uuid(571194f7-25ed-419f-aa8b-7016b3159701),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerThreadEnum : IUnknown
+{
+    HRESULT Skip([in] ULONG celt);
+
+    HRESULT Reset();
+
+    HRESULT Clone([out] ICorProfilerThreadEnum **ppEnum);
+
+    HRESULT GetCount([out] ULONG *pcelt);
+
+    HRESULT Next([in]  ULONG            celt,
+                 [out, size_is(celt), length_is(*pceltFetched)]
+                       ThreadID         ids[],
+                 [out] ULONG *          pceltFetched);
+}
+
+
+/*
+ * This interface is given to the profiler in the GetAssemblyReferences() callback, to
+ * allow the profiler to inform the CLR of assembly references that the profiler plans to
+ * add later on during ModuleLoadFinished.  This improves the accuracy of the CLR assembly
+ * reference closure walker, and its algorithms for determining whether assemblies may be shared
+ *
+ * This interface is valid for use only within the GetAssemblyReferences callback that passed
+ * this interface to the profiler
+ */
+[
+    object,
+    uuid(66A78C24-2EEF-4F65-B45F-DD1D8038BF3C),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerAssemblyReferenceProvider : IUnknown
+{
+    // The profiler calls this for each target assembly it plans to reference from the
+    // assembly specified in the wszAssemblyPath argument of the GetAssemblyReferences callback.
+    HRESULT AddAssemblyReference(const COR_PRF_ASSEMBLY_REFERENCE_INFO * pAssemblyRefInfo);
+};

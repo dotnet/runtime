@@ -4,6 +4,7 @@
 .assembly extern mscorlib { auto }
 .assembly extern System.Console {auto}
 .assembly UnusedValueBug { }
+.assembly extern xunit.core {}
 
 // This bug was found on desktop CLR using ILGEN.
 // The expression ending in the 'mul' below is all dead, but not all the dead code
@@ -36,6 +37,9 @@
 
     .method private hidebysig static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
       .vtentry 11 : 1
       // Code size       131 (0x83)
@@ -47,8 +51,8 @@
         stloc      returnVal
 
         // if (Test(1,1) != 1) goto F1
-        ldc.i4     1
         ldc.i8     1
+        ldc.i4     1
         call       int32 GitHub_18295::Test(int64, int32)
 
         ldc.i4.0

@@ -7,7 +7,7 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net
 {
-    internal class HttpListenerRequestContext : TransportContext
+    internal sealed class HttpListenerRequestContext : TransportContext
     {
         private readonly HttpListenerRequest _request;
 
@@ -24,7 +24,7 @@ namespace System.Net
                 throw new NotSupportedException(SR.Format(
                     SR.net_listener_invalid_cbt_type, kind.ToString()));
             }
-            return _request.GetChannelBinding();
+            return _request.GetChannelBinding()!;
         }
     }
 }

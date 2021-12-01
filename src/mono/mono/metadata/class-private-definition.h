@@ -57,10 +57,6 @@ struct _MonoClass {
 	guint packing_size    : 4;
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
 	guint has_finalize    : 1; /* class has its own Finalize impl */ 
-#ifndef DISABLE_REMOTING
-	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
-	guint contextbound    : 1; /* class is a ContextBoundObject */
-#endif
 	/* next byte */
 	guint delegate        : 1; /* class is a Delegate */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
@@ -121,7 +117,7 @@ struct _MonoClass {
 
 	MonoGCDescriptor gc_descr;
 
-	MonoClassRuntimeInfo *runtime_info;
+	MonoVTable *runtime_vtable;
 
 	/* Generic vtable. Initialized by a call to mono_class_setup_vtable () */
 	MonoMethod **vtable;

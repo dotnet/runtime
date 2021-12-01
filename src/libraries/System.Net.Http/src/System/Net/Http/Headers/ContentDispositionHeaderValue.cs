@@ -21,8 +21,8 @@ namespace System.Net.Http.Headers
         private const string readDate = "read-date";
         private const string size = "size";
 
-        // Use ObjectCollection<T> since we may have multiple parameters with the same name.
-        private ObjectCollection<NameValueHeaderValue>? _parameters;
+        // Use UnvalidatedObjectCollection<T> since we may have multiple parameters with the same name.
+        private UnvalidatedObjectCollection<NameValueHeaderValue>? _parameters;
         private string _dispositionType = null!;
 
         #endregion Fields
@@ -39,7 +39,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
         public string? Name
         {
@@ -134,14 +134,7 @@ namespace System.Net.Http.Headers
             Debug.Assert(source != null);
 
             _dispositionType = source._dispositionType;
-
-            if (source._parameters != null)
-            {
-                foreach (var parameter in source._parameters)
-                {
-                    this.Parameters.Add((NameValueHeaderValue)((ICloneable)parameter).Clone());
-                }
-            }
+            _parameters = source._parameters.Clone();
         }
 
         public ContentDispositionHeaderValue(string dispositionType)
@@ -162,7 +155,7 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             ContentDispositionHeaderValue? other = obj as ContentDispositionHeaderValue;
 
@@ -241,7 +234,7 @@ namespace System.Net.Http.Headers
             {
                 current++; // Skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
-                    (ObjectCollection<NameValueHeaderValue>)contentDispositionHeader.Parameters);
+                    (UnvalidatedObjectCollection<NameValueHeaderValue>)contentDispositionHeader.Parameters);
 
                 if (parameterLength == 0)
                 {

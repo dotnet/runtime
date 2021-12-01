@@ -7,12 +7,12 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Text;
 
-    internal class StringOutput : SequentialOutput
+    internal sealed class StringOutput : SequentialOutput
     {
         private readonly StringBuilder _builder;
-        private string _result;
+        private string? _result;
 
-        internal string Result
+        internal string? Result
         {
             get
             {
@@ -35,7 +35,7 @@ namespace System.Xml.Xsl.XsltOld
 #endif
         }
 
-        internal override void Write(string outputText)
+        internal override void Write(string? outputText)
         {
             _builder.Append(outputText);
 

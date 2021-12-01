@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -10,9 +11,9 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     public class MemoryCacheSetAndRemoveTests
     {
-        private static IMemoryCache CreateCache()
+        private static IMemoryCache CreateCache(bool trackLinkedCacheEntries = false)
         {
-            return new MemoryCache(new MemoryCacheOptions());
+            return new MemoryCache(new MemoryCacheOptions { TrackLinkedCacheEntries = trackLinkedCacheEntries });
         }
 
         [Fact]
@@ -163,10 +164,12 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Same(obj, result);
         }
 
-        [Fact]
-        public void GetOrCreate_WillNotCreateEmptyValue_WhenFactoryThrows()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void GetOrCreate_WillNotCreateEmptyValue_WhenFactoryThrows(bool trackLinkedCacheEntries)
         {
-            var cache = CreateCache();
+            var cache = CreateCache(trackLinkedCacheEntries);
             string key = "myKey";
             try
             {
@@ -180,12 +183,17 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             Assert.False(cache.TryGetValue(key, out int obj));
+
+            // verify that throwing an exception doesn't leak CacheEntry objects
+            Assert.Null(CacheEntryHelper.Current);
         }
 
-        [Fact]
-        public async Task GetOrCreateAsync_WillNotCreateEmptyValue_WhenFactoryThrows()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetOrCreateAsync_WillNotCreateEmptyValue_WhenFactoryThrows(bool trackLinkedCacheEntries)
         {
-            var cache = CreateCache();
+            var cache = CreateCache(trackLinkedCacheEntries);
             string key = "myKey";
             try
             {
@@ -199,6 +207,44 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             Assert.False(cache.TryGetValue(key, out int obj));
+
+            // verify that throwing an exception doesn't leak CacheEntry objects
+            Assert.Null(CacheEntryHelper.Current);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void DisposingCacheEntryReleasesScope(bool trackLinkedCacheEntries)
+        {
+            object GetScope(ICacheEntry entry)
+            {
+                return entry.GetType()
+                    .GetField("_previous", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(entry);
+            }
+
+            var cache = CreateCache(trackLinkedCacheEntries);
+
+            ICacheEntry first = cache.CreateEntry("myKey1");
+            Assert.Null(GetScope(first)); // it's the first entry, so it has no previous cache entry set
+
+            ICacheEntry second = cache.CreateEntry("myKey2");
+
+            if (trackLinkedCacheEntries)
+            {
+                Assert.NotNull(GetScope(second)); // it's not first, so it has previous set
+                Assert.Same(first, GetScope(second)); // second.previous is set to first
+
+                second.Dispose();
+                Assert.Null(GetScope(second));
+                first.Dispose();
+                Assert.Null(GetScope(first));
+            }
+            else
+            {
+                Assert.Null(GetScope(second)); // tracking not enabled, the scope is null
+            }
         }
 
         [Fact]
@@ -335,6 +381,29 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public void ClearClears()
+        {
+            var cache = (MemoryCache)CreateCache();
+            var obj = new object();
+            string[] keys = new string[] { "key1", "key2", "key3", "key4" };
+
+            foreach (string key in keys)
+            {
+                var result = cache.Set(key, obj);
+                Assert.Same(obj, result);
+                Assert.Same(obj, cache.Get(key));
+            }
+
+            cache.Clear();
+
+            Assert.Equal(0, cache.Count);
+            foreach (string key in keys)
+            {
+                Assert.Null(cache.Get(key));
+            }
+        }
+
+        [Fact]
         public void RemoveRemovesAndInvokesCallback()
         {
             var cache = CreateCache();
@@ -359,6 +428,38 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Same(value, result);
 
             cache.Remove(key);
+            Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
+
+            result = cache.Get(key);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void ClearClearsAndInvokesCallback()
+        {
+            var cache = (MemoryCache)CreateCache();
+            var value = new object();
+            string key = "myKey";
+            var callbackInvoked = new ManualResetEvent(false);
+
+            var options = new MemoryCacheEntryOptions();
+            options.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
+            {
+                EvictionCallback = (subkey, subValue, reason, state) =>
+                {
+                    Assert.Equal(key, subkey);
+                    Assert.Same(value, subValue);
+                    Assert.Equal(EvictionReason.Removed, reason);
+                    var localCallbackInvoked = (ManualResetEvent)state;
+                    localCallbackInvoked.Set();
+                },
+                State = callbackInvoked
+            });
+            var result = cache.Set(key, value, options);
+            Assert.Same(value, result);
+
+            cache.Clear();
+            Assert.Equal(0, cache.Count);
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
 
             result = cache.Get(key);
@@ -562,6 +663,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
         public void AddAndReplaceEntries_AreThreadSafe()
         {
             var cache = new MemoryCache(new MemoryCacheOptions

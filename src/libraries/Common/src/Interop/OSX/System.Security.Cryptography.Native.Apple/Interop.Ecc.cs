@@ -5,53 +5,52 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_EccGenerateKey(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_EccGenerateKey(
             int keySizeInBits,
-            SafeKeychainHandle tempKeychain,
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey,
-            out int pOSStatus);
+            out SafeCFErrorHandle pErrorOut);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EccGetKeySizeInBits")]
-        internal static extern long EccGetKeySizeInBits(SafeSecKeyRefHandle publicKey);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EccGetKeySizeInBits")]
+        internal static partial long EccGetKeySizeInBits(SafeSecKeyRefHandle publicKey);
 
         internal static void EccGenerateKey(
             int keySizeInBits,
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey)
         {
-            using (SafeTemporaryKeychainHandle tempKeychain = CreateTemporaryKeychain())
+            SafeSecKeyRefHandle publicKey;
+            SafeSecKeyRefHandle privateKey;
+            SafeCFErrorHandle error;
+
+            int result = AppleCryptoNative_EccGenerateKey(
+                keySizeInBits,
+                out publicKey,
+                out privateKey,
+                out error);
+
+            using (error)
             {
-                SafeSecKeyRefHandle keychainPublic;
-                SafeSecKeyRefHandle keychainPrivate;
-                int osStatus;
-
-                int result = AppleCryptoNative_EccGenerateKey(
-                    keySizeInBits,
-                    tempKeychain,
-                    out keychainPublic,
-                    out keychainPrivate,
-                    out osStatus);
-
-                if (result == 1)
+                if (result == kSuccess)
                 {
-                    pPublicKey = keychainPublic;
-                    pPrivateKey = keychainPrivate;
+                    pPublicKey = publicKey;
+                    pPrivateKey = privateKey;
                     return;
                 }
 
-                using (keychainPrivate)
-                using (keychainPublic)
+                using (privateKey)
+                using (publicKey)
                 {
-                    if (result == 0)
+                    if (result == kErrorSeeError)
                     {
-                        throw CreateExceptionForOSStatus(osStatus);
+                        throw CreateExceptionForCFError(error);
                     }
 
                     Debug.Fail($"Unexpected result from AppleCryptoNative_EccGenerateKey: {result}");

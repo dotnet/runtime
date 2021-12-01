@@ -740,7 +740,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             ' Cannot call through IO.File.WriteAllBytes (since they don't support append)
             ' so only check for trailing separator
-            CheckFilePathTrailingSeparator(file, "file")
+            CheckFilePathTrailingSeparator(file, NameOf(file))
 
             Dim FileStream As IO.FileStream = Nothing
             Try
@@ -787,7 +787,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             'Cannot call through IO.File.WriteAllText (since they don't support: append, prefer current encoding than specified one)
             ' so only check for trailing separator.
-            CheckFilePathTrailingSeparator(file, "file")
+            CheckFilePathTrailingSeparator(file, NameOf(file))
 
             Dim StreamWriter As IO.StreamWriter = Nothing
             Try
@@ -1537,8 +1537,7 @@ Namespace Microsoft.VisualBasic.FileIO
             ' Remove any separators at the end for the same reason in IsRoot.
             Path1 = Path1.TrimEnd(IO.Path.DirectorySeparatorChar, IO.Path.AltDirectorySeparatorChar)
             Path2 = Path2.TrimEnd(IO.Path.DirectorySeparatorChar, IO.Path.AltDirectorySeparatorChar)
-            Return String.Compare(IO.Path.GetPathRoot(Path1), IO.Path.GetPathRoot(Path2),
-                    StringComparison.OrdinalIgnoreCase) = 0
+            Return String.Equals(IO.Path.GetPathRoot(Path1), IO.Path.GetPathRoot(Path2), StringComparison.OrdinalIgnoreCase)
         End Function
 
         ''' <summary>
@@ -1559,8 +1558,7 @@ Namespace Microsoft.VisualBasic.FileIO
             End If
 
             Path = Path.TrimEnd(IO.Path.DirectorySeparatorChar, IO.Path.AltDirectorySeparatorChar)
-            Return String.Compare(Path, IO.Path.GetPathRoot(Path),
-                    StringComparison.OrdinalIgnoreCase) = 0
+            Return String.Equals(Path, IO.Path.GetPathRoot(Path), StringComparison.OrdinalIgnoreCase)
         End Function
 
         ''' <summary>
@@ -2024,7 +2022,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <summary>
         ''' A simple tree node to build up the directory structure used for a snapshot in Copy / Move Directory.
         ''' </summary>
-        Private Class DirectoryNode
+        Private NotInheritable Class DirectoryNode
             ''' <summary>
             ''' Given a DirectoryPath, create the node and add the sub-directory nodes.
             ''' </summary>
@@ -2085,7 +2083,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' This class will take care of text spanning byte arrays by caching a part of the array and use it in
         '''      the next IsTextFound() call.
         ''' </remarks>
-        Private Class TextSearchHelper
+        Private NotInheritable Class TextSearchHelper
             ''' <summary>
             ''' Constructs a new helper with a given encoding and a text to search for.
             ''' </summary>
@@ -2195,7 +2193,7 @@ Namespace Microsoft.VisualBasic.FileIO
             Private m_SearchText As String ' The text to search.
             Private m_IgnoreCase As Boolean ' Should we ignore case?
             Private m_Decoder As Text.Decoder ' The Decoder to use.
-            Private m_PreviousCharBuffer() As Char = {} ' The cached character array from previous call to IsTextExist.
+            Private m_PreviousCharBuffer() As Char = Array.Empty(Of Char)() ' The cached character array from previous call to IsTextExist.
             Private m_CheckPreamble As Boolean = True ' True to check for preamble. False otherwise.
             Private m_Preamble() As Byte ' The byte order mark we need to consider.
         End Class 'Private Class TextSearchHelper

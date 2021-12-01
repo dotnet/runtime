@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml
 {
     using System;
@@ -20,7 +19,7 @@ namespace System.Xml
     ///
     /// It also performs well-formed document checks if standalone="yes" and/or a doc-type-decl is output.
     /// </summary>
-    internal class QueryOutputWriter : XmlRawWriter
+    internal sealed class QueryOutputWriter : XmlRawWriter
     {
         private readonly XmlRawWriter _wrapped;
         private bool _inCDataSection;
@@ -164,7 +163,7 @@ namespace System.Xml
             if (_outputDocType)
             {
                 _wrapped.WriteDocType(
-                        string.IsNullOrEmpty(prefix) ? localName : prefix + ":" + localName,
+                        string.IsNullOrEmpty(prefix) ? localName : $"{prefix}:{localName}",
                         _publicId,
                         _systemId,
                         null);

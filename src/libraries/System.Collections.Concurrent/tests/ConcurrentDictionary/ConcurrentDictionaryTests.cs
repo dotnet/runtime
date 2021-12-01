@@ -666,6 +666,24 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
+        [Fact]
+        public static void TestComparerGetter()
+        {
+            AssertComparerBehavior<string>(null);
+            AssertComparerBehavior<string>(EqualityComparer<string>.Default);
+            AssertComparerBehavior<string>(StringComparer.InvariantCulture);
+            AssertComparerBehavior<string>(StringComparer.OrdinalIgnoreCase);
+            AssertComparerBehavior<int>(EqualityComparer<int>.Default);
+            AssertComparerBehavior<bool>(EqualityComparer<bool>.Default);
+
+            void AssertComparerBehavior<T>(IEqualityComparer<T> comparer)
+            {
+                var dc = new ConcurrentDictionary<T, object>(comparer);
+                object expected = comparer ?? EqualityComparer<T>.Default;
+                Assert.Same(expected, dc.Comparer);
+            }
+        }
+
         private sealed class EqualityApiSpy : IEquatable<EqualityApiSpy>
         {
             public bool ObjectApiUsed { get; private set; }
@@ -1032,7 +1050,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [OuterLoop("Runs for several seconds")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConcurrentWriteRead_NoTornValues()
         {
             var cd = new ConcurrentDictionary<int, KeyValuePair<long, long>>();

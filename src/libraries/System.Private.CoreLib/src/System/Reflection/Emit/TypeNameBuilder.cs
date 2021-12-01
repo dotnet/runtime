@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-//  This TypeNameBuilder is ported from CoreCLR's original.
-//  It replaces the C++ bits of the implementation with a faithful C# port.
+
+// This TypeNameBuilder is ported from CoreCLR's original.
+// It replaces the C++ bits of the implementation with a faithful C# port.
 
 using System.Collections.Generic;
 using System.Collections;
@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Emit
 {
-    internal class TypeNameBuilder
+    internal sealed class TypeNameBuilder
     {
         private StringBuilder _str = new StringBuilder();
         private int _instNesting;

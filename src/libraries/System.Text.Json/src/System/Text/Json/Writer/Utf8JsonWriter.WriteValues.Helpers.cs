@@ -19,7 +19,7 @@ namespace System.Text.Json
                 if (_tokenType != JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueWithinObject, currentDepth: default, token: default, _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueWithinObject, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
                 }
             }
             else
@@ -29,7 +29,7 @@ namespace System.Text.Json
                 // It is more likely for CurrentDepth to not equal 0 when writing valid JSON, so check that first to rely on short-circuiting and return quickly.
                 if (CurrentDepth == 0 && _tokenType != JsonTokenType.None)
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueAfterPrimitiveOrClose, currentDepth: default, token: default, _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueAfterPrimitiveOrClose, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
                 }
             }
         }
@@ -39,8 +39,8 @@ namespace System.Text.Json
         {
             byte[]? outputText = null;
 
-            Span<byte> encodedBytes = encodingLength <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[encodingLength] :
+            Span<byte> encodedBytes = encodingLength <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (outputText = ArrayPool<byte>.Shared.Rent(encodingLength));
 
             OperationStatus status = Base64.EncodeToUtf8(bytes, encodedBytes, out int consumed, out int written);

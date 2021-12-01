@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Connections;
+using System.Text;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
@@ -33,6 +36,12 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_operation_started);
             }
         }
+
+        /// <summary>
+        /// Gets a value that indicates whether the handler is supported on the current platform.
+        /// </summary>
+        [UnsupportedOSPlatformGuard("browser")]
+        public static bool IsSupported => !OperatingSystem.IsBrowser();
 
         public bool UseCookies
         {
@@ -130,7 +139,7 @@ namespace System.Net.Http
             get => _settings._maxAutomaticRedirections;
             set
             {
-                if (value < 1)
+                if (value <= 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
@@ -274,6 +283,100 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Defines the initial HTTP2 stream receive window size for all connections opened by the this <see cref="SocketsHttpHandler"/>.
+        /// </summary>
+        /// <remarks>
+        /// Larger the values may lead to faster download speed, but potentially higher memory footprint.
+        /// The property must be set to a value between 65535 and the configured maximum window size, which is 16777216 by default.
+        /// </remarks>
+        public int InitialHttp2StreamWindowSize
+        {
+            get => _settings._initialHttp2StreamWindowSize;
+            set
+            {
+                if (value < HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize || value > GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize)
+                {
+                    string message = SR.Format(
+                        SR.net_http_http2_invalidinitialstreamwindowsize,
+                        HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize,
+                        GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize);
+
+                    throw new ArgumentOutOfRangeException(nameof(InitialHttp2StreamWindowSize), message);
+                }
+                CheckDisposedOrStarted();
+                _settings._initialHttp2StreamWindowSize = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
+        /// doesn't receive any frames on a connection for this period of time. This property is used together with
+        /// <see cref="SocketsHttpHandler.KeepAlivePingTimeout"/> to close broken connections.
+        /// <para>
+        /// Delay value must be greater than or equal to 1 second. Set to <see cref="Timeout.InfiniteTimeSpan"/> to
+        /// disable the keep alive ping.
+        /// Defaults to <see cref="Timeout.InfiniteTimeSpan"/>.
+        /// </para>
+        /// </summary>
+        public TimeSpan KeepAlivePingDelay
+        {
+            get => _settings._keepAlivePingDelay;
+            set
+            {
+                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, value, TimeSpan.FromSeconds(1)));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingDelay = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the keep alive ping timeout. Keep alive pings are sent when a period of inactivity exceeds
+        /// the configured <see cref="KeepAlivePingDelay"/> value. The client will close the connection if it
+        /// doesn't receive any frames within the timeout.
+        /// <para>
+        /// Timeout must be greater than or equal to 1 second. Set to <see cref="Timeout.InfiniteTimeSpan"/> to
+        /// disable the keep alive ping timeout.
+        /// Defaults to 20 seconds.
+        /// </para>
+        /// </summary>
+        public TimeSpan KeepAlivePingTimeout
+        {
+            get => _settings._keepAlivePingTimeout;
+            set
+            {
+                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, value, TimeSpan.FromSeconds(1)));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingTimeout = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the keep alive ping behaviour. Keep alive pings are sent when a period of inactivity exceeds
+        /// the configured <see cref="KeepAlivePingDelay"/> value.
+        /// </summary>
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy
+        {
+            get => _settings._keepAlivePingPolicy;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingPolicy = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that indicates whether additional HTTP/2 connections can be established to the same server
+        /// when the maximum of concurrent streams is reached on all existing connections.
+        /// </summary>
         public bool EnableMultipleHttp2Connections
         {
             get => _settings._enableMultipleHttp2Connections;
@@ -285,39 +388,85 @@ namespace System.Net.Http
             }
         }
 
-        internal bool SupportsAutomaticDecompression => true;
-        internal bool SupportsProxy => true;
-        internal bool SupportsRedirectConfiguration => true;
+        internal const bool SupportsAutomaticDecompression = true;
+        internal const bool SupportsProxy = true;
+        internal const bool SupportsRedirectConfiguration = true;
 
         /// <summary>
-        /// When non-null, a custom factory used to open new TCP connections.
-        /// When null, a <see cref="SocketsHttpConnectionFactory"/> will be used.
+        /// When non-null, a custom callback used to open new connections.
         /// </summary>
-        public ConnectionFactory? ConnectionFactory
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
         {
-            get => _settings._connectionFactory;
+            get => _settings._connectCallback;
             set
             {
                 CheckDisposedOrStarted();
-                _settings._connectionFactory = value;
+                _settings._connectCallback = value;
             }
         }
 
         /// <summary>
-        /// When non-null, a connection filter that is applied prior to any TLS encryption.
+        /// Gets or sets a custom callback that provides access to the plaintext HTTP protocol stream.
         /// </summary>
-        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
+        public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter
         {
-            get => _settings._plaintextFilter;
+            get => _settings._plaintextStreamFilter;
             set
             {
                 CheckDisposedOrStarted();
-                _settings._plaintextFilter = value;
+                _settings._plaintextStreamFilter = value;
             }
         }
 
+        /// <summary>
+        /// Gets a writable dictionary (that is, a map) of custom properties for the HttpClient requests. The dictionary is initialized empty; you can insert and query key-value pairs for your custom handlers and special processing.
+        /// </summary>
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
+
+        /// <summary>
+        /// Gets or sets a callback that returns the <see cref="Encoding"/> to encode the value for the specified request header name,
+        /// or <see langword="null"/> to use the default behavior.
+        /// </summary>
+        public HeaderEncodingSelector<HttpRequestMessage>? RequestHeaderEncodingSelector
+        {
+            get => _settings._requestHeaderEncodingSelector;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._requestHeaderEncodingSelector = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a callback that returns the <see cref="Encoding"/> to decode the value for the specified response header name,
+        /// or <see langword="null"/> to use the default behavior.
+        /// </summary>
+        public HeaderEncodingSelector<HttpRequestMessage>? ResponseHeaderEncodingSelector
+        {
+            get => _settings._responseHeaderEncodingSelector;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._responseHeaderEncodingSelector = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="DistributedContextPropagator"/> to use when propagating the distributed trace and context.
+        /// Use <see langword="null"/> to disable propagation.
+        /// Defaults to <see cref="DistributedContextPropagator.Current"/>.
+        /// </summary>
+        [CLSCompliant(false)]
+        public DistributedContextPropagator? ActivityHeadersPropagator
+        {
+            get => _settings._activityHeadersPropagator;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._activityHeadersPropagator = value;
+            }
+        }
 
         protected override void Dispose(bool disposing)
         {
@@ -347,6 +496,12 @@ namespace System.Net.Http
             else
             {
                 handler = new HttpAuthenticatedConnectionHandler(poolManager);
+            }
+
+            // DiagnosticsHandler is inserted before RedirectHandler so that trace propagation is done on redirects as well
+            if (DiagnosticsHandler.IsGloballyEnabled() && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
+            {
+                handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
 
             if (settings._allowAutoRedirect)
@@ -379,12 +534,26 @@ namespace System.Net.Http
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
             if (request.Version.Major >= 2)
             {
                 throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
             }
 
+            // Do not allow upgrades for synchronous requests, that might lead to asynchronous code-paths.
+            if (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_upgrade_not_enabled_sync, nameof(Send), request.VersionPolicy));
+            }
+
             CheckDisposed();
+
+            cancellationToken.ThrowIfCancellationRequested();
+
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
             Exception? error = ValidateAndNormalizeRequest(request);
@@ -398,7 +567,18 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
             CheckDisposed();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
+            }
+
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();
 
             Exception? error = ValidateAndNormalizeRequest(request);
@@ -449,6 +629,17 @@ namespace System.Net.Http
                 {
                     request.Headers.ExpectContinue = false;
                 }
+            }
+
+            Uri? requestUri = request.RequestUri;
+            if (requestUri is null || !requestUri.IsAbsoluteUri)
+            {
+                return new InvalidOperationException(SR.net_http_client_invalid_requesturi);
+            }
+
+            if (!HttpUtilities.IsSupportedScheme(requestUri.Scheme))
+            {
+                return new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme));
             }
 
             return null;

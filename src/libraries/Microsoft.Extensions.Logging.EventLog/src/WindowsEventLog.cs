@@ -4,10 +4,12 @@
 using System;
 using System.Diagnostics;
 using System.Security;
+using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
-    internal class WindowsEventLog : IEventLog
+    [SupportedOSPlatform("windows")]
+    internal sealed class WindowsEventLog : IEventLog
     {
         // https://msdn.microsoft.com/EN-US/library/windows/desktop/aa363679.aspx
         private const int MaximumMessageSize = 31839;

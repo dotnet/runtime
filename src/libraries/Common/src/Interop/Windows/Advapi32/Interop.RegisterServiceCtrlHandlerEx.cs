@@ -4,13 +4,13 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
         public delegate int ServiceControlCallbackEx(int control, int eventType, IntPtr eventData, IntPtr eventContext);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern IntPtr RegisterServiceCtrlHandlerEx(string? serviceName, ServiceControlCallbackEx? callback, IntPtr userData);
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegisterServiceCtrlHandlerExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        public static partial IntPtr RegisterServiceCtrlHandlerEx(string? serviceName, ServiceControlCallbackEx? callback, IntPtr userData);
     }
 }

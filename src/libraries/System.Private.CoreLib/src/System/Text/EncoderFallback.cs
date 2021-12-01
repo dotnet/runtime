@@ -134,7 +134,7 @@ namespace System.Text
             {
                 firstChar = chars[0];
 
-                if (1 < (uint)chars.Length)
+                if (chars.Length > 1)
                 {
                     secondChar = chars[1];
                 }

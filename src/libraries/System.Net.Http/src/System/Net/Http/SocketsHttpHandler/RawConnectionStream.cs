@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection : IDisposable
+    internal sealed partial class HttpConnection : IDisposable
     {
         private sealed class RawConnectionStream : HttpContentStream
         {
@@ -17,23 +17,22 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             }
 
-            public sealed override bool CanRead => true;
-            public sealed override bool CanWrite => true;
+            public sealed override bool CanRead => _connection != null;
+            public sealed override bool CanWrite => _connection != null;
 
             public override int Read(Span<byte> buffer)
             {
                 HttpConnection? connection = _connection;
-                if (connection == null || buffer.Length == 0)
+                if (connection == null)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
                 }
 
                 int bytesRead = connection.ReadBuffered(buffer);
-                if (bytesRead == 0)
+                if (bytesRead == 0 && buffer.Length != 0)
                 {
                     // We cannot reuse this connection, so close it.
-                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -46,9 +45,9 @@ namespace System.Net.Http
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 HttpConnection? connection = _connection;
-                if (connection == null || buffer.Length == 0)
+                if (connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data
+                    // Response body fully consumed
                     return 0;
                 }
 
@@ -75,13 +74,12 @@ namespace System.Net.Http
                     }
                 }
 
-                if (bytesRead == 0)
+                if (bytesRead == 0 && buffer.Length != 0)
                 {
                     // A cancellation request may have caused the EOF.
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                     // We cannot reuse this connection, so close it.
-                    if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                     _connection = null;
                     connection.Dispose();
                 }
@@ -91,7 +89,7 @@ namespace System.Net.Http
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                ValidateCopyToArgs(this, destination, bufferSize);
+                ValidateCopyToArguments(destination, bufferSize);
 
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -143,7 +141,6 @@ namespace System.Net.Http
             private void Finish(HttpConnection connection)
             {
                 // We cannot reuse this connection, so close it.
-                if (HttpTelemetry.Log.IsEnabled()) LogRequestStop();
                 connection.Dispose();
                 _connection = null;
             }

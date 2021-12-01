@@ -65,16 +65,6 @@ mono_dl_get_so_suffixes (void)
 	return suffixes;
 }
 
-int
-mono_dl_get_executable_path (char *buf, int buflen)
-{
-#if defined(HAVE_READLINK)
-	return readlink ("/proc/self/exe", buf, buflen - 1);
-#else
-	return -1;
-#endif
-}
-
 const char*
 mono_dl_get_system_dir (void)
 {
@@ -104,11 +94,11 @@ mono_dl_open_file (const char *file, int flags)
 #endif
 #if defined(_AIX)
 	/*
-	 * dlopen is /weird/ on AIX 
+	 * dlopen is /weird/ on AIX
 	 * shared libraries (really, all oobjects are, since PPC is PIC)
 	 * can cohabitate with not just SOs of the other arch, but also
 	 * with regular objects in an archive used for static linking
-	 * 
+	 *
 	 * we have to pass RTLD_MEMBER, otherwise lib.a(lib.o) doesn't work
 	 */
 	return dlopen (file, flags | RTLD_MEMBER);
@@ -130,21 +120,17 @@ mono_dl_lookup_symbol (MonoDl *module, const char *name)
 }
 
 int
-mono_dl_convert_flags (int flags)
+mono_dl_convert_flags (int mono_flags, int native_flags)
 {
-	int lflags = 0;
+	int lflags = native_flags;
 
-#ifdef ENABLE_NETCORE
 	// Specifying both will default to LOCAL
-	if (flags & MONO_DL_GLOBAL && !(flags & MONO_DL_LOCAL))
+	if (mono_flags & MONO_DL_GLOBAL && !(mono_flags & MONO_DL_LOCAL))
 		lflags |= RTLD_GLOBAL;
-	else 
+	else
 		lflags |= RTLD_LOCAL;
-#else
-	lflags = flags & MONO_DL_LOCAL ? RTLD_LOCAL : RTLD_GLOBAL;
-#endif
 
-	if (flags & MONO_DL_LAZY)
+	if (mono_flags & MONO_DL_LAZY)
 		lflags |= RTLD_LAZY;
 	else
 		lflags |= RTLD_NOW;

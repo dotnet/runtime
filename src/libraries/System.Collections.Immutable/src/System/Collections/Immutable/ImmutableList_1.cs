@@ -166,13 +166,8 @@ namespace System.Collections.Immutable
         /// <param name="index">The 0-based index of the element in the set to return.</param>
         /// <returns>The element at the given position.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown from getter when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
-#if !NETSTANDARD1_0
         public T this[int index] => _root.ItemRef(index);
-#else
-        public T this[int index] => _root[index];
-#endif
 
-#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference to the element of the set at the given index.
         /// </summary>
@@ -180,7 +175,6 @@ namespace System.Collections.Immutable
         /// <returns>A read-only reference to the element at the given position.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
         public ref readonly T ItemRef(int index) => ref _root.ItemRef(index);
-#endif
 
         #endregion
 
@@ -593,8 +587,7 @@ namespace System.Collections.Immutable
         /// The first element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
-        [return: MaybeNull]
-        public T Find(Predicate<T> match) => _root.Find(match);
+        public T? Find(Predicate<T> match) => _root.Find(match);
 
         /// <summary>
         /// Retrieves all the elements that match the conditions defined by the specified
@@ -667,8 +660,7 @@ namespace System.Collections.Immutable
         /// The last element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
-        [return: MaybeNull]
-        public T FindLast(Predicate<T> match) => _root.FindLast(match);
+        public T? FindLast(Predicate<T> match) => _root.FindLast(match);
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified

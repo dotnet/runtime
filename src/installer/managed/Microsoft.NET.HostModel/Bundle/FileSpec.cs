@@ -7,9 +7,9 @@ namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     ///  Information about files to embed into the Bundle (input to the Bundler).
-    ///  
+    ///
     ///   SourcePath: path to the file to be bundled at compile time
-    ///   BundleRelativePath: path where the file is expected at run time, 
+    ///   BundleRelativePath: path where the file is expected at run time,
     ///                       relative to the app DLL.
     /// </summary>
     public class FileSpec
@@ -27,14 +27,10 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public bool IsValid()
         {
-            return !string.IsNullOrWhiteSpace(SourcePath) && 
+            return !string.IsNullOrWhiteSpace(SourcePath) &&
                    !string.IsNullOrWhiteSpace(BundleRelativePath);
         }
 
-        public override string ToString()
-        {
-            return string.Format($"SourcePath: {SourcePath}, RelativePath: {BundleRelativePath} {(Excluded ? "[Excluded]" : "")}");
-        }
+        public override string ToString() => $"SourcePath: {SourcePath}, RelativePath: {BundleRelativePath} {(Excluded ? "[Excluded]" : "")}";
     }
 }
-

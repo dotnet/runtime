@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System
@@ -104,7 +105,7 @@ namespace System
                     continue;
 
                 // Validate the parameters.
-                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy();
 
 #region Match method by parameter count
                 if (par.Length == 0)
@@ -112,7 +113,7 @@ namespace System
 #region No formal parameters
                     if (args.Length != 0)
                     {
-                        if ((candidates[i]!.CallingConvention & CallingConventions.VarArgs) == 0) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if ((candidates[i]!.CallingConvention & CallingConventions.VarArgs) == 0)
                             continue;
                     }
 
@@ -189,7 +190,7 @@ namespace System
 #region Match method by parameter type
                 for (j = 0; j < argsToCheck; j++)
                 {
-#region Classic argument coersion checks
+#region Classic argument coercion checks
                     // get the formal type
                     pCls = par[j].ParameterType;
 
@@ -227,7 +228,7 @@ namespace System
 
                         if (!pCls.IsAssignableFrom(argTypes[paramOrder[i][j]]))
                         {
-                            if (argTypes[paramOrder[i][j]].IsCOMObject)
+                            if (Marshal.IsBuiltInComSupported && argTypes[paramOrder[i][j]].IsCOMObject)
                             {
                                 if (pCls.IsInstanceOfType(args[paramOrder[i][j]]))
                                     continue;
@@ -255,7 +256,7 @@ namespace System
 
                             if (!paramArrayType.IsAssignableFrom(argTypes[j]))
                             {
-                                if (argTypes[j].IsCOMObject)
+                                if (Marshal.IsBuiltInComSupported && argTypes[j].IsCOMObject)
                                 {
                                     if (paramArrayType.IsInstanceOfType(args[j]))
                                         continue;
@@ -527,7 +528,7 @@ namespace System
             for (i = 0; i < types.Length; i++)
             {
                 realTypes[i] = types[i].UnderlyingSystemType;
-                if (!(realTypes[i].IsRuntimeImplemented() || realTypes[i] is SignatureType))
+                if (!(realTypes[i] is RuntimeType || realTypes[i] is SignatureType))
                     throw new ArgumentException(SR.Arg_MustBeType, nameof(types));
             }
             types = realTypes;
@@ -566,8 +567,8 @@ namespace System
 
                     if (pCls.IsPrimitive)
                     {
-                        if (!type.UnderlyingSystemType.IsRuntimeImplemented() ||
-                            !CanChangePrimitive(type.UnderlyingSystemType, pCls.UnderlyingSystemType))
+                        if (type.UnderlyingSystemType is not RuntimeType rtType ||
+                            !CanChangePrimitive(rtType, pCls.UnderlyingSystemType))
                             break;
                     }
                     else
@@ -653,8 +654,8 @@ namespace System
 
                         if (pCls.IsPrimitive)
                         {
-                            if (!indexes[j].UnderlyingSystemType.IsRuntimeImplemented() ||
-                                !CanChangePrimitive(indexes[j].UnderlyingSystemType, pCls.UnderlyingSystemType))
+                            if (indexes[j].UnderlyingSystemType is not RuntimeType rtType ||
+                                !CanChangePrimitive(rtType, pCls.UnderlyingSystemType))
                                 break;
                         }
                         else
@@ -671,8 +672,8 @@ namespace System
                     {
                         if (candidates[i].PropertyType.IsPrimitive)
                         {
-                            if (!returnType.UnderlyingSystemType.IsRuntimeImplemented() ||
-                                !CanChangePrimitive(returnType.UnderlyingSystemType, candidates[i].PropertyType.UnderlyingSystemType))
+                            if (returnType.UnderlyingSystemType is not RuntimeType rtType ||
+                                !CanChangePrimitive(rtType, candidates[i].PropertyType.UnderlyingSystemType))
                                 continue;
                         }
                         else
@@ -1257,7 +1258,7 @@ namespace System
             String = 1 << TypeCode.String,
         }
 
-        internal class BinderState
+        internal sealed class BinderState
         {
             internal readonly int[] _argsMap;
             internal readonly int _originalSize;

@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Dsa.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Csp.Tests
 {
+    [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
     public class DSACryptoServiceProviderTests
     {
         const int PROV_DSS_DH = 13;
@@ -33,6 +35,7 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51331", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void PublicOnly_WithPrivateKey()
         {
             using (var dsa = new DSACryptoServiceProvider())
@@ -248,11 +251,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void VerifyHash_InvalidHashAlgorithm_Throws()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -264,11 +263,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void SignHash_DefaultAlgorithm_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -280,11 +275,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void SignHash_InvalidHashAlgorithm_Throws()
         {
-            byte[] hashVal;
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                hashVal = sha256.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA256.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -295,11 +286,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void VerifyHash_DefaultAlgorithm_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -311,11 +298,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void VerifyHash_CaseInsensitive_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {

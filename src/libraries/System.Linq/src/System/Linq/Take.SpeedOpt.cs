@@ -8,39 +8,32 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, int count) =>
-            source is IPartition<TSource> partition ? partition.Take(count) :
-            source is IList<TSource> sourceList ? (IEnumerable<TSource>)new ListPartition<TSource>(sourceList, 0, count - 1) :
-            new EnumerablePartition<TSource>(source, 0, count - 1);
-
-        private static IEnumerable<TSource> TakeLastEnumerableFactory<TSource>(IEnumerable<TSource> source, int count)
+        private static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, int count)
         {
+            Debug.Assert(source != null);
             Debug.Assert(count > 0);
 
-            if (source is IPartition<TSource> partition)
+            return
+                source is IPartition<TSource> partition ? partition.Take(count) :
+                source is IList<TSource> sourceList ? new ListPartition<TSource>(sourceList, 0, count - 1) :
+                new EnumerablePartition<TSource>(source, 0, count - 1);
+        }
+
+        private static IEnumerable<TSource> TakeRangeIterator<TSource>(IEnumerable<TSource> source, int startIndex, int endIndex)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(startIndex >= 0 && startIndex < endIndex);
+
+            return
+                source is IPartition<TSource> partition ? TakePartitionRange(partition, startIndex, endIndex) :
+                source is IList<TSource> sourceList ? new ListPartition<TSource>(sourceList, startIndex, endIndex - 1) :
+                new EnumerablePartition<TSource>(source, startIndex, endIndex - 1);
+
+            static IPartition<TSource> TakePartitionRange(IPartition<TSource> partition, int startIndex, int endIndex)
             {
-                int length = partition.GetCount(onlyIfCheap: true);
-
-                if (length >= 0)
-                {
-                    return length - count > 0 ? partition.Skip(length - count) : partition;
-                }
+                partition = endIndex == 0 ? EmptyPartition<TSource>.Instance : partition.Take(endIndex);
+                return startIndex == 0 ? partition : partition.Skip(startIndex);
             }
-            else if (source is IList<TSource> sourceList)
-            {
-                int sourceCount = sourceList.Count;
-
-                if (sourceCount > count)
-                {
-                    return new ListPartition<TSource>(sourceList, sourceCount - count, sourceCount);
-                }
-                else
-                {
-                    return new ListPartition<TSource>(sourceList, 0, sourceCount);
-                }
-            }
-
-            return TakeLastIterator<TSource>(source, count);
         }
     }
 }

@@ -10,6 +10,7 @@ using System.Runtime.Serialization;
 
 namespace System.CodeDom.Compiler
 {
+    [ToolboxItem(false)]
     public abstract class CodeDomProvider : Component
     {
         private static readonly Dictionary<string, CompilerInfo> s_compilerLanguages = new Dictionary<string, CompilerInfo>(StringComparer.OrdinalIgnoreCase);
@@ -115,7 +116,7 @@ namespace System.CodeDom.Compiler
 
         public virtual LanguageOptions LanguageOptions => LanguageOptions.None;
 
-        [Obsolete("Callers should not use the ICodeGenerator interface and should instead use the methods directly on the CodeDomProvider class. Those inheriting from CodeDomProvider must still implement this interface, and should exclude this warning or also obsolete this method.")]
+        [Obsolete("ICodeGenerator has been deprecated. Use the methods directly on the CodeDomProvider class instead. Classes inheriting from CodeDomProvider must still implement this interface, and should suppress this warning or also mark this method as obsolete.")]
         public abstract ICodeGenerator CreateGenerator();
 
 #pragma warning disable 618 // obsolete
@@ -124,10 +125,10 @@ namespace System.CodeDom.Compiler
         public virtual ICodeGenerator CreateGenerator(string fileName) => CreateGenerator();
 #pragma warning restore 618
 
-        [Obsolete("Callers should not use the ICodeCompiler interface and should instead use the methods directly on the CodeDomProvider class. Those inheriting from CodeDomProvider must still implement this interface, and should exclude this warning or also obsolete this method.")]
+        [Obsolete("ICodeCompiler has been deprecated. Use the methods directly on the CodeDomProvider class instead. Classes inheriting from CodeDomProvider must still implement this interface, and should suppress this warning or also mark this method as obsolete.")]
         public abstract ICodeCompiler CreateCompiler();
 
-        [Obsolete("Callers should not use the ICodeParser interface and should instead use the methods directly on the CodeDomProvider class. Those inheriting from CodeDomProvider must still implement this interface, and should exclude this warning or also obsolete this method.")]
+        [Obsolete("ICodeParser has been deprecated. Use the methods directly on the CodeDomProvider class instead. Classes inheriting from CodeDomProvider must still implement this interface, and should suppress this warning or also mark this method as obsolete.")]
         public virtual ICodeParser CreateParser() => null;
 
         public virtual TypeConverter GetConverter(Type type) => TypeDescriptor.GetConverter(type);

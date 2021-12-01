@@ -2,15 +2,19 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true'">
-    <NoWarn>$(NoWarn);CS8769</NoWarn>
+    <NoWarn>$(NoWarn);CS8769;SYSLIB0026</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage>SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+  <PropertyGroup>
+    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
+    <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
+  </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(TargetsAnyOS)' != 'true'" />
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="Internal\Cryptography\ICertificatePal.cs" />
     <Compile Include="Internal\Cryptography\ICertificatePalCore.cs" />
@@ -18,6 +22,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
@@ -124,7 +130,8 @@
     <Compile Include="Internal\Cryptography\IStorePal.cs" />
     <Compile Include="Internal\Cryptography\IX509Pal.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequest.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\DSACertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaCertificateExtensions.cs" />
@@ -237,7 +244,6 @@
     <Compile Include="Internal\Cryptography\Pal.Windows\ChainPal.GetChainStatusInformation.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Helpers.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.cryptoapi.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.crypt32.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Primitives.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\SafeHandles.cs" />
@@ -249,18 +255,186 @@
     <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.GetCertContentType.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.PublicKey.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.X500DistinguishedName.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptAcquireContext_IntPtr.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertAddCertificateContextToStore.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertAddCertificateContextToStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore_CertStoreAddDisposition.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore_CertStoreAddDisposition.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertChainFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertChainFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCloseStore.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertCloseStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertControlStore.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertControlStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertControlStoreFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertControlStoreFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertControlStoreType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertControlStoreType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDeleteCertificateFromStore.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDeleteCertificateFromStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFindCertificateInStore.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFindCertificateInStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateChain.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateChain.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetValidUsages.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetValidUsages.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertNameToStr.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertNameToStr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ChainEngine.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.ChainEngine.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKey_SafeNCryptKeyHandle.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKey_SafeNCryptKeyHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKeyFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptAcquireCertificatePrivateKeyFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptImportPublicKeyInfoEx2.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptImportPublicKeyInfoEx2.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptKeySpec.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptKeySpec.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgClose.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CHAIN_ENGINE_CONFIG.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_CHAIN_ENGINE_CONFIG.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_EXTENSION.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_EXTENSION.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertContextPropId.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertContextPropId.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCreateCertificateChainEngine.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertCreateCertificateChainEngine.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateChain.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateChain.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContextWithKeyContainerDeletion.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContextWithKeyContainerDeletion.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateStore.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore_SafeCertStoreHandle.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore_SafeCertStoreHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFindExtension.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFindExtension.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFindFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFindFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFindType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFindType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateChain.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetCertificateChain.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetIntendedKeyUsage.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetIntendedKeyUsage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateChainEngine.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateChainEngine.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateContextPropertyString.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetCertificateContextPropertyString.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetNameString.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetNameString.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertNameFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertNameFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertNameStringType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertNameStringType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertNameStrTypeAndFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertNameStrTypeAndFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertNameType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertNameType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertOpenStore_ENUM.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertOpenStore_ENUM.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertSetCertificateContextProperty_CRYPT_KEY_PROV_INFO.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertSetCertificateContextProperty_CRYPT_KEY_PROV_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertSetCertificateContextProperty_DATA_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertSetCertificateContextProperty_DATA_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertSetCertificateContextProperty_SafeNCryptKeyHandle.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertSetCertificateContextProperty_SafeNCryptKeyHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertSetPropertyFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertSetPropertyFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertStoreAddDisposition.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertStoreAddDisposition.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertStoreFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertStoreFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertQueryObjectType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertQueryObjectType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertSaveStore.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertSaveStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertSerializeCertificateStoreElement.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertSerializeCertificateStoreElement.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertStoreSaveAs.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertStoreSaveAs.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertStoreSaveTo.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertStoreSaveTo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertStrToName.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertStrToName.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertVerifyTimeValidity.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertVerifyTimeValidity.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ChainEngineConfigFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.ChainEngineConfigFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptAcquireContextFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptAcquireContextFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptDecodeObjectFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptDecodeObjectFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptDecodeObjectPointer_IntPtr.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptDecodeObjectPointer_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptDecodeObjectPointer_string.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptDecodeObjectPointer_string.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptDecodeObject_CertEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptDecodeObject_CertEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptEncodeObject_CertEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptEncodeObject_CertEncodingType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptFormatObject.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CryptFormatObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptHashPublicKeyInfo.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptHashPublicKeyInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptImportPublicKeyInfoFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptImportPublicKeyInfoFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgGetParam.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgGetParam.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgParamType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgParamType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptMsgType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptQueryObject.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ContentType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.ContentType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_KEY_PROV_INFO_ANSI.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CRYPT_KEY_PROV_INFO_ANSI.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ExpectedContentTypeFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.ExpectedContentTypeFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ExpectedFormatTypeFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.ExpectedFormatTypeFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FindOidInfo.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FormatType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.FormatType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PfxCertStoreFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.PfxCertStoreFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXExportFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.PFXExportFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXExportCertStore.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.PFXExportCertStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXImportCertStore.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.PFXImportCertStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.X509KeyUsageFlags.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.X509KeyUsageFlags.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\CryptoThrowHelper.cs"
              Link="Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
@@ -281,8 +455,21 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertContextHandleWithKeyContainerDeletion.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCertContextHandleWithKeyContainerDeletion.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertStoreHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCertStoreHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeChainEngineHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeChainEngineHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCryptMsgHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCryptMsgHandle.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <!-- Used in Unix except Android (native crypto) and Apple -->
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml</DependentUpon>
@@ -291,12 +478,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
-             Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
-             Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
-             Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\ReasonFlagsAsn.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CachedDirectoryStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CachedSystemStoreProvider.cs" />
@@ -309,21 +490,28 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\ExportProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslCertificateFinder.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslPkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509CertificateReader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslPkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509ChainProcessor.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509Encoder.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\PkcsFormatReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\SingleCertLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\UnsupportedDisallowedStore.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X509Pal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X509Persistence.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
+             Link="Common\Interop\Unix\Interop.DefaultPathBufferSize.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Permissions.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.ReadLink.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.GetIntegerBytes.cs"
@@ -342,12 +530,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs12.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs12.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs7.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs7.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs"
@@ -380,12 +564,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs"
@@ -395,7 +575,75 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and '$(IsPartialFacadeAssembly)' != 'true'">
+  <!-- Used in Android (native crypto) -->
+  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
+    <Compile Include="Internal\Cryptography\Pal.Android\AndroidCertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\AndroidPkcs12Reader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\FindPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.AndroidKeyStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.ExportPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.LoaderPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.TrustedStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\UnsupportedDisallowedStore.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs"
+             Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
+             Link="Common\Interop\Android\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
+             Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Dsa.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Dsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.ImportExport.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.ImportExport.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcKey.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcKey.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Store.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Store.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\DSAAndroid.cs"
+             Link="Common\System\Security\Cryptography\DSAAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.cs"
+             Link="Common\System\Security\Cryptography\ECAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.ImportExport.cs"
+             Link="Common\System\Security\Cryptography\ECAndroid.ImportExport.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroid.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanDerivation.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaAndroid.cs"
+             Link="Common\System\Security\Cryptography\ECDsaAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RSAAndroid.cs"
+             Link="Common\System\Security\Cryptography\RSAAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
+             Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs"
+             Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Ansi.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs"
              Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
@@ -416,8 +664,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs"
@@ -428,36 +676,30 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SignVerify.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SignVerify.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Trust.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Trust.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Store.cs"
-             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Store.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\DSAKeyFormatHelper.cs"
-             Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.cs"
-             Link="Common\System\Security\Cryptography\DSASecurityTransforms.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\EccKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.cs"
              Link="Common\System\Security\Cryptography\EccSecurityTransforms.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaSecurityTransforms.cs"
              Link="Common\System\Security\Cryptography\ECDsaSecurityTransforms.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
-             Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
-             Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
-             Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanSecurityTransforms.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanSecurityTransforms.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanDerivation.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs"
+             Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.cs"
@@ -520,13 +762,36 @@
       <Link>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\SpecifiedECDomain.xml</DependentUpon>
     </Compile>
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Pkcs12.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\ApplePkcs12Reader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.TempExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\CertificateData.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.ECKey.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.X500Name.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.macOS.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\DSAKeyFormatHelper.cs"
+             Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.cs"
+             Link="Common\System\Security\Cryptography\DSASecurityTransforms.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.macOS.cs"
+             Link="Common\System\Security\Cryptography\DSASecurityTransforms.macOS.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.macOS.cs"
+             Link="Common\System\Security\Cryptography\EccSecurityTransforms.macOS.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.macOS.cs"
+             Link="Common\System\Security\Cryptography\RSASecurityTransforms.macOS.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.ImportExport.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Keys.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Pkcs12.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\ApplePkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleTrustStore.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleKeychainStore.cs" />
@@ -534,7 +799,37 @@
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(TargetsOSX)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.iOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.iOS.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.iOS.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.iOS.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\EccSecurityTransforms.iOS.cs"
+             Link="Common\System\Security\Cryptography\EccSecurityTransforms.iOS.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RSASecurityTransforms.iOS.cs"
+             Link="Common\System\Security\Cryptography\RSASecurityTransforms.iOS.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificateExporter.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.ImportExport.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Keys.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Pkcs12.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\AppleCertificatePal.Pem.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\ApplePkcs12CertLoader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\ApplePkcs12Reader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\StorePal.AppleKeychainStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.iOS\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertCollectionLoader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\UnsupportedDisallowedStore.cs" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
+             Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.Encrypted.cs"
+             Link="Common\System\Security\Cryptography\KeyFormatHelper.Encrypted.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
+             Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
+             Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\DigestInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml</Link>
     </AsnXml>
@@ -666,25 +961,31 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Reference Include="System.Security.Cryptography.Csp" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAppleCrypto)' != 'true'">
     <Reference Include="System.Diagnostics.StackTrace" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' == 'true'">
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
   <ItemGroup>
     <None Include="@(AsnXml)" />

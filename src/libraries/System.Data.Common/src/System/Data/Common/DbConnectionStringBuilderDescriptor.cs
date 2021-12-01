@@ -5,7 +5,7 @@ using System.ComponentModel;
 
 namespace System.Data.Common
 {
-    internal class DbConnectionStringBuilderDescriptor : PropertyDescriptor
+    internal sealed class DbConnectionStringBuilderDescriptor : PropertyDescriptor
     {
         internal DbConnectionStringBuilderDescriptor(string propertyName, Type componentType, Type propertyType, bool isReadOnly, Attribute[] attributes) : base(propertyName, attributes)
         {
@@ -25,7 +25,7 @@ namespace System.Data.Common
             return ((null != builder) && builder.ShouldSerialize(DisplayName));
         }
 
-        public override object? GetValue(object component)
+        public override object? GetValue(object? component)
         {
             DbConnectionStringBuilder? builder = (component as DbConnectionStringBuilder);
             if (null != builder)
@@ -53,7 +53,7 @@ namespace System.Data.Common
             }
         }
 
-        public override void SetValue(object component, object? value)
+        public override void SetValue(object? component, object? value)
         {
             DbConnectionStringBuilder? builder = (component as DbConnectionStringBuilder);
             if (null != builder)

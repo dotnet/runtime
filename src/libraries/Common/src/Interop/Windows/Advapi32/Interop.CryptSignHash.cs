@@ -5,9 +5,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
         internal enum KeySpec : int
         {
@@ -24,17 +24,17 @@ internal partial class Interop
             CRYPT_X931_FORMAT = 0x00000004,  // Not supported
         }
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptSignHashW")]
-        public static extern bool CryptSignHash(
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "CryptSignHashW", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static partial bool CryptSignHash(
             SafeHashHandle hHash,
             KeySpec dwKeySpec,
             string? szDescription,
             CryptSignAndVerifyHashFlags dwFlags,
-            [Out] byte[]? pbSignature,
-            [In, Out] ref int pdwSigLen);
+            byte[]? pbSignature,
+            ref int pdwSigLen);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptVerifySignatureW")]
-        public static extern bool CryptVerifySignature(
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "CryptVerifySignatureW", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static partial bool CryptVerifySignature(
             SafeHashHandle hHash,
             byte[] pbSignature,
             int dwSigLen,

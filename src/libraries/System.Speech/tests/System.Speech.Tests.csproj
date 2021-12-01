@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SpeechRecognizerTests.cs" />
+    <Compile Include="SynthesizeRecognizeTests.cs" />
+    <Compile Include="GrammarTests.cs" />
+    <Compile Include="OtherTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Speech.csproj" />
+  </ItemGroup>
+</Project>

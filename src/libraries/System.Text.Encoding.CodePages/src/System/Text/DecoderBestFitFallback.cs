@@ -6,9 +6,10 @@
 //
 
 using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Threading;
-using System.Diagnostics;
 
 namespace System.Text
 {
@@ -31,7 +32,7 @@ namespace System.Text
         // Maximum number of characters that this instance of this fallback could return
         public override int MaxCharCount => 1;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is InternalDecoderBestFitFallback that && encoding.CodePage == that.encoding.CodePage;
 
         public override int GetHashCode() => encoding.CodePage;

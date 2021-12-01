@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 
 namespace System.Xml
@@ -189,7 +188,7 @@ namespace System.Xml
             if (nCount > 0 && nCount < baseURI.Length)
                 buf = baseURI.Substring(0, nCount);
             else if (nCount == 0)
-                buf = buf + "\\";
+                buf = $"{buf}\\";
             return (buf + systemId.Replace('\\', '/'));
         }
 

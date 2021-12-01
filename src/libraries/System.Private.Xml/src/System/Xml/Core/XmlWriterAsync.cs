@@ -1,18 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Threading.Tasks;
-
-using System;
-using System.IO;
-using System.Text;
 using System.Xml.XPath;
 using System.Xml.Schema;
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.Versioning;
 
 namespace System.Xml
 {
@@ -28,7 +20,7 @@ namespace System.Xml
             throw new NotImplementedException();
         }
 
-        //Writes out the XML declaration with the version "1.0" and the speficied standalone attribute.
+        //Writes out the XML declaration with the version "1.0" and the specified standalone attribute.
 
         public virtual Task WriteStartDocumentAsync(bool standalone)
         {
@@ -71,20 +63,18 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
-        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string value)
+        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string? value)
         {
             Task task = WriteStartAttributeAsync(prefix, localName, ns);
             if (task.IsSuccess())
             {
                 return WriteStringAsync(value).CallTaskFuncWhenFinishAsync(thisRef => thisRef.WriteEndAttributeAsync(), this);
             }
-            else
-            {
-                return WriteAttributeStringAsyncHelper(task, value);
-            }
+
+            return WriteAttributeStringAsyncHelper(task, value);
         }
 
-        private async Task WriteAttributeStringAsyncHelper(Task task, string value)
+        private async Task WriteAttributeStringAsyncHelper(Task task, string? value)
         {
             await task.ConfigureAwait(false);
             await WriteStringAsync(value).ConfigureAwait(false);
@@ -121,7 +111,7 @@ namespace System.Xml
 
         // Writes out a processing instruction with a space between the name and text as follows: <?name text?>
 
-        public virtual Task WriteProcessingInstructionAsync(string name, string text)
+        public virtual Task WriteProcessingInstructionAsync(string name, string? text)
         {
             throw new NotImplementedException();
         }
@@ -189,7 +179,7 @@ namespace System.Xml
             throw new NotImplementedException();
         }
 
-        // Encodes the specified binary bytes as binhex and writes out the resulting text.
+        // Encodes the specified binary bytes as bin hex and writes out the resulting text.
         public virtual Task WriteBinHexAsync(byte[] buffer, int index, int count)
         {
             return BinHexEncoder.EncodeAsync(buffer, index, count, this);
@@ -208,7 +198,7 @@ namespace System.Xml
         // (http://www.w3.org/TR/1998/REC-xml-19980210#NT-Name).
         public virtual Task WriteNmTokenAsync(string name)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentException(SR.Xml_EmptyName);
             }
@@ -225,7 +215,7 @@ namespace System.Xml
         // Writes out the specified namespace-qualified name by looking up the prefix that is in scope for the given namespace.
         public virtual async Task WriteQualifiedNameAsync(string localName, string? ns)
         {
-            if (ns != null && ns.Length > 0)
+            if (!string.IsNullOrEmpty(ns))
             {
                 string? prefix = LookupPrefix(ns);
                 if (prefix == null)
@@ -243,12 +233,12 @@ namespace System.Xml
         // Writes out all the attributes found at the current position in the specified XmlReader.
         public virtual async Task WriteAttributesAsync(XmlReader reader, bool defattr)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            if (reader.NodeType == XmlNodeType.Element || reader.NodeType == XmlNodeType.XmlDeclaration)
+            if (reader.NodeType is XmlNodeType.Element or XmlNodeType.XmlDeclaration)
             {
                 if (reader.MoveToFirstAttribute())
                 {
@@ -291,19 +281,17 @@ namespace System.Xml
         // to the corresponding end element.
         public virtual Task WriteNodeAsync(XmlReader reader, bool defattr)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            if (reader.Settings != null && reader.Settings.Async)
+            if (reader.Settings is { Async: true })
             {
                 return WriteNodeAsync_CallAsyncReader(reader, defattr);
             }
-            else
-            {
-                return WriteNodeAsync_CallSyncReader(reader, defattr);
-            }
+
+            return WriteNodeAsync_CallSyncReader(reader, defattr);
         }
 
 
@@ -324,20 +312,16 @@ namespace System.Xml
                         if (reader.IsEmptyElement)
                         {
                             await WriteEndElementAsync().ConfigureAwait(false);
-                            break;
                         }
                         break;
                     case XmlNodeType.Text:
                         if (canReadChunk)
                         {
-                            if (_writeNodeBuffer == null)
-                            {
-                                _writeNodeBuffer = new char[WriteNodeBufferSize];
-                            }
+                            _writeNodeBuffer ??= new char[WriteNodeBufferSize];
                             int read;
                             while ((read = reader.ReadValueChunk(_writeNodeBuffer, 0, WriteNodeBufferSize)) > 0)
                             {
-                                await this.WriteCharsAsync(_writeNodeBuffer, 0, read).ConfigureAwait(false);
+                                await WriteCharsAsync(_writeNodeBuffer, 0, read).ConfigureAwait(false);
                             }
                         }
                         else
@@ -390,20 +374,16 @@ namespace System.Xml
                         if (reader.IsEmptyElement)
                         {
                             await WriteEndElementAsync().ConfigureAwait(false);
-                            break;
                         }
                         break;
                     case XmlNodeType.Text:
                         if (canReadChunk)
                         {
-                            if (_writeNodeBuffer == null)
-                            {
-                                _writeNodeBuffer = new char[WriteNodeBufferSize];
-                            }
+                            _writeNodeBuffer ??= new char[WriteNodeBufferSize];
                             int read;
                             while ((read = await reader.ReadValueChunkAsync(_writeNodeBuffer, 0, WriteNodeBufferSize).ConfigureAwait(false)) > 0)
                             {
-                                await this.WriteCharsAsync(_writeNodeBuffer, 0, read).ConfigureAwait(false);
+                                await WriteCharsAsync(_writeNodeBuffer, 0, read).ConfigureAwait(false);
                             }
                         }
                         else
@@ -521,19 +501,17 @@ namespace System.Xml
                         iLevel++;
                         continue;
                     }
-                    else
+
+                    // EndElement
+                    if (navigator.NodeType == XPathNodeType.Element)
                     {
-                        // EndElement
-                        if (navigator.NodeType == XPathNodeType.Element)
+                        if (navigator.IsEmptyElement)
                         {
-                            if (navigator.IsEmptyElement)
-                            {
-                                await WriteEndElementAsync().ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                await WriteFullEndElementAsync().ConfigureAwait(false);
-                            }
+                            await WriteEndElementAsync().ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            await WriteFullEndElementAsync().ConfigureAwait(false);
                         }
                     }
                 }
@@ -570,7 +548,7 @@ namespace System.Xml
         public async Task WriteElementStringAsync(string? prefix, string localName, string? ns, string value)
         {
             await WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(false);
-            if (null != value && 0 != value.Length)
+            if (!string.IsNullOrEmpty(value))
             {
                 await WriteStringAsync(value).ConfigureAwait(false);
             }

@@ -42,6 +42,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void EnumerateFilesOverLegacyMaxPath()
         {
             // We want to test that directories under the legacy MAX_PATH (260 characters, including the null) can iterate files

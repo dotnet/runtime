@@ -244,7 +244,7 @@ namespace System.Linq.Tests
             yield return new object[] { Enumerable.Range(0, 500).Select(i => Enumerable.Repeat(i, 1)).Reverse() };
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
         public void CountOfConcatIteratorShouldThrowExceptionOnIntegerOverflow()
         {
             var supposedlyLargeCollection = new DelegateBasedCollection<int> { CountWorker = () => int.MaxValue };

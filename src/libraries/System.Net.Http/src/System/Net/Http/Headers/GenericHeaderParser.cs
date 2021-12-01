@@ -18,7 +18,7 @@ namespace System.Net.Http.Headers
         internal static readonly GenericHeaderParser MultipleValueNameValueWithParametersParser = new GenericHeaderParser(true, NameValueWithParametersHeaderValue.GetNameValueWithParametersLength);
         internal static readonly GenericHeaderParser SingleValueNameValueParser = new GenericHeaderParser(false, ParseNameValue);
         internal static readonly GenericHeaderParser MultipleValueNameValueParser = new GenericHeaderParser(true, ParseNameValue);
-        internal static readonly GenericHeaderParser MailAddressParser = new GenericHeaderParser(false, ParseMailAddress);
+        internal static readonly GenericHeaderParser SingleValueParserWithoutValidation = new GenericHeaderParser(false, ParseWithoutValidation);
         internal static readonly GenericHeaderParser SingleValueProductParser = new GenericHeaderParser(false, ParseProduct);
         internal static readonly GenericHeaderParser MultipleValueProductParser = new GenericHeaderParser(true, ParseProduct);
         internal static readonly GenericHeaderParser RangeConditionParser = new GenericHeaderParser(false, RangeConditionHeaderValue.GetRangeConditionLength);
@@ -114,21 +114,18 @@ namespace System.Net.Http.Headers
             return resultLength;
         }
 
-        private static int ParseMailAddress(string value, int startIndex, out object? parsedValue)
+        /// <summary>
+        /// Allows for arbitrary header values without validation (aside from newline, which is always invalid in a header value).
+        /// </summary>
+        private static int ParseWithoutValidation(string value, int startIndex, out object? parsedValue)
         {
-            parsedValue = null;
-
-            if (HttpRuleParser.ContainsInvalidNewLine(value, startIndex))
+            if (HttpRuleParser.ContainsNewLine(value, startIndex))
             {
+                parsedValue = null;
                 return 0;
             }
 
             string result = value.Substring(startIndex);
-
-            if (!HeaderUtilities.IsValidEmailAddress(result))
-            {
-                return 0;
-            }
 
             parsedValue = result;
             return result.Length;

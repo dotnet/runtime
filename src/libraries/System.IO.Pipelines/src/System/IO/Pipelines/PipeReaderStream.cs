@@ -47,7 +47,25 @@ namespace System.IO.Pipelines
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return ReadAsync(buffer, offset, count).GetAwaiter().GetResult();
+            if (buffer is null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
+            return ReadInternal(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int ReadByte()
+        {
+            Span<byte> oneByte = stackalloc byte[1];
+            return ReadInternal(oneByte) == 0 ? -1 : oneByte[0];
+        }
+
+        private int ReadInternal(Span<byte> buffer)
+        {
+            ValueTask<ReadResult> vt = _pipeReader.ReadAsync();
+            ReadResult result = vt.IsCompletedSuccessfully ? vt.Result : vt.AsTask().Result;
+            return HandleReadResult(result, buffer);
         }
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
@@ -64,10 +82,20 @@ namespace System.IO.Pipelines
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            if (buffer is null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
             return ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+        public override int Read(Span<byte> buffer)
+        {
+            return ReadInternal(buffer);
+        }
+
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return ReadAsyncInternal(buffer, cancellationToken);
@@ -77,7 +105,11 @@ namespace System.IO.Pipelines
         private async ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             ReadResult result = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            return HandleReadResult(result, buffer.Span);
+        }
 
+        private int HandleReadResult(ReadResult result, Span<byte> buffer)
+        {
             if (result.IsCanceled)
             {
                 ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
@@ -95,7 +127,7 @@ namespace System.IO.Pipelines
 
                     ReadOnlySequence<byte> slice = actual == bufferLength ? sequence : sequence.Slice(0, actual);
                     consumed = slice.End;
-                    slice.CopyTo(buffer.Span);
+                    slice.CopyTo(buffer);
 
                     return actual;
                 }
@@ -118,6 +150,8 @@ namespace System.IO.Pipelines
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
             // Delegate to CopyToAsync on the PipeReader
             return _pipeReader.CopyToAsync(destination, cancellationToken);
         }

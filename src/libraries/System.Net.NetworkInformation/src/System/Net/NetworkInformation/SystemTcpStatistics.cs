@@ -6,19 +6,21 @@ using System.Net.Sockets;
 namespace System.Net.NetworkInformation
 {
     // TCP specific statistics.
-    internal class SystemTcpStatistics : TcpStatistics
+    internal sealed class SystemTcpStatistics : TcpStatistics
     {
         private readonly Interop.IpHlpApi.MibTcpStats _stats;
 
         private SystemTcpStatistics() { }
 
-        internal SystemTcpStatistics(AddressFamily family)
+        internal unsafe SystemTcpStatistics(AddressFamily family)
         {
-            uint result = Interop.IpHlpApi.GetTcpStatisticsEx(out _stats, family);
-
-            if (result != Interop.IpHlpApi.ERROR_SUCCESS)
+            fixed (Interop.IpHlpApi.MibTcpStats* pStats = &_stats)
             {
-                throw new NetworkInformationException((int)result);
+                uint result = Interop.IpHlpApi.GetTcpStatisticsEx(pStats, family);
+                if (result != Interop.IpHlpApi.ERROR_SUCCESS)
+                {
+                    throw new NetworkInformationException((int)result);
+                }
             }
         }
 

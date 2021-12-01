@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -92,6 +93,29 @@ namespace Microsoft.Extensions.Logging.Test
                 var logValues = new FormattedLogValues(format, new object[] { "arg1" });
                 logValues.ToString();
             });
+        }
+
+        [Fact]
+        public void LogValues_WithNullAndEnumerable_IsNotMutatingParameter()
+        {
+            string format = "TestMessage {Param1} {Param2} {Param3} {Param4}";
+            int param1 = 1;
+            string param2 = null;
+            int[] param3 = new[] { 1, 2, 3, 4 };
+            string param4 = "string";
+
+            var logValues = new FormattedLogValues(format, param1, param2, param3, param4);
+            logValues.ToString();
+
+            var state = logValues.ToArray();
+            Assert.Equal(new[]
+            {
+                new KeyValuePair<string, object>("Param1", param1),
+                new KeyValuePair<string, object>("Param2", param2),
+                new KeyValuePair<string, object>("Param3", param3),
+                new KeyValuePair<string, object>("Param4", param4),
+                new KeyValuePair<string, object>("{OriginalFormat}", format),
+            }, state);
         }
 
         [Fact]

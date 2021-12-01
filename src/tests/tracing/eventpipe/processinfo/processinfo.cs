@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -9,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
@@ -56,14 +56,33 @@ namespace Tracing.Tests.ProcessInfoValidation
                 }
             }
 
-            string normalizedCommandLine = parts
-                .Where(part => !string.IsNullOrWhiteSpace(part))
-                .Select(part => (new FileInfo(part)).FullName)
-                .Aggregate((s1, s2) => string.Join(' ', s1, s2));
+            StringBuilder sb = new();
+            bool isArgument = false;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (string.IsNullOrEmpty(parts[i]))
+                    continue;
+                else if (parts[i].StartsWith('-'))
+                {
+                    // if we see '-', then assume it's a '-option argument' pair and remove
+                    isArgument = true;
+                }
+                else if (isArgument)
+                {
+                    isArgument = false;
+                }
+                else
+                {
+                    // assume anything else is a file/executable so get the full path
+                    sb.Append((new FileInfo(parts[i])).FullName + " ");
+                }
+            }
+
+            string normalizedCommandLine = sb.ToString().Trim();
 
             // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
             // This isn't represented in the output from FileInfo.FullName unfortunately, so we'll fake that completion in that case.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && normalizedCommandLine.StartsWith("/tmp/"))
+            if (OperatingSystem.IsMacOS() && normalizedCommandLine.StartsWith("/tmp/"))
                 normalizedCommandLine = "/private" + normalizedCommandLine;
 
             return normalizedCommandLine;
@@ -82,7 +101,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             var processInfoMessage = new IpcMessage(0x04, 0x00);
             Logger.logger.Log($"Wrote: {processInfoMessage}");
             IpcMessage response = IpcClient.SendMessage(stream, processInfoMessage);
-            Logger.logger.Log($"Received: {response}");
+            Logger.logger.Log($"Received: <omitted>");
 
             Utils.Assert(response.Header.CommandSet == 0xFF, $"Response must have Server command set. Expected: 0xFF, Received: 0x{response.Header.CommandSet:X2}"); // server
             Utils.Assert(response.Header.CommandId == 0x00, $"Response must have OK command id. Expected: 0x00, Received: 0x{response.Header.CommandId:X2}"); // OK
@@ -95,7 +114,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             // LPCWSTR Arch;
 
             int totalSize = response.Payload.Length;
-            Logger.logger.Log($"Total size of Payload == {totalSize} b");
+            Logger.logger.Log($"Total size of Payload = {totalSize} bytes");
 
             // VALIDATE PID
             int start = 0;
@@ -147,15 +166,15 @@ namespace Tracing.Tests.ProcessInfoValidation
 
             // see eventpipeeventsource.cpp for these values
             string expectedOSValue = null;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 expectedOSValue = "Windows";
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 expectedOSValue = "macOS";
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (OperatingSystem.IsLinux())
             {
                 expectedOSValue = "Linux";
             }

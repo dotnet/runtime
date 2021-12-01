@@ -38,7 +38,7 @@ namespace System.Net.Security
 
         public Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
 
-        public Task FlushAsync() => _stream.FlushAsync();
+        public Task FlushAsync() => _stream.FlushAsync(CancellationToken);
 
         public CancellationToken CancellationToken { get; }
     }

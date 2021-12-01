@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -113,7 +114,7 @@ namespace System.Data
 
             // add column to the dependency list, do not add duplicate columns
 
-            Debug.Assert(_column != null, "Failed to bind column " + _columnName);
+            Debug.Assert(_column != null, $"Failed to bind column {_columnName}");
 
             int i;
             for (i = 0; i < list.Count; i++)
@@ -155,11 +156,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval()
         {
             return Eval(null, DataRowVersion.Default);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             if (_childTable == null)
@@ -220,6 +223,7 @@ namespace System.Data
         }
 
         // Helper for the DataTable.Compute method
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(int[] records)
         {
             if (_childTable == null)

@@ -5,12 +5,12 @@ using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern unsafe bool GetOverlappedResult(
+        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Auto, SetLastError = true)]
+        internal static unsafe partial bool GetOverlappedResult(
             SafeFileHandle hFile,
             NativeOverlapped* lpOverlapped,
             ref int lpNumberOfBytesTransferred,

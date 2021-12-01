@@ -311,11 +311,10 @@ handle_instruction:
 	}
 	g_hash_table_destroy (addr_loads);
 
-#ifdef ENABLE_NETCORE
 	/* There could be ldaddr instructions which already got eliminated */
 	if (COMPILE_LLVM (cfg))
 		return TRUE;
-#endif
+
 	return needs_dce;
 }
 

@@ -5,15 +5,15 @@ using Microsoft.Win32.SafeHandles;
 using System.IO;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use DeleteFile.
         /// </summary>
-        [DllImport(Libraries.Kernel32, EntryPoint = "DeleteFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        private static extern bool DeleteFilePrivate(string path);
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "DeleteFileW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        private static partial bool DeleteFilePrivate(string path);
 
         internal static bool DeleteFile(string path)
         {

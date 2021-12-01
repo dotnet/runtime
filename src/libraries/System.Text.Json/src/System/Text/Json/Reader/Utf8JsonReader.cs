@@ -33,7 +33,6 @@ namespace System.Text.Json
         private int _consumed;
         private bool _inObject;
         private bool _isNotPrimitive;
-        internal char _numberFormat;
         private JsonTokenType _tokenType;
         private JsonTokenType _previousTokenType;
         private JsonReaderOptions _readerOptions;
@@ -183,7 +182,6 @@ namespace System.Text.Json
             _bytePositionInLine = _bytePositionInLine,
             _inObject = _inObject,
             _isNotPrimitive = _isNotPrimitive,
-            _numberFormat = _numberFormat,
             _stringHasEscaping = _stringHasEscaping,
             _trailingCommaBeforeComment = _trailingCommaBeforeComment,
             _tokenType = _tokenType,
@@ -215,7 +213,6 @@ namespace System.Text.Json
             _bytePositionInLine = state._bytePositionInLine;
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
-            _numberFormat = state._numberFormat;
             _stringHasEscaping = state._stringHasEscaping;
             _trailingCommaBeforeComment = state._trailingCommaBeforeComment;
             _tokenType = state._tokenType;
@@ -307,7 +304,7 @@ namespace System.Text.Json
         {
             if (!_isFinalBlock)
             {
-                throw ThrowHelper.GetInvalidOperationException_CannotSkipOnPartial();
+                ThrowHelper.ThrowInvalidOperationException_CannotSkipOnPartial();
             }
 
             SkipHelper();
@@ -432,8 +429,9 @@ namespace System.Text.Json
         {
             if (!IsTokenTypeString(TokenType))
             {
-                throw ThrowHelper.GetInvalidOperationException_ExpectedStringComparison(TokenType);
+                ThrowHelper.ThrowInvalidOperationException_ExpectedStringComparison(TokenType);
             }
+
             return TextEqualsHelper(utf8Text);
         }
 
@@ -502,7 +500,7 @@ namespace System.Text.Json
         {
             if (!IsTokenTypeString(TokenType))
             {
-                throw ThrowHelper.GetInvalidOperationException_ExpectedStringComparison(TokenType);
+                ThrowHelper.ThrowInvalidOperationException_ExpectedStringComparison(TokenType);
             }
 
             if (MatchNotPossible(text.Length))
@@ -516,7 +514,7 @@ namespace System.Text.Json
 
             int length = checked(text.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
 
-            if (length > JsonConstants.StackallocThreshold)
+            if (length > JsonConstants.StackallocByteThreshold)
             {
                 otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length);
                 otherUtf8Text = otherUtf8TextArray;
@@ -526,8 +524,8 @@ namespace System.Text.Json
                 // Cannot create a span directly since it gets passed to instance methods on a ref struct.
                 unsafe
                 {
-                    byte* ptr = stackalloc byte[JsonConstants.StackallocThreshold];
-                    otherUtf8Text = new Span<byte>(ptr, JsonConstants.StackallocThreshold);
+                    byte* ptr = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                    otherUtf8Text = new Span<byte>(ptr, JsonConstants.StackallocByteThreshold);
                 }
             }
 
@@ -1000,7 +998,7 @@ namespace System.Text.Json
             {
                 byte val = localBuffer[_consumed];
 
-                // JSON RFC 8259 section 2 says only these 4 characters count, not all of the Unicode defintions of whitespace.
+                // JSON RFC 8259 section 2 says only these 4 characters count, not all of the Unicode definitions of whitespace.
                 if (val != JsonConstants.Space &&
                     val != JsonConstants.CarriageReturn &&
                     val != JsonConstants.LineFeed &&
@@ -1415,7 +1413,6 @@ namespace System.Text.Json
             // TODO: https://github.com/dotnet/runtime/issues/27837
             Debug.Assert(data.Length > 0);
 
-            _numberFormat = default;
             consumed = 0;
             int i = 0;
 
@@ -1493,7 +1490,6 @@ namespace System.Text.Json
 
             Debug.Assert(nextByte == 'E' || nextByte == 'e');
             i++;
-            _numberFormat = JsonConstants.ScientificNotationFormat;
 
             signResult = ConsumeSign(ref data, ref i);
             if (signResult == ConsumeNumberResult.NeedMoreData)

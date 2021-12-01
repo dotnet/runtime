@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO-NULLABLE: Enable after System.ComponentModel.TypeDescriptionProvider is annotated
-#nullable disable
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -12,7 +11,8 @@ namespace System.ComponentModel.DataAnnotations
     /// </summary>
     public class AssociatedMetadataTypeTypeDescriptionProvider : TypeDescriptionProvider
     {
-        private readonly Type _associatedMetadataType;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        private readonly Type? _associatedMetadataType;
 
         /// <summary>
         /// Initializes a new instance of the System.ComponentModel.DataAnnotations.AssociatedMetadataTypeTypeDescriptionProvider
@@ -31,7 +31,9 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="type">The type for which the metadata provider is created.</param>
         /// <param name="associatedMetadataType">The associated type that contains the metadata.</param>
         /// <exception cref="System.ArgumentNullException">The value of associatedMetadataType is null.</exception>
-        public AssociatedMetadataTypeTypeDescriptionProvider(Type type, Type associatedMetadataType)
+        public AssociatedMetadataTypeTypeDescriptionProvider(
+            Type type,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type associatedMetadataType)
             : this(type)
         {
             if (associatedMetadataType == null)
@@ -48,9 +50,9 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="objectType">The type of object to retrieve the type descriptor for.</param>
         /// <param name="instance">An instance of the type.</param>
         /// <returns>The descriptor that provides metadata for the type.</returns>
-        public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
         {
-            ICustomTypeDescriptor baseDescriptor = base.GetTypeDescriptor(objectType, instance);
+            ICustomTypeDescriptor? baseDescriptor = base.GetTypeDescriptor(objectType, instance);
             return new AssociatedMetadataTypeTypeDescriptor(baseDescriptor, objectType, _associatedMetadataType);
         }
     }

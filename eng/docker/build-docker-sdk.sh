@@ -23,10 +23,9 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
 imagename="dotnet-sdk-libs-current"
 configuration="Release"
-privateaspnetcore=0
 
 while [[ $# > 0 ]]; do
-  opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
+  opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     -imagename|-t)
       imagename=$2
@@ -36,10 +35,6 @@ while [[ $# > 0 ]]; do
       configuration=$2
       shift 2
       ;;
-    -privateaspnetcore|-pa)
-      privateaspnetcore=1
-      shift 1
-      ;;
     *)
       shift 1
       ;;
@@ -48,10 +43,6 @@ done
 
 repo_root=$(git rev-parse --show-toplevel)
 docker_file="$scriptroot/libraries-sdk.linux.Dockerfile"
-
-if [[ $privateaspnetcore -eq 1 ]]; then
-    docker_file="$scriptroot/libraries-sdk-aspnetcore.linux.Dockerfile"
-fi
 
 docker build --tag $imagename \
     --build-arg CONFIGURATION=$configuration \

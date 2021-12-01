@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +10,7 @@ using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
 {
-    internal class TokenInfo
+    internal sealed class TokenInfo
     {
         public char startChar;      // First element of numbering sequence for format token
         public int startIdx;       // Start index of separator token
@@ -108,7 +109,7 @@ namespace System.Xml.Xsl.Runtime
         }
     }
 
-    internal class NumberFormatter : NumberFormatterBase
+    internal sealed class NumberFormatter : NumberFormatterBase
     {
         private readonly string _formatString;
         private readonly int _lang;
@@ -295,7 +296,7 @@ namespace System.Xml.Xsl.Runtime
                     }
                     break;
                 default:
-                    Debug.Assert(CharUtil.IsDecimalDigitOne(startChar), "Unexpected startChar: " + startChar);
+                    Debug.Assert(CharUtil.IsDecimalDigitOne(startChar), $"Unexpected startChar: {startChar}");
                     zero = (char)(startChar - 1);
                     break;
             }

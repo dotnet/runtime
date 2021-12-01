@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.ComponentModel;
@@ -70,7 +69,7 @@ namespace System.Xml.Schema
                         int i = 1;
                         foreach (string wildcardNS in _namespaceList.Enumerate)
                         {
-                            sb.Append(wildcardNS + ":*");
+                            sb.Append($"{wildcardNS}:*");
                             if (i < _namespaceList.Enumerate.Count)
                             {
                                 sb.Append(' ');

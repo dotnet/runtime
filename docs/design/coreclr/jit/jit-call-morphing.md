@@ -17,7 +17,6 @@ post/pre increment, perhaps like this: `Foo(j, a[j++])`.  Here `j` is updated vi
 when the second arg is evaluated, so the earlier uses of `j` would need to be evaluated and
 saved in a new LclVar.
 
- 
 One simple approach would be to create new single definition, single use LclVars for every argument
 that is passed.  This would preserve the evaluation order.  However, it would potentially create
 hundreds of LclVar for moderately sized methods and that would overflow the limited number of
@@ -25,7 +24,6 @@ tracked local variables in the JIT.  One observation is that many arguments to m
 either constants or LclVars and can be set up anytime we want. They usually will not need a
 new LclVar to preserve the order of evaluation rule.
 
- 
 Each argument is an arbitrary expression tree.  The JIT tracks a summary of observable side-effects
 using a set of five bit flags in every GenTree node: `GTF_ASG`, `GTF_CALL`, `GTF_EXCEPT`, `GTF_GLOB_REF`,
 and `GTF_ORDER_SIDEEFF`.  These flags are propagated up the tree so that the top node has a particular

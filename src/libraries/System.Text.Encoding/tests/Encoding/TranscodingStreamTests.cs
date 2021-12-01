@@ -1,8 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Pipelines;
+using System.IO.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
@@ -10,8 +14,20 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    public class TranscodingStreamTests
+    public class TranscodingStreamTests : ConnectedStreamConformanceTests
     {
+        protected override bool FlushRequiredToWriteData => true;
+        protected override bool FlushGuaranteesAllDataWritten => false;
+        protected override bool BlocksOnZeroByteReads => true;
+
+        protected override Task<StreamPair> CreateConnectedStreamsAsync()
+        {
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            return Task.FromResult<StreamPair>(
+                (Encoding.CreateTranscodingStream(stream1, new IdentityEncoding(), new IdentityEncoding()),
+                 Encoding.CreateTranscodingStream(stream2, new IdentityEncoding(), new IdentityEncoding())));
+        }
+
         public static IEnumerable<object[]> ReadWriteTestBufferLengths
         {
             get
@@ -23,7 +39,8 @@ namespace System.Text.Tests
             }
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AsyncMethods_ReturnCanceledTaskIfCancellationTokenTripped()
         {
             // Arrange
@@ -61,7 +78,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>("outerStreamEncoding", () => Encoding.CreateTranscodingStream(Stream.Null, Encoding.UTF8, null));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanRead_DelegatesToInnerStream(bool expectedCanRead)
@@ -84,7 +101,7 @@ namespace System.Text.Tests
             Assert.False(actualCanReadAfterDispose);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanWrite_DelegatesToInnerStream(bool expectedCanWrite)
@@ -182,7 +199,8 @@ namespace System.Text.Tests
             innerStream.Read(Span<byte>.Empty); // shouldn't throw
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Flush_FlushesInnerStreamButNotDecodedState()
         {
             // Arrange
@@ -322,14 +340,30 @@ namespace System.Text.Tests
 
             Assert.Equal(-1, transcodingStream.ReadByte()); // should've reached EOF
 
-            // Now put some invalid data into the inner stream as EOF.
+            // Now put some invalid data into the inner stream, followed by EOF, and ensure we get U+FFFD back out.
 
             innerStream.SetLength(0); // reset
-            innerStream.WriteByte(0xC0);
+            innerStream.WriteByte(0xC0); // [ C0 ] is never valid in UTF-8
             innerStream.Position = 0;
 
             sink.SetLength(0); // reset
             int numBytesReadJustNow;
+            do
+            {
+                numBytesReadJustNow = callback(transcodingStream, sink);
+                Assert.True(numBytesReadJustNow >= 0);
+            } while (numBytesReadJustNow > 0);
+
+            Assert.Equal("[FFFD]", ErrorCheckingAsciiEncoding.GetString(sink.ToArray()));
+            Assert.Equal(-1, transcodingStream.ReadByte()); // should've reached EOF
+
+            // Now put some incomplete data into the inner stream, followed by EOF, and ensure we get U+FFFD back out.
+
+            innerStream.SetLength(0); // reset
+            innerStream.WriteByte(0xC2); // [ C2 ] must be followed by [ 80..BF ] in UTF-8
+            innerStream.Position = 0;
+
+            sink.SetLength(0); // reset
             do
             {
                 numBytesReadJustNow = callback(transcodingStream, sink);
@@ -359,7 +393,7 @@ namespace System.Text.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public Task ReadApm()
         {
             // Tests TranscodingStream.BeginRead / EndRead
@@ -400,7 +434,7 @@ namespace System.Text.Tests
             suppressExpectedCancellationTokenAsserts: true); // APM pattern doesn't allow flowing CancellationToken
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public Task ReadAsync_ByteArray(int bufferLength)
         {
@@ -419,7 +453,7 @@ namespace System.Text.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public async Task ReadAsync_Memory(int bufferLength)
         {
@@ -436,6 +470,56 @@ namespace System.Text.Tests
                 sink.Write(buffer.AsSpan(0..numBytesRead));
                 return numBytesRead;
             });
+        }
+
+        [Fact]
+        public async Task ReadAsync_LoopsWhenPartialDataReceived()
+        {
+            // Validates that the TranscodingStream will loop instead of returning 0
+            // if the inner stream read partial data and GetBytes cannot make forward progress.
+
+            using AsyncComms comms = new AsyncComms();
+            Stream transcodingStream = Encoding.CreateTranscodingStream(comms.ReadStream, Encoding.UTF8, Encoding.UTF8);
+
+            // First, ensure that writing [ C0 ] (always invalid UTF-8) to the stream
+            // causes the reader to return immediately with fallback behavior.
+
+            byte[] readBuffer = new byte[1024];
+            comms.WriteBytes(new byte[] { 0xC0 });
+
+            int numBytesRead = await transcodingStream.ReadAsync(readBuffer.AsMemory());
+            Assert.Equal(new byte[] { 0xEF, 0xBF, 0xBD }, readBuffer[0..numBytesRead]); // fallback substitution
+
+            // Next, ensure that writing [ C2 ] (partial UTF-8, needs more data) to the stream
+            // causes the reader to asynchronously loop, returning "not yet complete".
+
+            readBuffer = new byte[1024];
+            comms.WriteBytes(new byte[] { 0xC2 });
+
+            ValueTask<int> task = transcodingStream.ReadAsync(readBuffer.AsMemory());
+            Assert.False(task.IsCompleted);
+            comms.WriteBytes(new byte[] { 0x80 }); // [ C2 80 ] is valid UTF-8
+
+            numBytesRead = await task; // should complete successfully
+            Assert.Equal(new byte[] { 0xC2, 0x80 }, readBuffer[0..numBytesRead]);
+
+            // Finally, ensure that writing [ C2 ] (partial UTF-8, needs more data) to the stream
+            // followed by EOF causes the reader to perform substitution before returning EOF.
+
+            readBuffer = new byte[1024];
+            comms.WriteBytes(new byte[] { 0xC2 });
+
+            task = transcodingStream.ReadAsync(readBuffer.AsMemory());
+            Assert.False(task.IsCompleted);
+            comms.WriteEof();
+
+            numBytesRead = await task; // should complete successfully
+            Assert.Equal(new byte[] { 0xEF, 0xBF, 0xBD }, readBuffer[0..numBytesRead]); // fallback substitution
+
+            // Next call really should return "EOF reached"
+
+            readBuffer = new byte[1024];
+            Assert.Equal(0, await transcodingStream.ReadAsync(readBuffer.AsMemory()));
         }
 
         [Fact]
@@ -496,14 +580,30 @@ namespace System.Text.Tests
 
             Assert.Equal(-1, await transcodingStream.ReadByteAsync(expectedCancellationToken)); // should've reached EOF
 
-            // Now put some invalid data into the inner stream as EOF.
+            // Now put some invalid data into the inner stream, followed by EOF, and ensure we get U+FFFD back out.
 
             innerStream.SetLength(0); // reset
-            innerStream.WriteByte(0xC0);
+            innerStream.WriteByte(0xC0); // [ C0 ] is never valid in UTF-8
             innerStream.Position = 0;
 
             sink.SetLength(0); // reset
             int numBytesReadJustNow;
+            do
+            {
+                numBytesReadJustNow = await callback(transcodingStream, expectedCancellationToken, sink);
+                Assert.True(numBytesReadJustNow >= 0);
+            } while (numBytesReadJustNow > 0);
+
+            Assert.Equal("[FFFD]", ErrorCheckingAsciiEncoding.GetString(sink.ToArray()));
+            Assert.Equal(-1, await transcodingStream.ReadByteAsync(expectedCancellationToken)); // should've reached EOF
+
+            // Now put some incomplete data into the inner stream, followed by EOF, and ensure we get U+FFFD back out.
+
+            innerStream.SetLength(0); // reset
+            innerStream.WriteByte(0xC2); // [ C2 ] must be followed by [ 80..BF ] in UTF-8
+            innerStream.Position = 0;
+
+            sink.SetLength(0); // reset
             do
             {
                 numBytesReadJustNow = await callback(transcodingStream, expectedCancellationToken, sink);
@@ -619,7 +719,7 @@ namespace System.Text.Tests
             Assert.Equal(0, innerStream.Position);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Write_WithPartialData()
         {
             MemoryStream innerStream = new MemoryStream();
@@ -667,8 +767,9 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => transcodingStream.Write(new byte[5], 6, 0));
         }
 
-        [Fact]
-        public async Task WriteAsync()
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public async Task WriteAsync_WithFullData()
         {
             MemoryStream sink = new MemoryStream();
             CancellationToken expectedFlushAsyncCancellationToken = new CancellationTokenSource().Token;
@@ -726,7 +827,8 @@ namespace System.Text.Tests
             Assert.Equal(0, sink.Position);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task WriteAsync_WithPartialData()
         {
             MemoryStream sink = new MemoryStream();
@@ -781,7 +883,8 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => (object)transcodingStream.WriteAsync(new byte[5], 6, 0));
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void WriteApm()
         {
             // Arrange
@@ -890,6 +993,86 @@ namespace System.Text.Tests
                     _remainingIdx--;
                     return true;
                 }
+            }
+        }
+
+        /// <summary>A custom encoding that's used to roundtrip from bytes to bytes through a string.</summary>
+        private sealed class IdentityEncoding : Encoding
+        {
+            public override int GetByteCount(char[] chars, int index, int count) => count;
+
+            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+            {
+                Span<char> span = chars.AsSpan(charIndex, charCount);
+                for (int i = 0; i < span.Length; i++)
+                {
+                    Debug.Assert(span[i] <= 0xFF);
+                    bytes[byteIndex + i] = (byte)span[i];
+                }
+                return charCount;
+            }
+
+            public override int GetCharCount(byte[] bytes, int index, int count) => count;
+
+            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+            {
+                Span<byte> span = bytes.AsSpan(byteIndex, byteCount);
+                for (int i = 0; i < span.Length; i++)
+                {
+                    Debug.Assert(span[i] <= 0xFF);
+                    chars[charIndex + i] = (char)span[i];
+                }
+                return byteCount;
+            }
+
+            public override int GetMaxByteCount(int charCount) => charCount;
+
+            public override int GetMaxCharCount(int byteCount) => byteCount;
+
+            public override byte[] GetPreamble() => Array.Empty<byte>();
+        }
+
+        // A helper type that allows synchronously writing to a stream while asynchronously
+        // reading from it.
+        private sealed class AsyncComms : IDisposable
+        {
+            private readonly BlockingCollection<byte[]> _blockingCollection;
+            private readonly PipeWriter _writer;
+
+            public AsyncComms()
+            {
+                _blockingCollection = new BlockingCollection<byte[]>();
+                var pipe = new Pipe();
+                ReadStream = pipe.Reader.AsStream();
+                _writer = pipe.Writer;
+                Task.Run(_DrainWorker);
+            }
+
+            public Stream ReadStream { get; }
+
+            public void Dispose()
+            {
+                _blockingCollection.Dispose();
+            }
+
+            public void WriteBytes(ReadOnlySpan<byte> bytes)
+            {
+                _blockingCollection.Add(bytes.ToArray());
+            }
+
+            public void WriteEof()
+            {
+                _blockingCollection.Add(null);
+            }
+
+            private async Task _DrainWorker()
+            {
+                byte[] buffer;
+                while ((buffer = _blockingCollection.Take()) is not null)
+                {
+                    await _writer.WriteAsync(buffer);
+                }
+                _writer.Complete();
             }
         }
     }

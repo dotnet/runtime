@@ -107,7 +107,7 @@ namespace System.Diagnostics.Eventing.Reader
 
                 _registeredWaitHandle.Unregister(_unregisterDoneHandle);
 
-                if (_callbackThreadId != Thread.CurrentThread.ManagedThreadId)
+                if (_callbackThreadId != Environment.CurrentManagedThreadId)
                 {
                     // Not calling Stop from within callback - wait for
                     // Any outstanding callbacks to complete.
@@ -211,7 +211,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         internal void SubscribedEventsAvailableCallback(object state, bool timedOut)
         {
-            _callbackThreadId = Thread.CurrentThread.ManagedThreadId;
+            _callbackThreadId = Environment.CurrentManagedThreadId;
             try
             {
                 RequestEvents();

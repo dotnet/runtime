@@ -6,7 +6,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-public class Test
+public class Test_Free_neg
 {
     public static int Main()
     {

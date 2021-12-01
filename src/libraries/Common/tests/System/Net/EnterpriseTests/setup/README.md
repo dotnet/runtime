@@ -1,7 +1,7 @@
 # Enterprise Scenario Testing
 
 ## What Are Enterprise Scenarios?
-There are many definitions for enterprise scenarios. But generally in terms of how .NET Core networking APIs are used, enterprise scenarios are those networking scenarios that are fundamentally used by businesses (a.k.a enterprises) compared with consumers. As such, they use networking components, protocols, and security authentication mechanisms that are not used by most consumers using their home networking and Internet connections. 
+There are many definitions for enterprise scenarios. But generally in terms of how .NET Core networking APIs are used, enterprise scenarios are those networking scenarios that are fundamentally used by businesses (a.k.a enterprises) compared with consumers. As such, they use networking components, protocols, and security authentication mechanisms that are not used by most consumers using their home networking and Internet connections.
 
 ## Networking Components of Enterprise Scenarios
 Enterprise scenarios typically see the following kinds of components/protocols/security:
@@ -38,6 +38,12 @@ docker-compose build
 
 # Start up test machines and network
 docker-compose up -d
+
+There should be three server containers and client:
+- kdc serves as Kerberos key center and Primary Domain Controller using Samba
+- apacheweb runs standard web server on port 80 and has various authentication methods enabled
+- altweb is identical container but running web on non-standard port. This primarily matters for Kerberos and SPN calculation
+- linuxclient is container where the tests actually run
 
 # Connect to the 'linuxclient' container
 docker exec -it linuxclient bash

@@ -26,7 +26,8 @@ namespace System.IO.Pipelines
             _disposed = true;
         }
 
-        public override int MaxBufferSize => 4096;
+        internal const int DefaultMaxBufferSize = 4096;
+        public override int MaxBufferSize => DefaultMaxBufferSize;
 
         internal void CheckDisposed()
         {
@@ -58,7 +59,7 @@ namespace System.IO.Pipelines
 
             ~PooledMemory()
             {
-                Debug.Assert(_returned, "Block being garbage collected instead of returned to pool" + Environment.NewLine + _leaser);
+                Debug.Assert(_returned, $"Block being garbage collected instead of returned to pool{Environment.NewLine}{_leaser}");
             }
 
             protected override void Dispose(bool disposing)

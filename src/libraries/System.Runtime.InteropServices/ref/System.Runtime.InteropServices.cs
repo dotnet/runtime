@@ -76,6 +76,7 @@ namespace System.IO
 }
 namespace System.Runtime.CompilerServices
 {
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class IDispatchConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
     {
@@ -97,12 +98,12 @@ namespace System.Runtime.InteropServices
     {
         public AllowReversePInvokeCallsAttribute() { }
     }
-    public partial struct ArrayWithOffset
+    public readonly partial struct ArrayWithOffset
     {
-        private object _dummy;
-        private int _dummyPrimitive;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ArrayWithOffset(object? array, int offset) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.ArrayWithOffset obj) { throw null; }
         public object? GetArray() { throw null; }
         public override int GetHashCode() { throw null; }
@@ -155,6 +156,17 @@ namespace System.Runtime.InteropServices
         [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDual = 2,
     }
+    [System.CLSCompliantAttribute(false)]
+    public readonly struct CLong : IEquatable<CLong>
+    {
+        public CLong(int value) { }
+        public CLong(nint value) { }
+        public nint Value { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
+        public bool Equals(CLong other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
     public sealed partial class CoClassAttribute : System.Attribute
     {
@@ -164,6 +176,8 @@ namespace System.Runtime.InteropServices
     public static partial class CollectionsMarshal
     {
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
+        public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
+        public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class ComAliasNameAttribute : System.Attribute
@@ -174,13 +188,14 @@ namespace System.Runtime.InteropServices
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class ComAwareEventInfo : System.Reflection.EventInfo
     {
-        public ComAwareEventInfo(System.Type type, string eventName) { }
+        public ComAwareEventInfo([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] System.Type type, string eventName) { }
         public override System.Reflection.EventAttributes Attributes { get { throw null; } }
         public override System.Type? DeclaringType { get { throw null; } }
         public override int MetadataToken { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public override void AddEventHandler(object target, System.Delegate handler) { }
         public override System.Reflection.MethodInfo? GetAddMethod(bool nonPublic) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
@@ -190,6 +205,7 @@ namespace System.Runtime.InteropServices
         public override System.Reflection.MethodInfo? GetRaiseMethod(bool nonPublic) { throw null; }
         public override System.Reflection.MethodInfo? GetRemoveMethod(bool nonPublic) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public override void RemoveEventHandler(object target, System.Delegate handler) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
@@ -216,10 +232,13 @@ namespace System.Runtime.InteropServices
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ComEventInterfaceAttribute : System.Attribute
     {
-        public ComEventInterfaceAttribute(System.Type SourceInterface, System.Type EventProvider) { }
+        public ComEventInterfaceAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type SourceInterface, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] System.Type EventProvider) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Type EventProvider { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Type SourceInterface { get { throw null; } }
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class ComEventsHelper
     {
@@ -274,6 +293,17 @@ namespace System.Runtime.InteropServices
     {
         public ComUnregisterFunctionAttribute() { }
     }
+    [System.CLSCompliantAttribute(false)]
+    public readonly struct CULong : IEquatable<CULong>
+    {
+        public CULong(uint value) { }
+        public CULong(nuint value) { }
+        public nuint Value { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
+        public bool Equals(CULong other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+    }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.ObsoleteAttribute("CurrencyWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class CurrencyWrapper
@@ -313,11 +343,11 @@ namespace System.Runtime.InteropServices
         public DefaultParameterValueAttribute(object? value) { }
         public object? Value { get { throw null; } }
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DispatchWrapper
     {
         public DispatchWrapper(object? obj) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public object? WrappedObject { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
@@ -463,15 +493,15 @@ namespace System.Runtime.InteropServices
     {
         public static readonly int SystemDefaultCharSize;
         public static readonly int SystemMaxDBCSCharSize;
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static int AddRef(System.IntPtr pUnk) { throw null; }
         public static System.IntPtr AllocCoTaskMem(int cb) { throw null; }
         public static System.IntPtr AllocHGlobal(int cb) { throw null; }
         public static System.IntPtr AllocHGlobal(System.IntPtr cb) { throw null; }
         public static bool AreComObjectsAvailableForCleanup() { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object BindToMoniker(string monikerName) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void ChangeWrapperHandleStrength(object otp, bool fIsWeak) { }
         public static void CleanupUnusedObjectsInCurrentContext() { }
         public static void Copy(byte[] source, int startIndex, System.IntPtr destination, int length) { }
@@ -490,40 +520,41 @@ namespace System.Runtime.InteropServices
         public static void Copy(System.IntPtr source, float[] destination, int startIndex, int length) { }
         public static void Copy(System.IntPtr[] source, int startIndex, System.IntPtr destination, int length) { }
         public static void Copy(float[] source, int startIndex, System.IntPtr destination, int length) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr CreateAggregatedObject(System.IntPtr pOuter, object o) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.IntPtr CreateAggregatedObject<T>(System.IntPtr pOuter, T o) where T : notnull { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static object? CreateWrapperOfType(object? o, System.Type t) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
-        public static TWrapper CreateWrapperOfType<T, TWrapper>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T o) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void DestroyStructure(System.IntPtr ptr, System.Type structuretype) { }
         public static void DestroyStructure<T>(System.IntPtr ptr) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int FinalReleaseComObject(object o) { throw null; }
         public static void FreeBSTR(System.IntPtr ptr) { }
         public static void FreeCoTaskMem(System.IntPtr ptr) { }
         public static void FreeHGlobal(System.IntPtr hglobal) { }
         public static System.Guid GenerateGuidForType(System.Type type) { throw null; }
         public static string? GenerateProgIdForType(System.Type type) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr GetComInterfaceForObject(object o, System.Type T) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr GetComInterfaceForObject(object o, System.Type T, System.Runtime.InteropServices.CustomQueryInterfaceMode mode) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.IntPtr GetComInterfaceForObject<T, TInterface>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T o) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object? GetComObjectData(object obj, object key) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Delegate GetDelegateForFunctionPointer(System.IntPtr ptr, System.Type t) { throw null; }
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(System.IntPtr ptr) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int GetEndComSlot(System.Type t) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("GetExceptionCode() may be unavailable in future releases.")]
@@ -537,42 +568,44 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr GetHINSTANCE(System.Reflection.Module m) { throw null; }
         public static int GetHRForException(System.Exception? e) { throw null; }
         public static int GetHRForLastWin32Error() { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.IntPtr GetIDispatchForObject(object o) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.IntPtr GetIUnknownForObject(object o) { throw null; }
+        public static int GetLastPInvokeError() { throw null; }
+        public static int GetLastSystemError() { throw null; }
         public static int GetLastWin32Error() { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject(object? obj, System.IntPtr pDstNativeVariant) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public static void GetNativeVariantForObject<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T obj, System.IntPtr pDstNativeVariant) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        public static void GetNativeVariantForObject<T>(T? obj, System.IntPtr pDstNativeVariant) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object GetObjectForIUnknown(System.IntPtr pUnk) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static object? GetObjectForNativeVariant(System.IntPtr pSrcNativeVariant) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T GetObjectForNativeVariant<T>(System.IntPtr pSrcNativeVariant) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        public static T? GetObjectForNativeVariant<T>(System.IntPtr pSrcNativeVariant) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static object?[] GetObjectsForNativeVariants(System.IntPtr aSrcNativeVariant, int cVars) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static T[] GetObjectsForNativeVariants<T>(System.IntPtr aSrcNativeVariant, int cVars) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int GetStartComSlot(System.Type t) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object GetTypedObjectForIUnknown(System.IntPtr pUnk, System.Type t) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
-        public static System.Type GetTypeFromCLSID(System.Guid clsid) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static System.Type? GetTypeFromCLSID(System.Guid clsid) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string GetTypeInfoName(System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object GetUniqueObjectForIUnknown(System.IntPtr unknown) { throw null; }
+        public static void InitHandle(SafeHandle safeHandle, IntPtr handle) { }
         public static bool IsComObject(object o) { throw null; }
         public static bool IsTypeVisibleFromCom(System.Type t) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -592,11 +625,9 @@ namespace System.Runtime.InteropServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void PtrToStructure(System.IntPtr ptr, object structure) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public static object? PtrToStructure(System.IntPtr ptr, System.Type structureType) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public static T PtrToStructure<T>(System.IntPtr ptr) { throw null; }
+        public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors| System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type structureType) { throw null; }
+        public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]T>(System.IntPtr ptr) { throw null; }
         public static void PtrToStructure<T>(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure) { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }
         public static byte ReadByte(System.IntPtr ptr) { throw null; }
         public static byte ReadByte(System.IntPtr ptr, int ofs) { throw null; }
@@ -625,17 +656,18 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr ReadIntPtr(object ptr, int ofs) { throw null; }
         public static System.IntPtr ReAllocCoTaskMem(System.IntPtr pv, int cb) { throw null; }
         public static System.IntPtr ReAllocHGlobal(System.IntPtr pv, System.IntPtr cb) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
         public static int Release(System.IntPtr pUnk) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int ReleaseComObject(object o) { throw null; }
         public static System.IntPtr SecureStringToBSTR(System.Security.SecureString s) { throw null; }
         public static System.IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
         public static System.IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
         public static System.IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
         public static System.IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool SetComObjectData(object obj, object key, object? data) { throw null; }
+        public static void SetLastPInvokeError(int error) { throw null; }
+        public static void SetLastSystemError(int error) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static int SizeOf(object structure) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -729,10 +761,77 @@ namespace System.Runtime.InteropServices
         public static bool TryLoad(string libraryPath, out System.IntPtr handle) { throw null; }
         public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
     }
+    public static unsafe partial class NativeMemory
+    {
+        [System.CLSCompliantAttribute(false)]
+        public static void* AlignedAlloc(nuint byteCount, nuint alignment) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void AlignedFree(void* ptr) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AlignedRealloc(void* ptr, nuint byteCount, nuint alignment) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Alloc(nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Alloc(nuint elementCount, nuint elementSize) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AllocZeroed(nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AllocZeroed(nuint elementCount, nuint elementSize) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void Free(void* ptr) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Realloc(void* ptr, nuint byteCount) { throw null; }
+    }
+    public readonly struct NFloat : IEquatable<NFloat>
+    {
+        public NFloat(float value) { }
+        public NFloat(double value) { }
+        public double Value { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
+        public bool Equals(NFloat other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class OptionalAttribute : System.Attribute
     {
         public OptionalAttribute() { }
+    }
+    public enum PosixSignal
+    {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGTSTP = -10,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGTTOU = -9,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGTTIN = -8,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGWINCH = -7,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGCONT = -6,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGCHLD = -5,
+        SIGTERM = -4,
+        SIGQUIT = -3,
+        SIGINT = -2,
+        SIGHUP = -1,
+    }
+    public sealed partial class PosixSignalContext
+    {
+        public PosixSignalContext(System.Runtime.InteropServices.PosixSignal signal) { }
+        public bool Cancel { get { throw null; } set { } }
+        public System.Runtime.InteropServices.PosixSignal Signal { get { throw null; } }
+    }
+    public sealed partial class PosixSignalRegistration : System.IDisposable
+    {
+        internal PosixSignalRegistration() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public static System.Runtime.InteropServices.PosixSignalRegistration Create(System.Runtime.InteropServices.PosixSignal signal, System.Action<System.Runtime.InteropServices.PosixSignalContext> handler) { throw null; }
+        public void Dispose() { }
+        ~PosixSignalRegistration() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class PreserveSigAttribute : System.Attribute
@@ -754,10 +853,13 @@ namespace System.Runtime.InteropServices
     }
     public static partial class RuntimeEnvironment
     {
+        [System.ObsoleteAttribute("RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0019", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static string SystemConfigurationFile { get { throw null; } }
         public static bool FromGlobalAccessCache(System.Reflection.Assembly a) { throw null; }
         public static string GetRuntimeDirectory() { throw null; }
+        [System.ObsoleteAttribute("RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0019", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.IntPtr GetRuntimeInterfaceAsIntPtr(System.Guid clsid, System.Guid riid) { throw null; }
+        [System.ObsoleteAttribute("RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0019", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static object GetRuntimeInterfaceAsObject(System.Guid clsid, System.Guid riid) { throw null; }
         public static string GetSystemVersion() { throw null; }
     }
@@ -942,7 +1044,7 @@ namespace System.Runtime.InteropServices
         VariantBool = 37,
         FunctionPtr = 38,
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Marshalling arbitrary types may be unavailable in future releases. Please specify the type you wish to marshal as.")]
+        [System.ObsoleteAttribute("Marshalling arbitrary types may be unavailable in future releases. Specify the type you wish to marshal as.")]
         AsAny = 40,
         LPArray = 42,
         LPStruct = 43,
@@ -1019,7 +1121,13 @@ namespace System.Runtime.InteropServices
         None = 0,
         TrackerObject = 1,
         UniqueInstance = 2,
+        Aggregation = 4,
+        Unwrap = 8,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
     {
@@ -1031,17 +1139,25 @@ namespace System.Runtime.InteropServices
         public struct ComInterfaceDispatch
         {
             public System.IntPtr Vtable;
-            public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
+            public unsafe static T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
         }
         public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
         public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
-        protected abstract object CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
+        protected abstract object? CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
         public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper, System.IntPtr inner) { throw null; }
         protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance) { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public sealed class UnmanagedCallConvAttribute : System.Attribute
+    {
+        public UnmanagedCallConvAttribute() { }
+        public System.Type[]? CallConvs;
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
@@ -1752,6 +1868,43 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_STATIC = 1,
         VAR_CONST = 2,
         VAR_DISPATCH = 3,
+    }
+}
+namespace System.Runtime.InteropServices.ObjectiveC
+{
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public sealed class ObjectiveCTrackedTypeAttribute : System.Attribute
+    {
+        public ObjectiveCTrackedTypeAttribute() { }
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [System.CLSCompliantAttribute(false)]
+    public static class ObjectiveCMarshal
+    {
+        public unsafe delegate delegate* unmanaged<System.IntPtr, void> UnhandledExceptionPropagationHandler(
+            System.Exception exception,
+            System.RuntimeMethodHandle lastMethod,
+            out System.IntPtr context);
+        public static unsafe void Initialize(
+            delegate* unmanaged<void> beginEndCallback,
+            delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization,
+            UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler) => throw null;
+        public static GCHandle CreateReferenceTrackingHandle(
+            object obj,
+            out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public enum MessageSendFunction
+        {
+            MsgSend,
+            MsgSendFpret,
+            MsgSendStret,
+            MsgSendSuper,
+            MsgSendSuperStret,
+        }
+        public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, System.IntPtr func) => throw null;
+        public static void SetMessageSendPendingException(Exception? exception) => throw null;
     }
 }
 namespace System.Security

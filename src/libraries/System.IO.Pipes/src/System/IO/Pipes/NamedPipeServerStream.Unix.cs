@@ -20,6 +20,7 @@ namespace System.IO.Pipes
         private int _inBufferSize;
         private int _outBufferSize;
         private HandleInheritability _inheritability;
+        private CancellationTokenSource _internalTokenSource = new CancellationTokenSource();
 
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
@@ -77,8 +78,25 @@ namespace System.IO.Pipes
                 Task.FromCanceled(cancellationToken) :
                 WaitForConnectionAsyncCore();
 
-            async Task WaitForConnectionAsyncCore() =>
-               HandleAcceptedSocket(await _instance!.ListeningSocket.AcceptAsync().ConfigureAwait(false));
+            async Task WaitForConnectionAsyncCore()
+            {
+                Socket acceptedSocket;
+                CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_internalTokenSource.Token, cancellationToken);
+                try
+                {
+                    acceptedSocket = await _instance!.ListeningSocket.AcceptAsync(linkedTokenSource.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    throw new IOException(SR.IO_PipeBroken);
+                }
+                finally
+                {
+                    linkedTokenSource.Dispose();
+                }
+
+                HandleAcceptedSocket(acceptedSocket);
+            }
         }
 
         private void HandleAcceptedSocket(Socket acceptedSocket)
@@ -116,8 +134,18 @@ namespace System.IO.Pipes
             State = PipeState.Connected;
         }
 
-        internal override void DisposeCore(bool disposing) =>
+        internal override void DisposeCore(bool disposing)
+        {
             Interlocked.Exchange(ref _instance, null)?.Dispose(disposing); // interlocked to avoid shared state problems from erroneous double/concurrent disposes
+
+            if (disposing)
+            {
+                if (State != PipeState.Closed)
+                {
+                    _internalTokenSource.Cancel();
+                }
+            }
+        }
 
         public void Disconnect()
         {
@@ -134,7 +162,7 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
 
-            SafeHandle? handle = InternalHandle?.NamedPipeSocketHandle;
+            SafeHandle? handle = InternalHandle?.PipeSocketHandle;
             if (handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
@@ -155,7 +183,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
                 if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-                return InternalHandle?.NamedPipeSocket?.ReceiveBufferSize ?? _inBufferSize;
+                return InternalHandle?.PipeSocket.ReceiveBufferSize ?? _inBufferSize;
             }
         }
 
@@ -165,7 +193,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
                 if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-                return InternalHandle?.NamedPipeSocket?.SendBufferSize ?? _outBufferSize;
+                return InternalHandle?.PipeSocket.SendBufferSize ?? _outBufferSize;
             }
         }
 
@@ -173,7 +201,7 @@ namespace System.IO.Pipes
         public void RunAsClient(PipeStreamImpersonationWorker impersonationWorker)
         {
             CheckWriteOperations();
-            SafeHandle? handle = InternalHandle?.NamedPipeSocketHandle;
+            SafeHandle? handle = InternalHandle?.PipeSocketHandle;
             if (handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);

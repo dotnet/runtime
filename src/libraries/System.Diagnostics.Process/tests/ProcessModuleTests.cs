@@ -7,9 +7,10 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessModuleTests : ProcessTestBase
+    public partial class ProcessModuleTests : ProcessTestBase
     {
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestModuleProperties()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
@@ -29,6 +30,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void Modules_Get_ContainsHostFileName()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
@@ -67,6 +69,27 @@ namespace System.Diagnostics.Tests
         public class ModuleCollectionSubClass : ProcessModuleCollection
         {
             public ModuleCollectionSubClass() : base() { }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ModulesAreDisposedWhenProcessIsDisposed()
+        {
+            Process process = CreateDefaultProcess();
+
+            ProcessModuleCollection modulesCollection = process.Modules;
+            int expectedCount = 0;
+            int disposedCount = 0;
+            foreach (ProcessModule processModule in modulesCollection)
+            {
+                expectedCount += 1;
+                processModule.Disposed += (_, __) => disposedCount += 1;
+            }
+
+            KillWait(process);
+            Assert.Equal(0, disposedCount);
+
+            process.Dispose();
+            Assert.Equal(expectedCount, disposedCount);
         }
     }
 }

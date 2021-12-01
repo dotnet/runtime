@@ -27,6 +27,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Globalization
@@ -157,6 +158,8 @@ namespace System.Globalization
             return s_userDefaultUICulture!;
         }
 
+        private static string GetCultureNotSupportedExceptionMessage() => GlobalizationMode.Invariant ? SR.Argument_CultureNotSupportedInInvariantMode : SR.Argument_CultureNotSupported;
+
         public CultureInfo(string name) : this(name, true)
         {
         }
@@ -173,7 +176,7 @@ namespace System.Globalization
 
             if (cultureData == null)
             {
-                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(name), name, GetCultureNotSupportedExceptionMessage());
             }
 
             _cultureData = cultureData;
@@ -248,7 +251,7 @@ namespace System.Globalization
             }
 
             CultureData? cultureData = CultureData.GetCultureData(cultureName, false) ??
-                throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(cultureName), cultureName, GetCultureNotSupportedExceptionMessage());
 
             _cultureData = cultureData;
 
@@ -279,7 +282,7 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// Return a specific culture. A tad irrelevent now since we always
+        /// Return a specific culture. A tad irrelevant now since we always
         /// return valid data for neutral locales.
         ///
         /// Note that there's interesting behavior that tries to find a
@@ -496,6 +499,42 @@ namespace System.Globalization
                     CultureInfo culture;
                     string parentName = _cultureData.ParentName;
 
+                    if (parentName == "zh")
+                    {
+                        if (_name.Length == 5 && _name[2] == '-')
+                        {
+                            // We need to keep the parent chain for the zh cultures as follows to preserve the resource lookup compatability
+                            //      zh-CN -> zh-Hans -> zh -> Invariant
+                            //      zh-HK -> zh-Hant -> zh -> Invariant
+                            //      zh-MO -> zh-Hant -> zh -> Invariant
+                            //      zh-SG -> zh-Hans -> zh -> Invariant
+                            //      zh-TW -> zh-Hant -> zh -> Invariant
+
+                            if ((_name[3] == 'C' && _name[4] == 'N' ) || // zh-CN
+                                (_name[3] == 'S' && _name[4] == 'G' ))   // zh-SG
+                            {
+                                parentName = "zh-Hans";
+                            }
+                            else if ((_name[3] == 'H' && _name[4] == 'K' ) ||   // zh-HK
+                                    (_name[3] == 'M' && _name[4] == 'O' ) ||    // zh-MO
+                                    (_name[3] == 'T' && _name[4] == 'W' ))      // zh-TW
+                            {
+                                parentName = "zh-Hant";
+                            }
+                        }
+                        else if (_name.Length > 8 && _name.AsSpan(2, 4).Equals("-Han", StringComparison.Ordinal) && _name[7] == '-') // cultures like zh-Hant-* and zh-Hans-*
+                        {
+                            if (_name[6] == 't') // zh-Hant-*
+                            {
+                                parentName = "zh-Hant";
+                            }
+                            else if (_name[6] == 's') // zh-Hans-*
+                            {
+                                parentName = "zh-Hans";
+                            }
+                        }
+                    }
+
                     if (string.IsNullOrEmpty(parentName))
                     {
                         culture = InvariantCulture;
@@ -620,7 +659,7 @@ namespace System.Globalization
             }
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (object.ReferenceEquals(this, value))
             {
@@ -1023,7 +1062,7 @@ namespace System.Globalization
             }
             catch (ArgumentException)
             {
-                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(culture), culture, GetCultureNotSupportedExceptionMessage());
             }
 
             lock (lcidTable)
@@ -1059,7 +1098,7 @@ namespace System.Globalization
             }
 
             result = CreateCultureInfoNoThrow(name, useUserOverride: false) ??
-                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(name), name, GetCultureNotSupportedExceptionMessage());
             result._isReadOnly = true;
 
             // Remember our name as constructed.  Do NOT use alternate sort name versions because
@@ -1132,9 +1171,10 @@ namespace System.Globalization
 
             if (predefinedOnly && !GlobalizationMode.Invariant)
             {
-                return GlobalizationMode.UseNls ?
-                    NlsGetPredefinedCultureInfo(name) :
-                    IcuGetPredefinedCultureInfo(name);
+                if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name): !CultureData.IcuIsEnsurePredefinedLocaleName(name))
+                {
+                    throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
+                }
             }
 
             return GetCultureInfo(name);

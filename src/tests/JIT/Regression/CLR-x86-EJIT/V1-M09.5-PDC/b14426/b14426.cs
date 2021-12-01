@@ -39,7 +39,7 @@ namespace SetIPTest
                 for (; index < m_count; index++) {
                     if ((index >= 0) && (index < (MAX - 1))) {
                         if (m_variety[index] != null)
-                            s = m_variety[index].ToString(); ;
+                            s = m_variety[index].ToString();
                     }
                     else
                         break;

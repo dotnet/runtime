@@ -3,9 +3,9 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class User32
+    internal static partial class User32
     {
         // The returned value is a COLORREF. The docs don't say that explicitly, but
         // they do document the same macros (GetRValue, etc.). [0x00BBGGRR]
@@ -15,7 +15,7 @@ internal partial class Interop
         // index that doesn't exist.
 
         [SuppressGCTransition]
-        [DllImport(Libraries.User32, ExactSpelling = true)]
-        internal static extern uint GetSysColor(int nIndex);
+        [GeneratedDllImport(Libraries.User32, ExactSpelling = true)]
+        internal static partial uint GetSysColor(int nIndex);
     }
 }

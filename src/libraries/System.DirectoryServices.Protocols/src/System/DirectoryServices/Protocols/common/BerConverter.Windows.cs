@@ -9,12 +9,12 @@ namespace System.DirectoryServices.Protocols
 {
     public static partial class BerConverter
     {
-        private static unsafe int DecodeBitStringHelper(ArrayList resultList, SafeBerHandle berElement)
+        private static int DecodeBitStringHelper(ArrayList resultList, SafeBerHandle berElement)
         {
             int error;
             // return a bitstring and its length
             IntPtr ptrResult = IntPtr.Zero;
-            int length = 0;
+            uint length = 0;
             error = BerPal.ScanNextBitString(berElement, "B", ref ptrResult, ref length);
 
             if (!BerPal.IsBerDecodeError(error))
@@ -23,7 +23,7 @@ namespace System.DirectoryServices.Protocols
                 if (ptrResult != IntPtr.Zero)
                 {
                     byteArray = new byte[length];
-                    Marshal.Copy(ptrResult, byteArray, 0, length);
+                    Marshal.Copy(ptrResult, byteArray, 0, (int)length);
                 }
                 resultList.Add(byteArray);
             }

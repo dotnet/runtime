@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -31,7 +32,18 @@ namespace System
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct DateTimeOffset : IComparable, IFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback, ISpanFormattable
+    public readonly struct DateTimeOffset : IComparable, ISpanFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
+        , IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
+          IAdditiveIdentity<DateTimeOffset, TimeSpan>,
+          IComparisonOperators<DateTimeOffset, DateTimeOffset>,
+          IMinMaxValue<DateTimeOffset>,
+          ISpanParseable<DateTimeOffset>,
+          ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
+          ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>
+#pragma warning restore SA1001, CA2252
+#endif // FEATURE_GENERIC_MATH
     {
         // Constants
         internal const long MaxOffset = TimeSpan.TicksPerHour * 14;
@@ -54,13 +66,15 @@ namespace System
 
         // Constructors
 
-        // Constructs a DateTimeOffset from a tick count and offset
-        public DateTimeOffset(long ticks, TimeSpan offset)
+        private DateTimeOffset(short validOffsetMinutes, DateTime validDateTime)
         {
-            _offsetMinutes = ValidateOffset(offset);
-            // Let the DateTime constructor do the range checks
-            DateTime dateTime = new DateTime(ticks);
-            _dateTime = ValidateDate(dateTime, offset);
+            _dateTime = validDateTime;
+            _offsetMinutes = validOffsetMinutes;
+        }
+
+        // Constructs a DateTimeOffset from a tick count and offset
+        public DateTimeOffset(long ticks, TimeSpan offset) : this(ValidateOffset(offset), ValidateDate(new DateTime(ticks), offset))
+        {
         }
 
         // Constructs a DateTimeOffset from a DateTime. For Local and Unspecified kinds,
@@ -120,7 +134,7 @@ namespace System
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second), offset);
 
             if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, 60, DateTimeKind.Utc))
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -142,7 +156,7 @@ namespace System
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond), offset);
 
             if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, 60, DateTimeKind.Utc))
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -164,7 +178,7 @@ namespace System
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond, calendar), offset);
 
             if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, 60, DateTimeKind.Utc))
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -174,7 +188,18 @@ namespace System
         // resolution of the returned value depends on the system timer.
         public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
 
-        public static DateTimeOffset UtcNow => new DateTimeOffset(DateTime.UtcNow);
+        public static DateTimeOffset UtcNow
+        {
+            get
+            {
+                DateTime utcNow = DateTime.UtcNow;
+                var result = new DateTimeOffset(0, utcNow);
+
+                Debug.Assert(new DateTimeOffset(utcNow) == result); // ensure lack of verification does not break anything
+
+                return result;
+            }
+        }
 
         public DateTime DateTime => ClockDateTime;
 
@@ -374,7 +399,7 @@ namespace System
         // is equal to the value of this DateTimeOffset. Returns false
         // otherwise.
         //
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is DateTimeOffset && UtcDateTime.Equals(((DateTimeOffset)obj).UtcDateTime);
 
         public bool Equals(DateTimeOffset other) =>
@@ -839,5 +864,112 @@ namespace System
 
         public static bool operator >=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime >= right.UtcDateTime;
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTimeOffset IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator +(DateTimeOffset left, TimeSpan right)
+            => left + right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked DateTimeOffset IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator +(DateTimeOffset left, TimeSpan right)
+        //     => checked(left + right);
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static TimeSpan IAdditiveIdentity<DateTimeOffset, TimeSpan>.AdditiveIdentity => default;
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator <(DateTimeOffset left, DateTimeOffset right)
+            => left < right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator <=(DateTimeOffset left, DateTimeOffset right)
+            => left <= right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator >(DateTimeOffset left, DateTimeOffset right)
+            => left > right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<DateTimeOffset, DateTimeOffset>.operator >=(DateTimeOffset left, DateTimeOffset right)
+            => left >= right;
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<DateTimeOffset, DateTimeOffset>.operator ==(DateTimeOffset left, DateTimeOffset right)
+            => left == right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<DateTimeOffset, DateTimeOffset>.operator !=(DateTimeOffset left, DateTimeOffset right)
+            => left != right;
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTimeOffset IMinMaxValue<DateTimeOffset>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTimeOffset IMinMaxValue<DateTimeOffset>.MaxValue => MaxValue;
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTimeOffset IParseable<DateTimeOffset>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IParseable<DateTimeOffset>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTimeOffset result)
+            => TryParse(s, provider, DateTimeStyles.None, out result);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTimeOffset ISpanParseable<DateTimeOffset>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, provider, DateTimeStyles.None);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool ISpanParseable<DateTimeOffset>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTimeOffset result)
+            => TryParse(s, provider, DateTimeStyles.None, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTimeOffset ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator -(DateTimeOffset left, TimeSpan right)
+            => left - right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked DateTimeOffset ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator -(DateTimeOffset left, TimeSpan right)
+        //     => checked(left - right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static TimeSpan ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>.operator -(DateTimeOffset left, DateTimeOffset right)
+            => left - right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked TimeSpan ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>.operator -(DateTimeOffset left, DateTimeOffset right)
+        //     => checked(left - right);
+#endif // FEATURE_GENERIC_MATH
     }
 }

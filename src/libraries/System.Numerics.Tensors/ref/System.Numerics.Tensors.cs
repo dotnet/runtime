@@ -97,7 +97,7 @@ namespace System.Numerics.Tensors
         int System.Collections.ICollection.Count { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
+        object? System.Collections.IList.this[int index] { get { throw null; } set { } }
         public abstract System.Numerics.Tensors.Tensor<T> Clone();
         public virtual System.Numerics.Tensors.Tensor<T> CloneEmpty() { throw null; }
         public virtual System.Numerics.Tensors.Tensor<T> CloneEmpty(System.ReadOnlySpan<int> dimensions) { throw null; }
@@ -119,6 +119,15 @@ namespace System.Numerics.Tensors
         protected virtual int IndexOf(T item) { throw null; }
         public abstract System.Numerics.Tensors.Tensor<T> Reshape(System.ReadOnlySpan<int> dimensions);
         public abstract void SetValue(int index, T value);
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>
+        {
+            public T Current { get; private set; }
+            object? System.Collections.IEnumerator.Current => throw null;
+            public bool MoveNext() => throw null;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        public Enumerator GetEnumerator() => throw null;
         void System.Collections.Generic.ICollection<T>.Add(T item) { }
         void System.Collections.Generic.ICollection<T>.Clear() { }
         bool System.Collections.Generic.ICollection<T>.Contains(T item) { throw null; }
@@ -130,15 +139,15 @@ namespace System.Numerics.Tensors
         void System.Collections.Generic.IList<T>.RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.Collections.IList.Add(object value) { throw null; }
+        int System.Collections.IList.Add(object? value) { throw null; }
         void System.Collections.IList.Clear() { }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
+        bool System.Collections.IList.Contains(object? value) { throw null; }
+        int System.Collections.IList.IndexOf(object? value) { throw null; }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
         public virtual System.Numerics.Tensors.CompressedSparseTensor<T> ToCompressedSparseTensor() { throw null; }
         public virtual System.Numerics.Tensors.DenseTensor<T> ToDenseTensor() { throw null; }

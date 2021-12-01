@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -10,6 +11,8 @@ namespace System.Data
     /// Represents a restriction on a set of columns in which all values must be unique.
     /// </summary>
     [DefaultProperty("ConstraintName")]
+    [Editor("Microsoft.VSDesigner.Data.Design.UniqueConstraintEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class UniqueConstraint : Constraint
     {
         private DataKey _key;
@@ -386,7 +389,7 @@ namespace System.Data
         /// <summary>
         /// Compares this constraint to a second to determine if both are identical.
         /// </summary>
-        public override bool Equals(object? key2)
+        public override bool Equals([NotNullWhen(true)] object? key2)
         {
             if (!(key2 is UniqueConstraint))
                 return false;

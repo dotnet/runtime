@@ -138,4 +138,34 @@
   <data name="NotWriteableStream" xml:space="preserve">
     <value>The base stream is not writeable.</value>
   </data>
+  <data name="net_WebSockets_ArgumentOutOfRange" xml:space="preserve">
+    <value>The argument must be a value between {0} and {1}.</value>
+  </data>
+  <data name="net_Websockets_PerMessageCompressedFlagInContinuation" xml:space="preserve">
+    <value>The WebSocket received a continuation frame with Per-Message Compressed flag set.</value>
+  </data>
+  <data name="net_Websockets_PerMessageCompressedFlagWhenNotEnabled" xml:space="preserve">
+    <value>The WebSocket received compressed frame when compression is not enabled.</value>
+  </data>
+  <data name="ZLibErrorDLLLoadError" xml:space="preserve">
+    <value>The underlying compression routine could not be loaded correctly.</value>
+  </data>
+  <data name="ZLibErrorInconsistentStream" xml:space="preserve">
+    <value>The stream state of the underlying compression routine is inconsistent.</value>
+  </data>
+  <data name="ZLibErrorNotEnoughMemory" xml:space="preserve">
+    <value>The underlying compression routine could not reserve sufficient memory.</value>
+  </data>
+  <data name="ZLibErrorUnexpected" xml:space="preserve">
+    <value>The underlying compression routine returned an unexpected error code {0}.</value>
+  </data>
+  <data name="ZLibUnsupportedCompression" xml:space="preserve">
+    <value>The message was compressed using an unsupported compression method.</value>
+  </data>
+  <data name="net_WebSockets_Argument_MessageFlagsHasDifferentCompressionOptions" xml:space="preserve">
+    <value>The compression options for a continuation cannot be different than the options used to send the first fragment of the message.</value>
+  </data>
+  <data name="net_Websockets_InvalidPayloadLength" xml:space="preserve">
+    <value>The WebSocket received a frame with an invalid payload length.</value>
+  </data>
 </root>

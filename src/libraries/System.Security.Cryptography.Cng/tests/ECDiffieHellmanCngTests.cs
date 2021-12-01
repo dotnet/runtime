@@ -13,7 +13,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             return new ECDiffieHellmanCng();
         }
 
-#if NETCOREAPP
         [Fact]
         public static void ECCurve_ctor()
         {
@@ -35,7 +34,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 ecdh.Exercise();
             }
         }
-#endif
 
         [Fact]
         public static void CngKey_ReusesObject()
@@ -178,6 +176,16 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         {
             using (var ecdhCng = new ECDiffieHellmanCng())
                 Assert.Equal(CngAlgorithm.Sha256, ecdhCng.HashAlgorithm);
+        }
+
+        [Fact]
+        public static void HashAlgorithm_SupportsOtherECDHImplementations()
+        {
+            using ECDiffieHellman ecdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+            using ECDiffieHellmanCng ecdhCng = new ECDiffieHellmanCng(ECCurve.NamedCurves.nistP256);
+            byte[] key1 = ecdhCng.DeriveKeyFromHash(ecdh.PublicKey, HashAlgorithmName.SHA256);
+            byte[] key2 = ecdh.DeriveKeyFromHash(ecdhCng.PublicKey, HashAlgorithmName.SHA256);
+            Assert.Equal(key1, key2);
         }
     }
 }

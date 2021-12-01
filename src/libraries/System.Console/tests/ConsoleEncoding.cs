@@ -22,7 +22,7 @@ public partial class ConsoleEncoding
 
     [Theory]
     [MemberData(nameof(InputData))]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void TestEncoding(string inputString)
     {
         TextWriter outConsoleStream = Console.Out;
@@ -79,7 +79,7 @@ public partial class ConsoleEncoding
     }
 
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void TestValidEncodings()
     {
         Action<Encoding> check = encoding =>
@@ -95,7 +95,7 @@ public partial class ConsoleEncoding
         check(Encoding.Unicode);
 
         // On full Windows, ASCII is available also
-        if (!PlatformDetection.IsWindowsNanoServer)
+        if (PlatformDetection.IsNotWindowsNanoNorServerCore)
         {
             check(Encoding.ASCII);
         }

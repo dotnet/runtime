@@ -6,7 +6,7 @@ using System.Security.Permissions;
 
 namespace System.Data.SqlClient
 {
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed class SqlClientPermission : DBDataPermission

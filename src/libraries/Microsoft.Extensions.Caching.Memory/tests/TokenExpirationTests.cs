@@ -163,6 +163,29 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public void ClearingCacheDisposesTokenRegistration()
+        {
+            var cache = (MemoryCache)CreateCache();
+            string key = "myKey";
+            var value = new object();
+            var callbackInvoked = new ManualResetEvent(false);
+            var expirationToken = new TestExpirationToken() { ActiveChangeCallbacks = true };
+            cache.Set(key, value, new MemoryCacheEntryOptions()
+                .AddExpirationToken(expirationToken)
+                .RegisterPostEvictionCallback((subkey, subValue, reason, state) =>
+                {
+                    var localCallbackInvoked = (ManualResetEvent)state;
+                    localCallbackInvoked.Set();
+                }, state: callbackInvoked));
+            cache.Clear();
+
+            Assert.Equal(0, cache.Count);
+            Assert.NotNull(expirationToken.Registration);
+            Assert.True(expirationToken.Registration.Disposed);
+            Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
+        }
+
+        [Fact]
         public void AddExpiredTokenPreventsCaching()
         {
             var cache = CreateCache();
@@ -205,6 +228,35 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Same(value, result);
             result = cache.Get(key);
             Assert.Null(result);
+        }
+
+        [Fact]
+        public void PostEvictionCallbacksGetInvokedWhenMemoryCacheEntriesExpireWithAnActiveChangeToken()
+        {
+            using var cache = new MemoryCache(new MemoryCacheOptions());
+            var key = new object();
+
+            var cts = new CancellationTokenSource();
+            var callbackInvoked = new ManualResetEvent(false);
+
+            cache.Set(key, new object(), new MemoryCacheEntryOptions
+            {
+                ExpirationTokens = { new CancellationChangeToken(cts.Token) },
+                PostEvictionCallbacks =
+                {
+                    new PostEvictionCallbackRegistration()
+                    {
+                        EvictionCallback = (key, value, reason, state) => ((ManualResetEvent)state).Set(),
+                        State = callbackInvoked
+                    }
+                }
+            });
+
+            Assert.True(cache.TryGetValue(key, out _));
+
+            cts.Cancel();
+            Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(10)));
+            Assert.False(cache.TryGetValue(key, out _));
         }
 
         internal class TestToken : IChangeToken

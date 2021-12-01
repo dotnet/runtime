@@ -22,15 +22,30 @@ namespace Internal.Cryptography.Pal
             string oidValue = GetExpectedOidValue<T>();
             PublicKey publicKey = certificate.PublicKey;
             Oid algorithmOid = publicKey.Oid;
+
             if (oidValue != algorithmOid.Value)
                 return null;
 
             if (matchesConstraints != null && !matchesConstraints(certificate))
                 return null;
 
-            byte[] rawEncodedKeyValue = publicKey.EncodedKeyValue.RawData;
-            byte[] rawEncodedParameters = publicKey.EncodedParameters.RawData;
-            return (T)(X509Pal.Instance.DecodePublicKey(algorithmOid, rawEncodedKeyValue, rawEncodedParameters, certificate.Pal));
+            if (typeof(T) == typeof(RSA) || typeof(T) == typeof(DSA))
+            {
+                byte[] rawEncodedKeyValue = publicKey.EncodedKeyValue.RawData;
+                byte[] rawEncodedParameters = publicKey.EncodedParameters.RawData;
+                return (T)(X509Pal.Instance.DecodePublicKey(algorithmOid, rawEncodedKeyValue, rawEncodedParameters, certificate.Pal));
+            }
+            else if (typeof(T) == typeof(ECDsa))
+            {
+                return (T)(object)(X509Pal.Instance.DecodeECDsaPublicKey(certificate.Pal));
+            }
+            else if (typeof(T) == typeof(ECDiffieHellman))
+            {
+                return (T)(object)(X509Pal.Instance.DecodeECDiffieHellmanPublicKey(certificate.Pal));
+            }
+
+            Debug.Fail("Expected GetExpectedOidValue() to have thrown before we got here.");
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
 
         public static T? GetPrivateKey<T>(
@@ -57,6 +72,9 @@ namespace Internal.Cryptography.Pal
             if (typeof(T) == typeof(DSA))
                 return (T?)(object?)certificate.Pal.GetDSAPrivateKey();
 
+            if (typeof(T) == typeof(ECDiffieHellman))
+                return (T?)(object?)certificate.Pal.GetECDiffieHellmanPrivateKey();
+
             Debug.Fail("Expected GetExpectedOidValue() to have thrown before we got here.");
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
@@ -65,7 +83,8 @@ namespace Internal.Cryptography.Pal
         {
             if (typeof(T) == typeof(RSA))
                 return Oids.Rsa;
-            if (typeof(T) == typeof(ECDsa))
+            if (typeof(T) == typeof(ECDsa) || typeof(T) == typeof(ECDiffieHellman))
+                // Neither Windows nor OpenSSL permit id-ECDH as the SPKI public key algorithm.
                 return Oids.EcPublicKey;
             if (typeof(T) == typeof(DSA))
                 return Oids.Dsa;

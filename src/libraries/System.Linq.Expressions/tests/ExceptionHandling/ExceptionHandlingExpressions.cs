@@ -240,9 +240,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(4, func());
         }
 
-#if FEATURE_COMPILE
-
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ClassData(typeof(CompilationTypes))]
         public void CatchFromExternallyThrownString(bool useInterpreter)
         {
             foreach (bool assemblyWraps in new []{false, true})
@@ -258,7 +257,7 @@ namespace System.Linq.Expressions.Tests
                 ModuleBuilder module = assembly.DefineDynamicModule("Name");
                 TypeBuilder type = module.DefineType("Type");
                 MethodBuilder throwingMethod = type.DefineMethod(
-                    "WillThrow", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Array.Empty<Type>());
+                    "WillThrow", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
                 ILGenerator ilGen = throwingMethod.GetILGenerator();
                 ilGen.Emit(OpCodes.Ldstr, "An Exceptional Exception!");
                 ilGen.Emit(OpCodes.Throw);
@@ -274,7 +273,6 @@ namespace System.Linq.Expressions.Tests
                 Assert.Equal("An Exceptional Exception!", func());
             }
         }
-#endif
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
@@ -887,7 +885,7 @@ namespace System.Linq.Expressions.Tests
             */
 
             ConstantExpression builder = Expression.Constant(sb);
-            Type[] noTypes = Array.Empty<Type>();
+            Type[] noTypes = Type.EmptyTypes;
             TryExpression tryExp = Expression.TryCatch(
                 Expression.TryFinally(
                     Expression.Block(
@@ -911,7 +909,7 @@ namespace System.Linq.Expressions.Tests
         {
             StringBuilder sb = new StringBuilder();
             ConstantExpression builder = Expression.Constant(sb);
-            Type[] noTypes = Array.Empty<Type>();
+            Type[] noTypes = Type.EmptyTypes;
             TryExpression tryExp = Expression.TryCatch(
                 Expression.TryFault(
                     Expression.Block(
@@ -1006,11 +1004,14 @@ namespace System.Linq.Expressions.Tests
                 )
             );
             Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(tryExp);
-#if FEATURE_COMPILE
-            Assert.Throws<InvalidOperationException>(() => lambda.Compile(false));
-#else
-            lambda.Compile(true);
-#endif
+            if (PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly)
+            {
+                Assert.Throws<InvalidOperationException>(() => lambda.Compile(false));
+            }
+            else
+            {
+                lambda.Compile(true);
+            }
         }
 
         [Theory, InlineData(true)]

@@ -6,7 +6,6 @@
   <PropertyGroup>
     <DebugType>Full</DebugType>
     <Optimize>True</Optimize>
-    <JitOptimizationSensitive>True</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Bool_And_Op.cs" />

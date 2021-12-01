@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -12,19 +11,19 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaUpRef")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaUpRef")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool DsaUpRef(IntPtr dsa);
+        internal static partial bool DsaUpRef(IntPtr dsa);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaDestroy")]
-        internal static extern void DsaDestroy(IntPtr dsa);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaDestroy")]
+        internal static partial void DsaDestroy(IntPtr dsa);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaGenerateKey")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaGenerateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool DsaGenerateKey(out SafeDsaHandle dsa, int bits);
+        internal static partial bool DsaGenerateKey(out SafeDsaHandle dsa, int bits);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeSignature")]
-        private static extern int DsaSizeSignature(SafeDsaHandle dsa);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeSignature")]
+        private static partial int DsaSizeSignature(SafeDsaHandle dsa);
 
         /// <summary>
         /// Return the maximum size of the DER-encoded key in bytes.
@@ -35,8 +34,8 @@ internal static partial class Interop
             return size;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeQ")]
-        private static extern int DsaSizeQ(SafeDsaHandle dsa);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeQ")]
+        private static partial int DsaSizeQ(SafeDsaHandle dsa);
 
         /// <summary>
         /// Return the size of the 'r' or 's' signature fields in bytes.
@@ -48,8 +47,8 @@ internal static partial class Interop
             return size;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeP")]
-        private static extern int DsaSizeP(SafeDsaHandle dsa);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeP")]
+        private static partial int DsaSizeP(SafeDsaHandle dsa);
 
         /// <summary>
         /// Return the size of the key in bytes.
@@ -66,9 +65,9 @@ internal static partial class Interop
         internal static bool DsaSign(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, Span<byte> refSignature, out int outSignatureLength) =>
             DsaSign(dsa, ref MemoryMarshal.GetReference(hash), hash.Length, ref MemoryMarshal.GetReference(refSignature), out outSignatureLength);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSign")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool DsaSign(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte refSignature, out int outSignatureLength);
+        private static partial bool DsaSign(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte refSignature, out int outSignatureLength);
 
         internal static bool DsaVerify(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
         {
@@ -84,9 +83,9 @@ internal static partial class Interop
             return ret;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaVerify")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaVerify")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool DsaVerify(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte signature, int signatureLength);
+        private static partial bool DsaVerify(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte signature, int signatureLength);
 
         internal static DSAParameters ExportDsaParameters(SafeDsaHandle key, bool includePrivateParameters)
         {
@@ -145,9 +144,9 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDsaParameters")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetDsaParameters(
+        private static partial bool GetDsaParameters(
             SafeDsaHandle key,
             out IntPtr p, out int p_cb,
             out IntPtr q, out int q_cb,
@@ -155,9 +154,9 @@ internal static partial class Interop
             out IntPtr y, out int y_cb,
             out IntPtr x, out int x_cb);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaKeyCreateByExplicitParameters")]
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaKeyCreateByExplicitParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool DsaKeyCreateByExplicitParameters(
+        internal static partial bool DsaKeyCreateByExplicitParameters(
             out SafeDsaHandle dsa,
             byte[] p,
             int pLength,
@@ -169,5 +168,40 @@ internal static partial class Interop
             int yLength,
             byte[]? x,
             int xLength);
+
+        /// <summary>
+        /// Return the maximum value in the array; assumes non-negative values.
+        /// </summary>
+        private static int GetMax(int[] values)
+        {
+            int max = 0;
+
+            foreach (var i in values)
+            {
+                Debug.Assert(i >= 0);
+                if (i > max)
+                    max = i;
+            }
+
+            return max;
+        }
+
+        /// <summary>
+        /// Return the maximum value in the array; assumes non-negative values.
+        /// </summary>
+        private static int GetMax(int value1, int value2)
+        {
+            Debug.Assert(value1 >= 0);
+            Debug.Assert(value2 >= 0);
+            return (value1 > value2 ? value1 : value2);
+        }
+
+        /// <summary>
+        /// Return the maximum value in the array; assumes non-negative values.
+        /// </summary>
+        private static int GetMax(int value1, int value2, int value3)
+        {
+            return GetMax(GetMax(value1, value2), value3);
+        }
     }
 }

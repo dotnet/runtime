@@ -6,14 +6,14 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         public const int LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
         public const int LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern SafeLibraryHandle LoadLibraryExW([In] string lpwLibFileName, [In] IntPtr hFile, [In] uint dwFlags);
+        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        public static partial SafeLibraryHandle LoadLibraryExW(string lpwLibFileName, IntPtr hFile, uint dwFlags);
     }
 }

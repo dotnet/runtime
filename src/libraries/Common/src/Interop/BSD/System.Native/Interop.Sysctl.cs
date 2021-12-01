@@ -16,53 +16,69 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Sysctl", SetLastError = true)]
-        private static extern unsafe int Sysctl(int* name, int namelen, void* value, size_t* len);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Sysctl", SetLastError = true)]
+        private static unsafe partial int Sysctl(int* name, int namelen, void* value, size_t* len);
 
         // This is 'raw' sysctl call, only wrapped to allocate memory if needed
         // caller always needs to free returned buffer using  Marshal.FreeHGlobal()
 
-        public static unsafe int Sysctl(Span<int> name, ref byte* value, ref int len)
+        internal static unsafe void Sysctl(Span<int> name, ref byte* value, ref int len)
         {
-            fixed (int * ptr = &MemoryMarshal.GetReference(name))
+            fixed (int* ptr = &MemoryMarshal.GetReference(name))
             {
-                return Sysctl(ptr, name.Length, ref value, ref len);
+                Sysctl(ptr, name.Length, ref value, ref len);
             }
         }
 
-        public static unsafe int Sysctl(int* name, int name_len, ref byte* value, ref int len)
+        private static unsafe void Sysctl(int* name, int name_len, ref byte* value, ref int len)
         {
             IntPtr bytesLength = (IntPtr)len;
-            byte * pBuffer = value;
-            value = null;
-            int ret=-1;
+            int ret = -1;
+            bool autoSize = (value == null && len == 0);
 
-            if (value == null && len == 0)
+            if (autoSize)
             {
                 // do one try to see how much data we need
-                ret = Sysctl(name,  name_len, pBuffer, &bytesLength);
+                ret = Sysctl(name, name_len, value, &bytesLength);
                 if (ret != 0)
                 {
                     throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
                 }
-                pBuffer = (byte*)Marshal.AllocHGlobal((int)bytesLength);
+                value = (byte*)Marshal.AllocHGlobal((int)bytesLength);
             }
-            ret = Sysctl(name,  name_len, pBuffer, &bytesLength);
+
+            ret = Sysctl(name, name_len, value, &bytesLength);
+            while (autoSize && ret != 0 && GetLastErrorInfo().Error == Error.ENOMEM)
+            {
+                // Do not use ReAllocHGlobal() here: we don't care about
+                // previous contents, and proper checking of value returned
+                // will make code more complex.
+                Marshal.FreeHGlobal((IntPtr)value);
+                if ((int)bytesLength == int.MaxValue)
+                {
+                    throw new OutOfMemoryException();
+                }
+                if ((int)bytesLength >= int.MaxValue / 2)
+                {
+                    bytesLength = (IntPtr)int.MaxValue;
+                }
+                else
+                {
+                    bytesLength = (IntPtr)((int)bytesLength * 2);
+                }
+                value = (byte*)Marshal.AllocHGlobal(bytesLength);
+                ret = Sysctl(name, name_len, value, &bytesLength);
+            }
             if (ret != 0)
             {
-                if (value == null && len == 0)
+                if (autoSize)
                 {
-                    // This is case we allocated memory for caller
-                    Marshal.FreeHGlobal((IntPtr)pBuffer);
+                    Marshal.FreeHGlobal((IntPtr)value);
                 }
                 throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
             }
 
-            value = pBuffer;
             len = (int)bytesLength;
-
-            return ret;
         }
     }
 }

@@ -1,15 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
 using System;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
-#endif
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Microsoft.Reflection;
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
@@ -317,91 +313,36 @@ namespace System.Diagnostics.Tracing
             };
         }
 
+        public static TraceLoggingDataType FormatScalar(EventFieldFormat format, TraceLoggingDataType nativeFormat) =>
+            nativeFormat switch
+            {
+                TraceLoggingDataType.Boolean8 or TraceLoggingDataType.Int8 or TraceLoggingDataType.UInt8 => Format8(format, nativeFormat),
+                TraceLoggingDataType.Char16 or TraceLoggingDataType.Int16 or TraceLoggingDataType.UInt16 => Format16(format, nativeFormat),
+                TraceLoggingDataType.Int32 or TraceLoggingDataType.UInt32 or TraceLoggingDataType.Float => Format32(format, nativeFormat),
+                TraceLoggingDataType.Int64 or TraceLoggingDataType.UInt64 or TraceLoggingDataType.Double => Format64(format, nativeFormat),
+                _ => MakeDataType(nativeFormat, format),
+            };
+
         #endregion
 
         #region Reflection helpers
-
-        /*
-        All TraceLogging use of reflection APIs should go through wrappers here.
-        This helps with portability, and it also makes it easier to audit what
-        kinds of reflection operations are being done.
-        */
-
-        public static object? CreateInstance(Type type, params object?[]? parameters)
-        {
-            return Activator.CreateInstance(type, parameters);
-        }
-
-        public static bool IsValueType(Type type)
-        {
-            bool result = type.IsValueType();
-            return result;
-        }
-
-        public static bool IsEnum(Type type)
-        {
-            bool result = type.IsEnum();
-            return result;
-        }
-
-        public static IEnumerable<PropertyInfo> GetProperties(Type type)
-        {
-            IEnumerable<PropertyInfo> result = type.GetProperties();
-            return result;
-        }
-
-        public static MethodInfo? GetGetMethod(PropertyInfo propInfo)
-        {
-            MethodInfo? result = propInfo.GetGetMethod();
-            return result;
-        }
-
-        public static MethodInfo? GetDeclaredStaticMethod(Type declaringType, string name)
-        {
-            MethodInfo? result;
-#if (ES_BUILD_PCL)
-            result = declaringType.GetTypeInfo().GetDeclaredMethod(name);
-#else
-            result = declaringType.GetMethod(
-                name,
-                BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.NonPublic);
-#endif
-            return result;
-        }
 
         public static bool HasCustomAttribute(
             PropertyInfo propInfo,
             Type attributeType)
         {
-            bool result;
-#if (ES_BUILD_PCL)
-            result = propInfo.IsDefined(attributeType);
-#else
-            object[] attributes = propInfo.GetCustomAttributes(
-                attributeType,
-                false);
-            result = attributes.Length != 0;
-#endif
-            return result;
+            return propInfo.IsDefined(attributeType, false);
         }
 
         public static AttributeType? GetCustomAttribute<AttributeType>(PropertyInfo propInfo)
             where AttributeType : Attribute
         {
             AttributeType? result = null;
-#if (ES_BUILD_PCL)
-            foreach (var attrib in propInfo.GetCustomAttributes<AttributeType>(false))
-            {
-                result = attrib;
-                break;
-            }
-#else
             object[] attributes = propInfo.GetCustomAttributes(typeof(AttributeType), false);
             if (attributes.Length != 0)
             {
                 result = (AttributeType)attributes[0];
             }
-#endif
             return result;
         }
 
@@ -409,52 +350,32 @@ namespace System.Diagnostics.Tracing
             where AttributeType : Attribute
         {
             AttributeType? result = null;
-#if (ES_BUILD_PCL)
-            foreach (var attrib in type.GetTypeInfo().GetCustomAttributes<AttributeType>(false))
-            {
-                result = attrib;
-                break;
-            }
-#else
             object[] attributes = type.GetCustomAttributes(typeof(AttributeType), false);
             if (attributes.Length != 0)
             {
                 result = (AttributeType)attributes[0];
             }
-#endif
             return result;
         }
 
-        public static Type[] GetGenericArguments(Type type)
-        {
-            return type.GetGenericArguments();
-        }
-
-        public static Type? FindEnumerableElementType(Type type)
+        public static Type? FindEnumerableElementType(
+#if !ES_BUILD_STANDALONE
+            [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
+#endif
+            Type type)
         {
             Type? elementType = null;
 
             if (IsGenericMatch(type, typeof(IEnumerable<>)))
             {
-                elementType = GetGenericArguments(type)[0];
+                elementType = type.GetGenericArguments()[0];
             }
             else
             {
-#if (ES_BUILD_PCL)
-                IEnumerable<Type> ifaceTypes = type.GetTypeInfo().ImplementedInterfaces;
-#else
                 Type[] ifaceTypes = type.FindInterfaces(IsGenericMatch, typeof(IEnumerable<>));
-#endif
 
                 foreach (Type ifaceType in ifaceTypes)
                 {
-#if (ES_BUILD_PCL)
-                    if (!IsGenericMatch(ifaceType, typeof(IEnumerable<>)))
-                    {
-                        continue;
-                    }
-#endif
-
                     if (elementType != null)
                     {
                         // ambiguous match. report no match at all.
@@ -462,7 +383,7 @@ namespace System.Diagnostics.Tracing
                         break;
                     }
 
-                    elementType = GetGenericArguments(ifaceType)[0];
+                    elementType = ifaceType.GetGenericArguments()[0];
                 }
             }
 
@@ -471,23 +392,12 @@ namespace System.Diagnostics.Tracing
 
         public static bool IsGenericMatch(Type type, object? openType)
         {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == (Type?)openType;
+            return type.IsGenericType && type.GetGenericTypeDefinition() == (Type?)openType;
         }
 
-        public static Delegate CreateDelegate(Type delegateType, MethodInfo methodInfo)
-        {
-            Delegate result;
-#if (ES_BUILD_PCL)
-            result = methodInfo.CreateDelegate(
-                delegateType);
-#else
-            result = Delegate.CreateDelegate(
-                delegateType,
-                methodInfo);
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
 #endif
-            return result;
-        }
-
         public static TraceLoggingTypeInfo CreateDefaultTypeInfo(
             Type dataType,
             List<Type> recursionCheck)
@@ -579,12 +489,12 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                if (Statics.IsEnum(dataType))
+                if (dataType.IsEnum)
                     dataType = Enum.GetUnderlyingType(dataType);
 
                 if (dataType == typeof(string))
                 {
-                    result = new StringTypeInfo();
+                    result = StringTypeInfo.Instance();
                 }
                 else if (dataType == typeof(bool))
                 {
@@ -636,11 +546,11 @@ namespace System.Diagnostics.Tracing
                 }
                 else if (dataType == typeof(DateTime))
                 {
-                    result = new DateTimeTypeInfo();
+                    result = DateTimeTypeInfo.Instance();
                 }
                 else if (dataType == typeof(decimal))
                 {
-                    result = new DecimalTypeInfo();
+                    result = DecimalTypeInfo.Instance();
                 }
                 else if (dataType == typeof(IntPtr))
                 {
@@ -656,15 +566,15 @@ namespace System.Diagnostics.Tracing
                 }
                 else if (dataType == typeof(TimeSpan))
                 {
-                    result = new TimeSpanTypeInfo();
+                    result = TimeSpanTypeInfo.Instance();
                 }
                 else if (dataType == typeof(DateTimeOffset))
                 {
-                    result = new DateTimeOffsetTypeInfo();
+                    result = DateTimeOffsetTypeInfo.Instance();
                 }
                 else if (dataType == typeof(EmptyStruct))
                 {
-                    result = new NullTypeInfo();
+                    result = NullTypeInfo.Instance();
                 }
                 else if (IsGenericMatch(dataType, typeof(Nullable<>)))
                 {

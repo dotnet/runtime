@@ -17,7 +17,7 @@ namespace System.ComponentModel.Design
         /// that stores an array with a pointer to each <see cref='System.ComponentModel.Design.IDesignerHost'/>
         /// for each document in the collection.
         /// </summary>
-        public DesignerCollection(IDesignerHost[] designers)
+        public DesignerCollection(IDesignerHost[]? designers)
         {
             if (designers != null)
             {
@@ -34,7 +34,7 @@ namespace System.ComponentModel.Design
         /// that stores an array with a pointer to each <see cref='System.ComponentModel.Design.IDesignerHost'/>
         /// for each document in the collection.
         /// </summary>
-        public DesignerCollection(IList designers)
+        public DesignerCollection(IList? designers)
         {
             _designers = designers ?? new ArrayList();
         }
@@ -47,7 +47,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets or sets the document at the specified index.
         /// </summary>
-        public virtual IDesignerHost this[int index] => (IDesignerHost)_designers[index];
+        public virtual IDesignerHost? this[int index] => (IDesignerHost?)_designers[index];
 
         /// <summary>
         /// Creates and retrieves a new enumerator for this collection.
@@ -58,7 +58,7 @@ namespace System.ComponentModel.Design
 
         bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot => null;
+        object ICollection.SyncRoot => null!;
 
         void ICollection.CopyTo(Array array, int index) => _designers.CopyTo(array, index);
 

@@ -381,9 +381,19 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            fixed (char* ptr = &value[0])
+            if (BitConverter.IsLittleEndian)
             {
-                WriteBytesUnchecked((byte*)ptr, value.Length * sizeof(char));
+                fixed (char* ptr = &value[0])
+                {
+                    WriteBytesUnchecked((byte*)ptr, value.Length * sizeof(char));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < value.Length; i++)
+                {
+                    WriteUInt16((ushort)value[i]);
+                }
             }
         }
 
@@ -398,9 +408,19 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(value));
             }
 
-            fixed (char* ptr = value)
+            if (BitConverter.IsLittleEndian)
             {
-                WriteBytesUnchecked((byte*)ptr, value.Length * sizeof(char));
+                fixed (char* ptr = value)
+                {
+                    WriteBytesUnchecked((byte*)ptr, value.Length * sizeof(char));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < value.Length; i++)
+                {
+                    WriteUInt16((ushort)value[i]);
+                }
             }
         }
 

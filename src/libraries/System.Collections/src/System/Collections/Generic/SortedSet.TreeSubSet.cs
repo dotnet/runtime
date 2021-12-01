@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -16,10 +15,8 @@ namespace System.Collections.Generic
         internal sealed class TreeSubSet : SortedSet<T>, ISerializable, IDeserializationCallback
         {
             private readonly SortedSet<T> _underlying;
-            [MaybeNull, AllowNull]
-            private readonly T _min;
-            [MaybeNull, AllowNull]
-            private readonly T _max;
+            private readonly T? _min;
+            private readonly T? _max;
             // keeps track of whether the count variable is up to date
             // up to date -> _countVersion = _underlying.version
             // not up to date -> _countVersion < _underlying.version
@@ -38,7 +35,7 @@ namespace System.Collections.Generic
             }
 #endif
 
-            public TreeSubSet(SortedSet<T> Underlying, [AllowNull] T Min, [AllowNull] T Max, bool lowerBoundActive, bool upperBoundActive)
+            public TreeSubSet(SortedSet<T> Underlying, T? Min, T? Max, bool lowerBoundActive, bool upperBoundActive)
                 : base(Underlying.Comparer)
             {
                 _underlying = Underlying;
@@ -103,7 +100,7 @@ namespace System.Collections.Generic
                 BreadthFirstTreeWalk(n => { toRemove.Add(n.Item); return true; });
                 while (toRemove.Count != 0)
                 {
-                    _underlying.Remove(toRemove[toRemove.Count - 1]);
+                    _underlying.Remove(toRemove[^1]);
                     toRemove.RemoveAt(toRemove.Count - 1);
                 }
 
@@ -128,14 +125,15 @@ namespace System.Collections.Generic
             {
                 get
                 {
+                    VersionCheck();
                     Node? current = root;
-                    T result = default(T)!;
+                    T? result = default;
 
                     while (current != null)
                     {
 
                         int comp = _lBoundActive ? Comparer.Compare(_min, current.Item) : -1;
-                        if (comp == 1)
+                        if (comp > 0)
                         {
                             current = current.Right;
                         }
@@ -150,7 +148,7 @@ namespace System.Collections.Generic
                         }
                     }
 
-                    return result;
+                    return result!;
                 }
             }
 
@@ -158,13 +156,14 @@ namespace System.Collections.Generic
             {
                 get
                 {
+                    VersionCheck();
                     Node? current = root;
-                    T result = default(T)!;
+                    T? result = default;
 
                     while (current != null)
                     {
                         int comp = _uBoundActive ? Comparer.Compare(_max, current.Item) : 1;
-                        if (comp == -1)
+                        if (comp < 0)
                         {
                             current = current.Left;
                         }
@@ -179,7 +178,7 @@ namespace System.Collections.Generic
                         }
                     }
 
-                    return result;
+                    return result!;
                 }
             }
 
@@ -340,7 +339,7 @@ namespace System.Collections.Generic
             // This passes functionality down to the underlying tree, clipping edges if necessary
             // There's nothing gained by having a nested subset. May as well draw it from the base
             // Cannot increase the bounds of the subset, can only decrease it
-            public override SortedSet<T> GetViewBetween([AllowNull] T lowerValue, [AllowNull] T upperValue)
+            public override SortedSet<T> GetViewBetween(T? lowerValue, T? upperValue)
             {
                 if (_lBoundActive && Comparer.Compare(_min, lowerValue) > 0)
                 {

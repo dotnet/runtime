@@ -162,7 +162,7 @@ namespace System.Drawing
 #endif
                     Gdip.GdipDeleteFontFamily(new HandleRef(this, _nativeFamily));
 #if DEBUG
-                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
 #endif
                 }
                 catch (Exception ex) when (!ClientUtils.IsCriticalException(ex))
@@ -225,7 +225,7 @@ namespace System.Drawing
         /// Returns an array that contains all of the <see cref='FontFamily'/> objects associated with the specified
         /// graphics context.
         /// </summary>
-        [Obsolete("Do not use method GetFamilies, use property Families instead")]
+        [Obsolete("FontFamily.GetFamilies has been deprecated. Use Families instead.")]
         public static FontFamily[] GetFamilies(Graphics graphics)
         {
             if (graphics == null)

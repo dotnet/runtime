@@ -13,7 +13,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_EKUIncludesClientAuth_PrivateKey =
             new X509Certificate2(
                 Convert.FromBase64String(
-                  // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Dummy certificate for testing.")]
                   @"MIIKTgIBAzCCCgoGCSqGSIb3DQEHAaCCCfsEggn3MIIJ8zCCBgwGCSqGSIb3DQEHAaCCBf0EggX5
                     MIIF9TCCBfEGCyqGSIb3DQEMCgECoIIE/jCCBPowHAYKKoZIhvcNAQwBAzAOBAiHDatvDr8QBQIC
                     B9AEggTYv1r4ckwt7o6f6DCMHlb/zv4t7rPju+PP0PjoJ8kzPfj419aSeyPuE+65YH9WFDqafJed
@@ -66,7 +65,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         private readonly X509Certificate2 _cert_KeyUsageMissingDigitalSignature_EKUIncludesClientAuth_PrivateKey =
             new X509Certificate2(
                 Convert.FromBase64String(
-                  // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Dummy certificate for testing.")]
                   @"MIIKTgIBAzCCCgoGCSqGSIb3DQEHAaCCCfsEggn3MIIJ8zCCBgwGCSqGSIb3DQEHAaCCBf0EggX5
                     MIIF9TCCBfEGCyqGSIb3DQEMCgECoIIE/jCCBPowHAYKKoZIhvcNAQwBAzAOBAiSNi65ZF5ZTQIC
                     B9AEggTYRTivDtzHOWRR+MobtGFEUu6d1PiIlF1Ic84FWvmFCcJShkBmg3cBqDilqtamAkDkga4h
@@ -119,7 +117,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_EKUMissingClientAuth_PrivateKey =
             new X509Certificate2(
                 Convert.FromBase64String(
-                  // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Dummy certificate for testing.")]
                   @"MIIKRgIBAzCCCgIGCSqGSIb3DQEHAaCCCfMEggnvMIIJ6zCCBgQGCSqGSIb3DQEHAaCCBfUEggXx
                     MIIF7TCCBekGCyqGSIb3DQEMCgECoIIE9jCCBPIwHAYKKoZIhvcNAQwBAzAOBAhCUuNQ0RqfZQIC
                     B9AEggTQHCQRSiCiNI7egTvUaI1Z3tfeLwFWvG7B/za5v9fb97MExoyVQSDmUyUDTlVEcg3gVqJZ
@@ -172,7 +169,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_NoEKU_PrivateKey =
             new X509Certificate2(
                 Convert.FromBase64String(
-                  // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Dummy certificate for testing.")]
                   @"MIIKPgIBAzCCCfoGCSqGSIb3DQEHAaCCCesEggnnMIIJ4zCCBgwGCSqGSIb3DQEHAaCCBf0EggX5
                     MIIF9TCCBfEGCyqGSIb3DQEMCgECoIIE/jCCBPowHAYKKoZIhvcNAQwBAzAOBAijQh1kbOZOYQIC
                     B9AEggTY+wDp3V31Lh7f8YrsqEsyGZ+GlYvFhLWvDASjisYJi5NlQ0ONbf0KOXHVSvBj3tVyuHm4
@@ -225,7 +221,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_EKUIncludesClientAuth_NoPrivateKey =
             new X509Certificate2(
                 Convert.FromBase64String(
-                  // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Dummy certificate for testing.")]
                   @"MIIDFjCCAf6gAwIBAgIQTm8+EF94L4FJ0nBFl5LICzANBgkqhkiG9w0BAQsFADAb
                     MRkwFwYDVQQDDBB1c2VyQGV4YW1wbGUuY29tMCAXDTE1MTAwNTEwMDMwMFoYDzIx
                     MTUxMDA1MTAwMzAwWjAbMRkwFwYDVQQDDBB1c2VyQGV4YW1wbGUuY29tMIIBIjAN

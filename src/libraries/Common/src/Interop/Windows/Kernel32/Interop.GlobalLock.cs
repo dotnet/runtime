@@ -4,12 +4,12 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
-        public static extern IntPtr GlobalLock(IntPtr hMem);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
+        public static partial IntPtr GlobalLock(IntPtr hMem);
 
         public static IntPtr GlobalLock(HandleRef hMem)
         {
@@ -18,8 +18,8 @@ internal partial class Interop
             return result;
         }
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        public static extern IntPtr GlobalUnlock(IntPtr hMem);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
+        public static partial IntPtr GlobalUnlock(IntPtr hMem);
 
         public static IntPtr GlobalUnlock(HandleRef hMem)
         {

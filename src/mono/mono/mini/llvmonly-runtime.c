@@ -5,6 +5,7 @@
  */
 
 #include <config.h>
+#include <mono/metadata/tokentype.h>
 #include "llvmonly-runtime.h"
 #include "aot-runtime.h"
 
@@ -18,7 +19,11 @@ gpointer
 mini_llvmonly_load_method (MonoMethod *method, gboolean caller_gsharedvt, gboolean need_unbox, gpointer *out_arg, MonoError *error)
 {
 	gpointer addr = mono_compile_method_checked (method, error);
-	return_val_if_nok (error, NULL);
+
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
+		error_init_reuse (error);
+	}
 
 	if (addr) {
 		return mini_llvmonly_add_method_wrappers (method, (gpointer)addr, caller_gsharedvt, need_unbox, out_arg);
@@ -43,7 +48,7 @@ mini_llvmonly_load_method_ftndesc (MonoMethod *method, gboolean caller_gsharedvt
 		gpointer arg = NULL;
 		addr = mini_llvmonly_add_method_wrappers (method, (gpointer)addr, caller_gsharedvt, need_unbox, &arg);
 		// FIXME: Cache this
-		return mini_llvmonly_create_ftndesc (mono_domain_get (), addr, arg);
+		return mini_llvmonly_create_ftndesc (method, addr, arg);
 	} else {
 		MonoFtnDesc *ftndesc = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (method, need_unbox, error);
 		return_val_if_nok (error, NULL);
@@ -106,13 +111,15 @@ mini_llvmonly_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
  * This is used for:
  * - generic sharing (ARG is the rgctx)
  * - gsharedvt signature wrappers (ARG is a function descriptor)
+ * 
  */
 MonoFtnDesc*
-mini_llvmonly_create_ftndesc (MonoDomain *domain, gpointer addr, gpointer arg)
+mini_llvmonly_create_ftndesc (MonoMethod *m, gpointer addr, gpointer arg)
 {
-	MonoFtnDesc *ftndesc = (MonoFtnDesc*)mono_domain_alloc0 (mono_domain_get (), 2 * sizeof (gpointer));
+	MonoFtnDesc *ftndesc = (MonoFtnDesc*)m_method_alloc0 (m, sizeof (MonoFtnDesc));
 	ftndesc->addr = addr;
 	ftndesc->arg = arg;
+	ftndesc->method = m;
 
 	return ftndesc;
 }
@@ -171,7 +178,7 @@ mini_llvmonly_add_method_wrappers (MonoMethod *m, gpointer compiled_method, gboo
 		MonoMethod *jmethod;
 		gpointer wrapper_addr;
 
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+		ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (compiled_method));
 		g_assert (ji);
 		jmethod = jinfo_get_method (ji);
 
@@ -186,7 +193,7 @@ mini_llvmonly_add_method_wrappers (MonoMethod *m, gpointer compiled_method, gboo
 		/*
 		 * This is a gsharedvt in wrapper, it gets passed a ftndesc for the gsharedvt method as an argument.
 		 */
-		*out_arg = mini_llvmonly_create_ftndesc (mono_domain_get (), addr, mini_method_get_rgctx (m));
+		*out_arg = mini_llvmonly_create_ftndesc (m, addr, mini_method_get_rgctx (m));
 		addr = wrapper_addr;
 		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
 	}
@@ -199,7 +206,7 @@ mini_llvmonly_add_method_wrappers (MonoMethod *m, gpointer compiled_method, gboo
 		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
 		 */
 		gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature_internal (m), NULL, -1, FALSE);
-		MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (mono_domain_get (), addr, *out_arg);
+		MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (m, addr, *out_arg);
 
 		addr = out_wrapper;
 		*out_arg = out_wrapper_arg;
@@ -310,7 +317,7 @@ llvmonly_fallback_imt_tramp (gpointer *arg, MonoMethod *imt_method)
 }
 
 gpointer
-mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	gpointer *buf;
 	gpointer *res;
@@ -347,7 +354,7 @@ mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIM
 	}
 
 	/* Save the entries into an array */
-	buf = (void **)mono_domain_alloc (domain, (real_count + 1) * 2 * sizeof (gpointer));
+	buf = (void **)m_class_alloc (vtable->klass, (real_count + 1) * 2 * sizeof (gpointer));
 	index = 0;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -370,7 +377,7 @@ mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIM
 	 * Return a function descriptor for a C function with 'buf' as its argument.
 	 * It will by called by JITted code.
 	 */
-	res = (void **)mono_domain_alloc (domain, 2 * sizeof (gpointer));
+	res = (void **)m_class_alloc (vtable->klass, 2 * sizeof (gpointer));
 	switch (real_count) {
 	case 1:
 		res [0] = (gpointer)llvmonly_imt_tramp_1;
@@ -447,10 +454,10 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 	/* Same as in common_call_trampoline () */
 
 	/* Avoid loading metadata or creating a generic vtable if possible */
-	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot, error);
+	addr = mono_aot_get_method_from_vt_slot (vt, slot, error);
 	return_val_if_nok (error, NULL);
 	if (addr && !m_class_is_valuetype (vt->klass))
-		return mono_create_ftnptr (mono_domain_get (), addr);
+		return mono_create_ftnptr (addr);
 
 	m = mono_class_get_vtable_entry (vt->klass, slot);
 
@@ -493,10 +500,9 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 
 	if (!gsharedvt && generic_virtual) {
 		// FIXME: This wastes memory since add_generic_virtual_invocation ignores it in a lot of cases
-		MonoFtnDesc *ftndesc = mini_llvmonly_create_ftndesc (mono_domain_get (), addr, out_arg);
+		MonoFtnDesc *ftndesc = mini_llvmonly_create_ftndesc (m, addr, out_arg);
 
-		mono_method_add_generic_virtual_invocation (mono_domain_get (),
-													vt, vt->vtable + slot,
+		mono_method_add_generic_virtual_invocation (vt, vt->vtable + slot,
 													generic_virtual, ftndesc);
 	}
 
@@ -563,8 +569,7 @@ mini_llvmonly_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod
 	MonoFtnDesc *ftndesc = mini_llvmonly_load_method_ftndesc (m, FALSE, need_unbox_tramp, error);
 	mono_error_assert_ok (error);
 
-	mono_method_add_generic_virtual_invocation (mono_domain_get (),
-												vt, vt->vtable + slot,
+	mono_method_add_generic_virtual_invocation (vt, vt->vtable + slot,
 												generic_virtual, ftndesc);
 	return ftndesc;
 }
@@ -607,8 +612,7 @@ mini_llvmonly_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, 
 	 */
 	ftndesc = mini_llvmonly_load_method_ftndesc (m, FALSE, need_unbox_tramp, error);
 
-	mono_method_add_generic_virtual_invocation (mono_domain_get (),
-												vt, imt + imt_slot,
+	mono_method_add_generic_virtual_invocation (vt, imt + imt_slot,
 												variant_iface ? variant_iface : generic_virtual, ftndesc);
 	return ftndesc;
 }
@@ -630,7 +634,7 @@ mini_llvmonly_init_vtable_slot (MonoVTable *vtable, int slot)
 	addr = resolve_vcall (vtable, slot, NULL, &arg, FALSE, error);
 	if (mono_error_set_pending_exception (error))
 		return NULL;
-	ftnptr = mono_domain_alloc0 (vtable->domain, 2 * sizeof (gpointer));
+	ftnptr = m_class_alloc0 (vtable->klass, 2 * sizeof (gpointer));
 	ftnptr [0] = addr;
 	ftnptr [1] = arg;
 	mono_memory_barrier ();
@@ -647,16 +651,31 @@ mini_llvmonly_init_vtable_slot (MonoVTable *vtable, int slot)
  * Similar to mono_delegate_ctor ().
  */
 void
-mini_llvmonly_init_delegate (MonoDelegate *del)
+mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 {
 	ERROR_DECL (error);
-	MonoFtnDesc *ftndesc = *(MonoFtnDesc**)del->method_code;
+	MonoFtnDesc *ftndesc;
 
-	/*
-	 * We store a MonoFtnDesc in del->method_code.
-	 * It would be better to store an ftndesc in del->method_ptr too,
-	 * but we don't have a a structure which could own its memory.
-	 */
+	if (!info && !del->method) {
+		// Multicast delegate init
+		// Have to set the invoke_impl field
+		// FIXME: Cache
+		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (mono_get_delegate_invoke_internal (del->object.vtable->klass), NULL);
+		gpointer arg = NULL;
+		gpointer addr = mini_llvmonly_load_method_delegate (invoke_impl, FALSE, FALSE, &arg, error);
+		mono_error_assert_ok (error);
+		del->invoke_impl = mini_llvmonly_create_ftndesc (invoke_impl, addr, arg);
+		return;
+	}
+
+	if (G_UNLIKELY (!info)) {
+		g_assert (del->method);
+		info = mono_create_delegate_trampoline_info (del->object.vtable->klass, del->method);
+	}
+
+	/* Cache the target method address in MonoDelegateTrampInfo */
+	ftndesc = (MonoFtnDesc*)info->method_ptr;
+
 	if (G_UNLIKELY (!ftndesc)) {
 		MonoMethod *m = del->method;
 		gboolean need_unbox = FALSE;
@@ -664,42 +683,49 @@ mini_llvmonly_init_delegate (MonoDelegate *del)
 		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 			m = mono_marshal_get_synchronized_wrapper (m);
 
-		if (m_class_is_valuetype (m->klass) && mono_method_signature_internal (m)->hasthis)
+		if (m_class_is_valuetype (m->klass) && mono_method_signature_internal (m)->hasthis && !(info->invoke_sig->param_count > info->sig->param_count))
 			need_unbox = TRUE;
 
 		gpointer arg = NULL;
 		gpointer addr = mini_llvmonly_load_method_delegate (m, FALSE, need_unbox, &arg, error);
 		if (mono_error_set_pending_exception (error))
 			return;
-		ftndesc = mini_llvmonly_create_ftndesc (mono_domain_get (), addr, arg);
+		ftndesc = mini_llvmonly_create_ftndesc (m, addr, arg);
 		mono_memory_barrier ();
-		*del->method_code = (guint8*)ftndesc;
+		//*del->method_code = (guint8*)ftndesc;
+		info->method_ptr = ftndesc;
 	}
 	del->method_ptr = ftndesc->addr;
 	del->extra_arg = ftndesc->arg;
+
+	WrapperSubtype subtype = mono_marshal_get_delegate_invoke_subtype (info->invoke, del);
+
+	ftndesc = info->invoke_impl;
+	if (G_UNLIKELY (!ftndesc) || subtype != WRAPPER_SUBTYPE_NONE) {
+		ERROR_DECL (error);
+		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (info->invoke, del);
+		gpointer arg = NULL;
+		gpointer addr = mini_llvmonly_load_method_delegate (invoke_impl, FALSE, FALSE, &arg, error);
+		mono_error_assert_ok (error);
+		ftndesc = mini_llvmonly_create_ftndesc (invoke_impl, addr, arg);
+		if (subtype == WRAPPER_SUBTYPE_NONE) {
+			mono_memory_barrier ();
+			info->invoke_impl = ftndesc;
+		} else {
+			// FIXME: Cache
+		}
+	}
+	del->invoke_impl = ftndesc;
 }
 
 void
 mini_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
 {
-	ERROR_DECL (error);
-	gpointer addr, arg;
-	gboolean need_unbox;
-
 	g_assert (target);
 
-	method = mono_object_get_virtual_method_internal (target, method);
+	del->method = mono_object_get_virtual_method_internal (target, method);
 
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		method = mono_marshal_get_synchronized_wrapper (method);
-	need_unbox = m_class_is_valuetype (method->klass);
-
-	del->method = method;
-	addr = mini_llvmonly_load_method_delegate (method, FALSE, need_unbox, &arg, error);
-	if (mono_error_set_pending_exception (error))
-		return;
-	del->method_ptr = addr;
-	del->extra_arg = arg;
+	mini_llvmonly_init_delegate (del, NULL);
 }
 
 /*
@@ -748,8 +774,7 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 	if (generic_virtual || variant_iface) {
 		MonoMethod *target = generic_virtual ? generic_virtual : variant_iface;
 
-		mono_method_add_generic_virtual_invocation (mono_domain_get (),
-													vt, imt + imt_slot,
+		mono_method_add_generic_virtual_invocation (vt, imt + imt_slot,
 													target, addr);
 	}
 
@@ -760,6 +785,7 @@ gpointer
 mini_llvmonly_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg)
 {
 	ERROR_DECL (error);
+
 	gpointer res = resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, TRUE, error);
 	if (!is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);
@@ -810,4 +836,26 @@ mini_llvmonly_throw_aot_failed_exception (const char *name)
 	MonoException *ex = mono_get_exception_execution_engine (msg);
 	g_free (msg);
 	mono_llvm_throw_exception ((MonoObject*)ex);
+}
+
+/*
+ * mini_llvmonly_pop_lmf:
+ *
+ *   Pop LMF off the LMF stack.
+ */
+void
+mini_llvmonly_pop_lmf (MonoLMF *lmf)
+{
+	if (lmf->previous_lmf)
+		mono_set_lmf ((MonoLMF*)lmf->previous_lmf);
+}
+
+gpointer
+mini_llvmonly_get_interp_entry (MonoMethod *method)
+{
+	ERROR_DECL (error);
+
+	MonoFtnDesc *desc = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (method, FALSE, error);
+	mono_error_assert_ok (error);
+	return desc;
 }

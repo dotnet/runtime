@@ -177,7 +177,7 @@ namespace System.Collections.Generic
             while (current != null)
             {
                 LinkedListNode<T> temp = current;
-                current = current.Next;   // use Next the instead of "next", otherwise it will loop forever
+                current = current.Next;
                 temp.Invalidate();
             }
 
@@ -530,7 +530,7 @@ namespace System.Collections.Generic
             private readonly LinkedList<T> _list;
             private LinkedListNode<T>? _node;
             private readonly int _version;
-            [AllowNull] private T _current;
+            private T? _current;
             private int _index;
 
             internal Enumerator(LinkedList<T> list)
@@ -542,10 +542,7 @@ namespace System.Collections.Generic
                 _index = 0;
             }
 
-            public T Current
-            {
-                get { return _current; }
-            }
+            public T Current => _current!;
 
             object? IEnumerator.Current
             {

@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
-#endif
 using System.Text;
 
 #if ES_BUILD_STANDALONE
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 namespace Microsoft.Diagnostics.Tracing
 #else
 namespace System.Diagnostics.Tracing
@@ -18,7 +15,7 @@ namespace System.Diagnostics.Tracing
     /// TraceLogging: Contains the information needed to generate tracelogging
     /// metadata for an event field.
     /// </summary>
-    internal class FieldMetadata
+    internal sealed class FieldMetadata
     {
         /// <summary>
         /// Name of the field

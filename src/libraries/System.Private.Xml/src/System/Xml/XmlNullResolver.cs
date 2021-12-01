@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Net;
 
 namespace System.Xml
 {
-    internal class XmlNullResolver : XmlResolver
+    internal sealed class XmlNullResolver : XmlResolver
     {
         public static readonly XmlNullResolver Singleton = new XmlNullResolver();
 

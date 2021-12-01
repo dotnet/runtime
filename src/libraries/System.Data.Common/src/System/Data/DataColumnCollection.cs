@@ -15,6 +15,8 @@ namespace System.Data
     /// objects for a <see cref='System.Data.DataTable'/>.
     /// </summary>
     [DefaultEvent(nameof(CollectionChanged))]
+    [Editor("Microsoft.VSDesigner.Data.Design.ColumnsCollectionEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed class DataColumnCollection : InternalDataCollectionBase
     {
         private readonly DataTable _table;
@@ -180,7 +182,7 @@ namespace System.Data
             }
             if (!_table.fInitInProgress && column != null && column.Computed)
             {
-                column.Expression = column.Expression;
+                column.CopyExpressionFrom(column);
             }
             OnCollectionChanged(new CollectionChangeEventArgs(CollectionChangeAction.Add, column));
         }
@@ -209,7 +211,8 @@ namespace System.Data
         /// Creates and adds a <see cref='System.Data.DataColumn'/>
         /// with the specified name, type, and compute expression to the columns collection.
         /// </summary>
-        public DataColumn Add(string? columnName, Type type, string expression)
+        [RequiresUnreferencedCode("Members might be trimmed for some data types or expressions.")]
+        public DataColumn Add(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type, string expression)
         {
             var column = new DataColumn(columnName, type, expression);
             Add(column);
@@ -221,7 +224,7 @@ namespace System.Data
         /// with the
         /// specified name and type to the columns collection.
         /// </summary>
-        public DataColumn Add(string? columnName, Type type)
+        public DataColumn Add(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type)
         {
             var column = new DataColumn(columnName, type);
             Add(column);

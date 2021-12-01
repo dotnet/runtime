@@ -34,6 +34,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             internal string InternalProperty { get; set; }
             protected string ProtectedProperty { get; set; }
 
+            [ConfigurationKeyName("Named_Property")]
+            public string NamedProperty { get; set; }
+
             protected string ProtectedPrivateSet { get; private set; }
 
             private string PrivateReadOnly { get; }
@@ -107,6 +110,16 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public int MyInt32 { get; set; }
             public string MyString { get; set; }
+        }
+
+        public class ByteArrayOptions
+        {
+            public byte[] MyByteArray { get; set; }
+        }
+
+        public class GetterOnlyOptions
+        {
+            public string MyString => throw new NotImplementedException();
         }
 
         [Fact]
@@ -197,6 +210,22 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void CanBindConfigurationKeyNameAttributes()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Named_Property", "Yo"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>();
+            
+            Assert.Equal("Yo", options.NamedProperty);
+        }
+
+        [Fact]
         public void EmptyStringIsNullable()
         {
             var dic = new Dictionary<string, string>
@@ -271,6 +300,69 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void ThrowsIfPropertyInConfigMissingInModel()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ThisDoesNotExistInTheModel", "42"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+
+            string expectedMessage = SR.Format(SR.Error_MissingConfig,
+                nameof(BinderOptions.ErrorOnUnknownConfiguration), nameof(BinderOptions), typeof(ComplexOptions), "'ThisDoesNotExistInTheModel'");
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+        [Fact]
+        public void ThrowsIfPropertyInConfigMissingInNestedModel()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Nested:ThisDoesNotExistInTheModel", "42"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+
+            string expectedMessage = SR.Format(SR.Error_MissingConfig,
+                nameof(BinderOptions.ErrorOnUnknownConfiguration), nameof(BinderOptions), typeof(NestedOptions), "'ThisDoesNotExistInTheModel'");
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        [Fact]
+        public void DoesNotExecuteGetterIfNoSetter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"MyString", "hello world"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var _ = config.Get<GetterOnlyOptions>();
+        }
+
+        [Fact]
         public void GetDefaultsWhenDataDoesNotExist()
         {
             var dic = new Dictionary<string, string>
@@ -328,6 +420,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         // enum test
         [InlineData("Constructor", typeof(AttributeTargets))]
         [InlineData("CA761232-ED42-11CE-BACD-00AA0057B223", typeof(Guid))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void CanReadAllSupportedTypes(string value, Type type)
         {
             // arrange
@@ -374,6 +467,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         [InlineData(typeof(TimeSpan))]
         [InlineData(typeof(AttributeTargets))]
         [InlineData(typeof(Guid))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51211", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void ConsistentExceptionOnFailedBinding(Type type)
         {
             // arrange
@@ -810,6 +904,55 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ValueTypeOptions>();
             Assert.Equal(42, options.MyInt32);
             Assert.Equal("hello world", options.MyString);
+        }
+
+        [Fact]
+        public void CanBindByteArray()
+        {
+            var bytes = new byte[] { 1, 2, 3, 4 };
+            var dic = new Dictionary<string, string>
+            {
+                { "MyByteArray", Convert.ToBase64String(bytes) }
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ByteArrayOptions>();
+            Assert.Equal(bytes, options.MyByteArray);
+        }
+
+        [Fact]
+        public void CanBindByteArrayWhenValueIsNull()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                { "MyByteArray", null }
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ByteArrayOptions>();
+            Assert.Null(options.MyByteArray);
+        }
+
+        [Fact]
+        public void ExceptionWhenTryingToBindToByteArray()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                { "MyByteArray", "(not a valid base64 string)" }
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<ByteArrayOptions>());
+            Assert.Equal(
+                SR.Format(SR.Error_FailedBinding, "MyByteArray", typeof(byte[])),
+                exception.Message);
         }
 
         private interface ISomeInterface

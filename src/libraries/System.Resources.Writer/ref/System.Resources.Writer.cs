@@ -21,7 +21,7 @@ namespace System.Resources
         public System.Func<System.Type, string>? TypeNameConverter { get { throw null; } set { } }
         public void AddResource(string name, byte[]? value) { }
         public void AddResource(string name, System.IO.Stream? value) { }
-        public void AddResource(string name, System.IO.Stream? value, bool closeAfterWrite) { }
+        public void AddResource(string name, System.IO.Stream? value, bool closeAfterWrite = false) { }
         public void AddResource(string name, object? value) { }
         public void AddResource(string name, string? value) { }
         public void AddResourceData(string name, string typeName, byte[] serializedData) { }

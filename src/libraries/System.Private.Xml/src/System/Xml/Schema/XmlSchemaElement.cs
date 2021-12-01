@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.ComponentModel;
 using System.Xml.Serialization;
 using System.Diagnostics;
@@ -112,6 +111,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("ref")]
+        [AllowNull]
         public XmlQualifiedName RefName
         {
             get { return _refName; }
@@ -119,6 +119,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("substitutionGroup")]
+        [AllowNull]
         public XmlQualifiedName SubstitutionGroup
         {
             get { return _substitutionGroup; }
@@ -126,6 +127,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("type")]
+        [AllowNull]
         public XmlQualifiedName SchemaTypeName
         {
             get { return _typeName; }
@@ -162,7 +164,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        [Obsolete("This property has been deprecated. Please use ElementSchemaType property that returns a strongly typed element type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("XmlSchemaElement.ElementType has been deprecated. Use the ElementSchemaType property that returns a strongly typed element type instead.")]
         public object? ElementType
         {
             get

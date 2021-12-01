@@ -6,6 +6,7 @@
 
 namespace System.Drawing
 {
+    [System.ComponentModel.EditorAttribute("System.Drawing.Design.BitmapEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Bitmap : System.Drawing.Image
     {
         public Bitmap(System.Drawing.Image original) { }
@@ -207,7 +208,6 @@ namespace System.Drawing
         internal BufferedGraphics() { }
         public System.Drawing.Graphics Graphics { get { throw null; } }
         public void Dispose() { }
-        ~BufferedGraphics() { }
         public void Render() { }
         public void Render(System.Drawing.Graphics? target) { }
         public void Render(System.IntPtr targetDC) { }
@@ -232,11 +232,12 @@ namespace System.Drawing
         public CharacterRange(int First, int Length) { throw null; }
         public int First { get { throw null; } set { } }
         public int Length { get { throw null; } set { } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Drawing.CharacterRange cr1, System.Drawing.CharacterRange cr2) { throw null; }
         public static bool operator !=(System.Drawing.CharacterRange cr1, System.Drawing.CharacterRange cr2) { throw null; }
     }
+    [System.ComponentModel.EditorAttribute("System.Drawing.Design.ContentAlignmentEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public enum ContentAlignment
     {
         TopLeft = 1,
@@ -269,9 +270,8 @@ namespace System.Drawing
         Whiteness = 16711778,
         CaptureBlt = 1073741824,
     }
-#if NETCOREAPP
-    [System.ComponentModel.TypeConverterAttribute("System.Drawing.FontConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [System.ComponentModel.EditorAttribute("System.Drawing.Design.FontEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.TypeConverterAttribute(typeof(System.Drawing.FontConverter))]
     public sealed partial class Font : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         public Font(System.Drawing.Font prototype, System.Drawing.FontStyle newStyle) { }
@@ -302,6 +302,8 @@ namespace System.Drawing
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool Italic { get { throw null; } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        [System.ComponentModel.EditorAttribute("System.Drawing.Design.FontNameEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        [System.ComponentModel.TypeConverterAttribute(typeof(System.Drawing.FontConverter.FontNameConverter))]
         public string Name { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public string? OriginalFontName { get { throw null; } }
@@ -316,10 +318,11 @@ namespace System.Drawing
         public string SystemFontName { get { throw null; } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool Underline { get { throw null; } }
+        [System.ComponentModel.TypeConverterAttribute(typeof(System.Drawing.FontConverter.FontUnitConverter))]
         public System.Drawing.GraphicsUnit Unit { get { throw null; } }
         public object Clone() { throw null; }
         public void Dispose() { }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         ~Font() { }
         public static System.Drawing.Font FromHdc(System.IntPtr hdc) { throw null; }
         public static System.Drawing.Font FromHfont(System.IntPtr hfont) { throw null; }
@@ -335,6 +338,34 @@ namespace System.Drawing
         public void ToLogFont(object logFont, System.Drawing.Graphics graphics) { }
         public override string ToString() { throw null; }
     }
+    public partial class FontConverter : System.ComponentModel.TypeConverter
+    {
+        public FontConverter() { }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+        public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
+        public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
+        [Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        public override System.ComponentModel.PropertyDescriptorCollection? GetProperties(System.ComponentModel.ITypeDescriptorContext? context, object? value, System.Attribute[]? attributes) { throw null; }
+        public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
+        public sealed partial class FontNameConverter : System.ComponentModel.TypeConverter, System.IDisposable
+        {
+            public FontNameConverter() { }
+            public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+            public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+            public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
+            public override bool GetStandardValuesExclusive(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
+            public override bool GetStandardValuesSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
+            void System.IDisposable.Dispose() { }
+        }
+        public partial class FontUnitConverter : System.ComponentModel.EnumConverter
+        {
+            public FontUnitConverter() : base (default(System.Type)) { }
+            public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
+        }
+    }
     public sealed partial class FontFamily : System.MarshalByRefObject, System.IDisposable
     {
         public FontFamily(System.Drawing.Text.GenericFontFamilies genericFamily) { }
@@ -346,12 +377,12 @@ namespace System.Drawing
         public static System.Drawing.FontFamily GenericSerif { get { throw null; } }
         public string Name { get { throw null; } }
         public void Dispose() { }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         ~FontFamily() { }
         public int GetCellAscent(System.Drawing.FontStyle style) { throw null; }
         public int GetCellDescent(System.Drawing.FontStyle style) { throw null; }
         public int GetEmHeight(System.Drawing.FontStyle style) { throw null; }
-        [System.ObsoleteAttribute("Do not use method GetFamilies, use property Families instead")]
+        [System.ObsoleteAttribute("FontFamily.GetFamilies has been deprecated. Use Families instead.")]
         public static System.Drawing.FontFamily[] GetFamilies(System.Drawing.Graphics graphics) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetLineSpacing(System.Drawing.FontStyle style) { throw null; }
@@ -563,8 +594,6 @@ namespace System.Drawing
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHwndInternal(System.IntPtr hwnd) { throw null; }
         public static System.Drawing.Graphics FromImage(System.Drawing.Image image) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public object GetContextInfo() { throw null; }
         public static System.IntPtr GetHalftonePalette() { throw null; }
         public System.IntPtr GetHdc() { throw null; }
         public System.Drawing.Color GetNearestColor(System.Drawing.Color color) { throw null; }
@@ -630,9 +659,8 @@ namespace System.Drawing
         Document = 5,
         Millimeter = 6,
     }
-#if NETCOREAPP
-    [System.ComponentModel.TypeConverterAttribute("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [System.ComponentModel.EditorAttribute("System.Drawing.Design.IconEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.ComponentModel.TypeConverterAttribute(typeof(System.Drawing.IconConverter))]
     public sealed partial class Icon : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         public Icon(System.Drawing.Icon original, System.Drawing.Size size) { }
@@ -657,19 +685,26 @@ namespace System.Drawing
         ~Icon() { }
         public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
         public void Save(System.IO.Stream outputStream) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public System.Drawing.Bitmap ToBitmap() { throw null; }
         public override string ToString() { throw null; }
+    }
+    public partial class IconConverter : System.ComponentModel.ExpandableObjectConverter
+    {
+        public IconConverter() { }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
     public partial interface IDeviceContext : System.IDisposable
     {
         System.IntPtr GetHdc();
         void ReleaseHdc();
     }
+    [System.ComponentModel.EditorAttribute("System.Drawing.Design.ImageEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ImmutableObjectAttribute(true)]
-#if NETCOREAPP
-    [System.ComponentModel.TypeConverterAttribute("System.Drawing.ImageConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [System.ComponentModel.TypeConverterAttribute(typeof(System.Drawing.ImageConverter))]
     public abstract partial class Image : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         internal Image() { }
@@ -731,17 +766,38 @@ namespace System.Drawing
         public void SaveAdd(System.Drawing.Imaging.EncoderParameters? encoderParams) { }
         public int SelectActiveFrame(System.Drawing.Imaging.FrameDimension dimension, int frameIndex) { throw null; }
         public void SetPropertyItem(System.Drawing.Imaging.PropertyItem propitem) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public delegate bool GetThumbnailImageAbort();
     }
     public sealed partial class ImageAnimator
     {
         internal ImageAnimator() { }
         public static void Animate(System.Drawing.Image image, System.EventHandler onFrameChangedHandler) { }
-        public static bool CanAnimate(System.Drawing.Image? image) { throw null; }
+        public static bool CanAnimate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Drawing.Image? image) { throw null; }
         public static void StopAnimate(System.Drawing.Image image, System.EventHandler onFrameChangedHandler) { }
         public static void UpdateFrames() { }
         public static void UpdateFrames(System.Drawing.Image image) { }
+    }
+    public partial class ImageConverter : System.ComponentModel.TypeConverter
+    {
+        public ImageConverter() { }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+        [Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext? context, object? value, System.Attribute[]? attributes) { throw null; }
+        public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
+    }
+    public partial class ImageFormatConverter : System.ComponentModel.TypeConverter
+    {
+        public ImageFormatConverter() { }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type? sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+        public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
+        public override bool GetStandardValuesSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
     }
     public sealed partial class Pen : System.MarshalByRefObject, System.ICloneable, System.IDisposable
     {
@@ -962,7 +1018,7 @@ namespace System.Drawing
         public bool IsVisible(System.Drawing.Rectangle rect, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(System.Drawing.RectangleF rect) { throw null; }
         public bool IsVisible(System.Drawing.RectangleF rect, System.Drawing.Graphics? g) { throw null; }
-        public bool IsVisible(int x, int y, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(int x, int y, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(int x, int y, int width, int height) { throw null; }
         public bool IsVisible(int x, int y, int width, int height, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(float x, float y) { throw null; }
@@ -1210,7 +1266,7 @@ namespace System.Drawing
         public ToolboxBitmapAttribute(string imageFile) { }
         public ToolboxBitmapAttribute(System.Type t) { }
         public ToolboxBitmapAttribute(System.Type t, string name) { }
-        public override bool Equals(object? value) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.Drawing.Image? GetImage(object? component) { throw null; }
         public System.Drawing.Image? GetImage(object? component, bool large) { throw null; }
@@ -1604,7 +1660,7 @@ namespace System.Drawing.Drawing2D
         public float OffsetY { get { throw null; } }
         public System.Drawing.Drawing2D.Matrix Clone() { throw null; }
         public void Dispose() { }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         ~Matrix() { }
         public override int GetHashCode() { throw null; }
         public void Invert() { }
@@ -2096,17 +2152,17 @@ namespace System.Drawing.Imaging
     {
         public static readonly System.Drawing.Imaging.Encoder ChrominanceTable;
         public static readonly System.Drawing.Imaging.Encoder ColorDepth;
+        public static readonly System.Drawing.Imaging.Encoder ColorSpace;
         public static readonly System.Drawing.Imaging.Encoder Compression;
+        public static readonly System.Drawing.Imaging.Encoder ImageItems;
         public static readonly System.Drawing.Imaging.Encoder LuminanceTable;
         public static readonly System.Drawing.Imaging.Encoder Quality;
         public static readonly System.Drawing.Imaging.Encoder RenderMethod;
+        public static readonly System.Drawing.Imaging.Encoder SaveAsCmyk;
         public static readonly System.Drawing.Imaging.Encoder SaveFlag;
         public static readonly System.Drawing.Imaging.Encoder ScanMethod;
         public static readonly System.Drawing.Imaging.Encoder Transformation;
         public static readonly System.Drawing.Imaging.Encoder Version;
-        public static readonly System.Drawing.Imaging.Encoder ColorSpace;
-        public static readonly System.Drawing.Imaging.Encoder ImageItems;
-        public static readonly System.Drawing.Imaging.Encoder SaveAsCmyk;
         public Encoder(System.Guid guid) { }
         public System.Guid Guid { get { throw null; } }
     }
@@ -2120,7 +2176,7 @@ namespace System.Drawing.Imaging
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, short[] value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numberValues, System.Drawing.Imaging.EncoderParameterValueType type, System.IntPtr value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator, int denominator) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.")]
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int NumberOfValues, int Type, int Value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator1, int demoninator1, int numerator2, int demoninator2) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int[] numerator, int[] denominator) { }
@@ -2190,7 +2246,7 @@ namespace System.Drawing.Imaging
         public static System.Drawing.Imaging.FrameDimension Page { get { throw null; } }
         public static System.Drawing.Imaging.FrameDimension Resolution { get { throw null; } }
         public static System.Drawing.Imaging.FrameDimension Time { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -2293,9 +2349,7 @@ namespace System.Drawing.Imaging
         ReadOnly = 65536,
         Caching = 131072,
     }
-#if NETCOREAPP
-    [System.ComponentModel.TypeConverterAttribute("System.Drawing.ImageFormatConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [System.ComponentModel.TypeConverterAttribute(typeof(System.Drawing.ImageFormatConverter))]
     public sealed partial class ImageFormat
     {
         public ImageFormat(System.Guid guid) { }
@@ -2310,7 +2364,7 @@ namespace System.Drawing.Imaging
         public static System.Drawing.Imaging.ImageFormat Png { get { throw null; } }
         public static System.Drawing.Imaging.ImageFormat Tiff { get { throw null; } }
         public static System.Drawing.Imaging.ImageFormat Wmf { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -2321,6 +2375,7 @@ namespace System.Drawing.Imaging
         ReadWrite = 3,
         UserInputBuffer = 4,
     }
+    [System.ComponentModel.EditorAttribute("System.Drawing.Design.MetafileEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Metafile : System.Drawing.Image
     {
         public Metafile(System.IntPtr henhmetafile, bool deleteEmf) { }
@@ -2492,9 +2547,7 @@ namespace System.Drawing.Printing
         protected InvalidPrinterException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-#if NETCOREAPP
-    [System.ComponentModel.TypeConverterAttribute("System.Drawing.Printing.MarginsConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [System.ComponentModel.TypeConverterAttribute(typeof(System.Drawing.Printing.MarginsConverter))]
     public partial class Margins : System.ICloneable
     {
         public Margins() { }
@@ -2504,11 +2557,21 @@ namespace System.Drawing.Printing
         public int Right { get { throw null; } set { } }
         public int Top { get { throw null; } set { } }
         public object Clone() { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static bool operator ==(System.Drawing.Printing.Margins m1, System.Drawing.Printing.Margins m2) { throw null; }
-        public static bool operator !=(System.Drawing.Printing.Margins m1, System.Drawing.Printing.Margins m2) { throw null; }
+        public static bool operator ==(System.Drawing.Printing.Margins? m1, System.Drawing.Printing.Margins? m2) { throw null; }
+        public static bool operator !=(System.Drawing.Printing.Margins? m1, System.Drawing.Printing.Margins? m2) { throw null; }
         public override string ToString() { throw null; }
+    }
+    public partial class MarginsConverter : System.ComponentModel.ExpandableObjectConverter
+    {
+        public MarginsConverter() { }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+        public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
+        public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
     }
     public partial class PageSettings : System.ICloneable
     {
@@ -2718,8 +2781,8 @@ namespace System.Drawing.Printing
         public virtual System.Drawing.Graphics? OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
         public virtual void OnStartPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
     }
-    [System.ComponentModel.DefaultPropertyAttribute("DocumentName")]
     [System.ComponentModel.DefaultEventAttribute("PrintPage")]
+    [System.ComponentModel.DefaultPropertyAttribute("DocumentName")]
     public partial class PrintDocument : System.ComponentModel.Component
     {
         public PrintDocument() { }

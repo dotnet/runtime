@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System.Xml.XPath;
@@ -19,7 +18,7 @@ namespace System.Xml.Schema
 
     // stack element class
     // this one needn't change, even the parameter in methods
-    internal class AxisElement
+    internal sealed class AxisElement
     {
         internal DoubleLinkAxis curNode;                // current under-checking node during navigating
         internal int rootDepth;                         // root depth -- contextDepth + 1 if ! isDss; context + {1...} if isDss
@@ -137,7 +136,7 @@ namespace System.Xml.Schema
         }
     }
 
-    internal class AxisStack
+    internal sealed class AxisStack
     {
         // property
         private readonly ArrayList _stack;                            // of AxisElement
@@ -405,7 +404,7 @@ namespace System.Xml.Schema
      * ---------------------------------------------------------------------------------------------- */
 
     // each node in the xpath tree
-    internal class DoubleLinkAxis : Axis
+    internal sealed class DoubleLinkAxis : Axis
     {
         internal Axis? next;
 
@@ -445,7 +444,7 @@ namespace System.Xml.Schema
 
     // only keep axis, rootNode, isAttribute, isDss inside
     // act as an element tree for the Asttree
-    internal class ForwardAxis
+    internal sealed class ForwardAxis
     {
         // Axis tree
         private readonly DoubleLinkAxis _topNode;
@@ -498,7 +497,7 @@ namespace System.Xml.Schema
     }
 
     // static, including an array of ForwardAxis  (this is the whole picture)
-    internal class Asttree
+    internal sealed class Asttree
     {
         // set private then give out only get access, to keep it intact all along
         private ArrayList _fAxisArray = null!;

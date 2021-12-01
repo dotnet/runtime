@@ -52,7 +52,7 @@ namespace System.IO.MemoryMappedFiles
         /// memory mapped file should not be associated with an existing file on disk (i.e. start
         /// out empty).
         /// </summary>
-        private static unsafe SafeMemoryMappedFileHandle CreateCore(
+        private static SafeMemoryMappedFileHandle CreateCore(
             FileStream? fileStream, string? mapName,
             HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)
@@ -174,7 +174,7 @@ namespace System.IO.MemoryMappedFiles
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
             // The POSIX shared memory object name must begin with '/'.  After that we just want something short and unique.
-            string mapName = "/corefx_map_" + Guid.NewGuid().ToString("N");
+            string mapName = string.Create(null, stackalloc char[128], $"/corefx_map_{Guid.NewGuid():N}");
 
             // Determine the flags to use when creating the shared memory object
             Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?

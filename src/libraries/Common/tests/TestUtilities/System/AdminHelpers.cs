@@ -40,9 +40,8 @@ namespace System
                 return(userId == 0);
             }
 
-            IntPtr processHandle = Interop.Kernel32.GetCurrentProcess();
             SafeAccessTokenHandle token;
-            if (!Interop.Advapi32.OpenProcessToken(processHandle, TokenAccessLevels.Read, out token))
+            if (!Interop.Advapi32.OpenProcessToken(Interop.Kernel32.GetCurrentProcess(), TokenAccessLevels.Read, out token))
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "Open process token failed");
             }

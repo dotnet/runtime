@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http.Headers;
@@ -21,15 +22,18 @@ namespace System.Net.Http
             WinHttpRequestState state,
             DecompressionMethods manuallyProcessedDecompressionMethods)
         {
-            HttpRequestMessage request = state.RequestMessage;
-            SafeWinHttpHandle requestHandle = state.RequestHandle;
+            HttpRequestMessage? request = state.RequestMessage;
+            SafeWinHttpHandle? requestHandle = state.RequestHandle;
+            Debug.Assert(request != null);
+            Debug.Assert(requestHandle != null);
+
             var response = new HttpResponseMessage();
             bool stripEncodingHeaders = false;
 
             // Create a single buffer to use for all subsequent WinHttpQueryHeaders string interop calls.
             // This buffer is the length needed for WINHTTP_QUERY_RAW_HEADERS_CRLF, which includes the status line
             // and all headers separated by CRLF, so it should be large enough for any individual status line or header queries.
-            int bufferLength = GetResponseHeaderCharBufferLength(requestHandle, Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF);
+            int bufferLength = GetResponseHeaderCharBufferLength(requestHandle, isTrailingHeaders: false);
             char[] buffer = ArrayPool<char>.Shared.Rent(bufferLength);
             try
             {
@@ -58,7 +62,7 @@ namespace System.Net.Http
                     string.Empty;
 
                 // Create response stream and wrap it in a StreamContent object.
-                var responseStream = new WinHttpResponseStream(requestHandle, state);
+                var responseStream = new WinHttpResponseStream(requestHandle, state, response);
                 state.RequestHandle = null; // ownership successfully transfered to WinHttpResponseStram.
                 Stream decompressedStream = responseStream;
 
@@ -133,9 +137,9 @@ namespace System.Net.Http
         public static unsafe bool GetResponseHeader(
             SafeWinHttpHandle requestHandle,
             uint infoLevel,
-            ref char[] buffer,
+            ref char[]? buffer,
             ref uint index,
-            out string headerValue)
+            [NotNullWhen(true)] out string? headerValue)
         {
             const int StackLimit = 128;
 
@@ -223,19 +227,26 @@ namespace System.Net.Http
         /// <summary>
         /// Returns the size of the char array buffer.
         /// </summary>
-        private static unsafe int GetResponseHeaderCharBufferLength(SafeWinHttpHandle requestHandle, uint infoLevel)
+        public static unsafe int GetResponseHeaderCharBufferLength(SafeWinHttpHandle requestHandle, bool isTrailingHeaders)
         {
             char* buffer = null;
             int bufferLength = 0;
             uint index = 0;
 
+            uint infoLevel = Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF;
+            if (isTrailingHeaders)
+            {
+                infoLevel |= Interop.WinHttp.WINHTTP_QUERY_FLAG_TRAILERS;
+            }
+
             if (!QueryHeaders(requestHandle, infoLevel, buffer, ref bufferLength, ref index))
             {
                 int lastError = Marshal.GetLastWin32Error();
 
-                Debug.Assert(lastError != Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND);
+                Debug.Assert(isTrailingHeaders || lastError != Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND);
 
-                if (lastError != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
+                if (lastError != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER &&
+                    (!isTrailingHeaders || lastError != Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND))
                 {
                     throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));
                 }
@@ -279,7 +290,7 @@ namespace System.Net.Http
 
             // If it's a known reason phrase, use the known reason phrase instead of allocating a new string.
 
-            string knownReasonPhrase = HttpStatusDescription.Get(statusCode);
+            string? knownReasonPhrase = HttpStatusDescription.Get(statusCode);
 
             return (knownReasonPhrase != null && knownReasonPhrase.AsSpan().SequenceEqual(buffer.AsSpan(0, bufferLength))) ?
                 knownReasonPhrase :
@@ -306,10 +317,7 @@ namespace System.Net.Http
             reader.ReadLine();
 
             // Parse the array of headers and split them between Content headers and Response headers.
-            string headerName;
-            string headerValue;
-
-            while (reader.ReadHeader(out headerName, out headerValue))
+            while (reader.ReadHeader(out string? headerName, out string? headerValue))
             {
                 if (!responseHeaders.TryAddWithoutValidation(headerName, headerValue))
                 {
@@ -328,6 +336,27 @@ namespace System.Net.Http
 
                     contentHeaders.TryAddWithoutValidation(headerName, headerValue);
                 }
+            }
+        }
+
+        public static void ParseResponseTrailers(
+            SafeWinHttpHandle requestHandle,
+            HttpResponseMessage response,
+            char[] buffer)
+        {
+            HttpHeaders responseTrailers = WinHttpTrailersHelper.GetResponseTrailers(response);
+
+            int bufferLength = GetResponseHeader(
+                requestHandle,
+                Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF | Interop.WinHttp.WINHTTP_QUERY_FLAG_TRAILERS,
+                buffer);
+
+            var reader = new WinHttpResponseHeaderReader(buffer, 0, bufferLength);
+
+            // Parse the array of headers and split them between Content headers and Response headers.
+            while (reader.ReadHeader(out string? headerName, out string? headerValue))
+            {
+                responseTrailers.TryAddWithoutValidation(headerName, headerValue);
             }
         }
 

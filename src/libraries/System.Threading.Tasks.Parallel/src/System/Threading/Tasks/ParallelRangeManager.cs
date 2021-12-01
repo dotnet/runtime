@@ -204,7 +204,7 @@ namespace System.Threading.Tasks
     ///    2) Every thread joining to service the parallel loop calls RegisterWorker to grab a
     ///       RangeWorker struct to wrap the state it will need to find and execute work,
     ///       and they keep interacting with that struct until the end of the loop
-    internal class RangeManager
+    internal sealed class RangeManager
     {
         internal readonly IndexRange[] _indexRanges;
         internal readonly bool _use32BitCurrentIndex;

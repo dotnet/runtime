@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -12,10 +11,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes,
             string correctPassword,
             X509Certificate2 expectedCert,
+            X509KeyStorageFlags nonExportFlags,
             Action<X509Certificate2> otherWork)
         {
-            ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, s_importFlags);
-            ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, s_exportableImportFlags);
+            X509KeyStorageFlags exportFlags = nonExportFlags | X509KeyStorageFlags.Exportable;
+
+            ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, nonExportFlags);
+            ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, exportFlags);
         }
 
         protected override void ReadMultiPfx(
@@ -23,10 +25,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string correctPassword,
             X509Certificate2 expectedSingleCert,
             X509Certificate2[] expectedOrder,
+            X509KeyStorageFlags nonExportFlags,
             Action<X509Certificate2> perCertOtherWork)
         {
-            ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, s_importFlags);
-            ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, s_exportableImportFlags);
+            X509KeyStorageFlags exportFlags = nonExportFlags | X509KeyStorageFlags.Exportable;
+
+            ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, nonExportFlags);
+            ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, exportFlags);
         }
 
         private void ReadPfx(
@@ -63,13 +68,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected override void ReadUnreadablePfx(
             byte[] pfxBytes,
             string bestPassword,
+            X509KeyStorageFlags importFlags,
             int win32Error,
             int altWin32Error)
         {
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
-                () => new X509Certificate2(pfxBytes, bestPassword, s_importFlags));
+                () => new X509Certificate2(pfxBytes, bestPassword, importFlags));
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 if (altWin32Error != 0 && ex.HResult != altWin32Error)
                 {
@@ -79,6 +85,39 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             else
             {
                 Assert.NotNull(ex.InnerException);
+            }
+        }
+
+        private static void CheckBadKeyset(X509Certificate2 cert)
+        {
+            CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
+                    () => cert.GetRSAPrivateKey());
+
+            // NTE_BAD_KEYSET
+            Assert.Equal(-2146893802, ex.HResult);
+        }
+
+        protected override void CheckMultiBoundKeyConsistency(X509Certificate2 cert)
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                CheckBadKeyset(cert);
+            }
+            else
+            {
+                base.CheckMultiBoundKeyConsistency(cert);
+            }
+        }
+
+        protected override void CheckMultiBoundKeyConsistencyFails(X509Certificate2 cert)
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                CheckBadKeyset(cert);
+            }
+            else
+            {
+                base.CheckMultiBoundKeyConsistencyFails(cert);
             }
         }
     }

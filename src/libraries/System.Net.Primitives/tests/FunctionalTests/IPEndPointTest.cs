@@ -131,7 +131,7 @@ namespace System.Net.Primitives.Functional.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-            yield return new object[] { new IPEndPoint(2, 500), "2.0.0.0:500" };
+            yield return new object[] { new IPEndPoint(IPAddress.HostToNetworkOrder(0x02000000), 500), "2.0.0.0:500" };
             yield return new object[] { new IPEndPoint(IPAddress.Parse("192.169.0.9"), 500), "192.169.0.9:500" };
             yield return new object[] { new IPEndPoint(IPAddress.Parse("0:0:0:0:0:0:0:1"), 500), "[::1]:500" };
         }
@@ -193,7 +193,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<ArgumentNullException>("socketAddress", () => endPoint.Create(null));
         }
 
-        public static IEnumerable<object[]> Create_InvalidAdddressFamily_TestData()
+        public static IEnumerable<object[]> Create_InvalidAddressFamily_TestData()
         {
             yield return new object[] { new IPEndPoint(2, 500), new SocketAddress(Sockets.AddressFamily.InterNetworkV6) };
             yield return new object[] { new IPEndPoint(IPAddress.Parse("192.169.0.9"), 500), new SocketAddress(Sockets.AddressFamily.InterNetworkV6) };
@@ -201,7 +201,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Create_InvalidAdddressFamily_TestData))]
+        [MemberData(nameof(Create_InvalidAddressFamily_TestData))]
         public static void Create_InvalidAddressFamily_ThrowsArgumentException(IPEndPoint endPoint, SocketAddress socketAddress)
         {
             AssertExtensions.Throws<ArgumentException>("socketAddress", () => endPoint.Create(socketAddress));

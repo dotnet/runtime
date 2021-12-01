@@ -208,7 +208,7 @@ namespace System.IO.Tests
         {
             foreach (char invalid in Path.GetInvalidFileNameChars())
             {
-                string badPath = string.Format($"{TestDirectory}{Path.DirectorySeparatorChar}te{invalid}st");
+                string badPath = $"{TestDirectory}{Path.DirectorySeparatorChar}te{invalid}st";
                 switch (invalid)
                 {
                     case '/':

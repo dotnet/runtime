@@ -3,13 +3,13 @@
 
 Imports System
 Imports System.Reflection
-Imports System.Text
 Imports System.Runtime.InteropServices
+Imports System.Runtime.Versioning
 Imports Microsoft.Win32
 
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
-Imports Microsoft.VisualBasic.CompilerServices.Utils
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic
 
@@ -117,6 +117,7 @@ Namespace Microsoft.VisualBasic
         ' User interaction functions.
         '============================================================================
 
+        <SupportedOSPlatform("windows")>
         Public Sub Beep()
 #If TARGET_WINDOWS Then
             UnsafeNativeMethods.MessageBeep(0)
@@ -133,8 +134,10 @@ Namespace Microsoft.VisualBasic
             Return DirectCast(InvokeMethod("MsgBox", Prompt, Buttons, Title), MsgBoxResult)
         End Function
 
+        <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2075:UnrecognizedReflectionPattern",
+                Justification:="Trimmer warns because it can't see Microsoft.VisualBasic.Forms. If the assembly is there, the trimmer will be able to tell to preserve the method specified.")>
         Private Function InvokeMethod(methodName As String, ParamArray args As Object()) As Object
-            Dim type As Type = type.GetType("Microsoft.VisualBasic._Interaction, Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
+            Dim type As Type = Type.GetType("Microsoft.VisualBasic._Interaction, Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
             Dim method As MethodInfo = type?.GetMethod(methodName)
             If method Is Nothing Then
                 Throw New PlatformNotSupportedException(SR.MethodRequiresSystemWindowsForms)
@@ -315,6 +318,7 @@ Namespace Microsoft.VisualBasic
         ' Registry functions.
         '============================================================================
 
+        <SupportedOSPlatform("windows")>
         Public Sub DeleteSetting(ByVal AppName As String, Optional ByVal Section As String = Nothing, Optional ByVal Key As String = Nothing)
             Dim AppSection As String
             Dim UserKey As RegistryKey
@@ -346,6 +350,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Sub
 
+        <SupportedOSPlatform("windows")>
         Public Function GetAllSettings(ByVal AppName As String, ByVal Section As String) As String(,)
             Dim rk As RegistryKey
             Dim sAppSect As String
@@ -404,6 +409,7 @@ Namespace Microsoft.VisualBasic
             End Try
         End Function
 
+        <SupportedOSPlatform("windows")>
         Public Function GetSetting(ByVal AppName As String, ByVal Section As String, ByVal Key As String, Optional ByVal [Default] As String = "") As String
             Dim rk As RegistryKey = Nothing
             Dim sAppSect As String
@@ -443,6 +449,7 @@ Namespace Microsoft.VisualBasic
             End If
         End Function
 
+        <SupportedOSPlatform("windows")>
         Public Sub SaveSetting(ByVal AppName As String, ByVal Section As String, ByVal Key As String, ByVal Setting As String)
             Dim rk As RegistryKey
             Dim sIniSect As String
@@ -490,6 +497,8 @@ Namespace Microsoft.VisualBasic
             End If
         End Sub
 
+        <SupportedOSPlatform("windows")>
+        <RequiresUnreferencedCode("The COM object to be created cannot be statically analyzed and may be trimmed")>
         Public Function CreateObject(ByVal ProgId As String, Optional ByVal ServerName As String = "") As Object
             'Creates local or remote COM2 objects.  Should not be used to create COM+ objects.
             'Applications that need to be STA should set STA either on their Sub Main via STAThreadAttribute
@@ -506,7 +515,7 @@ Namespace Microsoft.VisualBasic
                 ServerName = Nothing
             Else
                 'Does the ServerName match the MachineName?
-                If String.Compare(Environment.MachineName, ServerName, StringComparison.OrdinalIgnoreCase) = 0 Then
+                If String.Equals(Environment.MachineName, ServerName, StringComparison.OrdinalIgnoreCase) Then
                     ServerName = Nothing
                 End If
             End If
@@ -534,6 +543,8 @@ Namespace Microsoft.VisualBasic
             End Try
         End Function
 
+        <SupportedOSPlatform("windows")>
+        <RequiresUnreferencedCode("The COM component to be returned cannot be statically analyzed and may be trimmed")>
         Public Function GetObject(Optional ByVal PathName As String = Nothing, Optional ByVal [Class] As String = Nothing) As Object
             'Only works for Com2 objects, not for COM+ objects.
 
@@ -570,6 +581,7 @@ Namespace Microsoft.VisualBasic
         '============================================================================
         ' Object/latebound functions.
         '============================================================================
+        <RequiresUnreferencedCode("The type of ObjectRef cannot be statically analyzed and its members may be trimmed.")>
         Public Function CallByName(ByVal ObjectRef As System.Object, ByVal ProcName As String, ByVal UseCallType As CallType, ByVal ParamArray Args() As Object) As Object
             Select Case UseCallType
 

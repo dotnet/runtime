@@ -131,25 +131,26 @@ namespace System.Net
                 ContentLength64 = responseEntity.Length;
             }
             EnsureResponseStream();
+            Debug.Assert(_responseStream != null);
             if (willBlock)
             {
                 try
                 {
-                    _responseStream.Write(responseEntity, 0, responseEntity.Length);
+                    _responseStream!.Write(responseEntity, 0, responseEntity.Length);
                 }
                 catch (Win32Exception)
                 {
                 }
                 finally
                 {
-                    _responseStream.Close();
+                    _responseStream!.Close();
                     _responseState = ResponseState.Closed;
-                    HttpListenerContext.Close();
+                    HttpListenerContext!.Close();
                 }
             }
             else
             {
-                _responseStream.BeginWrite(responseEntity, 0, responseEntity.Length, new AsyncCallback(NonBlockingCloseCallback), null);
+                _responseStream!.BeginWrite(responseEntity, 0, responseEntity.Length, new AsyncCallback(NonBlockingCloseCallback), null);
             }
         }
 
@@ -160,10 +161,10 @@ namespace System.Net
                 return;
             }
             EnsureResponseStream();
-            _responseStream.Close();
+            _responseStream!.Close();
             _responseState = ResponseState.Closed;
 
-            HttpListenerContext.Close();
+            HttpListenerContext!.Close();
         }
 
         internal BoundaryType BoundaryType => _boundaryType;
@@ -172,7 +173,7 @@ namespace System.Net
         {
             if (_responseStream == null)
             {
-                _responseStream = new HttpResponseStream(HttpListenerContext);
+                _responseStream = new HttpResponseStream(HttpListenerContext!);
             }
         }
 
@@ -180,14 +181,14 @@ namespace System.Net
         {
             try
             {
-                _responseStream.EndWrite(asyncResult);
+                _responseStream!.EndWrite(asyncResult);
             }
             catch (Win32Exception)
             {
             }
             finally
             {
-                _responseStream.Close();
+                _responseStream!.Close();
                 HttpListenerContext.Close();
                 _responseState = ResponseState.Closed;
             }
@@ -217,7 +218,7 @@ namespace System.Net
             not after. Thus, flag is not applicable to HttpSendHttpResponse.
         */
         internal unsafe uint SendHeaders(Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk,
-            HttpResponseStreamAsyncResult asyncResult,
+            HttpResponseStreamAsyncResult? asyncResult,
             Interop.HttpApi.HTTP_FLAGS flags,
             bool isWebSocketHandshake)
         {
@@ -251,7 +252,7 @@ namespace System.Net
 
             uint statusCode;
             uint bytesSent;
-            List<GCHandle> pinnedHeaders = SerializeHeaders(ref _nativeResponse.Headers, isWebSocketHandshake);
+            List<GCHandle>? pinnedHeaders = SerializeHeaders(ref _nativeResponse.Headers, isWebSocketHandshake);
             try
             {
                 if (pDataChunk != null)
@@ -360,7 +361,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                 {
                     _boundaryType = BoundaryType.Chunked;
                 }
-                if (CanSendResponseBody(_httpContext.Response.StatusCode))
+                if (CanSendResponseBody(_httpContext!.Response.StatusCode))
                 {
                     _contentLength = -1;
                 }
@@ -420,10 +421,10 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             ComputeCookies();
         }
 
-        private List<GCHandle> SerializeHeaders(ref Interop.HttpApi.HTTP_RESPONSE_HEADERS headers,
+        private List<GCHandle>? SerializeHeaders(ref Interop.HttpApi.HTTP_RESPONSE_HEADERS headers,
             bool isWebSocketHandshake)
         {
-            Interop.HttpApi.HTTP_UNKNOWN_HEADER[] unknownHeaders = null;
+            Interop.HttpApi.HTTP_UNKNOWN_HEADER[]? unknownHeaders = null;
             List<GCHandle> pinnedHeaders;
             GCHandle gcHandle;
 
@@ -435,7 +436,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             string headerName;
             string headerValue;
             int lookup;
-            byte[] bytes = null;
+            byte[]? bytes = null;
             pinnedHeaders = new List<GCHandle>();
 
             //---------------------------------------------------
@@ -490,7 +491,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
 
                 if (lookup == -1)
                 {
-                    string[] headerValues = Headers.GetValues(index);
+                    string[] headerValues = Headers.GetValues(index)!;
                     numUnknownHeaders += headerValues.Length;
                 }
             }
@@ -502,7 +503,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                     for (int index = 0; index < Headers.Count; index++)
                     {
                         headerName = Headers.GetKey(index) as string;
-                        headerValue = Headers.Get(index) as string;
+                        headerValue = (Headers.Get(index) as string)!;
                         lookup = Interop.HttpApi.HTTP_RESPONSE_HEADER_ID.IndexOfKnownHeader(headerName);
                         if (lookup == (int)HttpResponseHeader.SetCookie ||
                             isWebSocketHandshake && lookup == (int)HttpResponseHeader.Connection)
@@ -526,7 +527,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                             //FOR UNKNOWN HEADERS
                             //ALLOW MULTIPLE HEADERS to be added
                             //---------------------------------------
-                            string[] headerValues = Headers.GetValues(index);
+                            string[] headerValues = Headers.GetValues(index)!;
                             for (int headerValueIndex = 0; headerValueIndex < headerValues.Length; headerValueIndex++)
                             {
                                 //Add Name
@@ -577,7 +578,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             return pinnedHeaders;
         }
 
-        private void FreePinnedHeaders(List<GCHandle> pinnedHeaders)
+        private void FreePinnedHeaders(List<GCHandle>? pinnedHeaders)
         {
             if (pinnedHeaders != null)
             {

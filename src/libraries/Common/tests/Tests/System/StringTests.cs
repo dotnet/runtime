@@ -317,7 +317,7 @@ namespace System.Tests
             Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // mini-stress test that likely runs for several seconds
         public static void Concat_String_ConcurrencySafe()
         {
@@ -480,6 +480,42 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(s.Length, dst, 0, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(s.Length - 1, dst, 0, 2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(0, dst, 0, 6));
+        }
+
+        [Theory]
+        [InlineData("", 0)]
+        [InlineData("", 1)]
+        [InlineData("a", 1)]
+        [InlineData("a", 0)]
+        [InlineData("a", 2)]
+        [InlineData("abc", 2)]
+        [InlineData("abc", 3)]
+        [InlineData("abc", 4)]
+        [InlineData("Hello world", 20)]
+        public static void CopyTo_Span(string s, int destinationLength)
+        {
+            char[] destination = new char[destinationLength];
+
+            if (s.Length > destinationLength)
+            {
+                AssertExtensions.Throws<ArgumentException>("destination", () => s.CopyTo(destination));
+                Assert.All(destination, c => Assert.Equal(0, c));
+
+                Assert.False(s.TryCopyTo(destination));
+                Assert.All(destination, c => Assert.Equal(0, c));
+            }
+            else
+            {
+                s.CopyTo(destination);
+                Assert.Equal(s, new Span<char>(destination, 0, s.Length).ToString());
+                Assert.All(destination.AsSpan(s.Length).ToArray(), c => Assert.Equal(0, c));
+
+                Array.Clear(destination);
+
+                Assert.True(s.TryCopyTo(destination));
+                Assert.Equal(s, new Span<char>(destination, 0, s.Length).ToString());
+                Assert.All(destination.AsSpan(s.Length).ToArray(), c => Assert.Equal(0, c));
+            }
         }
 
         public static IEnumerable<object[]> Compare_TestData()
@@ -1821,7 +1857,7 @@ namespace System.Tests
         [Fact]
         public static void LengthMismatchEndsWith_Char()
         {
-            string value = "456";;
+            string value = "456";
 
             string s1 = value.Substring(0, 2);
             string s2 = value.Substring(0, 3);
@@ -2567,8 +2603,7 @@ namespace System.Tests
         {
             string source = "encyclop\u00e6dia";
             string target = "encyclopaedia";
-
-            using (new ThreadCultureChange("se-SE"))
+            using (new ThreadCultureChange(PlatformDetection.IsBrowser ?"pl-PL" : "se-SE"))
             {
                 Assert.Equal(expected, string.Equals(source, target, comparison));
                 Assert.Equal(expected, source.AsSpan().Equals(target.AsSpan(), comparison));
@@ -2883,6 +2918,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
         public static void IndexOf_TurkishI_TurkishCulture()
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -2966,6 +3002,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
         public static void IndexOf_HungarianDoubleCompression_HungarianCulture()
         {
             using (new ThreadCultureChange("hu-HU"))
@@ -4497,7 +4534,7 @@ namespace System.Tests
         [InlineData("", 0, 0, "")]
         public static void Remove(string s, int startIndex, int count, string expected)
         {
-            if (startIndex + count == s.Length && count != 0)
+            if (startIndex + count == s.Length)
             {
                 Assert.Equal(expected, s.Remove(startIndex));
             }
@@ -4513,8 +4550,8 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(-1, 0));
 
-            // Start index >= string.Length
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(s.Length));
+            // Start index > string.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(s.Length + 1));
 
             // Count < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s.Remove(0, -1));
@@ -5088,20 +5125,24 @@ namespace System.Tests
 
         private static IEnumerable<object[]> ToLower_Culture_TestData()
         {
-            var tuples = new[]
+            List<Tuple<char, char, CultureInfo>> tuples = new List<Tuple<char, char, CultureInfo>>();
+
+            // Android has different results w/ tr-TR
+            // See https://github.com/dotnet/runtime/issues/60568
+            if (!PlatformDetection.IsAndroid)
             {
-                Tuple.Create('\u0049', '\u0131', new CultureInfo("tr-TR")),
-                Tuple.Create('\u0130', '\u0069', new CultureInfo("tr-TR")),
-                Tuple.Create('\u0131', '\u0131', new CultureInfo("tr-TR")),
+                tuples.Add(Tuple.Create('\u0049', '\u0131', new CultureInfo("tr-TR")));
+                tuples.Add(Tuple.Create('\u0130', '\u0069', new CultureInfo("tr-TR")));
+                tuples.Add(Tuple.Create('\u0131', '\u0131', new CultureInfo("tr-TR")));
+            }
 
-                Tuple.Create('\u0049', '\u0069', new CultureInfo("en-US")),
-                Tuple.Create('\u0130', '\u0069', new CultureInfo("en-US")),
-                Tuple.Create('\u0131', '\u0131', new CultureInfo("en-US")),
+            tuples.Add(Tuple.Create('\u0049', '\u0069', new CultureInfo("en-US")));
+            tuples.Add(Tuple.Create('\u0130', '\u0069', new CultureInfo("en-US")));
+            tuples.Add(Tuple.Create('\u0131', '\u0131', new CultureInfo("en-US")));
 
-                Tuple.Create('\u0049', '\u0069', CultureInfo.InvariantCulture),
-                Tuple.Create('\u0130', '\u0130', CultureInfo.InvariantCulture),
-                Tuple.Create('\u0131', '\u0131', CultureInfo.InvariantCulture),
-            };
+            tuples.Add(Tuple.Create('\u0049', '\u0069', CultureInfo.InvariantCulture));
+            tuples.Add(Tuple.Create('\u0130', '\u0130', CultureInfo.InvariantCulture));
+            tuples.Add(Tuple.Create('\u0131', '\u0131', CultureInfo.InvariantCulture));
 
             foreach (Tuple<char, char, CultureInfo> tuple in tuples)
             {
@@ -5575,9 +5616,14 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToUpper_Culture_TestData()
         {
-            yield return new object[] { "h\u0069 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
-            yield return new object[] { "h\u0130 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
-            yield return new object[] { "h\u0131 world", "H\u0049 WORLD", new CultureInfo("tr-TR") };
+            // Android has different results w/ tr-TR
+            // See https://github.com/dotnet/runtime/issues/60568
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { "h\u0069 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
+                yield return new object[] { "h\u0130 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
+                yield return new object[] { "h\u0131 world", "H\u0049 WORLD", new CultureInfo("tr-TR") };
+            }
 
             yield return new object[] { "h\u0069 world", "H\u0049 WORLD", new CultureInfo("en-US") };
             yield return new object[] { "h\u0130 world", "H\u0130 WORLD", new CultureInfo("en-US") };
@@ -5648,6 +5694,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(ToUpper_TurkishI_TurkishCulture_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
         public static void ToUpper_TurkishI_TurkishCulture(string s, string expected)
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -6739,7 +6786,9 @@ namespace System.Tests
             yield return new object[] { "",                 null,         "en-us",    true,         1  };
             yield return new object[] { "",                 null,         null,       true,         1  };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            // Android has different results w/ tr-TR
+            // See https://github.com/dotnet/runtime/issues/60568
+            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
             {
                 yield return new object[] { "latin i",         "Latin I",     "tr-TR",    false,        1  };
                 yield return new object[] { "latin i",         "Latin I",     "tr-TR",    true,         1  };
@@ -6759,8 +6808,13 @@ namespace System.Tests
 
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
-                yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
-                yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
+                // Android has different results w/ tr-TR
+                // See https://github.com/dotnet/runtime/issues/60568
+                if (!PlatformDetection.IsAndroid)
+                {
+                    yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
+                    yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
+                }
                 yield return new object[] { "\ud801\udc29",     PlatformDetection.IsWindows7 ? "\ud801\udc29" : "\ud801\udc01", "en-US" };
             }
         }
@@ -6775,7 +6829,9 @@ namespace System.Tests
             yield return new object[] { "ABcd",                  "ab",      "CD",   "en-US",    false,       false  };
             yield return new object[] { "abcd",                  "AB",      "CD",   "en-US",    true,        true   };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            // Android has different results w/ tr-TR
+            // See https://github.com/dotnet/runtime/issues/60568
+            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
             {
                 yield return new object[] { "i latin i",             "I Latin", "I",    "tr-TR",    false,       false  };
                 yield return new object[] { "i latin i",             "I Latin", "I",    "tr-TR",    true,        false  };
@@ -7312,8 +7368,15 @@ namespace System.Tests
             Assert.False(s.IsNormalized(), "String should be not normalized when checking with the default which same as FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormC), "String should be not normalized when checking with FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormD), "String should be not normalized when checking with FormD");
-            Assert.False(s.IsNormalized(NormalizationForm.FormKC), "String should be not normalized when checking with FormKC");
-            Assert.False(s.IsNormalized(NormalizationForm.FormKD), "String should be not normalized when checking with FormKD");
+
+            // Browser's, iOS's, MacCatalyst's, and tvOS's ICU do not support FormKC and FormKD
+            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
+
+            if (supportsKCKD)
+            {
+                Assert.False(s.IsNormalized(NormalizationForm.FormKC), "String should be not normalized when checking with FormKC");
+                Assert.False(s.IsNormalized(NormalizationForm.FormKD), "String should be not normalized when checking with FormKD");
+            }
 
             string normalized = s.Normalize(); // FormC
             Assert.True(normalized.IsNormalized(), "Expected to have the normalized string with default form FormC");
@@ -7326,23 +7389,35 @@ namespace System.Tests
             normalized = s.Normalize(NormalizationForm.FormD);
             Assert.True(normalized.IsNormalized(NormalizationForm.FormD), "Expected to have the normalized string with FormD");
 
-            normalized = s.Normalize(NormalizationForm.FormKC);
-            Assert.True(normalized.IsNormalized(NormalizationForm.FormKC), "Expected to have the normalized string with FormKC");
+            if (supportsKCKD)
+            {
+                normalized = s.Normalize(NormalizationForm.FormKC);
+                Assert.True(normalized.IsNormalized(NormalizationForm.FormKC), "Expected to have the normalized string with FormKC");
 
-            normalized = s.Normalize(NormalizationForm.FormKD);
-            Assert.True(normalized.IsNormalized(NormalizationForm.FormKD), "Expected to have the normalized string with FormKD");
+                normalized = s.Normalize(NormalizationForm.FormKD);
+                Assert.True(normalized.IsNormalized(NormalizationForm.FormKD), "Expected to have the normalized string with FormKD");
+            }
 
             s = "hello";
             Assert.True(s.IsNormalized());
             Assert.True(s.IsNormalized(NormalizationForm.FormC));
             Assert.True(s.IsNormalized(NormalizationForm.FormD));
-            Assert.True(s.IsNormalized(NormalizationForm.FormKC));
-            Assert.True(s.IsNormalized(NormalizationForm.FormKD));
+
+            if (supportsKCKD)
+            {
+                Assert.True(s.IsNormalized(NormalizationForm.FormKC));
+                Assert.True(s.IsNormalized(NormalizationForm.FormKD));
+            }
+
             Assert.Same(s, s.Normalize());
             Assert.Same(s, s.Normalize(NormalizationForm.FormC));
             Assert.Same(s, s.Normalize(NormalizationForm.FormD));
-            Assert.Same(s, s.Normalize(NormalizationForm.FormKC));
-            Assert.Same(s, s.Normalize(NormalizationForm.FormKD));
+
+            if (supportsKCKD)
+            {
+                Assert.Same(s, s.Normalize(NormalizationForm.FormKC));
+                Assert.Same(s, s.Normalize(NormalizationForm.FormKD));
+            }
         }
 
         [Fact]

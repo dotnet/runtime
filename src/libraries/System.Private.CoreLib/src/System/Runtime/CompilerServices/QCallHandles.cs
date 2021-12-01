@@ -47,7 +47,7 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    // Wraps RuntimeModule into a handle. Used to pass RuntimeModule to native code wihtout letting it be collected
+    // Wraps RuntimeModule into a handle. Used to pass RuntimeModule to native code without letting it be collected
     internal unsafe ref struct QCallModule
     {
         private void* _ptr;
@@ -62,11 +62,11 @@ namespace System.Runtime.CompilerServices
         internal QCallModule(ref System.Reflection.Emit.ModuleBuilder module)
         {
             _ptr = Unsafe.AsPointer(ref module);
-            _module = module.GetNativeHandle().GetUnderlyingNativeHandle();
+            _module = module.InternalModule.GetUnderlyingNativeHandle();
         }
     }
 
-    // Wraps RuntimeAssembly into a handle. Used to pass RuntimeAssembly to native code wihtout letting it be collected
+    // Wraps RuntimeAssembly into a handle. Used to pass RuntimeAssembly to native code without letting it be collected
     internal unsafe ref struct QCallAssembly
     {
         private void* _ptr;
@@ -79,7 +79,7 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    // Wraps RuntimeType into a handle. Used to pass RuntimeType to native code wihtout letting it be collected
+    // Wraps RuntimeType into a handle. Used to pass RuntimeType to native code without letting it be collected
     internal unsafe ref struct QCallTypeHandle
     {
         private void* _ptr;

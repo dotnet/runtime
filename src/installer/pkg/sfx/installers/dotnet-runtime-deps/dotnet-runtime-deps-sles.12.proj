@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <GenerateInstallers Condition="'$(BuildRpmPackage)' != 'true'">false</GenerateInstallers>
+    <PackageTargetOS>sles.12</PackageTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="libopenssl1_1;libicu;krb5" />
+  </ItemGroup>
+</Project>

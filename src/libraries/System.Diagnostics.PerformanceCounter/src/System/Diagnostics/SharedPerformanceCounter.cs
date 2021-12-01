@@ -697,6 +697,7 @@ namespace System.Diagnostics
                             }
                             else
                             {
+                                Debug.Assert(counterNamesObject is string[], $"Expected string[], got '{counterNamesObject}' of type '{counterNamesObject?.GetType()}' with kind '{categoryKey.GetValueKind("Counter Names")}' for category '{_categoryName}'");
                                 string[] counterNames = (string[])counterNamesObject;
                                 for (int i = 0; i < counterNames.Length; i++)
                                     counterNames[i] = counterNames[i].ToLowerInvariant();
@@ -1645,7 +1646,7 @@ namespace System.Diagnostics
             return offset;
         }
 
-        private class FileMapping
+        private sealed class FileMapping
         {
             internal int _fileMappingSize;
             private SafeMemoryMappedViewHandle _fileViewAddress;
@@ -1690,6 +1691,7 @@ namespace System.Diagnostics
                         throw new InvalidOperationException(SR.SetSecurityDescriptorFailed);
 
                     Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+                    securityAttributes.lpSecurityDescriptor = securityDescriptorPointer.DangerousGetHandle();
                     securityAttributes.bInheritHandle = Interop.BOOL.FALSE;
 
                     //
@@ -1844,7 +1846,7 @@ namespace System.Diagnostics
             public long StartupTime;
         }
 
-        private class CategoryData
+        private sealed class CategoryData
         {
             public FileMapping FileMapping;
             public bool EnableReuse;
@@ -1855,7 +1857,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class ProcessData
+    internal sealed class ProcessData
     {
         public ProcessData(int pid, long startTime)
         {

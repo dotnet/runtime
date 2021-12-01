@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
 namespace System.Xml.Xsl.Runtime
 {
-    internal class DecimalFormat
+    internal sealed class DecimalFormat
     {
         public NumberFormatInfo info;
         public char digit;
@@ -23,7 +24,7 @@ namespace System.Xml.Xsl.Runtime
         }
     }
 
-    internal class DecimalFormatter
+    internal sealed class DecimalFormatter
     {
         private readonly NumberFormatInfo _posFormatInfo;
         private readonly NumberFormatInfo _negFormatInfo;

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Security;
-using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
@@ -11,8 +9,12 @@ namespace Microsoft.Win32.SafeHandles
     /// <summary>
     /// Used to wrap handles gotten from OpenSCManager or OpenService
     /// </summary>
-    internal class SafeServiceHandle : SafeHandle
+    internal sealed class SafeServiceHandle : SafeHandle
     {
+        public SafeServiceHandle() : base(IntPtr.Zero, true)
+        {
+        }
+
         internal SafeServiceHandle(IntPtr handle) : base(IntPtr.Zero, true)
         {
             SetHandle(handle);

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -31,11 +32,20 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
-    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3 : HttpClientMiniStress
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3_MsQuic : HttpClientMiniStress
     {
-        public SocketsHttpHandler_HttpClientMiniStress_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientMiniStress_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
+        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3_Mock : HttpClientMiniStress
+    {
+        public SocketsHttpHandler_HttpClientMiniStress_Http3_Mock(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http2 : HttpClientMiniStress
@@ -78,7 +88,7 @@ namespace System.Net.Http.Functional.Tests
                     while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false)));
                     Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
 
-                    await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
+                    await connection.WriteStringAsync(responseText).ConfigureAwait(false);
                     connection.Socket.Shutdown(SocketShutdown.Send);
                 });
 
@@ -88,6 +98,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [Collection(nameof(HttpClientMiniStress))]
+    [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Security is not supported on Browser")]
     public abstract class HttpClientMiniStress : HttpClientHandlerTestBase
     {
         public HttpClientMiniStress(ITestOutputHelper output) : base(output) { }

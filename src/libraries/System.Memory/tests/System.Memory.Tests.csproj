@@ -14,6 +14,7 @@
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpan.cs" />
+    <Compile Include="MemoryMarshal\CreateReadOnlySpanFromNullTerminated.cs" />
     <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs"
              Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.cs" />
@@ -63,6 +64,8 @@
     <Compile Include="Span\EndsWith.char.cs" />
     <Compile Include="Span\EndsWith.long.cs" />
     <Compile Include="Span\EndsWith.T.cs" />
+    <Compile Include="Span\EnumerateLines.cs" />
+    <Compile Include="Span\EnumerateRunes.cs" />
     <Compile Include="Span\Equality.cs" />
     <Compile Include="Span\GcReporting.cs" />
     <Compile Include="Span\GetEnumerator.cs" />
@@ -73,6 +76,7 @@
     <Compile Include="Span\IndexOf.byte.cs" />
     <Compile Include="Span\IndexOf.char.cs" />
     <Compile Include="Span\IndexOf.T.cs" />
+    <Compile Include="Span\IndexOfAny.AlgorithmicComplexity.cs" />
     <Compile Include="Span\IndexOfAny.byte.cs" />
     <Compile Include="Span\IndexOfAny.char.cs" />
     <Compile Include="Span\IndexOfAny.T.cs" />
@@ -108,6 +112,7 @@
     <Compile Include="Span\StartsWith.T.cs" />
     <Compile Include="Span\ToArray.cs" />
     <Compile Include="Span\ToString.cs" />
+    <Compile Include="Span\TryWrite.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.char.cs" />

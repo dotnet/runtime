@@ -77,7 +77,7 @@ namespace System.Text.RegularExpressions
             // Gets the weakly cached replacement helper or creates one if there isn't one already,
             // then uses it to perform the replace.
             return
-                RegexReplacement.GetOrCreate(_replref!, replacement, caps!, capsize, capnames!, roptions).
+                RegexReplacement.GetOrCreate(RegexReplacementWeakReference, replacement, caps!, capsize, capnames!, roptions).
                 Replace(this, input, count, startat);
         }
 
@@ -170,17 +170,17 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            var state = (segments: new SegmentStringBuilder(256), evaluator, prevat: 0, input, count);
+            var state = (segments: SegmentStringBuilder.Create(), evaluator, prevat: 0, input, count);
 
             if (!regex.RightToLeft)
             {
-                regex.Run(input, startat, ref state, (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
+                regex.Run(input, startat, ref state, static (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
                 {
                     state.segments.Add(state.input.AsMemory(state.prevat, match.Index - state.prevat));
                     state.prevat = match.Index + match.Length;
                     state.segments.Add(state.evaluator(match).AsMemory());
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: false);
 
                 if (state.segments.Count == 0)
                 {
@@ -193,13 +193,13 @@ namespace System.Text.RegularExpressions
             {
                 state.prevat = input.Length;
 
-                regex.Run(input, startat, ref state, (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
+                regex.Run(input, startat, ref state, static (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
                 {
                     state.segments.Add(state.input.AsMemory(match.Index + match.Length, state.prevat - match.Index - match.Length));
                     state.prevat = match.Index;
-                    state.segments.Add(evaluator(match).AsMemory());
+                    state.segments.Add(state.evaluator(match).AsMemory());
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: false);
 
                 if (state.segments.Count == 0)
                 {

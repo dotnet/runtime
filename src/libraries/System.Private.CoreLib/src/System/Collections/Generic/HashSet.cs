@@ -47,7 +47,6 @@ namespace System.Collections.Generic
         private int _freeCount;
         private int _version;
         private IEqualityComparer<T>? _comparer;
-        private SerializationInfo? _siInfo; // temporary variable needed during deserialization
 
         #region Constructors
 
@@ -55,15 +54,21 @@ namespace System.Collections.Generic
 
         public HashSet(IEqualityComparer<T>? comparer)
         {
-            if (comparer != null && comparer != EqualityComparer<T>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
+            if (comparer is not null && comparer != EqualityComparer<T>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
             {
                 _comparer = comparer;
             }
 
-            if (typeof(T) == typeof(string) && _comparer == null)
+            // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
+            // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
+            // hash buckets become unbalanced.
+            if (typeof(T) == typeof(string))
             {
-                // To start, move off default comparer for string which is randomized.
-                _comparer = (IEqualityComparer<T>)NonRandomizedStringEqualityComparer.Default;
+                IEqualityComparer<string>? stringComparer = NonRandomizedStringEqualityComparer.GetStringComparer(_comparer);
+                if (stringComparer is not null)
+                {
+                    _comparer = (IEqualityComparer<T>?)stringComparer;
+                }
             }
         }
 
@@ -123,7 +128,7 @@ namespace System.Collections.Generic
             // deserialized and we have a reasonable estimate that GetHashCode is not going to
             // fail.  For the time being, we'll just cache this.  The graph is not valid until
             // OnDeserialization has been called.
-            _siInfo = info;
+            HashHelpers.SerializationInfoTable.Add(this, info);
         }
 
         /// <summary>Initializes the HashSet from another HashSet with the same element type and equality comparer.</summary>
@@ -184,7 +189,7 @@ namespace System.Collections.Generic
                 Debug.Assert(_buckets != null, "_buckets should be non-null");
                 Debug.Assert(_entries != null, "_entries should be non-null");
 
-                Array.Clear(_buckets, 0, _buckets.Length);
+                Array.Clear(_buckets);
                 _count = 0;
                 _freeList = -1;
                 _freeCount = 0;
@@ -380,7 +385,7 @@ namespace System.Collections.Generic
             }
 
             info.AddValue(VersionName, _version); // need to serialize version to avoid problems with serializing while enumerating
-            info.AddValue(ComparerName, _comparer ?? EqualityComparer<T>.Default, typeof(IEqualityComparer<T>));
+            info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
             info.AddValue(CapacityName, _buckets == null ? 0 : _buckets.Length);
 
             if (_buckets != null)
@@ -397,7 +402,8 @@ namespace System.Collections.Generic
 
         public virtual void OnDeserialization(object? sender)
         {
-            if (_siInfo == null)
+            HashHelpers.SerializationInfoTable.TryGetValue(this, out SerializationInfo? siInfo);
+            if (siInfo == null)
             {
                 // It might be necessary to call OnDeserialization from a container if the
                 // container object also implements OnDeserialization. We can return immediately
@@ -405,8 +411,8 @@ namespace System.Collections.Generic
                 return;
             }
 
-            int capacity = _siInfo.GetInt32(CapacityName);
-            _comparer = (IEqualityComparer<T>)_siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>))!;
+            int capacity = siInfo.GetInt32(CapacityName);
+            _comparer = (IEqualityComparer<T>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>))!;
             _freeList = -1;
             _freeCount = 0;
 
@@ -418,7 +424,7 @@ namespace System.Collections.Generic
                 _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)capacity);
 #endif
 
-                T[]? array = (T[]?)_siInfo.GetValue(ElementsName, typeof(T[]));
+                T[]? array = (T[]?)siInfo.GetValue(ElementsName, typeof(T[]));
                 if (array == null)
                 {
                     ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
@@ -435,8 +441,8 @@ namespace System.Collections.Generic
                 _buckets = null;
             }
 
-            _version = _siInfo.GetInt32(VersionName);
-            _siInfo = null;
+            _version = siInfo.GetInt32(VersionName);
+            HashHelpers.SerializationInfoTable.Remove(this);
         }
 
         #endregion
@@ -912,10 +918,20 @@ namespace System.Collections.Generic
         }
 
         /// <summary>Gets the <see cref="IEqualityComparer"/> object that is used to determine equality for the values in the set.</summary>
-        public IEqualityComparer<T> Comparer =>
-            (_comparer == null || _comparer is NonRandomizedStringEqualityComparer) ?
-                EqualityComparer<T>.Default :
-                _comparer;
+        public IEqualityComparer<T> Comparer
+        {
+            get
+            {
+                if (typeof(T) == typeof(string))
+                {
+                    return (IEqualityComparer<T>)IInternalStringEqualityComparer.GetUnderlyingEqualityComparer((IEqualityComparer<string?>?)_comparer);
+                }
+                else
+                {
+                    return _comparer ?? EqualityComparer<T>.Default;
+                }
+            }
+        }
 
         /// <summary>Ensures that this hash set can hold the specified number of elements without growing.</summary>
         public int EnsureCapacity(int capacity)
@@ -957,14 +973,21 @@ namespace System.Collections.Generic
 
             if (!typeof(T).IsValueType && forceNewHashCodes)
             {
+                Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
+                _comparer = (IEqualityComparer<T>)((NonRandomizedStringEqualityComparer)_comparer).GetRandomizedEqualityComparer();
+
                 for (int i = 0; i < count; i++)
                 {
                     ref Entry entry = ref entries[i];
                     if (entry.Next >= -1)
                     {
-                        Debug.Assert(_comparer == null);
-                        entry.HashCode = entry.Value != null ? entry.Value!.GetHashCode() : 0;
+                        entry.HashCode = entry.Value != null ? _comparer!.GetHashCode(entry.Value) : 0;
                     }
+                }
+
+                if (ReferenceEquals(_comparer, EqualityComparer<T>.Default))
+                {
+                    _comparer = null;
                 }
             }
 
@@ -1185,7 +1208,6 @@ namespace System.Collections.Generic
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
-                _comparer = null;
                 Resize(entries.Length, forceNewHashCodes: true);
                 location = FindItemIndex(value);
                 Debug.Assert(location >= 0);

@@ -9,10 +9,9 @@
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/metadata/components.h>
 
-//XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
-#include <mono/mini/interp/interp-internals.h>
-
+static int mono_wasm_debug_level = 0;
 #ifndef DISABLE_JIT
 
 #include "ir-emit.h"
@@ -226,11 +225,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->gen_sdb_seq_points)
 		g_error ("gen_sdb_seq_points not supported");
 
-	if (cfg->method->save_lmf)
+	if (cfg->method->save_lmf) {
 		cfg->create_lmf_var = TRUE;
-
-	if (cfg->method->save_lmf)
 		cfg->lmf_ir = TRUE;
+	}
 }
 
 void
@@ -274,7 +272,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
-	if (!ret->byref) {
+	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_R4) {
 			MONO_EMIT_NEW_UNALU (cfg, cfg->r4fp ? OP_RMOVE : OP_FMOVE, cfg->ret->dreg, val->dreg);
 			return;
@@ -370,7 +368,7 @@ mono_arch_get_delegate_invoke_impls (void)
 }
 
 gpointer
-mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
+mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
 {
 	g_error ("mono_arch_get_gsharedvt_call_info");
 	return NULL;
@@ -382,7 +380,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	g_error ("mono_arch_get_delegate_invoke_impl");
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 #include <emscripten.h>
 
@@ -395,10 +393,9 @@ extern void mono_set_timeout (int t, int d);
 extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
 
-extern void mono_wasm_pump_threadpool (void);
 void mono_background_exec (void);
 
-#endif // HOST_WASM
+#endif // HOST_BROWSER
 
 gpointer
 mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
@@ -469,7 +466,7 @@ mono_arch_get_cie_program (void)
 }
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	g_error ("mono_arch_build_imt_trampoline");
 }
@@ -489,21 +486,20 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return 0;
 }
 
-#ifdef HOST_WASM
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	g_error ("mono_arch_context_get_int_reg_address");
+	return 0;
+}
+
+#ifdef HOST_BROWSER
 
 void
 mono_runtime_setup_stat_profiler (void)
 {
 	g_error ("mono_runtime_setup_stat_profiler");
 }
-
-
-void
-mono_runtime_shutdown_stat_profiler (void)
-{
-	g_error ("mono_runtime_shutdown_stat_profiler");
-}
-
 
 gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
@@ -519,18 +515,7 @@ mono_runtime_install_handlers (void)
 }
 
 void
-mono_runtime_cleanup_handlers (void)
-{
-}
-
-void
 mono_init_native_crash_info (void)
-{
-	return;
-}
-
-void
-mono_cleanup_native_crash_info (void)
 {
 	return;
 }
@@ -547,11 +532,7 @@ mono_set_timeout_exec (int id)
 {
 	ERROR_DECL (error);
 
-#ifdef ENABLE_NETCORE
 	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
-#else
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "WasmRuntime");
-#endif
 	g_assert (klass);
 
 	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
@@ -566,13 +547,13 @@ mono_set_timeout_exec (int id)
 	//YES we swallow exceptions cuz there's nothing much we can do from here.
 	//FIXME Maybe call the unhandled exception function?
 	if (!is_ok (error)) {
-		printf ("timeout callback failed due to %s\n", mono_error_get_message (error));
+		g_printerr ("timeout callback failed due to %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("timeout callback threw a %s\n", type_name);
+		g_printerr ("timeout callback threw a %s\n", type_name);
 		g_free (type_name);
 	}
 }
@@ -582,7 +563,7 @@ mono_set_timeout_exec (int id)
 void
 mono_wasm_set_timeout (int timeout, int id)
 {
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 	mono_set_timeout (timeout, id);
 #endif
 }
@@ -604,57 +585,41 @@ tp_cb (void)
 	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
 
 	if (!is_ok (error)) {
-		printf ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
+		g_printerr ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
+		g_printerr ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
 		g_free (type_name);
 	}
 }
 
+#ifdef HOST_BROWSER
 void
 mono_wasm_queue_tp_cb (void)
 {
-#ifdef HOST_WASM
 	mono_threads_schedule_background_job (tp_cb);
-#endif
 }
-
-void
-mono_wasm_pump_threadpool (void)
-{
-#ifdef HOST_WASM
-	mono_background_exec ();
 #endif
-}
 
 void
 mono_arch_register_icall (void)
 {
-#ifdef ENABLE_NETCORE
+#ifdef HOST_BROWSER
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
-	mono_add_internal_call_internal ("System.Threading.ThreadPool::PumpThreadPool", mono_wasm_pump_threadpool);
-#else
-	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
 #endif
 }
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	g_error ("mono_arch_patch_code_new");
 }
 
-#ifdef HOST_WASM
-
-/*
-The following functions don't belong here, but are due to laziness.
-*/
-gboolean mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, gint fsbuffersize);
+#ifdef HOST_BROWSER
 
 G_BEGIN_DECLS
 
@@ -666,25 +631,6 @@ int inotify_add_watch (int fd, const char *pathname, uint32_t mask);
 int sem_timedwait (sem_t *sem, const struct timespec *abs_timeout);
 
 G_END_DECLS
-
-//w32file-wasm.c
-gboolean
-mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, gint fsbuffersize)
-{
-	glong len;
-	gboolean status = FALSE;
-
-	gunichar2 *ret = g_utf8_to_utf16 ("memfs", -1, NULL, &len, NULL);
-	if (ret != NULL && len < fsbuffersize) {
-		memcpy (fsbuffer, ret, len * sizeof (gunichar2));
-		fsbuffer [len] = 0;
-		status = TRUE;
-	}
-	if (ret != NULL)
-		g_free (ret);
-
-	return status;
-}
 
 G_BEGIN_DECLS
 
@@ -795,10 +741,33 @@ getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
 
 G_END_DECLS
 
-#endif // HOST_WASM
+/* Helper for runtime debugging */
+void
+mono_wasm_print_stack_trace (void)
+{
+	EM_ASM(
+		   var err = new Error();
+		   console.log ("Stacktrace: \n");
+		   console.log (err.stack);
+		   );
+}
+
+#endif // HOST_BROWSER
 
 gpointer
 mono_arch_load_function (MonoJitICallId jit_icall_id)
 {
 	return NULL;
+}
+
+MONO_API void 
+mono_wasm_enable_debugging (int log_level)
+{
+	mono_wasm_debug_level = log_level;
+}
+
+int
+mono_wasm_get_debug_level (void)
+{
+	return mono_wasm_debug_level;
 }

@@ -40,9 +40,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -56,7 +54,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#include "version.h"
 
 #include "jit-icalls.h"
 
@@ -66,32 +63,34 @@
 #include <mach/exception.h>
 #include <mach/task.h>
 #include <pthread.h>
-#include <dlfcn.h>
 #include <AvailabilityMacros.h>
-
-/* This is #define'd by Boehm GC to _GC_dlopen. */
-#undef dlopen
-
-void* dlopen(const char* path, int mode);
 
 void
 mono_runtime_install_handlers (void)
 {
 	mono_runtime_posix_install_handlers ();
 
-	/* Snow Leopard has a horrible bug: http://openradar.appspot.com/7209349
-	 * This causes obscure SIGTRAP's for any application that comes across this built on
-	 * Snow Leopard.  This is a horrible hack to ensure that the private __CFInitialize
-	 * is run on the main thread, so that we don't get SIGTRAPs later
+#if !defined (HOST_WATCHOS) && !defined (HOST_TVOS)
+	/* LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
+	 * exceptions first to any registered "activation" handler and then to
+	 * any registered task handler before dispatching the exception to a
+	 * host-wide Mach exception handler that does translation to POSIX
+	 * signals. This makes it impossible to use LLDB with an
+	 * implicit-null-check-enabled Mono; continuing execution after LLDB
+	 * traps an EXC_BAD_ACCESS will result in LLDB's EXC_BAD_ACCESS handler
+	 * being invoked again. This also interferes with the translation of
+	 * SIGFPEs to .NET-level ArithmeticExceptions. Work around this here by
+	 * installing a no-op task-wide Mach exception handler for
+	 * EXC_BAD_ACCESS and EXC_ARITHMETIC.
 	 */
-#if defined (__APPLE__) && (defined (__i386__) || defined (__x86_64__))
-	{
-		void *handle = dlopen ("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation", RTLD_LAZY);
-		if (handle == NULL)
-			return;
-
-		dlclose (handle);
-	}
+	kern_return_t kr = task_set_exception_ports (
+		mach_task_self (),
+		EXC_MASK_BAD_ACCESS | EXC_MASK_ARITHMETIC, /* SIGSEGV, SIGFPE */
+		MACH_PORT_NULL,
+		EXCEPTION_STATE_IDENTITY,
+		MACHINE_THREAD_STATE);
+	if (kr != KERN_SUCCESS)
+		g_warning ("mono_runtime_install_handlers: task_set_exception_ports failed");
 #endif
 }
 

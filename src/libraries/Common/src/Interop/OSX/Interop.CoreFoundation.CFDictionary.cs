@@ -11,8 +11,8 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        internal static extern IntPtr CFDictionaryGetValue(SafeCFDictionaryHandle handle, IntPtr key);
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        internal static partial IntPtr CFDictionaryGetValue(SafeCFDictionaryHandle handle, IntPtr key);
     }
 }
 
@@ -20,7 +20,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeCFDictionaryHandle : SafeHandle
     {
-        private SafeCFDictionaryHandle()
+        public SafeCFDictionaryHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

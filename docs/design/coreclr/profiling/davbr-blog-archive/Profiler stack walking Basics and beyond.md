@@ -17,31 +17,31 @@ It’s nice to be able to get call stacks whenever you want them.  But with powe
 
 So let’s take a look at the beast.  Here’s what your profiler calls (you can find this in ICorProfilerInfo2, in corprof.idl):
 ```
-HRESULT DoStackSnapshot(   
-  [in] ThreadID thread,   
-  [in] StackSnapshotCallback *callback,   
-  [in] ULONG32 infoFlags,   
-  [in] void *clientData,   
-  [in, size_is(contextSize), length_is(contextSize)] BYTE context[],   
+HRESULT DoStackSnapshot(
+  [in] ThreadID thread,
+  [in] StackSnapshotCallback *callback,
+  [in] ULONG32 infoFlags,
+  [in] void *clientData,
+  [in, size_is(contextSize), length_is(contextSize)] BYTE context[],
   [in] ULONG32 contextSize);
 ```
 And here’s what the CLR calls on your profiler (you can also find this in corprof.idl).  You’ll pass a pointer to your implementation of this function in the callback parameter above.
 ```
-typedef HRESULT \_\_stdcall StackSnapshotCallback(   
-  FunctionID funcId,   
-  UINT_PTR ip,   
-  COR_PRF_FRAME_INFO frameInfo,   
-  ULONG32 contextSize,   
-  BYTE context[],   
+typedef HRESULT __stdcall StackSnapshotCallback(
+  FunctionID funcId,
+  UINT_PTR ip,
+  COR_PRF_FRAME_INFO frameInfo,
+  ULONG32 contextSize,
+  BYTE context[],
   void *clientData);
 ```
 
 It’s like a sandwich.  When your profiler wants to walk the stack, you call DoStackSnapshot.  Before the CLR returns from that call, it calls your StackSnapshotCallback several times, once for each managed frame (or run of unmanaged frames) on the stack:
 ```
-Profiler calls DoStackSnapshot.                           Whole wheat bread  
-            CLR calls StackSnapshotCallback.              Lettuce frame (“leaf”-most frame, ha)  
-            CLR calls StackSnapshotCallback.              Tomato frame  
-            CLR calls StackSnapshotCallback.              Bacon frame (root or “main” frame)  
+Profiler calls DoStackSnapshot.                           Whole wheat bread
+            CLR calls StackSnapshotCallback.              Lettuce frame (“leaf”-most frame, ha)
+            CLR calls StackSnapshotCallback.              Tomato frame
+            CLR calls StackSnapshotCallback.              Bacon frame (root or “main” frame)
 CLR returns back to profiler from DoStackSnapshot         Whole wheat bread
 ```
 
@@ -77,50 +77,20 @@ Before I continue from this exciting cliffhanger, a brief interlude.  Everyone k
 
 Now that we’re speaking the same language.  Let’s look at a mixed-mode stack:
 
-| 
-
+```
 Unmanaged
-
- |
-| 
-
 D (Managed)
-
- |
-| 
-
 Unmanaged
-
- |
-| 
-
 C (Managed)
-
- |
-| 
-
 B (Managed)
-
- |
-| 
-
 Unmanaged
-
- |
-| 
-
 A (Managed)
-
- |
-| 
-
 Main (Managed)
-
- |
+```
 
 Stepping back a bit, it’s worthwhile to understand why DoStackSnapshot exists in the first place.  It’s there to help you walk _managed_ frames on the stack.  If you tried to walk managed frames yourself, you would get unreliable results, particularly on 32 bits, because of some wacky calling conventions used in managed code.  The CLR understands these calling conventions, and DoStackSnapshot is therefore in a uniquely suitable position to help you decode them.  However, DoStackSnapshot is not a complete solution if you want to be able to walk the entire stack, including unmanaged frames.  Here’s where you have a choice:
 
-1. Do nothing and report stacks with “unmanaged holes” to your users, or 
+1. Do nothing and report stacks with “unmanaged holes” to your users, or
 2. Write your own unmanaged stack walker to fill in those holes.
 
 When DoStackSnapshot comes across a block of unmanaged frames, it calls your StackSnapshotCallback with funcId=0.  (I think I mentioned this before, but I’m not sure you were listening.)  If you’re going with option #1 above, simply do nothing in your callback when funcId=0.  We’ll call you again for the next managed frame and you can wake up at that point.
@@ -145,81 +115,67 @@ But before you get too deep, note that the issue of whether and how to seed a st
 
 For the truly adventurous profiler that is doing an asynchronous, cross-thread, seeded stack walk while filling in the unmanaged holes, here’s what it would look like.
 
-| 
+Block of Unmanaged Frames
 
-Block of  
-Unmanaged  
-Frames
-
- | 
-1. You suspend the target thread (target thread’s suspend count is now 1) 
-2. You get the target thread’s current register context 
-3. You determine if the register context points to unmanaged code (e.g., call ICorProfilerInfo2::GetFunctionFromIP(), and see if you get back a 0 FunctionID) 
+1. You suspend the target thread (target thread’s suspend count is now 1)
+2. You get the target thread’s current register context
+3. You determine if the register context points to unmanaged code (e.g., call ICorProfilerInfo2::GetFunctionFromIP(), and see if you get back a 0 FunctionID)
 4. In this case the register context does point to unmanaged code, so you perform an unmanaged stack walk until you find the top-most managed frame (D)
- |
-| 
 
-Function D  
-(Managed)
+   ```
+   Function D
+   (Managed)
+   ```
 
- | 
 1. You call DoStackSnapshot with your seed context. CLR suspends target thread again: its suspend count is now 2.  Our sandwich begins.
 
 1. CLR calls your StackSnapshotCallback with FunctionID for D.
- |
-| 
 
-Block of  
-Unmanaged  
-Frames
+   ```
+   Block of
+   Unmanaged
+   Frames
+   ```
 
- | 
 1. CLR calls your StackSnapshotCallback with FunctionID=0.  You’ll need to walk this block yourself.  You can stop when you hit the first managed frame, or you can cheat: delay your unmanaged walk until sometime after your next callback, as the next callback will tell you exactly where the next managed frame begins (and thus where your unmanaged walk should end).
- |
-| 
 
-Function C  
-(Managed)
-
- | 
+   ```
+   Function C
+   (Managed)
+   ```
 1. CLR calls your StackSnapshotCallback with FunctionID for C.
- |
-| 
 
-Function B  
-(Managed)
+   ```
+   Function B
+   (Managed)
+   ```
 
- | 
 1. CLR calls your StackSnapshotCallback with FunctionID for B.
- |
-| 
 
-Block of  
-Unmanaged  
-Frames
+   ```
+   Block of
+   Unmanaged
+   Frames
+   ```
 
- | 
 1. CLR calls your StackSnapshotCallback with FunctionID=0.  Again, you’ll need to walk this block yourself.
- |
-| 
 
-Function A  
-(Managed)
+   ```
+   Function A
+   (Managed)
+   ```
 
- | 
 1. CLR calls your StackSnapshotCallback with FunctionID for A.
- |
-| 
 
-Main  
-(Managed)
+   ```
+   Main
+   (Managed)
+   ```
 
- | 
-1. CLR calls your StackSnapshotCallback with FunctionID for Main. 
+1. CLR calls your StackSnapshotCallback with FunctionID for Main.
 2. DoStackSnapshot “resumes” target thread (its suspend count is now 1) and returns.  Our sandwich is complete.
 
 1. You resume target thread (its suspend count is now 0, so it’s resumed for real).
- |
 
 **Triumph over evil**
 
@@ -253,8 +209,8 @@ Problem 2: _While you suspend the target thread, the target thread tries to susp
 
 “Come on!  Like that could really happen.”  Believe it or not, if:
 
-- Your app runs on a multiproc box, and 
-- Thread A runs on one proc and thread B runs on another, and 
+- Your app runs on a multiproc box, and
+- Thread A runs on one proc and thread B runs on another, and
 - A tries to suspend B while B tries to suspend A
 
 then it’s possible that both suspensions win, and both threads end up suspended.  It’s like the line from that movie: “Multiproc means never having to say, ‘I lose.’”.  Since each thread is waiting for the other to wake it up, they stay suspended forever.  It is the most romantic of all deadlocks.
@@ -265,7 +221,7 @@ Ok, so, why is the target thread trying to suspend you anyway?  Well, in a hypot
 
 A less obvious reason that the target thread might try to suspend your walking thread is due to the inner workings of the CLR.  The CLR suspends application threads to help with things like garbage collection.  So if your walker tries to walk (and thus suspend) the thread doing the GC at the same time the thread doing the GC tries to suspend your walker, you are hosed.
 
-The way out, fortunately, is quite simple.  The CLR is only going to suspend threads it needs to suspend in order to do its work.  Let’s label the two threads involved in your stack walk: Thread A = the current thread (the thread performing the walk), and Thread B = the target thread (the thread whose stack is walked).  As long as Thread A has _never executed managed code_ (and is therefore of no use to the CLR during a garbage collection), then the CLR will never try to suspend Thread A.  This means it’s safe for your profiler to have Thread A suspend Thread B, as the CLR will have no reason for B to suspend A. 
+The way out, fortunately, is quite simple.  The CLR is only going to suspend threads it needs to suspend in order to do its work.  Let’s label the two threads involved in your stack walk: Thread A = the current thread (the thread performing the walk), and Thread B = the target thread (the thread whose stack is walked).  As long as Thread A has _never executed managed code_ (and is therefore of no use to the CLR during a garbage collection), then the CLR will never try to suspend Thread A.  This means it’s safe for your profiler to have Thread A suspend Thread B, as the CLR will have no reason for B to suspend A.
 
 If you’re writing a sampling profiler, it’s quite natural to ensure all of this.  You will typically have a separate thread of your own creation that responds to timer interrupts and walks the stacks of other threads.  Call this your sampler thread.  Since you create this sampler thread yourself and have control over what it executes, the CLR will have no reason to suspend it.  And this also fixes the “poorly-written profiler” example above, since this sampler thread is the only thread of your profiler trying to walk or suspend other threads.  So your profiler will never try to directly suspend the sampler thread.
 
@@ -281,7 +237,7 @@ Lucky for you, the CLR notifies profilers when a thread is about to be destroyed
 
 Rule 2: Block in ThreadDestroyed callback until that thread’s stack walk is complete
 
- 
+
 
 **_GC helps you make a cycle_**
 
@@ -293,25 +249,25 @@ A while back I mentioned that it is clearly a bad idea for your profiler to hold
 
 Example #1:
 
-- Thread A successfully grabs and now owns one of your profiler locks 
-- Thread B = thread doing the GC 
-- Thread B calls profiler’s GarbageCollectionStarted callback 
-- Thread B blocks on the same profiler lock 
-- Thread A executes GetClassFromTokenAndTypeArgs() 
-- GetClassFromTokenAndTypeArgs tries to trigger a GC, but notices a GC is already in progress. 
-- Thread A blocks, waiting for GC currently in progress (Thread B) to complete 
+- Thread A successfully grabs and now owns one of your profiler locks
+- Thread B = thread doing the GC
+- Thread B calls profiler’s GarbageCollectionStarted callback
+- Thread B blocks on the same profiler lock
+- Thread A executes GetClassFromTokenAndTypeArgs()
+- GetClassFromTokenAndTypeArgs tries to trigger a GC, but notices a GC is already in progress.
+- Thread A blocks, waiting for GC currently in progress (Thread B) to complete
 - But B is waiting for A, because of your profiler lock.
 
 ![](media/gccycle.jpg)
 
 Example #2:
 
-- Thread A successfully grabs and now owns one of your profiler locks 
-- Thread B calls profiler’s ModuleLoadStarted callback 
-- Thread B blocks on the same profiler lock 
-- Thread A executes GetClassFromTokenAndTypeArgs() 
-- GetClassFromTokenAndTypeArgs triggers a GC 
-- Thread A (now doing the GC) waits for B to be ready to be collected 
+- Thread A successfully grabs and now owns one of your profiler locks
+- Thread B calls profiler’s ModuleLoadStarted callback
+- Thread B blocks on the same profiler lock
+- Thread A executes GetClassFromTokenAndTypeArgs()
+- GetClassFromTokenAndTypeArgs triggers a GC
+- Thread A (now doing the GC) waits for B to be ready to be collected
 - But B is waiting for A, because of your profiler lock.
 
 ![](media/deadlock.jpg)
@@ -332,10 +288,10 @@ Yeah, if you read carefully, you’ll see that this rule never even mentions DoS
 
 I’m just about tuckered out, so I’m gonna close this out with a quick summary of the highlights.  Here's what's important to remember.
 
-1. Synchronous stack walks involve walking the current thread in response to a profiler callback.  These don’t require seeding, suspending, or any special rules.  Enjoy! 
-2. Asynchronous walks require a seed if the top of the stack is unmanaged code not part of a PInvoke or COM call.  You supply a seed by directly suspending the target thread and walking it yourself, until you find the top-most managed frame.  If you don’t supply a seed in this case, DoStackSnapshot will just return a failure code to you. 
-3. If you directly suspend threads, remember that only a thread that has never run managed code can suspend another thread 
-4. When doing asynchronous walks, always block in your ThreadDestroyed callback until that thread’s stack walk is complete 
+1. Synchronous stack walks involve walking the current thread in response to a profiler callback.  These don’t require seeding, suspending, or any special rules.  Enjoy!
+2. Asynchronous walks require a seed if the top of the stack is unmanaged code not part of a PInvoke or COM call.  You supply a seed by directly suspending the target thread and walking it yourself, until you find the top-most managed frame.  If you don’t supply a seed in this case, DoStackSnapshot will just return a failure code to you.
+3. If you directly suspend threads, remember that only a thread that has never run managed code can suspend another thread
+4. When doing asynchronous walks, always block in your ThreadDestroyed callback until that thread’s stack walk is complete
 5. Do not hold a lock while your profiler calls into a CLR function that can trigger a GC
 
 Finally, a note of thanks to the rest of the CLR Profiling API team, as the writing of these rules is truly a team effort.  And special thanks to Sean Selitrennikoff who provided an earlier incarnation of much of this content.

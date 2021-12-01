@@ -5,14 +5,13 @@ schedules:
   displayName: Outerloop scheduled build
   branches:
     include:
-    - master
+    - main
     - release/*.*
 
 variables:
   - template: variables.yml
 
 jobs:
-  - template: /eng/pipelines/common/checkout-job.yml
 
   #
   # CoreCLR Build
@@ -23,8 +22,8 @@ jobs:
       buildConfig: release
       platforms:
       - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
-        - Windows_NT_x64
-        - Windows_NT_x86
+        - windows_x64
+        - windows_x86
       - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
         - Linux_x64
         - Linux_musl_x64
@@ -33,6 +32,7 @@ jobs:
           - Linux_arm64
           - Linux_musl_arm64
       - ${{ if eq(variables['includeOsxOuterloop'], true) }}:        
+        - OSX_arm64
         - OSX_x64
       jobParameters:
         testGroup: innerloop
@@ -45,9 +45,9 @@ jobs:
       buildConfig: Release
       platforms:
       - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
-        - Windows_NT_x86
+        - windows_x86
         - ${{ if eq(variables['isFullMatrix'], true) }}:
-          - Windows_NT_x64
+          - windows_x64
       - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
         - ${{ if eq(variables['isFullMatrix'], true) }}:
           - Linux_x64
@@ -56,6 +56,7 @@ jobs:
           - Linux_musl_x64
           - Linux_musl_arm64
       - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isFullMatrix'], true)) }}:
+        - OSX_arm64
         - OSX_x64
       helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
       jobParameters:
@@ -72,11 +73,12 @@ jobs:
         buildConfig: Debug
         platforms:
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
-          - Windows_NT_x64
+          - windows_x64
         - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
           - Linux_x64
           - Linux_musl_x64
         - ${{ if eq(variables['includeOsxOuterloop'], true) }}:
+          - OSX_arm64
           - OSX_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
@@ -92,9 +94,9 @@ jobs:
         jobTemplate: /eng/pipelines/libraries/build-job.yml
         buildConfig: Release
         platforms:
-        - Windows_NT_x86
+        - windows_x86
         - ${{ if eq(variables['isFullMatrix'], true) }}:
-          - Windows_NT_x64
+          - windows_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -13,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
-    internal partial class XsdCachingReader : XmlReader, IXmlLineInfo
+    internal sealed partial class XsdCachingReader : XmlReader, IXmlLineInfo
     {
         private enum CachingReaderState
         {
@@ -178,7 +177,7 @@ namespace System.Xml
         }
 
         // Gets the base URI of the current node.
-        public override string? BaseURI
+        public override string BaseURI
         {
             get
             {

@@ -4,11 +4,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace System.Net
 {
-    internal class HeaderInfoTable
+    internal sealed class HeaderInfoTable
     {
         private static readonly Func<string, string[]> s_singleParser = value => new[] { value };
         private static readonly Func<string, string[]> s_multiParser = value => ParseValueHelper(value, isSetCookie: false);

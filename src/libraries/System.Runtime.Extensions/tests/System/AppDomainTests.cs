@@ -44,7 +44,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // throws pNSE
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "The dotnet sdk will not be available on these platforms")]
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
@@ -86,7 +86,7 @@ namespace System.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18984")]
-        [PlatformSpecific(~TestPlatforms.OSX)] // Unhandled exception on a separate process causes xunit to crash on osx
+        [SkipOnPlatform(TestPlatforms.OSX, "Unhandled exception on a separate process causes xunit to crash on osx")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UnhandledException_Called()
         {
@@ -235,12 +235,14 @@ namespace System.Tests
             Assert.Equal(AppDomain.CurrentDomain.ApplyPolicy(entryAssembly), entryAssembly);
         }
 
+#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and throws an exception.
         [Fact]
         public void CreateDomainNonNetfx()
         {
             AssertExtensions.Throws<ArgumentNullException>("friendlyName", () => { AppDomain.CreateDomain(null); });
             Assert.Throws<PlatformNotSupportedException>(() => { AppDomain.CreateDomain("test"); });
         }
+#pragma warning restore SYSLIB0024
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExecuteAssemblyByName()
@@ -266,8 +268,10 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AppDomain.CurrentDomain.ExecuteAssembly(null));
             Assert.Throws<FileNotFoundException>(() => AppDomain.CurrentDomain.ExecuteAssembly("NonExistentFile.exe"));
 
+#pragma warning disable SYSLIB0003 // Code Access Security is not supported or honored by the runtime.
             Func<int> executeAssembly = () => AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] { "2", "3" }, null, Configuration.Assemblies.AssemblyHashAlgorithm.SHA1);
             Assert.Throws<PlatformNotSupportedException>(() => executeAssembly());
+#pragma warning restore SYSLIB0003
 
             Assert.Equal(5, AppDomain.CurrentDomain.ExecuteAssembly(name));
             Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] { "2", "3" }));
@@ -339,6 +343,7 @@ namespace System.Tests
             }).Dispose();
         }
 
+#pragma warning disable SYSLIB0024 // Creating and unloading AppDomains is not supported and throws an exception.
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Unload()
         {
@@ -347,6 +352,7 @@ namespace System.Tests
                 Assert.Throws<CannotUnloadAppDomainException>(() => { AppDomain.Unload(AppDomain.CurrentDomain); });
             }).Dispose();
         }
+#pragma warning restore SYSLIB0024
 
         [Fact]
         public void Load()
@@ -358,7 +364,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void LoadBytes()
         {
             Assembly assembly = typeof(AppDomainTests).Assembly;
@@ -373,7 +379,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Throws PNSE
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Throws PNSE")]
         public void MonitoringIsEnabled()
         {
             Assert.True(AppDomain.MonitoringIsEnabled);
@@ -391,8 +397,10 @@ namespace System.Tests
             using (Process p = Process.GetCurrentProcess())
             {
                 TimeSpan processTime = p.UserProcessorTime;
+                Assert.InRange(processTime, TimeSpan.Zero, TimeSpan.MaxValue);
+
                 TimeSpan monitoringTime = AppDomain.CurrentDomain.MonitoringTotalProcessorTime;
-                Assert.InRange(monitoringTime, processTime, TimeSpan.MaxValue);
+                Assert.InRange(monitoringTime, processTime * 0.95, TimeSpan.MaxValue); // *0.95 for a bit of wiggle room due to precision differences with employed timing mechanisms
             }
 
             GC.KeepAlive(o);
@@ -639,6 +647,48 @@ namespace System.Tests
             }).Dispose();
         }
 
+        class CorrectlyPropagatesException : Exception
+        {
+            public CorrectlyPropagatesException(string message) : base(message)
+            { }
+        }
+
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43909", TestRuntimes.Mono)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AssemblyResolve_ExceptionPropagatesCorrectly(bool throwOnError)
+        {
+            bool handlerExceptionThrown = false;
+
+            ResolveEventHandler handler = (sender, args) =>
+            {
+                if (args.Name.StartsWith("Some.Assembly"))
+                    throw new CorrectlyPropagatesException("Failure");
+                return null;
+            };
+
+            AppDomain.CurrentDomain.AssemblyResolve += handler;
+
+            try
+            {
+                Type.GetType("Some.Assembly.Type, Some.Assembly", throwOnError);
+            }
+            catch (FileLoadException e)
+            {
+                Assert.NotNull(e.InnerException);
+                Assert.IsAssignableFrom<CorrectlyPropagatesException>(e.InnerException);
+                Assert.Equal("Failure", e.InnerException.Message);
+                handlerExceptionThrown = true;
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.AssemblyResolve -= handler;
+            }
+
+            Assert.True(handlerExceptionThrown);
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TypeResolve()
         {
@@ -713,14 +763,30 @@ namespace System.Tests
 
         private void CopyTestAssemblies()
         {
-            string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTestApp", "AssemblyResolveTestApp.dll");
+            string rootPath;
+            string assemblyResolvePath = "AssemblyResolveTestApp";
+            string appOutsideTPAPath = "TestAppOutsideOfTPA";
+            
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                rootPath = Path.GetTempPath();
+            }
+            else
+            {
+                rootPath = Environment.CurrentDirectory;
+            }
+
+            assemblyResolvePath = Path.Combine(rootPath, assemblyResolvePath);
+            appOutsideTPAPath = Path.Combine(rootPath, appOutsideTPAPath);
+
+            string destTestAssemblyPath = Path.Combine(assemblyResolvePath, "AssemblyResolveTestApp.dll");
             if (!File.Exists(destTestAssemblyPath) && File.Exists("AssemblyResolveTestApp.dll"))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
                 File.Copy("AssemblyResolveTestApp.dll", destTestAssemblyPath, false);
             }
 
-            destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe");
+            destTestAssemblyPath = Path.Combine(appOutsideTPAPath, "TestAppOutsideOfTPA.exe");
             if (!File.Exists(destTestAssemblyPath) && File.Exists("TestAppOutsideOfTPA.exe"))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
@@ -748,7 +814,6 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux | TestPlatforms.Browser, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
@@ -785,18 +850,29 @@ namespace System.Tests
             Assert.True(File.Exists(physicalFileName));
         }
 
-        public static TheoryData<string, string, string, string, Type> TestingCreateInstanceFromObjectHandleData => new TheoryData<string, string, string, string, Type>
+        public static IEnumerable<object[]> TestingCreateInstanceFromObjectHandleData()
         {
+            Type exceptionType;
+
+            if (PlatformDetection.IsCaseSensitiveOS && PlatformDetection.IsMonoRuntime)
+            {
+                exceptionType = typeof(FileNotFoundException);
+            }
+            else
+            {
+                exceptionType = typeof(TypeLoadException);
+            }
+
             // string physicalFileName, string assemblyFile, string typeName, returnedFullNameType, expectedException
-            { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassSample", "AssemblyResolveTestApp.PublicClassSample", null },
-            { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", "AssemblyResolveTestApp.PublicClassSample", typeof(TypeLoadException) },
+            yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassSample", "AssemblyResolveTestApp.PublicClassSample", null };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", "AssemblyResolveTestApp.PublicClassSample", exceptionType };
 
-            { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PrivateClassSample", "AssemblyResolveTestApp.PrivateClassSample", null },
-            { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", "AssemblyResolveTestApp.PrivateClassSample", typeof(TypeLoadException) },
+            yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PrivateClassSample", "AssemblyResolveTestApp.PrivateClassSample", null };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", "AssemblyResolveTestApp.PrivateClassSample", exceptionType };
 
-            { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", typeof(MissingMethodException) },
-            { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclassnodefaultconstructorsample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", typeof(TypeLoadException) }
-        };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", typeof(MissingMethodException) };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclassnodefaultconstructorsample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", exceptionType };
+        }
 
         [Theory]
         [MemberData(nameof(TestingCreateInstanceObjectHandleData))]
@@ -848,7 +924,6 @@ namespace System.Tests
         };
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux | TestPlatforms.Browser, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleFullSignatureData))]
         public static void TestingCreateInstanceFromObjectHandleFullSignature(string physicalFileName, string assemblyFile, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType)
         {
@@ -865,14 +940,17 @@ namespace System.Tests
         {
             // string physicalFileName, string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, returnedFullNameType
             yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
-            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
             yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
-            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
-
             yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
-            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
             yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
-            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
+
+            if (PlatformDetection.IsCaseInsensitiveOS)
+            {
+                yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
+                yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
+                yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
+                yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
+            }
         }
 
         [Theory]

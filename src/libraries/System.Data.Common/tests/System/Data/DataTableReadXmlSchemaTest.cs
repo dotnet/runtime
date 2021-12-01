@@ -53,7 +53,7 @@ namespace System.Data.Tests
             return ds;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void SuspiciousDataSetElement()
         {
             string schema = @"<?xml version='1.0'?>
@@ -108,7 +108,7 @@ namespace System.Data.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void IsDataSetAndTypeIgnored()
         {
             string xsbase = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
@@ -140,7 +140,7 @@ namespace System.Data.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void NestedReferenceNotAllowed()
         {
             string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
@@ -194,7 +194,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataColumn("col2", dt.Columns[1], "Child", false, false, 0, 1, "Child", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void PrefixedTargetNS()
         {
             string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata' xmlns:x='urn:foo' targetNamespace='urn:foo' elementFormDefault='qualified'>
@@ -308,7 +308,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataColumn("att2", dt.Columns["att2"], "att2", true, false, 0, 1, "att2", MappingType.Attribute, typeof(int), 2, string.Empty, -1, string.Empty, /*1*/-1, string.Empty, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TestSampleFileComplexTables3()
         {
             var ds = new DataSet();
@@ -338,7 +338,7 @@ namespace System.Data.Tests
             DataSetAssertion.AssertDataColumn("simple", dt.Columns[1], "e_text", false, false, 0, 1, "e_text", MappingType.SimpleContent, typeof(decimal), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void TestSampleFileXPath()
         {
             var ds = new DataSet();
@@ -428,7 +428,7 @@ namespace System.Data.Tests
             Assert.Equal("Constraint1", ds.Tables[0].Constraints[0].ConstraintName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void XsdSchemaSerializationIgnoresLocale()
         {
             var serializer = new BinaryFormatter();
@@ -475,7 +475,7 @@ namespace System.Data.Tests
             Assert.DoesNotContain("()2", rawSchemaXML);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have the fix for this bug")]
         public void XsdSchemaDeserializationIgnoresLocale()
         {

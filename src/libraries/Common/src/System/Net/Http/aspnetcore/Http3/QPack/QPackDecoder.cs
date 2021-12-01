@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 
 namespace System.Net.Http.QPack
 {
-    internal class QPackDecoder : IDisposable
+    internal sealed class QPackDecoder : IDisposable
     {
         private enum State
         {
@@ -123,7 +123,7 @@ namespace System.Net.Http.QPack
         private int _headerValueLength;
         private int _stringLength;
         private int _stringIndex;
-        private readonly IntegerDecoder _integerDecoder = new IntegerDecoder();
+        private IntegerDecoder _integerDecoder;
 
         private static ArrayPool<byte> Pool => ArrayPool<byte>.Shared;
 
@@ -167,19 +167,46 @@ namespace System.Net.Http.QPack
             }
         }
 
-        public void Decode(in ReadOnlySequence<byte> headerBlock, IHttpHeadersHandler handler)
+        /// <summary>
+        /// Reset the decoder state back to its initial value. Resetting state is required when reusing a decoder with multiple
+        /// header frames. For example, decoding a response's headers and trailers.
+        /// </summary>
+        public void Reset()
+        {
+            _state = State.RequiredInsertCount;
+        }
+
+        public void Decode(in ReadOnlySequence<byte> headerBlock, bool endHeaders, IHttpHeadersHandler handler)
         {
             foreach (ReadOnlyMemory<byte> segment in headerBlock)
             {
-                Decode(segment.Span, handler);
+                DecodeCore(segment.Span, handler);
             }
+            CheckIncompleteHeaderBlock(endHeaders);
         }
 
-        public void Decode(ReadOnlySpan<byte> headerBlock, IHttpHeadersHandler handler)
+        public void Decode(ReadOnlySpan<byte> headerBlock, bool endHeaders, IHttpHeadersHandler handler)
+        {
+            DecodeCore(headerBlock, handler);
+            CheckIncompleteHeaderBlock(endHeaders);
+        }
+
+        private void DecodeCore(ReadOnlySpan<byte> headerBlock, IHttpHeadersHandler handler)
         {
             foreach (byte b in headerBlock)
             {
                 OnByte(b, handler);
+            }
+        }
+
+        private void CheckIncompleteHeaderBlock(bool endHeaders)
+        {
+            if (endHeaders)
+            {
+                if (_state != State.CompressedHeaders)
+                {
+                    throw new QPackDecodingException(SR.net_http_hpack_incomplete_header_block);
+                }
             }
         }
 

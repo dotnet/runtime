@@ -25,7 +25,7 @@ namespace System.IO.Pipelines
                 byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
                 return FinishReadAsync(stream.ReadAsync(sharedBuffer, 0, buffer.Length, cancellationToken), sharedBuffer, buffer);
 
-                async ValueTask<int> FinishReadAsync(Task<int> readTask, byte[] localBuffer, Memory<byte> localDestination)
+                static async ValueTask<int> FinishReadAsync(Task<int> readTask, byte[] localBuffer, Memory<byte> localDestination)
                 {
                     try
                     {
@@ -86,6 +86,12 @@ namespace System.IO.Pipelines
             {
                 ArrayPool<byte>.Shared.Return(localBuffer);
             }
+        }
+
+        public static Task CopyToAsync(this Stream source, Stream destination, CancellationToken cancellationToken = default)
+        {
+            const int DefaultBufferSize = 81920;
+            return source.CopyToAsync(destination, DefaultBufferSize, cancellationToken);
         }
     }
 }

@@ -216,7 +216,7 @@ namespace System.Threading.Tasks
             Debug.Assert(task != null);
             Debug.Assert(task.m_taskScheduler != null);
 
-            // Set the TASK_STATE_STARTED flag.  This only needs to be done
+            // Set the TaskStateFlags.Started flag.  This only needs to be done
             // if the task may be canceled or if someone else has a reference to it
             // that may try to execute it.
             if (needsProtection)
@@ -226,7 +226,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                task.m_stateFlags |= Task.TASK_STATE_STARTED;
+                task.m_stateFlags |= (int)Task.TaskStateFlags.Started;
             }
 
             // Try to inline it but queue if we can't
@@ -311,7 +311,7 @@ namespace System.Threading.Tasks
                 // If the task was cancel before running (e.g a ContinueWhenAll with a cancelled caancelation token)
                 // we will still flow it to ScheduleAndStart() were it will check the status before running
                 // We check here to avoid faulty logs that contain a join event to an operation that was already set as completed.
-                if (!continuationTask.IsCanceled && TplEventSource.Log.IsEnabled())
+                if (TplEventSource.Log.IsEnabled() && !continuationTask.IsCanceled)
                 {
                     // Log now that we are sure that this continuation is being ran
                     TplEventSource.Log.TraceOperationRelation(continuationTask.Id, CausalityRelation.AssignDelegate);
@@ -419,7 +419,7 @@ namespace System.Threading.Tasks
             var c = (SynchronizationContextAwaitTaskContinuation)state;
 
             TplEventSource log = TplEventSource.Log;
-            if (log.TasksSetActivityIds && c.m_continuationId != 0)
+            if (log.IsEnabled() && log.TasksSetActivityIds && c.m_continuationId != 0)
             {
                 c.m_syncContext.Post(s_postCallback, GetActionLogDelegate(c.m_continuationId, c.m_action));
             }
@@ -629,7 +629,7 @@ namespace System.Threading.Tasks
             }
 
             Guid savedActivityId = default;
-            if (log.TasksSetActivityIds && m_continuationId != 0)
+            if (log.IsEnabled() && log.TasksSetActivityIds && m_continuationId != 0)
             {
                 Guid activityId = TplEventSource.CreateGuidForTaskID(m_continuationId);
                 System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out savedActivityId);
@@ -656,7 +656,7 @@ namespace System.Threading.Tasks
             }
             finally
             {
-                if (log.TasksSetActivityIds && m_continuationId != 0)
+                if (log.IsEnabled() && log.TasksSetActivityIds && m_continuationId != 0)
                 {
                     System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(savedActivityId);
                 }

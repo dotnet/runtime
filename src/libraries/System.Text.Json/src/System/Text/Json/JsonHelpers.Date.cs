@@ -51,8 +51,8 @@ namespace System.Text.Json
 
             int maxLength = checked(source.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
 
-            Span<byte> bytes = maxLength <= JsonConstants.StackallocThreshold
-                ? stackalloc byte[JsonConstants.StackallocThreshold]
+            Span<byte> bytes = maxLength <= JsonConstants.StackallocByteThreshold
+                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
                 : new byte[maxLength];
 
             int length = JsonReaderHelper.GetUtf8FromText(source, bytes);
@@ -86,8 +86,8 @@ namespace System.Text.Json
 
             int maxLength = checked(source.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
 
-            Span<byte> bytes = maxLength <= JsonConstants.StackallocThreshold
-                ? stackalloc byte[JsonConstants.StackallocThreshold]
+            Span<byte> bytes = maxLength <= JsonConstants.StackallocByteThreshold
+                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
                 : new byte[maxLength];
 
             int length = JsonReaderHelper.GetUtf8FromText(source, bytes);
@@ -113,12 +113,6 @@ namespace System.Text.Json
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValidDateTimeOffsetParseLength(int length)
-        {
-            return IsInRangeInclusive(length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsValidDateTimeOffsetParseLength(long length)
         {
             return IsInRangeInclusive(length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
         }
@@ -211,11 +205,8 @@ namespace System.Text.Json
         {
             parseData = default;
 
-            // Source does not have enough characters for YYYY-MM-DD
-            if (source.Length < 10)
-            {
-                return false;
-            }
+            // too short datetime
+            Debug.Assert(source.Length >= 10);
 
             // Parse the calendar date
             // -----------------------
@@ -252,8 +243,6 @@ namespace System.Text.Json
             }
 
             // We now have YYYY-MM-DD [dateX]
-
-            Debug.Assert(source.Length >= 10);
             if (source.Length == 10)
             {
                 // Just a calendar date

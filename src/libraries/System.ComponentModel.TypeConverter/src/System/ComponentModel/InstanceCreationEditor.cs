@@ -18,6 +18,6 @@ namespace System.ComponentModel
         /// The object returned from this method must be an instance of the specified type, or null in which case the editor will do nothing.
         ///
         /// </summary>
-        public abstract object CreateInstance(ITypeDescriptorContext context, Type instanceType);
+        public abstract object? CreateInstance(ITypeDescriptorContext context, Type instanceType);
     }
 }

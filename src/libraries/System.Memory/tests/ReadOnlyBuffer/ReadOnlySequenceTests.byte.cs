@@ -20,6 +20,11 @@ namespace System.Memory.Tests
             public Memory() : base(ReadOnlySequenceFactory<byte>.MemoryFactory) { }
         }
 
+        public class MemoryManager : ReadOnlySequenceTestsByte
+        {
+            public MemoryManager() : base(ReadOnlySequenceFactory<byte>.MemoryManagerFactory) { }
+        }
+
         public class SingleSegment : ReadOnlySequenceTestsByte
         {
             public SingleSegment() : base(ReadOnlySequenceFactory<byte>.SingleSegmentFactory) { }
@@ -178,6 +183,36 @@ namespace System.Memory.Tests
                 Span<byte> span = new byte[5];
                 buffer.CopyTo(span);
             });
+        }
+
+        [Fact]
+        public void End_EqualToGetPositionSize()
+        {
+            ReadOnlySequence<byte> buffer = Factory.CreateOfSize(5);
+            Assert.Equal(buffer.End, buffer.GetPosition(5));
+        }
+
+        [Fact]
+        public void Start_EqualToGetPosition0()
+        {
+            ReadOnlySequence<byte> buffer = Factory.CreateOfSize(5);
+            Assert.Equal(buffer.Start, buffer.GetPosition(0));
+        }
+
+        [Fact]
+        public void InnerPositionAreNotEqualToEnd()
+        {
+            ReadOnlySequence<byte> buffer = Factory.CreateOfSize(3);
+            Assert.NotEqual(buffer.GetPosition(1), buffer.End);
+            Assert.NotEqual(buffer.GetPosition(2), buffer.End);
+        }
+
+        [Fact]
+        public void InnerPositionAreNotEqualToStart()
+        {
+            ReadOnlySequence<byte> buffer = Factory.CreateOfSize(3);
+            Assert.NotEqual(buffer.GetPosition(1), buffer.Start);
+            Assert.NotEqual(buffer.GetPosition(2), buffer.Start);
         }
 
         public static TheoryData<Func<ReadOnlySequence<byte>, ReadOnlySequence<byte>>> ValidSliceCases => new TheoryData<Func<ReadOnlySequence<byte>, ReadOnlySequence<byte>>>

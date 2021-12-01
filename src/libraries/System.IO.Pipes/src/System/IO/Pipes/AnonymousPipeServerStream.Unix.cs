@@ -12,7 +12,7 @@ namespace System.IO.Pipes
     public sealed partial class AnonymousPipeServerStream : PipeStream
     {
         // Creates the anonymous pipe.
-        private unsafe void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize)
+        private void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize)
         {
             Debug.Assert(direction != PipeDirection.InOut, "Anonymous pipe direction shouldn't be InOut");
             // Ignore bufferSize.  It's optional, and the fcntl F_SETPIPE_SZ for changing it is Linux specific.

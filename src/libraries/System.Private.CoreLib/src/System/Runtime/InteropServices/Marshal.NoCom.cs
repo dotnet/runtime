@@ -10,26 +10,23 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
+        internal static bool IsBuiltInComSupported => false;
+
         public static int GetHRForException(Exception? e)
         {
             return e?.HResult ?? 0;
         }
 
-        [MinimumOSPlatform("windows7.0")]
-        public static int AddRef(IntPtr pUnk)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
         public static bool AreComObjectsAvailableForCleanup() => false;
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
+        [SupportedOSPlatform("windows")]
         public static object BindToMoniker(string monikerName)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -39,156 +36,147 @@ namespace System.Runtime.InteropServices
         {
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
-        public static TWrapper CreateWrapperOfType<T, TWrapper>([AllowNull] T o)
+        [SupportedOSPlatform("windows")]
+        public static TWrapper CreateWrapperOfType<T, TWrapper>(T? o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static void ChangeWrapperHandleStrength(object otp, bool fIsWeak)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static int FinalReleaseComObject(object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static IntPtr GetComInterfaceForObject(object o, Type T)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static IntPtr GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static IntPtr GetComInterfaceForObject<T, TInterface>([DisallowNull] T o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static object? GetComObjectData(object obj, object key)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static IntPtr GetHINSTANCE(Module m)
-        {
-            if (m is null)
-            {
-                throw new ArgumentNullException(nameof(m));
-            }
-
-            return (IntPtr)(-1);
-        }
-
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static IntPtr GetIDispatchForObject(object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static IntPtr GetIUnknownForObject(object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static void GetNativeVariantForObject(object? obj, IntPtr pDstNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
-        public static void GetNativeVariantForObject<T>([AllowNull] T obj, IntPtr pDstNativeVariant)
+        [SupportedOSPlatform("windows")]
+        public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static object GetTypedObjectForIUnknown(IntPtr pUnk, Type t)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static object GetObjectForIUnknown(IntPtr pUnk)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static object? GetObjectForNativeVariant(IntPtr pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
-        [return: MaybeNull]
-        public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
+        [SupportedOSPlatform("windows")]
+        public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static object?[] GetObjectsForNativeVariants(IntPtr aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static int GetStartComSlot(Type t)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static int GetEndComSlot(Type t)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
-        public static Type? GetTypeFromCLSID(Guid clsid)
+        internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+            if (throwOnError)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+
+            return null;
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static string GetTypeInfoName(ITypeInfo typeInfo)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static object GetUniqueObjectForIUnknown(IntPtr unknown)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -213,25 +201,13 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        [MinimumOSPlatform("windows7.0")]
-        public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
-        [MinimumOSPlatform("windows7.0")]
-        public static int Release(IntPtr pUnk)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static int ReleaseComObject(object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static bool SetComObjectData(object obj, object key, object? data)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);

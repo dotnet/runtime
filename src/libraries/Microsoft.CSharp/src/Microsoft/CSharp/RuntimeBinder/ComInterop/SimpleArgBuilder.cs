@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
@@ -21,6 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         protected Type ParameterType { get; }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal override Expression Marshal(Expression parameter)
         {
             Debug.Assert(parameter != null);

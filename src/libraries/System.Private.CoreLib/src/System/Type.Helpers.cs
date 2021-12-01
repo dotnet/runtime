@@ -18,7 +18,7 @@ namespace System
                     return true;
 
                 Type? underlyingType = UnderlyingSystemType;
-                if (underlyingType.IsRuntimeImplemented())
+                if (underlyingType is RuntimeType)
                 {
                     do
                     {
@@ -114,6 +114,7 @@ namespace System
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public virtual Type[] FindInterfaces(TypeFilter filter, object? filterCriteria)
         {
             if (filter == null)
@@ -135,8 +136,8 @@ namespace System
             cnt = 0;
             for (int i = 0; i < c.Length; i++)
             {
-                if (c[i] != null)
-                    ret[cnt++] = c[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                if (c[i] is Type t)
+                    ret[cnt++] = t!;
             }
             return ret;
         }
@@ -272,47 +273,47 @@ namespace System
             {
                 for (i = 0; i < m.Length; i++)
                     if (m[i] != null)
-                        ret[cnt++] = m[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        ret[cnt++] = m[i]!;
             }
 
             // Copy the Constructors
             if (c != null)
             {
                 for (i = 0; i < c.Length; i++)
-                    if (c[i] != null)
-                        ret[cnt++] = c[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (c[i] is ConstructorInfo ci)
+                        ret[cnt++] = ci;
             }
 
             // Copy the Fields
             if (f != null)
             {
                 for (i = 0; i < f.Length; i++)
-                    if (f[i] != null)
-                        ret[cnt++] = f[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (f[i] is FieldInfo fi)
+                        ret[cnt++] = fi;
             }
 
             // Copy the Properties
             if (p != null)
             {
                 for (i = 0; i < p.Length; i++)
-                    if (p[i] != null)
-                        ret[cnt++] = p[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (p[i] is PropertyInfo pi)
+                        ret[cnt++] = pi;
             }
 
             // Copy the Events
             if (e != null)
             {
                 for (i = 0; i < e.Length; i++)
-                    if (e[i] != null)
-                        ret[cnt++] = e[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (e[i] is EventInfo ei)
+                        ret[cnt++] = ei;
             }
 
             // Copy the Types
             if (t != null)
             {
                 for (i = 0; i < t.Length; i++)
-                    if (t[i] != null)
-                        ret[cnt++] = t[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (t[i] is Type type)
+                        ret[cnt++] = type;
             }
 
             return ret;
@@ -344,7 +345,7 @@ namespace System
             // For backward-compatibility, we need to special case for the types
             // whose UnderlyingSystemType are runtime implemented.
             Type toType = this.UnderlyingSystemType;
-            if (toType?.IsRuntimeImplemented() == true)
+            if (toType is RuntimeType)
                 return toType.IsAssignableFrom(c);
 
             // If c is a subclass of this class, then c can be cast to this type.
@@ -368,6 +369,10 @@ namespace System
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
+                "But this method only compares the result against the passed in ifaceType." +
+                "So if ifaceType exists, then trimming should have kept it implemented on any type.")]
         internal bool ImplementInterface(Type ifaceType)
         {
             Type? t = this;

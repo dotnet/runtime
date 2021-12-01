@@ -3,6 +3,7 @@
 
 Imports System
 Imports System.Globalization
+Imports System.Runtime.Versioning
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -20,6 +21,7 @@ Namespace Microsoft.VisualBasic
             Get
                 Return DateTime.Today
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As DateTime)
                 SetDate(Value)
             End Set
@@ -38,6 +40,7 @@ Namespace Microsoft.VisualBasic
                 'Truncate to the nearest second
                 Return New DateTime(Ticks - Ticks Mod TimeSpan.TicksPerSecond)
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As DateTime)
                 SetTime(Value)
             End Set
@@ -49,6 +52,7 @@ Namespace Microsoft.VisualBasic
             Get
                 Return (New DateTime(DateTime.Now.TimeOfDay.Ticks)).ToString("HH:mm:ss", GetInvariantCultureInfo())
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As String)
                 Dim dt As Date
 
@@ -93,6 +97,7 @@ Namespace Microsoft.VisualBasic
                     Return DateTime.Today.ToString("MM\-dd\-yyyy", GetInvariantCultureInfo())
                 End If
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As String)
                 Dim NewDate As Date
 

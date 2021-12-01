@@ -21,14 +21,6 @@ namespace System.Threading
         [ThreadStatic]
         private static SafeWaitHandle?[]? t_safeWaitHandlesForRent;
 
-        private protected enum OpenExistingResult
-        {
-            Success,
-            NameNotFound,
-            PathNotFound,
-            NameInvalid
-        }
-
         // The wait result values below match Win32 wait result codes (WAIT_OBJECT_0,
         // WAIT_ABANDONED, WAIT_TIMEOUT).
 
@@ -48,7 +40,7 @@ namespace System.Threading
         {
         }
 
-        [Obsolete("Use the SafeWaitHandle property instead.")]
+        [Obsolete("WaitHandleHandle has been deprecated. Use the SafeWaitHandle property instead.")]
         public virtual IntPtr Handle
         {
             get => _waitHandle == null ? InvalidHandle : _waitHandle.DangerousGetHandle();
@@ -311,15 +303,54 @@ namespace System.Threading
             {
                 for (int i = 0; i < waitHandles.Length; ++i)
                 {
-                    if (safeWaitHandles[i] != null)
+                    if (safeWaitHandles[i] is SafeWaitHandle swh)
                     {
-                        safeWaitHandles[i]!.DangerousRelease(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        swh.DangerousRelease();
                         safeWaitHandles[i] = null;
                     }
                 }
 
                 ReturnSafeWaitHandleArray(safeWaitHandles);
             }
+        }
+
+        private static int WaitAnyMultiple(ReadOnlySpan<SafeWaitHandle> safeWaitHandles, int millisecondsTimeout)
+        {
+            // - Callers are expected to manage the lifetimes of the safe wait handles such that they would not expire during
+            //   this wait
+            // - If the safe wait handle that satisfies the wait is an abandoned mutex, the wait result would reflect that and
+            //   handling of that is left up to the caller
+
+            Debug.Assert(safeWaitHandles.Length != 0);
+            Debug.Assert(safeWaitHandles.Length <= MaxWaitHandles);
+            Debug.Assert(millisecondsTimeout >= -1);
+
+            SynchronizationContext? context = SynchronizationContext.Current;
+            bool useWaitContext = context != null && context.IsWaitNotificationRequired();
+
+            int waitResult;
+            if (useWaitContext)
+            {
+                IntPtr[] unsafeWaitHandles = new IntPtr[safeWaitHandles.Length];
+                for (int i = 0; i < safeWaitHandles.Length; ++i)
+                {
+                    Debug.Assert(safeWaitHandles[i] != null);
+                    unsafeWaitHandles[i] = safeWaitHandles[i].DangerousGetHandle();
+                }
+                waitResult = context!.Wait(unsafeWaitHandles, false, millisecondsTimeout);
+            }
+            else
+            {
+                Span<IntPtr> unsafeWaitHandles = stackalloc IntPtr[safeWaitHandles.Length];
+                for (int i = 0; i < safeWaitHandles.Length; ++i)
+                {
+                    Debug.Assert(safeWaitHandles[i] != null);
+                    unsafeWaitHandles[i] = safeWaitHandles[i].DangerousGetHandle();
+                }
+                waitResult = WaitMultipleIgnoringSyncContext(unsafeWaitHandles, false, millisecondsTimeout);
+            }
+
+            return waitResult;
         }
 
         private static bool SignalAndWait(WaitHandle toSignal, WaitHandle toWaitOn, int millisecondsTimeout)
@@ -378,6 +409,13 @@ namespace System.Threading
             }
         }
 
+        internal static void ThrowInvalidHandleException()
+        {
+            var ex = new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
+            ex.HResult = HResults.E_HANDLE;
+            throw ex;
+        }
+
         public virtual bool WaitOne(TimeSpan timeout) => WaitOneNoCheck(ToTimeoutMilliseconds(timeout));
         public virtual bool WaitOne() => WaitOneNoCheck(-1);
         public virtual bool WaitOne(int millisecondsTimeout, bool exitContext) => WaitOne(millisecondsTimeout);
@@ -395,6 +433,10 @@ namespace System.Threading
             WaitMultiple(waitHandles, true, ToTimeoutMilliseconds(timeout)) != WaitTimeout;
 
         public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout) =>
+            WaitMultiple(waitHandles, false, millisecondsTimeout);
+        internal static int WaitAny(ReadOnlySpan<SafeWaitHandle> safeWaitHandles, int millisecondsTimeout) =>
+            WaitAnyMultiple(safeWaitHandles, millisecondsTimeout);
+        internal static int WaitAny(ReadOnlySpan<WaitHandle> waitHandles, int millisecondsTimeout) =>
             WaitMultiple(waitHandles, false, millisecondsTimeout);
         public static int WaitAny(WaitHandle[] waitHandles, TimeSpan timeout) =>
             WaitMultiple(waitHandles, false, ToTimeoutMilliseconds(timeout));

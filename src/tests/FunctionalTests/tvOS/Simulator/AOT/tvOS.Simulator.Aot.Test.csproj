@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <TestRuntime>true</TestRuntime>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <MainLibraryFileName>tvOS.Simulator.Aot.Test.dll</MainLibraryFileName>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

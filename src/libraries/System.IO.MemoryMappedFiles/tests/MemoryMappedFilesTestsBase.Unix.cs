@@ -14,7 +14,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>Gets the system's page size.</summary>
         protected static Lazy<int> s_pageSize = new Lazy<int>(() =>
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Browser))
+            if (OperatingSystem.IsBrowser())
                 return Environment.SystemPageSize;
 
             int pageSize;
@@ -23,8 +23,8 @@ namespace System.IO.MemoryMappedFiles.Tests
             const int _SC_PAGESIZE_NetBSD = 28;
             const int _SC_PAGESIZE_OSX = 29;
             pageSize = sysconf(
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? _SC_PAGESIZE_OSX :
-                RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? _SC_PAGESIZE_FreeBSD :
+                OperatingSystem.IsMacOS() ? _SC_PAGESIZE_OSX :
+                OperatingSystem.IsFreeBSD() ? _SC_PAGESIZE_FreeBSD :
                 RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")) ? _SC_PAGESIZE_NetBSD :
                 _SC_PAGESIZE_Linux);
             Assert.InRange(pageSize, 1, int.MaxValue);

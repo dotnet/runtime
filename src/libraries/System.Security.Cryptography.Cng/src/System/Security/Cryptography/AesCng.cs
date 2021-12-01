@@ -92,6 +92,126 @@ namespace System.Security.Cryptography
             _core.GenerateIV();
         }
 
+        protected override bool TryDecryptEcbCore(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: null,
+                encrypting: false,
+                paddingMode,
+                CipherMode.ECB,
+                feedbackSizeInBits: 0);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: null,
+                encrypting: true,
+                paddingMode,
+                CipherMode.ECB,
+                feedbackSizeInBits: 0);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptCbcCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: true,
+                paddingMode,
+                CipherMode.CBC,
+                feedbackSizeInBits: 0);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryDecryptCbcCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: false,
+                paddingMode,
+                CipherMode.CBC,
+                feedbackSizeInBits: 0);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryDecryptCfbCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: false,
+                paddingMode,
+                CipherMode.CFB,
+                feedbackSizeInBits);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptCfbCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: true,
+                paddingMode,
+                CipherMode.CFB,
+                feedbackSizeInBits);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
@@ -105,9 +225,21 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
+        int ICngSymmetricAlgorithm.GetPaddingSize(CipherMode mode, int feedbackSizeBits)
         {
-            return AesBCryptModes.GetSharedHandle(Mode);
+            return this.GetPaddingSize(mode, feedbackSizeBits);
+        }
+
+        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle(CipherMode mode, int feedbackSizeInBits)
+        {
+            try
+            {
+                return AesBCryptModes.GetSharedHandle(mode, feedbackSizeInBits / 8);
+            }
+            catch (NotSupportedException)
+            {
+                throw new CryptographicException(SR.Cryptography_InvalidCipherMode);
+            }
         }
 
         string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()
@@ -118,6 +250,11 @@ namespace System.Security.Cryptography
         byte[] ICngSymmetricAlgorithm.PreprocessKey(byte[] key)
         {
             return key;
+        }
+
+        bool ICngSymmetricAlgorithm.IsValidEphemeralFeedbackSize(int feedbackSizeInBits)
+        {
+            return feedbackSizeInBits == 8 || feedbackSizeInBits == 128;
         }
 
         private CngSymmetricAlgorithmCore _core;

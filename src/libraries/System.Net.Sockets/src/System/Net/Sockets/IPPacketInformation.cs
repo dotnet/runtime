@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Net.Sockets
 {
     public struct IPPacketInformation
@@ -42,7 +44,7 @@ namespace System.Net.Sockets
             return !(packetInformation1 == packetInformation2);
         }
 
-        public override bool Equals(object? comparand) =>
+        public override bool Equals([NotNullWhen(true)] object? comparand) =>
             comparand is IPPacketInformation other && this == other;
 
         public override int GetHashCode()

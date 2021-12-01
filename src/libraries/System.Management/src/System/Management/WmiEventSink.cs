@@ -75,8 +75,8 @@ namespace System.Management
                 if (null != path)
                 {
                     this.path = new ManagementPath(path);
-                    if ((0 == string.Compare(this.path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                        (0 == string.Compare(this.path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+                    if ((string.Equals(this.path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
+                        (string.Equals(this.path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
                     {
                         this.isLocal = true;
                     }
@@ -87,8 +87,8 @@ namespace System.Management
                     this.scope = (ManagementScope)scope.Clone();
                     if (null == path) // use scope to see if sink is local
                     {
-                        if ((0 == string.Compare(this.scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                            (0 == string.Compare(this.scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+                        if ((string.Equals(this.scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
+                            (string.Equals(this.scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
                         {
                             this.isLocal = true;
                         }
@@ -235,7 +235,7 @@ namespace System.Management
 
     // Special sink implementation for ManagementObject.Get
     // Doesn't issue ObjectReady events
-    internal class WmiGetEventSink : WmiEventSink
+    internal sealed class WmiGetEventSink : WmiEventSink
     {
         private readonly ManagementObject managementObject;
 

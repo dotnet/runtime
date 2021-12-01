@@ -36,7 +36,7 @@ namespace System.Threading
         public Thread(System.Threading.ParameterizedThreadStart start, int maxStackSize) { }
         public Thread(System.Threading.ThreadStart start) { }
         public Thread(System.Threading.ThreadStart start, int maxStackSize) { }
-        [System.ObsoleteAttribute("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
+        [System.ObsoleteAttribute("The ApartmentState property has been deprecated. Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.")]
         public System.Threading.ApartmentState ApartmentState { get { throw null; } set { } }
         public System.Globalization.CultureInfo CurrentCulture { get { throw null; } set { } }
         public static System.Security.Principal.IPrincipal? CurrentPrincipal { get { throw null; } set { } }
@@ -64,7 +64,7 @@ namespace System.Threading
         ~Thread() { }
         public static void FreeNamedDataSlot(string name) { }
         public System.Threading.ApartmentState GetApartmentState() { throw null; }
-        [System.ObsoleteAttribute("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Threading.CompressedStack GetCompressedStack() { throw null; }
         public static int GetCurrentProcessorId() { throw null; }
         public static object? GetData(System.LocalDataStoreSlot slot) { throw null; }
@@ -77,22 +77,29 @@ namespace System.Threading
         public bool Join(int millisecondsTimeout) { throw null; }
         public bool Join(System.TimeSpan timeout) { throw null; }
         public static void MemoryBarrier() { }
+        [System.ObsoleteAttribute("Thread.ResetAbort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ResetAbort() { }
-        [System.ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("Thread.Resume has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.")]
         public void Resume() { }
-        [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void SetApartmentState(System.Threading.ApartmentState state) { }
-        [System.ObsoleteAttribute("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void SetCompressedStack(System.Threading.CompressedStack stack) { }
         public static void SetData(System.LocalDataStoreSlot slot, object? data) { }
         public static void Sleep(int millisecondsTimeout) { }
         public static void Sleep(System.TimeSpan timeout) { }
         public static void SpinWait(int iterations) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Start() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Start(object? parameter) { }
-        [System.ObsoleteAttribute("Thread.Suspend has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("Thread.Suspend has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.")]
         public void Suspend() { }
         public bool TrySetApartmentState(System.Threading.ApartmentState state) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public void UnsafeStart() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public void UnsafeStart(object? parameter) { }
         public static byte VolatileRead(ref byte address) { throw null; }
         public static double VolatileRead(ref double address) { throw null; }
         public static short VolatileRead(ref short address) { throw null; }
@@ -100,7 +107,7 @@ namespace System.Threading
         public static long VolatileRead(ref long address) { throw null; }
         public static System.IntPtr VolatileRead(ref System.IntPtr address) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("address")]
-        public static object? VolatileRead(ref object? address) { throw null; }
+        public static object? VolatileRead([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("address")] ref object? address) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte VolatileRead(ref sbyte address) { throw null; }
         public static float VolatileRead(ref float address) { throw null; }

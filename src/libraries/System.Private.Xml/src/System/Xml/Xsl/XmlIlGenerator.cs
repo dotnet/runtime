@@ -13,6 +13,7 @@ using System.Xml.Xsl.IlGen;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl
 {
@@ -48,13 +49,13 @@ namespace System.Xml.Xsl
     /// As visits to each node in the tree start and end, various Analyzers are invoked.  These Analyzers incrementally
     /// collect and store information that is later used to generate faster and smaller code.
     /// </remarks>
-    internal class XmlILGenerator
+    internal sealed class XmlILGenerator
     {
-        private QilExpression _qil;
-        private GenerateHelper _helper;
-        private XmlILOptimizerVisitor _optVisitor;
-        private XmlILVisitor _xmlIlVisitor;
-        private XmlILModule _module;
+        private QilExpression? _qil;
+        private GenerateHelper? _helper;
+        private XmlILOptimizerVisitor? _optVisitor;
+        private XmlILVisitor? _xmlIlVisitor;
+        private XmlILModule? _module;
 
         /// <summary>
         /// Always output debug information in debug mode.
@@ -69,7 +70,11 @@ namespace System.Xml.Xsl
         // SxS Note: The way the trace file names are created (hardcoded) is NOT SxS safe. However the files are
         // created only for internal tracing purposes. In addition XmlILTrace class is not compiled into retail
         // builds. As a result it is fine to suppress the FxCop SxS warning.
-        public XmlILCommand Generate(QilExpression query, TypeBuilder typeBldr)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This method will generate the IL methods using RefEmit at runtime, which will then try to call them " +
+            "using methods that are annotated as RequiresUnreferencedCode. In this case, these uses can be suppressed as the " +
+            "trimmer won't be able to trim any IL that gets generated at runtime.")]
+        public XmlILCommand? Generate(QilExpression query, TypeBuilder? typeBldr)
         {
             _qil = query;
 
@@ -123,13 +128,13 @@ namespace System.Xml.Xsl
 
             // Create metadata for the Execute function, which is the entry point to the query
             // public static void Execute(XmlQueryRuntime);
-            MethodInfo methExec = _module.DefineMethod("Execute", typeof(void), Array.Empty<Type>(), Array.Empty<string>(), XmlILMethodAttributes.NonUser);
+            MethodInfo methExec = _module.DefineMethod("Execute", typeof(void), Type.EmptyTypes, Array.Empty<string>(), XmlILMethodAttributes.NonUser);
 
             // Create metadata for the root expression
             // public void Root()
             Debug.Assert(_qil.Root != null);
             XmlILMethodAttributes methAttrs = (_qil.Root.SourceLine == null) ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
-            MethodInfo methRoot = _module.DefineMethod("Root", typeof(void), Array.Empty<Type>(), Array.Empty<string>(), methAttrs);
+            MethodInfo methRoot = _module.DefineMethod("Root", typeof(void), Type.EmptyTypes, Array.Empty<string>(), methAttrs);
 
             // Declare all early bound function objects
             foreach (EarlyBoundInfo info in _qil.EarlyBoundTypes)
@@ -204,7 +209,7 @@ namespace System.Xml.Xsl
                     Debug.Assert(ndParam.NodeType == QilNodeType.Parameter);
 
                     // Get the type of each argument as a Clr type
-                    paramTypes[arg] = XmlILTypeHelper.GetStorageType(ndParam.XmlType);
+                    paramTypes[arg] = XmlILTypeHelper.GetStorageType(ndParam.XmlType!);
 
                     // Get the name of each argument
                     if (ndParam.DebugName != null)
@@ -220,12 +225,12 @@ namespace System.Xml.Xsl
                 else
                 {
                     // Pull mode functions have a return value
-                    typReturn = XmlILTypeHelper.GetStorageType(ndFunc.XmlType);
+                    typReturn = XmlILTypeHelper.GetStorageType(ndFunc.XmlType!);
                 }
 
                 // Create the method metadata
                 methAttrs = ndFunc.SourceLine == null ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
-                methInfo = _module.DefineMethod(ndFunc.DebugName, typReturn, paramTypes, paramNames, methAttrs);
+                methInfo = _module!.DefineMethod(ndFunc.DebugName!, typReturn, paramTypes, paramNames, methAttrs);
 
                 for (int arg = 0; arg < ndFunc.Arguments.Count; arg++)
                 {
@@ -250,9 +255,9 @@ namespace System.Xml.Xsl
             foreach (QilReference ndRef in globalList)
             {
                 // public T GlobalValue()
-                typReturn = XmlILTypeHelper.GetStorageType(ndRef.XmlType);
+                typReturn = XmlILTypeHelper.GetStorageType(ndRef.XmlType!);
                 methAttrs = ndRef.SourceLine == null ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
-                methInfo = _module.DefineMethod(ndRef.DebugName.ToString(), typReturn, Array.Empty<Type>(), Array.Empty<string>(), methAttrs);
+                methInfo = _module!.DefineMethod(ndRef.DebugName!.ToString(), typReturn, Type.EmptyTypes, Array.Empty<string>(), methAttrs);
 
                 // Annotate function with MethodBuilder
                 XmlILAnnotation.Write(ndRef).FunctionBinding = methInfo;
@@ -264,10 +269,10 @@ namespace System.Xml.Xsl
         /// </summary>
         private MethodInfo GenerateExecuteFunction(MethodInfo methExec, MethodInfo methRoot)
         {
-            _helper.MethodBegin(methExec, null, false);
+            _helper!.MethodBegin(methExec, null, false);
 
             // Force some or all global values to be evaluated at start of query
-            EvaluateGlobalValues(_qil.GlobalVariableList);
+            EvaluateGlobalValues(_qil!.GlobalVariableList);
             EvaluateGlobalValues(_qil.GlobalParameterList);
 
             // Root(runtime);
@@ -288,14 +293,14 @@ namespace System.Xml.Xsl
             Label lblClone;
 
             // public static XPathNavigator SyncToNavigator(XPathNavigator, XPathNavigator);
-            meth = _module.DefineMethod(
+            meth = _module!.DefineMethod(
                             "SyncToNavigator",
                             typeof(XPathNavigator),
                             new Type[] { typeof(XPathNavigator), typeof(XPathNavigator) },
-                            new string[] { null, null },
+                            new string?[] { null, null },
                             XmlILMethodAttributes.NonUser | XmlILMethodAttributes.Raw);
 
-            _helper.MethodBegin(meth, null, false);
+            _helper!.MethodBegin(meth, null, false);
 
             // if (navigatorThis != null && navigatorThis.MoveTo(navigatorThat))
             //     return navigatorThis;
@@ -323,18 +328,18 @@ namespace System.Xml.Xsl
         /// </summary>
         private void EvaluateGlobalValues(IList<QilNode> iterList)
         {
-            MethodInfo methInfo;
+            MethodInfo? methInfo;
 
             foreach (QilIterator ndIter in iterList)
             {
                 // Evaluate global if generating debug code, or if global might have side effects
-                if (_qil.IsDebug || OptimizerPatterns.Read(ndIter).MatchesPattern(OptimizerPatternName.MaybeSideEffects))
+                if (_qil!.IsDebug || OptimizerPatterns.Read(ndIter).MatchesPattern(OptimizerPatternName.MaybeSideEffects))
                 {
                     // Get MethodInfo that evaluates the global value and discard its return value
                     methInfo = XmlILAnnotation.Write(ndIter).FunctionBinding;
                     Debug.Assert(methInfo != null, "MethodInfo for global value should have been created previously.");
 
-                    _helper.LoadQueryRuntime();
+                    _helper!.LoadQueryRuntime();
                     _helper.Call(methInfo);
                     _helper.Emit(OpCodes.Pop);
                 }
@@ -352,12 +357,12 @@ namespace System.Xml.Xsl
             ConstructorInfo cctor;
 
             staticData.GetObjectData(out data, out ebTypes);
-            fldInitData = _module.DefineInitializedData("__" + XmlQueryStaticData.DataFieldName, data);
+            fldInitData = _module!.DefineInitializedData($"__{XmlQueryStaticData.DataFieldName}", data);
             fldData = _module.DefineField(XmlQueryStaticData.DataFieldName, typeof(object));
             fldTypes = _module.DefineField(XmlQueryStaticData.TypesFieldName, typeof(Type[]));
 
             cctor = _module.DefineTypeInitializer();
-            _helper.MethodBegin(cctor, null, false);
+            _helper!.MethodBegin(cctor, null, false);
 
             // s_data = new byte[s_initData.Length] { s_initData };
             _helper.LoadInteger(data.Length);

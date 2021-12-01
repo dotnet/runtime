@@ -14,13 +14,13 @@ using System.IO;
 
 using static Interop.Advapi32;
 
-#if NETCOREAPP2_0 || !NETCOREAPP
+#if !NETCOREAPP
 using MemoryMarshal = System.Diagnostics.PerformanceCounterLib;
 #endif
 
 namespace System.Diagnostics
 {
-    internal class PerformanceCounterLib
+    internal sealed class PerformanceCounterLib
     {
         internal const string PerfShimName = "netfxperf.dll";
         private const string PerfShimFullNameSuffix = @"\netfxperf.dll";
@@ -105,7 +105,7 @@ namespace System.Diagnostics
             }
         }
 
-#if NETCOREAPP2_0 || !NETCOREAPP
+#if !NETCOREAPP
         internal static T Read<T>(ReadOnlySpan<byte> span) where T : struct
             => System.Runtime.InteropServices.MemoryMarshal.Read<T>(span);
 
@@ -369,8 +369,12 @@ namespace System.Diagnostics
 
             if (!categoryExists)
             {
-                // Consider adding diagnostic logic here, may be we can dump the nameTable...
-                throw new InvalidOperationException(SR.MissingCategory);
+#if DEBUG
+                string categories = "Categories: " + string.Join(';', library.GetCategories());
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category) + "\r\n" + categories);
+#else
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
+#endif
             }
 
             return counterExists;
@@ -792,7 +796,7 @@ namespace System.Diagnostics
             help = library.GetCategoryHelp(category);
 
             if (help == null)
-                throw new InvalidOperationException(SR.MissingCategory);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return help;
         }
@@ -823,7 +827,7 @@ namespace System.Diagnostics
                 }
             }
             if (sample == null)
-                throw new InvalidOperationException(SR.MissingCategory);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return sample;
         }
@@ -864,7 +868,7 @@ namespace System.Diagnostics
             }
 
             if (!categoryExists)
-                throw new InvalidOperationException(SR.MissingCategory);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return counters;
         }
@@ -929,7 +933,7 @@ namespace System.Diagnostics
             help = library.GetCounterHelp(category, counter, ref categoryExists);
 
             if (!categoryExists)
-                throw new InvalidOperationException(SR.Format(SR.MissingCategoryDetail, category));
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return help;
         }
@@ -1265,7 +1269,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class PerformanceMonitor
+    internal sealed class PerformanceMonitor
     {
         private PerformanceDataRegistryKey perfDataKey;
         private readonly string machineName;
@@ -1378,7 +1382,7 @@ namespace System.Diagnostics
 
     }
 
-    internal class CategoryEntry
+    internal sealed class CategoryEntry
     {
         internal int NameIndex;
         internal int HelpIndex;
@@ -1676,7 +1680,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class CounterDefinitionSample
+    internal sealed class CounterDefinitionSample
     {
         internal readonly int _nameIndex;
         internal readonly int _counterType;

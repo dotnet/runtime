@@ -5,11 +5,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public static class DictionaryGlobals
-#else
     internal static class DictionaryGlobals
-#endif
     {
         // Update array size when adding new strings or templates
         private static readonly XmlDictionary s_dictionary = new XmlDictionary(61);

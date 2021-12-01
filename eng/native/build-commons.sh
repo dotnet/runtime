@@ -6,32 +6,12 @@ initTargetDistroRid()
 
     local passedRootfsDir=""
 
-    # Only pass ROOTFS_DIR if cross is specified.
-    if [[ "$__CrossBuild" == 1 ]]; then
+    # Only pass ROOTFS_DIR if cross is specified and the target platform is not Darwin that doesn't use rootfs
+    if [[ "$__CrossBuild" == 1 && "$platform" != "Darwin" ]]; then
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
     initDistroRidGlobal "$__TargetOS" "$__BuildArch" "$__PortableBuild" "$passedRootfsDir"
-}
-
-isMSBuildOnNETCoreSupported()
-{
-    __IsMSBuildOnNETCoreSupported="$__msbuildonunsupportedplatform"
-
-    if [[ "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
-        return
-    fi
-
-    if [[ "$__SkipManaged" == 1 ]]; then
-        __IsMSBuildOnNETCoreSupported=0
-        return
-    fi
-
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" ) ]]; then
-        __IsMSBuildOnNETCoreSupported=1
-    elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
-        __IsMSBuildOnNETCoreSupported=1
-    fi
 }
 
 setup_dirs()
@@ -48,21 +28,16 @@ check_prereqs()
 {
     echo "Checking prerequisites..."
 
-    if ! cmake --help 2>&1 | grep -q \\-B; then
-        echo "Please install cmake v3.14.5 or newer from https://www.cmake.org/download/."
-        exit 1
-    fi
-
     if [[ "$__HostOS" == "OSX" ]]; then
         # Check presence of pkg-config on the path
-        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
 
         if ! pkg-config openssl ; then
             # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
             # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
-            export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig
+            export PKG_CONFIG_PATH=$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$(brew --prefix)/opt/openssl/lib/pkgconfig
             # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
-            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
         fi
     fi
 
@@ -73,14 +48,61 @@ check_prereqs()
 
 build_native()
 {
-    platformArch="$1"
-    cmakeDir="$2"
-    tryrunDir="$3"
+    if [[ ! -e "$__RepoRootDir/artifacts/obj/_version.c" ]]; then
+        eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+    fi
+
+    targetOS="$1"
+    platformArch="$2"
+    cmakeDir="$3"
     intermediatesDir="$4"
-    message="$5"
+    target="$5"
+    cmakeArgs="$6"
+    message="$7"
 
     # All set to commence the build
-    echo "Commencing build of \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
+    echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
+
+    if [[ "$targetOS" == OSX || "$targetOS" == MacCatalyst ]]; then
+        if [[ "$platformArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$platformArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown OSX architecture $platformArch."
+            exit 1
+        fi
+    fi
+
+    if [[ "$targetOS" == MacCatalyst ]]; then
+        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
+    fi
+
+    if [[ "$targetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+        if [[ -z "$ANDROID_NDK_ROOT" ]]; then
+            echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
+            exit 1
+        fi
+
+        # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=21 $cmakeArgs"
+
+        # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
+        __Compiler="default"
+
+        if [[ "$platformArch" == x64 ]]; then
+            cmakeArgs="-DANDROID_ABI=x86_64 $cmakeArgs"
+        elif [[ "$platformArch" == x86 ]]; then
+            cmakeArgs="-DANDROID_ABI=x86 $cmakeArgs"
+        elif [[ "$platformArch" == arm64 ]]; then
+            cmakeArgs="-DANDROID_ABI=arm64-v8a $cmakeArgs"
+        elif [[ "$platformArch" == arm ]]; then
+            cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
+        else
+            echo "Error: Unknown Android architecture $platformArch."
+            exit 1
+        fi
+    fi
 
     if [[ "$__UseNinja" == 1 ]]; then
         generator="ninja"
@@ -89,58 +111,13 @@ build_native()
         buildTool="make"
     fi
 
-    runtimeVersionHeaderFile="$intermediatesDir/../runtime_version.h"
     if [[ "$__SkipConfigure" == 0 ]]; then
-        # if msbuild is not supported, then set __SkipGenerateVersion to 1
-        if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then __SkipGenerateVersion=1; fi
-        # Drop version.c file
-        __versionSourceFile="$intermediatesDir/version.c"
-
-        if [[ ! -z "${__LogsDir}" ]]; then
-            __binlogArg="-bl:\"$__LogsDir/GenNativeVersion_$__TargetOS.$__BuildArch.$__BuildType.binlog\""
-        fi
-
-        if [[ "$__SkipGenerateVersion" == 0 ]]; then
-            "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary "$__ArcadeScriptArgs" "$__RepoRootDir"/eng/empty.csproj \
-                                                   /p:NativeVersionFile="$__versionSourceFile" \
-                                                   /p:RuntimeVersionFile="$runtimeVersionHeaderFile" \
-                                                   /t:GenerateRuntimeVersionFile /restore \
-                                                   $__CommonMSBuildArgs $__binlogArg $__UnprocessedBuildArgs
-            local exit_code="$?"
-            if [[ "$exit_code" != 0 ]]; then
-                echo "${__ErrMsgPrefix}Failed to generate native version file."
-                exit "$exit_code"
-            fi
-        else
-            # Generate the dummy version.c and runtime_version.h, but only if they didn't exist to make sure we don't trigger unnecessary rebuild
-            __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
-            if [[ -e "$__versionSourceFile" ]]; then
-                read existingVersionSourceLine < "$__versionSourceFile"
-            fi
-            if [[ "$__versionSourceLine" != "$existingVersionSourceLine" ]]; then
-                cat << EOF > $runtimeVersionHeaderFile
-#define RuntimeAssemblyMajorVersion 0
-#define RuntimeAssemblyMinorVersion 0
-#define RuntimeFileMajorVersion 0
-#define RuntimeFileMinorVersion 0
-#define RuntimeFileBuildVersion 0
-#define RuntimeFileRevisionVersion 0
-#define RuntimeProductMajorVersion 0
-#define RuntimeProductMinorVersion 0
-#define RuntimeProductPatchVersion 0
-#define RuntimeProductVersion
-EOF
-                echo "$__versionSourceLine" > "$__versionSourceFile"
-            fi
-        fi
 
         if [[ "$__StaticAnalyzer" == 1 ]]; then
             scan_build=scan-build
         fi
 
-        engNativeDir="$__RepoRootDir/eng/native"
-        __CMakeArgs="-DCLR_ENG_NATIVE_DIR=\"$engNativeDir\" $__CMakeArgs"
-        nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$cmakeDir\" \"$tryrunDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $__CMakeArgs"
+        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -163,25 +140,51 @@ EOF
         return
     fi
 
+    SAVED_CFLAGS="${CFLAGS}"
+    SAVED_CXXFLAGS="${CXXFLAGS}"
+    SAVED_LDFLAGS="${LDFLAGS}"
+
+    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
+    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
+    # See https://github.com/dotnet/runtime/issues/35727 for more information.
+    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
+    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
+    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
+
+    local exit_code
     if [[ "$__StaticAnalyzer" == 1 ]]; then
         pushd "$intermediatesDir"
 
         buildTool="$SCAN_BUILD_COMMAND -o $__BinDir/scan-build-log $buildTool"
-        echo "Executing $buildTool install -j $__NumProc"
-        "$buildTool" install -j "$__NumProc"
+        echo "Executing $buildTool $target -j $__NumProc"
+        "$buildTool" $target -j "$__NumProc"
+        exit_code="$?"
 
         popd
     else
         cmake_command=cmake
         if [[ "$build_arch" == "wasm" ]]; then
-            cmake_command="emcmake $cmake_command"
-        fi
+            cmake_command="emcmake cmake"
+            echo "Executing $cmake_command --build \"$intermediatesDir\" --target $target -- -j $__NumProc"
+            $cmake_command --build "$intermediatesDir" --target $target -- -j "$__NumProc"
+            exit_code="$?"
+        else
+            # For non-wasm Unix scenarios, we may have to use an old version of CMake that doesn't support
+            # multiple targets. Instead, directly invoke the build tool to build multiple targets in one invocation.
+            pushd "$intermediatesDir"
 
-        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -j $__NumProc"
-        $cmake_command --build "$intermediatesDir" --target install -j "$__NumProc"
+            echo "Executing $buildTool $target -j $__NumProc"
+            "$buildTool" $target -j "$__NumProc"
+            exit_code="$?"
+
+            popd
+        fi
     fi
 
-    local exit_code="$?"
+    CFLAGS="${SAVED_CFLAGS}"
+    CXXFLAGS="${SAVED_CXXFLAGS}"
+    LDFLAGS="${SAVED_LDFLAGS}"
+
     if [[ "$exit_code" != 0 ]]; then
         echo "${__ErrMsgPrefix}Failed to build \"$message\"."
         exit "$exit_code"
@@ -194,7 +197,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armel, -arm64, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armel, -arm64, -s390x, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
@@ -207,12 +210,11 @@ usage()
     echo "        will use ROOTFS_DIR environment variable if set."
     echo "-gcc: optional argument to build using gcc in PATH."
     echo "-gccx.y: optional argument to build using gcc version x.y."
-    echo "-msbuildonunsupportedplatform: build managed binaries even if distro is not officially supported."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
-    echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
+    echo "-keepnativesymbols: keep native/unmanaged debug symbols."
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
     echo "Additional Options:"
@@ -232,14 +234,32 @@ __TargetOS=$os
 __HostOS=$os
 __BuildOS=$os
 
-__msbuildonunsupportedplatform=0
+# Get the number of processors available to the scheduler
+# Other techniques such as `nproc` only get the number of
+# processors available to a single process.
+platform="$(uname)"
+if [[ "$platform" == "FreeBSD" ]]; then
+  __NumProc=$(($(sysctl -n hw.ncpu)+1))
+elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+elif [[ "$platform" == "Darwin" ]]; then
+  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+else
+  if command -v nproc > /dev/null 2>&1; then
+    __NumProc=$(nproc --all)
+  elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+    __NumProc=$(getconf _NPROCESSORS_ONLN)
+  else
+    __NumProc=1
+  fi
+fi
 
 while :; do
     if [[ "$#" -le 0 ]]; then
         break
     fi
 
-    lowerI="$(echo "$1" | awk '{print tolower($0)}')"
+    lowerI="$(echo "${1/--/-}" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
         -\?|-h|--help)
             usage
@@ -328,8 +348,8 @@ while :; do
                 __CompilerMinorVersion="${parts[1]}"
             ;;
 
-        msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
-            __msbuildonunsupportedplatform=1
+        keepnativesymbols|-keepnativesymbols)
+            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
             ;;
 
         ninja|-ninja)
@@ -358,10 +378,6 @@ while :; do
             __SkipConfigure=1
             ;;
 
-        skipgenerateversion|-skipgenerateversion)
-            __SkipGenerateVersion=1
-            ;;
-
         verbose|-verbose)
             __VerboseBuild=1
             ;;
@@ -372,6 +388,10 @@ while :; do
 
         x64|-x64)
             __BuildArch=x64
+            ;;
+
+        s390x|-s390x)
+            __BuildArch=s390x
             ;;
 
         wasm|-wasm)
@@ -400,20 +420,6 @@ while :; do
     shift
 done
 
-# Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
-platform="$(uname)"
-if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
-  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-elif [[ "$platform" == "Darwin" ]]; then
-  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
-else
-  __NumProc=$(nproc --all)
-fi
-
 __CommonMSBuildArgs="/p:TargetArchitecture=$__BuildArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
 # Configure environment if we are doing a verbose build
@@ -427,11 +433,28 @@ if [[ "$__PortableBuild" == 0 ]]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
 fi
 
+if [[ "$__BuildArch" == wasm ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == Android ]]; then
+    # nothing to do here
+    true
+else
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
+fi
+
 # Configure environment if we are doing a cross compile.
 if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
-    if [[ ! -n "$ROOTFS_DIR" ]]; then
+    # Darwin that doesn't use rootfs
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
         export ROOTFS_DIR
     fi
@@ -439,6 +462,3 @@ fi
 
 # init the target distro name
 initTargetDistroRid
-
-# Init if MSBuild for .NET Core is supported for this platform
-isMSBuildOnNETCoreSupported

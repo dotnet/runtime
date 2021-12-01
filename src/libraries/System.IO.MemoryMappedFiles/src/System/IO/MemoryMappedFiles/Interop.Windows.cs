@@ -7,13 +7,13 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
     public static unsafe void CheckForAvailableVirtualMemory(ulong nativeSize)
     {
         Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
         memoryStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
-        if (Interop.Kernel32.GlobalMemoryStatusEx(ref memoryStatus))
+        if (Interop.Kernel32.GlobalMemoryStatusEx(&memoryStatus) != Interop.BOOL.FALSE)
         {
             ulong totalVirtual = memoryStatus.ullTotalVirtual;
             if (nativeSize >= totalVirtual)

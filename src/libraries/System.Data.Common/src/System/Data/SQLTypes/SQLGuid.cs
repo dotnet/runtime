@@ -5,6 +5,7 @@ using System.Data.Common;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -280,7 +281,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (!(value is SqlGuid))
             {
@@ -305,7 +306,7 @@ namespace System.Data.SqlTypes
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            string isNull = reader.GetAttribute("nil", XmlSchema.InstanceNamespace);
+            string? isNull = reader.GetAttribute("nil", XmlSchema.InstanceNamespace);
             if (isNull != null && XmlConvert.ToBoolean(isNull))
             {
                 // Read the next value.

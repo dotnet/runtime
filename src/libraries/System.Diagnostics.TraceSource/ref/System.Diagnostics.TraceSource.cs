@@ -69,7 +69,7 @@ namespace System.Diagnostics
     public abstract partial class Switch
     {
         protected Switch(string displayName, string? description) { }
-        protected Switch(string displayName, string? description, string? defaultSwitchValue) { }
+        protected Switch(string displayName, string? description, string defaultSwitchValue) { }
         public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
         public string Description { get { throw null; } }
         public string DisplayName { get { throw null; } }
@@ -86,6 +86,7 @@ namespace System.Diagnostics
         public string? SwitchDescription { get { throw null; } set { } }
         public string SwitchName { get { throw null; } set { } }
         public System.Type SwitchType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Types may be trimmed from the assembly.")]
         public static System.Diagnostics.SwitchAttribute[] GetAll(System.Reflection.Assembly assembly) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
@@ -227,7 +228,7 @@ namespace System.Diagnostics
         public virtual void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object?[]? data) { }
         public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id) { }
         public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string? message) { }
-        public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string format, params object?[]? args) { }
+        public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string? format, params object?[]? args) { }
         public virtual void TraceTransfer(System.Diagnostics.TraceEventCache? eventCache, string source, int id, string? message, System.Guid relatedActivityId) { }
         public virtual void Write(object? o) { }
         public virtual void Write(object? o, string? category) { }
@@ -300,11 +301,11 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceEvent(System.Diagnostics.TraceEventType eventType, int id, string? message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public void TraceEvent(System.Diagnostics.TraceEventType eventType, int id, string format, params object?[]? args) { }
+        public void TraceEvent(System.Diagnostics.TraceEventType eventType, int id, string? format, params object?[]? args) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public void TraceInformation(string message) { }
+        public void TraceInformation(string? message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public void TraceInformation(string format, params object?[]? args) { }
+        public void TraceInformation(string? format, params object?[]? args) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceTransfer(int id, string? message, System.Guid relatedActivityId) { }
     }

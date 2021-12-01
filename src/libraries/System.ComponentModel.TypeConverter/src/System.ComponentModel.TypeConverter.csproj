@@ -3,7 +3,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="MS\Internal\Xml\Linq\ComponentModel\XComponentModel.cs" />
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
@@ -67,6 +71,7 @@
     <Compile Include="System\ComponentModel\MemberDescriptor.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\ReflectionCachesUpdateHandler.cs" />
     <Compile Include="System\ComponentModel\ReflectEventDescriptor.cs" />
     <Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.cs" />
@@ -119,7 +124,6 @@
     <Compile Include="System\ComponentModel\DataObjectMethodAttribute.cs" />
     <Compile Include="System\ComponentModel\DataObjectMethodType.cs" />
     <Compile Include="System\ComponentModel\DefaultBindingPropertyAttribute.cs" />
-    <Compile Include="System\ComponentModel\DesignerAttribute.cs" />
     <Compile Include="System\ComponentModel\DesignTimeVisibleAttribute.cs" />
     <Compile Include="System\ComponentModel\Design\IDesigner.cs" />
     <Compile Include="System\ComponentModel\Design\DesignerVerbCollection.cs" />
@@ -128,7 +132,6 @@
     <Compile Include="System\ComponentModel\Design\CommandID.cs" />
     <Compile Include="System\ComponentModel\Design\CheckoutException.cs" />
     <Compile Include="System\ComponentModel\Design\StandardCommands.cs" />
-    <Compile Include="System\ComponentModel\EditorAttribute.cs" />
     <Compile Include="System\ComponentModel\ExpandableObjectConverter.cs" />
     <Compile Include="System\ComponentModel\IBindingListView.cs" />
     <Compile Include="System\ComponentModel\ListSortDescriptionCollection.cs" />
@@ -221,7 +224,6 @@
     <Compile Include="System\ComponentModel\Design\Serialization\ContextStack.cs" />
     <Compile Include="System\ComponentModel\Design\Serialization\DefaultSerializationProviderAttribute.cs" />
     <Compile Include="System\ComponentModel\Design\Serialization\DesignerLoader.cs" />
-    <Compile Include="System\ComponentModel\Design\Serialization\DesignerSerializerAttribute.cs" />
     <Compile Include="System\ComponentModel\Design\Serialization\SerializationStore.cs" />
     <Compile Include="System\ComponentModel\Design\Serialization\IDesignerLoaderHost.cs" />
     <Compile Include="System\ComponentModel\Design\Serialization\IDesignerLoaderService.cs" />
@@ -253,6 +255,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />

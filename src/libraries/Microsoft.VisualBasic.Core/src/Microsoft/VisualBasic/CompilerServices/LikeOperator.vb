@@ -9,10 +9,10 @@ Imports System.Globalization
 Imports System.Collections.Generic
 Imports System.Diagnostics
 
-Imports Microsoft.VisualBasic.Strings
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Imports Microsoft.VisualBasic.CompilerServices.Operators
 Imports Microsoft.VisualBasic.CompilerServices.Utils
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -194,6 +194,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Sub
 
+        <RequiresUnreferencedCode("The types of source and pattern cannot be statically analyzed so the like operator may be trimmed")>
         Public Shared Function LikeObject(ByVal Source As Object, ByVal Pattern As Object, ByVal CompareOption As CompareMethod) As Object
 
             Dim conv1, conv2 As IConvertible

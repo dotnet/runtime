@@ -2,26 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     /// <summary>
-    /// Converter for <cref>System.Collections.Generic.IDictionary{string, TValue}</cref> that
+    /// Converter for <cref>System.Collections.Generic.IDictionary{TKey, TValue}</cref> that
     /// (de)serializes as a JSON object with properties representing the dictionary element key and value.
     /// </summary>
-    internal sealed class IDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>
-        : DictionaryDefaultConverter<TCollection, TKey, TValue>
-        where TCollection : IDictionary<TKey, TValue>
+    internal sealed class IDictionaryOfTKeyTValueConverter<TDictionary, TKey, TValue>
+        : DictionaryDefaultConverter<TDictionary, TKey, TValue>
+        where TDictionary : IDictionary<TKey, TValue>
         where TKey : notnull
     {
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((TCollection)state.Current.ReturnValue!)[key] = value;
+            TDictionary collection = (TDictionary)state.Current.ReturnValue!;
+            collection[key] = value;
+            if (IsValueType)
+            {
+                state.Current.ReturnValue = collection;
+            };
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
@@ -30,16 +36,16 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
                 }
 
-                state.Current.ReturnValue = new Dictionary<string, TValue>();
+                state.Current.ReturnValue = new Dictionary<TKey, TValue>();
             }
             else
             {
-                if (classInfo.CreateObject == null)
+                if (typeInfo.CreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
 
-                TCollection returnValue = (TCollection)classInfo.CreateObject()!;
+                TDictionary returnValue = (TDictionary)typeInfo.CreateObject()!;
 
                 if (returnValue.IsReadOnly)
                 {
@@ -48,56 +54,6 @@ namespace System.Text.Json.Serialization.Converters
 
                 state.Current.ReturnValue = returnValue;
             }
-        }
-
-        protected internal override bool OnWriteResume(
-            Utf8JsonWriter writer,
-            TCollection value,
-            JsonSerializerOptions options,
-            ref WriteStack state)
-        {
-            IEnumerator<KeyValuePair<TKey, TValue>> enumerator;
-            if (state.Current.CollectionEnumerator == null)
-            {
-                enumerator = value.GetEnumerator();
-                if (!enumerator.MoveNext())
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                enumerator = (IEnumerator<KeyValuePair<TKey, TValue>>)state.Current.CollectionEnumerator;
-            }
-
-            JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo.ElementClassInfo!);
-            do
-            {
-                if (ShouldFlush(writer, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                if (state.Current.PropertyState < StackFramePropertyState.Name)
-                {
-                    state.Current.PropertyState = StackFramePropertyState.Name;
-                    TKey key = enumerator.Current.Key;
-                    keyConverter.WriteWithQuotes(writer, key, options, ref state);
-                }
-
-                TValue element = enumerator.Current.Value;
-                if (!valueConverter.TryWrite(writer, element, options, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                state.Current.EndDictionaryElement();
-            } while (enumerator.MoveNext());
-
-            return true;
         }
 
         internal override Type RuntimeType

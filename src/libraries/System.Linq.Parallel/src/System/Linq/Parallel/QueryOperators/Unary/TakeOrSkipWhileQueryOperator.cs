@@ -127,6 +127,8 @@ namespace System.Linq.Parallel
         private void WrapHelper<TKey>(PartitionedStream<TResult, TKey> inputStream, IPartitionedStreamRecipient<TResult> recipient, QuerySettings settings)
         {
             int partitionCount = inputStream.PartitionCount;
+            if (ParallelEnumerable.SinglePartitionMode)
+                Debug.Assert(partitionCount == 1);
 
             // Create shared data.
             OperatorState<TKey> operatorState = new OperatorState<TKey>();
@@ -200,7 +202,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the take- or skip-while.
         //
 
-        private class TakeOrSkipWhileQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TResult, TKey>
+        private sealed class TakeOrSkipWhileQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TResult, TKey>
         {
             private readonly QueryOperatorEnumerator<TResult, TKey> _source; // The data source to enumerate.
             private readonly Func<TResult, bool>? _predicate;  // The actual predicate function.
@@ -247,7 +249,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TResult currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TResult currentElement, [AllowNull] ref TKey currentKey)
             {
                 // If the buffer has not been created, we will generate it lazily on demand.
                 if (_buffer == null)
@@ -269,7 +271,7 @@ namespace System.Linq.Parallel
                         while (_source.MoveNext(ref current!, ref key))
                         {
                             if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                                _cancellationToken.ThrowIfCancellationRequested();;
+                                _cancellationToken.ThrowIfCancellationRequested();
 
                             // Add the current element to our buffer.
                             buffer.Add(new Pair<TResult, TKey>(current, key));
@@ -321,13 +323,16 @@ namespace System.Linq.Parallel
                     }
                     finally
                     {
-                        // No matter whether we exit due to an exception or normal completion, we must ensure
-                        // that we signal other partitions that we have completed.  Otherwise, we can cause deadlocks.
-                        _sharedBarrier.Signal();
+                        if (!ParallelEnumerable.SinglePartitionMode) {
+                            // No matter whether we exit due to an exception or normal completion, we must ensure
+                            // that we signal other partitions that we have completed.  Otherwise, we can cause deadlocks.
+                            _sharedBarrier.Signal();
+                        }
                     }
 
                     // Before exiting the search phase, we will synchronize with others. This is a barrier.
-                    _sharedBarrier.Wait(_cancellationToken);
+                    if (!ParallelEnumerable.SinglePartitionMode)
+                        _sharedBarrier.Wait(_cancellationToken);
 
                     // Publish the buffer and set the index to just before the 1st element.
                     _buffer = buffer;
@@ -397,7 +402,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        private class OperatorState<TKey>
+        private sealed class OperatorState<TKey>
         {
             internal volatile int _updatesDone;
             internal TKey _currentLowKey = default!;

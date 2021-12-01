@@ -5,9 +5,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -16,7 +17,8 @@ namespace System.Runtime.Serialization
 {
     internal abstract class ReflectionClassWriter
     {
-        public void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, XmlDictionaryString[] memberNames)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, XmlDictionaryString[]? memberNames)
         {
             InvokeOnSerializing(obj, context, classContract);
             obj = ResolveAdapterType(obj, classContract);
@@ -37,14 +39,17 @@ namespace System.Runtime.Serialization
             InvokeOnSerialized(obj, context, classContract);
         }
 
-        public void ReflectionWriteValue(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object value, bool writeXsiType, PrimitiveDataContract primitiveContractForParamType)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        public void ReflectionWriteValue(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object? value, bool writeXsiType, PrimitiveDataContract? primitiveContractForParamType)
         {
             Type memberType = type;
-            object memberValue = value;
+            object? memberValue = value;
             bool originValueIsNullableOfT = (memberType.IsGenericType && memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable);
             if (memberType.IsValueType && !originValueIsNullableOfT)
             {
-                PrimitiveDataContract primitiveContract = primitiveContractForParamType;
+                Debug.Assert(memberValue != null);
+
+                PrimitiveDataContract? primitiveContract = primitiveContractForParamType;
                 if (primitiveContract != null && !writeXsiType)
                 {
                     primitiveContract.WriteXmlValue(xmlWriter, memberValue, context);
@@ -60,12 +65,12 @@ namespace System.Runtime.Serialization
                 {
                     if (memberValue == null)
                     {
-                        memberType = Nullable.GetUnderlyingType(memberType);
+                        memberType = Nullable.GetUnderlyingType(memberType)!;
                     }
                     else
                     {
-                        MethodInfo getValue = memberType.GetMethod("get_Value", Array.Empty<Type>());
-                        memberValue = getValue.Invoke(memberValue, Array.Empty<object>());
+                        MethodInfo getValue = memberType.GetMethod("get_Value", Type.EmptyTypes)!;
+                        memberValue = getValue.Invoke(memberValue, Array.Empty<object>())!;
                         memberType = memberValue.GetType();
                     }
                 }
@@ -76,7 +81,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    PrimitiveDataContract primitiveContract = originValueIsNullableOfT ? PrimitiveDataContract.GetPrimitiveDataContract(memberType) : primitiveContractForParamType;
+                    PrimitiveDataContract? primitiveContract = originValueIsNullableOfT ? PrimitiveDataContract.GetPrimitiveDataContract(memberType) : primitiveContractForParamType;
                     if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject && !writeXsiType)
                     {
                         primitiveContract.WriteXmlValue(xmlWriter, memberValue, context);
@@ -91,21 +96,23 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
-                            ReflectionInternalSerialize(xmlWriter, context, memberValue, memberValue.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType, originValueIsNullableOfT);
+                            ReflectionInternalSerialize(xmlWriter, context, memberValue!, memberValue!.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType, originValueIsNullableOfT);
                         }
                     }
                 }
             }
         }
 
-        protected abstract int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[] memberNames);
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected abstract int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[]? memberNames);
 
-        protected object ReflectionGetMemberValue(object obj, DataMember dataMember)
+        protected object? ReflectionGetMemberValue(object obj, DataMember dataMember)
         {
             return dataMember.Getter(obj);
         }
 
-        protected bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object value, XmlDictionaryString name, XmlDictionaryString ns, PrimitiveDataContract primitiveContract)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object? value, XmlDictionaryString name, XmlDictionaryString? ns, PrimitiveDataContract? primitiveContract)
         {
             if (primitiveContract == null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
                 return false;
@@ -144,14 +151,19 @@ namespace System.Runtime.Serialization
             {
                 obj = DateTimeOffsetAdapter.GetDateTimeOffsetAdapter((DateTimeOffset)obj);
             }
+            else if (type == Globals.TypeOfMemoryStream)
+            {
+                obj = MemoryStreamAdapter.GetMemoryStreamAdapter((MemoryStream)obj);
+            }
             else if (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePair)
             {
-                obj = classContract.KeyValuePairAdapterConstructorInfo.Invoke(new object[] { obj });
+                obj = classContract.KeyValuePairAdapterConstructorInfo!.Invoke(new object[] { obj });
             }
 
             return obj;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ReflectionInternalSerialize(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, object obj, bool isDeclaredType, bool writeXsiType, Type memberType, bool isNullableOfT = false)
         {
             if (isNullableOfT)

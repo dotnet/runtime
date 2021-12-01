@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private string DebugView => new DebugViewPrinter(_interpreter).ToString();
 
-        private class DebugViewPrinter
+        private sealed class DebugViewPrinter
         {
             private readonly Interpreter _interpreter;
             private readonly Dictionary<int, int> _tryStart = new Dictionary<int, int>();
@@ -167,7 +167,7 @@ namespace System.Linq.Expressions.Interpreter
 
                     InstructionList.DebugView.InstructionView instructionView = instructionViews[i];
 
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}IP_{1}: {2}", _indent, i.ToString().PadLeft(4, '0'), instructionView.GetValue()).AppendLine();
+                    sb.AppendLine(CultureInfo.InvariantCulture, $"{_indent}IP_{i.ToString().PadLeft(4, '0')}: {instructionView.GetValue()}");
                 }
 
                 EmitExits(sb, instructions.Length);

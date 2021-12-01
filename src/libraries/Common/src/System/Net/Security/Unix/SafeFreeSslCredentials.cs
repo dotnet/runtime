@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using Microsoft.Win32.SafeHandles;
 
 using System.Diagnostics;
@@ -10,6 +9,8 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
 
 namespace System.Net.Security
 {
@@ -20,6 +21,7 @@ namespace System.Net.Security
         private SslProtocols _protocols = SslProtocols.None;
         private EncryptionPolicy _policy;
         private bool _isInvalid;
+        private SslStreamCertificateContext? _context;
 
         internal SafeX509Handle? CertHandle
         {
@@ -41,14 +43,15 @@ namespace System.Net.Security
             get { return _policy; }
         }
 
-        public SafeFreeSslCredentials(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy)
+        public SafeFreeSslCredentials(SslStreamCertificateContext? context, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
             : base(IntPtr.Zero, true)
         {
+
             Debug.Assert(
-                certificate == null || certificate is X509Certificate2,
+                context == null || context.Certificate is X509Certificate2,
                 "Only X509Certificate2 certificates are supported at this time");
 
-            X509Certificate2? cert = (X509Certificate2?)certificate;
+            X509Certificate2? cert = context?.Certificate;
 
             if (cert != null)
             {
@@ -86,6 +89,7 @@ namespace System.Net.Security
 
             _protocols = protocols;
             _policy = policy;
+            _context = context;
         }
 
         public override bool IsInvalid

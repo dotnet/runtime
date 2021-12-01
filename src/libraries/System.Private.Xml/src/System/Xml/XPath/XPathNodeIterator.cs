@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections;
 using System.Diagnostics;
 
@@ -41,7 +40,7 @@ namespace System.Xml.XPath
         /// <summary>
         /// Implementation of a resetable enumerator that is linked to the XPathNodeIterator used to create it.
         /// </summary>
-        private class Enumerator : IEnumerator
+        private sealed class Enumerator : IEnumerator
         {
             private readonly XPathNodeIterator _original;     // Keep original XPathNodeIterator in case Reset() is called
             private XPathNodeIterator? _current;
@@ -52,7 +51,7 @@ namespace System.Xml.XPath
                 _original = original.Clone();
             }
 
-            public virtual object Current
+            public object Current
             {
                 get
                 {
@@ -73,7 +72,7 @@ namespace System.Xml.XPath
                 }
             }
 
-            public virtual bool MoveNext()
+            public bool MoveNext()
             {
                 // Delegate to XPathNodeIterator
                 if (!_iterationStarted)
@@ -92,7 +91,7 @@ namespace System.Xml.XPath
                 return true;
             }
 
-            public virtual void Reset()
+            public void Reset()
             {
                 _iterationStarted = false;
             }

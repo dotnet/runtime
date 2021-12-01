@@ -27,6 +27,22 @@
     ret
 }
 
+.method public static void TestMethodFoo()
+{
+    ret
+}
+
+.method public static void TestMethodFoo(int32 myInt)
+{
+    ret
+}
+
+.method private static int32 TestMethodBar(int32 myInt)
+{
+    ldarg.0
+    ret
+}
+
 .namespace System.Reflection.TestModule
 {
     .class public Dummy extends [System.Runtime]System.Object

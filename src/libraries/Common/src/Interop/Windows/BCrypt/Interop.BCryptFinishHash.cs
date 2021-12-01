@@ -5,14 +5,14 @@ using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class BCrypt
+    internal static partial class BCrypt
     {
         internal static NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, Span<byte> pbOutput, int cbOutput, int dwFlags) =>
             BCryptFinishHash(hHash, ref MemoryMarshal.GetReference(pbOutput), cbOutput, dwFlags);
 
-        [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        private static extern NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, ref byte pbOutput, int cbOutput, int dwFlags);
+        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        private static partial NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, ref byte pbOutput, int cbOutput, int dwFlags);
     }
 }

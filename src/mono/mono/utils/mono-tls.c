@@ -31,7 +31,7 @@
 #define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("movl $" #var "@ntpoff, %0" : "=r" (offset))
 #endif
 
-#elif defined(TARGET_ARM64) && !defined(PIC)
+#elif defined(TARGET_ARM64) && !defined(PIC) && !defined(HOST_WIN32)
 
 #define MONO_THREAD_VAR_OFFSET(var,offset) \
 	__asm ( "mov %0, #0\n add %0, %0, #:tprel_hi12:" #var "\n add %0, %0, #:tprel_lo12_nc:" #var "\n" \
@@ -70,11 +70,11 @@
 #  endif
 # else
 #  define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  			\
-						__asm__ ("basr  %%r1,0\n\t"		\
+						__asm__ ("larl  %%r1,0f\n\t"		\
 							 "j     0f\n\t"			\
-							 ".quad " #var "@NTPOFF\n"	\
-							 "0:\n\t"			\
-							 "lg    %0,4(%%r1)\n\t"		\
+							 "0:.quad " #var "@NTPOFF\n"	\
+							 "1:\n\t"			\
+							 "lg    %0,0(%%r1)\n\t"		\
 							: "=r" (foo) : : "1");		\
 						offset = foo; } while (0)
 # endif
@@ -166,20 +166,6 @@ mono_tls_init_runtime_keys (void)
 	MONO_THREAD_VAR_OFFSET (mono_tls_key_domain, mono_tls_offsets [TLS_KEY_DOMAIN]);
 	mono_native_tls_alloc (&mono_tls_key_lmf_addr, NULL);
 	MONO_THREAD_VAR_OFFSET (mono_tls_key_lmf_addr, mono_tls_offsets [TLS_KEY_LMF_ADDR]);
-#endif
-}
-
-void
-mono_tls_free_keys (void)
-{
-#ifdef MONO_KEYWORD_THREAD
-#elif defined(DISABLE_THREADS)
-#else
-	mono_native_tls_free (mono_tls_key_thread);
-	mono_native_tls_free (mono_tls_key_jit_tls);
-	mono_native_tls_free (mono_tls_key_domain);
-	mono_native_tls_free (mono_tls_key_sgen_thread_info);
-	mono_native_tls_free (mono_tls_key_lmf_addr);
 #endif
 }
 

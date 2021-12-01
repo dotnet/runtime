@@ -48,7 +48,6 @@
       System.IO.FileSystem.Watcher;
       System.IO.IsolatedStorage;
       System.IO.MemoryMappedFiles;
-      System.IO.Pipelines;
       System.IO.Pipes;
       System.IO.Pipes.AccessControl;
       System.IO.UnmanagedMemoryStream;
@@ -57,7 +56,6 @@
       System.Linq.Parallel;
       System.Linq.Queryable;
       System.Memory;
-      System.Net.Connections;
       System.Net.Http;
       System.Net.Http.Json;
       System.Net.HttpListener;
@@ -66,6 +64,7 @@
       System.Net.NetworkInformation;
       System.Net.Ping;
       System.Net.Primitives;
+      System.Net.Quic;
       System.Net.Requests;
       System.Net.Security;
       System.Net.ServicePoint;
@@ -78,6 +77,7 @@
       System.Numerics.Vectors;
       System.ObjectModel;
       System.Private.DataContractSerialization;
+      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;
@@ -99,7 +99,6 @@
       System.Runtime.Extensions;
       System.Runtime.Handles;
       System.Runtime.InteropServices;
-      System.Runtime.InteropServices.JavaScript;
       System.Runtime.InteropServices.RuntimeInformation;
       System.Runtime.Intrinsics;
       System.Runtime.Loader;
@@ -110,6 +109,7 @@
       System.Runtime.Serialization.Xml;
       System.Security.AccessControl;
       System.Security.Claims;
+      System.Security.Cryptography;
       System.Security.Cryptography.Algorithms;
       System.Security.Cryptography.Cng;
       System.Security.Cryptography.Csp;
@@ -146,18 +146,67 @@
       System.Xml.XPath;
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
-    <NetCoreAppLibraryNoReference>
-      Microsoft.Win32.Registry;
-      System.IO.FileSystem.AccessControl;
-      System.IO.Pipes.AccessControl;
-      System.Security.AccessControl;
-      System.Security.Cryptography.Cng;
-      System.Security.Cryptography.OpenSsl;
-      System.Security.Principal.Windows;
-    </NetCoreAppLibraryNoReference>
+    <AspNetCoreAppLibrary>
+      Microsoft.Extensions.Caching.Abstractions;
+      Microsoft.Extensions.Caching.Memory;
+      Microsoft.Extensions.Configuration;
+      Microsoft.Extensions.Configuration.Abstractions;
+      Microsoft.Extensions.Configuration.Binder;
+      Microsoft.Extensions.Configuration.CommandLine;
+      Microsoft.Extensions.Configuration.EnvironmentVariables;
+      Microsoft.Extensions.Configuration.FileExtensions;
+      Microsoft.Extensions.Configuration.Ini;
+      Microsoft.Extensions.Configuration.Json;
+      Microsoft.Extensions.Configuration.UserSecrets;
+      Microsoft.Extensions.Configuration.Xml;
+      Microsoft.Extensions.DependencyInjection;
+      Microsoft.Extensions.DependencyInjection.Abstractions;
+      Microsoft.Extensions.FileProviders.Abstractions;
+      Microsoft.Extensions.FileProviders.Composite;
+      Microsoft.Extensions.FileProviders.Physical;
+      Microsoft.Extensions.FileSystemGlobbing;
+      Microsoft.Extensions.Hosting;
+      Microsoft.Extensions.Hosting.Abstractions;
+      Microsoft.Extensions.Http;
+      Microsoft.Extensions.Logging;
+      Microsoft.Extensions.Logging.Abstractions;
+      Microsoft.Extensions.Logging.Configuration;
+      Microsoft.Extensions.Logging.Console;
+      Microsoft.Extensions.Logging.Debug;
+      Microsoft.Extensions.Logging.EventLog;
+      Microsoft.Extensions.Logging.EventSource;
+      Microsoft.Extensions.Logging.TraceSource;
+      Microsoft.Extensions.Options;
+      Microsoft.Extensions.Options.ConfigurationExtensions;
+      Microsoft.Extensions.Options.DataAnnotations;
+      Microsoft.Extensions.Primitives;
+      System.Diagnostics.EventLog;
+      System.IO.Pipelines;
+      System.Security.Cryptography.Xml;
+    </AspNetCoreAppLibrary>
+    <WindowsDesktopCoreAppLibrary>
+      Microsoft.Win32.Registry.AccessControl;
+      Microsoft.Win32.SystemEvents;
+      System.CodeDom;
+      System.Configuration.ConfigurationManager;
+      System.Diagnostics.EventLog;
+      System.Diagnostics.PerformanceCounter;
+      System.DirectoryServices;
+      System.Drawing.Common;
+      System.IO.Packaging;
+      System.Resources.Extensions;
+      System.Security.Cryptography.Pkcs;
+      System.Security.Cryptography.ProtectedData;
+      System.Security.Cryptography.Xml;
+      System.Security.Permissions;
+      System.Threading.AccessControl;
+      System.Windows.Extensions;
+    </WindowsDesktopCoreAppLibrary>
   </PropertyGroup>
-  <!-- Make NetCoreAppLibrary available as an item. -->
+  <!-- Make available as an item. -->
   <ItemGroup>
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
+    <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
+    <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />
   </ItemGroup>
 </Project>

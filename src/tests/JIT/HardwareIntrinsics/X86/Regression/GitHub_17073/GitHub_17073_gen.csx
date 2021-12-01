@@ -273,7 +273,7 @@ class BinaryOpTest<T> : Test
     {
         w.WriteLine();
         w.WriteLine("    [MethodImpl(MethodImplOptions.NoInlining)]");
-        // Pass parameters by reference so we get consistency accross various ABIs.
+        // Pass parameters by reference so we get consistency across various ABIs.
         // We get operands in memory and by adding an extra "nop" intrinsic we can
         // force one of the operands in a register, just enough to catch some cases
         // of containment.

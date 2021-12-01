@@ -105,6 +105,19 @@ namespace System.Numerics.Tests
             Assert.Equal(0, result);
         }
 
+        [Fact]
+        public void Parse_Hex32Bits()
+        {
+            // Regression test for: https://github.com/dotnet/runtime/issues/54251
+            BigInteger result;
+
+            Assert.True(BigInteger.TryParse("80000000", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(int.MinValue, result);
+
+            Assert.True(BigInteger.TryParse("080000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0x80000001u, result);
+        }
+
         private static void RunFormatProviderParseStrings()
         {
             NumberFormatInfo nfi = new NumberFormatInfo();
@@ -126,6 +139,8 @@ namespace System.Numerics.Tests
             VerifyFormatParse("123&4567^", NumberStyles.Any, nfi, new BigInteger(1234567));
             VerifyFormatParse("123&4567^ <", NumberStyles.Any, nfi, new BigInteger(-1234567));
         }
+
+        private static bool NoGrouping(int[] sizes) => sizes.Length == 0 || (sizes.Length == 1 && sizes[0] == 0);
 
         private static void VerifyDefaultParse(Random random)
         {
@@ -219,7 +234,14 @@ namespace System.Numerics.Tests
                 sizes = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSizes;
                 seperator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
                 digits = GenerateGroups(sizes, seperator, random);
-                VerifyFailParseToString(digits, typeof(FormatException));
+                if (NoGrouping(sizes))
+                {
+                    VerifyParseToString(digits);
+                }
+                else
+                {
+                    VerifyFailParseToString(digits, typeof(FormatException));
+                }
             }
 
             // Exponent
@@ -341,7 +363,7 @@ namespace System.Numerics.Tests
                 sizes = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSizes;
                 seperator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
                 digits = GenerateGroups(sizes, seperator, random);
-                VerifyParseToString(digits, ns, ((ns & NumberStyles.AllowThousands) != 0));
+                VerifyParseToString(digits, ns, NoGrouping(sizes) || ((ns & NumberStyles.AllowThousands) != 0));
             }
 
             // Exponent
@@ -726,6 +748,11 @@ namespace System.Numerics.Tests
             int total;
             int num_digits = random.Next(10, 100);
             string digits = string.Empty;
+
+            if (NoGrouping(sizes))
+            {
+                return GetDigitSequence(1, 100, random);
+            }
 
             total = 0;
             total_sizes.Add(0);

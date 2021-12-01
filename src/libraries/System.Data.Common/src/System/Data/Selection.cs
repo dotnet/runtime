@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -27,7 +28,7 @@ namespace System.Data
         public static bool operator !=(IndexField if1, IndexField if2) => !(if1 == if2);
 
         // must override Equals if == operator is defined
-        public override bool Equals(object? obj) => obj is IndexField ?
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is IndexField ?
             this == (IndexField)obj :
             false;
 
@@ -895,6 +896,7 @@ namespace System.Data
                 }
             }
         }
+
         // new RecordChanged which takes oldIndex and newIndex and fires _onListChanged
         public void RecordChanged(int oldIndex, int newIndex)
         {

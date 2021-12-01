@@ -36,7 +36,7 @@ namespace System.Composition.Runtime.Util
             Debug.Assert(closedGenericType.IsConstructedGenericType);
             var name = closedGenericType.Name.Substring(0, closedGenericType.Name.IndexOf('`'));
             IEnumerable<string> args = closedGenericType.GenericTypeArguments.Select(t => Format(t));
-            return string.Format("{0}<{1}>", name, string.Join(SR.Formatter_ListSeparatorWithSpace, args));
+            return $"{name}<{string.Join(SR.Formatter_ListSeparatorWithSpace, args)}>";
         }
     }
 }

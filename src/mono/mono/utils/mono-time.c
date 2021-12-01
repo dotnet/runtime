@@ -279,11 +279,16 @@ mono_clock_get_time_ns (mono_clock_id_t clk_id)
 	return ((guint64) mach_ts.tv_sec * 1000000000) + (guint64) mach_ts.tv_nsec;
 }
 
-#elif defined(__linux__)
+// TODO: Potentially make this the default?
+// Can we assume clock_gettime exists on all modern POSIX systems? Maybe add a better check for it in configure.ac?
+#elif defined(__linux__) || defined (TARGET_WASM)
 
 void
 mono_clock_init (mono_clock_id_t *clk_id)
-{	
+{
+#ifdef HAVE_CLOCK_MONOTONIC
+	*clk_id = CLOCK_MONOTONIC;
+#endif
 }
 
 void
@@ -293,13 +298,17 @@ mono_clock_cleanup (mono_clock_id_t clk_id)
 
 guint64
 mono_clock_get_time_ns (mono_clock_id_t clk_id)
-{	
+{
+#ifdef HAVE_CLOCK_GETTIME
 	struct timespec ts;
 
 	if (clock_gettime (clk_id, &ts) == -1)
 		g_error ("%s: clock_gettime () returned -1, errno = %d", __func__, errno);
 
 	return ((guint64) ts.tv_sec * 1000000000) + (guint64) ts.tv_nsec;
+#else
+	return 0;
+#endif
 }
 
 #else
@@ -307,22 +316,20 @@ mono_clock_get_time_ns (mono_clock_id_t clk_id)
 void
 mono_clock_init (mono_clock_id_t *clk_id)
 {
-	// TODO: need to implement this function for PC
-	g_assert_not_reached ();
+	// TODO: need to implement this function for Windows
 }
 
 void
 mono_clock_cleanup (mono_clock_id_t clk_id)
 {
-	// TODO: need to implement this function for PC
-	g_assert_not_reached ();
+	// TODO: need to implement this function for Windows
 }
 
 guint64
 mono_clock_get_time_ns (mono_clock_id_t clk_id)
 {
-	// TODO: need to implement time stamp function for PC
-	g_assert_not_reached ();
+	// TODO: need to implement time stamp function for Windows
+	return 0;
 }
 
 #endif

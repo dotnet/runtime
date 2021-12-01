@@ -12,6 +12,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module nonvirtualcalls_tailcall.exe
 // MVID: {EC3860F1-6469-489C-86D2-A81D88AE196E}
 .imagebase 0x00400000
@@ -24,7 +25,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public abstract auto ansi beforefieldinit Test.Base
+.class public abstract auto ansi beforefieldinit Test_tailcall.Base
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -164,8 +165,8 @@
 
 } // end of class Test.Base
 
-.class public auto ansi beforefieldinit Test.Child
-       extends Test.Base
+.class public auto ansi beforefieldinit Test_tailcall.Child
+       extends Test_tailcall.Base
 {
   .method public hidebysig virtual final 
           instance string  AbstractFinal() cil managed
@@ -190,7 +191,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.Child::AbstractFinal()
+    IL_0002:  tail. call   instance string Test_tailcall.Child::AbstractFinal()
     IL_000b:  ret
   } // end of method Child::CallAbstractFinal
 
@@ -247,7 +248,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.Child::AbstractOverrideNil()
+    IL_0002:  tail. call   instance string Test_tailcall.Child::AbstractOverrideNil()
     IL_000b:  ret
   } // end of method Child::CallAbstractOverrideNil
 
@@ -274,7 +275,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.Child::VirtualFinal()
+    IL_0002:  tail. call   instance string Test_tailcall.Child::VirtualFinal()
    IL_000b:  ret
   } // end of method Child::tail. callualFinal
 
@@ -331,7 +332,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.Child::VirtualOverrideNil()
+    IL_0002:  tail. call   instance string Test_tailcall.Child::VirtualOverrideNil()
     IL_000b:  ret
   } // end of method Child::tail. callualOverrideNil
 
@@ -341,14 +342,14 @@
     // Code size       7 (0x7)
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void Test.Base::.ctor()
+    IL_0001:  call       instance void Test_tailcall.Base::.ctor()
     IL_0006:  ret
   } // end of method Child::.ctor
 
 } // end of class Test.Child
 
-.class public auto ansi beforefieldinit Test.GrandChild
-       extends Test.Child
+.class public auto ansi beforefieldinit Test_tailcall.GrandChild
+       extends Test_tailcall.Child
 {
   .method public hidebysig virtual final 
           instance string  AbstractOverrideFinal() cil managed
@@ -373,7 +374,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.GrandChild::AbstractOverrideFinal()
+    IL_0002:  tail. call   instance string Test_tailcall.GrandChild::AbstractOverrideFinal()
     IL_000b:  ret
   } // end of method GrandChild::CallAbstractOverrideFinal
 
@@ -400,7 +401,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.GrandChild::AbstractOverrideOverride()
+    IL_0002:  tail. call   instance string Test_tailcall.GrandChild::AbstractOverrideOverride()
    IL_000b:  ret
   } // end of method GrandChild::CallAbstractOverrideOverride
 
@@ -427,7 +428,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.GrandChild::VirtualNilFinal()
+    IL_0002:  tail. call   instance string Test_tailcall.GrandChild::VirtualNilFinal()
    IL_000b:  ret
   } // end of method GrandChild::tail. callualNilFinal
 
@@ -454,7 +455,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.GrandChild::VirtualOverrideFinal()
+    IL_0002:  tail. call   instance string Test_tailcall.GrandChild::VirtualOverrideFinal()
     IL_000b:  ret
   } // end of method GrandChild::tail. callualOverrideFinal
 
@@ -481,7 +482,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.GrandChild::VirtualOverrideOverride()
+    IL_0002:  tail. call   instance string Test_tailcall.GrandChild::VirtualOverrideOverride()
    IL_000b:  ret
   } // end of method GrandChild::tail. callualOverrideOverride
 
@@ -508,7 +509,7 @@
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  tail. call   instance string Test.GrandChild::VirtualNilOverride()
+    IL_0002:  tail. call   instance string Test_tailcall.GrandChild::VirtualNilOverride()
     IL_000b:  ret
   } // end of method GrandChild::tail. callualNilOverride
 
@@ -523,50 +524,50 @@
     IL_000b:  nop
     IL_000c:  ldstr      "Child.AbstractFinal"
     IL_0011:  ldarg.0
-    IL_0012:  call       instance string Test.Child::CallAbstractFinal()
-    IL_0017:  call       void Test.Assert::AreEqual(string,
+    IL_0012:  call       instance string Test_tailcall.Child::CallAbstractFinal()
+    IL_0017:  call       void Test_tailcall.Assert::AreEqual(string,
                                                     string)
     IL_001c:  nop
     IL_001d:  ldstr      "GrandChild.AbstractOverrideFinal"
     IL_0022:  ldarg.0
-    IL_0023:  call       instance string Test.GrandChild::CallAbstractOverrideFinal()
-    IL_0028:  call       void Test.Assert::AreEqual(string,
+    IL_0023:  call       instance string Test_tailcall.GrandChild::CallAbstractOverrideFinal()
+    IL_0028:  call       void Test_tailcall.Assert::AreEqual(string,
                                                     string)
     IL_002d:  nop
     IL_002e:  ldstr      "GrandChild.AbstractOverrideOverride"
     IL_0033:  ldarg.0
-    IL_0034:  call       instance string Test.GrandChild::CallAbstractOverrideOverride()
-    IL_0039:  call       void Test.Assert::AreEqual(string,
+    IL_0034:  call       instance string Test_tailcall.GrandChild::CallAbstractOverrideOverride()
+    IL_0039:  call       void Test_tailcall.Assert::AreEqual(string,
                                                     string)
     IL_003e:  nop
     IL_003f:  ldstr      "Child.AbstractOverrideNil"
     IL_0044:  ldarg.0
-    IL_0045:  call       instance string Test.Child::CallAbstractOverrideNil()
-    IL_004a:  call       void Test.Assert::AreEqual(string,
+    IL_0045:  call       instance string Test_tailcall.Child::CallAbstractOverrideNil()
+    IL_004a:  call       void Test_tailcall.Assert::AreEqual(string,
                                                     string)
     IL_004f:  nop
     IL_0050:  ldstr      "Child.VirtualFinal"
     IL_0055:  ldarg.0
-    IL_0056:  call       instance string Test.Child::CallVirtualFinal()
-    IL_005b:  call       void Test.Assert::AreEqual(string,
+    IL_0056:  call       instance string Test_tailcall.Child::CallVirtualFinal()
+    IL_005b:  call       void Test_tailcall.Assert::AreEqual(string,
                                                     string)
     IL_0060:  nop
     IL_0061:  ldstr      "GrandChild.VirtualOverrideFinal"
     IL_0066:  ldarg.0
-    IL_0067:  call       instance string Test.GrandChild::CallVirtualOverrideFinal()
-    IL_006c:  call       void Test.Assert::AreEqual(string,
+    IL_0067:  call       instance string Test_tailcall.GrandChild::CallVirtualOverrideFinal()
+    IL_006c:  call       void Test_tailcall.Assert::AreEqual(string,
                                                     string)
     IL_0071:  nop
     IL_0072:  ldstr      "GrandChild.VirtualOverrideOverride"
     IL_0077:  ldarg.0
-    IL_0078:  call       instance string Test.GrandChild::CallVirtualOverrideOverride()
-    IL_007d:  call       void Test.Assert::AreEqual(string,
+    IL_0078:  call       instance string Test_tailcall.GrandChild::CallVirtualOverrideOverride()
+    IL_007d:  call       void Test_tailcall.Assert::AreEqual(string,
                                                     string)
     IL_0082:  nop
     IL_0083:  ldstr      "Child.VirtualOverrideNil"
     IL_0088:  ldarg.0
-    IL_0089:  call       instance string Test.Child::CallVirtualOverrideNil()
-    IL_008e:  call       void Test.Assert::AreEqual(string,
+    IL_0089:  call       instance string Test_tailcall.Child::CallVirtualOverrideNil()
+    IL_008e:  call       void Test_tailcall.Assert::AreEqual(string,
                                                     string)
     IL_0093:  nop
     IL_0094:  ret
@@ -578,30 +579,33 @@
     // Code size       7 (0x7)
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void Test.Child::.ctor()
+    IL_0001:  call       instance void Test_tailcall.Child::.ctor()
     IL_0006:  ret
   } // end of method GrandChild::.ctor
 
 } // end of class Test.GrandChild
 
-.class public abstract auto ansi sealed beforefieldinit Test.Program
+.class public abstract auto ansi sealed beforefieldinit Test_tailcall.Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallFromInsideGrandChild() cil managed
   {
     // Code size       15 (0xf)
     .maxstack  1
-    .locals init (class Test.GrandChild V_0)
+    .locals init (class Test_tailcall.GrandChild V_0)
     IL_0000:  nop
-    IL_0001:  newobj     instance void Test.GrandChild::.ctor()
+    IL_0001:  newobj     instance void Test_tailcall.GrandChild::.ctor()
     IL_0006:  stloc.0
     IL_0007:  ldloc.0
-    IL_0008:  tail. call   instance void Test.GrandChild::TestGrandChild()
+    IL_0008:  tail. call   instance void Test_tailcall.GrandChild::TestGrandChild()
     IL_000e:  ret
   } // end of method Program::CallFromInsideGrandChild
 
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       52 (0x34)
     .maxstack  1
@@ -611,7 +615,7 @@
     .try
     {
       IL_0001:  nop
-      IL_0002:  call       void Test.Program::CallFromInsideGrandChild()
+      IL_0002:  call       void Test_tailcall.Program::CallFromInsideGrandChild()
       IL_0007:  nop
       IL_0008:  ldstr      "Test SUCCESS"
       IL_000d:  call       void [System.Console]System.Console::WriteLine(string)
@@ -643,7 +647,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test.Assert
+.class public abstract auto ansi sealed beforefieldinit Test_tailcall.Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,

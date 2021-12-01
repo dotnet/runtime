@@ -3,7 +3,7 @@
 
 namespace System.Text
 {
-    internal class CodePageDataItem
+    internal sealed class CodePageDataItem
     {
         public int UIFamilyCodePage { get; }
         public string WebName { get; }

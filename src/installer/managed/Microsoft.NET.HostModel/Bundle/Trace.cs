@@ -10,7 +10,7 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public class Trace
     {
-        readonly bool Verbose = false;
+        private readonly bool Verbose;
 
         public Trace(bool verbose)
         {
@@ -31,4 +31,3 @@ namespace Microsoft.NET.HostModel.Bundle
         }
     }
 }
-

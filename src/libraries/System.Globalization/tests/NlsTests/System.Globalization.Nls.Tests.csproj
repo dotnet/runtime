@@ -4,7 +4,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- This test project is Windows only as it forces the use of NLS as the Globlaization platform -->
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <UnicodeUcdVersion>13.0</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>

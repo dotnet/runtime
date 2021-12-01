@@ -30,7 +30,8 @@ namespace System.Net.Http.Functional.Tests
             }
 
         }
-        [OuterLoop("Uses external server")]
+
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersAndReadModes))]
         public async Task GetStreamAsync_ReadToEnd_Success(Configuration.Http.RemoteServer remoteServer, int readMode)
         {
@@ -125,7 +126,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -144,7 +145,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -168,7 +169,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetStreamAsync_ReadZeroBytes_Success(Configuration.Http.RemoteServer remoteServer)
         {
@@ -183,7 +184,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task ReadAsStreamAsync_Cancel_TaskIsCanceled(Configuration.Http.RemoteServer remoteServer)
         {
@@ -226,11 +227,48 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
+
 #if NETCOREAPP
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_Streaming()
+        {
+            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+
+            var size = 1500 * 1024 * 1024;
+            var req = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.RemoteSecureHttp11Server.BaseUri + "large.ashx?size=" + size);
+
+            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteSecureHttp11Server))
+            // we need to switch off Response buffering of default ResponseContentRead option
+            using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+            {
+                Assert.Equal(typeof(StreamContent), response.Content.GetType());
+
+                Assert.Equal("application/octet-stream", response.Content.Headers.ContentType.MediaType);
+                Assert.True(size == response.Content.Headers.ContentLength, "ContentLength");
+
+                var stream = await response.Content.ReadAsStreamAsync();
+                Assert.Equal("ReadOnlyStream", stream.GetType().Name);
+                var buffer = new byte[1024 * 1024];
+                int totalCount = 0;
+                int fetchedCount = 0;
+                do
+                {
+                    // with WebAssemblyEnableStreamingResponse option set, we will be using https://developer.mozilla.org/en-US/docs/Web/API/ReadableStreamDefaultReader/read
+                    fetchedCount = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    totalCount += fetchedCount;
+                } while (fetchedCount != 0);
+                Assert.Equal(size, totalCount);
+            }
+        }
+
         [Theory]
         [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
         [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]
         [InlineData(TransferType.Chunked, TransferError.ChunkSizeTooLarge)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_InvalidServerResponse_ThrowsIOException(
             TransferType transferType,
             TransferError transferError)
@@ -252,6 +290,29 @@ namespace System.Net.Http.Functional.Tests
             await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
             {
                 await ReadAsStreamHelper(uri);
+            });
+        }
+
+        [Theory]
+        [InlineData(TransferType.None, TransferError.None)]
+        [InlineData(TransferType.ContentLength, TransferError.None)]
+        [InlineData(TransferType.Chunked, TransferError.None)]
+        public async Task ReadAsStreamAsync_StreamCanReadIsFalseAfterDispose(
+            TransferType transferType,
+            TransferError transferError)
+        {
+            await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                using (HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    Stream stream = await response.Content.ReadAsStreamAsync();
+                    Assert.True(stream.CanRead);
+
+                    stream.Dispose();
+
+                    Assert.False(stream.CanRead);
+                }
             });
         }
 #endif
@@ -298,15 +359,15 @@ namespace System.Net.Http.Functional.Tests
                     }
 
                     // Write response header
-                    TextWriter writer = connection.Writer;
-                    await writer.WriteAsync("HTTP/1.1 200 OK\r\n").ConfigureAwait(false);
-                    await writer.WriteAsync($"Date: {DateTimeOffset.UtcNow:R}\r\n").ConfigureAwait(false);
-                    await writer.WriteAsync("Content-Type: text/plain\r\n").ConfigureAwait(false);
+                    await connection.WriteStringAsync("HTTP/1.1 200 OK\r\n").ConfigureAwait(false);
+                    await connection.WriteStringAsync($"Date: {DateTimeOffset.UtcNow:R}\r\n").ConfigureAwait(false);
+                    await connection.WriteStringAsync(LoopbackServer.CorsHeaders).ConfigureAwait(false);
+                    await connection.WriteStringAsync("Content-Type: text/plain\r\n").ConfigureAwait(false);
                     if (!string.IsNullOrEmpty(transferHeader))
                     {
-                        await writer.WriteAsync(transferHeader).ConfigureAwait(false);
+                        await connection.WriteStringAsync(transferHeader).ConfigureAwait(false);
                     }
-                    await writer.WriteAsync("\r\n").ConfigureAwait(false);
+                    await connection.WriteStringAsync("\r\n").ConfigureAwait(false);
 
                     // Write response body
                     if (transferType == TransferType.Chunked)
@@ -314,16 +375,16 @@ namespace System.Net.Http.Functional.Tests
                         string chunkSizeInHex = string.Format(
                             "{0:x}\r\n",
                             content.Length + (transferError == TransferError.ChunkSizeTooLarge ? 42 : 0));
-                        await writer.WriteAsync(chunkSizeInHex).ConfigureAwait(false);
-                        await writer.WriteAsync($"{content}\r\n").ConfigureAwait(false);
+                        await connection.WriteStringAsync(chunkSizeInHex).ConfigureAwait(false);
+                        await connection.WriteStringAsync($"{content}\r\n").ConfigureAwait(false);
                         if (transferError != TransferError.MissingChunkTerminator)
                         {
-                            await writer.WriteAsync("0\r\n\r\n").ConfigureAwait(false);
+                            await connection.WriteStringAsync("0\r\n\r\n").ConfigureAwait(false);
                         }
                     }
                     else
                     {
-                        await writer.WriteAsync($"{content}").ConfigureAwait(false);
+                        await connection.WriteStringAsync($"{content}").ConfigureAwait(false);
                     }
                 }));
         }

@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable disable
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Reflection;
-#if FEATURE_COMPILED_XSL
 using System.Xml.Xsl.IlGen;
-#endif
 using System.Xml.Xsl.Qil;
 
 namespace System.Xml.Xsl.Runtime
@@ -15,7 +14,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Contains all static data that is used by the runtime.
     /// </summary>
-    internal class XmlQueryStaticData
+    internal sealed class XmlQueryStaticData
     {
         // Name of the field to serialize to
         public const string DataFieldName = "staticData";
@@ -34,10 +33,10 @@ namespace System.Xml.Xsl.Runtime
         private readonly string[] _globalNames;
         private readonly EarlyBoundInfo[] _earlyBound;
 
-#if FEATURE_COMPILED_XSL
         /// <summary>
         /// Constructor.
         /// </summary>
+        [RequiresUnreferencedCode("This method will create a copy that uses earlybound types which cannot be statically analyzed.")]
         public XmlQueryStaticData(XmlWriterSettings defaultWriterSettings, IList<WhitespaceRule> whitespaceRules, StaticDataManager staticData)
         {
             Debug.Assert(defaultWriterSettings != null && staticData != null);
@@ -69,11 +68,11 @@ namespace System.Xml.Xsl.Runtime
             _earlyBound = copy._earlyBound;
 #endif
         }
-#endif
 
         /// <summary>
         /// Deserialize XmlQueryStaticData object from a byte array.
         /// </summary>
+        [RequiresUnreferencedCode("This method will create EarlyBoundInfo from passed in ebTypes array which cannot be statically analyzed.")]
         public XmlQueryStaticData(byte[] data, Type[] ebTypes)
         {
             MemoryStream dataStream = new MemoryStream(data, /*writable:*/false);
@@ -403,7 +402,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Subclass of BinaryReader used to serialize query static data.
     /// </summary>
-    internal class XmlQueryDataReader : BinaryReader
+    internal sealed class XmlQueryDataReader : BinaryReader
     {
         public XmlQueryDataReader(Stream input) : base(input) { }
 
@@ -433,7 +432,7 @@ namespace System.Xml.Xsl.Runtime
     /// <summary>
     /// Subclass of BinaryWriter used to deserialize query static data.
     /// </summary>
-    internal class XmlQueryDataWriter : BinaryWriter
+    internal sealed class XmlQueryDataWriter : BinaryWriter
     {
         public XmlQueryDataWriter(Stream output) : base(output) { }
 

@@ -1,5 +1,4 @@
 <Project>
-
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -8,9 +7,10 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)generators.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
 
   <PropertyGroup>
     <!--
@@ -18,6 +18,80 @@
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
+    <EnableNETAnalyzers Condition="'$(EnableNETAnalyzers)' == ''">$(RunAnalyzers)</EnableNETAnalyzers>
+    <!-- SDK sets product to assembly but we want it to be our product name -->
+    <Product>Microsoft%AE .NET</Product>
+    <!-- Use the .NET product branding version for informational version description -->
+    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' == ''">$(ProductVersion)</InformationalVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' != ''">$(ProductVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
 
+  <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
+       This is required to show all the files corresponding to all target frameworks in VS. -->
+  <ItemGroup Condition="'$(DefaultLanguageSourceExtension)' != '' and
+                        ('$(BuildingInsideVisualStudio)' == 'true' or '$(DesignTimeBuild)' == 'true')">
+    <None Include="$(MSBuildProjectDirectory)\**\*$(DefaultLanguageSourceExtension)"
+          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
+  </ItemGroup>
+
+  <!-- Packaging -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <!-- The sfxproj files add the license themselves. -->
+    <None Include="$(LicenseFile)"
+          PackagePath="$([System.IO.Path]::GetFileName('$(LicenseFile)'))"
+          Pack="true"
+          Condition="'$(MSBuildProjectExtension)' != '.sfxproj' and '$(MSBuildProjectFile)' != 'msi.csproj'" />
+    <None Include="$(PackageThirdPartyNoticesFile)"
+          PackagePath="$([System.IO.Path]::GetFileName('$(PackageThirdPartyNoticesFile)'))"
+          Pack="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PackageDescription Condition="'$(PackageDescription)' == '' and '$(Description)' != ''">$(Description)</PackageDescription>
+    <RuntimePackageDisclaimer>Internal implementation package not meant for direct consumption. Please do not reference directly.</RuntimePackageDisclaimer>
+    <UseRuntimePackageDisclaimer Condition="'$(UseRuntimePackageDisclaimer)' == '' and
+                                            ($(MSBuildProjectName.StartsWith('runtime.native')) or '$(PackageTargetRuntime)' != '')">true</UseRuntimePackageDisclaimer>
+    <PackageDescription Condition="'$(PackageDescription)' != '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer) %0A$(PackageDescription)</PackageDescription>
+    <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
+    <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
+    <Description>$(PackageDescription)</Description>
+  </PropertyGroup>
+
+  <!--
+    Arcade SDK versioning is defined by static properties in a targets file: work around this by
+    moving properties based on versioning into a target.
+  -->
+  <Target Name="GetProductVersions">
+    <PropertyGroup>
+      <IncludePreReleaseLabelInPackageVersion Condition="'$(DotNetFinalVersionKind)' != 'release'">true</IncludePreReleaseLabelInPackageVersion>
+      <IncludePreReleaseLabelInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludePreReleaseLabelInPackageVersion>
+      <IncludePreReleaseLabelInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludePreReleaseLabelInPackageVersion>
+
+      <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
+      <IncludeBuildNumberInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludeBuildNumberInPackageVersion>
+      <IncludeBuildNumberInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludeBuildNumberInPackageVersion>
+
+      <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
+      <ProductBandVersion Condition="'$(ProductBandVersion)' == ''">$(MajorVersion).$(MinorVersion)</ProductBandVersion>
+      <ProductionVersion Condition="'$(ProductionVersion)' == ''">$(ProductBandVersion).$(PatchVersion)</ProductionVersion>
+      <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
+
+      <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
+      <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
+      <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
+
+      <!--
+        By default, we are always building the nuget packages for HostPolicy, HostFXR and
+        Dotnet/AppHost. Thus, the properties (below) are always set to $(ProductVersion).
+        However, there are scenarios when only some of these components will change (e.g. during
+        servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
+        pass the appropriate version value(s) as argument to the build command in order to override;
+        e.g. 'build -p:HostPolicyVersion=x.y.z ...'
+      -->
+      <HostVersion Condition="'$(HostVersion)' == ''">$(ProductVersion)</HostVersion>
+      <AppHostVersion Condition="'$(AppHostVersion)' == ''">$(ProductVersion)</AppHostVersion>
+      <HostResolverVersion Condition="'$(HostResolverVersion)' == ''">$(ProductVersion)</HostResolverVersion>
+      <HostPolicyVersion Condition="'$(HostPolicyVersion)' == ''">$(ProductVersion)</HostPolicyVersion>
+    </PropertyGroup>
+  </Target>
 </Project>

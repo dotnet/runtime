@@ -33,7 +33,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
         }
 
-        public ActiveDirectorySiteLink(DirectoryContext context, string siteLinkName, ActiveDirectoryTransportType transport, ActiveDirectorySchedule schedule)
+        public ActiveDirectorySiteLink(DirectoryContext context, string siteLinkName, ActiveDirectoryTransportType transport, ActiveDirectorySchedule? schedule)
         {
             ValidateArgument(context, siteLinkName, transport);
 
@@ -50,9 +50,9 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 de = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
-                string config = (string)PropertyManager.GetPropertyValue(context, de, PropertyManager.ConfigurationNamingContext);
+                string config = (string)PropertyManager.GetPropertyValue(context, de, PropertyManager.ConfigurationNamingContext)!;
 
-                string parentDN = null;
+                string parentDN;
                 if (transport == ActiveDirectoryTransportType.Rpc)
                     parentDN = "CN=IP,CN=Inter-Site Transports,CN=Sites," + config;
                 else
@@ -127,7 +127,7 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 de = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
-                string config = (string)PropertyManager.GetPropertyValue(context, de, PropertyManager.ConfigurationNamingContext);
+                string config = (string)PropertyManager.GetPropertyValue(context, de, PropertyManager.ConfigurationNamingContext)!;
                 string containerDN = "CN=Inter-Site Transports,CN=Sites," + config;
                 if (transport == ActiveDirectoryTransportType.Rpc)
                     containerDN = "CN=IP," + containerDN;
@@ -154,7 +154,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                                       false, /* don't need paged search */
                                                       false /* don't need to cache result */
                                                       );
-                SearchResult srchResult = adSearcher.FindOne();
+                SearchResult? srchResult = adSearcher.FindOne();
                 if (srchResult == null)
                 {
                     // no such sitelink object
@@ -251,7 +251,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     if (cachedEntry.Properties.Contains("cost"))
-                        return (int)cachedEntry.Properties["cost"][0];
+                        return (int)cachedEntry.Properties["cost"][0]!;
                 }
                 catch (COMException e)
                 {
@@ -291,7 +291,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (cachedEntry.Properties.Contains("replInterval"))
                     {
-                        int tmpValue = (int)cachedEntry.Properties["replInterval"][0];
+                        int tmpValue = (int)cachedEntry.Properties["replInterval"][0]!;
                         return new TimeSpan(0, tmpValue, 0);
                     }
                 }
@@ -337,7 +337,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
-                PropertyValueCollection propValue = null;
+                PropertyValueCollection? propValue = null;
                 try
                 {
                     propValue = cachedEntry.Properties["options"];
@@ -349,7 +349,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (propValue.Count != 0)
                 {
-                    options = (int)propValue[0];
+                    options = (int)propValue[0]!;
                 }
 
                 //NTDSSITELINK_OPT_TWOWAY_SYNC ( 1 << 1 )  force sync in opposite direction at end of sync
@@ -364,7 +364,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
-                PropertyValueCollection propValue = null;
+                PropertyValueCollection? propValue = null;
 
                 try
                 {
@@ -372,7 +372,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if (propValue.Count != 0)
                     {
-                        options = (int)propValue[0];
+                        options = (int)propValue[0]!;
                     }
 
                     //NTDSSITELINK_OPT_TWOWAY_SYNC ( 1 << 1 )  force sync in opposite direction at end of sync
@@ -401,7 +401,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
-                PropertyValueCollection propValue = null;
+                PropertyValueCollection? propValue = null;
                 try
                 {
                     propValue = cachedEntry.Properties["options"];
@@ -413,7 +413,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (propValue.Count != 0)
                 {
-                    options = (int)propValue[0];
+                    options = (int)propValue[0]!;
                 }
 
                 // NTDSSITELINK_OPT_USE_NOTIFY ( 1 << 0 )   Use notification on this link
@@ -428,14 +428,14 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
-                PropertyValueCollection propValue = null;
+                PropertyValueCollection? propValue = null;
 
                 try
                 {
                     propValue = cachedEntry.Properties["options"];
                     if (propValue.Count != 0)
                     {
-                        options = (int)propValue[0];
+                        options = (int)propValue[0]!;
                     }
 
                     // NTDSSITELINK_OPT_USE_NOTIFY ( 1 << 0 )   Use notification on this link
@@ -465,7 +465,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
-                PropertyValueCollection propValue = null;
+                PropertyValueCollection? propValue = null;
 
                 try
                 {
@@ -478,7 +478,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (propValue.Count != 0)
                 {
-                    options = (int)propValue[0];
+                    options = (int)propValue[0]!;
                 }
 
                 //NTDSSITELINK_OPT_DISABLE_COMPRESSION ( 1 << 2 )
@@ -495,14 +495,14 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
-                PropertyValueCollection propValue = null;
+                PropertyValueCollection? propValue = null;
 
                 try
                 {
                     propValue = cachedEntry.Properties["options"];
                     if (propValue.Count != 0)
                     {
-                        options = (int)propValue[0];
+                        options = (int)propValue[0]!;
                     }
 
                     //NTDSSITELINK_OPT_DISABLE_COMPRESSION ( 1 << 2 )
@@ -525,19 +525,19 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public ActiveDirectorySchedule InterSiteReplicationSchedule
+        public ActiveDirectorySchedule? InterSiteReplicationSchedule
         {
             get
             {
                 if (_disposed)
                     throw new ObjectDisposedException(GetType().Name);
 
-                ActiveDirectorySchedule schedule = null;
+                ActiveDirectorySchedule? schedule = null;
                 try
                 {
                     if (cachedEntry.Properties.Contains("schedule"))
                     {
-                        byte[] tmpSchedule = (byte[])cachedEntry.Properties["schedule"][0];
+                        byte[] tmpSchedule = (byte[])cachedEntry.Properties["schedule"][0]!;
                         Debug.Assert(tmpSchedule != null && tmpSchedule.Length == 188);
                         schedule = new ActiveDirectorySchedule();
                         schedule.SetUnmanagedSchedule(tmpSchedule);
@@ -694,7 +694,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private void GetSites()
         {
-            NativeComInterfaces.IAdsPathname pathCracker = null;
+            NativeComInterfaces.IAdsPathname? pathCracker = null;
             pathCracker = (NativeComInterfaces.IAdsPathname)new NativeComInterfaces.Pathname();
             ArrayList propertyList = new ArrayList();
             // need to turn off the escaping for name
@@ -703,7 +703,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             propertyList.Add(propertyName);
             Hashtable values = Utils.GetValuesWithRangeRetrieval(cachedEntry, "(objectClass=*)", propertyList, SearchScope.Base);
-            ArrayList siteLists = (ArrayList)values[propertyName.ToLowerInvariant()];
+            ArrayList? siteLists = (ArrayList?)values[propertyName.ToLowerInvariant()];
 
             // somehow no site list
             if (siteLists == null)
@@ -711,7 +711,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < siteLists.Count; i++)
             {
-                string dn = (string)siteLists[i];
+                string dn = (string)siteLists[i]!;
 
                 // escaping manipulation
                 pathCracker.Set(dn, NativeComInterfaces.ADS_SETTYPE_DN);

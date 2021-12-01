@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -164,6 +165,15 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<ChannelClosedException>(() => readTask.AsTask());
         }
 
+        [Fact]
+        public void TestBaseClassTryPeek()
+        {
+            var reader = new TryPeekNoOverrideReader<int>();
+            Assert.False(reader.CanPeek);
+            Assert.False(reader.TryPeek(out int item));
+            Assert.Equal(0, item);
+        }
+
         // This reader doesn't override ReadAsync to force using the base class ReadAsync method
         private sealed class WrapperChannelReader<T> : ChannelReader<T>
         {
@@ -216,7 +226,6 @@ namespace System.Threading.Channels.Tests
         {
             private Random _rand = new Random(42);
             private IEnumerator<T> _enumerator;
-            private int _count;
             private bool _closed;
 
             public TestChannelReader(IEnumerable<T> enumerable) => _enumerator = enumerable.GetEnumerator();
@@ -240,7 +249,6 @@ namespace System.Threading.Channels.Tests
                 }
 
                 // Otherwise return the next item.
-                _count++;
                 item = _enumerator.Current;
                 return true;
             }
@@ -261,6 +269,17 @@ namespace System.Threading.Channels.Tests
         {
             public override bool TryRead(out T item) => throw new FieldAccessException();
             public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken = default) => throw new DriveNotFoundException();
+        }
+
+        private sealed class TryPeekNoOverrideReader<T> : ChannelReader<T>
+        {
+            public override bool TryRead([MaybeNullWhen(false)] out T item)
+            {
+                item = default;
+                return false;
+            }
+
+            public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken) => default;
         }
 
         private sealed class CanReadFalseStream : MemoryStream

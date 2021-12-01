@@ -6,7 +6,7 @@
 
 namespace System.Xaml.Permissions
 {
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
     public sealed partial class XamlLoadPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
@@ -14,6 +14,7 @@ namespace System.Xaml.Permissions
         public XamlLoadPermission(System.Collections.Generic.IEnumerable<System.Xaml.Permissions.XamlAccessLevel> allowedAccess) { }
         public XamlLoadPermission(System.Security.Permissions.PermissionState state) { }
         public XamlLoadPermission(System.Xaml.Permissions.XamlAccessLevel allowedAccess) { }
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public System.Collections.Generic.IList<System.Xaml.Permissions.XamlAccessLevel> AllowedAccess { get { throw null; } }
         public override System.Security.IPermission Copy() { throw null; }
         public override bool Equals(object obj) { throw null; }

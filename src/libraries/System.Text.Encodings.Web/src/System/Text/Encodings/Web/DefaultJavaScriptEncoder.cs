@@ -2,256 +2,104 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Text.Internal;
 using System.Text.Unicode;
-
-#if NETCOREAPP
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
-using System.Runtime.Intrinsics.Arm;
-#endif
 
 namespace System.Text.Encodings.Web
 {
     internal sealed class DefaultJavaScriptEncoder : JavaScriptEncoder
     {
-        private readonly AllowedCharactersBitmap _allowedCharacters;
+        internal static readonly DefaultJavaScriptEncoder BasicLatinSingleton = new DefaultJavaScriptEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
+        internal static readonly DefaultJavaScriptEncoder UnsafeRelaxedEscapingSingleton = new DefaultJavaScriptEncoder(new TextEncoderSettings(UnicodeRanges.All), allowMinimalJsonEscaping: true);
 
-        private readonly int[] _asciiNeedsEscaping = new int[0x80];
+        private readonly OptimizedInboxTextEncoder _innerEncoder;
 
-        public DefaultJavaScriptEncoder(TextEncoderSettings filter)
+        internal DefaultJavaScriptEncoder(TextEncoderSettings settings)
+            : this(settings, allowMinimalJsonEscaping: false)
         {
-            if (filter == null)
+        }
+
+        private DefaultJavaScriptEncoder(TextEncoderSettings settings, bool allowMinimalJsonEscaping)
+        {
+            if (settings is null)
             {
-                throw new ArgumentNullException(nameof(filter));
+                throw new ArgumentNullException(nameof(settings));
             }
-
-            _allowedCharacters = filter.GetAllowedCharacters();
-
-            // Forbid codepoints which aren't mapped to characters or which are otherwise always disallowed
-            // (includes categories Cc, Cs, Co, Cn, Zs [except U+0020 SPACE], Zl, Zp)
-            _allowedCharacters.ForbidUndefinedCharacters();
-
-            // Forbid characters that are special in HTML.
-            // Even though this is a not HTML encoder,
-            // it's unfortunately common for developers to
-            // forget to HTML-encode a string once it has been JS-encoded,
-            // so this offers extra protection.
-            DefaultHtmlEncoder.ForbidHtmlCharacters(_allowedCharacters);
 
             // '\' (U+005C REVERSE SOLIDUS) must always be escaped in Javascript / ECMAScript / JSON.
             // '/' (U+002F SOLIDUS) is not Javascript / ECMAScript / JSON-sensitive so doesn't need to be escaped.
-            _allowedCharacters.ForbidCharacter('\\');
-
             // '`' (U+0060 GRAVE ACCENT) is ECMAScript-sensitive (see ECMA-262).
-            _allowedCharacters.ForbidCharacter('`');
 
-            for (int i = 0; i < _asciiNeedsEscaping.Length; i++)
-            {
-                _asciiNeedsEscaping[i] = WillEncode(i) ? 1 : -1;
-            }
+            _innerEncoder = allowMinimalJsonEscaping
+                ? new OptimizedInboxTextEncoder(EscaperImplementation.SingletonMinimallyEscaped, settings.GetAllowedCodePointsBitmap(), forbidHtmlSensitiveCharacters: false,
+                    extraCharactersToEscape: stackalloc char[] { '\"', '\\' })
+                : new OptimizedInboxTextEncoder(EscaperImplementation.Singleton, settings.GetAllowedCodePointsBitmap(), forbidHtmlSensitiveCharacters: true,
+                    extraCharactersToEscape: stackalloc char[] { '\\', '`' });
         }
 
-        public DefaultJavaScriptEncoder(params UnicodeRange[] allowedRanges) : this(new TextEncoderSettings(allowedRanges))
-        { }
+        public override int MaxOutputCharactersPerInputCharacter => 6; // "\uXXXX" for a single char ("\uXXXX\uYYYY" [12 chars] for supplementary scalar value)
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool WillEncode(int unicodeScalar)
-        {
-            if (UnicodeHelpers.IsSupplementaryCodePoint(unicodeScalar))
-            {
-                return true;
-            }
+        /*
+         * These overrides should be copied to all other subclasses that are backed
+         * by the fast inbox escaping mechanism.
+         */
 
-            Debug.Assert(unicodeScalar >= char.MinValue && unicodeScalar <= char.MaxValue);
+#pragma warning disable CS0618 // some of the adapters are intentionally marked [Obsolete]
+        private protected override OperationStatus EncodeCore(ReadOnlySpan<char> source, Span<char> destination, out int charsConsumed, out int charsWritten, bool isFinalBlock)
+            => _innerEncoder.Encode(source, destination, out charsConsumed, out charsWritten, isFinalBlock);
 
-            return !_allowedCharacters.IsUnicodeScalarAllowed(unicodeScalar);
-        }
+        private protected override OperationStatus EncodeUtf8Core(ReadOnlySpan<byte> utf8Source, Span<byte> utf8Destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock)
+            => _innerEncoder.EncodeUtf8(utf8Source, utf8Destination, out bytesConsumed, out bytesWritten, isFinalBlock);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private protected override int FindFirstCharacterToEncode(ReadOnlySpan<char> text)
+            => _innerEncoder.GetIndexOfFirstCharToEncode(text);
+
         public override unsafe int FindFirstCharacterToEncode(char* text, int textLength)
-        {
-            if (text == null)
-            {
-                throw new ArgumentNullException(nameof(text));
-            }
+            => _innerEncoder.FindFirstCharacterToEncode(text, textLength);
 
-            return _allowedCharacters.FindFirstCharacterToEncode(text, textLength);
-        }
+        public override int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
+            => _innerEncoder.GetIndexOfFirstByteToEncode(utf8Text);
 
-        public override unsafe int FindFirstCharacterToEncodeUtf8(ReadOnlySpan<byte> utf8Text)
-        {
-            fixed (byte* ptr = utf8Text)
-            {
-                int idx = 0;
-
-#if NETCOREAPP
-                if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
-                {
-                    sbyte* startingAddress = (sbyte*)ptr;
-                    while (utf8Text.Length - 16 >= idx)
-                    {
-                        Debug.Assert(startingAddress >= ptr && startingAddress <= (ptr + utf8Text.Length - 16));
-
-                        bool containsNonAsciiBytes;
-
-                        // Load the next 16 bytes, and check for ASCII text.
-                        // Any byte that's not in the ASCII range will already be negative when casted to signed byte.
-                        if (Sse2.IsSupported)
-                        {
-                            Vector128<sbyte> sourceValue = Sse2.LoadVector128(startingAddress);
-                            containsNonAsciiBytes = Sse2Helper.ContainsNonAsciiByte(sourceValue);
-                        }
-                        else if (AdvSimd.Arm64.IsSupported)
-                        {
-                            Vector128<sbyte> sourceValue = AdvSimd.LoadVector128(startingAddress);
-                            containsNonAsciiBytes = AdvSimdHelper.ContainsNonAsciiByte(sourceValue);
-                        }
-                        else
-                        {
-                            throw new PlatformNotSupportedException();
-                        }
-
-                        if (containsNonAsciiBytes)
-                        {
-                            // At least one of the following 16 bytes is non-ASCII.
-
-                            int processNextSixteen = idx + 16;
-                            Debug.Assert(processNextSixteen <= utf8Text.Length);
-
-                            while (idx < processNextSixteen)
-                            {
-                                Debug.Assert((ptr + idx) <= (ptr + utf8Text.Length));
-
-                                if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
-                                {
-                                    if (DoesAsciiNeedEncoding(ptr[idx]) == 1)
-                                    {
-                                        goto Return;
-                                    }
-                                    idx++;
-                                }
-                                else
-                                {
-                                    OperationStatus opStatus = UnicodeHelpers.DecodeScalarValueFromUtf8(utf8Text.Slice(idx), out uint nextScalarValue, out int utf8BytesConsumedForScalar);
-
-                                    Debug.Assert(nextScalarValue <= int.MaxValue);
-                                    if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
-                                    {
-                                        goto Return;
-                                    }
-
-                                    Debug.Assert(opStatus == OperationStatus.Done);
-                                    idx += utf8BytesConsumedForScalar;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (DoesAsciiNeedEncoding(ptr[idx]) == 1
-
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1
-                                || DoesAsciiNeedEncoding(ptr[++idx]) == 1)
-                            {
-                                goto Return;
-                            }
-                            idx++;
-                        }
-                        startingAddress = (sbyte*)ptr + idx;
-                    }
-
-                    // Process the remaining bytes.
-                    Debug.Assert(utf8Text.Length - idx < 16);
-                }
-#endif
-
-                while (idx < utf8Text.Length)
-                {
-                    Debug.Assert((ptr + idx) <= (ptr + utf8Text.Length));
-
-                    if (UnicodeUtility.IsAsciiCodePoint(ptr[idx]))
-                    {
-                        if (DoesAsciiNeedEncoding(ptr[idx]) == 1)
-                        {
-                            goto Return;
-                        }
-                        idx++;
-                    }
-                    else
-                    {
-                        OperationStatus opStatus = UnicodeHelpers.DecodeScalarValueFromUtf8(utf8Text.Slice(idx), out uint nextScalarValue, out int utf8BytesConsumedForScalar);
-
-                        Debug.Assert(nextScalarValue <= int.MaxValue);
-                        if (opStatus != OperationStatus.Done || WillEncode((int)nextScalarValue))
-                        {
-                            goto Return;
-                        }
-
-                        Debug.Assert(opStatus == OperationStatus.Done);
-                        idx += utf8BytesConsumedForScalar;
-                    }
-                }
-                Debug.Assert(idx == utf8Text.Length);
-
-                idx = -1; // All bytes are allowed.
-
-            Return:
-                return idx;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int DoesAsciiNeedEncoding(byte value)
-        {
-            Debug.Assert(value <= 0x7F);
-
-            int needsEscaping = _asciiNeedsEscaping[value];
-
-            Debug.Assert(needsEscaping == 1 || needsEscaping == -1);
-
-            return needsEscaping;
-        }
-
-        // The worst case encoding is 6 output chars per input char: [input] U+FFFF -> [output] "\uFFFF"
-        // We don't need to worry about astral code points since they're represented as encoded
-        // surrogate pairs in the output.
-        public override int MaxOutputCharactersPerInputCharacter => 12; // "\uFFFF\uFFFF" is the longest encoded form
-
-        private static readonly char[] s_b = new char[] { '\\', 'b' };
-        private static readonly char[] s_t = new char[] { '\\', 't' };
-        private static readonly char[] s_n = new char[] { '\\', 'n' };
-        private static readonly char[] s_f = new char[] { '\\', 'f' };
-        private static readonly char[] s_r = new char[] { '\\', 'r' };
-        private static readonly char[] s_back = new char[] { '\\', '\\' };
-
-        // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
-        // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9
-        // https://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
-        // https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
         public override unsafe bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
+            => _innerEncoder.TryEncodeUnicodeScalar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
+
+        public override bool WillEncode(int unicodeScalar)
+            => !_innerEncoder.IsScalarValueAllowed(new Rune(unicodeScalar));
+#pragma warning restore CS0618
+
+        /*
+         * End overrides section.
+         */
+
+        private sealed class EscaperImplementation : ScalarEscaperBase
         {
-            if (buffer == null)
+            internal static readonly EscaperImplementation Singleton = new EscaperImplementation(allowMinimalEscaping: false);
+            internal static readonly EscaperImplementation SingletonMinimallyEscaped = new EscaperImplementation(allowMinimalEscaping: true);
+
+            // Map stores the second byte for any ASCII input that can be escaped as the two-element sequence
+            // REVERSE SOLIDUS followed by a single character. For example, <LF> maps to the two chars "\n".
+            // The map does not contain an entry for chars which cannot be escaped in this manner.
+            private readonly AsciiByteMap _preescapedMap;
+
+            private EscaperImplementation(bool allowMinimalEscaping)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                _preescapedMap.InsertAsciiChar('\b', (byte)'b');
+                _preescapedMap.InsertAsciiChar('\t', (byte)'t');
+                _preescapedMap.InsertAsciiChar('\n', (byte)'n');
+                _preescapedMap.InsertAsciiChar('\f', (byte)'f');
+                _preescapedMap.InsertAsciiChar('\r', (byte)'r');
+                _preescapedMap.InsertAsciiChar('\\', (byte)'\\');
+
+                if (allowMinimalEscaping)
+                {
+                    _preescapedMap.InsertAsciiChar('\"', (byte)'\"');
+                }
             }
+
+            // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
+            // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9
+            // https://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
+            // https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
+            //
             // ECMA-262 allows encoding U+000B as "\v", but ECMA-404 does not.
             // Both ECMA-262 and ECMA-404 allow encoding U+002F SOLIDUS as "\/"
             // (in ECMA-262 this character is a NonEscape character); however, we
@@ -261,25 +109,108 @@ namespace System.Text.Encodings.Web
             // so it should be written using "\u002F" encoding.
             // HTML-specific characters (including apostrophe and quotes) will
             // be written out as numeric entities for defense-in-depth.
-            // See UnicodeEncoderBase ctor comments for more info.
 
-            if (!WillEncode(unicodeScalar))
+            internal override int EncodeUtf8(Rune value, Span<byte> destination)
             {
-                return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
+                if (_preescapedMap.TryLookup(value, out byte preescapedForm))
+                {
+                    if (!SpanUtility.IsValidIndex(destination, 1)) { goto OutOfSpace; }
+                    destination[0] = (byte)'\\';
+                    destination[1] = preescapedForm;
+                    return 2;
+
+                OutOfSpace:
+                    return -1;
+                }
+
+                return TryEncodeScalarAsHex(this, value, destination);
+
+#pragma warning disable IDE0060 // 'this' taken explicitly to avoid argument shuffling by caller
+                static int TryEncodeScalarAsHex(object @this, Rune value, Span<byte> destination)
+#pragma warning restore IDE0060
+                {
+                    if (value.IsBmp)
+                    {
+                        // Write 6 bytes: "\uXXXX"
+                        if (!SpanUtility.IsValidIndex(destination, 5)) { goto OutOfSpaceInner; }
+                        destination[0] = (byte)'\\';
+                        destination[1] = (byte)'u';
+                        HexConverter.ToBytesBuffer((byte)value.Value, destination, 4);
+                        HexConverter.ToBytesBuffer((byte)((uint)value.Value >> 8), destination, 2);
+                        return 6;
+                    }
+                    else
+                    {
+                        // Write 12 bytes: "\uXXXX\uYYYY"
+                        UnicodeHelpers.GetUtf16SurrogatePairFromAstralScalarValue((uint)value.Value, out char highSurrogate, out char lowSurrogate);
+                        if (!SpanUtility.IsValidIndex(destination, 11)) { goto OutOfSpaceInner; }
+                        destination[0] = (byte)'\\';
+                        destination[1] = (byte)'u';
+                        HexConverter.ToBytesBuffer((byte)highSurrogate, destination, 4);
+                        HexConverter.ToBytesBuffer((byte)((uint)highSurrogate >> 8), destination, 2);
+                        destination[6] = (byte)'\\';
+                        destination[7] = (byte)'u';
+                        HexConverter.ToBytesBuffer((byte)lowSurrogate, destination, 10);
+                        HexConverter.ToBytesBuffer((byte)((uint)lowSurrogate >> 8), destination, 8);
+                        return 12;
+                    }
+
+                OutOfSpaceInner:
+
+                    return -1;
+                }
             }
 
-            char[] toCopy;
-            switch (unicodeScalar)
+            internal override int EncodeUtf16(Rune value, Span<char> destination)
             {
-                case '\b': toCopy = s_b; break;
-                case '\t': toCopy = s_t; break;
-                case '\n': toCopy = s_n; break;
-                case '\f': toCopy = s_f; break;
-                case '\r': toCopy = s_r; break;
-                case '\\': toCopy = s_back; break;
-                default: return JavaScriptEncoderHelper.TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
+                if (_preescapedMap.TryLookup(value, out byte preescapedForm))
+                {
+                    if (!SpanUtility.IsValidIndex(destination, 1)) { goto OutOfSpace; }
+                    destination[0] = '\\';
+                    destination[1] = (char)preescapedForm;
+                    return 2;
+
+                OutOfSpace:
+                    return -1;
+                }
+
+                return TryEncodeScalarAsHex(this, value, destination);
+
+#pragma warning disable IDE0060 // 'this' taken explicitly to avoid argument shuffling by caller
+                static int TryEncodeScalarAsHex(object @this, Rune value, Span<char> destination)
+#pragma warning restore IDE0060
+                {
+                    if (value.IsBmp)
+                    {
+                        // Write 6 chars: "\uXXXX"
+                        if (!SpanUtility.IsValidIndex(destination, 5)) { goto OutOfSpaceInner; }
+                        destination[0] = '\\';
+                        destination[1] = 'u';
+                        HexConverter.ToCharsBuffer((byte)value.Value, destination, 4);
+                        HexConverter.ToCharsBuffer((byte)((uint)value.Value >> 8), destination, 2);
+                        return 6;
+                    }
+                    else
+                    {
+                        // Write 12 chars: "\uXXXX\uYYYY"
+                        UnicodeHelpers.GetUtf16SurrogatePairFromAstralScalarValue((uint)value.Value, out char highSurrogate, out char lowSurrogate);
+                        if (!SpanUtility.IsValidIndex(destination, 11)) { goto OutOfSpaceInner; }
+                        destination[0] = '\\';
+                        destination[1] = 'u';
+                        HexConverter.ToCharsBuffer((byte)highSurrogate, destination, 4);
+                        HexConverter.ToCharsBuffer((byte)((uint)highSurrogate >> 8), destination, 2);
+                        destination[6] = '\\';
+                        destination[7] = 'u';
+                        HexConverter.ToCharsBuffer((byte)lowSurrogate, destination, 10);
+                        HexConverter.ToCharsBuffer((byte)((uint)lowSurrogate >> 8), destination, 8);
+                        return 12;
+                    }
+
+                OutOfSpaceInner:
+
+                    return -1;
+                }
             }
-            return TryCopyCharacters(toCopy, buffer, bufferLength, out numberOfCharactersWritten);
         }
     }
 }

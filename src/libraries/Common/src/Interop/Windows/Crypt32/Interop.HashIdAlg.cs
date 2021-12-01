@@ -5,23 +5,27 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-internal partial class Interop
+internal static partial class Interop
 {
     internal static partial class Crypt32
     {
         /// <summary>
         /// Version used for a buffer containing a scalar integer (not an IntPtr)
         /// </summary>
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode)]
-        private static extern IntPtr CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, ref int pvKey, OidGroup group);
+        [GeneratedDllImport(Libraries.Crypt32)]
+        private static unsafe partial IntPtr CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, int* pvKey, OidGroup group);
 
         public static CRYPT_OID_INFO FindAlgIdOidInfo(Interop.BCrypt.ECC_CURVE_ALG_ID_ENUM algId)
         {
             int intAlgId = (int)algId;
-            IntPtr fullOidInfo = CryptFindOIDInfo(
-                CryptOidInfoKeyType.CRYPT_OID_INFO_ALGID_KEY,
-                ref intAlgId,
-                OidGroup.HashAlgorithm);
+            IntPtr fullOidInfo;
+            unsafe
+            {
+                fullOidInfo = CryptFindOIDInfo(
+                    CryptOidInfoKeyType.CRYPT_OID_INFO_ALGID_KEY,
+                    &intAlgId,
+                    OidGroup.HashAlgorithm);
+            }
 
             if (fullOidInfo != IntPtr.Zero)
             {

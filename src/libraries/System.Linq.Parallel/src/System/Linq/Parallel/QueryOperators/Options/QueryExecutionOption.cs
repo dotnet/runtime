@@ -16,7 +16,7 @@ namespace System.Linq.Parallel
     /// Represents operators that set various query execution options.
     /// </summary>
     /// <typeparam name="TSource"></typeparam>
-    internal class QueryExecutionOption<TSource> : QueryOperator<TSource>
+    internal sealed class QueryExecutionOption<TSource> : QueryOperator<TSource>
     {
         private readonly QueryOperator<TSource> _child;
         private readonly OrdinalIndexState _indexState;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Errors;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -28,6 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static ACCESSERROR CheckAccess2(Symbol symCheck, AggregateType atsCheck, Symbol symWhere, CType typeThru)
         {
             Debug.Assert(symCheck != null);
@@ -77,6 +79,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return CheckTypeAccess(type, symWhere) ? ACCESSERROR.ACCESSERROR_NOERROR : ACCESSERROR.ACCESSERROR_NOACCESS;
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static bool CheckTypeAccess(CType type, Symbol symWhere)
         {
             Debug.Assert(type != null);
@@ -110,6 +113,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static ACCESSERROR CheckAccessCore(Symbol symCheck, AggregateType atsCheck, Symbol symWhere, CType typeThru)
         {
             Debug.Assert(symCheck != null);
@@ -246,6 +250,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static bool CheckBogus(Symbol sym) => (sym as PropertySymbol)?.Bogus ?? false;
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static RuntimeBinderException ReportAccessError(SymWithType swtBad, Symbol symWhere, CType typeQual)
         {
             Debug.Assert(!CheckAccess(swtBad.Sym, swtBad.GetType(), symWhere, typeQual) ||
@@ -257,6 +262,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 : ErrorHandling.Error(ErrorCode.ERR_BadAccess, swtBad);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static bool CheckAccess(Symbol symCheck, AggregateType atsCheck, Symbol symWhere, CType typeThru) =>
             CheckAccess2(symCheck, atsCheck, symWhere, typeThru) == ACCESSERROR.ACCESSERROR_NOERROR;
     }

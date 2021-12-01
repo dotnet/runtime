@@ -25,7 +25,10 @@ typedef enum {
 	PROP_FIELD_DEF_VALUES = 7, /* MonoFieldDefaultValue* */
 	PROP_DECLSEC_FLAGS = 8, /* guint32 */
 	PROP_WEAK_BITMAP = 9,
-	PROP_DIM_CONFLICTS = 10 /* GSList of MonoMethod* */
+	PROP_DIM_CONFLICTS = 10, /* GSList of MonoMethod* */
+	PROP_FIELD_DEF_VALUES_2BYTESWIZZLE = 11, /* MonoFieldDefaultValue* with default values swizzled at 2 byte boundaries*/ 
+	PROP_FIELD_DEF_VALUES_4BYTESWIZZLE = 12, /* MonoFieldDefaultValue* with default values swizzled at 4 byte boundaries*/ 
+	PROP_FIELD_DEF_VALUES_8BYTESWIZZLE = 13 /* MonoFieldDefaultValue* with default values swizzled at 8 byte boundaries*/ 
 }  InfrequentDataKind;
 
 /* Accessors based on class kind*/
@@ -79,6 +82,9 @@ mono_class_get_flags (MonoClass *klass)
 		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR)
 			return TYPE_ATTRIBUTE_SEALED | TYPE_ATTRIBUTE_PUBLIC;
 		return TYPE_ATTRIBUTE_CLASS | (mono_class_get_flags (m_class_get_element_class (klass)) & TYPE_ATTRIBUTE_VISIBILITY_MASK);
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
+		break;
 	}
 	g_assert_not_reached ();
 }
@@ -174,6 +180,9 @@ mono_class_get_method_count (MonoClass *klass)
 		return m_classarray_get_method_count ((MonoClassArray*)klass);
 	case MONO_CLASS_POINTER:
 		return 0;
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
+		return 0;
 	default:
 		g_assert_not_reached ();
 		return 0;
@@ -197,6 +206,9 @@ mono_class_set_method_count (MonoClass *klass, guint32 count)
 	case MONO_CLASS_ARRAY:
 		((MonoClassArray*)klass)->method_count = count;
 		break;
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
+		break;
 	default:
 		g_assert_not_reached ();
 		break;
@@ -215,6 +227,9 @@ mono_class_get_field_count (MonoClass *klass)
 	case MONO_CLASS_GPARAM:
 	case MONO_CLASS_ARRAY:
 	case MONO_CLASS_POINTER:
+		return 0;
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
 		return 0;
 	default:
 		g_assert_not_reached ();
@@ -236,6 +251,9 @@ mono_class_set_field_count (MonoClass *klass, guint32 count)
 	case MONO_CLASS_ARRAY:
 	case MONO_CLASS_POINTER:
 		g_assert (count == 0);
+		break;
+	case MONO_CLASS_GC_FILLER:
+		g_assertf (0, "%s: unexpected GC filler class", __func__);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -367,10 +385,37 @@ mono_class_get_field_def_values (MonoClass *klass)
 	return (MonoFieldDefaultValue*)get_pointer_property (klass, PROP_FIELD_DEF_VALUES);
 }
 
+MonoFieldDefaultValue*
+mono_class_get_field_def_values_with_swizzle (MonoClass *klass, int swizzle)
+{
+	InfrequentDataKind dataKind = PROP_FIELD_DEF_VALUES;
+	if (swizzle == 2)
+		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
+	else if (swizzle == 4)
+		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
+	else
+		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
+	return (MonoFieldDefaultValue*)get_pointer_property (klass, dataKind);
+}
+
+
 void
 mono_class_set_field_def_values (MonoClass *klass, MonoFieldDefaultValue *values)
 {
 	set_pointer_property (klass, PROP_FIELD_DEF_VALUES, values);
+}
+
+void
+mono_class_set_field_def_values_with_swizzle (MonoClass *klass, MonoFieldDefaultValue *values, int swizzle)
+{
+	InfrequentDataKind dataKind = PROP_FIELD_DEF_VALUES;
+	if (swizzle == 2)
+		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
+	else if (swizzle == 4)
+		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
+	else
+		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
+	set_pointer_property (klass, dataKind, values);
 }
 
 guint32
@@ -520,13 +565,6 @@ mono_class_set_nonblittable (MonoClass *klass) {
 	klass->blittable = FALSE;
 	mono_loader_unlock ();
 }
-
-#ifndef DISABLE_REMOTING
-void
-mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out) {
-	mono_marshal_find_bitfield_offset (MonoClass, contextbound, byte_offset_out, mask_out);
-}
-#endif
 
 /**
  * mono_class_publish_gc_descriptor:

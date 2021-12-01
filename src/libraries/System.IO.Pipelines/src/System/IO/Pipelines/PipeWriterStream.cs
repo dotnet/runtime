@@ -56,13 +56,16 @@ namespace System.IO.Pipelines
         public sealed override void EndWrite(IAsyncResult asyncResult) =>
             TaskToApm.End(asyncResult);
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
+        public override void Write(byte[] buffer, int offset, int count) =>
             WriteAsync(buffer, offset, count).GetAwaiter().GetResult();
-        }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            if (buffer is null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
             ValueTask<FlushResult> valueTask = _pipeWriter.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
 
             return GetFlushResultAsTask(valueTask);

@@ -28,7 +28,7 @@ namespace Tracing.Tests.PauseOnStartValidation
             var server = new ReverseServer(serverName);
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (_) =>
                 {
                     Stream stream = await server.AcceptAsync();
@@ -56,7 +56,7 @@ namespace Tracing.Tests.PauseOnStartValidation
             using var memoryStream = new MemoryStream();
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (pid) =>
                 {
                     Stream stream = await server.AcceptAsync();
@@ -114,7 +114,7 @@ namespace Tracing.Tests.PauseOnStartValidation
             using var memoryStream3 = new MemoryStream();
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (pid) =>
                 {
                     Stream stream = await server.AcceptAsync();
@@ -207,7 +207,7 @@ namespace Tracing.Tests.PauseOnStartValidation
             using var memoryStream3 = new MemoryStream();
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (pid) =>
                 {
                     Stream stream = await server.AcceptAsync();
@@ -271,7 +271,7 @@ namespace Tracing.Tests.PauseOnStartValidation
             using var memoryStream3 = new MemoryStream();
             Task<bool> subprocessTask = Utils.RunSubprocess(
                 currentAssembly: Assembly.GetExecutingAssembly(),
-                environment: new Dictionary<string,string> { { Utils.DiagnosticsMonitorAddressEnvKey, serverName } },
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (pid) =>
                 {
                     Stream stream = await server.AcceptAsync();

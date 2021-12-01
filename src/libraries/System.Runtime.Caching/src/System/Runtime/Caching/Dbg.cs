@@ -36,7 +36,7 @@ namespace System.Runtime.Caching
 
             string output = string.Format(CultureInfo.InvariantCulture,
                  "[{0}] {1} {2}{3}{4}",
-                 Thread.CurrentThread.ManagedThreadId,
+                 Environment.CurrentManagedThreadId,
                  tagName,
                  message,
                  Environment.NewLine,

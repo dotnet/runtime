@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Disable for GCStress due to test failure: https://github.com/dotnet/runtime/issues/37237 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This test leaves random number of WaitOrTimerCallbacks registered at the exit, which prevents unloading -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>

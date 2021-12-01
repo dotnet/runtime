@@ -717,7 +717,7 @@ namespace System.Runtime.Caching
             if (_cEntriesInUse == 0)
                 return 0;
 
-            Debug.Assert(maxFlush > 0, "maxFlush is not greater than 0, instead is " + maxFlush);
+            Debug.Assert(maxFlush > 0, $"maxFlush is not greater than 0, instead is {maxFlush}");
             Debug.Assert(_cEntriesInFlush == 0, "_cEntriesInFlush == 0");
 
             UsageEntryRef inFlushHead = UsageEntryRef.INVALID;
@@ -854,7 +854,7 @@ namespace System.Runtime.Caching
         }
     }
 
-    internal class CacheUsage
+    internal sealed class CacheUsage
     {
         internal static readonly TimeSpan NEWADD_INTERVAL = new TimeSpan(0, 0, 10);
         internal static readonly TimeSpan CORRELATED_REQUEST_TIMEOUT = new TimeSpan(0, 0, 1);

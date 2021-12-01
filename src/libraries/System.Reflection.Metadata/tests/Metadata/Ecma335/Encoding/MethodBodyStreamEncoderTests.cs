@@ -373,7 +373,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             }
         }
 
-        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/24948")]
+        [Fact]
         public unsafe void LocAlloc()
         {
             var streamBuilder = new BlobBuilder();
@@ -418,7 +418,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             }, bodyBytes);
         }
 
-        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/24948")]
+        [Fact]
         public unsafe void LocAlloc_WithInstructionEncoder()
         {
             var streamBuilder = new BlobBuilder();

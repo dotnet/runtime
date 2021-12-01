@@ -4,11 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Advapi32
+    internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32)]
-        internal static extern bool AllocateLocallyUniqueId(out LUID Luid);
+        [GeneratedDllImport(Libraries.Advapi32)]
+        internal static unsafe partial bool AllocateLocallyUniqueId(LUID* Luid);
     }
 }

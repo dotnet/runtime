@@ -14,14 +14,29 @@
         "Unix"
         ]
       },
+    "MacCatalyst": {
+      "#import": [
+        "iOS"
+        ]
+      },
     "iOS": {
       "#import": [
         "Unix"
         ]
       },
+    "iOSSimulator": {
+      "#import": [
+        "iOS"
+        ]
+      },
     "tvOS": {
       "#import": [
         "Unix"
+        ]
+      },
+    "tvOSSimulator": {
+      "#import": [
+        "tvOS"
         ]
       },
     "Android": {

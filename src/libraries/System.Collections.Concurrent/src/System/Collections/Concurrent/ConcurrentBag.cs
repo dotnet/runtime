@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -448,7 +449,7 @@ namespace System.Collections.Concurrent
                 FreezeBag(ref lockTaken);
                 for (WorkStealingQueue? queue = _workStealingQueues; queue != null; queue = queue._nextQueue)
                 {
-                    T ignored;
+                    T? ignored;
                     while (queue.TrySteal(out ignored, take: true));
                 }
             }
@@ -860,7 +861,7 @@ namespace System.Collections.Concurrent
                     {
                         _headIndex = _tailIndex = StartIndex;
                         _addTakeCount = _stealCount = 0;
-                        Array.Clear(_array, 0, _array.Length);
+                        Array.Clear(_array);
                     }
                 }
             }
@@ -896,7 +897,10 @@ namespace System.Collections.Concurrent
                     {
                         int idx = tail & _mask;
                         result = _array[idx];
-                        _array[idx] = default(T)!;
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                        {
+                            _array[idx] = default(T)!;
+                        }
                         _addTakeCount--;
                         return true;
                     }
@@ -910,7 +914,10 @@ namespace System.Collections.Concurrent
                             // Element still available. Take it.
                             int idx = tail & _mask;
                             result = _array[idx];
-                            _array[idx] = default(T)!;
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                            {
+                                _array[idx] = default(T)!;
+                            }
                             _addTakeCount--;
                             return true;
                         }
@@ -1000,7 +1007,10 @@ namespace System.Collections.Concurrent
                         {
                             int idx = head & _mask;
                             result = _array[idx];
-                            _array[idx] = default(T)!;
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                            {
+                                _array[idx] = default(T)!;
+                            }
                             _stealCount++;
                             return true;
                         }
@@ -1089,7 +1099,7 @@ namespace System.Collections.Concurrent
         private sealed class Enumerator : IEnumerator<T>
         {
             private readonly T[] _array;
-            [AllowNull] private T _current = default;
+            private T? _current;
             private int _index;
 
             public Enumerator(T[] array)
@@ -1110,7 +1120,7 @@ namespace System.Collections.Concurrent
                 return false;
             }
 
-            public T Current => _current;
+            public T Current => _current!;
 
             object? IEnumerator.Current
             {

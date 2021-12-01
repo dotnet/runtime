@@ -238,6 +238,8 @@ namespace System.IO
         /// <devdoc>
         ///    Gets or sets the path of the directory to watch.
         /// </devdoc>
+        [Editor("System.Diagnostics.Design.FSWPathEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string Path
         {
             get
@@ -406,8 +408,11 @@ namespace System.IO
         /// </summary>
         private void NotifyInternalBufferOverflowEvent()
         {
-            _onErrorHandler?.Invoke(this, new ErrorEventArgs(
-                    new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory))));
+            if (_onErrorHandler != null)
+            {
+                OnError(new ErrorEventArgs(
+                        new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory))));
+            }
         }
 
         /// <summary>
@@ -416,11 +421,10 @@ namespace System.IO
         private void NotifyRenameEventArgs(WatcherChangeTypes action, ReadOnlySpan<char> name, ReadOnlySpan<char> oldName)
         {
             // filter if there's no handler or neither new name or old name match a specified pattern
-            RenamedEventHandler? handler = _onRenamedHandler;
-            if (handler != null &&
+            if (_onRenamedHandler != null &&
                 (MatchPattern(name) || MatchPattern(oldName)))
             {
-                handler(this, new RenamedEventArgs(action, _directory, name.IsEmpty ? null : name.ToString(), oldName.IsEmpty ? null : oldName.ToString()));
+                OnRenamed(new RenamedEventArgs(action, _directory, name.IsEmpty ? null : name.ToString(), oldName.IsEmpty ? null : oldName.ToString()));
             }
         }
 
@@ -449,7 +453,7 @@ namespace System.IO
 
             if (handler != null && MatchPattern(name.IsEmpty ? _directory : name))
             {
-                handler(this, new FileSystemEventArgs(changeType, _directory, name.IsEmpty ? null : name.ToString()));
+                InvokeOn(new FileSystemEventArgs(changeType, _directory, name.IsEmpty ? null : name.ToString()), handler);
             }
         }
 
@@ -462,7 +466,7 @@ namespace System.IO
 
             if (handler != null && MatchPattern(string.IsNullOrEmpty(name) ? _directory : name))
             {
-                handler(this, new FileSystemEventArgs(changeType, _directory, name));
+                InvokeOn(new FileSystemEventArgs(changeType, _directory, name), handler);
             }
         }
 
@@ -631,8 +635,7 @@ namespace System.IO
         private void StartRaisingEventsIfNotDisposed()
         {
             //Cannot allocate the directoryHandle and the readBuffer if the object has been disposed; finalization has been suppressed.
-            if (_disposed)
-                throw new ObjectDisposedException(GetType().Name);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             StartRaisingEvents();
         }
 

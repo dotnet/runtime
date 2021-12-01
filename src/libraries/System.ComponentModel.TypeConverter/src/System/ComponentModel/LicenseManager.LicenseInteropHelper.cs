@@ -13,10 +13,10 @@ namespace System.ComponentModel
         // A private implementation of a LicenseContext used for instantiating
         // managed objects exposed to COM. It has memory for the license key
         // of a single Type.
-        private class CLRLicenseContext : LicenseContext
+        private sealed class CLRLicenseContext : LicenseContext
         {
             private readonly Type _type;
-            private string _key;
+            private string? _key;
 
             private CLRLicenseContext(Type type, LicenseUsageMode mode)
             {
@@ -29,7 +29,7 @@ namespace System.ComponentModel
                 return new CLRLicenseContext(type, LicenseUsageMode.Designtime);
             }
 
-            public static CLRLicenseContext CreateRuntimeContext(Type type, string key)
+            public static CLRLicenseContext CreateRuntimeContext(Type type, string? key)
             {
                 var cxt = new CLRLicenseContext(type, LicenseUsageMode.Runtime);
                 if (key != null)
@@ -42,7 +42,7 @@ namespace System.ComponentModel
 
             public override LicenseUsageMode UsageMode { get; }
 
-            public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly)
+            public override string? GetSavedLicenseKey(Type type, Assembly? resourceAssembly)
             {
                 if (type == _type)
                 {
@@ -52,7 +52,7 @@ namespace System.ComponentModel
                 return null;
             }
 
-            public override void SetSavedLicenseKey(Type type, string key)
+            public override void SetSavedLicenseKey(Type type, string? key)
             {
                 if (type == _type)
                 {
@@ -62,7 +62,7 @@ namespace System.ComponentModel
         }
 
         // Used from IClassFactory2 when retrieving LicInfo
-        private class LicInfoHelperLicenseContext : LicenseContext
+        private sealed class LicInfoHelperLicenseContext : LicenseContext
         {
             private readonly Hashtable _savedLicenseKeys = new Hashtable();
 
@@ -70,25 +70,25 @@ namespace System.ComponentModel
 
             public override LicenseUsageMode UsageMode => LicenseUsageMode.Designtime;
 
-            public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly) => null;
+            public override string? GetSavedLicenseKey(Type type, Assembly? resourceAssembly) => null;
 
             public override void SetSavedLicenseKey(Type type, string key)
             {
-                _savedLicenseKeys[type.AssemblyQualifiedName] = key;
+                _savedLicenseKeys[type.AssemblyQualifiedName!] = key;
             }
         }
 
         // This is a helper class that supports the CLR's IClassFactory2 marshaling
         // support.
-        private class LicenseInteropHelper
+        private static class LicenseInteropHelper
         {
             // Used to validate a type and retrieve license details
             // when activating a managed COM server from an IClassFactory2 instance.
             public static bool ValidateAndRetrieveLicenseDetails(
                 LicenseContext context,
                 Type type,
-                out License license,
-                out string licenseKey)
+                out License? license,
+                out string? licenseKey)
             {
                 if (context == null)
                 {
@@ -107,7 +107,7 @@ namespace System.ComponentModel
             // The CLR invokes this when instantiating an unmanaged COM
             // object. The purpose is to decide which IClassFactory method to
             // use.
-            public static LicenseContext GetCurrentContextInfo(Type type, out bool isDesignTime, out string key)
+            public static LicenseContext GetCurrentContextInfo(Type type, out bool isDesignTime, out string? key)
             {
                 LicenseContext licContext = LicenseManager.CurrentContext;
                 isDesignTime = licContext.UsageMode == LicenseUsageMode.Designtime;

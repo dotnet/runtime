@@ -153,13 +153,6 @@ namespace System
                 1e80
             };
 
-            // Used to fill uninitialized stack variables with non-zero pattern in debug builds
-            [Conditional("DEBUG")]
-            private static unsafe void DebugPoison<T>(ref T s) where T : unmanaged
-            {
-                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref s, 1)).Fill(0xCD);
-            }
-
 #region Decimal Math Helpers
 
             private static unsafe uint GetExponent(float f)
@@ -538,7 +531,7 @@ PosRem:
             /// <returns>Returns new scale factor. bufRes updated in place, always 3 uints.</returns>
             private static unsafe int ScaleResult(Buf24* bufRes, uint hiRes, int scale)
             {
-                Debug.Assert(hiRes < bufRes->Length);
+                Debug.Assert(hiRes < Buf24.Length);
                 uint* result = (uint*)bufRes;
 
                 // See if we need to scale the result.  The combined scale must
@@ -666,7 +659,7 @@ PosRem:
                             uint cur = 0;
                             do
                             {
-                                Debug.Assert(cur + 1 < bufRes->Length);
+                                Debug.Assert(cur + 1 < Buf24.Length);
                             }
                             while (++result[++cur] == 0);
 
@@ -990,7 +983,6 @@ ThrowOverflow:
                     // Have to scale by a bunch. Move the number to a buffer where it has room to grow as it's scaled.
                     //
                     Unsafe.SkipInit(out Buf24 bufNum);
-                    DebugPoison(ref bufNum);
 
                     bufNum.Low64 = low64;
                     bufNum.Mid64 = tmp64;
@@ -1007,7 +999,7 @@ ThrowOverflow:
                         uint* rgulNum = (uint*)&bufNum;
                         for (uint cur = 0; ;)
                         {
-                            Debug.Assert(cur < bufNum.Length);
+                            Debug.Assert(cur < Buf24.Length);
                             tmp64 += UInt32x32To64(rgulNum[cur], power);
                             rgulNum[cur] = (uint)tmp64;
                             cur++;
@@ -1019,7 +1011,7 @@ ThrowOverflow:
                         if ((uint)tmp64 != 0)
                         {
                             // We're extending the result by another uint.
-                            Debug.Assert(hiProd + 1 < bufNum.Length);
+                            Debug.Assert(hiProd + 1 < Buf24.Length);
                             rgulNum[++hiProd] = (uint)tmp64;
                         }
                     }
@@ -1055,9 +1047,9 @@ ThrowOverflow:
                         uint cur = 3;
                         do
                         {
-                            Debug.Assert(cur < bufNum.Length);
+                            Debug.Assert(cur < Buf24.Length);
                         } while (number[cur++]-- == 0);
-                        Debug.Assert(hiProd < bufNum.Length);
+                        Debug.Assert(hiProd < Buf24.Length);
                         if (number[hiProd] == 0 && --hiProd <= 2)
                             goto ReturnResult;
                     }
@@ -1082,7 +1074,7 @@ ThrowOverflow:
                         uint* number = (uint*)&bufNum;
                         for (uint cur = 3; ++number[cur++] == 0;)
                         {
-                            Debug.Assert(cur < bufNum.Length);
+                            Debug.Assert(cur < Buf24.Length);
                             if (hiProd < cur)
                             {
                                 number[cur] = 1;
@@ -1339,7 +1331,6 @@ ThrowOverflow:
                 ulong tmp;
                 uint hiProd;
                 Unsafe.SkipInit(out Buf24 bufProd);
-                DebugPoison(ref bufProd);
 
                 if ((d1.High | d1.Mid) == 0)
                 {
@@ -1920,7 +1911,6 @@ ReturnZero:
             internal static unsafe void VarDecDiv(ref DecCalc d1, ref DecCalc d2)
             {
                 Unsafe.SkipInit(out Buf12 bufQuo);
-                DebugPoison(ref bufQuo);
 
                 uint power;
                 int curScale;
@@ -2021,7 +2011,6 @@ ReturnZero:
                     // Shift both dividend and divisor left by curScale.
                     //
                     Unsafe.SkipInit(out Buf16 bufRem);
-                    DebugPoison(ref bufRem);
 
                     bufRem.Low64 = d1.Low64 << curScale;
                     bufRem.High64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - curScale);
@@ -2090,7 +2079,6 @@ ReturnZero:
                         // Start by finishing the shift left by curScale.
                         //
                         Unsafe.SkipInit(out Buf12 bufDivisor);
-                        DebugPoison(ref bufDivisor);
 
                         bufDivisor.Low64 = divisor;
                         bufDivisor.U2 = (uint)((d2.Mid + ((ulong)d2.High << 32)) >> (32 - curScale));
@@ -2243,7 +2231,6 @@ ThrowOverflow:
                         d1.uflags = d2.uflags;
                         // Try to scale up dividend to match divisor.
                         Unsafe.SkipInit(out Buf12 bufQuo);
-                        DebugPoison(ref bufQuo);
 
                         bufQuo.Low64 = d1.Low64;
                         bufQuo.U2 = d1.High;
@@ -2303,7 +2290,6 @@ ThrowOverflow:
                 int shift = BitOperations.LeadingZeroCount(tmp);
 
                 Unsafe.SkipInit(out Buf28 b);
-                DebugPoison(ref b);
 
                 b.Buf24.Low64 = d1.Low64 << shift;
                 b.Buf24.Mid64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - shift);
@@ -2327,7 +2313,7 @@ ThrowOverflow:
                     // The high bit of the dividend must not be set.
                     if (tmp64 > int.MaxValue)
                     {
-                        Debug.Assert(high + 1 < b.Length);
+                        Debug.Assert(high + 1 < Buf28.Length);
                         buf[++high] = (uint)(tmp64 >> 32);
                     }
 
@@ -2358,7 +2344,6 @@ ThrowOverflow:
                 else
                 {
                     Unsafe.SkipInit(out Buf12 bufDivisor);
-                    DebugPoison(ref bufDivisor);
 
                     bufDivisor.Low64 = d2.Low64 << shift;
                     bufDivisor.U2 = (uint)((d2.Mid + ((ulong)d2.High << 32)) >> (32 - shift));
@@ -2683,7 +2668,7 @@ done:
 #endif
                 }
 
-                public int Length => 6;
+                public const int Length = 6;
             }
 
             private struct Buf28
@@ -2691,7 +2676,7 @@ done:
                 public Buf24 Buf24;
                 public uint U6;
 
-                public int Length => 7;
+                public const int Length = 7;
             }
         }
     }

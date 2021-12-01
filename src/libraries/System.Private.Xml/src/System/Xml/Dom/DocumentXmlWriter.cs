@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -442,7 +441,7 @@ namespace System.Xml
                 if (offset != -1
                     && ((XmlAttribute)attrs.nodes[offset]).Specified)
                 {
-                    throw new XmlException(SR.Xml_DupAttributeName, attr.Prefix.Length == 0 ? attr.LocalName : string.Concat(attr.Prefix, ":", attr.LocalName));
+                    throw new XmlException(SR.Xml_DupAttributeName, attr.Prefix.Length == 0 ? attr.LocalName : $"{attr.Prefix}:{attr.LocalName}");
                 }
             }
             for (int i = 0; i < _fragment.Count; i++)
@@ -472,7 +471,7 @@ namespace System.Xml
                     throw new InvalidOperationException(SR.Xdom_Node_Modify_ReadOnly);
                 }
 
-                DocumentXPathNavigator.DeleteToFollowingSibling(_start.NextSibling, _end);
+                DocumentXPathNavigator.DeleteToFollowingSibling(_start.NextSibling!, _end);
             }
 
             XmlNode fragment0 = _fragment[0];

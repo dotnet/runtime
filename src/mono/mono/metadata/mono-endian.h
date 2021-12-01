@@ -6,6 +6,7 @@
 #define _MONO_METADATA_ENDIAN_H_ 1
 
 #include <glib.h>
+#include <mono/utils/mono-compiler.h>
 
 typedef union {
 	guint32 ival;
@@ -28,9 +29,9 @@ typedef union {
 
 # if NO_UNALIGNED_ACCESS
 
-guint16 mono_read16 (const unsigned char *x);
-guint32 mono_read32 (const unsigned char *x);
-guint64 mono_read64 (const unsigned char *x);
+MONO_COMPONENT_API guint16 mono_read16 (const unsigned char *x);
+MONO_COMPONENT_API guint32 mono_read32 (const unsigned char *x);
+MONO_COMPONENT_API guint64 mono_read64 (const unsigned char *x);
 
 #define read16(x) (mono_read16 ((const unsigned char *)(x)))
 #define read32(x) (mono_read32 ((const unsigned char *)(x)))

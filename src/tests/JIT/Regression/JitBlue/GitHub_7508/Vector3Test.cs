@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Since https://github.com/dotnet/coreclr/issues/7508 was a performance issue,
+// Since https://github.com/dotnet/runtime/issues/6775 was a performance issue,
 // there's not really a correctness test for this.
 // However, this is a very simple test that can be used to compare the code generated
 // for a non-accelerated vector of 3 floats, a "raw" Vector3 and a Vector3
@@ -90,7 +90,15 @@ namespace Test01
 
     public class Program
     {
-        static Random random = new Random( 12345 );
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
+        static Random random = new Random(Seed);
         [MethodImpl( MethodImplOptions.NoInlining )]
         static SimpleVector3 RandomSimpleVector3()
             => new SimpleVector3( (float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble() );

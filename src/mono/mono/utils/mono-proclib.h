@@ -70,7 +70,7 @@ char*     mono_process_get_name (gpointer pid, char *buf, int len);
 gint64    mono_process_get_data (gpointer pid, MonoProcessData data);
 gint64    mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProcessError *error);
 
-int       mono_process_current_pid (void);
+MONO_COMPONENT_API int       mono_process_current_pid (void);
 
 MONO_API int       mono_cpu_count    (void);
 gint64    mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error);
@@ -328,7 +328,7 @@ gboolean
 mono_pe_file_time_date_stamp (const gunichar2 *filename, guint32 *out);
 
 gpointer
-mono_pe_file_map (const gunichar2 *filename, gint32 *map_size, void **handle);
+mono_pe_file_map (const gunichar2 *filename, guint32 *map_size, void **handle);
 
 void
 mono_pe_file_unmap (gpointer file_map, void *handle);

@@ -19,7 +19,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectorySchemaProperty this[int index]
         {
-            get => (ActiveDirectorySchemaProperty)InnerList[index];
+            get => (ActiveDirectorySchemaProperty)InnerList[index]!;
         }
 
         public bool Contains(ActiveDirectorySchemaProperty schemaProperty)
@@ -28,7 +28,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException(nameof(schemaProperty));
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySchemaProperty tmp = (ActiveDirectorySchemaProperty)InnerList[i];
+                ActiveDirectorySchemaProperty tmp = (ActiveDirectorySchemaProperty)InnerList[i]!;
                 if (Utils.Compare(tmp.Name, schemaProperty.Name) == 0)
                 {
                     return true;
@@ -44,7 +44,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySchemaProperty tmp = (ActiveDirectorySchemaProperty)InnerList[i];
+                ActiveDirectorySchemaProperty tmp = (ActiveDirectorySchemaProperty)InnerList[i]!;
                 if (Utils.Compare(tmp.Name, schemaProperty.Name) == 0)
                 {
                     return i;

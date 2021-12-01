@@ -12,15 +12,15 @@ namespace System.Xml.Xsl.XsltOld
     {
         private const int NameDone = 2;
 
-        private Avt _nameAvt;
-        private Avt _nsAvt;
-        private InputScopeManager _manager;
+        private Avt? _nameAvt;
+        private Avt? _nsAvt;
+        private InputScopeManager? _manager;
         // Compile time precalculated AVTs
-        private string _name;
-        private string _nsUri;
-        private PrefixQName _qname; // When we not have AVTs at all we can do this. null otherwise.
+        private string? _name;
+        private string? _nsUri;
+        private PrefixQName? _qname; // When we not have AVTs at all we can do this. null otherwise.
 
-        private static PrefixQName CreateAttributeQName(string name, string nsUri, InputScopeManager manager)
+        private static PrefixQName? CreateAttributeQName(string name, string? nsUri, InputScopeManager? manager)
         {
             // if name == "xmlns" we don't need to generate this attribute.
             // to avoid its generation we can return false and not add AttributeCreation to it's parent container action
@@ -34,7 +34,7 @@ namespace System.Xml.Xsl.XsltOld
             PrefixQName qname = new PrefixQName();
             qname.SetQName(name);
 
-            qname.Namespace = nsUri != null ? nsUri : manager.ResolveXPathNamespace(qname.Prefix);
+            qname.Namespace = nsUri != null ? nsUri : manager!.ResolveXPathNamespace(qname.Prefix);
 
             if (qname.Prefix.StartsWith("xml", StringComparison.Ordinal))
             {
@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 if (_name != "xmlns")
                 {
-                    _qname = CreateAttributeQName(_name, _nsUri, compiler.CloneScopeManager());
+                    _qname = CreateAttributeQName(_name!, _nsUri, compiler.CloneScopeManager());
                 }
             }
             else
@@ -127,7 +127,7 @@ namespace System.Xml.Xsl.XsltOld
                     else
                     {
                         frame.CalulatedName = CreateAttributeQName(
-                            _nameAvt == null ? _name : _nameAvt.Evaluate(processor, frame),
+                            _nameAvt == null ? _name! : _nameAvt.Evaluate(processor, frame),
                             _nsAvt == null ? _nsUri : _nsAvt.Evaluate(processor, frame),
                             _manager
                         );
@@ -141,7 +141,7 @@ namespace System.Xml.Xsl.XsltOld
                     goto case NameDone;
                 case NameDone:
                     {
-                        PrefixQName qname = frame.CalulatedName;
+                        PrefixQName qname = frame.CalulatedName!;
                         if (processor.BeginEvent(XPathNodeType.Attribute, qname.Prefix, qname.Name, qname.Namespace, false) == false)
                         {
                             // Come back later
