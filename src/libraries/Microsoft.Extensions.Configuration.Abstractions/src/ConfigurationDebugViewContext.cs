@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Configuration
         public string Key { get; }
 
         /// <summary>
-        /// Value of the current item
+        /// Gets the value of the current item.
         /// </summary>
         public string? Value { get; }
 
