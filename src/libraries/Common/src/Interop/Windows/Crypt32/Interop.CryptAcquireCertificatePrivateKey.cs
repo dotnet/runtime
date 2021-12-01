@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptAcquireCertificatePrivateKey(
+        [GeneratedDllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial bool CryptAcquireCertificatePrivateKey(
             SafeCertContextHandle pCert,
             CryptAcquireCertificatePrivateKeyFlags dwFlags,
             IntPtr pvParameters,

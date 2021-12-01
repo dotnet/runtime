@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (reader.TokenType != JsonTokenType.String)
             {
-                throw ThrowHelper.GetInvalidOperationException_ExpectedString(reader.TokenType);
+                ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
             }
 
             bool isEscaped = reader._stringHasEscaping;
@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (!JsonHelpers.IsInRangeInclusive(sequenceLength, MinimumTimeSpanFormatLength, maximumLength))
                 {
-                    throw ThrowHelper.GetFormatException(DataType.TimeSpan);
+                    ThrowHelper.ThrowFormatException(DataType.TimeSpan);
                 }
 
                 Span<byte> stackSpan = stackalloc byte[isEscaped ? MaximumEscapedTimeSpanFormatLength : MaximumTimeSpanFormatLength];
@@ -45,7 +45,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (!JsonHelpers.IsInRangeInclusive(source.Length, MinimumTimeSpanFormatLength, maximumLength))
                 {
-                    throw ThrowHelper.GetFormatException(DataType.TimeSpan);
+                    ThrowHelper.ThrowFormatException(DataType.TimeSpan);
                 }
             }
 
@@ -68,7 +68,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 // Note: Utf8Parser.TryParse allows for leading whitespace so we
                 // need to exclude that case here.
-                throw ThrowHelper.GetFormatException(DataType.TimeSpan);
+                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
             }
 
             bool result = Utf8Parser.TryParse(source, out TimeSpan tmpValue, out int bytesConsumed, 'c');
@@ -78,12 +78,12 @@ namespace System.Text.Json.Serialization.Converters
             // "1$$$$$$$$$$". We need to check bytesConsumed to know if the
             // entire source was actually valid.
 
-            if (result && source.Length == bytesConsumed)
+            if (!result || source.Length != bytesConsumed)
             {
-                return tmpValue;
+                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
             }
 
-            throw ThrowHelper.GetFormatException(DataType.TimeSpan);
+            return tmpValue;
         }
 
         public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)

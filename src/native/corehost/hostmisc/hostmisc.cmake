@@ -3,7 +3,7 @@
 
 include(${CMAKE_CURRENT_LIST_DIR}/configure.cmake)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories("${CLR_SRC_NATIVE_DIR}/common")
+include_directories("${CLR_SRC_NATIVE_DIR}")
 
 if(CLR_CMAKE_TARGET_OS_ILLUMOS)
     add_definitions(-DTARGET_ILLUMOS)

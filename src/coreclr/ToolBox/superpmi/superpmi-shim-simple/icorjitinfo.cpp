@@ -333,12 +333,6 @@ uint32_t interceptor_ICJI::getClassAttribs(
     return original_ICorJitInfo->getClassAttribs(cls);
 }
 
-bool interceptor_ICJI::isStructRequiringStackAllocRetBuf(
-          CORINFO_CLASS_HANDLE cls)
-{
-    return original_ICorJitInfo->isStructRequiringStackAllocRetBuf(cls);
-}
-
 CORINFO_MODULE_HANDLE interceptor_ICJI::getClassModule(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -1092,6 +1086,12 @@ bool interceptor_ICJI::notifyInstructionSetUsage(
           bool supportEnabled)
 {
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
+}
+
+void interceptor_ICJI::updateEntryPointForTailCall(
+          CORINFO_CONST_LOOKUP* entryPoint)
+{
+    original_ICorJitInfo->updateEntryPointForTailCall(entryPoint);
 }
 
 void interceptor_ICJI::allocMem(

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class Matrix4x4Tests
+    public sealed class Matrix4x4Tests
     {
         static Matrix4x4 GenerateIncrementalMatrixNumber(float value = 0.0f)
         {
@@ -39,6 +39,86 @@ namespace System.Numerics.Tests
                 Matrix4x4.CreateRotationZ(MathHelper.ToRadians(30.0f));
             m.Translation = new Vector3(111.0f, 222.0f, 333.0f);
             return m;
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
+        public void Matrix4x4IndexerGetTest(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44)
+        {
+            var matrix = new Matrix4x4(m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, m41, m42, m43, m44);
+
+            Assert.Equal(m11, matrix[0, 0]);
+            Assert.Equal(m12, matrix[0, 1]);
+            Assert.Equal(m13, matrix[0, 2]);
+            Assert.Equal(m14, matrix[0, 3]);
+
+            Assert.Equal(m21, matrix[1, 0]);
+            Assert.Equal(m22, matrix[1, 1]);
+            Assert.Equal(m23, matrix[1, 2]);
+            Assert.Equal(m24, matrix[1, 3]);
+
+            Assert.Equal(m31, matrix[2, 0]);
+            Assert.Equal(m32, matrix[2, 1]);
+            Assert.Equal(m33, matrix[2, 2]);
+            Assert.Equal(m34, matrix[2, 3]);
+
+            Assert.Equal(m41, matrix[3, 0]);
+            Assert.Equal(m42, matrix[3, 1]);
+            Assert.Equal(m43, matrix[3, 2]);
+            Assert.Equal(m44, matrix[3, 3]);
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
+        public void Matrix4x4IndexerSetTest(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44)
+        {
+            var matrix = new Matrix4x4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+
+            matrix[0, 0] = m11;
+            matrix[0, 1] = m12;
+            matrix[0, 2] = m13;
+            matrix[0, 3] = m14;
+
+            matrix[1, 0] = m21;
+            matrix[1, 1] = m22;
+            matrix[1, 2] = m23;
+            matrix[1, 3] = m24;
+
+            matrix[2, 0] = m31;
+            matrix[2, 1] = m32;
+            matrix[2, 2] = m33;
+            matrix[2, 3] = m34;
+
+            matrix[3, 0] = m41;
+            matrix[3, 1] = m42;
+            matrix[3, 2] = m43;
+            matrix[3, 3] = m44;
+
+            Assert.Equal(m11, matrix[0, 0]);
+            Assert.Equal(m12, matrix[0, 1]);
+            Assert.Equal(m13, matrix[0, 2]);
+            Assert.Equal(m14, matrix[0, 3]);
+
+            Assert.Equal(m21, matrix[1, 0]);
+            Assert.Equal(m22, matrix[1, 1]);
+            Assert.Equal(m23, matrix[1, 2]);
+            Assert.Equal(m24, matrix[1, 3]);
+
+            Assert.Equal(m31, matrix[2, 0]);
+            Assert.Equal(m32, matrix[2, 1]);
+            Assert.Equal(m33, matrix[2, 2]);
+            Assert.Equal(m34, matrix[2, 3]);
+
+            Assert.Equal(m41, matrix[3, 0]);
+            Assert.Equal(m42, matrix[3, 1]);
+            Assert.Equal(m43, matrix[3, 2]);
+            Assert.Equal(m44, matrix[3, 3]);
         }
 
         // A test for Identity

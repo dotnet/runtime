@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, runtimeHelpers } from "./modules";
+import { Module, runtimeHelpers } from "./imports";
 import {
     cs_owned_js_handle_symbol, get_cs_owned_object_by_js_handle, get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol,
     mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle,
@@ -14,13 +14,15 @@ import { wrap_error } from "./method-calls";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
-import { JSHandle, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol } from "./types";
+import { Int32Ptr, JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";
+import { setI32, setU32, setF64 } from "./memory";
 
-export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any) {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any): MonoObject {
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
-            return 0;
+            return MonoObjectNull;
         case typeof js_obj === "symbol":
         case typeof js_obj === "string":
             return corebindings._create_uri(js_obj);
@@ -30,10 +32,12 @@ export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any) {
 }
 
 // this is only used from Blazor
-export function js_to_mono_obj(js_obj: any) {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function js_to_mono_obj(js_obj: any): MonoObject {
     return _js_to_mono_obj(false, js_obj);
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObject {
     switch (true) {
         case js_obj === null:
@@ -58,10 +62,11 @@ export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any): Mon
             return <any>js_string_to_mono_string_interned(js_obj);
         case typeof js_obj === "boolean":
             return _box_js_bool(js_obj);
-        case isThenable(js_obj) === true:
-            var { task_ptr } = _wrap_js_thenable_as_task(js_obj);
+        case isThenable(js_obj) === true: {
+            const { task_ptr } = _wrap_js_thenable_as_task(js_obj);
             // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
             return task_ptr;
+        }
         case js_obj.constructor.name === "Date":
             // getTime() is always UTC
             return corebindings._create_date_time(js_obj.getTime());
@@ -105,22 +110,22 @@ function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObje
 }
 
 function _box_js_int(js_obj: number) {
-    Module.HEAP32[<any>runtimeHelpers._box_buffer / 4] = js_obj;
+    setI32(runtimeHelpers._box_buffer, js_obj);
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_int32, runtimeHelpers._box_buffer, 4);
 }
 
 function _box_js_uint(js_obj: number) {
-    Module.HEAPU32[<any>runtimeHelpers._box_buffer / 4] = js_obj;
+    setU32(runtimeHelpers._box_buffer, js_obj);
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_uint32, runtimeHelpers._box_buffer, 4);
 }
 
 function _box_js_double(js_obj: number) {
-    Module.HEAPF64[<any>runtimeHelpers._box_buffer / 8] = js_obj;
+    setF64(runtimeHelpers._box_buffer, js_obj);
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_double, runtimeHelpers._box_buffer, 8);
 }
 
-export function _box_js_bool(js_obj: boolean) {
-    Module.HEAP32[<any>runtimeHelpers._box_buffer / 4] = js_obj ? 1 : 0;
+export function _box_js_bool(js_obj: boolean): MonoObject {
+    setI32(runtimeHelpers._box_buffer, js_obj ? 1 : 0);
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4);
 }
 
@@ -133,7 +138,8 @@ function js_typedarray_to_heap(typedArray: TypedArray) {
     return heapBytes;
 }
 
-export function js_typed_array_to_array(js_obj: any) {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function js_typed_array_to_array(js_obj: any): MonoArray {
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing
     // raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
     // split the implementation into buffers and views. A buffer (implemented by the ArrayBuffer object)
@@ -154,14 +160,15 @@ export function js_typed_array_to_array(js_obj: any) {
     }
 }
 
-export function js_to_mono_enum(js_obj: any, method: MonoMethod, parmIdx: number) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/explicit-module-boundary-types
+export function js_to_mono_enum(js_obj: any, method: MonoMethod, parmIdx: number): number {
     if (typeof (js_obj) !== "number")
         throw new Error(`Expected numeric value for enum argument, got '${js_obj}'`);
 
     return js_obj | 0;
 }
 
-export function js_array_to_mono_array(js_array: any[], asString: boolean, should_add_in_flight: boolean) {
+export function js_array_to_mono_array(js_array: any[], asString: boolean, should_add_in_flight: boolean): MonoArray {
     const mono_array = asString ? cwraps.mono_wasm_string_array_new(js_array.length) : cwraps.mono_wasm_obj_array_new(js_array.length);
     const arrayRoot = mono_wasm_new_root(mono_array);
     const elemRoot = mono_wasm_new_root(MonoObjectNull);
@@ -231,7 +238,7 @@ export function _wrap_js_thenable_as_task(thenable: Promise<any>): {
     };
 }
 
-export function mono_wasm_typed_array_to_array(js_handle: JSHandle, is_exception: Int32Ptr) {
+export function mono_wasm_typed_array_to_array(js_handle: JSHandle, is_exception: Int32Ptr): MonoArray | MonoString {
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!js_obj) {
         return wrap_error(is_exception, "ERR06: Invalid JS object handle '" + js_handle + "'");

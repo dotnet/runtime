@@ -226,6 +226,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60190")]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
             using (HttpClient client = CreateHttpClient())

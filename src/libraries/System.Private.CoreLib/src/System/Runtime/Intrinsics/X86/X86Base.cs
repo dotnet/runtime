@@ -69,7 +69,7 @@ namespace System.Runtime.Intrinsics.X86
         internal static uint BitScanReverse(uint value) => BitScanReverse(value);
 
         /// <summary>
-        /// void __cpuidex(int cpuInfo[4], int function_id, int subfunction_id);
+        /// void __cpuidex (int cpuInfo[4], int function_id, int subfunction_id);
         ///   CPUID
         /// </summary>
         public static unsafe (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId)
@@ -78,5 +78,11 @@ namespace System.Runtime.Intrinsics.X86
             __cpuidex(cpuInfo, functionId, subFunctionId);
             return (cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
         }
+
+        /// <summary>
+        /// void _mm_pause (void);
+        ///   PAUSE
+        /// </summary>
+        public static void Pause() => Pause();
     }
 }

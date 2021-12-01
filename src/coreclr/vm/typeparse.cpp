@@ -110,7 +110,7 @@ SAFEHANDLE TypeName::GetSafeHandle()
 }
 
 /*static*/
-void QCALLTYPE TypeName::QCreateTypeNameParser(LPCWSTR wszTypeName, QCall::ObjectHandleOnStack pHandle, BOOL throwOnError)
+extern "C" void QCALLTYPE TypeName_CreateTypeNameParser(LPCWSTR wszTypeName, QCall::ObjectHandleOnStack pHandle, BOOL throwOnError)
 {
     QCALL_CONTRACT;
 
@@ -143,7 +143,7 @@ void QCALLTYPE TypeName::QCreateTypeNameParser(LPCWSTR wszTypeName, QCall::Objec
 }
 
 /*static*/
-void QCALLTYPE TypeName::QReleaseTypeNameParser(TypeName * pTypeName)
+extern "C" void QCALLTYPE TypeName_ReleaseTypeNameParser(TypeName * pTypeName)
 {
     CONTRACTL
     {
@@ -160,7 +160,7 @@ void QCALLTYPE TypeName::QReleaseTypeNameParser(TypeName * pTypeName)
 }
 
 /*static*/
-void QCALLTYPE TypeName::QGetNames(TypeName * pTypeName, QCall::ObjectHandleOnStack pNames)
+extern "C" void QCALLTYPE TypeName_GetNames(TypeName * pTypeName, QCall::ObjectHandleOnStack pNames)
 {
     CONTRACTL
     {
@@ -203,7 +203,7 @@ void QCALLTYPE TypeName::QGetNames(TypeName * pTypeName, QCall::ObjectHandleOnSt
 }
 
 /*static*/
-void QCALLTYPE TypeName::QGetTypeArguments(TypeName * pTypeName, QCall::ObjectHandleOnStack pTypeArguments)
+extern "C" void QCALLTYPE TypeName_GetTypeArguments(TypeName * pTypeName, QCall::ObjectHandleOnStack pTypeArguments)
 {
     CONTRACTL
     {
@@ -248,7 +248,7 @@ void QCALLTYPE TypeName::QGetTypeArguments(TypeName * pTypeName, QCall::ObjectHa
 }
 
 /*static*/
-void QCALLTYPE TypeName::QGetModifiers(TypeName * pTypeName, QCall::ObjectHandleOnStack pModifiers)
+extern "C" void QCALLTYPE TypeName_GetModifiers(TypeName * pTypeName, QCall::ObjectHandleOnStack pModifiers)
 {
     CONTRACTL
     {
@@ -292,7 +292,7 @@ void QCALLTYPE TypeName::QGetModifiers(TypeName * pTypeName, QCall::ObjectHandle
 }
 
 /*static*/
-void QCALLTYPE TypeName::QGetAssemblyName(TypeName * pTypeName, QCall::StringHandleOnStack pAssemblyName)
+extern "C" void QCALLTYPE TypeName_GetAssemblyName(TypeName * pTypeName, QCall::StringHandleOnStack pAssemblyName)
 {
     CONTRACTL
     {
@@ -1415,7 +1415,7 @@ TypeName::GetTypeHaveAssemblyHelper(
                 if (pManifestModule->LookupFile(mdFile))
                     continue;
 
-                pManifestModule->LoadModule(GetAppDomain(), mdFile, FALSE);
+                pManifestModule->LoadModule(GetAppDomain(), mdFile);
 
                 th = GetTypeHaveAssemblyHelper(pAssembly, bThrowIfNotFound, bIgnoreCase, NULL, FALSE);
 
@@ -1479,7 +1479,7 @@ DomainAssembly * LoadDomainAssembly(
     {
         // If the requesting assembly has Fallback LoadContext binder available,
         // then set it up in the AssemblySpec.
-        PEFile *pRequestingAssemblyManifestFile = pRequestingAssembly->GetManifestFile();
+        PEAssembly *pRequestingAssemblyManifestFile = pRequestingAssembly->GetManifestFile();
         spec.SetFallbackBinderForRequestingAssembly(pRequestingAssemblyManifestFile->GetFallbackBinder());
     }
 

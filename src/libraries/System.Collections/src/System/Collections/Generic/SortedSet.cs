@@ -1681,41 +1681,27 @@ namespace System.Collections.Generic
 #if DEBUG
                 Debug.Assert(count == GetCount());
 #endif
-
-                // Breadth-first traversal to recreate nodes, preorder traversal to replicate nodes.
-
-                var originalNodes = new Stack<Node>(2 * Log2(count) + 2);
-                var newNodes = new Stack<Node>(2 * Log2(count) + 2);
                 Node newRoot = ShallowClone();
 
-                Node? originalCurrent = this;
-                Node newCurrent = newRoot;
+                var pendingNodes = new Stack<(Node source, Node target)>(2 * Log2(count) + 2);
+                pendingNodes.Push((this, newRoot));
 
-                while (originalCurrent != null)
+                while (pendingNodes.TryPop(out var next))
                 {
-                    originalNodes.Push(originalCurrent);
-                    newNodes.Push(newCurrent);
-                    newCurrent.Left = originalCurrent.Left?.ShallowClone();
-                    originalCurrent = originalCurrent.Left;
-                    newCurrent = newCurrent.Left!;
-                }
+                    Node clonedNode;
 
-                while (originalNodes.Count != 0)
-                {
-                    originalCurrent = originalNodes.Pop();
-                    newCurrent = newNodes.Pop();
-
-                    Node? originalRight = originalCurrent.Right;
-                    Node? newRight = originalRight?.ShallowClone();
-                    newCurrent.Right = newRight;
-
-                    while (originalRight != null)
+                    if (next.source.Left is Node left)
                     {
-                        originalNodes.Push(originalRight);
-                        newNodes.Push(newRight!);
-                        newRight!.Left = originalRight.Left?.ShallowClone();
-                        originalRight = originalRight.Left;
-                        newRight = newRight.Left;
+                        clonedNode = left.ShallowClone();
+                        next.target.Left = clonedNode;
+                        pendingNodes.Push((left, clonedNode));
+                    }
+
+                    if (next.source.Right is Node right)
+                    {
+                        clonedNode = right.ShallowClone();
+                        next.target.Right = clonedNode;
+                        pendingNodes.Push((right, clonedNode));
                     }
                 }
 

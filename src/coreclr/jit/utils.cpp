@@ -110,7 +110,7 @@ const char* varTypeName(var_types vt)
 #undef DEF_TP
     };
 
-    assert((unsigned)vt < _countof(varTypeNames));
+    assert((unsigned)vt < ArrLen(varTypeNames));
 
     return varTypeNames[vt];
 }
@@ -601,7 +601,7 @@ void dumpILRange(const BYTE* const codeAddr, unsigned codeSize) // in bytes
     for (IL_OFFSET offs = 0; offs < codeSize;)
     {
         char prefix[100];
-        sprintf_s(prefix, _countof(prefix), "IL_%04x ", offs);
+        sprintf_s(prefix, ArrLen(prefix), "IL_%04x ", offs);
         unsigned codeBytesDumped = dumpSingleInstr(codeAddr, offs, prefix);
         offs += codeBytesDumped;
     }
@@ -1377,7 +1377,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSTATICFIELDADDR_CONTEXT:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
             case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
@@ -2414,15 +2413,18 @@ T GetUnsignedMagic(T d, bool* increment /*out*/, int* preShift /*out*/, int* pos
     }
 }
 
-uint32_t GetUnsigned32Magic(uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/)
+uint32_t GetUnsigned32Magic(
+    uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits)
 {
-    return GetUnsignedMagic<uint32_t>(d, increment, preShift, postShift, 32);
+    assert(bits <= 32);
+    return GetUnsignedMagic<uint32_t>(d, increment, preShift, postShift, bits);
 }
 
 #ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(
     uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits)
 {
+    assert(bits <= 64);
     return GetUnsignedMagic<uint64_t>(d, increment, preShift, postShift, bits);
 }
 #endif

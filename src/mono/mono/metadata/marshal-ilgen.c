@@ -1162,7 +1162,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 			int t;
 
 			//XXX a byref field!?!? that's not allowed! and worse, it might miss a WB
-			g_assert (!ftype->byref);
+			g_assert (!m_type_is_byref (ftype));
 			if (ftype->type == MONO_TYPE_I || ftype->type == MONO_TYPE_U) {
 				mono_mb_emit_ldloc (mb, 1);
 				mono_mb_emit_ldloc (mb, 0);
@@ -1442,7 +1442,7 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 	MonoType *t = mono_type_get_underlying_type (return_type);
 	MonoType *int_type = mono_get_int_type ();
 
-	if (return_type->byref)
+	if (m_type_is_byref (return_type))
 		return_type = int_type;
 
 	switch (t->type) {
@@ -1542,7 +1542,7 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 			mono_mb_emit_byte (mb, CEE_ADD);
 		}
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 			/* A Nullable<T> type don't have a boxed form, it's either null or a boxed T.
 			 * So to make this work we unbox it to a local variablee and push a reference to that.
@@ -1628,7 +1628,7 @@ handle_enum:
 		mono_mb_emit_calli (mb, callsig);
 	}
 
-	if (sig->ret->byref) {
+	if (m_type_is_byref (sig->ret)) {
 		/* perform indirect load and return by value */
 		int pos;
 		mono_mb_emit_byte (mb, CEE_DUP);
@@ -1638,7 +1638,7 @@ handle_enum:
 
 		int ldind_op;
 		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
-		g_assert (!ret_byval->byref);
+		g_assert (!m_type_is_byref (ret_byval));
 		// TODO: Handle null references
 		ldind_op = mono_type_to_ldind (ret_byval);
 		/* taken from similar code in mini-generic-sharing.c
@@ -1701,7 +1701,7 @@ handle_enum:
 		 * Box the result and put it back into the array, the caller will have
 		 * to obtain it from there.
 		 */
-		if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
+		if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
 			mono_mb_emit_ldarg (mb, 1);			
 			mono_mb_emit_icon (mb, TARGET_SIZEOF_VOID_P * i);
 			mono_mb_emit_byte (mb, CEE_ADD);
@@ -2184,7 +2184,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	gc_safe_transition_builder_cleanup (&gc_safe_transition_builder);
 
 	/* convert the result */
-	if (!sig->ret->byref) {
+	if (!m_type_is_byref (sig->ret)) {
 		MonoMarshalSpec *spec = mspecs [0];
 		type = sig->ret->type;
 
@@ -2446,7 +2446,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (m_class_is_blittable (eklass)) {
 			mono_mb_emit_ldarg (mb, argnum);
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_icall_id (mb, conv_to_icall (MONO_MARSHAL_CONV_ARRAY_LPARRAY, NULL));
 			mono_mb_emit_stloc (mb, conv_arg);
@@ -2481,7 +2481,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			src_var = mono_mb_add_local (mb, object_type);
 			mono_mb_emit_ldarg (mb, argnum);
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_stloc (mb, src_var);
 
@@ -2584,18 +2584,18 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			param_type = m->sig->params [param_num];
 
-			if (param_type->byref && param_type->type != MONO_TYPE_I4) {
+			if (m_type_is_byref (param_type) && param_type->type != MONO_TYPE_I4) {
 				char *msg = g_strdup ("Not implemented.");
 				mono_mb_emit_exception_marshal_directive (mb, msg);
 				break;
 			}
 
-			if (t->byref ) {
+			if (m_type_is_byref (t) ) {
 				mono_mb_emit_ldarg (mb, argnum);
 
 				/* Create the managed array */
 				mono_mb_emit_ldarg (mb, param_num);
-				if (m->sig->params [param_num]->byref)
+				if (m_type_is_byref (m->sig->params [param_num]))
 					// FIXME: Support other types
 					mono_mb_emit_byte (mb, CEE_LDIND_I4);
 				mono_mb_emit_byte (mb, CEE_CONV_OVF_I);
@@ -2621,7 +2621,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			/* Check null */
 			mono_mb_emit_ldarg (mb, argnum);
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
 			label1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
@@ -2635,7 +2635,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			label2 = mono_mb_get_label (mb);
 			mono_mb_emit_ldloc (mb, index_var);
 			mono_mb_emit_ldarg (mb, argnum);
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 			mono_mb_emit_byte (mb, CEE_LDLEN);
 			label3 = mono_mb_emit_branch (mb, CEE_BGE);
@@ -2650,7 +2650,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 				/* dest */
 				mono_mb_emit_ldarg (mb, argnum);
-				if (t->byref)
+				if (m_type_is_byref (t))
 					mono_mb_emit_byte (mb, CEE_LDIND_I);
 				mono_mb_emit_ldloc (mb, index_var);
 				mono_mb_emit_byte (mb, CEE_LDELEM_REF);
@@ -2686,7 +2686,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 					/* set dst_ptr */
 					mono_mb_emit_ldarg (mb, argnum);
-					if (t->byref)
+					if (m_type_is_byref (t))
 						mono_mb_emit_byte (mb, CEE_LDIND_REF);
 					mono_mb_emit_ldloc (mb, index_var);
 					mono_mb_emit_op (mb, CEE_LDELEMA, eklass);
@@ -2718,7 +2718,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* free memory allocated (if any) by MONO_MARSHAL_CONV_ARRAY_LPARRAY */
 
 			mono_mb_emit_ldarg (mb, argnum);
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_icall_id (mb, conv_to_icall (MONO_MARSHAL_FREE_LPARRAY, NULL));
@@ -2728,7 +2728,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -2750,7 +2750,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		conv_arg = mono_mb_add_local (mb, object_type);
 		*conv_arg_type = int_type;
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			char *msg = g_strdup ("Byref array marshalling to managed code is not implemented.");
 			mono_mb_emit_exception_marshal_directive (mb, msg);
 			return conv_arg;
@@ -2952,7 +2952,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		
 		/* These are already checked in CONV_IN */
-		g_assert (!t->byref);
+		g_assert (!m_type_is_byref (t));
 		g_assert (spec->native == MONO_NATIVE_LPARRAY);
 		g_assert (t->attrs & PARAM_ATTRIBUTE_OUT);
 
@@ -3071,7 +3071,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMarshalConv conv = MONO_MARSHAL_CONV_INVALID;
 		gboolean is_string = FALSE;
 		
-		g_assert (!t->byref);
+		g_assert (!m_type_is_byref (t));
 
 		mono_marshal_load_type_info (eklass);
 
@@ -3239,14 +3239,14 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		guint8 ldc_op = CEE_LDC_I4_1;
 
 		local_type = mono_marshal_boolean_conv_in_get_local_type (spec, &ldc_op);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			*conv_arg_type = int_type;
 		else
 			*conv_arg_type = local_type;
 		conv_arg = mono_mb_add_local (mb, local_type);
 		
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_I1);
 		label_false = mono_mb_emit_branch (mb, CEE_BRFALSE);
 		mono_mb_emit_byte (mb, ldc_op);
@@ -3259,7 +3259,7 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_CONV_OUT:
 	{
 		int label_false, label_end;
-		if (!t->byref)
+		if (!m_type_is_byref (t))
 			break;
 
 		mono_mb_emit_ldarg (mb, argnum);
@@ -3278,7 +3278,7 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else if (conv_arg)
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -3299,7 +3299,7 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		conv_arg_class = mono_marshal_boolean_managed_conv_in_get_conv_arg_class (spec, &ldop);
 		conv_arg = mono_mb_add_local (mb, boolean_type);
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			*conv_arg_type = m_class_get_this_arg (conv_arg_class);
 		else
 			*conv_arg_type = m_class_get_byval_arg (conv_arg_class);
@@ -3308,7 +3308,7 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_ldarg (mb, argnum);
 		
 		/* Check null */
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			label_null = mono_mb_emit_branch (mb, CEE_BRFALSE);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, ldop);
@@ -3320,7 +3320,7 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_stloc (mb, conv_arg);
 		mono_mb_patch_branch (mb, label_false);
 
-		if (t->byref) 
+		if (m_type_is_byref (t)) 
 			mono_mb_patch_branch (mb, label_null);
 		break;
 	}
@@ -3330,7 +3330,7 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		guint8 ldc_op = CEE_LDC_I4_1;
 		int label_null,label_false, label_end;
 
-		if (!t->byref)
+		if (!m_type_is_byref (t))
 			break;
 		if (spec) {
 			switch (spec->native) {
@@ -3409,7 +3409,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, M
 	mono_mb_set_param_names (mb, param_names);
 	MonoType *int_type = mono_get_int_type ();
 	MonoType *int32_type = m_class_get_byval_arg (mono_defaults.int32_class);
-	MonoType *object_type_byref = m_class_get_this_arg (mono_defaults.object_class);
+	MonoType *object_type_byref = mono_class_get_byref_type (mono_defaults.object_class);
 
 	/*For now simply call plain old stelemref*/
 	switch (kind) {
@@ -3817,7 +3817,7 @@ emit_stelemref_ilgen (MonoMethodBuilder *mb)
 	int array_slot_addr;
 	
 	MonoType *int_type = mono_get_int_type ();
-	MonoType *object_type_byref = m_class_get_this_arg (mono_defaults.object_class);
+	MonoType *object_type_byref = mono_class_get_byref_type (mono_defaults.object_class);
 
 	aklass = mono_mb_add_local (mb, int_type);
 	vklass = mono_mb_add_local (mb, int_type);
@@ -4463,7 +4463,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 			/* byref args & and the "this" arg must remain a ptr.
 			   Otherwise make a copy of the value type */
-			if (!(csig->params [i]->byref || (i == 0 && sig->hasthis)))
+			if (!(m_type_is_byref (csig->params [i]) || (i == 0 && sig->hasthis)))
 				mono_mb_emit_op (mb, CEE_LDOBJ, klass);
 
 			csig->params [i] = object_type;
@@ -4634,23 +4634,23 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_LDNULL);
 		mono_mb_emit_stloc (mb, conv_arg);
 
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT))
+		if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT))
 			break;
 
 		/* Minic MS.NET behavior */
-		if (!t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT) && !(t->attrs & PARAM_ATTRIBUTE_IN))
+		if (!m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT) && !(t->attrs & PARAM_ATTRIBUTE_IN))
 			break;
 
 		/* Check for null */
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		emit_marshal_custom_get_instance (mb, mklass, spec);
 				
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 
 		if (t->type == MONO_TYPE_VALUETYPE) {
@@ -4674,7 +4674,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_ldloc (mb, conv_arg);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			mono_mb_emit_ldarg (mb, argnum);
 
 			emit_marshal_custom_get_instance (mb, mklass, spec);
@@ -4702,7 +4702,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -4739,19 +4739,19 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_LDNULL);
 		mono_mb_emit_stloc (mb, conv_arg);
 
-		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
+		if (m_type_is_byref (t) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
 
 		/* Check for null */
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		emit_marshal_custom_get_instance (mb, mklass, spec);
 				
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 				
 		mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
@@ -4761,7 +4761,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
-		g_assert (!t->byref);
+		g_assert (!m_type_is_byref (t));
 
 		loc1 = mono_mb_add_local (mb, object_type);
 			
@@ -4793,7 +4793,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_ldloc (mb, conv_arg);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			mono_mb_emit_ldarg (mb, argnum);
 
 			emit_marshal_custom_get_instance (mb, mklass, spec);
@@ -4832,7 +4832,7 @@ emit_marshal_asany_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMarshalNative encoding = mono_marshal_get_string_encoding (m->piinfo, NULL);
 
 		g_assert (t->type == MONO_TYPE_OBJECT);
-		g_assert (!t->byref);
+		g_assert (!m_type_is_byref (t));
 
 		conv_arg = mono_mb_add_local (mb, int_type);
 		mono_mb_emit_ldarg (mb, argnum);
@@ -4888,13 +4888,13 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			conv_arg = mono_mb_add_local (mb, double_type);
 
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				mono_mb_emit_ldarg (mb, argnum);
 				pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 			}
 
-			if (!(t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
-				if (!t->byref)
+			if (!(m_type_is_byref (t) && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
+				if (!m_type_is_byref (t))
 					m->csig->params [argnum - m->csig->hasthis] = double_type;
 
 				MONO_STATIC_POINTER_INIT (MonoMethod, to_oadate)
@@ -4907,7 +4907,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_stloc (mb, conv_arg);
 			}
 
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_patch_branch (mb, pos);
 			break;
 		}
@@ -4918,7 +4918,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		conv_arg = mono_mb_add_local (mb, int_type);
 			
 		/* store the address of the source into local variable 0 */
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldarg (mb, argnum);
 		else
 			mono_mb_emit_ldarg_addr (mb, argnum);
@@ -4932,12 +4932,12 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_LOCALLOC);
 		mono_mb_emit_stloc (mb, conv_arg);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			mono_mb_emit_ldloc (mb, 0);
 			pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 		}
 
-		if (!(t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
+		if (!(m_type_is_byref (t) && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
 			/* set dst_ptr */
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_stloc (mb, 1);
@@ -4946,14 +4946,14 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			emit_struct_conv (mb, klass, FALSE);
 		}
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_patch_branch (mb, pos);
 		break;
 
 	case MARSHAL_ACTION_PUSH:
 		if (spec && spec->native == MONO_NATIVE_LPSTRUCT) {
 			/* FIXME: */
-			g_assert (!t->byref);
+			g_assert (!m_type_is_byref (t));
 
 			/* Have to change the signature since the vtype is passed byref */
 			m->csig->params [argnum - m->csig->hasthis] = int_type;
@@ -4966,7 +4966,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		if (klass == date_time_class) {
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_emit_ldloc_addr (mb, conv_arg);
 			else
 				mono_mb_emit_ldloc (mb, conv_arg);
@@ -4978,7 +4978,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}			
 		mono_mb_emit_ldloc (mb, conv_arg);
-		if (!t->byref) {
+		if (!m_type_is_byref (t)) {
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_op (mb, CEE_MONO_LDNATIVEOBJ, klass);
 		}
@@ -4988,7 +4988,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (klass == date_time_class) {
 			/* Convert from an OLE DATE type */
 
-			if (!t->byref)
+			if (!m_type_is_byref (t))
 				break;
 
 			if (!((t->attrs & PARAM_ATTRIBUTE_IN) && !(t->attrs & PARAM_ATTRIBUTE_OUT))) {
@@ -5010,7 +5010,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass) || m_class_is_enumtype (klass))
 			break;
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			/* dst = argument */
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_stloc (mb, 1);
@@ -5030,7 +5030,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		emit_struct_free (mb, klass, conv_arg);
 		
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_patch_branch (mb, pos);
 		break;
 
@@ -5064,13 +5064,13 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
 
-		if (t->byref) 
+		if (m_type_is_byref (t)) 
 			mono_mb_emit_ldarg (mb, argnum);
 		else
 			mono_mb_emit_ldarg_addr (mb, argnum);
 		mono_mb_emit_stloc (mb, 0);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			mono_mb_emit_ldloc (mb, 0);
 			pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 		}			
@@ -5081,14 +5081,14 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* emit valuetype conversion code */
 		emit_struct_conv (mb, klass, TRUE);
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_patch_branch (mb, pos);
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT:
 		if (mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass) || m_class_is_enumtype (klass))
 			break;
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_IN) && !(t->attrs & PARAM_ATTRIBUTE_OUT))
+		if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_IN) && !(t->attrs & PARAM_ATTRIBUTE_OUT))
 			break;
 
 		/* Check for null */
@@ -5171,7 +5171,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		*conv_arg_type = int_type;
 		conv_arg = mono_mb_add_local (mb, int_type);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			if (t->attrs & PARAM_ATTRIBUTE_OUT)
 				break;
 
@@ -5201,7 +5201,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (encoding == MONO_NATIVE_VBBYREFSTR) {
 
-			if (!t->byref) {
+			if (!m_type_is_byref (t)) {
 				char *msg = g_strdup ("VBByRefStr marshalling requires a ref parameter.");
 				mono_mb_emit_exception_marshal_directive (mb, msg);
 				break;
@@ -5217,7 +5217,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			 * Have to allocate a new string with the same length as the original, and
 			 * copy the contents of the buffer pointed to by CONV_ARG into it.
 			 */
-			g_assert (t->byref);
+			g_assert (m_type_is_byref (t));
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_ldarg (mb, argnum);
@@ -5225,7 +5225,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_managed_call (mb, m, NULL);
 			mono_mb_emit_icall (mb, mono_string_new_len_wrapper);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
-		} else if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
+		} else if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
 			int stind_op;
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -5241,7 +5241,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref && encoding != MONO_NATIVE_VBBYREFSTR)
+		if (m_type_is_byref (t) && encoding != MONO_NATIVE_VBBYREFSTR)
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -5271,7 +5271,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		*conv_arg_type = int_type;
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			if (t->attrs & PARAM_ATTRIBUTE_OUT)
 				break;
 		}
@@ -5284,14 +5284,14 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icall_id (mb, conv_to_icall (conv, NULL));
 		mono_mb_emit_stloc (mb, conv_arg);
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT:
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			if (conv_arg) {
 				int stind_op;
 				mono_mb_emit_ldarg (mb, argnum);
@@ -5350,7 +5350,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_icon (mb, 0);
 		mono_mb_emit_stloc (mb, dar_release_slot);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			int old_handle_value_slot = mono_mb_add_local (mb, int_type);
 
 			if (!is_in (t)) {
@@ -5389,7 +5389,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else 
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -5398,12 +5398,12 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_CONV_OUT: {
 		/* The slot for the boolean is the next temporary created after conv_arg, see the CONV_IN code */
 		int dar_release_slot = conv_arg + 1;
-		int label_next;
+		int label_next = 0;
 
 		if (!sh_dangerous_release)
 			init_safe_handle ();
 
-		if (t->byref){
+		if (m_type_is_byref (t)) {
 			/* If there was SafeHandle on input we have to release the reference to it */
 			if (is_in (t)) {
 				mono_mb_emit_ldloc (mb, dar_release_slot);
@@ -5455,7 +5455,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldloc (mb, conv_arg);
 				mono_mb_emit_byte (mb, CEE_STIND_I);
 
-				if (is_in (t)) {
+				if (is_in (t) && label_next) {
 					mono_mb_patch_branch (mb, label_next);
 				}
 			}
@@ -5534,7 +5534,7 @@ emit_marshal_handleref_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		conv_arg = mono_mb_add_local (mb, int_type);
 		*conv_arg_type = int_type;
 
-		if (t->byref){
+		if (m_type_is_byref (t)) {
 			char *msg = g_strdup ("HandleRefs can not be returned from unmanaged code (or passed by ref)");
 			mono_mb_emit_exception_marshal_directive (mb, msg);
 			break;
@@ -5605,7 +5605,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		if (m_class_is_delegate (klass)) {
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
 					char *msg = g_strdup_printf ("Byref marshalling of delegates is not implemented.");
 					mono_mb_emit_exception_marshal_directive (mb, msg);
@@ -5622,7 +5622,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			MonoMarshalConv conv = mono_marshal_get_stringbuilder_to_ptr_conv (m->piinfo, spec);
 
 #if 0			
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
 					char *msg = g_strdup_printf ("Byref marshalling of stringbuilders is not implemented.");
 					mono_mb_emit_exception_marshal_directive (mb, msg);
@@ -5631,7 +5631,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 #endif
 
-			if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))
+			if (m_type_is_byref (t) && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))
 				break;
 
 			if (conv == MONO_MARSHAL_CONV_INVALID) {
@@ -5641,7 +5641,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 
 			mono_mb_emit_ldarg (mb, argnum);
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 			mono_mb_emit_icall_id (mb, conv_to_icall (conv, NULL));
@@ -5663,7 +5663,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_LDNULL);
 			mono_mb_emit_stloc (mb, conv_arg);
 
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				/* we dont need any conversions for out parameters */
 				if (t->attrs & PARAM_ATTRIBUTE_OUT)
 					break;
@@ -5688,7 +5688,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_LOCALLOC);
 			mono_mb_emit_stloc (mb, conv_arg);
 
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				/* Need to store the original buffer so we can free it later */
 				m->orig_conv_args [argnum] = mono_mb_add_local (mb, int_type);
 				mono_mb_emit_ldloc (mb, conv_arg);
@@ -5722,7 +5722,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			g_assert (encoding != -1);
 
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				//g_assert (!(t->attrs & PARAM_ATTRIBUTE_OUT));
 
 				need_free = TRUE;
@@ -5760,7 +5760,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		if (m_class_is_delegate (klass)) {
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
@@ -5771,7 +5771,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
+		if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			/* allocate a new object */
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -5782,7 +5782,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* dst = *argument */
 		mono_mb_emit_ldarg (mb, argnum);
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 		mono_mb_emit_stloc (mb, 1);
@@ -5790,7 +5790,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_ldloc (mb, 1);
 		pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		if (t->byref || (t->attrs & PARAM_ATTRIBUTE_OUT)) {
+		if (m_type_is_byref (t) || (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			mono_mb_emit_ldloc (mb, 1);
 			mono_mb_emit_icon (mb, MONO_ABI_SIZEOF (MonoObject));
 			mono_mb_emit_byte (mb, CEE_ADD);
@@ -5835,7 +5835,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -5843,7 +5843,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_CONV_RESULT:
 		if (m_class_is_delegate (klass)) {
-			g_assert (!t->byref);
+			g_assert (!m_type_is_byref (t));
 			mono_mb_emit_stloc (mb, 0);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
@@ -5900,7 +5900,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
 			mono_mb_emit_ldarg (mb, argnum);
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_icall_id (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL, NULL));
 			mono_mb_emit_stloc (mb, conv_arg);
@@ -5915,7 +5915,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			// FIXME:
 			g_assert (encoding == MONO_NATIVE_LPSTR || encoding == MONO_NATIVE_UTF8STR);
 
-			g_assert (!t->byref);
+			g_assert (!m_type_is_byref (t));
 			g_assert (encoding != -1);
 
 			mono_mb_emit_ldarg (mb, argnum);
@@ -5938,7 +5938,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* Set src */
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			int pos2;
 
 			/* Check for NULL and raise an exception */
@@ -5975,7 +5975,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT:
 		if (m_class_is_delegate (klass)) {
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				int stind_op;
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_ldloc (mb, conv_arg);
@@ -5985,7 +5985,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 		}
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			/* Check for null */
 			mono_mb_emit_ldloc (mb, conv_arg);
 			pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
@@ -6093,23 +6093,23 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 #ifndef DISABLE_COM
 	MonoMethodBuilder *mb = m->mb;
 	MonoType *variant_type = m_class_get_byval_arg (mono_class_get_variant_class ());
-	MonoType *variant_type_byref = m_class_get_this_arg (mono_class_get_variant_class ());
+	MonoType *variant_type_byref = mono_class_get_byref_type (mono_class_get_variant_class ());
 	MonoType *object_type = mono_get_object_type ();
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
 		conv_arg = mono_mb_add_local (mb, variant_type);
 		
-		if (t->byref)
+		if (m_type_is_byref (t))
 			*conv_arg_type = variant_type_byref;
 		else
 			*conv_arg_type = variant_type;
 
-		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
+		if (m_type_is_byref (t) && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte(mb, CEE_LDIND_REF);
 		mono_mb_emit_ldloc_addr (mb, conv_arg);
 		mono_mb_emit_managed_call (mb, mono_get_Marshal_GetNativeVariantForObject (), NULL);
@@ -6117,7 +6117,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_CONV_OUT: {
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
+		if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 			mono_mb_emit_managed_call (mb, mono_get_Marshal_GetObjectForNativeVariant (), NULL);
@@ -6130,7 +6130,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -6145,15 +6145,15 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		conv_arg = mono_mb_add_local (mb, object_type);
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			*conv_arg_type = variant_type_byref;
 		else
 			*conv_arg_type = variant_type;
 
-		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
+		if (m_type_is_byref (t) && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldarg (mb, argnum);
 		else
 			mono_mb_emit_ldarg_addr (mb, argnum);
@@ -6163,7 +6163,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
+		if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_managed_call (mb, mono_get_Marshal_GetNativeVariantForObject (), NULL);
@@ -6297,7 +6297,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		MonoType *t = sig->params [i];
 
 		if (tmp_locals [i]) {
-			if (t->byref)
+			if (m_type_is_byref (t))
 				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
 			else
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
@@ -6322,7 +6322,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	if (mspecs [0] && mspecs [0]->native == MONO_NATIVE_CUSTOM) {
 		mono_emit_marshal (m, 0, sig->ret, mspecs [0], 0, NULL, MARSHAL_ACTION_MANAGED_CONV_RESULT);
-	} else if (!sig->ret->byref) { 
+	} else if (!m_type_is_byref (sig->ret)) { 
 		switch (sig->ret->type) {
 		case MONO_TYPE_VOID:
 			break;
@@ -6369,7 +6369,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
 			mono_emit_marshal (m, i, t, mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 		}
-		else if (t->byref) {
+		else if (m_type_is_byref (t)) {
 			switch (t->type) {
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_VALUETYPE:
@@ -6552,18 +6552,18 @@ signature_param_uses_handles (MonoMethodSignature *sig, MonoMethodSignature *gen
 	 * like string& since the C code for the icall has to work uniformly
 	 * for both valuetypes and reference types.
 	 */
-	if (generic_sig && mono_type_is_byref_internal (generic_sig->params [param]) &&
+	if (generic_sig && m_type_is_byref (generic_sig->params [param]) &&
 	    (generic_sig->params [param]->type == MONO_TYPE_VAR || generic_sig->params [param]->type == MONO_TYPE_MVAR))
 		return ICALL_HANDLES_WRAP_VALUETYPE_REF;
 
 	if (MONO_TYPE_IS_REFERENCE (sig->params [param])) {
 		if (mono_signature_param_is_out (sig, param))
 			return ICALL_HANDLES_WRAP_OBJ_OUT;
-		else if (mono_type_is_byref_internal (sig->params [param]))
+		else if (m_type_is_byref (sig->params [param]))
 			return ICALL_HANDLES_WRAP_OBJ_INOUT;
 		else
 			return ICALL_HANDLES_WRAP_OBJ;
-	} else if (mono_type_is_byref_internal (sig->params [param]))
+	} else if (m_type_is_byref (sig->params [param]))
 		return ICALL_HANDLES_WRAP_VALUETYPE_REF;
 	else
 		return ICALL_HANDLES_WRAP_NONE;

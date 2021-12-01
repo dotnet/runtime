@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchI
 {
@@ -38,18 +34,7 @@ public static class Ackermann
         int a11 = Acker(1, 1);
         int a22 = Acker(2, 2);
         int a33 = Acker(3, 3);
-        return (a00 == 1) && (a11 == 3) && (a22 == 7) & (a33 == 61);
-    }
-
-    [Benchmark]
-    public static void Test() {
-        foreach (var iteration in Benchmark.Iterations) {
-            using (iteration.StartMeasurement()) {
-                for (int i = 0; i < Iterations; i++) {
-                    Bench();
-                }
-            }
-        }
+        return (a00 == 1) && (a11 == 3) && (a22 == 7) && (a33 == 61);
     }
 
     static bool TestBase() {

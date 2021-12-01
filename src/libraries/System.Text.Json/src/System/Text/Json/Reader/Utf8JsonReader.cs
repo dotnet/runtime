@@ -304,7 +304,7 @@ namespace System.Text.Json
         {
             if (!_isFinalBlock)
             {
-                throw ThrowHelper.GetInvalidOperationException_CannotSkipOnPartial();
+                ThrowHelper.ThrowInvalidOperationException_CannotSkipOnPartial();
             }
 
             SkipHelper();
@@ -429,8 +429,9 @@ namespace System.Text.Json
         {
             if (!IsTokenTypeString(TokenType))
             {
-                throw ThrowHelper.GetInvalidOperationException_ExpectedStringComparison(TokenType);
+                ThrowHelper.ThrowInvalidOperationException_ExpectedStringComparison(TokenType);
             }
+
             return TextEqualsHelper(utf8Text);
         }
 
@@ -499,7 +500,7 @@ namespace System.Text.Json
         {
             if (!IsTokenTypeString(TokenType))
             {
-                throw ThrowHelper.GetInvalidOperationException_ExpectedStringComparison(TokenType);
+                ThrowHelper.ThrowInvalidOperationException_ExpectedStringComparison(TokenType);
             }
 
             if (MatchNotPossible(text.Length))

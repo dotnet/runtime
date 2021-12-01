@@ -14,13 +14,13 @@ internal static partial class Interop
             private IntPtr Ptr;
         }
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern unsafe void InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
+        internal static unsafe partial void InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern unsafe void WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
+        internal static unsafe partial void WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern unsafe bool SleepConditionVariableCS(CONDITION_VARIABLE* ConditionVariable, CRITICAL_SECTION* CriticalSection, int dwMilliseconds);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
+        internal static unsafe partial bool SleepConditionVariableCS(CONDITION_VARIABLE* ConditionVariable, CRITICAL_SECTION* CriticalSection, int dwMilliseconds);
     }
 }

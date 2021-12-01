@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Configuration.Memory
         /// <summary>
         /// The initial key value configuration pairs.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, string>> InitialData { get; set; }
+        public IEnumerable<KeyValuePair<string, string?>>? InitialData { get; set; }
 
         /// <summary>
         /// Builds the <see cref="MemoryConfigurationProvider"/> for this source.

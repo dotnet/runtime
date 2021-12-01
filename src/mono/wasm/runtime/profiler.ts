@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "./modules";
+import { Module } from "./imports";
 import { AOTProfilerOptions, CoverageProfilerOptions } from "./types";
 
 // Initialize the AOT profiler with OPTIONS.
@@ -10,9 +10,9 @@ import { AOTProfilerOptions, CoverageProfilerOptions } from "./types";
 // <METHODNAME> should be in the format <CLASS>::<METHODNAME>.
 // write_at defaults to 'WebAssembly.Runtime::StopProfile'.
 // send_to defaults to 'WebAssembly.Runtime::DumpAotProfileData'.
-// DumpAotProfileData stores the data into Module.aot_profile_data.
+// DumpAotProfileData stores the data into INTERNAL.aot_profile_data.
 //
-export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions) {
+export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
     if (options == null)
         options = {};
     if (!("write_at" in options))
@@ -27,8 +27,8 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions) {
 // <METHODNAME> should be in the format <CLASS>::<METHODNAME>.
 // write_at defaults to 'WebAssembly.Runtime::StopProfile'.
 // send_to defaults to 'WebAssembly.Runtime::DumpCoverageProfileData'.
-// DumpCoverageProfileData stores the data into Module.coverage_profile_data.
-export function mono_wasm_init_coverage_profiler(options: CoverageProfilerOptions) {
+// DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.
+export function mono_wasm_init_coverage_profiler(options: CoverageProfilerOptions): void {
     if (options == null)
         options = {};
     if (!("write_at" in options))

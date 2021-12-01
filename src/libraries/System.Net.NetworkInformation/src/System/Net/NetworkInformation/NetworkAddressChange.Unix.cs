@@ -138,11 +138,11 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static void CreateSocket()
+        private static unsafe void CreateSocket()
         {
             Debug.Assert(s_socket == 0, "s_socket != 0, must close existing socket before opening another.");
             int newSocket;
-            Interop.Error result = Interop.Sys.CreateNetworkChangeListenerSocket(out newSocket);
+            Interop.Error result = Interop.Sys.CreateNetworkChangeListenerSocket(&newSocket);
             if (result != Interop.Error.SUCCESS)
             {
                 string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();

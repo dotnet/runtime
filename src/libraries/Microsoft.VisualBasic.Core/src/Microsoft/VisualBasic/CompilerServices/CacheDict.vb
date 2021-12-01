@@ -7,7 +7,7 @@ Imports System.Runtime.InteropServices
 Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements a MRU collection for caching dynamic methods used in IDO late binding.
-    Friend Class CacheDict(Of TKey, TValue)
+    Friend NotInheritable Class CacheDict(Of TKey, TValue)
         ' The Dictionary to quickly access cached data
         Private ReadOnly _dict As Dictionary(Of TKey, KeyInfo)
         ' MRU sorted linked list

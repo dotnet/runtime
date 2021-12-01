@@ -590,7 +590,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
                 string expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
 
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "hostfxrFrameworkMissingFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrFrameworkMissingFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(2, 2, 0));
                 var dotnet = dotnetBuilder.Build();

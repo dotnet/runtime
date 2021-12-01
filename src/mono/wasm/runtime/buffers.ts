@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, MonoArray } from "./types";
-import { Module } from "./modules";
+import { Int32Ptr, JSHandle, MonoArray, MonoObject, MonoString, VoidPtr } from "./types";
+import { Module } from "./imports";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { wrap_error } from "./method-calls";
 import { _js_to_mono_obj } from "./js-to-cs";
@@ -133,7 +133,7 @@ function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, 
     }
 }
 
-export function mono_wasm_typed_array_copy_to(js_handle: JSHandle, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, is_exception: Int32Ptr) {
+export function mono_wasm_typed_array_copy_to(js_handle: JSHandle, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, is_exception: Int32Ptr): MonoObject {
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!js_obj) {
         return wrap_error(is_exception, "ERR07: Invalid JS object handle '" + js_handle + "'");
@@ -144,13 +144,14 @@ export function mono_wasm_typed_array_copy_to(js_handle: JSHandle, pinned_array:
     return _js_to_mono_obj(false, res);
 }
 
-export function mono_wasm_typed_array_from(pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, type: number, is_exception: Int32Ptr) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function mono_wasm_typed_array_from(pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, type: number, is_exception: Int32Ptr): MonoObject {
     const res = typed_array_from(pinned_array, begin, end, bytes_per_element, type);
     // returns JS typed array like Int8Array, to be wraped with JSObject proxy
     return _js_to_mono_obj(true, res);
 }
 
-export function mono_wasm_typed_array_copy_from(js_handle: JSHandle, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, is_exception: Int32Ptr) {
+export function mono_wasm_typed_array_copy_from(js_handle: JSHandle, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, is_exception: Int32Ptr): MonoObject | MonoString {
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!js_obj) {
         return wrap_error(is_exception, "ERR08: Invalid JS object handle '" + js_handle + "'");
@@ -161,7 +162,7 @@ export function mono_wasm_typed_array_copy_from(js_handle: JSHandle, pinned_arra
     return _js_to_mono_obj(false, res);
 }
 
-export function has_backing_array_buffer(js_obj: any) {
+export function has_backing_array_buffer(js_obj: TypedArray): boolean {
     return typeof SharedArrayBuffer !== "undefined"
         ? js_obj.buffer instanceof ArrayBuffer || js_obj.buffer instanceof SharedArrayBuffer
         : js_obj.buffer instanceof ArrayBuffer;

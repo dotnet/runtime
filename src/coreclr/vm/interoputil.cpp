@@ -256,7 +256,7 @@ BOOL GetDefaultDllImportSearchPathsAttributeValue(Module *pModule, mdToken token
     CaArg args[1];
     args[0].InitEnum(SERIALIZATION_TYPE_U4, (ULONG)0);
 
-    ParseKnownCaArgs(ca, args, lengthof(args));
+    ParseKnownCaArgs(ca, args, ARRAY_SIZE(args));
     *pDllImportSearchPathFlags = args[0].val.u4;
     return TRUE;
 }
@@ -287,7 +287,7 @@ int GetLCIDParameterIndex(MethodDesc *pMD)
         CustomAttributeParser caLCID(pVal, cbVal);
         CaArg args[1];
         args[0].Init(SERIALIZATION_TYPE_I4, 0);
-        IfFailGo(ParseKnownCaArgs(caLCID, args, lengthof(args)));
+        IfFailGo(ParseKnownCaArgs(caLCID, args, ARRAY_SIZE(args)));
         iLCIDParam = args[0].val.i4;
     }
 
@@ -1711,7 +1711,7 @@ void SafeReleaseStream(IStream *pStream)
 
 #ifdef _DEBUG
         WCHAR      logStr[200];
-        swprintf_s(logStr, NumItems(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
+        swprintf_s(logStr, ARRAY_SIZE(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
         LogInterop(logStr);
         if (hr != S_OK)
         {
@@ -1721,7 +1721,7 @@ void SafeReleaseStream(IStream *pStream)
             ULARGE_INTEGER li2;
             pStream->Seek(li, STREAM_SEEK_SET, &li2);
             hr = CoReleaseMarshalData(pStream);
-            swprintf_s(logStr, NumItems(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
+            swprintf_s(logStr, ARRAY_SIZE(logStr), W("Object gone: CoReleaseMarshalData returned %x, file %S, line %d\n"), hr, __FILE__, __LINE__);
             LogInterop(logStr);
         }
 #endif

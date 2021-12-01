@@ -27,7 +27,7 @@ internal static partial class Interop
         }
     }
 
-    internal static class CryptoInitializer
+    internal static partial class CryptoInitializer
     {
         static CryptoInitializer()
         {
@@ -48,7 +48,7 @@ internal static partial class Interop
             // No-op that exists to provide a hook for other static constructors.
         }
 
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_EnsureOpenSslInitialized")]
-        private static extern int EnsureOpenSslInitialized();
+        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_EnsureOpenSslInitialized")]
+        private static partial int EnsureOpenSslInitialized();
     }
 }

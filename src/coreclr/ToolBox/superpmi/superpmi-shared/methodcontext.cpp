@@ -1813,29 +1813,6 @@ bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
     return value != 0;
 }
 
-void MethodContext::recIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls, bool result)
-{
-    if (IsStructRequiringStackAllocRetBuf == nullptr)
-        IsStructRequiringStackAllocRetBuf = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORDLONG key = CastHandle(cls);
-    DWORD value = result ? 1 : 0;
-    IsStructRequiringStackAllocRetBuf->Add(key, value);
-    DEBUG_REC(dmpIsStructRequiringStackAllocRetBuf(key, value));
-}
-void MethodContext::dmpIsStructRequiringStackAllocRetBuf(DWORDLONG key, DWORD value)
-{
-    printf("IsStructRequiringStackAllocRetBuf key cls-%016llX, value res-%u", key, value);
-}
-bool MethodContext::repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
-{
-    DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(IsStructRequiringStackAllocRetBuf, key, ": key %016llX", key);
-    DWORD value = IsStructRequiringStackAllocRetBuf->Get(key);
-    DEBUG_REP(dmpIsStructRequiringStackAllocRetBuf(key, value));
-    return value != 0;
-}
-
 void MethodContext::recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result)
 {
     if (GetClassSize == nullptr)
@@ -6606,6 +6583,41 @@ bool MethodContext::repGetTailCallHelpers(
     pResult->hCallTarget = (CORINFO_METHOD_HANDLE)value.hCallTarget;
     pResult->hDispatcher = (CORINFO_METHOD_HANDLE)value.hDispatcher;
     return true;
+}
+
+void MethodContext::recUpdateEntryPointForTailCall(
+    const CORINFO_CONST_LOOKUP& origEntryPoint,
+    const CORINFO_CONST_LOOKUP& newEntryPoint)
+{
+    if (UpdateEntryPointForTailCall == nullptr)
+        UpdateEntryPointForTailCall = new LightWeightMap<Agnostic_CORINFO_CONST_LOOKUP, Agnostic_CORINFO_CONST_LOOKUP>();
+
+    Agnostic_CORINFO_CONST_LOOKUP key = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&origEntryPoint);
+    Agnostic_CORINFO_CONST_LOOKUP value = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&newEntryPoint);
+    UpdateEntryPointForTailCall->Add(key, value);
+    DEBUG_REC(dmpUpdateEntryPointForTailCall(key, value));
+}
+
+void MethodContext::dmpUpdateEntryPointForTailCall(
+    const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint,
+    const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint)
+{
+    printf("UpdateEntryPointForTailcall orig=%s new=%s",
+        SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(origEntryPoint).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(newEntryPoint).c_str());
+}
+
+void MethodContext::repUpdateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
+{
+    AssertMapExistsNoMessage(UpdateEntryPointForTailCall);
+
+    Agnostic_CORINFO_CONST_LOOKUP key = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(entryPoint);
+    AssertKeyExistsNoMessage(UpdateEntryPointForTailCall, key);
+
+    Agnostic_CORINFO_CONST_LOOKUP value = UpdateEntryPointForTailCall->Get(key);
+    DEBUG_REP(dmpUpdateEntryPointForTailCall(key, value));
+
+    *entryPoint = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value);
 }
 
 void MethodContext::recGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod, mdMethodDef result)

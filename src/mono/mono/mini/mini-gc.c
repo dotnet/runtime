@@ -1698,7 +1698,7 @@ process_variables (MonoCompile *cfg)
 			is_this = TRUE;
 		}
 
-		byref = t->byref;
+		byref = m_type_is_byref (t);
 
 		if (ins->opcode == OP_REGVAR) {
 			int hreg;
@@ -1831,7 +1831,7 @@ process_variables (MonoCompile *cfg)
 			/* Vret addr etc. */
 			continue;
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			if (is_arg) {
 				set_slot_everywhere (gcfg, pos, SLOT_PIN);
 			} else {
@@ -1865,7 +1865,7 @@ process_variables (MonoCompile *cfg)
 			set_slot_everywhere (gcfg, pos, SLOT_NOREF);
 			if (cfg->verbose_level > 1)
 				printf ("\tnoref%s at %s0x%x(fp) (R%d, slot = %d): %s\n", (is_arg ? " arg" : ""), ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
-			if (!t->byref && sizeof (host_mgreg_t) == 4 && (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_R8)) {
+			if (!m_type_is_byref (t) && sizeof (host_mgreg_t) == 4 && (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_R8)) {
 				set_slot_everywhere (gcfg, pos + 1, SLOT_NOREF);
 				if (cfg->verbose_level > 1)
 					printf ("\tnoref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)(ins->inst_offset + 4) : (int)ins->inst_offset + 4, vmv->vreg, pos + 1, mono_type_full_name (ins->inst_vtype));

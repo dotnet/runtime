@@ -30,20 +30,7 @@ typedef struct MonoLookupPInvokeStatus {
 } MonoLookupPInvokeStatus;
 
 gpointer
-mono_lookup_pinvoke_qcall_internal (MonoMethod *method, MonoLookupPInvokeStatus *error);
-
-typedef struct MonoQCallDef
-{
-    const char *class_name;
-    const char *namespace_name;
-    const void **functions;
-} MonoQCallDef;
-
-typedef struct MonoQCallFunc {
-    intptr_t        flags; //legal values (0x01 - end of array mareker, 0x08 - qcall)
-    void           *implementation;
-    const char     *method_name;
-} MonoQCallFunc;
+mono_lookup_pinvoke_qcall_internal (const char *name);
 
 void
 mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn);

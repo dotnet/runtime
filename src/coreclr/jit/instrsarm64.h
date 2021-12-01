@@ -1563,10 +1563,13 @@ INST1(uxth,        "uxth",         0,      IF_DR_2H,  0x53003C00)
 INST1(nop,         "nop",          0,      IF_SN_0A,  0xD503201F)
                                    //  nop                          SN_0A  1101010100000011 0010000000011111   D503 201F
 
-INST1(bkpt,        "bkpt",         0,      IF_SN_0A,  0xD43E0000)
-                                   //  brpt                         SN_0A  1101010000111110 0000000000000000   D43E 0000   0xF000
+INST1(yield,       "yield",        0,      IF_SN_0A,  0xD503203F)
+                                   //  yield                        SN_0A  1101010100000011 0010000000111111   D503 203F
 
-INST1(brk,         "brk",          0,      IF_SI_0A,  0xD4200000)
+INST1(brk_windows, "brk_windows",  0,      IF_SI_0A,  0xD43E0000)
+                                   //  brk (windows)                SI_0A  1101010000111110 0000000000000000   D43E 0000   0xF000
+
+INST1(brk_unix,    "brk_unix",     0,      IF_SI_0A,  0xD4200000)
                                    //  brk     imm16                SI_0A  11010100001iiiii iiiiiiiiiii00000   D420 0000   imm16
 
 INST1(dsb,         "dsb",          0,      IF_SI_0B,  0xD503309F)
@@ -1971,6 +1974,10 @@ INST1(tbx_3regs,   "tbx",          0,      IF_DV_3C,  0x0E005000)
 INST1(tbx_4regs,   "tbx",          0,      IF_DV_3C,  0x0E007000)
                                    //  tbx    Vd,{Vn,Vn+1,Vn+2,Vn+3},Vm DV_3C  0Q001110000mmmmm 011100nnnnnddddd   0E00 7000   Vd,Vn,Vm   (vector)
 
+#if FEATURE_LOOP_ALIGN
+INST1(align,       "align",        0,      IF_SN_0A,  BAD_CODE)
+                                   //  align                          SN_0A
+#endif
 // clang-format on
 
 /*****************************************************************************/

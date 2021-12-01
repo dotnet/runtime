@@ -109,6 +109,7 @@
       System.Runtime.Serialization.Xml;
       System.Security.AccessControl;
       System.Security.Claims;
+      System.Security.Cryptography;
       System.Security.Cryptography.Algorithms;
       System.Security.Cryptography.Cng;
       System.Security.Cryptography.Csp;

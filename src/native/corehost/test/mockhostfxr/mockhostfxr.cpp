@@ -18,9 +18,9 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_startupinfo(const int argc, const p
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_startupinfo"));
 
-    const pal::string_t dotnet_folder = get_directory(dotnet_root);
+    const pal::string_t dotnet_folder = get_filename(dotnet_root);
 
-    if (pal::strcmp(dotnet_folder.c_str(), _X("hostfxrFrameworkMissingFailure")))
+    if (pal::strcmp(dotnet_folder.c_str(), _X("mockhostfxrFrameworkMissingFailure")) == 0)
     {
         return StatusCode::FrameworkMissingFailure;
     }
@@ -38,9 +38,9 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, 
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_bundle_startupinfo"));
 
-    const pal::string_t dotnet_folder = get_directory(dotnet_root);
+    const pal::string_t dotnet_folder = get_filename(dotnet_root);
 
-    if (pal::strcmp(dotnet_folder.c_str(), _X("mockhostfxrBundleVersionFailure")))
+    if (pal::strcmp(dotnet_folder.c_str(), _X("mockhostfxrBundleVersionFailure")) == 0)
     {
         trace::error(_X("Failure processing application bundle."));
         trace::error(_X("Bundle header version compatibility check failed."));

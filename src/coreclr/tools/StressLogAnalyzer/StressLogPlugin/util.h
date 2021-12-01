@@ -19,11 +19,11 @@ typedef void* CRITSEC_COOKIE;
 // Unix L"" is UTF32, and on windows it's UTF16.  Because of built-in assumptions on the size
 // of string literals, it's important to match behaviour between Unix and Windows.  Unix will be defined
 // as u"" (char16_t)
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 #define W(str)  u##str
-#else // PLATFORM_UNIX
+#else // TARGET_UNIX
 #define W(str)  L##str
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
 //*****************************************************************************
 //

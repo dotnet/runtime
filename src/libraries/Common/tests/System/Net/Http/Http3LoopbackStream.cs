@@ -359,6 +359,54 @@ namespace System.Net.Test.Common
 
         public async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
         {
+            bool readCanceled = false;
+            bool writeCanceled = false;
+
+            async Task WaitForReadCancellation()
+            {
+                try
+                {
+                    if (ignoreIncomingData)
+                    {
+                        await DrainResponseData();
+                    }
+                    else
+                    {
+                        int bytesRead = await _stream.ReadAsync(new byte[1]);
+                        if (bytesRead != 0)
+                        {
+                            throw new Exception($"Unexpected data received while waiting for client cancllation.");
+                        }
+                    }
+                }
+                catch (QuicStreamAbortedException ex) when (ex.ErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
+                {
+                    readCanceled = true;
+                }
+            }
+
+            async Task WaitForWriteCancellation()
+            {
+                try
+                {
+                    await _stream.WaitForWriteCompletionAsync();
+                }
+                catch (QuicStreamAbortedException ex) when (ex.ErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
+                {
+                    writeCanceled = true;
+                }
+            }
+
+            await Task.WhenAll(WaitForReadCancellation(), WaitForWriteCancellation());
+
+            if (!readCanceled && !writeCanceled)
+            {
+                throw new Exception("Both read and write completed successfully; expected clien cancellation");
+            }
+        }
+
+        private async Task DrainResponseData()
+        {
             while (true)
             {
                 (long? frameType, _) = await ReadFrameAsync().ConfigureAwait(false);
@@ -368,11 +416,10 @@ namespace System.Net.Test.Common
                     case null:
                         // end of stream reached.
                         return;
-                    case DataFrame when ignoreIncomingData == true:
+                    case DataFrame:
                         break;
                     default:
-                        Debug.Fail("Unexpected frame type while waiting for client cancellation.");
-                        throw new Exception();
+                        throw new Exception($"Unexpected frame type {frameType} while draining response data.");
                 }
             }
         }

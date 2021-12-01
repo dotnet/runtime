@@ -298,9 +298,9 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
             {
                 GenTreeBoundsChk* check = tree->gtNext->AsBoundsChk();
 
-                if ((check->gtArrLen == tree) && check->gtIndex->IsCnsIntOrI())
+                if ((check->GetArrayLength() == tree) && check->GetIndex()->IsCnsIntOrI())
                 {
-                    ssize_t checkConstVal = check->gtIndex->AsIntCon()->IconValue();
+                    ssize_t checkConstVal = check->GetIndex()->AsIntCon()->IconValue();
                     if ((checkConstVal >= 0) && (checkConstVal < actualConstVal))
                     {
                         GenTree* comma = check->gtGetParent(nullptr);
@@ -700,7 +700,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
     assert(fgStmtListThreaded);
     while (canRemoveNullCheck && (currentTree != tree) && (currentTree != nullptr))
     {
-        if ((*nullCheckParent == nullptr) && (nullCheckTree->gtGetChildPointer(currentTree) != nullptr))
+        if ((*nullCheckParent == nullptr) && currentTree->TryGetUse(nullCheckTree))
         {
             *nullCheckParent = currentTree;
         }

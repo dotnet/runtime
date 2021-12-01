@@ -101,13 +101,14 @@ void Compiler::fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt)
 // Arguments:
 //   block - the block into which 'tree' will be inserted;
 //   tree  - the tree to be inserted.
+//   di    - the debug info to use for the new statement.
 //
 // Return Value:
 //    The new created statement with `tree` inserted into `block`.
 //
-Statement* Compiler::fgNewStmtAtBeg(BasicBlock* block, GenTree* tree)
+Statement* Compiler::fgNewStmtAtBeg(BasicBlock* block, GenTree* tree, const DebugInfo& di)
 {
-    Statement* stmt = gtNewStmt(tree);
+    Statement* stmt = gtNewStmt(tree, di);
     fgInsertStmtAtBeg(block, stmt);
     return stmt;
 }
@@ -153,6 +154,7 @@ void Compiler::fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt)
 // Arguments:
 //   block - the block into which 'stmt' will be inserted;
 //   tree  - the tree to be inserted.
+//   di    - the debug info to use for the new statement.
 //
 // Return Value:
 //    The new created statement with `tree` inserted into `block`.
@@ -160,9 +162,9 @@ void Compiler::fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt)
 // Note:
 //   If the block can be a conditional block, use fgNewStmtNearEnd.
 //
-Statement* Compiler::fgNewStmtAtEnd(BasicBlock* block, GenTree* tree)
+Statement* Compiler::fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, const DebugInfo& di)
 {
-    Statement* stmt = gtNewStmt(tree);
+    Statement* stmt = gtNewStmt(tree, di);
     fgInsertStmtAtEnd(block, stmt);
     return stmt;
 }
@@ -241,13 +243,14 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
 // Arguments:
 //   block - the block into which 'stmt' will be inserted;
 //   tree  - the tree to be inserted.
+//   di    - the debug info to use for the new statement.
 //
 // Return Value:
 //    The new created statement with `tree` inserted into `block`.
 //
-Statement* Compiler::fgNewStmtNearEnd(BasicBlock* block, GenTree* tree)
+Statement* Compiler::fgNewStmtNearEnd(BasicBlock* block, GenTree* tree, const DebugInfo& di)
 {
-    Statement* stmt = gtNewStmt(tree);
+    Statement* stmt = gtNewStmt(tree, di);
     fgInsertStmtNearEnd(block, stmt);
     return stmt;
 }
@@ -379,9 +382,9 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
  *
  *  Create a new statement from tree and wire the links up.
  */
-Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFSETX offs)
+Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di)
 {
-    Statement* stmt = gtNewStmt(tree, offs);
+    Statement* stmt = gtNewStmt(tree, di);
 
     if (fgStmtListThreaded)
     {
@@ -401,17 +404,17 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFS
 
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree)
 {
-    return fgNewStmtFromTree(tree, nullptr, BAD_IL_OFFSET);
+    return fgNewStmtFromTree(tree, nullptr, DebugInfo());
 }
 
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block)
 {
-    return fgNewStmtFromTree(tree, block, BAD_IL_OFFSET);
+    return fgNewStmtFromTree(tree, block, DebugInfo());
 }
 
-Statement* Compiler::fgNewStmtFromTree(GenTree* tree, IL_OFFSETX offs)
+Statement* Compiler::fgNewStmtFromTree(GenTree* tree, const DebugInfo& di)
 {
-    return fgNewStmtFromTree(tree, nullptr, offs);
+    return fgNewStmtFromTree(tree, nullptr, di);
 }
 
 //------------------------------------------------------------------------
@@ -455,7 +458,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
     }
 #endif // DEBUG
 
-    if (opts.compDbgCode && stmt->GetPrevStmt() != stmt && stmt->GetILOffsetX() != BAD_IL_OFFSET)
+    if (opts.compDbgCode && stmt->GetPrevStmt() != stmt && stmt->GetDebugInfo().IsValid())
     {
         /* TODO: For debuggable code, should we remove significant
            statement boundaries. Or should we leave a GT_NO_OP in its place? */

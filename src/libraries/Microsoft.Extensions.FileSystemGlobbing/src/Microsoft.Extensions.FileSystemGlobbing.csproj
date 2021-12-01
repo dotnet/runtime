@@ -2,7 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- Use targeting pack references instead of granular ones in the project file. -->
+    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <PackageDescription>File system globbing to find files matching a specified pattern.</PackageDescription>
   </PropertyGroup>
 
@@ -10,10 +13,5 @@
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Runtime" />
-  </ItemGroup>
+
 </Project>

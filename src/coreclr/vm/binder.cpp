@@ -8,6 +8,7 @@
 
 #include "binder.h"
 #include "ecall.h"
+#include "qcall.h"
 
 #include "field.h"
 #include "excep.h"
@@ -532,7 +533,7 @@ void CoreLibBinder::Check()
 
     MethodTable * pMT = NULL;
 
-    for (unsigned i = 0; i < NumItems(OffsetsAndSizes); i++)
+    for (unsigned i = 0; i < ARRAY_SIZE(OffsetsAndSizes); i++)
     {
         const OffsetAndSizeCheck * p = OffsetsAndSizes + i;
 
@@ -821,11 +822,11 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
                 }
                 else if (argType == ELEMENT_TYPE_I4)
                 {
-                    bSigError = !IsStrInArray(pUnmanagedArg, len, aInt32Type, NumItems(aInt32Type));
+                    bSigError = !IsStrInArray(pUnmanagedArg, len, aInt32Type, ARRAY_SIZE(aInt32Type));
                 }
                 else if (argType == ELEMENT_TYPE_U4)
                 {
-                    bSigError = !IsStrInArray(pUnmanagedArg, len, aUInt32Type, NumItems(aUInt32Type));
+                    bSigError = !IsStrInArray(pUnmanagedArg, len, aUInt32Type, ARRAY_SIZE(aUInt32Type));
                 }
                 else if (argType == ELEMENT_TYPE_VALUETYPE)
                 {
@@ -834,7 +835,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
                 }
                 else
                 {
-                    bSigError = IsStrInArray(pUnmanagedArg, len, aType, NumItems(aType));
+                    bSigError = IsStrInArray(pUnmanagedArg, len, aType, ARRAY_SIZE(aType));
                 }
                 if (bSigError)
                 {
@@ -1030,19 +1031,25 @@ void CoreLibBinder::CheckExtended()
         else
         if (pMD->IsNDirect())
         {
-            NDirect::PopulateNDirectMethodDesc((NDirectMethodDesc *)pMD);
+            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
+            NDirect::PopulateNDirectMethodDesc(pNMD);
 
-            if (pMD->IsQCall())
+            if (pNMD->IsQCall() && QCallResolveDllImport(pNMD->GetEntrypointName()) == nullptr)
             {
-                id = ((NDirectMethodDesc *)pMD)->GetECallID();
-                if (id == 0) {
-                    id = ECall::GetIDForMethod(pMD);
+                LPCUTF8 pszClassName;
+                LPCUTF8 pszNameSpace;
+                if (FAILED(pInternalImport->GetNameOfTypeDef(tdClass, &pszClassName, &pszNameSpace)))
+                {
+                    pszClassName = pszNameSpace = "Invalid TypeDef record";
                 }
+                LPCUTF8 pszName;
+                if (FAILED(pInternalImport->GetNameOfMethodDef(td, &pszName)))
+                {
+                    pszName = "Invalid method name";
+                }
+                printf("CheckExtended: Unable to find qcall implementation: %s.%s::%s (EntryPoint name: %s)\n", pszNameSpace, pszClassName, pszName, pNMD->GetEntrypointName());
             }
-            else
-            {
-                continue;
-            }
+            continue;
         }
         else
         {

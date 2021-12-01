@@ -283,7 +283,7 @@ _mono_type_get_assembly_name (MonoClass *klass, GString *str)
 static void
 mono_type_name_check_byref (MonoType *type, GString *str)
 {
-	if (type->byref)
+	if (m_type_is_byref (type))
 		g_string_append_c (str, '&');
 }
 
@@ -575,9 +575,9 @@ mono_type_get_name (MonoType *type)
 MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !type->byref)
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !m_type_is_byref (type))
 		return mono_class_enum_basetype_internal (type->data.klass);
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !type->byref)
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
 		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
 	return type;
 }
@@ -705,10 +705,10 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		/*
 		 * Note that the VAR/MVAR cases are different from the rest.  The other cases duplicate @type,
 		 * while the VAR/MVAR duplicates a type from the context.  So, we need to ensure that the
-		 * ->byref and ->attrs from @type are propagated to the returned type.
+		 * ->byref__ and ->attrs from @type are propagated to the returned type.
 		 */
 		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
-		nt->byref = type->byref;
+		nt->byref__ = type->byref__;
 		nt->attrs = type->attrs;
 		return nt;
 	}
@@ -750,7 +750,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 #endif
 
 		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
-		nt->byref = type->byref || inst->type_argv[num]->byref;
+		nt->byref__ = type->byref__ || inst->type_argv[num]->byref__;
 		nt->attrs = type->attrs;
 #ifdef DEBUG_INFLATE_CMODS
 		if (append_cmods) {
@@ -1691,7 +1691,7 @@ MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type)
 {
 	/* When we do generic sharing we let type variables stand for reference/primitive types. */
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
+	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
 		(!type->data.generic_param->gshared_constraint || type->data.generic_param->gshared_constraint->type == MONO_TYPE_OBJECT))
 		return mono_get_object_type ();
 	return type;
@@ -3782,8 +3782,8 @@ mono_type_get_underlying_type_ignore_byref (MonoType *type)
 gboolean
 mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment)
 {
-	g_assert (type->byref);
-	g_assert (ctype->byref);
+	g_assert (m_type_is_byref (type));
+	g_assert (m_type_is_byref (ctype));
 	MonoType *t = mono_type_get_underlying_type_ignore_byref (type);
 	MonoType *ot = mono_type_get_underlying_type_ignore_byref (ctype);
 
@@ -5435,8 +5435,8 @@ mono_field_get_offset (MonoClassField *field)
 	return field->offset;
 }
 
-static const char *
-mono_field_get_rva (MonoClassField *field)
+const char *
+mono_field_get_rva (MonoClassField *field, int swizzle)
 {
 	guint32 rva;
 	int field_index;
@@ -5445,21 +5445,59 @@ mono_field_get_rva (MonoClassField *field)
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA);
 
-	def_values = mono_class_get_field_def_values (klass);
+	def_values = mono_class_get_field_def_values_with_swizzle (klass, swizzle);
 	if (!def_values) {
 		def_values = (MonoFieldDefaultValue *)mono_class_alloc0 (klass, sizeof (MonoFieldDefaultValue) * mono_class_get_field_count (klass));
 
-		mono_class_set_field_def_values (klass, def_values);
+		mono_class_set_field_def_values_with_swizzle (klass, def_values, swizzle);
 	}
 
 	field_index = mono_field_get_index (field);
 		
-	if (!def_values [field_index].data && !image_is_dynamic (m_class_get_image (klass))) {
-		int first_field_idx = mono_class_get_first_field_idx (klass);
-		mono_metadata_field_info (m_class_get_image (field->parent), first_field_idx + field_index, NULL, &rva, NULL);
-		if (!rva)
-			g_warning ("field %s in %s should have RVA data, but hasn't", mono_field_get_name (field), m_class_get_name (field->parent));
-		def_values [field_index].data = mono_image_rva_map (m_class_get_image (field->parent), rva);
+	if (!def_values [field_index].data) {
+		const char *rvaData;
+
+		if (!image_is_dynamic (m_class_get_image (klass))) {
+			int first_field_idx = mono_class_get_first_field_idx (klass);
+			mono_metadata_field_info (m_class_get_image (field->parent), first_field_idx + field_index, NULL, &rva, NULL);
+			if (!rva)
+				g_warning ("field %s in %s should have RVA data, but hasn't", mono_field_get_name (field), m_class_get_name (field->parent));
+
+			rvaData = mono_image_rva_map (m_class_get_image (field->parent), rva);
+		} else {
+			rvaData = mono_field_get_data (field);
+		}
+
+		if (rvaData == NULL)
+			return NULL;
+
+		if (swizzle != 1) {
+			int dummy;
+			int dataSizeInBytes =  mono_type_size (field->type, &dummy);
+			char *swizzledRvaData = mono_class_alloc0 (klass, dataSizeInBytes);
+
+#define SWAP(n) {								\
+	guint ## n *data = (guint ## n *) swizzledRvaData; \
+	guint ## n *src = (guint ## n *) rvaData; 				\
+	int i,									\
+	    nEnt = (dataSizeInBytes / sizeof(guint ## n));					\
+										\
+	for (i = 0; i < nEnt; i++) {						\
+		data[i] = read ## n (&src[i]);					\
+	} 									\
+}
+			if (swizzle == 2) {
+				SWAP (16);
+			} else if (swizzle == 4) {
+				SWAP (32);
+			} else {
+				SWAP (64);
+			}
+#undef SWAP
+			def_values [field_index].data = swizzledRvaData;
+		} else {
+			def_values [field_index].data = rvaData;
+		}
 	}
 
 	return def_values [field_index].data;
@@ -5480,7 +5518,7 @@ mono_field_get_data (MonoClassField *field)
 
 		return mono_class_get_field_default_value (field, &def_type);
 	} else if (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
-		return mono_field_get_rva (field);
+		return mono_field_get_rva (field, 1);
 	} else {
 		return NULL;
 	}

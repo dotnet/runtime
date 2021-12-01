@@ -277,7 +277,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [Collection(nameof(NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public class SelectTest_NonParallel
     {
         [OuterLoop]

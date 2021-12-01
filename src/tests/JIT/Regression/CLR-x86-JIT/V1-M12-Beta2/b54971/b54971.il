@@ -10,6 +10,7 @@
 .assembly bug 
 {
 }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class value private auto ansi sealed VT extends [mscorlib]System.ValueType
@@ -17,6 +18,9 @@
   	.field public int32 m_n
     .method private hidebysig static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  8
 		.locals (value class JitTest.VT src, value class JitTest.VT dst)

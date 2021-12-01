@@ -658,7 +658,7 @@ emit_jit_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 static gboolean
 byref_arg_is_reference (MonoType *t)
 {
-	g_assert (t->byref);
+	g_assert (m_type_is_byref (t));
 
 	return mini_type_is_reference (m_class_get_byval_arg (mono_class_from_mono_type_internal (t)));
 }
@@ -1019,7 +1019,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		gboolean is_enter = FALSE;
 		gboolean is_v4 = FALSE;
 
-		if (!strcmp (cmethod->name, "Enter") && fsig->param_count == 2 && fsig->params [1]->byref) {
+		if (!strcmp (cmethod->name, "Enter") && fsig->param_count == 2 && m_type_is_byref (fsig->params [1])) {
 			is_enter = TRUE;
 			is_v4 = TRUE;
 		}
@@ -1058,7 +1058,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 		} else if (strcmp (cmethod->name, "MemoryBarrier") == 0 && fsig->param_count == 0) {
 			return mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
-		} else if (!strcmp (cmethod->name, "VolatileRead") && fsig->param_count == 1 && fsig->params [0]->byref) {
+		} else if (!strcmp (cmethod->name, "VolatileRead") && fsig->param_count == 1 && m_type_is_byref (fsig->params [0])) {
 			guint32 opcode = 0;
 			gboolean is_ref = byref_arg_is_reference (fsig->params [0]);
 
@@ -1132,7 +1132,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 				return ins;
 			}
-		} else if (!strcmp (cmethod->name, "VolatileWrite") && fsig->param_count == 2 && fsig->params [0]->byref) {
+		} else if (!strcmp (cmethod->name, "VolatileWrite") && fsig->param_count == 2 && m_type_is_byref (fsig->params [0])) {
 			guint32 opcode = 0;
 			gboolean is_ref = byref_arg_is_reference (fsig->params [0]);
 
@@ -1295,7 +1295,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 		}
-		else if (strcmp (cmethod->name, "Exchange") == 0 && fsig->param_count == 2 && fsig->params [0]->byref) {
+		else if (strcmp (cmethod->name, "Exchange") == 0 && fsig->param_count == 2 && m_type_is_byref (fsig->params [0])) {
 			MonoInst *f2i = NULL, *i2f;
 			guint32 opcode, f2i_opcode, i2f_opcode;
 			gboolean is_ref = byref_arg_is_reference (fsig->params [0]);
@@ -1545,7 +1545,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			gboolean is_ref;
 			gboolean is_float = t->type == MONO_TYPE_R4 || t->type == MONO_TYPE_R8;
 
-			g_assert (t->byref);
+			g_assert (m_type_is_byref (t));
 			is_ref = byref_arg_is_reference (t);
 			if (t->type == MONO_TYPE_I1)
 				opcode = OP_ATOMIC_LOAD_I1;
@@ -1626,7 +1626,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoType *t = fsig->params [0];
 			gboolean is_ref;
 
-			g_assert (t->byref);
+			g_assert (m_type_is_byref (t));
 			is_ref = byref_arg_is_reference (t);
 			if (t->type == MONO_TYPE_I1)
 				opcode = OP_ATOMIC_STORE_I1;
@@ -1894,11 +1894,36 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_ADD_INS (cfg->cbb, ins);
 		}
 		return ins;
-	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "MonoMac") ||
-	            !strcmp (cmethod_klass_image->assembly->aname.name, "monotouch")) &&
-				!strcmp (cmethod_klass_name_space, "XamCore.ObjCRuntime") &&
-				!strcmp (cmethod_klass_name, "Selector")) ||
-			   ((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
+	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "get_IsValueType") &&
+			   args [0]->klass == mono_defaults.runtimetype_class) {
+		MonoClass *k1 = get_class_from_ldtoken_ins (args [0]);
+		if (k1) {
+			MonoType *t1 = m_class_get_byval_arg (k1);
+			MonoType *constraint1 = NULL;
+
+			/* Common case in gshared BCL code: t1 is a gshared type like T_INT */
+			if (mono_class_is_gparam (k1)) {
+				MonoGenericParam *gparam = t1->data.generic_param;
+				constraint1 = gparam->gshared_constraint;
+				if (constraint1) {
+					if (constraint1->type == MONO_TYPE_OBJECT) {
+						if (cfg->verbose_level > 2)
+							printf ("-> false\n");
+						EMIT_NEW_ICONST (cfg, ins, 0);
+						return ins;
+					} else if (MONO_TYPE_IS_PRIMITIVE (constraint1)) {
+						if (cfg->verbose_level > 2)
+							printf ("-> true\n");
+						EMIT_NEW_ICONST (cfg, ins, 1);
+						return ins;
+					}
+				}
+			}
+		}
+		return NULL;
+	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.TVOS") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.MacCatalyst") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac")) &&
 				!strcmp (cmethod_klass_name_space, "ObjCRuntime") &&
 				!strcmp (cmethod_klass_name, "Selector"))

@@ -1,12 +1,10 @@
-# The purpose of this pipeline is to exercise local developer workflow in the consolidated
-# runtime repo. In particular, it is supposed to run the root "build" script just like any
-# normal developer normally would and monitor regressions w.r.t. this fundamental scenario.
+# The purpose of this pipeline is to run the trimming tests. These tests ensure trimming is
+# done correctly and also that our APIs are trimming safe.
 
 trigger:
   batch: true
   branches:
     include:
-    - main
     - release/*.*
   paths:
     include:
@@ -22,6 +20,14 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
+  
+schedules:
+  - cron: "0 7,19 * * *" # run at 7:00 and 19:00 (UTC) which is 23:00 and 11:00 (PST).
+    displayName: Runtime-linker-tests default schedule
+    branches:
+      include:
+      - main
+    always: false # run only if there were changes since the last successful scheduled run.
 
 pr:
   branches:

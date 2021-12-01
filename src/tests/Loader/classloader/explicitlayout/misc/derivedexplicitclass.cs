@@ -18,7 +18,7 @@ public class Sub : Base
   [FieldOffset(8)]public object Fld1;
 }
 
-public class Test
+public class Test_derivedexplicitclass
 {
 	public static int Main()
 	{

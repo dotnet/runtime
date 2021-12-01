@@ -128,8 +128,12 @@ namespace System.Security.Principal
                 byte[] sourceName = { (byte)'C', (byte)'L', (byte)'R', (byte)0 };
 
                 TOKEN_SOURCE sourceContext;
-                if (!Interop.Advapi32.AllocateLocallyUniqueId(out sourceContext.SourceIdentifier))
-                    throw new SecurityException(new Win32Exception().Message);
+                unsafe
+                {
+                    if (!Interop.Advapi32.AllocateLocallyUniqueId(&sourceContext.SourceIdentifier))
+                        throw new SecurityException(new Win32Exception().Message);
+                }
+
                 sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
                 Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
 

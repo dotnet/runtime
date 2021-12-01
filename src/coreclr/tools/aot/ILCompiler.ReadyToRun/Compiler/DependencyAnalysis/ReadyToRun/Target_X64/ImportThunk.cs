@@ -37,6 +37,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     break;
 
+                case Kind.DelayLoadHelperWithExistingIndirectionCell:
+                    // Indirection cell is already in rax which will be first arg. Used for fast tailcalls.
+
+                    if (!relocsOnly)
+                    {
+                        // push table index
+                        instructionEncoder.EmitPUSH((sbyte)_containingImportSection.IndexFromBeginningOfArray);
+                    }
+
+                    // push [module]
+                    instructionEncoder.EmitPUSH(factory.ModuleImport);
+
+                    break;
+
                 case Kind.VirtualStubDispatch:
                     // mov rax, r11 - this is the most general case as the value of R11 also propagates
                     // to the new method after the indirection cell has been updated so the cell content

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const double roundDoubleDelta = 0.0006283185307180;
         private const double roundDoubleExpectedResult = 2;
-
-        [Benchmark(InnerIterationCount = RoundDoubleIterations)]
-        public static void RoundDoubleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        RoundDoubleTest();
-                    }
-                }
-            }
-        }
 
         public static void RoundDoubleTest()
         {

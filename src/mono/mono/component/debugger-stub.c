@@ -204,7 +204,7 @@ stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_
 {
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 #include <emscripten.h>
 
@@ -229,6 +229,4 @@ mono_wasm_send_dbg_command (int id, int command_set, int command, guint8* data, 
 	return false;
 }
 
-#endif // HOST_WASM
-
-
+#endif // HOST_BROWSER
