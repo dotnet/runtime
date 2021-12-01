@@ -4,8 +4,6 @@
 using System.Runtime.InteropServices;
 using System.Security;
 
-using Activeds = Interop.Activeds;
-
 namespace System.DirectoryServices.Interop
 {
 
@@ -34,7 +32,7 @@ namespace System.DirectoryServices.Interop
         {
             try
             {
-                return Activeds.ADsOpenObject(path, userName, password, flags, ref iid, out ppObject);
+                return global::Interop.Activeds.ADsOpenObject(path, userName, password, flags, ref iid, out ppObject);
             }
             catch (EntryPointNotFoundException)
             {

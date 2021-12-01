@@ -7,8 +7,6 @@ using System.Diagnostics;
 
 using Microsoft.Win32.SafeHandles;
 
-using Kernel32 = Interop.Kernel32;
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     public abstract class DirectoryServer : IDisposable
@@ -298,7 +296,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal void CheckConsistencyHelper(IntPtr dsHandle, SafeLibraryHandle libHandle)
         {
             // call DsReplicaConsistencyCheck
-            IntPtr functionPtr = Kernel32.GetProcAddress(libHandle, "DsReplicaConsistencyCheck");
+            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaConsistencyCheck");
             if (functionPtr == (IntPtr)0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -320,11 +318,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // first try to use the DsReplicaGetInfo2W API which does not exist on win2k machine
             // call DsReplicaGetInfo2W
-            functionPtr = Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfo2W");
+            functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfo2W");
             if (functionPtr == (IntPtr)0)
             {
                 // a win2k machine which does not have it.
-                functionPtr = Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfoW");
+                functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfoW");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -344,7 +342,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (needToTryAgain && result == DS_REPL_NOTSUPPORTED)
             {
                 // this is the case that client is xp/win2k3, dc is win2k
-                functionPtr = Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfoW");
+                functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaGetInfoW");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -645,7 +643,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // we want to return the dn instead of DNS guid
             // call DsReplicaSyncAllW
-            IntPtr functionPtr = Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
+            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
             if (functionPtr == (IntPtr)0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -676,7 +674,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // release the memory
                 if (errorInfo != (IntPtr)0)
-                    Kernel32.LocalFree(errorInfo);
+                    global::Interop.Kernel32.LocalFree(errorInfo);
             }
         }
 
@@ -685,7 +683,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (value != (IntPtr)0)
             {
                 // call DsReplicaFreeInfo
-                IntPtr functionPtr = Kernel32.GetProcAddress(libHandle, "DsReplicaFreeInfo");
+                IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaFreeInfo");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -725,7 +723,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // call DsReplicaSyncW
-                IntPtr functionPtr = Kernel32.GetProcAddress(libHandle, "DsReplicaSyncW");
+                IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncW");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());

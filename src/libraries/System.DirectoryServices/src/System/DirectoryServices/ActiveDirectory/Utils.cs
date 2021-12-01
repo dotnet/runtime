@@ -10,9 +10,6 @@ using System.Diagnostics;
 
 using Microsoft.Win32.SafeHandles;
 
-using Advapi32 = Interop.Advapi32;
-using Kernel32 = Interop.Kernel32;
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     internal struct Component
@@ -111,7 +108,7 @@ namespace System.DirectoryServices.ActiveDirectory
             Debug.Assert(distinguishedName != null);
 
             // call DsCrackNamesW
-            IntPtr functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
+            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
             if (functionPtr == (IntPtr)0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -167,7 +164,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (results != IntPtr.Zero)
                     {
                         // call DsFreeNameResultW
-                        functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                        functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                         if (functionPtr == (IntPtr)0)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -199,7 +196,7 @@ namespace System.DirectoryServices.ActiveDirectory
             Debug.Assert(dnsName != null);
 
             // call DsCrackNamesW
-            IntPtr functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
+            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
             if (functionPtr == (IntPtr)0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -235,7 +232,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (results != IntPtr.Zero)
                     {
                         // call DsFreeNameResultW
-                        functionPtr = Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                        functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                         if (functionPtr == (IntPtr)0)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -623,7 +620,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // create the credentials
             // call DsMakePasswordCredentialsW
-            IntPtr functionPtr = Kernel32.GetProcAddress(libHandle, "DsMakePasswordCredentialsW");
+            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsMakePasswordCredentialsW");
             if (functionPtr == (IntPtr)0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -648,7 +645,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (authIdentity != IntPtr.Zero)
             {
                 // call DsMakePasswordCredentialsW
-                IntPtr functionPtr = Kernel32.GetProcAddress(libHandle, "DsFreePasswordCredentials");
+                IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsFreePasswordCredentials");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -665,7 +662,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // call DsBindWithCred
             Debug.Assert((domainControllerName != null && domainName == null) || (domainName != null && domainControllerName == null));
-            IntPtr functionPtr = Kernel32.GetProcAddress(libHandle, "DsBindWithCredW");
+            IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsBindWithCredW");
             if (functionPtr == (IntPtr)0)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -686,7 +683,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (dsHandle != IntPtr.Zero)
             {
                 // call DsUnbind
-                IntPtr functionPtr = Kernel32.GetProcAddress(libHandle, "DsUnBindW");
+                IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(libHandle, "DsUnBindW");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -932,14 +929,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
             Utils.GetDomainAndUsername(context, out userName, out domainName);
 
-            int result = Advapi32.LogonUser(userName!, domainName, context.Password, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, ref hToken);
+            int result = global::Interop.Advapi32.LogonUser(userName!, domainName, context.Password, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, ref hToken);
             // check the result
             if (result == 0)
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
 
             try
             {
-                result = Advapi32.ImpersonateLoggedOnUser(hToken);
+                result = global::Interop.Advapi32.ImpersonateLoggedOnUser(hToken);
                 if (result == 0)
                 {
                     result = Marshal.GetLastWin32Error();
@@ -949,7 +946,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (hToken != (IntPtr)0)
-                    Kernel32.CloseHandle(hToken);
+                    global::Interop.Kernel32.CloseHandle(hToken);
             }
 
             return true;
@@ -957,7 +954,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static void ImpersonateAnonymous()
         {
-            IntPtr hThread = UnsafeNativeMethods.OpenThread(THREAD_ALL_ACCESS, false, Kernel32.GetCurrentThreadId());
+            IntPtr hThread = UnsafeNativeMethods.OpenThread(THREAD_ALL_ACCESS, false, global::Interop.Kernel32.GetCurrentThreadId());
             if (hThread == (IntPtr)0)
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
 
@@ -970,13 +967,13 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (hThread != (IntPtr)0)
-                    Kernel32.CloseHandle(hThread);
+                    global::Interop.Kernel32.CloseHandle(hThread);
             }
         }
 
         internal static void Revert()
         {
-            if (!Advapi32.RevertToSelf())
+            if (!global::Interop.Advapi32.RevertToSelf())
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }
@@ -1044,10 +1041,10 @@ namespace System.DirectoryServices.ActiveDirectory
             SafeLsaPolicyHandle handle;
             global::Interop.OBJECT_ATTRIBUTES objectAttribute = default;
 
-            uint result = Advapi32.LsaOpenPolicy(serverName, ref objectAttribute, (int)Advapi32.PolicyRights.POLICY_VIEW_LOCAL_INFORMATION, out handle);
+            uint result = global::Interop.Advapi32.LsaOpenPolicy(serverName, ref objectAttribute, (int)global::Interop.Advapi32.PolicyRights.POLICY_VIEW_LOCAL_INFORMATION, out handle);
             if (result != 0)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode((int)Advapi32.LsaNtStatusToWinError(result), serverName);
+                throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(result), serverName);
             }
 
             return handle;
@@ -2014,7 +2011,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // Does the user SID have the same domain as the machine SID?
                     bool sameDomain = false;
-                    bool success = Advapi32.EqualDomainSid(pCopyOfUserSid, pMachineDomainSid, ref sameDomain);
+                    bool success = global::Interop.Advapi32.EqualDomainSid(pCopyOfUserSid, pMachineDomainSid, ref sameDomain);
 
                     // Since both pCopyOfUserSid and pMachineDomainSid should always be account SIDs
                     Debug.Assert(success == true);
@@ -2052,8 +2049,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 int error = 0;
 
                 // Get the current thread's token
-                if (!Advapi32.OpenThreadToken(
-                                Kernel32.GetCurrentThread(),
+                if (!global::Interop.Advapi32.OpenThreadToken(
+                                global::Interop.Kernel32.GetCurrentThread(),
                                 TokenAccessLevels.Query, // TOKEN_QUERY
                                 true,
                                 out tokenHandle
@@ -2064,8 +2061,8 @@ namespace System.DirectoryServices.ActiveDirectory
                         Debug.Assert(tokenHandle.IsInvalid);
 
                         // Current thread doesn't have a token, try the process
-                        if (!Advapi32.OpenProcessToken(
-                                        Kernel32.GetCurrentProcess(),
+                        if (!global::Interop.Advapi32.OpenProcessToken(
+                                        global::Interop.Kernel32.GetCurrentProcess(),
                                         (int)TokenAccessLevels.Query,
                                         out tokenHandle
                                         ))
@@ -2086,9 +2083,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // Retrieve the user info from the current thread's token
                 // First, determine how big a buffer we need.
-                bool success = Advapi32.GetTokenInformation(
+                bool success = global::Interop.Advapi32.GetTokenInformation(
                                         tokenHandle.DangerousGetHandle(),
-                                        (uint)Advapi32.TOKEN_INFORMATION_CLASS.TokenUser,
+                                        (uint)global::Interop.Advapi32.TOKEN_INFORMATION_CLASS.TokenUser,
                                         IntPtr.Zero,
                                         0,
                                         out neededBufferSize);
@@ -2105,9 +2102,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 pBuffer = Marshal.AllocHGlobal((int)neededBufferSize);
 
                 // Load the user info into the buffer
-                success = Advapi32.GetTokenInformation(
+                success = global::Interop.Advapi32.GetTokenInformation(
                                         tokenHandle.DangerousGetHandle(),
-                                        (uint)Advapi32.TOKEN_INFORMATION_CLASS.TokenUser,
+                                        (uint)global::Interop.Advapi32.TOKEN_INFORMATION_CLASS.TokenUser,
                                         pBuffer,
                                         neededBufferSize,
                                         out neededBufferSize);
@@ -2123,12 +2120,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 global::Interop.TOKEN_USER tokenUser = (global::Interop.TOKEN_USER)Marshal.PtrToStructure(pBuffer, typeof(global::Interop.TOKEN_USER))!;
                 IntPtr pUserSid = tokenUser.sidAndAttributes.Sid;   // this is a reference into the NATIVE memory (into pBuffer)
 
-                Debug.Assert(Advapi32.IsValidSid(pUserSid));
+                Debug.Assert(global::Interop.Advapi32.IsValidSid(pUserSid));
 
                 // Now we make a copy of the SID to return
-                int userSidLength = Advapi32.GetLengthSid(pUserSid);
+                int userSidLength = global::Interop.Advapi32.GetLengthSid(pUserSid);
                 IntPtr pCopyOfUserSid = Marshal.AllocHGlobal(userSidLength);
-                success = Advapi32.CopySid(userSidLength, pCopyOfUserSid, pUserSid);
+                success = global::Interop.Advapi32.CopySid(userSidLength, pCopyOfUserSid, pUserSid);
                 if (!success)
                 {
                     int lastError = Marshal.GetLastWin32Error();
@@ -2156,38 +2153,38 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 global::Interop.OBJECT_ATTRIBUTES oa = default;
-                uint err = Advapi32.LsaOpenPolicy(
+                uint err = global::Interop.Advapi32.LsaOpenPolicy(
                                 SystemName: null,
                                 ref oa,
-                                (int)Advapi32.PolicyRights.POLICY_VIEW_LOCAL_INFORMATION,
+                                (int)global::Interop.Advapi32.PolicyRights.POLICY_VIEW_LOCAL_INFORMATION,
                                 out policyHandle);
 
                 if (err != 0)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.UnableToRetrievePolicy, Advapi32.LsaNtStatusToWinError(err)));
+                    throw new InvalidOperationException(SR.Format(SR.UnableToRetrievePolicy, global::Interop.Advapi32.LsaNtStatusToWinError(err)));
                 }
 
                 Debug.Assert(!policyHandle.IsInvalid);
-                err = Advapi32.LsaQueryInformationPolicy(
+                err = global::Interop.Advapi32.LsaQueryInformationPolicy(
                                 policyHandle.DangerousGetHandle(),
                                 5,              // PolicyAccountDomainInformation
                                 ref pBuffer);
 
                 if (err != 0)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.UnableToRetrievePolicy, Advapi32.LsaNtStatusToWinError(err)));
+                    throw new InvalidOperationException(SR.Format(SR.UnableToRetrievePolicy, global::Interop.Advapi32.LsaNtStatusToWinError(err)));
                 }
 
                 Debug.Assert(pBuffer != IntPtr.Zero);
                 POLICY_ACCOUNT_DOMAIN_INFO info = (POLICY_ACCOUNT_DOMAIN_INFO)
                                     Marshal.PtrToStructure(pBuffer, typeof(POLICY_ACCOUNT_DOMAIN_INFO))!;
 
-                Debug.Assert(Advapi32.IsValidSid(info.DomainSid));
+                Debug.Assert(global::Interop.Advapi32.IsValidSid(info.DomainSid));
 
                 // Now we make a copy of the SID to return
-                int sidLength = Advapi32.GetLengthSid(info.DomainSid);
+                int sidLength = global::Interop.Advapi32.GetLengthSid(info.DomainSid);
                 IntPtr pCopyOfSid = Marshal.AllocHGlobal(sidLength);
-                bool success = Advapi32.CopySid(sidLength, pCopyOfSid, info.DomainSid);
+                bool success = global::Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.DomainSid);
                 if (!success)
                 {
                     int lastError = Marshal.GetLastWin32Error();
@@ -2203,7 +2200,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     policyHandle.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
-                    Advapi32.LsaFreeMemory(pBuffer);
+                    global::Interop.Advapi32.LsaFreeMemory(pBuffer);
             }
         }
 
@@ -2242,15 +2239,15 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static SidType ClassifySID(IntPtr pSid)
         {
-            Debug.Assert(Advapi32.IsValidSid(pSid));
+            Debug.Assert(global::Interop.Advapi32.IsValidSid(pSid));
 
             // Get the issuing authority and the first RID
-            IntPtr pIdentAuth = Advapi32.GetSidIdentifierAuthority(pSid);
+            IntPtr pIdentAuth = global::Interop.Advapi32.GetSidIdentifierAuthority(pSid);
 
-            Advapi32.SID_IDENTIFIER_AUTHORITY identAuth =
-                (Advapi32.SID_IDENTIFIER_AUTHORITY)Marshal.PtrToStructure(pIdentAuth, typeof(Advapi32.SID_IDENTIFIER_AUTHORITY))!;
+            global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth =
+                (global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY)Marshal.PtrToStructure(pIdentAuth, typeof(global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY))!;
 
-            IntPtr pRid = Advapi32.GetSidSubAuthority(pSid, 0);
+            IntPtr pRid = global::Interop.Advapi32.GetSidSubAuthority(pSid, 0);
             int rid = Marshal.ReadInt32(pRid);
 
             // These bit signify that the sid was issued by ADAM.  If so then it can't be a fake sid.
@@ -2281,9 +2278,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static int GetLastRidFromSid(IntPtr pSid)
         {
-            IntPtr pRidCount = Advapi32.GetSidSubAuthorityCount(pSid);
+            IntPtr pRidCount = global::Interop.Advapi32.GetSidSubAuthorityCount(pSid);
             int ridCount = Marshal.ReadByte(pRidCount);
-            IntPtr pLastRid = Advapi32.GetSidSubAuthority(pSid, ridCount - 1);
+            IntPtr pLastRid = global::Interop.Advapi32.GetSidSubAuthority(pSid, ridCount - 1);
             int lastRid = Marshal.ReadInt32(pLastRid);
 
             return lastRid;

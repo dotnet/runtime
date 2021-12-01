@@ -28,8 +28,6 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
-using UNICODE_STRING = Interop.UNICODE_STRING;
-
 namespace System.DirectoryServices.ActiveDirectory
 {
 
@@ -414,7 +412,7 @@ namespace System.DirectoryServices.ActiveDirectory
         [FieldOffset(8)]
         public LARGE_INTEGER Time = null!;
         [FieldOffset(16)]
-        public UNICODE_STRING TopLevelName;
+        public global::Interop.UNICODE_STRING TopLevelName;
         [FieldOffset(16)]
         public LSA_FOREST_TRUST_BINARY_DATA Data = null!;
         [FieldOffset(16)]
@@ -456,8 +454,8 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential)]
     internal struct TRUSTED_DOMAIN_INFORMATION_EX
     {
-        public UNICODE_STRING Name;
-        public UNICODE_STRING FlatName;
+        public global::Interop.UNICODE_STRING Name;
+        public global::Interop.UNICODE_STRING FlatName;
         public IntPtr Sid;
         public int TrustDirection;
         public int TrustType;
@@ -477,7 +475,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int Index;
         public ForestTrustCollisionType Type;
         public int Flags;
-        public UNICODE_STRING Name;
+        public global::Interop.UNICODE_STRING Name;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -521,9 +519,9 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class POLICY_DNS_DOMAIN_INFO
     {
-        public UNICODE_STRING Name;
-        public UNICODE_STRING DnsDomainName;
-        public UNICODE_STRING DnsForestName;
+        public global::Interop.UNICODE_STRING Name;
+        public global::Interop.UNICODE_STRING DnsDomainName;
+        public global::Interop.UNICODE_STRING DnsForestName;
         public Guid DomainGuid;
         public IntPtr Sid;
     }
@@ -570,7 +568,7 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct POLICY_ACCOUNT_DOMAIN_INFO
     {
-        public UNICODE_STRING DomainName;
+        public global::Interop.UNICODE_STRING DomainName;
         public IntPtr DomainSid;
     }
 
@@ -608,16 +606,16 @@ namespace System.DirectoryServices.ActiveDirectory
         public static partial int NetApiBufferFree(IntPtr buffer);
 
         [GeneratedDllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaSetForestTrustInformation")]
-        public static partial uint LsaSetForestTrustInformation(SafeLsaPolicyHandle handle, in UNICODE_STRING target, IntPtr forestTrustInfo, int checkOnly, out IntPtr collisionInfo);
+        public static partial uint LsaSetForestTrustInformation(SafeLsaPolicyHandle handle, in global::Interop.UNICODE_STRING target, IntPtr forestTrustInfo, int checkOnly, out IntPtr collisionInfo);
 
         [GeneratedDllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaQueryForestTrustInformation")]
-        public static partial uint LsaQueryForestTrustInformation(SafeLsaPolicyHandle handle, in UNICODE_STRING target, ref IntPtr ForestTrustInfo);
+        public static partial uint LsaQueryForestTrustInformation(SafeLsaPolicyHandle handle, in global::Interop.UNICODE_STRING target, ref IntPtr ForestTrustInfo);
 
         [GeneratedDllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaQueryTrustedDomainInfoByName")]
-        public static partial uint LsaQueryTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, ref IntPtr buffer);
+        public static partial uint LsaQueryTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in global::Interop.UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, ref IntPtr buffer);
 
         [GeneratedDllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaSetTrustedDomainInfoByName")]
-        public static partial uint LsaSetTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, IntPtr buffer);
+        public static partial uint LsaSetTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in global::Interop.UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, IntPtr buffer);
 
         [GeneratedDllImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaDeleteTrustedDomain")]
         public static partial uint LsaDeleteTrustedDomain(SafeLsaPolicyHandle handle, IntPtr pSid);
@@ -638,7 +636,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static partial int ImpersonateAnonymousToken(IntPtr token);
 
         [GeneratedDllImport(global::Interop.Libraries.NtDll, EntryPoint = "RtlInitUnicodeString")]
-        public static partial int RtlInitUnicodeString(out UNICODE_STRING result, IntPtr s);
+        public static partial int RtlInitUnicodeString(out global::Interop.UNICODE_STRING result, IntPtr s);
 
         /*
         DWORD DsRoleGetPrimaryDomainInformation(

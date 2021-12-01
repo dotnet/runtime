@@ -7,9 +7,6 @@ using System.Security.Cryptography;
 
 using Microsoft.Win32.SafeHandles;
 
-using Advapi32 = Interop.Advapi32;
-using UNICODE_STRING = Interop.UNICODE_STRING;
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     internal enum TRUSTED_INFORMATION_CLASS
@@ -81,14 +78,14 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    UNICODE_STRING trustedDomainName;
+                    global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
                     {
-                        uint win32Error = Advapi32.LsaNtStatusToWinError(result);
+                        uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
                         if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
@@ -150,7 +147,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
-                        Advapi32.LsaFreeMemory(buffer);
+                        global::Interop.Advapi32.LsaFreeMemory(buffer);
                 }
             }
             catch { throw; }
@@ -177,7 +174,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    UNICODE_STRING trustedDomainName;
+                    global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
@@ -185,7 +182,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
                     {
-                        uint win32Error = Advapi32.LsaNtStatusToWinError(result);
+                        uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
                         if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
@@ -262,7 +259,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, newInfo);
                     if (result != 0)
                     {
-                        throw ExceptionHelper.GetExceptionFromErrorCode((int)Advapi32.LsaNtStatusToWinError(result), serverName);
+                        throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(result), serverName);
                     }
 
                     return;
@@ -276,7 +273,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
-                        Advapi32.LsaFreeMemory(buffer);
+                        global::Interop.Advapi32.LsaFreeMemory(buffer);
 
                     if (newInfo != (IntPtr)0)
                         Marshal.FreeHGlobal(newInfo);
@@ -305,7 +302,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     policyHandle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    UNICODE_STRING trustedDomainName;
+                    global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
@@ -313,7 +310,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(policyHandle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
                     {
-                        uint  win32Error = Advapi32.LsaNtStatusToWinError(result);
+                        uint  win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
                         if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
@@ -340,14 +337,14 @@ namespace System.DirectoryServices.ActiveDirectory
                         result = UnsafeNativeMethods.LsaDeleteTrustedDomain(policyHandle, domainInfo.Sid);
                         if (result != 0)
                         {
-                            uint win32Error = Advapi32.LsaNtStatusToWinError(result);
+                            uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                             throw ExceptionHelper.GetExceptionFromErrorCode((int)win32Error, serverName);
                         }
                     }
                     finally
                     {
                         if (buffer != (IntPtr)0)
-                            Advapi32.LsaFreeMemory(buffer);
+                            global::Interop.Advapi32.LsaFreeMemory(buffer);
                     }
                 }
                 finally
@@ -386,7 +383,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     policyHandle = Utils.GetPolicyHandle(policyServerName);
 
                     // get the target name
-                    UNICODE_STRING trustedDomainName;
+                    global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
@@ -559,7 +556,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     uint result = UnsafeNativeMethods.LsaCreateTrustedDomainEx(policyHandle, tdi, AuthInfoEx, TRUSTED_SET_POSIX | TRUSTED_SET_AUTH, out domainHandle);
                     if (result != 0)
                     {
-                        result = Advapi32.LsaNtStatusToWinError(result);
+                        result = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         if (result == ERROR_ALREADY_EXISTS)
                         {
                             if (isForest)
@@ -580,10 +577,10 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(fileTime);
 
                     if (domainHandle != (IntPtr)0)
-                        Advapi32.LsaClose(domainHandle);
+                        global::Interop.Advapi32.LsaClose(domainHandle);
 
                     if (info != (IntPtr)0)
-                        Advapi32.LsaFreeMemory(info);
+                        global::Interop.Advapi32.LsaFreeMemory(info);
 
                     if (unmanagedPassword != (IntPtr)0)
                         Marshal.FreeHGlobal(unmanagedPassword);
@@ -621,7 +618,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    UNICODE_STRING trustedDomainName;
+                    global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
@@ -629,7 +626,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
                     if (result != 0)
                     {
-                        uint win32Error = Advapi32.LsaNtStatusToWinError(result);
+                        uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
                         if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
@@ -695,7 +692,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
                     if (result != 0)
                     {
-                        throw ExceptionHelper.GetExceptionFromErrorCode((int)Advapi32.LsaNtStatusToWinError(result), serverName);
+                        throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(result), serverName);
                     }
 
                     return serverName;
@@ -709,7 +706,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
-                        Advapi32.LsaFreeMemory(buffer);
+                        global::Interop.Advapi32.LsaFreeMemory(buffer);
 
                     if (newBuffer != (IntPtr)0)
                         Marshal.FreeHGlobal(newBuffer);
@@ -752,7 +749,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    UNICODE_STRING trustedDomainName;
+                    global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
@@ -760,7 +757,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
                     if (result != 0)
                     {
-                        uint win32Error = Advapi32.LsaNtStatusToWinError(result);
+                        uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
                         if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                         {
@@ -838,7 +835,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
                     if (result != 0)
                     {
-                        throw ExceptionHelper.GetExceptionFromErrorCode((int)Advapi32.LsaNtStatusToWinError(result), serverName);
+                        throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(result), serverName);
                     }
 
                     return;
@@ -852,7 +849,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(target);
 
                     if (buffer != (IntPtr)0)
-                        Advapi32.LsaFreeMemory(buffer);
+                        global::Interop.Advapi32.LsaFreeMemory(buffer);
 
                     if (newBuffer != (IntPtr)0)
                         Marshal.FreeHGlobal(newBuffer);
@@ -870,7 +867,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        private static void ValidateTrust(SafeLsaPolicyHandle handle, UNICODE_STRING trustedDomainName, string? sourceName, string? targetName, bool isForest, int direction, string serverName)
+        private static void ValidateTrust(SafeLsaPolicyHandle handle, global::Interop.UNICODE_STRING trustedDomainName, string? sourceName, string? targetName, bool isForest, int direction, string serverName)
         {
             IntPtr buffer = (IntPtr)0;
 
@@ -878,7 +875,7 @@ namespace System.DirectoryServices.ActiveDirectory
             uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
             if (result != 0)
             {
-                uint win32Error = Advapi32.LsaNtStatusToWinError(result);
+                uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                 // 2 ERROR_FILE_NOT_FOUND <--> 0xc0000034 STATUS_OBJECT_NAME_NOT_FOUND
                 if (win32Error == STATUS_OBJECT_NAME_NOT_FOUND)
                 {
@@ -916,7 +913,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (buffer != (IntPtr)0)
-                    Advapi32.LsaFreeMemory(buffer);
+                    global::Interop.Advapi32.LsaFreeMemory(buffer);
             }
         }
 
@@ -1018,10 +1015,10 @@ namespace System.DirectoryServices.ActiveDirectory
                         policyHandle = Utils.GetPolicyHandle(serverName);
                     }
 
-                    uint result = Advapi32.LsaQueryInformationPolicy(policyHandle.DangerousGetHandle(), policyDnsDomainInformation, ref buffer);
+                    uint result = global::Interop.Advapi32.LsaQueryInformationPolicy(policyHandle.DangerousGetHandle(), policyDnsDomainInformation, ref buffer);
                     if (result != 0)
                     {
-                        throw ExceptionHelper.GetExceptionFromErrorCode((int)Advapi32.LsaNtStatusToWinError(result), serverName);
+                        throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(result), serverName);
                     }
 
                     return buffer;

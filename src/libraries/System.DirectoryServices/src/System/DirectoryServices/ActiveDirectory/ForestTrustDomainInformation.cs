@@ -4,9 +4,6 @@
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 
-using Advapi32 = Interop.Advapi32;
-using BOOL = Interop.BOOL;
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     public enum ForestTrustDomainStatus
@@ -30,8 +27,8 @@ namespace System.DirectoryServices.ActiveDirectory
             NetBiosName = Marshal.PtrToStringUni(domainInfo.NetBIOSNameBuffer, domainInfo.NetBIOSNameLength / 2);
 
             string sidLocal;
-            BOOL result = Advapi32.ConvertSidToStringSid(domainInfo.sid, out sidLocal);
-            if (result == BOOL.FALSE)
+            global::Interop.BOOL result = global::Interop.Advapi32.ConvertSidToStringSid(domainInfo.sid, out sidLocal);
+            if (result == global::Interop.BOOL.FALSE)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
             }

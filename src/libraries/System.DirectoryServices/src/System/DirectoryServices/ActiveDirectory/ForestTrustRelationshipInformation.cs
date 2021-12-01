@@ -7,11 +7,6 @@ using System.Collections.Specialized;
 
 using Microsoft.Win32.SafeHandles;
 
-using Advapi32 = Interop.Advapi32;
-using BOOL = Interop.BOOL;
-using Kernel32 = Interop.Kernel32;
-using UNICODE_STRING = Interop.UNICODE_STRING;
-
 namespace System.DirectoryServices.ActiveDirectory
 {
     public class ForestTrustRelationshipInformation : TrustRelationshipInformation
@@ -192,8 +187,8 @@ namespace System.DirectoryServices.ActiveDirectory
                         ForestTrustDomainInformation tmp = _domainInfo[i];
                         record.Time = tmp.time;
                         IntPtr pSid = (IntPtr)0;
-                        BOOL result = Advapi32.ConvertStringSidToSid(tmp.DomainSid, out pSid);
-                        if (result == BOOL.FALSE)
+                        global::Interop.BOOL result = global::Interop.Advapi32.ConvertStringSidToSid(tmp.DomainSid, out pSid);
+                        if (result == global::Interop.BOOL.FALSE)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                         }
@@ -273,7 +268,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    UNICODE_STRING trustedDomainName;
+                    global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(TargetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
@@ -281,7 +276,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     uint error = UnsafeNativeMethods.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 1, out collisionInfo);
                     if (error != 0)
                     {
-                        throw ExceptionHelper.GetExceptionFromErrorCode((int)Advapi32.LsaNtStatusToWinError(error), serverName);
+                        throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(error), serverName);
                     }
 
                     // there is collision, throw proper exception so user can deal with it
@@ -313,7 +308,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     for (int i = 0; i < sidList.Count; i++)
                     {
-                        Kernel32.LocalFree((IntPtr)sidList[i]!);
+                        global::Interop.Kernel32.LocalFree((IntPtr)sidList[i]!);
                     }
 
                     if (records != (IntPtr)0)
@@ -327,7 +322,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     if (collisionInfo != (IntPtr)0)
-                        Advapi32.LsaFreeMemory(collisionInfo);
+                        global::Interop.Advapi32.LsaFreeMemory(collisionInfo);
 
                     if (target != (IntPtr)0)
                         Marshal.FreeHGlobal(target);
@@ -361,7 +356,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     // get the target name
-                    UNICODE_STRING tmpName;
+                    global::Interop.UNICODE_STRING tmpName;
                     targetPtr = Marshal.StringToHGlobalUni(TargetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(out tmpName, targetPtr);
 
@@ -377,7 +372,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // check the result
                     if (result != 0)
                     {
-                        uint win32Error = Advapi32.LsaNtStatusToWinError(result);
+                        uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         if (win32Error != 0)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode((int)win32Error, serverName);
@@ -441,7 +436,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     finally
                     {
-                        Advapi32.LsaFreeMemory(forestTrustInfo);
+                        global::Interop.Advapi32.LsaFreeMemory(forestTrustInfo);
                     }
 
                     _topLevelNames = tmpTLNs;
