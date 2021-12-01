@@ -154,10 +154,8 @@ function _apply_configuration_from_args(config: MonoConfig) {
         mono_wasm_init_coverage_profiler(config.coverage_profiler_options);
 }
 
-export function finalize_startup(config?: MonoConfig | MonoConfigError): void {
+export function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {
     try {
-        if (!config) config = Module.config;
-
         if (!config || config.isError) {
             return;
         }
@@ -292,7 +290,7 @@ export function bindings_lazy_init(): void {
 }
 
 // Initializes the runtime and loads assemblies, debug information, and other files.
-export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoConfigError): Promise<void> {
+export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoConfigError | undefined): Promise<void> {
     if (!config || config.isError) {
         return;
     }

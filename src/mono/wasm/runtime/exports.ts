@@ -265,12 +265,12 @@ function initializeImportsAndExports(
         module.preRun.push(async () => {
             // execution order == [1] ==
             module.addRunDependency("mono_load_runtime_and_bcl_args");
-            await mono_load_runtime_and_bcl_args();
+            await mono_load_runtime_and_bcl_args(module.config);
             module.removeRunDependency("mono_load_runtime_and_bcl_args");
         });
         // this is synchronous method, which needs that emscripten is already initialized
         // execution order == [2] ==
-        module.onRuntimeInitialized = finalize_startup;
+        module.onRuntimeInitialized = () => finalize_startup(module.config);
 
         module.ready = module.ready.then(async () => {
             // mono_wasm_runtime_is_initialized is set when finalize_startup is done
