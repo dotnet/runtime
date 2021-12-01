@@ -435,7 +435,7 @@ namespace System.DirectoryServices.AccountManagement
             public int wki100_ver_minor;
         };
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential)]
         public struct POLICY_ACCOUNT_DOMAIN_INFO
         {
             public Interop.UNICODE_INTPTR_STRING DomainName;
