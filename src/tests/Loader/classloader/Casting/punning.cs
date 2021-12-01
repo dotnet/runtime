@@ -1,0 +1,56 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Runtime.InteropServices;
+
+using Xunit;
+
+partial class Program
+{
+    [Fact]
+    static void Via_GetFunctionPointer()
+    {
+        Console.WriteLine($"Running {nameof(Via_GetFunctionPointer)}...");
+
+        IntPtr fptr = typeof(A.Class).GetMethod("GetField").MethodHandle.GetFunctionPointer();
+        Assert.NotEqual(IntPtr.Zero, fptr);
+        var b = new Caller.Struct()
+        {
+            Field = 0x55
+        };
+        int fieldValue = Caller.Class.CallGetField(b, fptr, null);
+        Assert.Equal(b.Field, fieldValue);
+    }
+
+    [Fact]
+    static void Via_Ldftn()
+    {
+        Console.WriteLine($"Running {nameof(Via_Ldftn)}...");
+
+        IntPtr fptr = B.Class.GetFunctionPointer();
+        Assert.NotEqual(IntPtr.Zero, fptr);
+        var b = new Caller.Struct()
+        {
+            Field = 0x55
+        };
+        int fieldValue = Caller.Class.CallGetField(b, fptr, null);
+        Assert.Equal(b.Field, fieldValue);
+    }
+
+    [Fact]
+    static void Via_Ldvirtftn()
+    {
+        Console.WriteLine($"Running {nameof(Via_Ldvirtftn)}...");
+
+        object inst = new C.Derived();
+        IntPtr fptr = C.Class.GetFunctionPointer(inst);
+        Assert.NotEqual(IntPtr.Zero, fptr);
+        var b = new Caller.Struct()
+        {
+            Field = 0x55
+        };
+        int fieldValue = Caller.Class.CallGetField(b, fptr, inst);
+        Assert.Equal(b.Field, fieldValue);
+    }
+}
