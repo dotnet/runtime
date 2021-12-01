@@ -1885,7 +1885,9 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 	int field_offset;
 
 	for (int i = 0; i < field_count && !mono_class_has_failure (klass); i++) {
-		field = &klass->fields [i];
+		// using mono_class_get_fields_internal isn't appropriate here because it will
+		// try to call mono_class_setup_fields which is what we're doing already
+		field = &m_class_get_fields (klass) [i];
 		field_offset = field_offsets [i];
 
 		if (!field)
@@ -1901,12 +1903,12 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		if (mono_type_is_struct (ftype)) {
 			// recursively check the layout of the embedded struct
 			MonoClass *embedded_class = mono_class_from_mono_type_internal (ftype);
-			g_assert (embedded_class->fields_inited);
+			g_assert (m_class_is_fields_inited (embedded_class));
 
 			const int embedded_fields_count = mono_class_get_field_count (embedded_class);
 			int *embedded_offsets = g_new0 (int, embedded_fields_count);
 			for (int j = 0; j < embedded_fields_count; ++j) {
-				embedded_offsets [j] = field_offset + embedded_class->fields [j].offset - MONO_ABI_SIZEOF (MonoObject);
+				embedded_offsets [j] = field_offset + m_class_get_fields (embedded_class) [j].offset - MONO_ABI_SIZEOF (MonoObject);
 			}
 
 			gboolean is_valid = validate_struct_fields_overlaps (layout_check, layout_size, embedded_class, embedded_offsets, embedded_fields_count, invalid_field_offset);
