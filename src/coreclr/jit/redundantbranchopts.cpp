@@ -1083,61 +1083,6 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         // We going to forward-sub a copy of candidateTree
         //
         assert(!sideEffect);
-
-        // Note the candidateTree's result may still be live.
-        //
-        // We should only duplicate candidateTree tree if we're sure the copy
-        // will produce the same result. In particular if the tree contains
-        // volatile reads, it may not evaluate the same.
-        //
-        // Volatile reads are modelled as side effects in VN but not in the IR.
-        // Ideally perhaps we could leverage VN to detect when it would be unsafe
-        // to copy the tree, but it's not possible to do that today.
-        //
-        class HasVolatileRead final : public GenTreeVisitor<HasVolatileRead>
-        {
-        public:
-            enum
-            {
-                DoPreOrder = true
-            };
-
-            GenTree* m_read;
-
-            HasVolatileRead(Compiler* compiler) : GenTreeVisitor<HasVolatileRead>(compiler), m_read(nullptr)
-            {
-            }
-
-            Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-            {
-                GenTree* const node = *use;
-
-                switch (node->OperGet())
-                {
-                    case GT_IND:
-                    case GT_BLK:
-                    case GT_OBJ:
-                    case GT_CLS_VAR:
-                    case GT_FIELD:
-                        if ((node->gtFlags & GTF_IND_VOLATILE) != 0)
-                        {
-                            m_read = node;
-                            return WALK_ABORT;
-                        }
-                    default:
-                        return WALK_CONTINUE;
-                }
-            }
-        };
-
-        HasVolatileRead v(this);
-        v.WalkTree(&candidateTree, nullptr);
-        if (v.m_read != nullptr)
-        {
-            JITDUMP(" -- prev tree contains volatile read [%06u], sorry\n", dspTreeID(v.m_read));
-            return false;
-        }
-
         substituteTree = gtCloneExpr(candidateTree);
         usedCopy       = true;
     }
