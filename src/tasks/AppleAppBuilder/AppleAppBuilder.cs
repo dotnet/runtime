@@ -236,7 +236,7 @@ public class AppleAppBuilderTask : Task
 
         if (EnableAppSandbox && (string.IsNullOrEmpty(DevTeamProvisioning) || DevTeamProvisioning == "-"))
         {
-            throw new ArgumentException("DevTeamProvisioning must be set to a valid value when App Sandbox is enabled.");
+            throw new ArgumentException("DevTeamProvisioning must be set to a valid value when App Sandbox is enabled, using '-' is not supported.");
         }
 
         var generator = new Xcode(Log, TargetOS, Arch);
