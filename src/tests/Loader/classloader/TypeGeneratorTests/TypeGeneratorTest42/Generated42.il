@@ -941,7 +941,7 @@
 		call void Generated42::ConstrainedCallsTest()
 		call void Generated42::StructConstrainedInterfaceCallsTest()
 		call void Generated42::CalliTest()
-		ldc.i4 100
+		ldc.i4 101
 		ret
 	}
 }

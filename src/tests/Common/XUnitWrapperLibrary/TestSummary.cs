@@ -21,6 +21,8 @@ public class TestSummary
 
     private DateTime _testRunStart = DateTime.Now;
 
+    public bool AllTestsPassed => (_numFailed == 0);
+
     public void ReportPassedTest(string name, string containingTypeName, string methodName, TimeSpan duration)
     {
         _numPassed++;
