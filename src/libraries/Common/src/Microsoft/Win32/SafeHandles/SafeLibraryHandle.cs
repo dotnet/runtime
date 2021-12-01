@@ -16,8 +16,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            System.Runtime.InteropServices.NativeLibrary.Free(handle);
-            return true;
+            return Interop.Kernel32.FreeLibrary(handle);
         }
     }
 }
