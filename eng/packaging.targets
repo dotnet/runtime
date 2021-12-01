@@ -273,7 +273,7 @@
   </Target>
 
   <Target Name="ValidateAssemblyVersionsInRefPack" 
-          Condition="'$(SkipValidateAssemblyVersion)' != 'true' and '$(_AssemblyInTargetingPack)' == 'true' and ('$(PreReleaseVersionLabel)' == 'servicing' or '$(PreReleaseVersionLabel)' == 'mauipreview')"
+          Condition="'$(SkipValidateAssemblyVersion)' != 'true' and '$(_AssemblyInTargetingPack)' == 'true' and ('$(PreReleaseVersionLabel)' == 'servicing' or '$(PreReleaseVersionLabel)' == 'mauipre')"
           AfterTargets="CoreCompile" >
     <Error Condition="'$(AssemblyVersion)' != '$(LastReleasedStableAssemblyVersion)'" Text="AssemblyVersion should match last released assembly version $(LastReleasedStableAssemblyVersion)" />
   </Target>
