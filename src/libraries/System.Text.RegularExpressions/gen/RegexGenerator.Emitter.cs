@@ -240,7 +240,7 @@ namespace System.Text.RegularExpressions.Generator
             bool hasTextInfo = false;
 
             // Emit locals initialization
-            writer.WriteLine("global::System.ReadOnlySpan<char> runtextSpan = base.runtext!;");
+            writer.WriteLine("global::System.ReadOnlySpan<char> runtextSpan = base.runtext;");
             writer.WriteLine("int runtextpos = base.runtextpos;");
             writer.WriteLine("int runtextend = base.runtextend;");
             if (rtl)
