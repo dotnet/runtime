@@ -210,6 +210,10 @@ Specify the failure `limit` after which replay and asmdiffs will exit if it sees
 more than `limit` failures.
 """
 
+compile_help = """\
+Compile only specified method contexts, e.g., `-compile 20,25`. This is passed directly to the superpmi.exe `-compile` argument. See `superpmi.exe -?` for full documentation about allowed formats.
+"""
+
 # Start of parser object creation.
 
 parser = argparse.ArgumentParser(description=description)
@@ -297,6 +301,7 @@ replay_common_parser.add_argument("-product_location", help=product_location_hel
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
+replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -1212,7 +1217,7 @@ class SuperPMIReplay:
             if self.coreclr_args.arch != self.coreclr_args.target_arch:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
-            if not self.coreclr_args.sequential:
+            if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                 common_flags += [ "-p" ]
 
             if self.coreclr_args.break_on_assert:
@@ -1220,6 +1225,9 @@ class SuperPMIReplay:
 
             if self.coreclr_args.break_on_error:
                 common_flags += [ "-boe" ]
+
+            if self.coreclr_args.compile:
+                common_flags += [ "-c", self.coreclr_args.compile ]
 
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
@@ -1452,7 +1460,7 @@ class SuperPMIReplayAsmDiffs:
                 flags += base_option_flags
                 flags += diff_option_flags
 
-                if not self.coreclr_args.sequential:
+                if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                     flags += [ "-p" ]
 
                 if self.coreclr_args.break_on_assert:
@@ -1460,6 +1468,9 @@ class SuperPMIReplayAsmDiffs:
 
                 if self.coreclr_args.break_on_error:
                     flags += [ "-boe" ]
+
+                if self.coreclr_args.compile:
+                    flags += [ "-c", self.coreclr_args.compile ]
 
                 if self.coreclr_args.spmi_log_file is not None:
                     flags += [ "-w", self.coreclr_args.spmi_log_file ]
@@ -2969,6 +2980,11 @@ def setup_args(args):
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
+
+        coreclr_args.verify(args,
+                            "compile",
+                            lambda unused: True,
+                            "Method context not valid")
 
         coreclr_args.verify(args,
                             "private_store",
