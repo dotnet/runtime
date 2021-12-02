@@ -2431,7 +2431,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     retDebuggerCmdReader.BaseStream.Position = initialPos;
                     var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, isOwn: isParent, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
                     if (objectValues.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any())
-                        return null;
+                        continue;
                     if (getCommandType.HasFlag(GetObjectCommandOptions.WithSetter))
                     {
                         var command_params_writer_to_set = new MonoBinaryWriter();
