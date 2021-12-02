@@ -82,5 +82,8 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract Task DisposeReleasesQueuedAcquires();
+
+        [Fact]
+        public abstract Task DisposeAsyncReleasesQueuedAcquires();
     }
 }

@@ -280,10 +280,19 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
+            if (!disposing)
+            {
+                return;
+            }
+
             lock (Lock)
             {
+                if (_disposed)
+                {
+                    return;
+                }
                 _disposed = true;
                 _renewTimer?.Dispose();
                 while (_queue.Count > 0)
@@ -295,6 +304,13 @@ namespace System.Threading.RateLimiting
                     next.Tcs.SetResult(FailedLease);
                 }
             }
+        }
+
+        protected override ValueTask DisposeAsyncCore()
+        {
+            Dispose(true);
+
+            return default;
         }
 
         private sealed class TokenBucketLease : RateLimitLease

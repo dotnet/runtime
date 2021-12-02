@@ -387,6 +387,35 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public override async Task DisposeAsyncReleasesQueuedAcquires()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 3));
+            using var lease = limiter.Acquire(1);
+
+            var wait1 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAsync(1);
+            var wait3 = limiter.WaitAsync(1);
+            Assert.False(wait1.IsCompleted);
+            Assert.False(wait2.IsCompleted);
+            Assert.False(wait3.IsCompleted);
+
+            await limiter.DisposeAsync();
+
+            var failedLease = await wait1;
+            Assert.False(failedLease.IsAcquired);
+            failedLease = await wait2;
+            Assert.False(failedLease.IsAcquired);
+            failedLease = await wait3;
+            Assert.False(failedLease.IsAcquired);
+
+            lease.Dispose();
+
+            // Can't acquire any leases after disposal
+            Assert.False(limiter.Acquire(1).IsAcquired);
+            Assert.False((await limiter.WaitAsync(1)).IsAcquired);
+        }
+
+        [Fact]
         public async Task ReasonMetadataOnFailedWaitAsync()
         {
             var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.OldestFirst, 1));

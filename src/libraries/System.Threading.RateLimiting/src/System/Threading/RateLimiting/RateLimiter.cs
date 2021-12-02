@@ -8,7 +8,7 @@ namespace System.Threading.RateLimiting
     /// <summary>
     /// Represents a limiter type that users interact with to determine if an operation can proceed.
     /// </summary>
-    public abstract class RateLimiter : IDisposable
+    public abstract class RateLimiter : IAsyncDisposable, IDisposable
     {
         /// <summary>
         /// An estimated count of available permits.
@@ -75,7 +75,44 @@ namespace System.Threading.RateLimiting
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
         protected abstract ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken);
 
-        /// <interitdoc/>
-        public abstract void Dispose();
+        /// <summary>
+        /// Dispose method for implementations to write.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing) { }
+
+        /// <summary>
+        /// Dispose the RateLimiter. This completes any queued acquires with a failed lease.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// DisposeAsync method for implementations to write.
+        /// </summary>
+        protected virtual ValueTask DisposeAsyncCore()
+        {
+            return default;
+        }
+
+        /// <summary>
+        /// Diposes the RateLimiter asynchronously.
+        /// </summary>
+        /// <returns>ValueTask representin the completion of the disposal.</returns>
+        public async ValueTask DisposeAsync()
+        {
+            // Perform async cleanup.
+            await DisposeAsyncCore().ConfigureAwait(false);
+
+            // Dispose of unmanaged resources.
+            Dispose(false);
+
+            // Suppress finalization.
+            GC.SuppressFinalize(this);
+        }
     }
 }
