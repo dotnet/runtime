@@ -36,3 +36,4 @@ steps:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
       HelixTargetQueues: ${{ join('+', parameters.helixQueues) }} # Pass queues to MSBuild as env var to avoid need of escaping them
       _Scenarios: ${{ join(',', parameters.scenarios) }} # Pass scenarios to MSBuild as env var to avoid need of escaping comma separated list
+
