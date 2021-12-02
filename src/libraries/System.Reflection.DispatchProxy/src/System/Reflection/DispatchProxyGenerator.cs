@@ -115,9 +115,19 @@ namespace System.Reflection
 
             public ProxyAssembly(AssemblyLoadContext alc)
             {
-                string? alcName = alc.Name;
-                string name = string.IsNullOrEmpty(alcName) ? $"DispatchProxyTypes.{alc.GetHashCode()}" : $"DispatchProxyTypes.{alcName}";
-                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.RunAndCollect);
+                string name;
+                if (alc == AssemblyLoadContext.Default)
+                {
+                    name = "ProxyBuilder";
+                }
+                else
+                {
+                    string? alcName = alc.Name;
+                    name = string.IsNullOrEmpty(alcName) ? $"DispatchProxyTypes.{alc.GetHashCode()}" : $"DispatchProxyTypes.{alcName}";
+                }
+                AssemblyBuilderAccess builderAccess =
+                    alc.IsCollectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run;
+                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), builderAccess);
                 _mb = _ab.DefineDynamicModule("MainModule");
             }
 
