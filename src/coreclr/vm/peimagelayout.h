@@ -61,7 +61,7 @@ public:
     void AddRef();
     ULONG Release();
 
-    void ApplyBaseRelocations();
+    void ApplyBaseRelocations(bool relocationMustWriteCopy);
 
 public:
 #ifdef DACCESS_COMPILE
@@ -82,16 +82,16 @@ class FlatImageLayout;
 class ConvertedImageLayout: public PEImageLayout
 {
     VPTR_VTABLE_CLASS(ConvertedImageLayout,PEImageLayout)
-protected:
-    HandleHolder m_FileMap;
-    CLRMapViewHolder m_FileView;
 public:
+    static const int MAX_PARTS = 16;
 #ifndef DACCESS_COMPILE
     ConvertedImageLayout(FlatImageLayout* source);
     virtual ~ConvertedImageLayout();
+    void  FreeImageParts();
 #endif
 private:
     PT_RUNTIME_FUNCTION m_pExceptionDir;
+    SIZE_T              m_imageParts[MAX_PARTS];
 };
 
 class LoadedImageLayout: public PEImageLayout
@@ -125,7 +125,11 @@ public:
 #ifndef DACCESS_COMPILE
     FlatImageLayout(PEImage* pOwner);
     FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
-    void LayoutILOnly(void* base) const;
+    void* LoadImageByCopyingParts(SIZE_T* m_imageParts) const;
+
+#if TARGET_WINDOWS
+    void* LoadImageByMappingParts(SIZE_T* m_imageParts) const;
+#endif
 #endif
 
 };

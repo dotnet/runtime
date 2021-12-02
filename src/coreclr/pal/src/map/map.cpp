@@ -2165,14 +2165,9 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         goto done;
     }
 
-    // For compat reasons we always allow 32bit header.
-    // We may not get correct preferred ImageBase, but otherwise 32bit header is the same for our uses here.
-    // We will not patch the header into platform bitness though, since coreclr does not require that.
-    // NOTE: actual checks whether the PE is platform-specific or contains native code will happen later as needed.
     if ((VAL16(IMAGE_DOS_SIGNATURE) != VAL16(dosHeader.e_magic))
         || (VAL32(IMAGE_NT_SIGNATURE) != VAL32(ntHeader.Signature))
-        || ((VAL16(IMAGE_NT_OPTIONAL_HDR_MAGIC) != VAL16(ntHeader.OptionalHeader.Magic)) &&
-            (VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC) != VAL16(ntHeader.OptionalHeader.Magic))))
+        || (VAL16(IMAGE_NT_OPTIONAL_HDR_MAGIC) != VAL16(ntHeader.OptionalHeader.Magic) ) )
     {
         ERROR_(LOADER)( "Magic number mismatch\n" );
         palError = ERROR_INVALID_PARAMETER;

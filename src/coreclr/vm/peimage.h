@@ -91,6 +91,7 @@ public:
 
     BOOL HasLoadedLayout();
     PTR_PEImageLayout GetLoadedLayout();
+    PTR_PEImageLayout GetFlatLayout();
 
     BOOL  HasPath();
     ULONG GetPathHash();

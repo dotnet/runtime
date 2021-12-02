@@ -814,13 +814,6 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 
     if (pRetVal==NULL)
     {
-        // no-path layouts are filled up at creation, if image format permits.
-        if (!HasPath())
-        {
-            // TODO: VS we should manually map flat layouts for R2R here.
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-
         BOOL bIsLoadedLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_LOADED) != 0);
         BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
 
@@ -862,7 +855,6 @@ PTR_PEImageLayout PEImage::CreateLoadedLayout(bool throwOnFailure)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(m_pLayoutLock->IsWriterLock());
-        PRECONDITION(IsFile());
     }
     CONTRACTL_END;
 
@@ -901,17 +893,6 @@ PTR_PEImageLayout PEImage::CreateFlatLayout()
 
     PTR_PEImageLayout pFlatLayout = PEImageLayout::LoadFlat(this);
     SetLayout(IMAGE_FLAT, pFlatLayout);
-
-    if (m_pLayouts[IMAGE_LOADED] == NULL &&
-        pFlatLayout->CheckNTHeaders() &&
-        pFlatLayout->CheckILOnly() &&
-        !pFlatLayout->HasWriteableSections() &&
-        !pFlatLayout->HasReadyToRunHeader())
-    {
-        pFlatLayout->AddRef();
-        SetLayout(IMAGE_LOADED, pFlatLayout);
-    }
-
     return pFlatLayout;
 }
 
@@ -930,16 +911,6 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 
     SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
     pImage->SetLayout(IMAGE_FLAT,pLayout);
-
-    // TODO: VS allow R2R for now, meaning it will run as IL-only
-    if (pLayout->CheckNTHeaders() &&
-        pLayout->CheckILOnly() &&
-        !pLayout->HasWriteableSections())
-    {
-        pLayout->AddRef();
-        pImage->SetLayout(IMAGE_LOADED, pLayout);
-    }
-
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
 
@@ -996,7 +967,12 @@ HANDLE PEImage::GetFileHandle()
     {
         ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
         m_hFile=WszCreateFile((LPCWSTR) GetPathToLoad(),
-                               GENERIC_READ,
+                               GENERIC_READ
+#if TARGET_WINDOWS
+                                   // the file may have native code sections, make sure we have execute permissions
+                                   | GENERIC_EXECUTE
+#endif
+                               ,
                                FILE_SHARE_READ|FILE_SHARE_DELETE,
                                NULL,
                                OPEN_EXISTING,
@@ -1027,7 +1003,12 @@ HRESULT PEImage::TryOpenFile()
     {
         ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
         m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
-                              GENERIC_READ,
+                              GENERIC_READ
+#if TARGET_WINDOWS
+                                  // the file may have native code sections, make sure we have execute permissions
+                                  | GENERIC_EXECUTE
+#endif
+                              ,
                               FILE_SHARE_READ|FILE_SHARE_DELETE,
                               NULL,
                               OPEN_EXISTING,

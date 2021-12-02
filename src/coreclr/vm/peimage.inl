@@ -150,6 +150,15 @@ inline PTR_PEImageLayout PEImage::GetLoadedLayout()
     return m_pLayouts[IMAGE_LOADED];
 }
 
+inline PTR_PEImageLayout PEImage::GetFlatLayout()
+{
+    LIMITED_METHOD_CONTRACT;
+    SUPPORTS_DAC;
+
+    _ASSERTE(m_pLayouts[IMAGE_FLAT] != NULL);
+    return m_pLayouts[IMAGE_FLAT];
+}
+
 inline BOOL PEImage::IsOpened()
 {
     LIMITED_METHOD_CONTRACT;
