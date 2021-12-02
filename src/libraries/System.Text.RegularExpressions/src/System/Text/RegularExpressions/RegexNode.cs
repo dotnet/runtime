@@ -2207,46 +2207,41 @@ namespace System.Text.RegularExpressions
             return 1;
         }
 
-        // Determines whether the node supports an optimized code gen strategy based on walking the node tree.
-        internal bool SupportsSimplifiedCodeGenerationImplementation()
+        // Determines whether the node supports a compilation / code generation strategy based on walking the node tree.
+        internal bool SupportsCompilation()
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, simplified code generation isn't supported as the tree is too deep.
+                // If we can't recur further, code generation isn't supported as the tree is too deep.
                 return false;
             }
 
-            if ((Options & RegexOptions.RightToLeft) != 0)
+            if ((Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
             {
-                // RightToLeft isn't supported.  That applies to both the top-level options as well as when used
-                // to specify positive and negative lookbehinds.
+                // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
+                // options as well as when used to specify positive and negative lookbehinds.
                 return false;
-            }
-
-            // TODO: This should be moved somewhere else, to a pass somewhere where we explicitly
-            // annotate the tree, potentially as part of the final optimization pass.  It doesn't
-            // belong in this check.
-            switch (Type)
-            {
-                case Capture:
-                    // If we've found a supported capture, mark all of the nodes in its parent
-                    // hierarchy as containing a capture.
-                    RegexNode? parent = this;
-                    while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
-                    {
-                        parent.Options |= HasCapturesFlag;
-                        parent = parent.Next;
-                    }
-                    break;
             }
 
             int childCount = ChildCount();
             for (int i = 0; i < childCount; i++)
             {
                 // The node isn't supported if any of its children aren't supported.
-                if (!Child(i).SupportsSimplifiedCodeGenerationImplementation())
+                if (!Child(i).SupportsCompilation())
                 {
                     return false;
+                }
+            }
+
+            // TODO: This should be moved somewhere else, to a pass somewhere where we explicitly
+            // annotate the tree, potentially as part of the final optimization pass.  It doesn't
+            // belong in this check.
+            if (Type == Capture)
+            {
+                // If we've found a supported capture, mark all of the nodes in its parent hierarchy as containing a capture.
+                for (RegexNode? parent = this; parent != null && (parent.Options & HasCapturesFlag) == 0; parent = parent.Next)
+                {
+                    parent.Options |= HasCapturesFlag;
                 }
             }
 
