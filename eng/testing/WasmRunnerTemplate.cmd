@@ -32,7 +32,7 @@ if [%SCENARIO%]==[WasmTestOnBrowser] (
 set PATH=%SDK_FOR_WORKLOAD_TESTING_PATH%;%PATH%
 
 :: ========================= BEGIN Test Execution ============================= 
-echo ----- start %DATE% %TIME% ===============  To repro directly: ===================================================== 
+echo ----- start %DATE% %TIME% ===============  To repro directly: =====================================================
 echo pushd %EXECUTION_DIR%
 [[RunCommandsEcho]]
 echo popd
