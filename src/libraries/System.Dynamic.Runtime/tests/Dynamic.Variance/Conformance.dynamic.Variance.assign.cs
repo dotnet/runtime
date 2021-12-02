@@ -501,7 +501,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.assign.assignm
         private static dynamic s_array3;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55119", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55119", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
