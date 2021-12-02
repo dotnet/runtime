@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Metadata
 {
-    public static class AssemblyExtensions
+    public static partial class AssemblyExtensions
     {
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalTryGetRawMetadata")]
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalTryGetRawMetadata")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern unsafe bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length);
+        private static unsafe partial bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length);
 
         // Retrieves the metadata section of the assembly, for use with System.Reflection.Metadata.MetadataReader.
         //   - Returns false upon failure. Metadata might not be available for some assemblies, such as AssemblyBuilder, .NET
