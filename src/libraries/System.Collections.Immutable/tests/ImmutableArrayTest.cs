@@ -155,7 +155,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CreateEnumerableElementType()
         {
-            // Create should not have the same semantics as CreateRange, except for arrays.
+            // Create should not have the same semantics as CreateRange, except for arrays, span and readonlySpan.
             // If you pass in an IEnumerable<T> to Create, you should get an
             // ImmutableArray<IEnumerable<T>>. However, if you pass a T[] in, you should get
             // a ImmutableArray<T>.
@@ -168,6 +168,12 @@ namespace System.Collections.Immutable.Tests
 
             var enumerable = Enumerable.Empty<int>();
             Assert.IsType<ImmutableArray<IEnumerable<int>>>(ImmutableArray.Create(enumerable));
+
+            Span<int> span = Span<int>.Empty;
+            Assert.IsType<ImmutableArray<int>>(ImmutableArray.Create(span));
+
+            ReadOnlySpan<int> readonlySpan = ReadOnlySpan<int>.Empty;
+            Assert.IsType<ImmutableArray<int>>(ImmutableArray.Create(readonlySpan));
         }
 
         [Fact]
@@ -175,6 +181,8 @@ namespace System.Collections.Immutable.Tests
         {
             Assert.True(s_empty == ImmutableArray.Create<int>());
             Assert.True(s_empty == ImmutableArray.Create(new int[0]));
+            Assert.True(s_empty == ImmutableArray.Create(Span<int>.Empty));
+            Assert.True(s_empty == ImmutableArray.Create(ReadOnlySpan<int>.Empty));
         }
 
         [Theory]
@@ -422,6 +430,20 @@ namespace System.Collections.Immutable.Tests
         public void CreateFromArray(IEnumerable<int> source)
         {
             Assert.Equal(source, ImmutableArray.Create(source.ToArray()));
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateFromSpan(IEnumerable<int> source)
+        {
+            Assert.Equal(source, ImmutableArray.Create(source.ToArray().AsSpan()));
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void CreateFromReadOnlySpan(IEnumerable<int> source)
+        {
+            Assert.Equal(source, ImmutableArray.Create(new ReadOnlySpan<int>(source.ToArray())));
         }
 
         [Fact]

@@ -89,6 +89,11 @@ namespace System.Collections.Immutable
         /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> Create<T>(ReadOnlySpan<T> items)
         {
+            if (items.Length == 0)
+            {
+                return ImmutableArray<T>.Empty;
+            }
+
             T[] array = items.ToArray();
             return new ImmutableArray<T>(array);
         }
@@ -101,8 +106,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> Create<T>(Span<T> items)
         {
-            T[] array = items.ToArray();
-            return new ImmutableArray<T>(array);
+            return Create((ReadOnlySpan<T>)items);
         }
 
         /// <summary>
