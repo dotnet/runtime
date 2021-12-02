@@ -270,6 +270,8 @@
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" />
       <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
     </ItemGroup>
+
+    <Exec Command="chmod +x %(_MergedWrapperRunScript.Identity)" Condition="'$(TargetOSSpec)' != 'windows'" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectory"
@@ -449,8 +451,6 @@
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
-
-    <Exec Command="chmod +x $(MergedPayloadsRootDirectory)/%(FileName)/%(MergedTestHelixCommand)" Condition="'$(TargetOSSpec)' != 'windows'" />
 
     <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
