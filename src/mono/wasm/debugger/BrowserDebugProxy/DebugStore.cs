@@ -541,10 +541,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             asmStream = new MemoryStream(assembly);
             peReader = new PEReader(asmStream);
             asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
+            Name = asmMetadataReader.GetAssemblyDefinition().GetAssemblyName().Name + ".dll";
+            AssemblyNameUnqualified = asmMetadataReader.GetAssemblyDefinition().GetAssemblyName().Name + ".dll";
             if (pdb != null)
             {
                 pdbStream = new MemoryStream(pdb);
-                pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
+                try
+                {
+                    pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
+                }
+                catch (BadImageFormatException)
+                {
+                    Console.WriteLine($"Warning: Unable to read debug information of: {Name} (use DebugType=Portable/Embedded)");
+                }
             }
             else
             {
@@ -555,8 +564,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     pdbMetadataReader = peReader.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry).GetMetadataReader();
                 }
             }
-            Name = asmMetadataReader.GetAssemblyDefinition().GetAssemblyName().Name + ".dll";
-            AssemblyNameUnqualified = asmMetadataReader.GetAssemblyDefinition().GetAssemblyName().Name + ".dll";
             Populate();
         }
 
