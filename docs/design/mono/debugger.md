@@ -22,7 +22,7 @@ Web Assembly Debugger supports usage of following attributes:
    - Collapsed - displayed normally.
    - RootHidden:
       - Simple type - not displayed in the debugger window.
-      - Collection / Array - the values of a collection are appearing in a flat view, using naming convention: *rootName[idx]*.
+      - Collection / Array - the values of a collection are displayed in a flat view, using  the naming convention: *rootName[idx]*.
 
    - Never - not displayed in the debugger window.
 
