@@ -128,7 +128,7 @@ namespace System.Reflection
                 AssemblyBuilderAccess builderAccess =
                     alc.IsCollectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run;
                 _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), builderAccess);
-                _mb = _ab.DefineDynamicModule("MainModule");
+                _mb = _ab.DefineDynamicModule("testmod");
             }
 
             // Gets or creates the ConstructorInfo for the IgnoresAccessChecksAttribute.
