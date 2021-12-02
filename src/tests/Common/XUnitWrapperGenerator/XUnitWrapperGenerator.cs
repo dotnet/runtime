@@ -130,7 +130,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
 
         builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput());");
-        builder.AppendLine("return summary.AllTestsPassed ? 100 : 101;");
+        builder.AppendLine("return 100;");
 
         return builder.ToString();
     }

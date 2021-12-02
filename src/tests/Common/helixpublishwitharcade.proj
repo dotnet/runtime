@@ -450,6 +450,8 @@
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
 
+    <Exec Command="chmod +x $(MergedPayloadsRootDirectory)/%(FileName)/%(MergedTestHelixCommand)" Condition="'$(TargetOSSpec)' != 'windows'" />
+
     <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>%(MergedTestHelixCommand)</Command>
