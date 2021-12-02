@@ -273,9 +273,12 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     // Get the range for this index.
     Range range = GetRange(block, treeIndex, false DEBUGARG(0));
 
+    Limit lowerLimit = range.LowerLimit();
+    Limit upperLimit = range.UpperLimit();
+
     // If upper or lower limit is found to be unknown (top), or it was found to
     // be unknown because of over budget or a deep search, then return early.
-    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
+    if (lowerLimit.IsUnknown() || upperLimit.IsUnknown())
     {
         // Note: If we had stack depth too deep in the GetRange call, we'd be
         // too deep even in the DoesOverflow call. So return early.
@@ -284,8 +287,18 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     if (DoesOverflow(block, treeIndex))
     {
-        JITDUMP("Method determined to overflow.\n");
-        return;
+        // Actually, we don't overflow if both upper and lower limits are known
+        // to be constants
+        if (lowerLimit.IsConstant() && upperLimit.IsConstant() && (lowerLimit.cns <= upperLimit.cns) &&
+            (lowerLimit.cns > 0))
+        {
+            JITDUMP("Upper and lower limits are constants => we don't overflow.\n");
+        }
+        else
+        {
+            JITDUMP("Method determined to overflow.\n");
+            return;
+        }
     }
 
     JITDUMP("Range value %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
@@ -602,6 +615,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper             = GT_NONE;
         bool       isConstantAssertion = false;
+        bool       isUnsigned          = false;
 
         // Current assertion is of the form (i < len - cns) != 0
         if (curAssertion->IsCheckedBoundArithBound())
@@ -672,6 +686,25 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
 
             limit   = Limit(Limit::keConstant, info.constVal);
             cmpOper = (genTreeOps)info.cmpOper;
+        }
+        // Current assertion is of the form (i < 100) != 0
+        else if (curAssertion->IsConstantBoundUnsigned())
+        {
+            ValueNumStore::ConstantBoundInfo info;
+
+            //// Get the info as "i", "<" and "100"
+            m_pCompiler->vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
+
+            // If we don't have the same variable we are comparing against, bail.
+            if (normalLclVN != info.cmpOpVN)
+            {
+                continue;
+            }
+
+            limit = Limit(Limit::keConstant, info.constVal);
+            assert(info.cmpOper == VNF_GE_UN);
+            cmpOper    = GT_GE;
+            isUnsigned = true;
         }
         // Current assertion is of the form i == 100
         else if (curAssertion->IsConstantInt32Assertion())
@@ -827,6 +860,10 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             case GT_LT:
             case GT_LE:
                 pRange->uLimit = limit;
+                if (isUnsigned)
+                {
+                    pRange->lLimit = Limit(Limit::keConstant, 1);
+                }
                 break;
 
             case GT_GT:

@@ -4793,9 +4793,31 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn)
     return IsVNInt32Constant(funcAttr.m_args[0]) != IsVNInt32Constant(funcAttr.m_args[1]);
 }
 
+bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
+{
+    // Do we have "var < 100"?
+    if (vn == NoVN)
+    {
+        return false;
+    }
+
+    VNFuncApp funcAttr;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+    if (funcAttr.m_func != VNF_GE_UN)
+    {
+        return false;
+    }
+
+    // check IsVNPositiveInt32Constant ?
+    return IsVNInt32Constant(funcAttr.m_args[0]) != IsVNInt32Constant(funcAttr.m_args[1]);
+}
+
 void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 {
-    assert(IsVNConstantBound(vn));
+    //assert(IsVNConstantBound(vn));
     assert(info);
 
     // Do we have var < 100?
@@ -4812,7 +4834,16 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
     }
     else
     {
-        info->cmpOper  = GenTree::SwapRelop((genTreeOps)funcAttr.m_func);
+        genTreeOps op = (genTreeOps)funcAttr.m_func;
+        if (funcAttr.m_func == VNF_GT_UN)
+        {
+            op = GT_GT;
+        }
+        else if (funcAttr.m_func == VNF_GE_UN)
+        {
+            op = GT_GE;
+        }
+        info->cmpOper  = GenTree::SwapRelop(op);
         info->cmpOpVN  = funcAttr.m_args[1];
         info->constVal = GetConstantInt32(funcAttr.m_args[0]);
     }
