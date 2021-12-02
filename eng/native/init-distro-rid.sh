@@ -41,8 +41,8 @@ initNonPortableDistroRid()
             # We have forced __PortableBuild=0. This is because -portablebuld
             # has been passed as false.
             if (( isPortable == 0 )); then
-                if [[ "${ID}" == "rhel" || "${ID}" == "rocky" || "${ID}" == "almalinux" ]]; then
-                    # remove the last version digit
+                # for RHEL and its derivatives, remove the last version digit (if present)
+                if [[ "${ID}" == "rhel" || "${ID_LIKE}" =~ .*rhel.* ]]; then
                     VERSION_ID="${VERSION_ID%.*}"
                 fi
 
