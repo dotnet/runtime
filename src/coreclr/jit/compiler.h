@@ -7360,6 +7360,7 @@ public:
 #define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
 #define OMF_HAS_FROZEN_STRING 0x00000400    // Method has a frozen string (REF constant int), currently only on CoreRT.
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
+#define OMF_HAS_TAILCALL_SUCCESSOR 0x00001000             // Method has potential tail call in a non BBJ_RETURN block
 
     bool doesMethodHaveFatPointer()
     {
