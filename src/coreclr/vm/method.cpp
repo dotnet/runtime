@@ -4002,50 +4002,6 @@ moveToNextToken:
     }
 }
 
-
-#ifdef FEATURE_TYPEEQUIVALENCE
-static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    BOOL *pHasEquivalentParam = (BOOL *)pData;
-
-    if (IsTypeDefEquivalent(defToken, pDefModule))
-    {
-        *pHasEquivalentParam = TRUE;
-        SigPointer sigPtr(*ptr);
-        TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule, pTypeContext);
-    }
-}
-#endif // FEATURE_TYPEEQUIVALENCE
-
-VOID MethodDesc::CheckForTypeEquivalentStructParameters()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_TYPEEQUIVALENCE
-    BOOL fHasTypeEquivalentStructParameters = FALSE;
-    if (DoesNotHaveEquivalentValuetypeParameters())
-        return;
-
-    WalkValueTypeParameters(this->GetMethodTable(), CheckForEquivalenceAndLoadType, &fHasTypeEquivalentStructParameters);
-
-    if (!fHasTypeEquivalentStructParameters)
-        SetDoesNotHaveEquivalentValuetypeParameters();
-#endif // FEATURE_TYPEEQUIVALENCE
-}
-
 PrecodeType MethodDesc::GetPrecodeType()
 {
     LIMITED_METHOD_CONTRACT;
@@ -4117,11 +4073,52 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
     _ASSERTE(HaveValueTypeParametersBeenWalked());
 }
 
+static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    BOOL *pHasEquivalentParam = (BOOL *)pData;
+
+#ifdef FEATURE_TYPEEQUIVALENCE
+    *pHasEquivalentParam = IsTypeDefEquivalent(defToken, pDefModule);
+#else
+    _ASSERTE(*pHasEquivalentParam); // Assert this is always false.
+#endif // FEATURE_TYPEEQUIVALENCE
+
+    SigPointer sigPtr(*ptr);
+    TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule, pTypeContext);
+    _ASSERTE(!th.IsNull());
+}
+
 void MethodDesc::PrepareForUseAsAFunctionPointer()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
-    CheckForTypeEquivalentStructParameters();
+    // Since function pointers are unsafe and can enable type punning, all
+    // value type parameters must be loaded prior to providing a function pointer.
+    if (HaveValueTypeParametersBeenLoaded())
+        return;
+
+    BOOL fHasTypeEquivalentStructParameters = FALSE;
+    WalkValueTypeParameters(this->GetMethodTable(), CheckForEquivalenceAndLoadType, &fHasTypeEquivalentStructParameters);
+
+#ifdef FEATURE_TYPEEQUIVALENCE
+    if (!fHasTypeEquivalentStructParameters)
+        SetDoesNotHaveEquivalentValuetypeParameters();
+#endif // FEATURE_TYPEEQUIVALENCE
+
+    SetValueTypeParametersLoaded();
 }
 #endif //!DACCESS_COMPILE
 
