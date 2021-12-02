@@ -5259,8 +5259,8 @@ void Compiler::placeLoopAlignInstructions()
             continue;
         }
 
-        // If there is a unconditional jump
-        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
+        // If there is a unconditional jump (which is not part of callf/always pair)
+        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
