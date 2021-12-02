@@ -1,0 +1,19 @@
+name: Update from upstream
+agent:
+  type: Unity::VM
+  image: platform-foundation/linux-ubuntu18.04-il2cpp-bokken:latest
+  flavor: b1.xlarge
+
+commands:
+  - curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+  - sudo apt update
+  - sudo apt install gh
+  - git config --global user.email "joshuap@unity3d.com"
+  - git config --global user.name "Josh Peterson"
+  - .yamato/scripts/update_from_upstream.sh
+
+triggers:
+  recurring:
+    - branch: unity-main
+      frequency: weekly
