@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {

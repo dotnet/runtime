@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
