@@ -4694,15 +4694,15 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     if (compLocallocSeen)
     {
-        whyNot = "localloc";
+        whyNot = "OSR can't handle localloc";
     }
     else if (compHasBackwardJumpInHandler)
     {
-        whyNot = "loop in handler";
+        whyNot = "OSR can't handle loop in handler";
     }
     else if (opts.IsReversePInvoke())
     {
-        whyNot = "reverse pinvoke";
+        whyNot = "OSR can't handle reverse pinvoke";
     }
 #else
     whyNot = "OSR feature not defined in build";

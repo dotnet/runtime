@@ -255,6 +255,7 @@ protected:
     void genEstablishFramePointer(int delta, bool reportUnwindData);
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
     void genEnregisterIncomingStackArgs();
+    void genEnregisterOSRArgsAndLocals();
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
     void genClearStackVec3ArgUpperBits();
