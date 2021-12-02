@@ -5175,20 +5175,6 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 
             emitLastLoopStart = currLoopStart;
             emitLastLoopEnd   = currLoopEnd;
-
-            for (insGroup* igInLoop = dstIG; igInLoop != nullptr; igInLoop = igInLoop->igNext)
-            {
-                // Presence of an IG that ends with an align instruction is misleading to the loop size calculation of
-                // current loop, because the padding amount is not known when loop size is calculated.
-                if (igInLoop->endsWithAlignInstr())
-                {
-                    alignCurrentLoop = false;
-                    JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it has IG%02u that contains an align instruction for a different loop.\n",
-                            currLoopStart, currLoopEnd, igInLoop->igNum);
-
-                    break;
-                }
-            }
         }
         else if (currLoopStart == emitLastLoopStart)
         {
@@ -5208,27 +5194,18 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
             // if current loop completely encloses last loop,
             // then current loop should not be aligned.
             alignCurrentLoop = false;
-            JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
-                    "IG%02u ~ IG%02u.\n",
-                    currLoopStart, currLoopEnd, emitLastLoopStart, emitLastLoopEnd);
         }
         else if ((emitLastLoopStart < currLoopStart) && (currLoopEnd < emitLastLoopEnd))
         {
             // if last loop completely encloses current loop,
             // then last loop should not be aligned.
             alignLastLoop = false;
-            JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
-                    "IG%02u ~ IG%02u.\n",
-                    emitLastLoopStart, emitLastLoopEnd, currLoopStart, currLoopEnd);
         }
         else
         {
             // The loops intersect and should not align either of the loops
             alignLastLoop    = false;
             alignCurrentLoop = false;
-            JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u that intersects with the current loop "
-                    "IG%02u ~ IG%02u.\n",
-                    emitLastLoopStart, emitLastLoopEnd, currLoopStart, currLoopEnd);
         }
 
         if (!alignLastLoop || !alignCurrentLoop)
@@ -5248,7 +5225,11 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 
                     // This IG should no longer contain alignment instruction
                     alignInstr->removeAlignFlags();
+
                     markedCurrLoop = true;
+                    JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
+                            "IG%02u ~ IG%02u.\n",
+                            currLoopStart, currLoopEnd, emitLastLoopStart, emitLastLoopEnd);
                 }
 
                 // Find the IG that has 'align' instruction to align the last loop
@@ -5260,7 +5241,11 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 
                     // This IG should no longer contain alignment instruction
                     alignInstr->removeAlignFlags();
+
                     markedLastLoop = true;
+                    JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
+                            "IG%02u ~ IG%02u.\n",
+                            emitLastLoopStart, emitLastLoopEnd, currLoopStart, currLoopEnd);
                 }
 
                 if (markedLastLoop && markedCurrLoop)
