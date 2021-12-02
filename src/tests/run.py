@@ -160,7 +160,7 @@ class DebugEnv:
         self.__create_repro_wrapper__()
 
         self.path = None
-        
+
         if self.args.host_os == "windows":
             self.path = self.unique_name + ".cmd"
         else:
@@ -1200,31 +1200,17 @@ def parse_test_results(args):
 
                     type = type.split("._")[0]
                     test_name = type + method
-
-                assert test_name != None
-
-                failed = collection.attrib["failed"]
-                skipped = collection.attrib["skipped"]
-                passed = collection.attrib["passed"]
-                time = float(collection.attrib["time"])
-
-                test_output = None
-
-                if failed == "1":
-                    failure_info = collection[0][0]
-                    test_output = failure_info.text
-
-                test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, test_name)
-                if test_location_on_filesystem is not None:
-                    assert os.path.isfile(test_location_on_filesystem)
-
+                    result = test.attrib["result"]
+                    time = float(collection.attrib["time"])
+                    test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, test_name)
+                    if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
+                        test_location_on_filesystem = None
+                    test_output = test.findtext("output")
                     assert tests[test_name] == None
                     tests[test_name] = defaultdict(lambda: None, {
                         "name": test_name,
                         "test_path": test_location_on_filesystem,
-                        "failed": failed,
-                        "skipped": skipped,
-                        "passed": passed,
+                        "result" : result,
                         "time": time,
                         "test_output": test_output
                     })
@@ -1249,9 +1235,9 @@ def print_summary(tests):
     for test in tests:
         test = tests[test]
 
-        if test["failed"] == "1":
+        if test["result"] == "Fail":
             failed_tests.append(test)
-        elif test["passed"] == "1":
+        elif test["result"] == "Pass":
             passed_tests.append(test)
         else:
             skipped_tests.append(test)
@@ -1289,7 +1275,7 @@ def print_summary(tests):
 
                 remainder_str = " %s %s" % (int(time_remainder), second_unit)
 
-            print("%s (%d %s%s)" % (item["test_path"], time, unit, remainder_str))
+            print("%s (%d %s%s)" % (item["test_path"] or item["name"], time, unit, remainder_str))
 
             if stop_count != None:
                 if index >= stop_count:
@@ -1317,7 +1303,7 @@ def print_summary(tests):
         print("")
 
         for item in failed_tests:
-            print("[%s]: " % item["test_path"])
+            print("[%s]: " % (item["test_path"] or item["name"]))
             print("")
 
             test_output = item["test_output"]
@@ -1330,20 +1316,23 @@ def print_summary(tests):
 
             # Replace CR/LF by just LF; Python "print", below, will map as necessary on the platform.
             # If we don't do this, then Python on Windows will convert \r\n to \r\r\n on output.
-            test_output = test_output.replace("\r\n", "\n")
+            if test_output is not None:
+                test_output = test_output.replace("\r\n", "\n")
 
-            unicode_output = None
-            if sys.version_info < (3,0):
-                # Handle unicode characters in output in python2.*
-                try:
-                    unicode_output = unicode(test_output, "utf-8")
-                except:
-                    print("Error: failed to convert Unicode output")
+                unicode_output = None
+                if sys.version_info < (3,0):
+                    # Handle unicode characters in output in python2.*
+                    try:
+                        unicode_output = unicode(test_output, "utf-8")
+                    except:
+                        print("Error: failed to convert Unicode output")
+                else:
+                    unicode_output = test_output
+
+                if unicode_output is not None:
+                    print(unicode_output)
             else:
-                unicode_output = test_output
-
-            if unicode_output is not None:
-                print(unicode_output)
+                print("# Test output recorded in log file.")
             print("")
 
         print("")
@@ -1371,7 +1360,7 @@ def create_repro(args, env, tests):
     """
     assert tests is not None
 
-    failed_tests = [tests[item] for item in tests if tests[item]["failed"] == "1"]
+    failed_tests = [tests[item] for item in tests if tests[item]["result"] == "Fail" and tests[item]["test_path"] is not None]
     if len(failed_tests) == 0:
         return
 
