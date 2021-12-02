@@ -2990,7 +2990,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // goto endLoop;
-                Br(endLoop);
+                BrFar(endLoop);
 
                 // Backtracking section. Subsequent failures will jump to here, at which
                 // point we decrement the matched count as long as it's above the minimum
