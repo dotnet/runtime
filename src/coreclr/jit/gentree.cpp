@@ -2648,7 +2648,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             return level;
         }
 #endif
-        switch (hwTree->gtHWIntrinsicId)
+        switch (hwTree->GetHWIntrinsicId())
         {
 #if defined(TARGET_XARCH)
             case NI_Vector128_Create:
@@ -2658,11 +2658,14 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             case NI_Vector128_Create:
 #endif
             {
-                if (hwTree->gtGetOp1()->OperIsConst() && (hwTree->gtGetOp2() == nullptr))
+                if ((hwTree->GetOperandCount() == 1) && hwTree->Op(1)->OperIsConst())
                 {
                     // Vector.Create(cns) is cheap but not that cheap to be (1,1)
-                    costEx = 2;
+                    costEx = IND_COST_EX;
                     costSz = 2;
+                    level = gtSetEvalOrder(hwTree->Op(1));
+                    hwTree->SetCosts(costEx, costSz);
+                    return level;
                 }
                 break;
             }
