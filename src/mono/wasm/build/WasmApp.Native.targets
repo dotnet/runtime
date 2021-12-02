@@ -487,7 +487,6 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
-      <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt"/>
     </ItemGroup>
     <ItemGroup>
       <_AotInputAssemblies Include="@(_WasmAssembliesInternal)">
