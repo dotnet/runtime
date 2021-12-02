@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 "use strict";
-
-createDotnetRuntime(({ MONO, BINDING, Module }) => ({
-    disableDotnet6Compatibility: true,
+var Module = {
     configSrc: "./mono-config.json",
     onDotnetReady: () => {
         try {
-            App.init({ MONO, BINDING, Module });
+            App.init();
         } catch (error) {
             set_exit_code(1, error);
             throw (error);
@@ -17,4 +15,4 @@ createDotnetRuntime(({ MONO, BINDING, Module }) => ({
     onAbort: (error) => {
         set_exit_code(1, error);
     },
-}));
+};
