@@ -12136,7 +12136,7 @@ mono_ins_no_side_effects (MonoInst *ins)
 	if (mono_op_no_side_effects (ins->opcode))
 		return TRUE;
 	if (ins->opcode == OP_AOTCONST) {
-		MonoJumpInfoType type = (MonoJumpInfoType)ins->inst_p1;
+		MonoJumpInfoType type = (MonoJumpInfoType)(intptr_t)ins->inst_p1;
 		// Some AOTCONSTs have side effects
 		switch (type) {
 		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
