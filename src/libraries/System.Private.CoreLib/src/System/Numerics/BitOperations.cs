@@ -42,8 +42,6 @@ namespace System.Numerics
             19, 27, 23, 06, 26, 05, 04, 31
         };
 
-        private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
-
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
         /// </summary>
@@ -712,6 +710,73 @@ namespace System.Numerics
 #endif
         }
 
+        private static class Crc32Fallback
+        {
+
+            private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
+
+            internal static uint Crc32C(uint crc, byte data)
+            {
+                ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
+
+            internal static uint Crc32C(uint crc, ushort data)
+            {
+
+                ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
+
+            internal static uint Crc32C(uint crc, uint data)
+            {
+                if (!BitConverter.IsLittleEndian)
+                {
+                    data = BinaryPrimitives.ReverseEndianness(data);
+                }
+
+                ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                return Crc32CImpl(ref lut, crc, data);
+            }
+
+            internal static uint Crc32C(uint crc, ulong data)
+            {
+                if (!BitConverter.IsLittleEndian)
+                {
+                    data = BinaryPrimitives.ReverseEndianness(data);
+                }
+
+                ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+                crc = Crc32CImpl(ref lut, crc, (uint)data);
+                data >>= 32;
+                crc = Crc32CImpl(ref lut, crc, (uint)data);
+
+                return crc;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static uint Crc32CImpl(ref uint lut, uint crc, uint data)
+            {
+                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
+        }
+
         /// <summary>
         /// Calculates the CRC (Cyclic redundancy check) checksum.
         ///
@@ -737,10 +802,7 @@ namespace System.Numerics
             }
 
             // Software fallback
-            ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
-
-            return crc;
+            return Crc32Fallback.Crc32C(crc, data);
         }
 
         /// <summary>
@@ -773,13 +835,7 @@ namespace System.Numerics
                 data = BinaryPrimitives.ReverseEndianness(data);
             }
 
-            ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-
-            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
-            data >>= 8;
-            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
-
-            return crc;
+            return Crc32Fallback.Crc32C(crc, data);
         }
 
         /// <summary>
@@ -807,14 +863,7 @@ namespace System.Numerics
             }
 
             // Software fallback
-            if (!BitConverter.IsLittleEndian)
-            {
-                data = BinaryPrimitives.ReverseEndianness(data);
-            }
-
-            ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-
-            return Crc32CImpl(ref lut, crc, data);
+            return Crc32Fallback.Crc32C(crc, data);
         }
 
         /// <summary>
@@ -849,27 +898,7 @@ namespace System.Numerics
                 data = BinaryPrimitives.ReverseEndianness(data);
             }
 
-            ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-
-            crc = Crc32CImpl(ref lut, crc, (uint)data);
-            data >>= 32;
-            crc = Crc32CImpl(ref lut, crc, (uint)data);
-
-            return crc;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint Crc32CImpl(ref uint lut, uint crc, uint data)
-        {
-            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
-            data >>= 8;
-            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
-            data >>= 8;
-            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
-            data >>= 8;
-            crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
-
-            return crc;
+            return Crc32Fallback.Crc32C(crc, data);
         }
     }
 }
