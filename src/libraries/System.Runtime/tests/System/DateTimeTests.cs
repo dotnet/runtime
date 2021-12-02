@@ -2035,6 +2035,10 @@ namespace System.Tests
             yield return new object[] { new DateTime(1101778442151366156, DateTimeKind.Utc), "O", null, "3492-05-25T12:43:35.1366156Z" };
             yield return new object[] { new DateTime(221550163152616218, DateTimeKind.Utc), "r", null, "Sun, 25 Jan 0703 19:11:55 GMT" };
 
+            // https://github.com/dotnet/runtime/issues/61598
+            yield return new object[] { new DateTime(221550163152616218, DateTimeKind.Utc), "yyyy-MM-dd HH:mm:ss.fff", null, "0703-01-25 19:11:55.261" };
+            yield return new object[] { new DateTime(221550163152616218, DateTimeKind.Utc), "yyyy-MM-dd HH:mm:ss.fffffff", null, "0703-01-25 19:11:55.2616218" };
+
             // Year patterns
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
