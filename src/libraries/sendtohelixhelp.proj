@@ -261,6 +261,7 @@
       <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' != 'true'">$(HelixCommandPrefix) </HelixCommand>
       <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' == 'true'">$(HelixCommandPrefix) &amp; </HelixCommand>
 
+      <HelixCommand Condition="'$(BrowserHost)' != 'windows'">$(HelixCommand) which dotnet &amp;&amp; </HelixCommand>
       <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(BrowserHost)' != 'windows'">$(HelixCommand) dotnet dev-certs https &amp;&amp; </HelixCommand>
 
       <!-- on windows `dotnet dev-certs https shows a dialog, so instead install the certificate with powershell -->
