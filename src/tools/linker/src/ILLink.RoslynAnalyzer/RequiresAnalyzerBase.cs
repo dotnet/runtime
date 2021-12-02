@@ -335,12 +335,11 @@ namespace ILLink.RoslynAnalyzer
 				message));
 		}
 
+		// TODO: Should consider when a symbol is a method of a class that has the attribute
 		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2)
 		{
-			bool member1HasAttribute = TargetHasRequiresAttribute (member1, true, out _);
-
-			bool member2HasAttribute = TargetHasRequiresAttribute (member2, true, out _);
-
+			bool member1HasAttribute = IsMemberInRequiresScope (member1);
+			bool member2HasAttribute = IsMemberInRequiresScope (member2);
 			return member1HasAttribute ^ member2HasAttribute;
 		}
 
@@ -368,11 +367,6 @@ namespace ILLink.RoslynAnalyzer
 		/// </summary>
 		protected bool TargetHasRequiresAttribute (ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
 		{
-			return TargetHasRequiresAttribute(member, false, out requiresAttribute);
-		}
-
-		private bool TargetHasRequiresAttribute (ISymbol member, bool inheritRucForInstanceMethods, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
-		{
 			requiresAttribute = null;
 			if (member.IsStaticConstructor ()) {
 				return false;
@@ -383,7 +377,7 @@ namespace ILLink.RoslynAnalyzer
 			}
 
 			// Also check the containing type
-			if (inheritRucForInstanceMethods || member.IsStatic || member.IsConstructor ()) {
+			if (member.IsStatic || member.IsConstructor ()) {
 				return TryGetRequiresAttribute (member.ContainingType, out requiresAttribute);
 			}
 			return false;
