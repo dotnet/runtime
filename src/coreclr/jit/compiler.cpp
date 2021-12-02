@@ -5245,9 +5245,9 @@ void Compiler::placeLoopAlignInstructions()
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
-    weight_t    minBlockSoFar = BB_MAX_WEIGHT;
-    BasicBlock* bbHavingAlign = nullptr;
-    BasicBlock::loopNumber latestLoopNum = BasicBlock::NOT_IN_LOOP;
+    weight_t               minBlockSoFar = BB_MAX_WEIGHT;
+    BasicBlock*            bbHavingAlign = nullptr;
+    BasicBlock::loopNumber currentLoopNum = BasicBlock::NOT_IN_LOOP;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5266,7 +5266,7 @@ void Compiler::placeLoopAlignInstructions()
             if (block->bbWeight < minBlockSoFar)
             {
                 // Only if they are not part of the loop that will be aligned
-                if ((block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP) || (block->bbNatLoopNum != latestLoopNum))
+                if ((block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP) || (block->bbNatLoopNum != currentLoopNum))
                 {
                     minBlockSoFar = block->bbWeight;
                     bbHavingAlign = block;
@@ -5295,7 +5295,7 @@ void Compiler::placeLoopAlignInstructions()
             bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             minBlockSoFar = BB_MAX_WEIGHT;
             bbHavingAlign = nullptr;
-            latestLoopNum = block->bbNext->bbNatLoopNum;
+            currentLoopNum = block->bbNext->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {
@@ -5307,7 +5307,7 @@ void Compiler::placeLoopAlignInstructions()
         {
             // This is the last block of current loop. Reset the latestLoopNum so we can resume
             // placing the align behind jmp for subsequent loops.
-            latestLoopNum = BasicBlock::NOT_IN_LOOP;
+            currentLoopNum = BasicBlock::NOT_IN_LOOP;
         }
     }
 
