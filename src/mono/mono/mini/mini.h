@@ -667,7 +667,13 @@ typedef enum {
 	/* Vtype returned as an int */
 	LLVMArgVtypeAsScalar,
 	/* Address to local vtype passed as argument (using register or stack). */
-	LLVMArgVtypeAddr
+	LLVMArgVtypeAddr,
+	/*
+	 * On WASM, a one element vtype is passed/returned as a scalar with the same
+	 * type as the element.
+	 * esize is the size of the value.
+	 */
+	LLVMArgWasmVtypeAsScalar
 } LLVMArgStorage;
 
 typedef struct {
