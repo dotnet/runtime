@@ -18052,8 +18052,11 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
     }
 #endif
 
-    GenTree* op1 = tree->AsOp()->gtOp1;
-    GenTree* op2 = tree->AsOp()->gtOp2;
+    GenTree* lclVarTree = tree->AsOp()->gtOp2;
+    GenTree* consTree   = tree->AsOp()->gtOp1;
+
+    GenTree* op1 = consTree;
+    GenTree* op2 = lclVarTree;
 
     if (!op2->OperIs(GT_LCL_VAR) || !varTypeIsIntegral(op2))
     {
@@ -18090,8 +18093,6 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 
     // V0 + V0 ... + V0 becomes V0 * foldCount, where postorder transform will optimize
     // accordingly
-    GenTree* lclVarTree = tree->AsOp()->gtOp2;
-    GenTree* consTree   = tree->AsOp()->gtOp1;
     consTree->BashToConst(foldCount, lclVarTree->TypeGet());
 
     GenTree* morphed = gtNewOperNode(GT_MUL, tree->TypeGet(), lclVarTree, consTree);
