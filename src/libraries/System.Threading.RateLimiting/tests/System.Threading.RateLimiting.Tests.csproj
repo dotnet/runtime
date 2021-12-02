@@ -3,7 +3,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Internal\TaskExtensions.cs" />
     <Compile Include="BaseRateLimiterTests.cs" />
     <Compile Include="ConcurrencyLimiterTests.cs" />
     <Compile Include="TokenBucketRateLimiterTests.cs" />

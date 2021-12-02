@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.RateLimiting.Tests.Internal;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -41,7 +40,7 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
 
-            using var lease = await limiter.WaitAsync().DefaultTimeout();
+            using var lease = await limiter.WaitAsync();
 
             Assert.True(lease.IsAcquired);
             var wait = limiter.WaitAsync();
@@ -49,7 +48,7 @@ namespace System.Threading.RateLimiting.Test
 
             Assert.True(limiter.TryReplenish());
 
-            Assert.True((await wait.DefaultTimeout()).IsAcquired);
+            Assert.True((await wait).IsAcquired);
         }
 
         [Fact]
@@ -57,7 +56,7 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2,
                 TimeSpan.Zero, 1, autoReplenishment: false));
-            var lease = await limiter.WaitAsync().DefaultTimeout();
+            var lease = await limiter.WaitAsync();
 
             Assert.True(lease.IsAcquired);
             var wait1 = limiter.WaitAsync();
@@ -68,7 +67,7 @@ namespace System.Threading.RateLimiting.Test
             lease.Dispose();
             Assert.True(limiter.TryReplenish());
 
-            lease = await wait1.DefaultTimeout();
+            lease = await wait1;
             Assert.True(lease.IsAcquired);
             Assert.False(wait2.IsCompleted);
 
@@ -76,7 +75,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(0, limiter.GetAvailablePermits());
             Assert.True(limiter.TryReplenish());
 
-            lease = await wait2.DefaultTimeout();
+            lease = await wait2;
             Assert.True(lease.IsAcquired);
         }
 
@@ -86,7 +85,7 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 3,
                 TimeSpan.FromMinutes(0), 1, autoReplenishment: false));
 
-            var lease = await limiter.WaitAsync(2).DefaultTimeout();
+            var lease = await limiter.WaitAsync(2);
             Assert.True(lease.IsAcquired);
 
             var wait1 = limiter.WaitAsync(2);
@@ -98,7 +97,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(limiter.TryReplenish());
 
             // second queued item completes first with NewestFirst
-            lease = await wait2.DefaultTimeout();
+            lease = await wait2;
             Assert.True(lease.IsAcquired);
             Assert.False(wait1.IsCompleted);
 
@@ -107,7 +106,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(limiter.TryReplenish());
             Assert.True(limiter.TryReplenish());
 
-            lease = await wait1.DefaultTimeout();
+            lease = await wait1;
             Assert.True(lease.IsAcquired);
         }
 
@@ -119,7 +118,7 @@ namespace System.Threading.RateLimiting.Test
             using var lease = limiter.Acquire(1);
             var wait = limiter.WaitAsync(1);
 
-            var failedLease = await limiter.WaitAsync(1).DefaultTimeout();
+            var failedLease = await limiter.WaitAsync(1);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
             Assert.Equal(TimeSpan.Zero, timeSpan);
@@ -133,18 +132,18 @@ namespace System.Threading.RateLimiting.Test
             var lease = limiter.Acquire(1);
             var wait = limiter.WaitAsync(1);
 
-            var failedLease = await limiter.WaitAsync(1).DefaultTimeout();
+            var failedLease = await limiter.WaitAsync(1);
             Assert.False(failedLease.IsAcquired);
 
             limiter.TryReplenish();
-            lease = await wait.DefaultTimeout();
+            lease = await wait;
             Assert.True(lease.IsAcquired);
 
             wait = limiter.WaitAsync(1);
             Assert.False(wait.IsCompleted);
 
             limiter.TryReplenish();
-            lease = await wait.DefaultTimeout();
+            lease = await wait;
             Assert.True(lease.IsAcquired);
         }
 
@@ -161,7 +160,7 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAsync(2).DefaultTimeout());
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAsync(2));
         }
 
         [Fact]
@@ -177,7 +176,7 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAsync(-1).DefaultTimeout());
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAsync(-1));
         }
 
         [Fact]
@@ -209,7 +208,7 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
 
-            using var lease = await limiter.WaitAsync(0).DefaultTimeout();
+            using var lease = await limiter.WaitAsync(0);
             Assert.True(lease.IsAcquired);
         }
 
@@ -218,7 +217,7 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1,
                 TimeSpan.Zero, 1, autoReplenishment: false));
-            var lease = await limiter.WaitAsync(1).DefaultTimeout();
+            var lease = await limiter.WaitAsync(1);
             Assert.True(lease.IsAcquired);
 
             var wait = limiter.WaitAsync(0);
@@ -226,7 +225,7 @@ namespace System.Threading.RateLimiting.Test
 
             lease.Dispose();
             Assert.True(limiter.TryReplenish());
-            using var lease2 = await wait.DefaultTimeout();
+            using var lease2 = await wait;
             Assert.True(lease2.IsAcquired);
         }
 
@@ -235,7 +234,7 @@ namespace System.Threading.RateLimiting.Test
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(2, QueueProcessingOrder.OldestFirst, 2,
                 TimeSpan.Zero, 2, autoReplenishment: false));
-            using var lease = await limiter.WaitAsync(2).DefaultTimeout();
+            using var lease = await limiter.WaitAsync(2);
             Assert.True(lease.IsAcquired);
 
             var wait1 = limiter.WaitAsync(1);
@@ -246,8 +245,8 @@ namespace System.Threading.RateLimiting.Test
             lease.Dispose();
             Assert.True(limiter.TryReplenish());
 
-            var lease1 = await wait1.DefaultTimeout();
-            var lease2 = await wait2.DefaultTimeout();
+            var lease1 = await wait1;
+            var lease2 = await wait2;
             Assert.True(lease1.IsAcquired);
             Assert.True(lease2.IsAcquired);
         }
@@ -264,7 +263,7 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.WaitAsync(1, cts.Token);
 
             cts.Cancel();
-            await Assert.ThrowsAsync<OperationCanceledException>(() => wait.DefaultTimeout());
+            await Assert.ThrowsAsync<OperationCanceledException>(() => wait.AsTask());
 
             lease.Dispose();
             Assert.True(limiter.TryReplenish());
@@ -283,7 +282,7 @@ namespace System.Threading.RateLimiting.Test
             var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).DefaultTimeout());
+            await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).AsTask());
 
             lease.Dispose();
             Assert.True(limiter.TryReplenish());
@@ -372,7 +371,7 @@ namespace System.Threading.RateLimiting.Test
 
             using var lease = limiter.Acquire(2);
 
-            var failedLease = await limiter.WaitAsync(2).DefaultTimeout();
+            var failedLease = await limiter.WaitAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter.Name, out var metadata));
             var metaDataTime = Assert.IsType<TimeSpan>(metadata);
@@ -395,7 +394,7 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.WaitAsync(1);
             Assert.False(wait.IsCompleted);
 
-            var failedLease = await limiter.WaitAsync(2).DefaultTimeout();
+            var failedLease = await limiter.WaitAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
             Assert.Equal(options.ReplenishmentPeriod.Ticks * 3, typedMetadata.Ticks);
@@ -413,7 +412,7 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.WaitAsync(1);
             Assert.False(wait.IsCompleted);
 
-            var failedLease = await limiter.WaitAsync(2).DefaultTimeout();
+            var failedLease = await limiter.WaitAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
             Assert.Equal(options.ReplenishmentPeriod, typedMetadata);
@@ -431,7 +430,7 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.WaitAsync(1);
             Assert.False(wait.IsCompleted);
 
-            var failedLease = await limiter.WaitAsync(2).DefaultTimeout();
+            var failedLease = await limiter.WaitAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
             Assert.Equal(options.ReplenishmentPeriod, typedMetadata);
@@ -446,7 +445,7 @@ namespace System.Threading.RateLimiting.Test
 
             using var lease = limiter.Acquire(2);
 
-            var failedLease = await limiter.WaitAsync(3).DefaultTimeout();
+            var failedLease = await limiter.WaitAsync(3);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
             Assert.Equal(options.ReplenishmentPeriod.Ticks * 2, typedMetadata.Ticks);
@@ -496,7 +495,7 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(2, limiter.GetAvailablePermits());
             limiter.Acquire(2);
 
-            var lease = await limiter.WaitAsync(1).DefaultTimeout();
+            var lease = await limiter.WaitAsync(1);
             Assert.True(lease.IsAcquired);
         }
 
@@ -513,13 +512,13 @@ namespace System.Threading.RateLimiting.Test
             Assert.False(wait.IsCompleted);
 
             Assert.Equal(1, limiter.GetAvailablePermits());
-            lease = await limiter.WaitAsync(1).DefaultTimeout();
+            lease = await limiter.WaitAsync(1);
             Assert.True(lease.IsAcquired);
             Assert.False(wait.IsCompleted);
 
             limiter.TryReplenish();
 
-            lease = await wait.DefaultTimeout();
+            lease = await wait;
             Assert.True(lease.IsAcquired);
         }
 
@@ -539,13 +538,13 @@ namespace System.Threading.RateLimiting.Test
 
             limiter.TryReplenish();
 
-            lease = await wait.DefaultTimeout();
+            lease = await wait;
             Assert.True(lease.IsAcquired);
             Assert.False(wait2.IsCompleted);
 
             limiter.TryReplenish();
 
-            lease = await wait2.DefaultTimeout();
+            lease = await wait2;
             Assert.True(lease.IsAcquired);
         }
 
@@ -567,7 +566,7 @@ namespace System.Threading.RateLimiting.Test
 
             limiter.TryReplenish();
 
-            lease = await wait.DefaultTimeout();
+            lease = await wait;
             Assert.True(lease.IsAcquired);
         }
 
@@ -588,7 +587,7 @@ namespace System.Threading.RateLimiting.Test
 
             limiter.TryReplenish();
 
-            lease = await wait.DefaultTimeout();
+            lease = await wait;
             Assert.True(lease.IsAcquired);
         }
 
@@ -608,7 +607,7 @@ namespace System.Threading.RateLimiting.Test
             // This will set the last tick to the max value
             replenishInternalMethod.Invoke(limiter, new object[] { uint.MaxValue });
 
-            lease = await wait.DefaultTimeout();
+            lease = await wait;
             Assert.True(lease.IsAcquired);
 
             wait = limiter.WaitAsync(1);
@@ -616,7 +615,7 @@ namespace System.Threading.RateLimiting.Test
 
             // ticks wrapped, should replenish
             replenishInternalMethod.Invoke(limiter, new object[] { 2U });
-            lease = await wait.DefaultTimeout();
+            lease = await wait;
             Assert.True(lease.IsAcquired);
 
             replenishInternalMethod.Invoke(limiter, new object[] { uint.MaxValue });
