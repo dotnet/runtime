@@ -376,10 +376,19 @@ void BlockCountInstrumentor::Prepare(bool preImport)
     {
         JITDUMP("OSR + PGO + potential tail call --- preparing to relocate block probes\n");
 
+        // We should be in a root method compiler instance. OSR + PGO does not
+        // currently try and instrument inlinees.
+        //
+        // Relaxing this will require changes below because inlinee compilers
+        // share the root compiler flow graph (and hence bb epoch), and flow
+        // from inlinee tail calls to returns can be more complex.
+        //
+        assert(!m_comp->compIsForInlining());
+
         // Build cheap preds.
         //
         m_comp->fgComputeCheapPreds();
-        m_comp->NewBasicBlockEpoch();
+        m_comp->EnsureBasicBlockEpoch();
 
         // Keep track of return blocks needing special treatment.
         // We also need to track of duplicate preds.
@@ -764,7 +773,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     // graph. So for BlockSets and NumSucc, we use the root compiler instance.
     //
     Compiler* const comp = impInlineRoot();
-    comp->NewBasicBlockEpoch();
+    comp->EnsureBasicBlockEpoch();
 
     // We will track visited or queued nodes with a bit vector.
     //
