@@ -12566,6 +12566,8 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
         CORINFO_CLASS_HANDLE nullableHnd = gtGetStructHandle(arg->AsOp()->gtOp1);
         CORINFO_FIELD_HANDLE fieldHnd    = info.compCompHnd->getFieldInClass(nullableHnd, 0);
 
+        INDEBUG(RecordStructFieldInfo(fieldHnd));
+
         // Replace the box with an access of the nullable 'hasValue' field.
         JITDUMP("\nSuccess: replacing BOX_NULLABLE(&x) [%06u] with x.hasValue\n", dspTreeID(op));
         GenTree* newOp = gtNewFieldRef(TYP_BOOL, fieldHnd, arg, 0);

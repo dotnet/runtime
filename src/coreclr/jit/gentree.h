@@ -278,6 +278,43 @@ struct FieldSeqNode
     }
 };
 
+#ifdef DEBUG
+// This class carries some about fields information neeeded for asserts from imporation to VN.
+// Essentially, this is CORINFO_FIELD_INFO but Jit-specific and smaller.
+class FieldInfo
+{
+    const unsigned               m_flags;
+    const CORINFO_FIELD_ACCESSOR m_accessor;
+
+public:
+    FieldInfo(CORINFO_FIELD_INFO* eeFieldInfo)
+        : m_flags(eeFieldInfo->fieldFlags), m_accessor(eeFieldInfo->fieldAccessor)
+    {
+    }
+
+    FieldInfo() : m_flags(0), m_accessor(CORINFO_FIELD_INSTANCE)
+    {
+    }
+
+    bool IsStatic() const
+    {
+        return (m_flags & CORINFO_FLG_FIELD_STATIC) != 0;
+    }
+
+    bool IsBoxedStatic() const
+    {
+        return (m_flags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
+    }
+
+    bool IsSharedStatic() const
+    {
+        return m_accessor == CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
+    }
+};
+
+typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, const FieldInfo*> FieldInfoMap;
+#endif // DEBUG
+
 // This class canonicalizes field sequences.
 class FieldSeqStore
 {
