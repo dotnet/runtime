@@ -954,10 +954,12 @@ namespace System.Text.RegularExpressions
             // Load necessary locals
             // int runtextpos = this.runtextpos;
             // int runtextend = this.runtextend;
-            // ReadOnlySpan<char> runtextSpan = this.runtext;
+            // ReadOnlySpan<char> runtextSpan = this.runtext.AsSpan();
             Mvfldloc(s_runtextposField, _runtextposLocal);
             Mvfldloc(s_runtextendField, _runtextendLocal);
-            Mvfldloc(s_runtextField, _runtextSpanLocal);
+            Ldthisfld(s_runtextField);
+            Call(s_stringAsSpanMethod);
+            Stloc(_runtextSpanLocal);
             if (_code.RightToLeft)
             {
                 Mvfldloc(s_runtextbegField, _runtextbegLocal!);
@@ -1141,9 +1143,10 @@ namespace System.Text.RegularExpressions
                                     Ldloc(_runtextposLocal);
                                     Ldloc(_runtextendLocal);
                                     Beq(l2);
-                                    Ldloc(_runtextSpanLocal);
+                                    Ldloca(_runtextSpanLocal);
                                     Ldloc(_runtextposLocal);
                                     Call(s_spanGetItemMethod);
+                                    LdindU2();
                                     Ldc('\n');
                                     Beq(l2);
                                     MarkLabel(l1);
@@ -1194,16 +1197,17 @@ namespace System.Text.RegularExpressions
                                 Ble(atBeginningOfLine);
 
                                 // ... && runtextSpan[runtextpos - 1] != '\n') { ... }
-                                Ldloc(_runtextSpanLocal);
+                                Ldloca(_runtextSpanLocal);
                                 Ldloc(_runtextposLocal);
                                 Ldc(1);
                                 Sub();
                                 Call(s_spanGetItemMethod);
+                                LdindU2();
                                 Ldc('\n');
                                 Beq(atBeginningOfLine);
 
                                 // int tmp = runtextSpan.Slice(runtextpos).IndexOf('\n');
-                                Ldloc(_runtextSpanLocal);
+                                Ldloca(_runtextSpanLocal);
                                 Ldloc(_runtextposLocal);
                                 Call(s_spanSliceIntMethod);
                                 Ldc('\n');
@@ -1251,8 +1255,7 @@ namespace System.Text.RegularExpressions
                 using RentedLocalBuilder i = RentInt32Local();
 
                 // int i = runtextSpan.Slice(runtextpos, runtextend - runtextpos).IndexOf(prefix);
-                Ldthis();
-                Ldloc(_runtextSpanLocal);
+                Ldloca(_runtextSpanLocal);
                 Ldloc(_runtextposLocal);
                 Ldloc(_runtextendLocal);
                 Ldloc(_runtextposLocal);
@@ -1284,8 +1287,7 @@ namespace System.Text.RegularExpressions
                 using RentedLocalBuilder i = RentInt32Local();
 
                 // int i = runtextSpan.Slice(runtextbeg, runtextpos - runtextbeg).LastIndexOf(prefix);
-                Ldthis();
-                Ldloc(_runtextSpanLocal);
+                Ldloca(_runtextSpanLocal);
                 Ldloc(_runtextbegLocal!);
                 Ldloc(_runtextposLocal);
                 Ldloc(_runtextbegLocal!);
@@ -1324,8 +1326,7 @@ namespace System.Text.RegularExpressions
                 if (set.Chars is { Length: 1 } && !set.CaseInsensitive)
                 {
                     // int i = runtextSpan.Slice(runtextbeg, runtextpos - runtextbeg).LastIndexOf(set.Chars[0]);
-                    Ldthis();
-                    Ldloc(_runtextSpanLocal);
+                    Ldloca(_runtextSpanLocal);
                     Ldloc(_runtextbegLocal!);
                     Ldloc(_runtextposLocal);
                     Ldloc(_runtextbegLocal!);
@@ -1367,9 +1368,10 @@ namespace System.Text.RegularExpressions
 
                     // if (MatchCharClass(runtextSpan[i], set))
                     MarkLabel(body);
-                    Ldloc(_runtextSpanLocal);
+                    Ldloca(_runtextSpanLocal);
                     Ldloc(i);
                     Call(s_spanGetItemMethod);
+                    LdindU2();
                     EmitMatchCharacterClass(set.Set, set.CaseInsensitive);
                     Brfalse(increment);
 
@@ -1411,7 +1413,7 @@ namespace System.Text.RegularExpressions
                 using RentedLocalBuilder textSpanLocal = RentReadOnlySpanCharLocal();
 
                 // ReadOnlySpan<char> span = runtextSpan.Slice(runtextpos, runtextend - runtextpos);
-                Ldloc(_runtextSpanLocal);
+                Ldloca(_runtextSpanLocal);
                 Ldloc(_runtextposLocal);
                 Ldloc(_runtextendLocal);
                 Ldloc(_runtextposLocal);
