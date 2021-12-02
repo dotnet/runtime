@@ -6,9 +6,10 @@
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' == 'true'">$(AppBundleRoot)runonly\$(AssemblyName)</PublishDir>
     <BundleDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PublishDir)', 'AppBundle'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    
+
+    <BundleTestApp Condition="'$(BundleTestApp)' == ''">true</BundleTestApp>
     <PublishingTestsRun>true</PublishingTestsRun>
-    <BundleTestAppTargets>BundleTestAndroidApp</BundleTestAppTargets>
+    <BundleTestAppTargets Condition="'$(BundleTestApp)' == 'true'">BundleTestAndroidApp</BundleTestAppTargets>
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
   </PropertyGroup>
 

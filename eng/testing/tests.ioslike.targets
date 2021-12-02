@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAppleApp</BundleTestAppTargets>
+    <BundleTestAppTargets Condition="'$(BundleTestApp)' == 'true'">$(BundleTestAppTargets);BundleTestAppleApp</BundleTestAppTargets>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -39,8 +39,8 @@
   <PropertyGroup>
     <AppleBuildAppDependsOn>PrepareForAppleBuildApp;$(AppleBuildAppDependsOn);_CopyTestArchive</AppleBuildAppDependsOn>
   
-    <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOn)' == 'local'">AppleBuildApp</BundleTestAppleAppDependsOn>
-    <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOnHelix)' == 'true'">$(BundleTestAppleAppDependsOn);_BundleAOTTestAppleAppForHelix;_CopyTestArchive</BundleTestAppleAppDependsOn>
+    <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOn)' == 'local' and '$(BundleTestApp)' == 'true'">AppleBuildApp</BundleTestAppleAppDependsOn>
+    <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOnHelix)' == 'true' and '$(BundleTestApp)' == 'true'">$(BundleTestAppleAppDependsOn);_BundleAOTTestAppleAppForHelix;_CopyTestArchive</BundleTestAppleAppDependsOn>
   </PropertyGroup>
   
   <Target Name="BundleTestAppleApp" DependsOnTargets="$(BundleTestAppleAppDependsOn)" />
