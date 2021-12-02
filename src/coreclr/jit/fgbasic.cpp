@@ -536,10 +536,10 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 // Notes:
 // 1. Only branches are changed: BBJ_ALWAYS, the non-fallthrough path of BBJ_COND, BBJ_SWITCH, etc.
 //    We ignore other block types.
-// 2. Only the first target found is updated. If there are multiple ways for a block
-//    to reach 'oldTarget' (e.g., multiple arms of a switch), only the first one found is changed.
+// 2. All branch targets found are updated. If there are multiple ways for a block
+//    to reach 'oldTarget' (e.g., multiple arms of a switch), all of them are changed.
 // 3. The predecessor lists are not changed.
-// 4. The switch table "unique successor" cache is invalidated.
+// 4. If any switch table entry was updated, the switch table "unique successor" cache is invalidated.
 //
 // This function is most useful early, before the full predecessor lists have been computed.
 //
@@ -569,20 +569,26 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             break;
 
         case BBJ_SWITCH:
-            unsigned jumpCnt;
-            jumpCnt = block->bbJumpSwt->bbsCount;
-            BasicBlock** jumpTab;
-            jumpTab = block->bbJumpSwt->bbsDstTab;
+        {
+            unsigned const     jumpCnt = block->bbJumpSwt->bbsCount;
+            BasicBlock** const jumpTab = block->bbJumpSwt->bbsDstTab;
+            bool               changed = false;
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
                 if (jumpTab[i] == oldTarget)
                 {
                     jumpTab[i] = newTarget;
-                    break;
+                    changed    = true;
                 }
             }
+
+            if (changed)
+            {
+                InvalidateUniqueSwitchSuccMap();
+            }
             break;
+        }
 
         default:
             assert(!"Block doesn't have a valid bbJumpKind!!!!");
@@ -1947,9 +1953,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     // is based in that we know what trees we will
                     // generate for this ldfld, and we require that we
                     // won't need the address of this local at all
-                    noway_assert(varNum < lvaTableCnt);
 
-                    const bool notStruct    = !varTypeIsStruct(&lvaTable[varNum]);
+                    const bool notStruct    = !varTypeIsStruct(lvaGetDesc(varNum));
                     const bool notLastInstr = (codeAddr < codeEndp - sz);
                     const bool notDebugCode = !opts.compDbgCode;
 

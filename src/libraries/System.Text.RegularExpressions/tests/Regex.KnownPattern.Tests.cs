@@ -504,8 +504,6 @@ namespace System.Text.RegularExpressions.Tests
 
             Regex rBack = await RegexHelpers.GetRegexAsync(engine, @"(\w)\1+.\b");
             Regex rNoBack = await RegexHelpers.GetRegexAsync(engine, @"(?>(\w)\1+).\b");
-            string[] inputs = { "aaad", "aaaa" };
-
             Match back, noback;
 
             back = rBack.Match("cccd.");
@@ -1117,6 +1115,95 @@ namespace System.Text.RegularExpressions.Tests
                 Regex.Replace(Input, Pattern, m => string.Concat(m.Value.Reverse())));
         }
 
+        //
+        // Based on examples from https://blog.stevenlevithan.com/archives/balancing-groups
+        //
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Blog_Levithan_BalancingGroups_Palindromes(RegexEngine engine)
+        {
+            if (RegexHelpers.IsNonBacktracking(engine))
+            {
+                // balancing groups not supported
+                return;
+            }
+
+            Regex r = await RegexHelpers.GetRegexAsync(engine, @"(?<N>.)+.?(?<-N>\k<N>)+(?(N)(?!))");
+
+            // Palindromes
+            Assert.All(new[]
+            {
+                "kayak",
+                "racecar",
+                "never odd or even",
+                "madam im adam"
+            }, p => Assert.True(r.IsMatch(p)));
+
+            // Non-Palindromes
+            Assert.All(new[]
+            {
+                "canoe",
+                "raceboat"
+            }, p => Assert.False(r.IsMatch(p)));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Blog_Levithan_BalancingGroups_MatchingParentheses(RegexEngine engine)
+        {
+            if (RegexHelpers.IsNonBacktracking(engine))
+            {
+                // balancing groups not supported
+                return;
+            }
+
+            Regex r = await RegexHelpers.GetRegexAsync(engine, @"^\(
+                                                                     (?>
+                                                                         [^()]+
+                                                                     |
+                                                                         \( (?<Depth>)
+                                                                     |
+                                                                         \) (?<-Depth>)
+                                                                     )*
+                                                                     (?(Depth)(?!))
+                                                                 \)$", RegexOptions.IgnorePatternWhitespace);
+
+            Assert.True(r.IsMatch("()"));
+            Assert.True(r.IsMatch("(a(b c(de(f(g)hijkl))mn))"));
+
+            Assert.False(r.IsMatch("("));
+            Assert.False(r.IsMatch(")"));
+            Assert.False(r.IsMatch("())"));
+            Assert.False(r.IsMatch("(()"));
+            Assert.False(r.IsMatch("(ab(cd)ef"));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Blog_Levithan_BalancingGroups_WordLengthIncreases(RegexEngine engine)
+        {
+            if (RegexHelpers.IsNonBacktracking(engine))
+            {
+                // balancing groups not supported
+                return;
+            }
+
+            Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(?:
+                                                                     (?(A)\s|)
+                                                                     (?<B>)
+                                                                     (?<C-B>\w)+ (?(B)(?!))
+                                                                     (?:
+                                                                         \s
+                                                                         (?<C>)
+                                                                         (?<B-C>\w)+ (?(C)(?!))
+                                                                         (?<A>)
+                                                                     )?
+                                                                 )+ \b$", RegexOptions.IgnorePatternWhitespace);
+
+            Assert.True(r.IsMatch("a bc def ghij klmni"));
+            Assert.False(r.IsMatch("a bc def ghi klmn"));
+        }
 
         //
         // These patterns come from real-world customer usages

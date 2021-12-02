@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     process.cpp
@@ -12,8 +10,6 @@ Module Name:
 Abstract:
 
     Implementation of process object and functions related to processes.
-
-
 
 --*/
 
@@ -99,7 +95,7 @@ extern "C"
         if (machret != KERN_SUCCESS)                                        \
         {                                                                   \
             char _szError[1024];                                            \
-            snprintf(_szError, _countof(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            snprintf(_szError, ARRAY_SIZE(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
             mach_error(_szError, machret);                                  \
             abort();                                                        \
         }                                                                   \
@@ -2993,7 +2989,7 @@ CreateProcessModules(
         int devHi, devLo, inode;
         char moduleName[PATH_MAX];
 
-        if (sscanf_s(line, "%p-%p %*[-rwxsp] %p %x:%x %d %s\n", &startAddress, &endAddress, &offset, &devHi, &devLo, &inode, moduleName, _countof(moduleName)) == 7)
+        if (sscanf_s(line, "%p-%p %*[-rwxsp] %p %x:%x %d %s\n", &startAddress, &endAddress, &offset, &devHi, &devLo, &inode, moduleName, ARRAY_SIZE(moduleName)) == 7)
         {
             if (inode != 0)
             {

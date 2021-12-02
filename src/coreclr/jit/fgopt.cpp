@@ -5943,6 +5943,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                         // Update the loop table if we removed the bottom of a loop, for example.
                         fgUpdateLoopsAfterCompacting(block, bNext);
 
+                        // If this block was aligned, unmark it
+                        bNext->unmarkLoopAlign(this DEBUG_ARG("Optimized jump"));
+
                         // If this is the first Cold basic block update fgFirstColdBlock
                         if (bNext == fgFirstColdBlock)
                         {

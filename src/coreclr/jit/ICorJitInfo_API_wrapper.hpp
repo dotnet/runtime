@@ -455,15 +455,6 @@ uint32_t WrapICorJitInfo::getClassAttribs(
     return temp;
 }
 
-bool WrapICorJitInfo::isStructRequiringStackAllocRetBuf(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(isStructRequiringStackAllocRetBuf);
-    bool temp = wrapHnd->isStructRequiringStackAllocRetBuf(cls);
-    API_LEAVE(isStructRequiringStackAllocRetBuf);
-    return temp;
-}
-
 CORINFO_MODULE_HANDLE WrapICorJitInfo::getClassModule(
           CORINFO_CLASS_HANDLE cls)
 {

@@ -619,6 +619,15 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, null, @"(.*)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages/homepage.aspx", "index" } };
                 yield return new object[] { engine, null, @"(.*)/(.+)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages", "homepage.aspx", "index" } };
 
+                // Captures inside varying constructs with backtracking needing to uncapture
+                yield return new object[] { engine, null, @"a(bc)d|abc(e)", "abce", RegexOptions.None, new string[] { "abce", "", "e" } }; // alternation
+                yield return new object[] { engine, null, @"((ab){2}cd)*", "ababcdababcdababc", RegexOptions.None, new string[] { "ababcdababcd", "ababcd", "ab" } }; // loop
+                yield return new object[] { engine, null, @"(ab(?=(\w)\w))*a", "aba", RegexOptions.None, new string[] { "a", "", "" } }; // positive lookahead in a loop
+                yield return new object[] { engine, null, @"(ab(?=(\w)\w))*a", "ababa", RegexOptions.None, new string[] { "aba", "ab", "a" } }; // positive lookahead in a loop
+                yield return new object[] { engine, null, @"(ab(?=(\w)\w))*a", "abababa", RegexOptions.None, new string[] { "ababa", "ab", "a" } }; // positive lookahead in a loop
+                yield return new object[] { engine, null, @"\w\w(?!(\d)\d)", "aa..", RegexOptions.None, new string[] { "aa", "" } }; // negative lookahead
+                yield return new object[] { engine, null, @"\w\w(?!(\d)\d)", "aa.3", RegexOptions.None, new string[] { "aa", "" } }; // negative lookahead
+
                 // Quantifiers
                 yield return new object[] { engine, null, @"a*", "", RegexOptions.None, new string[] { "" } };
                 yield return new object[] { engine, null, @"a*", "a", RegexOptions.None, new string[] { "a" } };

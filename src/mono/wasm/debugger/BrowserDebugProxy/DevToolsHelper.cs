@@ -172,31 +172,31 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public MonoCommands(string expression) => this.expression = expression;
 
-        public static MonoCommands GetDebuggerAgentBufferReceived() => new MonoCommands("INTERNAL.mono_wasm_get_dbg_command_info()");
+        public static MonoCommands GetDebuggerAgentBufferReceived(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_dbg_command_info()");
 
-        public static MonoCommands IsRuntimeReady() => new MonoCommands("INTERNAL.mono_wasm_runtime_is_ready");
+        public static MonoCommands IsRuntimeReady(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_runtime_is_ready");
 
-        public static MonoCommands GetLoadedFiles() => new MonoCommands("INTERNAL.mono_wasm_get_loaded_files()");
+        public static MonoCommands GetLoadedFiles(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_loaded_files()");
 
-        public static MonoCommands SendDebuggerAgentCommand(int id, int command_set, int command, string command_parameters)
+        public static MonoCommands SendDebuggerAgentCommand(int runtimeId, int id, int command_set, int command, string command_parameters)
         {
-            return new MonoCommands($"INTERNAL.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
+            return new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
         }
 
-        public static MonoCommands SendDebuggerAgentCommandWithParms(int id, int command_set, int command, string command_parameters, int len, int type, string parm)
+        public static MonoCommands SendDebuggerAgentCommandWithParms(int runtimeId, int id, int command_set, int command, string command_parameters, int len, int type, string parm)
         {
-            return new MonoCommands($"INTERNAL.mono_wasm_send_dbg_command_with_parms ({id}, {command_set}, {command},'{command_parameters}', {len}, {type}, '{parm}')");
+            return new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_send_dbg_command_with_parms ({id}, {command_set}, {command},'{command_parameters}', {len}, {type}, '{parm}')");
         }
 
-        public static MonoCommands CallFunctionOn(JToken args) => new MonoCommands($"INTERNAL.mono_wasm_call_function_on ({args})");
+        public static MonoCommands CallFunctionOn(int runtimeId, JToken args) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_call_function_on ({args})");
 
-        public static MonoCommands GetDetails(int objectId, JToken args = null) => new MonoCommands($"INTERNAL.mono_wasm_get_details ({objectId}, {(args ?? "{ }")})");
+        public static MonoCommands GetDetails(int runtimeId, int objectId, JToken args = null) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_details ({objectId}, {(args ?? "{ }")})");
 
-        public static MonoCommands Resume() => new MonoCommands($"INTERNAL.mono_wasm_debugger_resume ()");
+        public static MonoCommands Resume(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_debugger_resume ()");
 
-        public static MonoCommands DetachDebugger() => new MonoCommands($"INTERNAL.mono_wasm_detach_debugger()");
+        public static MonoCommands DetachDebugger(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_detach_debugger()");
 
-        public static MonoCommands ReleaseObject(DotnetObjectId objectId) => new MonoCommands($"INTERNAL.mono_wasm_release_object('{objectId}')");
+        public static MonoCommands ReleaseObject(int runtimeId, DotnetObjectId objectId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_release_object('{objectId}')");
     }
 
     internal enum MonoErrorCodes
@@ -287,7 +287,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public TaskCompletionSource<DebugStore> ready;
         public bool IsRuntimeReady => ready != null && ready.Task.IsCompleted;
-
+        public bool IsSkippingHiddenMethod { get; set; }
         public int ThreadId { get; set; }
         public int Id { get; set; }
         public object AuxData { get; set; }

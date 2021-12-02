@@ -3,7 +3,7 @@
 
 namespace System.Security.Cryptography
 {
-    public partial class ECDsa : AsymmetricAlgorithm
+    public partial class ECDsa : ECAlgorithm
     {
         /// <summary>
         /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.

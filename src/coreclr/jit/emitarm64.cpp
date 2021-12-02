@@ -3649,21 +3649,20 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
     insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
-    switch (ins)
+    if (ins == INS_BREAKPOINT)
     {
-        case INS_brk:
-            if ((imm & 0x0000ffff) == imm)
-            {
-                fmt = IF_SI_0A;
-            }
-            else
-            {
-                assert(!"Instruction cannot be encoded: IF_SI_0A");
-            }
-            break;
-        default:
-            unreached();
-            break;
+        if ((imm & 0x0000ffff) == imm)
+        {
+            fmt = IF_SI_0A;
+        }
+        else
+        {
+            assert(!"Instruction cannot be encoded: IF_SI_0A");
+        }
+    }
+    else
+    {
+        unreached();
     }
     assert(fmt != IF_NONE);
 
@@ -5858,7 +5857,7 @@ void emitter::emitIns_R_R_R(
 
         case INS_adds:
         case INS_subs:
-            emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, INS_OPTS_NONE);
+            emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, opt);
             return;
 
         case INS_cmeq:
@@ -11459,8 +11458,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // then add "bkpt" instruction.
                 instrDescAlign* alignInstr = (instrDescAlign*)id;
 
-                if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&
-                    (alignInstr->idaIG != alignInstr->idaLoopHeadPredIG) && !skipIns)
+                if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp &&
+                    !skipIns)
                 {
                     // There is no good way to squeeze in "bkpt" as well as display it
                     // in the disassembly because there is no corresponding instrDesc for
@@ -11468,6 +11467,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     // next to the nop instruction in disasm.
                     // e.g. D43E0000          align   [4 bytes for IG07]
                     ins = INS_BREAKPOINT;
+                    fmt = IF_SI_0A;
                 }
 #endif
             }
@@ -13421,12 +13421,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     if (varx >= 0 && emitComp->opts.varNames)
     {
-        LclVarDsc*  varDsc;
-        const char* varName;
-
-        assert((unsigned)varx < emitComp->lvaCount);
-        varDsc  = emitComp->lvaTable + varx;
-        varName = emitComp->compLocalVarName(varx, offs);
+        const char* varName = emitComp->compLocalVarName(varx, offs);
 
         if (varName)
         {
@@ -13594,9 +13589,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             // no logic here to track local variable lifetime changes, like we do in the contained case
             // above. E.g., for a `str r0,[r1]` for byref `r1` to local `V01`, we won't store the local
             // `V01` and so the emitter can't update the GC lifetime for `V01` if this is a variable birth.
-            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-            unsigned             lclNum  = varNode->GetLclNum();
-            LclVarDsc*           varDsc  = emitComp->lvaGetDesc(lclNum);
+            LclVarDsc* varDsc = emitComp->lvaGetDesc(addr->AsLclVarCommon());
             assert(!varDsc->lvTracked);
         }
 #endif // DEBUG
@@ -14617,7 +14610,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SN_0A: // bkpt, brk, nop
+        case IF_SN_0A: // nop, yield, align
 
             if (id->idIns() == INS_align)
             {

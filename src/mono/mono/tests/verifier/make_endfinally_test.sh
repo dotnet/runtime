@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -39,7 +39,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g"  -e "s/BLOC
 		${OPCODE_2}
 		leave TRY_2
         }
-        catch [mscorlib]System.NullReferenceException 
+        catch [mscorlib]System.NullReferenceException
 	{
 		pop
 		${OPCODE_3}
@@ -70,7 +70,7 @@ TRY_3:
 			nop
 			leave TRY_4
 		}
-		catch [mscorlib]System.NullReferenceException 
+		catch [mscorlib]System.NullReferenceException
 		{
 			pop
 			${OPCODE_5}
@@ -86,7 +86,7 @@ TRY_3:
 
 TRY_4:
 
-	.try 
+	.try
 	{
 		nop
    		leave END
