@@ -5245,28 +5245,29 @@ void Compiler::placeLoopAlignInstructions()
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
-    weight_t               minBlockSoFar  = BB_MAX_WEIGHT;
-    BasicBlock*            bbHavingAlign  = nullptr;
-    BasicBlock::loopNumber currentLoopNum = BasicBlock::NOT_IN_LOOP;
+    weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
+    BasicBlock*            bbHavingAlign         = nullptr;
+    BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+
+    if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
+    {
+        // Adding align instruction in prolog is not supported
+        // hence just remove that loop from our list.
+        loopsToProcess--;
+    }
 
     for (BasicBlock* const block : Blocks())
     {
-        if ((block == fgFirstBB) && block->isLoopAlign())
-        {
-            // Adding align instruction in prolog is not supported
-            // hence skip the align block if it is the first block.
-            loopsToProcess--;
-            continue;
-        }
-
         // If there is a unconditional jump (which is not part of callf/always pair)
         if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
             {
-                // Only if they are not part of the loop that will be aligned
-                if ((block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP) || (block->bbNatLoopNum != currentLoopNum))
+                // Idle blocks that ends with unconditional jumps:
+                // 1. Blocks that are not part of any loop.
+                // 2. They are not part of the loop that is part of any aligned loop.
+                if ((block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP) || (block->bbNatLoopNum != currentAlignedLoopNum))
                 {
                     minBlockSoFar = block->bbWeight;
                     bbHavingAlign = block;
@@ -5293,9 +5294,9 @@ void Compiler::placeLoopAlignInstructions()
             }
 
             bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
-            minBlockSoFar  = BB_MAX_WEIGHT;
-            bbHavingAlign  = nullptr;
-            currentLoopNum = block->bbNext->bbNatLoopNum;
+            minBlockSoFar         = BB_MAX_WEIGHT;
+            bbHavingAlign         = nullptr;
+            currentAlignedLoopNum = block->bbNext->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {
@@ -5303,11 +5304,12 @@ void Compiler::placeLoopAlignInstructions()
             }
         }
 
-        if ((block->bbJumpDest != nullptr) && (block->bbJumpDest->isLoopAlign()))
+        bool validJumpKind = (block->bbJumpKind == BBJ_COND) || (block->bbJumpKind == BBJ_ALWAYS);
+        if (validJumpKind && (block->bbJumpDest != nullptr) && (block->bbJumpDest->isLoopAlign()))
         {
             // This is the last block of current loop. Reset the latestLoopNum so we can resume
             // placing the align behind jmp for subsequent loops.
-            currentLoopNum = BasicBlock::NOT_IN_LOOP;
+            currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
         }
     }
 
