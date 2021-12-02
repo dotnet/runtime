@@ -713,7 +713,8 @@ namespace System.Numerics
         private static class Crc32Fallback
         {
 
-            private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
+            private static readonly uint[] s_crcTable = Sse42.X64.IsSupported || Crc32.Arm64.IsSupported ?
+                Array.Empty<uint>() : Crc32ReflectedTable.Generate(0x82F63B78u);
 
             internal static uint Crc32C(uint crc, byte data)
             {

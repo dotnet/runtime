@@ -5864,7 +5864,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             GenTree* newTree = fgMorphFieldToSimdGetElement(tree);
             if (newTree != tree)
             {
-                newTree = fgMorphSmpOp(newTree);
+                newTree = fgMorphTree(newTree);
                 return newTree;
             }
         }
@@ -10054,15 +10054,14 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         }
         else // InitBlk
         {
-#if FEATURE_SIMD
+#ifdef FEATURE_SIMD
             if (varTypeIsSIMD(asgType))
             {
                 assert(!isCopyBlock); // Else we would have returned the tree above.
                 noway_assert(src->IsIntegralConst(0));
                 noway_assert(destVarDsc != nullptr);
 
-                src = new (this, GT_SIMD)
-                    GenTreeSIMD(asgType, src, SIMDIntrinsicInit, destVarDsc->GetSimdBaseJitType(), size);
+                src = gtNewSIMDNode(asgType, src, SIMDIntrinsicInit, destVarDsc->GetSimdBaseJitType(), size);
             }
             else
 #endif
@@ -10753,9 +10752,6 @@ GenTree* Compiler::fgMorphFieldToSimdGetElement(GenTree* tree)
 
         tree = gtNewSimdGetElementNode(simdBaseType, simdStructNode, op2, simdBaseJitType, simdSize,
                                        /* isSimdAsHWIntrinsic */ true);
-#ifdef DEBUG
-        tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
     }
     return tree;
 }
@@ -11571,9 +11567,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
             break;
 #endif
-        case GT_LIST:
-            // Special handling for the arg list.
-            return fgMorphArgList(tree->AsArgList(), mac);
 
         case GT_PUTARG_TYPE:
             return fgMorphTree(tree->AsUnOp()->gtGetOp1());
@@ -13276,7 +13269,7 @@ DONE_MORPHING_CHILDREN:
     // Propagate comma throws.
     // If we are in the Valuenum CSE phase then don't morph away anything as these
     // nodes may have CSE defs/uses in them.
-    if (fgGlobalMorph && (oper != GT_ASG) && (oper != GT_COLON) && !tree->OperIsAnyList())
+    if (fgGlobalMorph && (oper != GT_ASG) && (oper != GT_COLON))
     {
         if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
         {
@@ -14197,52 +14190,72 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             }
             break;
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        case GT_HWINTRINSIC:
-        {
-            GenTreeHWIntrinsic* hw = tree->AsHWIntrinsic();
-            switch (hw->gtHWIntrinsicId)
-            {
-                case NI_SSE_Xor:
-                case NI_SSE2_Xor:
-                case NI_AVX_Xor:
-                case NI_AVX2_Xor:
-                {
-                    // Transform XOR(X, 0) to X for vectors
-                    GenTree* op1 = hw->gtGetOp1();
-                    GenTree* op2 = hw->gtGetOp2();
-                    if (!gtIsActiveCSE_Candidate(tree))
-                    {
-                        if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
-                        {
-                            DEBUG_DESTROY_NODE(tree);
-                            DEBUG_DESTROY_NODE(op1);
-                            INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                            return op2;
-                        }
-                        if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
-                        {
-                            DEBUG_DESTROY_NODE(tree);
-                            DEBUG_DESTROY_NODE(op2);
-                            INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                            return op1;
-                        }
-                    }
-                    break;
-                }
-
-                default:
-                    break;
-            }
-            break;
-        }
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-
         default:
             break;
     }
     return tree;
 }
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+//------------------------------------------------------------------------
+// fgMorphMultiOp: Morph a GenTreeMultiOp (SIMD/HWINTRINSIC) tree.
+//
+// Arguments:
+//    multiOp - The tree to morph
+//
+// Return Value:
+//    The fully morphed tree.
+//
+GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
+{
+    gtUpdateNodeOperSideEffects(multiOp);
+    for (GenTree** use : multiOp->UseEdges())
+    {
+        *use = fgMorphTree(*use);
+        multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
+    }
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
+    {
+        GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
+        switch (hw->GetHWIntrinsicId())
+        {
+            case NI_SSE_Xor:
+            case NI_SSE2_Xor:
+            case NI_AVX_Xor:
+            case NI_AVX2_Xor:
+            {
+                // Transform XOR(X, 0) to X for vectors
+                GenTree* op1 = hw->Op(1);
+                GenTree* op2 = hw->Op(2);
+                if (!gtIsActiveCSE_Candidate(hw))
+                {
+                    if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
+                    {
+                        DEBUG_DESTROY_NODE(hw);
+                        DEBUG_DESTROY_NODE(op1);
+                        return op2;
+                    }
+                    if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
+                    {
+                        DEBUG_DESTROY_NODE(hw);
+                        DEBUG_DESTROY_NODE(op2);
+                        return op1;
+                    }
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
+    return multiOp;
+}
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
 //------------------------------------------------------------------------
 // fgMorphModToSubMulDiv: Transform a % b into the equivalent a - (a / b) * b
@@ -14812,6 +14825,17 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             }
             tree = fgMorphCall(tree->AsCall());
             break;
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+        case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            tree = fgMorphMultiOp(tree->AsMultiOp());
+            break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         case GT_ARR_ELEM:
             tree->AsArrElem()->gtArrObj = fgMorphTree(tree->AsArrElem()->gtArrObj);
@@ -18069,65 +18093,4 @@ bool Compiler::fgCanTailCallViaJitHelper()
 
     return true;
 #endif
-}
-
-static const int          numberOfTrackedFlags               = 5;
-static const GenTreeFlags trackedFlags[numberOfTrackedFlags] = {GTF_ASG, GTF_CALL, GTF_EXCEPT, GTF_GLOB_REF,
-                                                                GTF_ORDER_SIDEEFF};
-
-//------------------------------------------------------------------------
-// fgMorphArgList: morph argument list tree without recursion.
-//
-// Arguments:
-//    args - argument list tree to morph;
-//    mac  - morph address context, used to morph children.
-//
-// Return Value:
-//    morphed argument list.
-//
-GenTreeArgList* Compiler::fgMorphArgList(GenTreeArgList* args, MorphAddrContext* mac)
-{
-    // Use a non-recursive algorithm that morphs all actual list values,
-    // memorizes the last node for each effect flag and resets
-    // them during the second iteration.
-    assert((trackedFlags[0] | trackedFlags[1] | trackedFlags[2] | trackedFlags[3] | trackedFlags[4]) == GTF_ALL_EFFECT);
-
-    GenTree* memorizedLastNodes[numberOfTrackedFlags] = {nullptr};
-
-    for (GenTreeArgList* listNode = args; listNode != nullptr; listNode = listNode->Rest())
-    {
-        // Morph actual list values.
-        GenTree*& arg = listNode->Current();
-        arg           = fgMorphTree(arg, mac);
-
-        // Remember the last list node with each flag.
-        for (int i = 0; i < numberOfTrackedFlags; ++i)
-        {
-            if ((arg->gtFlags & trackedFlags[i]) != 0)
-            {
-                memorizedLastNodes[i] = listNode;
-            }
-        }
-    }
-
-    for (GenTreeArgList* listNode = args; listNode != nullptr; listNode = listNode->Rest())
-    {
-        // Clear all old effects from the list node.
-        listNode->gtFlags &= ~GTF_ALL_EFFECT;
-
-        // Spread each flag to all list nodes (to the prefix) before the memorized last node.
-        for (int i = 0; i < numberOfTrackedFlags; ++i)
-        {
-            if (memorizedLastNodes[i] != nullptr)
-            {
-                listNode->gtFlags |= trackedFlags[i];
-            }
-            if (listNode == memorizedLastNodes[i])
-            {
-                memorizedLastNodes[i] = nullptr;
-            }
-        }
-    }
-
-    return args;
 }

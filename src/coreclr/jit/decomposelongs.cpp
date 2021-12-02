@@ -1650,7 +1650,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
 
     GenTreeHWIntrinsic* hwintrinsicTree = tree->AsHWIntrinsic();
 
-    switch (hwintrinsicTree->gtHWIntrinsicId)
+    switch (hwintrinsicTree->GetHWIntrinsicId())
     {
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
@@ -1693,10 +1693,11 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 {
     assert(node == use.Def());
     assert(varTypeIsLong(node));
-    assert((node->gtHWIntrinsicId == NI_Vector128_GetElement) || (node->gtHWIntrinsicId == NI_Vector256_GetElement));
+    assert((node->GetHWIntrinsicId() == NI_Vector128_GetElement) ||
+           (node->GetHWIntrinsicId() == NI_Vector256_GetElement));
 
-    GenTree*  op1          = node->gtGetOp1();
-    GenTree*  op2          = node->gtGetOp2();
+    GenTree*  op1          = node->Op(1);
+    GenTree*  op2          = node->Op(2);
     var_types simdBaseType = node->GetSimdBaseType();
     unsigned  simdSize     = node->GetSimdSize();
 
@@ -1712,24 +1713,24 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
         index = op2->AsIntCon()->IconValue();
     }
 
-    GenTree* simdTmpVar    = RepresentOpAsLocalVar(op1, node, &node->gtOp1);
+    GenTree* simdTmpVar    = RepresentOpAsLocalVar(op1, node, &node->Op(1));
     unsigned simdTmpVarNum = simdTmpVar->AsLclVarCommon()->GetLclNum();
     JITDUMP("[DecomposeHWIntrinsicGetElement]: Saving op1 tree to a temp var:\n");
     DISPTREERANGE(Range(), simdTmpVar);
     Range().Remove(simdTmpVar);
-    op1 = node->gtGetOp1();
+    op1 = node->Op(1);
 
     GenTree* indexTmpVar    = nullptr;
     unsigned indexTmpVarNum = 0;
 
     if (!indexIsConst)
     {
-        indexTmpVar    = RepresentOpAsLocalVar(op2, node, &node->gtOp2);
+        indexTmpVar    = RepresentOpAsLocalVar(op2, node, &node->Op(2));
         indexTmpVarNum = indexTmpVar->AsLclVarCommon()->GetLclNum();
         JITDUMP("[DecomposeHWIntrinsicGetElement]: Saving op2 tree to a temp var:\n");
         DISPTREERANGE(Range(), indexTmpVar);
         Range().Remove(indexTmpVar);
-        op2 = node->gtGetOp2();
+        op2 = node->Op(2);
     }
 
     // Create:
@@ -1756,7 +1757,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     }
 
     GenTree* loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar1, indexTimesTwo1,
-                                                             node->gtHWIntrinsicId, CORINFO_TYPE_INT, simdSize);
+                                                             node->GetHWIntrinsicId(), CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(node, loResult);
 
     // Create:
@@ -1782,7 +1783,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     }
 
     GenTree* hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar2, indexTimesTwoPlusOne,
-                                                             node->gtHWIntrinsicId, CORINFO_TYPE_INT, simdSize);
+                                                             node->GetHWIntrinsicId(), CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(node, hiResult);
 
     // Done with the original tree; remove it.
