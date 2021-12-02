@@ -483,7 +483,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal int Token { get; }
         internal string Namespace { get; }
 
-        public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new Dictionary<string, DebuggerBrowsableState?>();
+        public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
 
         public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type)
         {
@@ -509,26 +509,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var fieldDefinition = metadataReader.GetFieldDefinition(field);
                 var fieldName = metadataReader.GetString(fieldDefinition.Name);
-                var hasBrowsableAttribute = false;
                 foreach (var cattr in fieldDefinition.GetCustomAttributes())
                 {
-                    if (hasBrowsableAttribute)
-                        break;
-
                     var ctorHandle = metadataReader.GetCustomAttribute(cattr).Constructor;
-                    if (ctorHandle.Kind == HandleKind.MemberReference)
+                    if (ctorHandle.Kind != HandleKind.MemberReference)
+                        continue;
+                    var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
+                    var value = metadataReader.GetBlobBytes(metadataReader.GetCustomAttribute(cattr).Value);
+                    var attributeName = metadataReader.GetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                    if (attributeName == "DebuggerBrowsableAttribute")
                     {
-                        var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
-                        var value = metadataReader.GetBlobBytes(metadataReader.GetCustomAttribute(cattr).Value);
-                        var attributeName = metadataReader.GetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                        if (attributeName == "DebuggerBrowsableAttribute")
+                        var state = (DebuggerBrowsableState)value[2];
+                        if (Enum.IsDefined(typeof(DebuggerBrowsableState), state))
                         {
-                            var state = (DebuggerBrowsableState)value[2];
-                            if (Enum.IsDefined(typeof(DebuggerBrowsableState), state))
-                            {
-                                DebuggerBrowsableFields.Add(fieldName, state);
-                                hasBrowsableAttribute = true;
-                            }
+                            DebuggerBrowsableFields.Add(fieldName, state);
+                            break;
                         }
                     }
                 }
