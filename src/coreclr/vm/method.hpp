@@ -1652,7 +1652,7 @@ public:
     VOID GetMethodInfoNoSig(SString &namespaceOrClassName, SString &methodName);
     VOID GetFullMethodInfo(SString& fullMethodSigName);
 
-    BOOL HasTypeEquivalentStructParameters();
+    VOID CheckForTypeEquivalentStructParameters();
 
     typedef void (*WalkValueTypeParameterFnPtr)(Module *pModule, mdToken token, Module *pDefModule, mdToken tkDefToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData);
 

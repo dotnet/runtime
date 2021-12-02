@@ -4024,9 +4024,8 @@ static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Modul
 }
 #endif // FEATURE_TYPEEQUIVALENCE
 
-BOOL MethodDesc::HasTypeEquivalentStructParameters()
+VOID MethodDesc::CheckForTypeEquivalentStructParameters()
 {
-#ifdef FEATURE_TYPEEQUIVALENCE
     CONTRACTL
     {
         THROWS;
@@ -4035,24 +4034,17 @@ BOOL MethodDesc::HasTypeEquivalentStructParameters()
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_TYPEEQUIVALENCE
     BOOL fHasTypeEquivalentStructParameters = FALSE;
     if (DoesNotHaveEquivalentValuetypeParameters())
-        return FALSE;
+        return;
 
     WalkValueTypeParameters(this->GetMethodTable(), CheckForEquivalenceAndLoadType, &fHasTypeEquivalentStructParameters);
 
     if (!fHasTypeEquivalentStructParameters)
         SetDoesNotHaveEquivalentValuetypeParameters();
-
-    return fHasTypeEquivalentStructParameters;
-
-#else
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-
 #endif // FEATURE_TYPEEQUIVALENCE
 }
-
 
 PrecodeType MethodDesc::GetPrecodeType()
 {
@@ -4129,7 +4121,7 @@ void MethodDesc::PrepareForUseAsAFunctionPointer()
 {
     STANDARD_VM_CONTRACT;
 
-    (void)HasTypeEquivalentStructParameters();
+    CheckForTypeEquivalentStructParameters();
 }
 #endif //!DACCESS_COMPILE
 
