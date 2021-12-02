@@ -37,8 +37,12 @@ namespace ILLink.RoslynAnalyzer
 				context.RegisterOperationAction (operationContext => {
 					var invocationOperation = (IInvocationOperation) operationContext.Operation;
 					var targetMethod = invocationOperation.TargetMethod;
-					if (!targetMethod.HasAttribute (DllImportAttribute) || targetMethod.HasAttribute(RequiresUnreferencedCodeAttribute))
+					if (!targetMethod.HasAttribute (DllImportAttribute))
 						return;
+
+					if (operationContext.ContainingSymbol is ISymbol containingSymbol && containingSymbol.HasAttribute(RequiresUnreferencedCodeAttribute)) {
+							return;
+					}
 
 					bool comDangerousMethod = IsComInterop (targetMethod.ReturnType);
 					foreach (var parameter in targetMethod.Parameters) {
