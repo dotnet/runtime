@@ -277,9 +277,9 @@ unw_tdep_context_t;
   unw_tdep_context_t *unw_ctx = (uc);                                   \
   register unsigned long *unw_base __asm__ ("r0") = unw_ctx->regs;      \
   __asm__ __volatile__ (                                                \
-    "stmia %[base], {r0-r15}"                                           \
-    "adds %[base], #64"                                                 \
-    "vstmia %[base], {d0-d15}"                                          \
+    "stmia %[base], {r0-r15}\n"                                           \
+    "adds %[base], #64\n"                                                 \
+    "vstmia %[base], {d0-d15}\n"                                          \
     : : [base] "r" (unw_base) : "memory");                              \
   }), 0)
 #else /* __thumb__ */
