@@ -5247,6 +5247,8 @@ void Compiler::placeLoopAlignInstructions()
     // Add align only if there were any loops that needed alignment
     weight_t    minBlockSoFar = BB_MAX_WEIGHT;
     BasicBlock* bbHavingAlign = nullptr;
+    BasicBlock::loopNumber latestLoopNum = BasicBlock::NOT_IN_LOOP;
+
     for (BasicBlock* const block : Blocks())
     {
         if ((block == fgFirstBB) && block->isLoopAlign())
@@ -5260,11 +5262,17 @@ void Compiler::placeLoopAlignInstructions()
         // If there is a unconditional jump
         if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
         {
+            // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
             {
-                minBlockSoFar = block->bbWeight;
-                bbHavingAlign = block;
-                JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
+                // Only if they are not part of the loop that will be aligned
+                if ((block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP) || (block->bbNatLoopNum != latestLoopNum))
+                {
+                    minBlockSoFar = block->bbWeight;
+                    bbHavingAlign = block;
+                    JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum,
+                            block->bbWeight);
+                }
             }
         }
 
@@ -5287,11 +5295,19 @@ void Compiler::placeLoopAlignInstructions()
             bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             minBlockSoFar = BB_MAX_WEIGHT;
             bbHavingAlign = nullptr;
+            latestLoopNum = block->bbNext->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {
                 break;
             }
+        }
+
+        if ((block->bbJumpDest != nullptr) && (block->bbJumpDest->isLoopAlign()))
+        {
+            // This is the last block of current loop. Reset the latestLoopNum so we can resume
+            // placing the align behind jmp for subsequent loops.
+            latestLoopNum = BasicBlock::NOT_IN_LOOP;
         }
     }
 
