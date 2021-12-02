@@ -1,26 +1,43 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.Versioning;
+
 namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public void Kill(bool entireProcessTree)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         /// <summary>
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             throw new PlatformNotSupportedException();
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         internal DateTime StartTimeCore
         {
             get { throw new PlatformNotSupportedException(); }
@@ -31,6 +48,8 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public TimeSpan TotalProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -40,9 +59,19 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public TimeSpan UserProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
+        }
+
+        /// <summary>
+        /// Returns all immediate child processes.
+        /// </summary>
+        private IReadOnlyList<Process> GetChildProcesses(Process[]? processes = null)
+        {
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>Gets parent process ID</summary>
@@ -83,5 +112,11 @@ namespace System.Diagnostics
         }
 
         private int ParentProcessId => throw new PlatformNotSupportedException();
+
+        private static bool IsProcessInvalidException(Exception e) =>
+            // InvalidOperationException signifies conditions such as the process already being dead.
+            // Win32Exception signifies issues such as insufficient permissions to get details on the process.
+            // In either case, the predicate couldn't be applied so return the fallback result.
+            e is InvalidOperationException || e is Win32Exception;
     }
 }
