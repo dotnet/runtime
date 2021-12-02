@@ -471,6 +471,9 @@ void BlockCountInstrumentor::Prepare(bool preImport)
         // Create an intermediary that falls through to the return.
         // Update any critical edges to target the intermediary.
         //
+        // Note we could also route any non-tail-call pred via the
+        // intermedary. Doing so would cut down on probe duplication.
+        //
         while (specialReturnBlocks.Size() > 0)
         {
             bool              first        = true;
@@ -494,9 +497,11 @@ void BlockCountInstrumentor::Prepare(bool preImport)
                         //
                         m_comp->fgReplaceJumpTarget(pred, intermediary, block);
 
-                        // Patch the pred list.
+                        // Patch the pred list. Note we only need one pred list
+                        // entry pointing at intermediary.
                         //
-                        predEdge->block = intermediary;
+                        predEdge->block = first ? intermediary : nullptr;
+                        first           = false;
                     }
                     else
                     {
