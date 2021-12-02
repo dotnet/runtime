@@ -30,7 +30,7 @@ rm .githubtoken
 git remote set-url origin $GIT_REPOSITORY_URL
 
 # Create a pull request back to unity-main
-gh pr create --fill
+gh pr create --title "Sync with upstream main branch" --body "This is an automatically generated pull request to merge changes from the upstream main branch."
 
 # For some unknown reason we often see this error from Github CLI:
 #
