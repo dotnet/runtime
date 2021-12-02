@@ -2034,67 +2034,82 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     var_types      baseType    = node->GetSimdBaseType();
     emitAttr       attr        = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
-    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // 213 form
+    instruction    _132form    = (instruction)(ins - 1);
+    instruction    _231form    = (instruction)(ins + 1);
     GenTree*       op1         = node->Op(1);
     GenTree*       op2         = node->Op(2);
     GenTree*       op3         = node->Op(3);
-    regNumber      targetReg   = node->GetRegNum();
+
+    regNumber targetReg = node->GetRegNum();
 
     genConsumeMultiOpOperands(node);
 
-    regNumber op1Reg;
-    regNumber op2Reg;
+    regNumber op1NodeReg = op1->GetRegNum();
+    regNumber op2NodeReg = op2->GetRegNum();
+    regNumber op3NodeReg = op3->GetRegNum();
 
-    bool       isCommutative   = false;
+    GenTree* emitOp1 = op1;
+    GenTree* emitOp2 = op2;
+    GenTree* emitOp3 = op3;
+
     const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
     assert(!copiesUpperBits || !op1->isContained());
 
-    if (op2->isContained() || op2->isUsedFromSpillTemp())
+    if (op1->isContained() || op1->isUsedFromSpillTemp())
     {
-        // 132 form: op1 = (op1 * op3) + [op2]
-
-        ins    = (instruction)(ins - 1);
-        op1Reg = op1->GetRegNum();
-        op2Reg = op3->GetRegNum();
-        op3    = op2;
+        if (targetReg == op2NodeReg)
+        {
+            std::swap(emitOp1, emitOp2);
+            // op2 = ([op1] * op2) + op3
+            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+            ins = _132form;
+            std::swap(emitOp2, emitOp3);
+        }
+        else
+        {
+            // targetReg == op3NodeReg or targetReg == ?
+            // op3 = ([op1] * op2) + op3
+            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+            ins = _231form;
+            std::swap(emitOp1, emitOp3);
+        }
     }
-    else if (op1->isContained() || op1->isUsedFromSpillTemp())
+    else if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
-        // 231 form: op3 = (op2 * op3) + [op1]
-
-        ins    = (instruction)(ins + 1);
-        op1Reg = op3->GetRegNum();
-        op2Reg = op2->GetRegNum();
-        op3    = op1;
+        if (!copiesUpperBits && (targetReg == op3NodeReg))
+        {
+            // op3 = (op1 * [op2]) + op3
+            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+            ins = _231form;
+            std::swap(emitOp1, emitOp3);
+        }
+        else
+        {
+            // targetReg == op1NodeReg or targetReg == ?
+            // op1 = (op1 * [op2]) + op3
+            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+            ins = _132form;
+        }
+        std::swap(emitOp2, emitOp3);
     }
     else
     {
-        // 213 form: op1 = (op2 * op1) + [op3]
-
-        op1Reg = op1->GetRegNum();
-        op2Reg = op2->GetRegNum();
-
-        isCommutative = !copiesUpperBits;
+        // targetReg could be op1NodeReg, op2NodeReg, or not equal to any op
+        // op1 = (op1 * op2) + [op3] or op2 = (op1 * op2) + [op3]
+        // ? = (op1 * op2) + [op3] or ? = (op1 * op2) + op3
+        // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+        if (!copiesUpperBits && (targetReg == op2NodeReg))
+        {
+            // op2 = (op1 * op2) + [op3]
+            // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+            std::swap(emitOp1, emitOp2);
+        }
     }
 
-    if (isCommutative && (op1Reg != targetReg) && (op2Reg == targetReg))
-    {
-        assert(node->isRMWHWIntrinsic(compiler));
-
-        // We have "reg2 = (reg1 * reg2) +/- op3" where "reg1 != reg2" on a RMW intrinsic.
-        //
-        // For non-commutative intrinsics, we should have ensured that op2 was marked
-        // delay free in order to prevent it from getting assigned the same register
-        // as target. However, for commutative intrinsics, we can just swap the operands
-        // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
-
-        op2Reg = op1Reg;
-        op1Reg = targetReg;
-    }
-
-    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3);
+    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3);
     genProduceReg(node);
 }
 

@@ -28,6 +28,8 @@
              Link="Common\System\IO\InterceptStreamWriter.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
              Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="WindowAndCursorProps.cs" />
   </ItemGroup>
   <ItemGroup>

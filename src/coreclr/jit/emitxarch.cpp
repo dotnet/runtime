@@ -10037,7 +10037,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     // For cases where 'align' was placed behing a 'jmp' in an IG that does not
     // immediately preced the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
-    bool validatePadding = alignInstr->idaIG == alignInstr->idaLoopHeadPredIG;
+    bool validatePadding = !alignInstr->isPlacedAfterJmp;
 #endif
 
     // Candidate for loop alignment
@@ -10076,7 +10076,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     // then add "int3" instruction. Since int3 takes 1 byte, we would only add
     // it if paddingToAdd >= 1 byte.
 
-    if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && !validatePadding && paddingToAdd >= 1)
+    if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp && paddingToAdd >= 1)
     {
         size_t int3Code = insCodeMR(INS_BREAKPOINT);
         // There is no good way to squeeze in "int3" as well as display it

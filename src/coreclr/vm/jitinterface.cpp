@@ -3613,29 +3613,6 @@ uint32_t CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
     return ret;
 }
 
-
-/*********************************************************************/
-bool CEEInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE clsHnd)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool ret = 0;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    // Disable this optimization. It has limited value (only kicks in on x86, and only for less common structs),
-    // causes bugs and introduces odd ABI differences not compatible with ReadyToRun.
-    ret = false;
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return ret;
-}
-
 /*********************************************************************/
 uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
 {
