@@ -808,7 +808,7 @@ namespace DebuggerTests
                 return null;
 
             var locals = frame_props.Value["result"];
-            // FIXME: Should be done when generating the list in library-dotnet.js, but not sure yet
+            // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)
             {

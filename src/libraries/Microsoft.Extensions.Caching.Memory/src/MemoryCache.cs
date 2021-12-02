@@ -391,9 +391,10 @@ namespace Microsoft.Extensions.Caching.Memory
         private void Compact(long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, CoherentState coherentState)
         {
             var entriesToRemove = new List<CacheEntry>();
-            var lowPriEntries = new List<CacheEntry>();
-            var normalPriEntries = new List<CacheEntry>();
-            var highPriEntries = new List<CacheEntry>();
+            // cache LastAccessed outside of the CacheEntry so it is stable during compaction
+            var lowPriEntries = new List<(CacheEntry entry, DateTimeOffset lastAccessed)>();
+            var normalPriEntries = new List<(CacheEntry entry, DateTimeOffset lastAccessed)>();
+            var highPriEntries = new List<(CacheEntry entry, DateTimeOffset lastAccessed)>();
             long removedSize = 0;
 
             // Sort items by expired & priority status
@@ -411,13 +412,13 @@ namespace Microsoft.Extensions.Caching.Memory
                     switch (entry.Priority)
                     {
                         case CacheItemPriority.Low:
-                            lowPriEntries.Add(entry);
+                            lowPriEntries.Add((entry, entry.LastAccessed));
                             break;
                         case CacheItemPriority.Normal:
-                            normalPriEntries.Add(entry);
+                            normalPriEntries.Add((entry, entry.LastAccessed));
                             break;
                         case CacheItemPriority.High:
-                            highPriEntries.Add(entry);
+                            highPriEntries.Add((entry, entry.LastAccessed));
                             break;
                         case CacheItemPriority.NeverRemove:
                             break;
@@ -441,7 +442,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // ?. Items with the soonest absolute expiration.
             // ?. Items with the soonest sliding expiration.
             // ?. Larger objects - estimated by object graph size, inaccurate.
-            static void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<CacheEntry> priorityEntries)
+            static void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<(CacheEntry Entry, DateTimeOffset LastAccessed)> priorityEntries)
             {
                 // Do we meet our quota by just removing expired entries?
                 if (removalSizeTarget <= removedSize)
@@ -454,8 +455,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 // TODO: Refine policy
 
                 // LRU
-                priorityEntries.Sort((e1, e2) => e1.LastAccessed.CompareTo(e2.LastAccessed));
-                foreach (CacheEntry entry in priorityEntries)
+                priorityEntries.Sort(static (e1, e2) => e1.LastAccessed.CompareTo(e2.LastAccessed));
+                foreach ((CacheEntry entry, _) in priorityEntries)
                 {
                     entry.SetExpired(EvictionReason.Capacity);
                     entriesToRemove.Add(entry);

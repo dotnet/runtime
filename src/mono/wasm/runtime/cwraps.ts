@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import {
-    CharPtr, CharPtrPtr, Int32Ptr,
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
-    MonoType, VoidPtr
+    MonoType
 } from "./types";
 import { Module } from "./imports";
+import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr } from "./types/emscripten";
 
 const fn_signatures: [ident: string, returnType: string | null, argTypes?: string[], opts?: any][] = [
     // MONO

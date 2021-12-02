@@ -14,8 +14,9 @@ import { wrap_error } from "./method-calls";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
-import { Int32Ptr, JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";
 import { setI32, setU32, setF64 } from "./memory";
+import { Int32Ptr, TypedArray } from "./types/emscripten";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any): MonoObject {
