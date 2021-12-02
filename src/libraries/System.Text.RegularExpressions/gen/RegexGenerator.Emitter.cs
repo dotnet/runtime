@@ -26,12 +26,6 @@ namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
     {
-        /// <summary>
-        /// Value added to the written code to enable subsequent replacement with any variable declarations
-        /// dynamically discovered during code generation.
-        /// </summary>
-        private const string AdditionalDeclarationsPlaceholder = "<>PLACEHOLDER_FOR_ADDITIONAL_DECLARATIONS";
-
         /// <summary>Code for a [GeneratedCode] attribute to put on the top-level generated members.</summary>
         private static readonly string s_generatedCodeAttribute = $"[global::System.CodeDom.Compiler.GeneratedCodeAttribute(\"{typeof(RegexGenerator).Assembly.GetName().Name}\", \"{typeof(RegexGenerator).Assembly.GetName().Version}\")]";
         /// <summary>Header comments and usings to include at the top of every generated file.</summary>
@@ -293,7 +287,10 @@ namespace System.Text.RegularExpressions.Generator
             // Emit locals initialization
             writer.WriteLine("global::System.ReadOnlySpan<char> runtextSpan = base.runtext;");
             writer.WriteLine("int runtextpos = base.runtextpos;");
-            writer.WriteLine($"int runtextend = base.runtextend;{AdditionalDeclarationsPlaceholder}"); // placeholder at the end of a line so the generated indents line up
+            writer.Write($"int runtextend = base.runtextend;");
+            writer.Flush();
+            int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
+            int additionalDeclarationsIndent = writer.Indent;
             writer.WriteLine();
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
@@ -353,7 +350,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("return false;");
 
             // We're done.  Patch up any additional declarations.
-            ReplaceAdditionalDeclarations(additionalDeclarations, writer);
+            ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
             return;
 
             // Emits any anchors.  Returns true if the anchor roots any match to a specific location and thus no further
@@ -639,9 +636,13 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("string runtext = base.runtext!;");
             writer.WriteLine("int runtextpos = base.runtextpos;");
             writer.WriteLine("int runtextend = base.runtextend;");
-            writer.WriteLine($"int original_runtextpos = runtextpos;{AdditionalDeclarationsPlaceholder}"); // placeholder at the end of a line so the generated indents line up
-            writer.WriteLine("int runstackpos = 0;");
+            writer.WriteLine($"int original_runtextpos = runtextpos;");
             hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
+            writer.Write("int runstackpos = 0;");
+            writer.Flush();
+            int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
+            int additionalDeclarationsIndent = writer.Indent;
+            writer.WriteLine();
 
             // TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo; // only if the whole expression or any subportion is ignoring case, and we're not using invariant
             bool hasTextInfo = EmitInitializeCultureForGoIfNecessary(writer, rm);
@@ -683,7 +684,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // We're done.  Patch up any additional declarations.
-            ReplaceAdditionalDeclarations(additionalDeclarations, writer);
+            ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
             return;
 
             static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
@@ -3003,22 +3004,31 @@ namespace System.Text.RegularExpressions.Generator
         /// Replaces <see cref="AdditionalDeclarationsPlaceholder"/> in <paramref name="writer"/> with
         /// all of the variable declarations in <paramref name="declarations"/>.
         /// </summary>
-        private static void ReplaceAdditionalDeclarations(HashSet<string> declarations, IndentedTextWriter writer)
+        /// <param name="writer">The writer around a StringWriter to have additional declarations inserted into.</param>
+        /// <param name="declarations">The additional declarations to insert.</param>
+        /// <param name="position">The position into the writer at which to insert the additional declarations.</param>
+        /// <param name="indent">The indentation to use for the additional declarations.</param>
+        private static void ReplaceAdditionalDeclarations(IndentedTextWriter writer, HashSet<string> declarations, int position, int indent)
         {
-            StringBuilder sb = ((StringWriter)writer.InnerWriter).GetStringBuilder();
-            string replacement = "";
-
             if (declarations.Count != 0)
             {
-                var tmp = new StringBuilder().AppendLine();
-                foreach (string decl in declarations)
-                {
-                    tmp.Append(' ', writer.Indent * 4).AppendLine(decl);
-                }
-                replacement = tmp.ToString();
-            }
+                var arr = new string[declarations.Count];
+                declarations.CopyTo(arr);
+                Array.Sort(arr);
 
-            sb.Replace(AdditionalDeclarationsPlaceholder, replacement);
+                StringBuilder tmp = new StringBuilder().AppendLine();
+                foreach (string decl in arr)
+                {
+                    for (int i = 0; i < indent; i++)
+                    {
+                        tmp.Append(IndentedTextWriter.DefaultTabString);
+                    }
+
+                    tmp.AppendLine(decl);
+                }
+
+                ((StringWriter)writer.InnerWriter).GetStringBuilder().Insert(position, tmp.ToString());
+            }
         }
 
         private static string Literal(char c) => SymbolDisplay.FormatLiteral(c, quote: true);
