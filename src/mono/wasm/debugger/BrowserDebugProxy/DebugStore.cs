@@ -21,6 +21,7 @@ using Microsoft.CodeAnalysis.Debugging;
 using System.IO.Compression;
 using System.Reflection;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -505,28 +506,47 @@ namespace Microsoft.WebAssembly.Diagnostics
             else
                 FullName = Name;
 
-            foreach (FieldDefinitionHandle field in type.GetFields())
+            DebuggerBrowsableFields = GetDebuggerBrowsableFields();
+
+            Dictionary<string, DebuggerBrowsableState?> GetDebuggerBrowsableFields()
             {
-                var fieldDefinition = metadataReader.GetFieldDefinition(field);
-                var fieldName = metadataReader.GetString(fieldDefinition.Name);
-                foreach (var cattr in fieldDefinition.GetCustomAttributes())
+                var fields = new Dictionary<string, DebuggerBrowsableState?>();
+                foreach (FieldDefinitionHandle field in type.GetFields())
                 {
-                    var ctorHandle = metadataReader.GetCustomAttribute(cattr).Constructor;
-                    if (ctorHandle.Kind != HandleKind.MemberReference)
-                        continue;
-                    var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
-                    var value = metadataReader.GetBlobBytes(metadataReader.GetCustomAttribute(cattr).Value);
-                    var attributeName = metadataReader.GetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                    if (attributeName == "DebuggerBrowsableAttribute")
+                    try
                     {
-                        var state = (DebuggerBrowsableState)value[2];
-                        if (Enum.IsDefined(typeof(DebuggerBrowsableState), state))
+                        var fieldDefinition = metadataReader.GetFieldDefinition(field);
+                        var fieldName = metadataReader.GetString(fieldDefinition.Name);
+                        foreach (var cattr in fieldDefinition.GetCustomAttributes())
                         {
-                            DebuggerBrowsableFields.Add(fieldName, state);
-                            break;
+                            try
+                            {
+                                var ctorHandle = metadataReader.GetCustomAttribute(cattr).Constructor;
+                                if (ctorHandle.Kind != HandleKind.MemberReference)
+                                    continue;
+                                var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
+                                var valueBytes = metadataReader.GetBlobBytes(metadataReader.GetCustomAttribute(cattr).Value);
+                                var attributeName = metadataReader.GetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                                if (attributeName != "DebuggerBrowsableAttribute")
+                                    continue;
+                                var state = (DebuggerBrowsableState)valueBytes[2];
+                                if (!Enum.IsDefined(typeof(DebuggerBrowsableState), state))
+                                    continue;
+                                fields.Add(fieldName, state);
+                                break;
+                            }
+                            catch
+                            {
+                                continue;
+                            }
                         }
                     }
+                    catch
+                    {
+                        continue;
+                    }
                 }
+                return fields;
             }
         }
 

@@ -498,12 +498,15 @@ namespace DebuggerTests
 
     public static class EvaluateBrowsableProperties
     {
-        public class TestEvaluateNever
+        public class TestEvaluateNone
         {
             public List<int> list = new List<int>() { 1, 2 };
             public int[] array = new int[] { 11, 22 };
             public string text = "text";
+        }
 
+        public class TestEvaluateNever
+        {
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
             public List<int> listNever = new List<int>() { 1, 2 };
 
@@ -516,10 +519,6 @@ namespace DebuggerTests
 
         public class TestEvaluateCollapsed
         {
-            public List<int> list = new List<int>() { 1, 2 };
-            public int[] array = new int[] { 11, 22 };
-            public string text = "text";
-
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
             public List<int> listCollapsed = new List<int>() { 1, 2 };
 
@@ -544,6 +543,7 @@ namespace DebuggerTests
 
         public static void Evaluate()
         {
+            var testNone = new TestEvaluateNone();
             var testNever = new TestEvaluateNever();
             var testCollapsed = new TestEvaluateCollapsed();
             var testRootHidden = new TestEvaluateRootHidden();

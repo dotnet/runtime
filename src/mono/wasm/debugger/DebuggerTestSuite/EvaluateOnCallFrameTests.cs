@@ -854,13 +854,32 @@ namespace DebuggerTests
                    ("\"15\"\n//comment as vs does\n", TString("15")),
                    ("\"15\"", TString("15")));
            });
-
+        
         [Fact]
-         public async Task EvaluateBrowsableProperties() => await CheckInspectLocalsAtBreakpointSite(
-             "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 4, "Evaluate",
+        public async Task EvaluateBrowsableFieldsNone() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 5, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
             wait_for_event_fn: async (pause_location) =>
-           {
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var (testNone, _) = await EvaluateOnCallFrame(id, "testNone");
+                await CheckValue(testNone, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateNone"), nameof(testNone));
+                var testNoneProps = await GetProperties(testNone["objectId"]?.Value<string>());
+                await CheckProps(testNoneProps, new
+                {
+                    list = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
+                    array = TObject("int[]", description: "int[2]"),
+                    text = TString("text")
+                }, "testNoneProps#1");
+           });
+
+        [Fact]
+        public async Task EvaluateBrowsableFieldsNever() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 5, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
+            wait_for_event_fn: async (pause_location) =>
+            {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var (testNever, _) = await EvaluateOnCallFrame(id, "testNever");
@@ -868,32 +887,45 @@ namespace DebuggerTests
                 var testNeverProps = await GetProperties(testNever["objectId"]?.Value<string>());
                 await CheckProps(testNeverProps, new
                 {
-                    list = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
-                    array = TObject("int[]", description: "int[2]"),
-                    text = TString("text")
                 }, "testNeverProps#1");
+           });
+
+        [Fact]
+        public async Task EvaluateBrowsableFieldsCollapsed() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 5, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var (testCollapsed, _) = await EvaluateOnCallFrame(id, "testCollapsed");
                 await CheckValue(testCollapsed, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateCollapsed"), nameof(testCollapsed));
                 var testCollapsedProps = await GetProperties(testCollapsed["objectId"]?.Value<string>());
                 await CheckProps(testCollapsedProps, new
                 {
-                    list = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
-                    array = TObject("int[]", description: "int[2]"),
-                    text = TString("text"),
                     listCollapsed = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
                     arrayCollapsed = TObject("int[]", description: "int[2]"),
                     textCollapsed = TString("textCollapsed")
-                }, "testCollapsedProps#1");                
+                }, "testCollapsedProps#1");
+           });
+        
+        [Fact]
+        public async Task EvaluateBrowsableFieldsRootHidden() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 5, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var (testRootHidden, _) = await EvaluateOnCallFrame(id, "testRootHidden");
                 await CheckValue(testRootHidden, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateRootHidden"), nameof(testRootHidden));
                 var testRootHiddenProps = await GetProperties(testRootHidden["objectId"]?.Value<string>());
-                var (refList, _) = await EvaluateOnCallFrame(id, "testNever.list");
+                var (refList, _) = await EvaluateOnCallFrame(id, "testNone.list");
                 var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
                 var refListElementsProp = await GetProperties(refListProp[0]["value"]["objectId"]?.Value<string>());
-                var (refArray, _) = await EvaluateOnCallFrame(id, "testNever.array");
+                var (refArray, _) = await EvaluateOnCallFrame(id, "testNone.array");
                 var refArrayProp = await GetProperties(refArray["objectId"]?.Value<string>());
+
                 //in Console App names are in []
                 //adding variable name to make elements unique
                 foreach (var item in refArrayProp)
@@ -904,7 +936,7 @@ namespace DebuggerTests
                 {
                     item["name"] = string.Concat("listRootHidden[", item["name"], "]");
                 }
-                var mergedRefItems = new JArray(refListElementsProp.Union(refArrayProp));                
+                var mergedRefItems = new JArray(refListElementsProp.Union(refArrayProp));
                 Assert.Equal(mergedRefItems, testRootHiddenProps);
            });
     }

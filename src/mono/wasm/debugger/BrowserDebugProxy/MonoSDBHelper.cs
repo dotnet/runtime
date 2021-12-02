@@ -2309,14 +2309,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JArray> GetObjectValues(int objectId, GetObjectCommandOptions getCommandType, CancellationToken token)
         {
-            var typeId = await GetTypeIdFromObject(objectId, true, token);
+            var typeIdsIncludingParent = await GetTypeIdFromObject(objectId, true, token);
             if (!getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute))
             {
-                var debuggerProxy = await GetValuesFromDebuggerProxyAttribute(objectId, typeId[0], token);
+                var debuggerProxy = await GetValuesFromDebuggerProxyAttribute(objectId, typeIdsIncludingParent[0], token);
                 if (debuggerProxy != null)
                     return debuggerProxy;
             }
-            var className = await GetTypeName(typeId[0], token);
+            var className = await GetTypeName(typeIdsIncludingParent[0], token);
             JArray objectValues = new JArray();
             if (await IsDelegate(objectId, token))
             {
@@ -2334,17 +2334,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                 objectValues.Add(obj);
                 return objectValues;
             }
-            for (int i = 0; i < typeId.Count; i++)
+            for (int i = 0; i < typeIdsIncludingParent.Count; i++)
             {
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                 {
-                    className = await GetTypeName(typeId[i], token);
-                    var fields = await GetTypeFields(typeId[i], token);
-                    var (regularFields, rootHiddenCollections, rootHiddenArrays) = await FilterFieldsByDebuggerBrowsable(fields, typeId[i], token);
+                    className = await GetTypeName(typeIdsIncludingParent[i], token);
+                    var fields = await GetTypeFields(typeIdsIncludingParent[i], token);
+                    var (regularFields, rootHiddenCollections, rootHiddenArrays) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParent[i], token);
 
-                    var regularObjects = await GetFieldsValue(regularFields, i == 0);
-                    var rootHiddenCollectionObjects = await GetFieldsValue(rootHiddenCollections, i == 0, true, false);
-                    var rootHiddenArrayObjects = await GetFieldsValue(rootHiddenArrays, i == 0, true, true);
+                    var regularObjects = await GetFieldsValues(regularFields, i == 0);
+                    var rootHiddenCollectionObjects = await GetFieldsValues(rootHiddenCollections, i == 0, true, false);
+                    var rootHiddenArrayObjects = await GetFieldsValues(rootHiddenArrays, i == 0, true, true);
 
                     objectValues = new JArray(objectValues.Union(regularObjects));
                     objectValues = new JArray(objectValues.Union(rootHiddenCollectionObjects));
@@ -2355,7 +2355,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 using var commandParamsObjWriter = new MonoBinaryWriter();
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", $"{objectId}"), this);
                 var props = await CreateJArrayForProperties(
-                    typeId[i],
+                    typeIdsIncludingParent[i],
                     commandParamsObjWriter.GetParameterBuffer(),
                     objectValues,
                     getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute),
@@ -2377,10 +2377,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var retAfterRemove = new JArray();
                 List<List<FieldTypeClass>> allFields = new List<List<FieldTypeClass>>();
-                for (int i = 0; i < typeId.Count; i++)
+                for (int i = 0; i < typeIdsIncludingParent.Count; i++)
                 {
-                    var fields = await GetTypeFields(typeId[i], token);
-                    var (regularFields, _, _) = await FilterFieldsByDebuggerBrowsable(fields, typeId[i], token);
+                    var fields = await GetTypeFields(typeIdsIncludingParent[i], token);
+                    var (regularFields, _, _) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParent[i], token);
                     allFields.Add(regularFields);
                 }
                 foreach (var item in objectValues)
@@ -2408,20 +2408,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return objectValues;
 
-            async Task<JArray> GetFieldsValue(List<FieldTypeClass> fields, bool isFirstElement, bool isRootHidden = false, bool isArray = false)
+            async Task<JArray> GetFieldsValues(List<FieldTypeClass> fields, bool isParent, bool isRootHidden = false, bool isArray = false)
             {
                 if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
-                {
                     fields = fields.Where(field => field.IsPublic).ToList();
-                }
 
                 using var commandParamsWriter = new MonoBinaryWriter();
                 commandParamsWriter.Write(objectId);
                 commandParamsWriter.Write(fields.Count);
                 foreach (var field in fields)
-                {
                     commandParamsWriter.Write(field.Id);
-                }
 
                 var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdObject.RefGetValues, commandParamsWriter, token);
 
@@ -2431,11 +2427,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     long initialPos = retDebuggerCmdReader.BaseStream.Position;
                     int valtype = retDebuggerCmdReader.ReadByte();
                     retDebuggerCmdReader.BaseStream.Position = initialPos;
-                    var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, isFirstElement, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
+                    var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, isOwn: isParent, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
                     if (objectValues.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any())
-                    {
                         return null;
-                    }
                     if (getCommandType.HasFlag(GetObjectCommandOptions.WithSetter))
                     {
                         var command_params_writer_to_set = new MonoBinaryWriter();
@@ -2485,9 +2479,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             async Task<(List<FieldTypeClass>, List<FieldTypeClass>, List<FieldTypeClass>)> FilterFieldsByDebuggerBrowsable(List<FieldTypeClass> fields, int typeId, CancellationToken token)
             {
+                if (fields.Count == 0)
+                    return (fields, new List<FieldTypeClass>(), new List<FieldTypeClass>());
+
                 var typeInfo = await GetTypeInfo(typeId, token);
                 var typeFieldsBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableFields;
-                if (typeFieldsBrowsableInfo == null)
+                if (typeFieldsBrowsableInfo == null || typeFieldsBrowsableInfo.Count == 0)
                     return (fields, new List<FieldTypeClass>(), new List<FieldTypeClass>());
 
                 var regularFields = new List<FieldTypeClass>();
@@ -2495,7 +2492,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var rootHiddenArrays = new List<FieldTypeClass>();
                 foreach (var field in fields)
                 {
-                    typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
+                    if (!typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state))
+                        continue;
                     switch (state)
                     {
                         case DebuggerBrowsableState.Never:
@@ -2513,10 +2511,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 break;
                             }
                             break;
-                        //null and DebuggerBrowsableState.Collapsed have the same result
-                        default:
+                        case DebuggerBrowsableState.Collapsed:
                             regularFields.Add(field);
                             break;
+                        default:
+                            throw new NotImplementedException($"DebuggerBrowsableState: {state}");
                     }
                 }
                 return (regularFields, rootHiddenCollections, rootHiddenArrays);
