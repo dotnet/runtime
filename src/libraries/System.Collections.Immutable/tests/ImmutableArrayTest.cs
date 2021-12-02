@@ -608,7 +608,12 @@ namespace System.Collections.Immutable.Tests
         public void ToImmutableArray(IEnumerable<int> source)
         {
             var array = source.ToImmutableArray();
+            Span<int> span = source.ToArray().AsSpan();
+
             Assert.Equal(source, array);
+            Assert.Equal(source, span.ToImmutableArray());
+            Assert.Equal(source, ((ReadOnlySpan<int>)span).ToImmutableArray());
+
             Assert.True(array == array.ToImmutableArray());
         }
 
@@ -1037,9 +1042,25 @@ namespace System.Collections.Immutable.Tests
                 var array = source.ToImmutableArray();
 
                 Assert.Equal(source.Concat(items), array.AddRange(it)); // Enumerable overload
-                Assert.Equal(source.Concat(items), array.AddRange(it.ToImmutableArray())); // Struct overload
+                Assert.Equal(source.Concat(items), array.AddRange(it.ToImmutableArray())); // ImmutableArray overload
+
+                int[] itArray = it.ToArray();
+                Assert.Equal(source.Concat(items), array.AddRange(itArray)); // Array overload
+                Assert.Equal(source.Concat(items), array.AddRange(new ReadOnlySpan<int>(itArray))); // ReadOnlySpan overload
+
                 Assert.Equal(source, array); // Make sure the original array wasn't affected.
             });
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void AddRangeEmptyOptimization(IEnumerable<int> source)
+        {
+            ImmutableArray<int> array = source.ToImmutableArray();
+            
+            // Verify that underlying array is reference-equal as original array
+            Assert.True(array.AddRange(Array.Empty<int>()) == array);
+            Assert.True(array.AddRange(ReadOnlySpan<int>.Empty) == array);
         }
 
         public static IEnumerable<object[]> AddData()
@@ -1065,8 +1086,13 @@ namespace System.Collections.Immutable.Tests
             // If the lhs or the rhs is a default ImmutableArray, AddRange should throw.
 
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(source)); // Enumerable overload
-            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(source.ToImmutableArray())); // Struct overload
-            TestExtensionsMethods.ValidateDefaultThisBehavior(() => source.ToImmutableArray().AddRange(s_emptyDefault)); // Struct overload
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(source.ToImmutableArray())); // ImmutableArray overload
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => source.ToImmutableArray().AddRange(s_emptyDefault)); // ImmutableArray overload
+
+            int[] sourceArray = source.ToArray();
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(sourceArray)); // Array overload
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(new ReadOnlySpan<int>(sourceArray))); // ReadOnlySpan overload
+            
             Assert.Throws<InvalidOperationException>(() => source.ToImmutableArray().AddRange((IEnumerable<int>)s_emptyDefault)); // Enumerable overload
 
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(s_emptyDefault));
