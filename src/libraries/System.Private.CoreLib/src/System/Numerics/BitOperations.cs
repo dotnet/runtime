@@ -743,7 +743,7 @@ namespace System.Numerics
                 }
 
                 ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-                return Crc32CImpl(ref lookupTable, crc, data);
+                return Crc32CCore(ref lookupTable, crc, data);
             }
 
             internal static uint Crc32C(uint crc, ulong data)
@@ -755,15 +755,15 @@ namespace System.Numerics
 
                 ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
 
-                crc = Crc32CImpl(ref lookupTable, crc, (uint)data);
+                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
                 data >>= 32;
-                crc = Crc32CImpl(ref lookupTable, crc, (uint)data);
+                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
 
                 return crc;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static uint Crc32CImpl(ref uint lookupTable, uint crc, uint data)
+            private static uint Crc32CCore(ref uint lookupTable, uint crc, uint data)
             {
                 crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
                 data >>= 8;
