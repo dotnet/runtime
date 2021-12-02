@@ -699,8 +699,11 @@ var MonoSupportLib = {
 		_create_proxy_from_object_id: function (objectId, details) {
 			if (objectId.startsWith ('dotnet:array:'))
 			{
-				let ret = details.map (p => p.value);
-				return ret;
+				if (details.dimensionsDetails == undefined || details.dimensionsDetails.length == 1)
+				{
+					const ret = details.items.map (p => p.value);
+					return ret;
+				}
 			}
 
 			let proxy = {};
