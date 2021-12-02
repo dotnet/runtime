@@ -698,6 +698,9 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(spanCls, 1);
     const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
+    INDEBUG(RecordStructFieldInfo(pointerHnd));
+    INDEBUG(RecordStructFieldInfo(lengthHnd));
+
     // Create a placeholder for Span object - we're not going to Append it to statements
     // in advance to avoid redundant spills in case if we fail to vectorize
     unsigned spanObjRef          = lvaGrabTemp(true DEBUGARG("spanObj tmp"));
