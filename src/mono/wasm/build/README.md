@@ -127,6 +127,6 @@ them for the new task assembly.
 2. The new dependency (eg. task assembly) needs to be sent to helix as a payload, see `src/libraries/sendtohelixhelp.proj`. Use `MonoAOTCompiler` as an example.
 
 3. Make changes similar to the one for existing dependent tasks in
-   - `eng/testing/linker/trimmingTests.targets`,
+   - `eng/testing/linker/trimmingTests.targets`, and `eng/testing/linker/project.csproj.template`
    - `src/tests/Common/wasm-test-runner/WasmTestRunner.proj`
    - `src/tests/Directory.Build.targets`

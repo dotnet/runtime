@@ -12,7 +12,7 @@
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
     <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
-    <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
+    <MonoTargetsSdkForTestingDir>{MonoTargetsSdkForTestingDir}</MonoTargetsSdkForTestingDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
 
     <!-- Needed for targetingpacks.targets -->

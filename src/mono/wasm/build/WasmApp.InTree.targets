@@ -3,7 +3,7 @@
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <MonoTargetsSdkForTestingDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargets.Sdk.ForTesting', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsSdkForTestingDir>
+    <MonoTargetsSdkForTestingDir Condition="'$(MonoTargetsSdkForTestingDir)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargets.Sdk.ForTesting', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsSdkForTestingDir>
   </PropertyGroup>
 
   <Import Project="$(MonoTargetsSdkForTestingDir)Sdk\Sdk.props" />

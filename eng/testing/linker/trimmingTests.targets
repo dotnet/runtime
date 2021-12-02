@@ -93,7 +93,7 @@
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
                                                  .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
-                                                 .Replace('{MonoTargetsTasksAssemblyPath}', '$(MonoTargetsTasksAssemblyPath)')
+                                                 .Replace('{MonoTargetsSdkForTestingDir}', '$(MonoTargetsSdkForTestingDir)')
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)')
                                                  .Replace('{ProductVersion}', '$(ProductVersion)')
