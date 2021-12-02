@@ -1,14 +1,11 @@
 <Project>
   <PropertyGroup>
-    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
     <_MicrosoftNetCoreAppRefDir>$(AppRefDir)\</_MicrosoftNetCoreAppRefDir>
   </PropertyGroup>
 
-  <Target Name="PrepareForWasmBuild">
-    <ItemGroup>
-      <WasmAssembliesToBundle Include="$(TargetDir)publish\**\*.dll" />
-    </ItemGroup>
-  </Target>
+  <ItemGroup>
+      <EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />
+  </ItemGroup>
 
   <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />

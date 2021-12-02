@@ -7,12 +7,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
-    <Compile Include="System\Numerics\BigIntegerCalculator.BitsBuffer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.FastReducer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.GcdInv.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.PowMod.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.Utils.cs" />
     <Compile Include="System\Numerics\BigInteger.cs" />
     <Compile Include="System\Numerics\BigNumber.cs" />
     <Compile Include="System\Numerics\NumericsHelpers.cs" />
@@ -30,5 +30,6 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
 </Project>

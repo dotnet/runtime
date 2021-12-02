@@ -15,7 +15,6 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    [Trait("category", "FlakyAppHostTests")]
     public class BundleExtractToSpecificPath : BundleTestBase, IClassFixture<BundleExtractToSpecificPath.SharedTestState>
     {
         private SharedTestState sharedTestState;
@@ -223,14 +222,33 @@ namespace AppHost.Bundle.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Windows, "On Windows the default extraction path is determined by calling GetTempPath which looks at multiple places and can't really be undefined.")]
-        private void Bundle_extraction_default_undefined()
+        private void Bundle_extraction_fallsback_to_getpwuid_when_HOME_env_var_is_undefined()
         {
+            string home = Environment.GetEnvironmentVariable("HOME");
+            // suppose we are testing on a system where HOME is not set, use System.Environment (which also fallsback to getpwuid)
+            if (string.IsNullOrEmpty(home))
+            {
+                home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            }
+
+            DirectoryInfo sharedExtractDirInfo = BundleHelper.GetExtractionDir(sharedTestState.TestFixture, sharedTestState.DefaultBundledAppBundler);
+            string sharedExtractDir = sharedExtractDirInfo.FullName;
+            string extractDirSubPath = sharedExtractDir.Substring(sharedExtractDir.LastIndexOf("extract/") + "extract/".Length);
+            string realExtractDir = Path.Combine(home, ".net", extractDirSubPath);
+            var expectedExtractDir = new DirectoryInfo(realExtractDir);
+
             Command.Create(sharedTestState.DefaultBundledAppExecutablePath)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("HOME", null)
-                .Execute().Should().Fail()
-                .And.HaveStdErrContaining("Failed to determine default extraction location. Environment variable '$HOME' is not defined.");
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+
+            var extractedFiles = BundleHelper.GetExtractedFiles(sharedTestState.TestFixture, BundleOptions.BundleNativeBinaries);
+            expectedExtractDir.Should().HaveFiles(extractedFiles);
         }
 
         public class SharedTestState : SharedTestStateBase, IDisposable

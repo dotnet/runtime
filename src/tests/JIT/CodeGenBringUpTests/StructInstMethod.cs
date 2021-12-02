@@ -62,7 +62,7 @@ public struct Point
     }
 }
 
-public class BringUpTest
+public class BringUpTest_StructInstMethod
 {
     const int Pass = 100;
     const int Fail = -1;

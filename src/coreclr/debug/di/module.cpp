@@ -82,7 +82,7 @@ CordbModule::CordbModule(
 
     m_fDynamic  = modInfo.fIsDynamic;
     m_fInMemory = modInfo.fInMemory;
-    m_vmPEFile = modInfo.vmPEFile;
+    m_vmPEFile = modInfo.vmPEAssembly;
 
     if (!vmDomainFile.IsNull())
     {
@@ -268,13 +268,13 @@ IDacDbiInterface::SymbolFormat CordbModule::GetInMemorySymbolStream(IStream ** p
 // Accessor for PE file.
 //
 // Returns:
-//    VMPTR_PEFile for this module. Should always be non-null
+//    VMPTR_PEAssembly for this module. Should always be non-null
 //
 // Notes:
 //    A main usage of this is to find the proper internal MetaData importer.
-//    DACized code needs to map from PEFile --> IMDInternalImport.
+//    DACized code needs to map from PEAssembly --> IMDInternalImport.
 //
-VMPTR_PEFile CordbModule::GetPEFile()
+VMPTR_PEAssembly CordbModule::GetPEFile()
 {
     return m_vmPEFile;
 }
@@ -2755,6 +2755,7 @@ HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
     FAIL_IF_NEUTERED(this);
 
     HRESULT hr = S_OK;
+    *isMapped = FALSE;
     CordbProcess *pProcess = GetProcess();
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
@@ -5101,11 +5102,11 @@ HRESULT CordbNativeCode::GetCallSignature(ULONG32 ILoffset, mdToken *pClass, mdT
     CordbILCode *pCode = this->m_pFunction->GetILCode();
     BYTE buffer[3];
     ULONG32 fetched = 0;
-    HRESULT hr = pCode->GetCode(ILoffset, ILoffset+_countof(buffer), _countof(buffer), buffer, &fetched);
+    HRESULT hr = pCode->GetCode(ILoffset, ILoffset+ARRAY_SIZE(buffer), ARRAY_SIZE(buffer), buffer, &fetched);
 
     if (FAILED(hr))
         return hr;
-    else if (fetched != _countof(buffer))
+    else if (fetched != ARRAY_SIZE(buffer))
         return CORDBG_E_INVALID_OPCODE;
 
     // tail.    - fe 14 (ECMA III.2.4)
@@ -5164,7 +5165,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
                 BYTE nativeBuffer[8];
 
                 ULONG32 fetched = 0;
-                IfFailRet(GetCode(pMap->nativeStartOffset, pMap->nativeStartOffset+_countof(nativeBuffer), _countof(nativeBuffer), nativeBuffer, &fetched));
+                IfFailRet(GetCode(pMap->nativeStartOffset, pMap->nativeStartOffset+ARRAY_SIZE(nativeBuffer), ARRAY_SIZE(nativeBuffer), nativeBuffer, &fetched));
 
                 int skipBytes = 0;
 
@@ -5176,12 +5177,12 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
                 {
                     skipBytes++;
 
-                    for (int j = 1; j < _countof(nativeBuffer) && nativeBuffer[j] == nop_opcode; ++j)
+                    for (int j = 1; j < ARRAY_SIZE(nativeBuffer) && nativeBuffer[j] == nop_opcode; ++j)
                         skipBytes++;
 
                     // We must have at least one skip byte since the outer while ensures it.  Thus we always need to reread
                     // the buffer at the end of this loop.
-                    IfFailRet(GetCode(pMap->nativeStartOffset+skipBytes, pMap->nativeStartOffset+skipBytes+_countof(nativeBuffer), _countof(nativeBuffer), nativeBuffer, &fetched));
+                    IfFailRet(GetCode(pMap->nativeStartOffset+skipBytes, pMap->nativeStartOffset+skipBytes+ARRAY_SIZE(nativeBuffer), ARRAY_SIZE(nativeBuffer), nativeBuffer, &fetched));
                 }
 #endif
 

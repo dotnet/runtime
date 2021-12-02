@@ -37,7 +37,7 @@
       <AllResolvedRuntimeDependencies Include="@(RuntimeCopyLocalItems -> '%(FileName)%(Extension)');@(NativeCopyLocalItems -> '%(FileName)%(Extension)')">
         <File>%(Identity)</File>
       </AllResolvedRuntimeDependencies>
-      
+
       <RunTimeDependencyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependencyExcludeFiles)"/>
       <RunTimeDependencyCopyLocal Include="@(RunTimeDependencyCopyLocalFile -> '%(File)')"  />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
@@ -143,19 +143,19 @@
 
         <!-- Wasm App Builder always builds in Debug -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\publish\**"
+          Include="$(ArtifactsBinDir)\MonoTargetsTasks\Debug\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>
-  
+
         <RunTimeDependencyCopyLocal
-          Include="$(MonoProjectRoot)\wasm\runtime-test.js"
+          Include="$(MonoProjectRoot)\wasm\test-main.js"
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal

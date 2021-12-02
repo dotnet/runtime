@@ -15,7 +15,7 @@ namespace System.DirectoryServices.AccountManagement
 {
     internal sealed class AuthZSet : ResultSet
     {
-        internal AuthZSet(
+        internal unsafe AuthZSet(
                     byte[] userSid,
                     NetCred credentials,
                     ContextOptions contextOptions,
@@ -52,9 +52,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                UnsafeNativeMethods.LUID luid = default;
-                luid.low = 0;
-                luid.high = 0;
+                Interop.LUID luid = default;
 
                 _psMachineSid = new SafeMemoryPtr(Utils.GetMachineDomainSid());
                 _psUserSid = new SafeMemoryPtr(Utils.ConvertByteArrayToIntPtr(userSid));
@@ -65,8 +63,8 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Initializing resource manager");
 
                 // Create a resource manager
-                f = UnsafeNativeMethods.AuthzInitializeResourceManager(
-                                            UnsafeNativeMethods.AUTHZ_RM_FLAG.AUTHZ_RM_FLAG_NO_AUDIT,
+                f = Interop.Authz.AuthzInitializeResourceManager(
+                                            Interop.Authz.AUTHZ_RM_FLAG_NO_AUDIT,
                                             IntPtr.Zero,
                                             IntPtr.Zero,
                                             IntPtr.Zero,
@@ -79,7 +77,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Getting ctx from SID");
 
                     // Construct a context for the user based on the user's SID
-                    f = UnsafeNativeMethods.AuthzInitializeContextFromSid(
+                    f = Interop.Authz.AuthzInitializeContextFromSid(
                                                 0,                  // default flags
                                                 _psUserSid.DangerousGetHandle(),
                                                 pResManager,
@@ -96,7 +94,7 @@ namespace System.DirectoryServices.AccountManagement
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Getting info from ctx");
 
                         // Extract the group SIDs from the user's context.  Determine the size of the buffer we need.
-                        f = UnsafeNativeMethods.AuthzGetInformationFromContext(
+                        f = Interop.Authz.AuthzGetInformationFromContext(
                                                     pClientContext,
                                                     2,                    // AuthzContextInfoGroupsSids
                                                     0,
@@ -113,7 +111,7 @@ namespace System.DirectoryServices.AccountManagement
                             pBuffer = Marshal.AllocHGlobal(bufferSize);
 
                             // Extract the group SIDs from the user's context, into our buffer.0
-                            f = UnsafeNativeMethods.AuthzGetInformationFromContext(
+                            f = Interop.Authz.AuthzGetInformationFromContext(
                                                         pClientContext,
                                                         2,                    // AuthzContextInfoGroupsSids
                                                         bufferSize,
@@ -134,23 +132,23 @@ namespace System.DirectoryServices.AccountManagement
 
                                 // Extract TOKEN_GROUPS.GroupCount
 
-                                UnsafeNativeMethods.TOKEN_GROUPS tokenGroups = (UnsafeNativeMethods.TOKEN_GROUPS)Marshal.PtrToStructure(pBuffer, typeof(UnsafeNativeMethods.TOKEN_GROUPS));
+                                Interop.TOKEN_GROUPS tokenGroups = (Interop.TOKEN_GROUPS)Marshal.PtrToStructure(pBuffer, typeof(Interop.TOKEN_GROUPS));
 
-                                int groupCount = tokenGroups.groupCount;
+                                uint groupCount = tokenGroups.GroupCount;
 
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "Found {0} groups", groupCount);
 
                                 // Extract TOKEN_GROUPS.Groups, by iterating over the array and marshalling
                                 // each native SID_AND_ATTRIBUTES into a managed SID_AND_ATTR.
-                                UnsafeNativeMethods.SID_AND_ATTR[] groups = new UnsafeNativeMethods.SID_AND_ATTR[groupCount];
+                                Interop.SID_AND_ATTRIBUTES[] groups = new Interop.SID_AND_ATTRIBUTES[groupCount];
 
-                                IntPtr currentItem = new IntPtr(pBuffer.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.TOKEN_GROUPS)) - IntPtr.Size);
+                                IntPtr currentItem = new IntPtr(pBuffer.ToInt64() + Marshal.SizeOf(typeof(Interop.TOKEN_GROUPS)) - sizeof(Interop.SID_AND_ATTRIBUTES));
 
                                 for (int i = 0; i < groupCount; i++)
                                 {
-                                    groups[i] = (UnsafeNativeMethods.SID_AND_ATTR)Marshal.PtrToStructure(currentItem, typeof(UnsafeNativeMethods.SID_AND_ATTR));
+                                    groups[i] = (Interop.SID_AND_ATTRIBUTES)Marshal.PtrToStructure(currentItem, typeof(Interop.SID_AND_ATTRIBUTES));
 
-                                    currentItem = new IntPtr(currentItem.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.SID_AND_ATTR)));
+                                    currentItem = new IntPtr(currentItem.ToInt64() + Marshal.SizeOf(typeof(Interop.SID_AND_ATTRIBUTES)));
                                 }
 
                                 _groupSidList = new SidList(groups);
@@ -215,10 +213,10 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pClientContext != IntPtr.Zero)
-                    UnsafeNativeMethods.AuthzFreeContext(pClientContext);
+                    Interop.Authz.AuthzFreeContext(pClientContext);
 
                 if (pResManager != IntPtr.Zero)
-                    UnsafeNativeMethods.AuthzFreeResourceManager(pResManager);
+                    Interop.Authz.AuthzFreeResourceManager(pResManager);
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);
@@ -287,7 +285,7 @@ namespace System.DirectoryServices.AccountManagement
                     // Is the SID from the same domain as the user?
                     bool sameDomain = false;
 
-                    bool success = UnsafeNativeMethods.EqualDomainSid(_psUserSid.DangerousGetHandle(), pSid, ref sameDomain);
+                    bool success = Interop.Advapi32.EqualDomainSid(_psUserSid.DangerousGetHandle(), pSid, ref sameDomain);
 
                     // if failed, psUserSid must not be a domain sid
                     if (!success)
@@ -334,7 +332,7 @@ namespace System.DirectoryServices.AccountManagement
                     // EqualDomainSid will return false if pSid is a BUILTIN SID, but that's okay, we treat those as domain (not local)
                     // groups for domain users.
                     bool inMachineDomain = false;
-                    if (UnsafeNativeMethods.EqualDomainSid(_psMachineSid.DangerousGetHandle(), pSid, ref inMachineDomain))
+                    if (Interop.Advapi32.EqualDomainSid(_psMachineSid.DangerousGetHandle(), pSid, ref inMachineDomain))
                         if (inMachineDomain)
                         {
                             // At this point we know that the group was issued by the local machine.  Now determine if this machine is
@@ -358,27 +356,10 @@ namespace System.DirectoryServices.AccountManagement
                     // or (2) it's a domain user that's a member of a group on the local machine.  Pass the default machine context options
                     // If we initially targetted AD then those options will not be valid for the machine store.
 
-#if USE_CTX_CACHE
                     PrincipalContext ctx = SDSCache.LocalMachine.GetContext(
                                                                     sidIssuerName,
                                                                     _credentials,
                                                                     DefaultContextOptions.MachineDefaultContextOption);
-#else
-                    PrincipalContext ctx = (PrincipalContext) this.contexts[sidIssuerName];
-                    if (ctx == null)
-                    {
-                        // Build a PrincipalContext for the machine
-                        ctx = new PrincipalContext(
-                                        ContextType.Machine,
-                                        sidIssuerName,
-                                        null,
-                                        (this.credentials != null ? credentials.UserName : null),
-                                        (this.credentials != null ? credentials.Password : null),
-                                        DefaultContextOptions.MachineDefaultContextOption);
-
-                        this.contexts[sidIssuerName] = ctx;
-                    }
-#endif
                     SecurityIdentifier sidObj = new SecurityIdentifier(sid, 0);
                     group = GroupPrincipal.FindByIdentity(ctx, IdentityType.Sid, sidObj.ToString());
                 }
@@ -389,33 +370,11 @@ namespace System.DirectoryServices.AccountManagement
 
                     // It's a domain group, because it's a domain user and the SID issuer isn't the local machine
 
-#if USE_CTX_CACHE
                     PrincipalContext ctx = SDSCache.Domain.GetContext(
                                                                 sidIssuerName,
                                                                 _credentials,
                                                                 _contextOptions);
-#else
-                    PrincipalContext ctx = (PrincipalContext) this.contexts[sidIssuerName];
-                    if (ctx == null)
-                    {
-                        // Determine the domain DNS name
 
-                        // DS_RETURN_DNS_NAME | DS_DIRECTORY_SERVICE_REQUIRED | DS_BACKGROUND_ONLY
-                        int flags = unchecked((int) (0x40000000 | 0x00000010 | 0x00000100));
-                        UnsafeNativeMethods.DomainControllerInfo info = Utils.GetDcName(null, sidIssuerName, null, flags);
-
-                        // Build a PrincipalContext for the domain
-                        ctx = new PrincipalContext(
-                                        ContextType.Domain,
-                                        info.DomainName,
-                                        null,
-                                        (this.credentials != null ? credentials.UserName : null),
-                                        (this.credentials != null ? credentials.Password : null),
-                                        this.contextOptions);
-
-                        this.contexts[sidIssuerName] = ctx;
-                    }
-#endif
                     // Retrieve the group.  We'd normally just do a Group.FindByIdentity here, but
                     // because the AZMan API can return "old" SIDs, we also need to check the SID
                     // history.  So we'll use the special FindPrincipalBySID method that the ADStoreCtx
@@ -466,7 +425,7 @@ namespace System.DirectoryServices.AccountManagement
                     IntPtr pSid = _groupSidList[_currentGroup].pSid;
 
                     bool sameDomain = false;
-                    if (Utils.ClassifySID(pSid) == SidType.RealObject && UnsafeNativeMethods.EqualDomainSid(_psUserSid.DangerousGetHandle(), pSid, ref sameDomain))
+                    if (Utils.ClassifySID(pSid) == SidType.RealObject && Interop.Advapi32.EqualDomainSid(_psUserSid.DangerousGetHandle(), pSid, ref sameDomain))
                     {
                         if (sameDomain)
                         {

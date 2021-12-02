@@ -41,7 +41,12 @@ namespace DebuggerTests
         static protected string FindTestPath()
         {
             var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", "Debug", "publish");
+#if DEBUG
+            var config="Debug";
+#else
+            var config="Release";
+#endif            
+            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", config, "publish");
             if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
                 return test_app_path;
 
@@ -352,10 +357,10 @@ namespace DebuggerTests
             return l;
         }
 
-        internal void CheckArray(JToken locals, string name, string class_name, int length)
+        internal void CheckArray(JToken locals, string name, string class_name, string description)
            => CheckValue(
                 GetAndAssertObjectWithName(locals, name)["value"],
-                TArray(class_name, length), name).Wait();
+                TArray(class_name, description), name).Wait();
 
         internal JToken GetAndAssertObjectWithName(JToken obj, string name, string label = "")
         {
@@ -803,7 +808,7 @@ namespace DebuggerTests
                 return null;
 
             var locals = frame_props.Value["result"];
-            // FIXME: Should be done when generating the list in library_mono.js, but not sure yet
+            // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)
             {
@@ -830,6 +835,37 @@ namespace DebuggerTests
 
             var res = await cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, token);
             AssertEqual(expect_ok, res.IsOk, $"Debugger.evaluateOnCallFrame ('{expression}', scope: {id}) returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
+            if (res.IsOk)
+                return (res.Value["result"], res);
+
+            return (null, res);
+        }
+
+        internal async Task RuntimeEvaluateAndCheck(params (string expression, JObject expected)[] args)
+        {
+            foreach (var arg in args)
+            {
+                var (eval_val, _) = await RuntimeEvaluate(arg.expression);
+                try
+                {
+                    await CheckValue(eval_val, arg.expected, arg.expression);
+                }
+                catch
+                {
+                    Console.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
+                    throw;
+                }
+            }
+        }
+        internal async Task<(JToken, Result)> RuntimeEvaluate(string expression, bool expect_ok = true)
+        {
+            var evaluate_req = JObject.FromObject(new
+            {
+                expression = expression
+            });
+
+            var res = await cli.SendCommand("Runtime.evaluate", evaluate_req, token);
+            AssertEqual(expect_ok, res.IsOk, $"Runtime.evaluate ('{expression}') returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
             if (res.IsOk)
                 return (res.Value["result"], res);
 
@@ -974,7 +1010,7 @@ namespace DebuggerTests
             JObject.FromObject(new { type = "object", className = className, description = description ?? className, subtype = is_null ? "null" : null }) :
             JObject.FromObject(new { type = "object", className = className, description = description ?? className });
 
-        internal static JObject TArray(string className, int length = 0) => JObject.FromObject(new { type = "object", className = className, description = $"{className}({length})", subtype = "array" });
+        internal static JObject TArray(string className, string description) => JObject.FromObject(new { type = "object", className, description, subtype = "array" });
 
         internal static JObject TBool(bool value) => JObject.FromObject(new { type = "boolean", value = @value, description = @value ? "true" : "false" });
 

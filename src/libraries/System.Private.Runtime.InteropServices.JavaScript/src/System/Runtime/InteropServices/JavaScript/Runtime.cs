@@ -12,11 +12,11 @@ namespace System.Runtime.InteropServices.JavaScript
         private const string TaskGetResultName = "get_Result";
         private static readonly MethodInfo _taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
 
-        // <summary>
-        // Execute the provided string in the JavaScript context
-        // </summary>
-        // <returns>The js.</returns>
-        // <param name="str">String.</param>
+        /// <summary>
+        /// Execute the provided string in the JavaScript context
+        /// </summary>
+        /// <returns>The js.</returns>
+        /// <param name="str">String.</param>
         public static string InvokeJS(string str)
         {
             return Interop.Runtime.InvokeJS(str);
@@ -50,6 +50,52 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(0)]
             internal RuntimeMethodHandle handle;
+
+            [FieldOffset(0)]
+            internal RuntimeTypeHandle typeHandle;
+        }
+
+        // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx
+        public enum MarshalType : int {
+            NULL = 0,
+            INT = 1,
+            FP64 = 2,
+            STRING = 3,
+            VT = 4,
+            DELEGATE = 5,
+            TASK = 6,
+            OBJECT = 7,
+            BOOL = 8,
+            ENUM = 9,
+            URI = 22,
+            SAFEHANDLE = 23,
+            ARRAY_BYTE = 10,
+            ARRAY_UBYTE = 11,
+            ARRAY_UBYTE_C = 12,
+            ARRAY_SHORT = 13,
+            ARRAY_USHORT = 14,
+            ARRAY_INT = 15,
+            ARRAY_UINT = 16,
+            ARRAY_FLOAT = 17,
+            ARRAY_DOUBLE = 18,
+            FP32 = 24,
+            UINT32 = 25,
+            INT64 = 26,
+            UINT64 = 27,
+            CHAR = 28,
+            STRING_INTERNED = 29,
+            VOID = 30,
+            ENUM64 = 31,
+            POINTER = 32
+        }
+
+        // see src/mono/wasm/driver.c MARSHAL_ERROR_xxx
+        public enum MarshalError : int {
+            BUFFER_TOO_SMALL = 512,
+            NULL_CLASS_POINTER = 513,
+            NULL_TYPE_POINTER = 514,
+            UNSUPPORTED_TYPE = 515,
+            FIRST = BUFFER_TOO_SMALL
         }
 
         public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
@@ -179,6 +225,76 @@ namespace System.Runtime.InteropServices.JavaScript
         public static Uri CreateUri(string uri)
         {
             return new Uri(uri);
+        }
+
+        public static void CancelPromise(int promiseJSHandle)
+        {
+            var res = Interop.Runtime.CancelPromise(promiseJSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException(res);
+        }
+
+        public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out int promiseJSHandle)
+        {
+            var res = Interop.Runtime.WebSocketOpen(uri, subProtocols, onClosed, out int webSocketJSHandle, out promiseJSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException((string)res);
+            webSocket = new JSObject((IntPtr)webSocketJSHandle);
+
+            return (Task<object>)res;
+        }
+
+        public static unsafe Task<object>? WebSocketSend(JSObject webSocket, ArraySegment<byte> buffer, int messageType, bool endOfMessage, out int promiseJSHandle)
+        {
+            fixed (byte* messagePtr = buffer.Array)
+            {
+                var res = Interop.Runtime.WebSocketSend(webSocket.JSHandle, (IntPtr)messagePtr, buffer.Offset, buffer.Count, messageType, endOfMessage, out promiseJSHandle, out int exception);
+                if (exception != 0)
+                    throw new JSException((string)res);
+
+                if (res == null)
+                {
+                    return null;
+                }
+
+                return (Task<object>)res;
+            }
+        }
+
+        public static unsafe Task<object>? WebSocketReceive(JSObject webSocket, ArraySegment<byte> buffer, ReadOnlySpan<int> response, out int promiseJSHandle)
+        {
+            fixed (int* responsePtr = response)
+            fixed (byte* bufferPtr = buffer.Array)
+            {
+                var res = Interop.Runtime.WebSocketReceive(webSocket.JSHandle, (IntPtr)bufferPtr, buffer.Offset, buffer.Count, (IntPtr)responsePtr, out promiseJSHandle, out int exception);
+                if (exception != 0)
+                    throw new JSException((string)res);
+                if (res == null)
+                {
+                    return null;
+                }
+                return (Task<object>)res;
+            }
+        }
+
+        public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out int promiseJSHandle)
+        {
+            var res = Interop.Runtime.WebSocketClose(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException((string)res);
+
+            if (res == null)
+            {
+                return null;
+            }
+            return (Task<object>)res;
+        }
+
+        public static void WebSocketAbort(JSObject webSocket)
+        {
+            var res = Interop.Runtime.WebSocketAbort(webSocket.JSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException(res);
         }
     }
 }

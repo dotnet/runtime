@@ -1124,6 +1124,70 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
         }
 
+        /// <summary>
+        /// Exports the public X.509 certificate, encoded as PEM.
+        /// </summary>
+        /// <returns>
+        /// The PEM encoding of the certificate.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The certificate is corrupt, in an invalid state, or could not be exported
+        /// to PEM.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded X.509 certificate will begin with <c>-----BEGIN CERTIFICATE-----</c>
+        ///   and end with <c>-----END CERTIFICATE-----</c>, with the base64 encoded DER
+        ///   contents of the certificate between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The certificate is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public string ExportCertificatePem()
+        {
+            int pemSize = PemEncoding.GetEncodedSize(PemLabels.X509Certificate.Length, RawDataMemory.Length);
+
+            return string.Create(pemSize, this, static (destination, cert) => {
+                if (!cert.TryExportCertificatePem(destination, out int charsWritten) ||
+                    charsWritten != destination.Length)
+                {
+                    Debug.Fail("Pre-allocated buffer was not the correct size.");
+                    throw new CryptographicException();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Attempts to export the public X.509 certificate, encoded as PEM.
+        /// </summary>
+        /// <param name="destination">The buffer to receive the PEM encoded certificate.</param>
+        /// <param name="charsWritten">When this method returns, the total number of characters written to <paramref name="destination" />.</param>
+        /// <returns>
+        ///   <see langword="true"/> if <paramref name="destination"/> was large enough to receive the encoded PEM;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The certificate is corrupt, in an invalid state, or could not be exported
+        /// to PEM.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded X.509 certificate will begin with <c>-----BEGIN CERTIFICATE-----</c>
+        ///   and end with <c>-----END CERTIFICATE-----</c>, with the base64 encoded DER
+        ///   contents of the certificate between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The certificate is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportCertificatePem(Span<char> destination, out int charsWritten)
+        {
+            return PemEncoding.TryWrite(PemLabels.X509Certificate, RawDataMemory.Span, destination, out charsWritten);
+        }
+
         private static X509Certificate2 ExtractKeyFromPem<TAlg>(
             ReadOnlySpan<char> keyPem,
             string[] labels,

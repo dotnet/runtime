@@ -690,16 +690,14 @@ Namespace Microsoft.VisualBasic.FileIO
 
             ' No need to slide if we're already at the beginning
             If m_Position > 0 Then
-                Dim BufferLength As Integer = m_Buffer.Length
-                Dim TempArray(BufferLength - 1) As Char
-                Array.Copy(m_Buffer, m_Position, TempArray, 0, BufferLength - m_Position)
+                Dim ContentLength As Integer = m_CharsRead - m_Position
 
-                ' Fill the rest of the buffer
-                Dim CharsRead As Integer = m_Reader.Read(TempArray, BufferLength - m_Position, m_Position)
-                m_CharsRead = m_CharsRead - m_Position + CharsRead
+                Array.Copy(m_Buffer, m_Position, m_Buffer, 0, ContentLength)
 
+                ' Try to fill the rest of the buffer
+                Dim CharsRead As Integer = m_Reader.Read(m_Buffer, ContentLength, m_Buffer.Length - ContentLength)
+                m_CharsRead = ContentLength + CharsRead
                 m_Position = 0
-                m_Buffer = TempArray
 
                 Return CharsRead
             End If
@@ -717,26 +715,29 @@ Namespace Microsoft.VisualBasic.FileIO
 
             Debug.Assert(m_Buffer IsNot Nothing, "There's no buffer")
             Debug.Assert(m_Reader IsNot Nothing, "There's no StreamReader")
+            Debug.Assert(m_Position = 0, "Non-zero position")
 
             ' Set cursor
             m_PeekPosition = m_CharsRead
 
-            ' Create a larger buffer and copy our data into it
-            Dim BufferSize As Integer = m_Buffer.Length + DEFAULT_BUFFER_LENGTH
+            If m_CharsRead = m_Buffer.Length Then
+                ' Create a larger buffer and copy our data into it
+                Dim BufferSize As Integer = m_Buffer.Length + DEFAULT_BUFFER_LENGTH
 
-            ' Make sure the buffer hasn't grown too large
-            If BufferSize > m_MaxBufferSize Then
-                Throw GetInvalidOperationException(SR.TextFieldParser_BufferExceededMaxSize)
+                ' Make sure the buffer hasn't grown too large
+                If BufferSize > m_MaxBufferSize Then
+                    Throw GetInvalidOperationException(SR.TextFieldParser_BufferExceededMaxSize)
+                End If
+
+                Dim TempArray(BufferSize - 1) As Char
+                Array.Copy(m_Buffer, TempArray, m_Buffer.Length)
+                m_Buffer = TempArray
             End If
 
-            Dim TempArray(BufferSize - 1) As Char
+            Dim CharsRead As Integer = m_Reader.Read(m_Buffer, m_CharsRead, m_Buffer.Length - m_CharsRead)
+            Debug.Assert(CharsRead <= m_Buffer.Length - m_CharsRead, "We've read more chars than we have space for")
 
-            Array.Copy(m_Buffer, TempArray, m_Buffer.Length)
-            Dim CharsRead As Integer = m_Reader.Read(TempArray, m_Buffer.Length, DEFAULT_BUFFER_LENGTH)
-            m_Buffer = TempArray
             m_CharsRead += CharsRead
-
-            Debug.Assert(m_CharsRead <= BufferSize, "We've read more chars than we have space for")
 
             Return CharsRead
         End Function
@@ -1539,7 +1540,7 @@ Namespace Microsoft.VisualBasic.FileIO
     '''  will build the field and handle escaped quotes
     ''' </summary>
     ''' <remarks></remarks>
-    Friend Class QuoteDelimitedFieldBuilder
+    Friend NotInheritable Class QuoteDelimitedFieldBuilder
         ''' <summary>
         '''  Creates an instance of the class and sets some properties
         ''' </summary>

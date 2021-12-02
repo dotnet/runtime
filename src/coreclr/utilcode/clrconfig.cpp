@@ -9,12 +9,7 @@
 #include "sstring.h"
 #include "ex.h"
 
-// Config prefixes
-#define COMPLUS_PREFIX W("COMPlus_")
-#define LEN_OF_COMPLUS_PREFIX StrLen(COMPLUS_PREFIX)
-
-#define DOTNET_PREFIX W("DOTNET_")
-#define LEN_OF_DOTNET_PREFIX StrLen(DOTNET_PREFIX)
+#include "clrconfignocache.h"
 
 using ConfigDWORDInfo = CLRConfig::ConfigDWORDInfo;
 using ConfigStringInfo = CLRConfig::ConfigStringInfo;
@@ -153,7 +148,7 @@ namespace
         bool noPrefix = CheckLookupOption(options, LookupOptions::DontPrependPrefix);
         if (noPrefix)
         {
-            if (namelen >= _countof(buff))
+            if (namelen >= ARRAY_SIZE(buff))
             {
                 _ASSERTE(!"Environment variable name too long.");
                 return NULL;
@@ -163,8 +158,8 @@ namespace
         }
         else
         {
-            bool dotnetValid = namelen < (size_t)(_countof(buff) - 1 - LEN_OF_DOTNET_PREFIX);
-            bool complusValid = namelen < (size_t)(_countof(buff) - 1 - LEN_OF_COMPLUS_PREFIX);
+            bool dotnetValid = namelen < (size_t)(STRING_LENGTH(buff) - LEN_OF_DOTNET_PREFIX);
+            bool complusValid = namelen < (size_t)(STRING_LENGTH(buff) - LEN_OF_COMPLUS_PREFIX);
             if(!dotnetValid || !complusValid)
             {
                 _ASSERTE(!"Environment variable name too long.");
@@ -176,11 +171,11 @@ namespace
                 return NULL;
 
             // Priority order is DOTNET_ and then COMPlus_.
-            wcscpy_s(buff, _countof(buff), DOTNET_PREFIX);
+            wcscpy_s(buff, ARRAY_SIZE(buff), DOTNET_PREFIX);
             fallbackPrefix = COMPLUS_PREFIX;
         }
 
-        wcscat_s(buff, _countof(buff), name);
+        wcscat_s(buff, ARRAY_SIZE(buff), name);
 
         FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
@@ -193,13 +188,29 @@ namespace
             DWORD len = WszGetEnvironmentVariable(buff, temp);
             if (len == 0 && fallbackPrefix != NULL)
             {
-                wcscpy_s(buff, _countof(buff), fallbackPrefix);
-                wcscat_s(buff, _countof(buff), name);
+                wcscpy_s(buff, ARRAY_SIZE(buff), fallbackPrefix);
+                wcscat_s(buff, ARRAY_SIZE(buff), name);
                 len = WszGetEnvironmentVariable(buff, temp);
             }
 
             if (len != 0)
+            {
                 ret = temp.GetCopyOfUnicodeString();
+
+#if defined(DEBUG) && !defined(SELF_NO_HOST)
+                // Validate the cache and no-cache logic result in the same answer
+                SString nameToConvert(name);
+                SString nameAsUTF8;
+                nameToConvert.ConvertToUTF8(nameAsUTF8);
+                SString valueAsUTF8;
+                temp.ConvertToUTF8(valueAsUTF8);
+
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameAsUTF8.GetUTF8NoConvert(), noPrefix);
+                LPCSTR valueNoCache = nonCache.AsString();
+
+                _ASSERTE(SString::_stricmp(valueNoCache, valueAsUTF8.GetUTF8NoConvert()) == 0);
+#endif // defined(DEBUG) && !defined(SELF_NO_HOST)
+            }
         }
         EX_CATCH_HRESULT(hr);
 
@@ -405,12 +416,19 @@ namespace
 #undef CONFIG_DWORD_INFO_EX
 #undef CONFIG_STRING_INFO_EX
 
+BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return IsConfigOptionSpecified(info.name);
+}
+
 //
 // Look up a DWORD config value.
 //
 // Arguments:
 //     * info - see file:../inc/CLRConfig.h for details.
-//
+//     * isDefault - the value was not set or had an invalid format so the default was returned.
 //     * result - the result.
 //
 // Return value:
@@ -431,9 +449,7 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *
 
     DWORD resultMaybe;
     HRESULT hr = GetConfigDWORD(info.name, info.defaultValue, &resultMaybe, info.options);
-
-    // Ignore the default value even if it's set explicitly.
-    if (resultMaybe != info.defaultValue)
+    if (SUCCEEDED(hr))
     {
         *isDefault = false;
         return resultMaybe;
@@ -471,6 +487,8 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, DWORD defaultValue
 // static
 DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info)
 {
+    WRAPPER_NO_CONTRACT;
+
     bool unused;
     return GetConfigValue(info, &unused);
 }

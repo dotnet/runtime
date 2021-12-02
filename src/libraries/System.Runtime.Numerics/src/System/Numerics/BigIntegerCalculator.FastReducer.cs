@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Security;
 
 namespace System.Numerics
 {
@@ -14,135 +13,114 @@ namespace System.Numerics
 
         // see https://en.wikipedia.org/wiki/Barrett_reduction
 
-        internal readonly struct FastReducer
+        private readonly ref struct FastReducer
         {
-            private readonly uint[] _modulus;
-            private readonly uint[] _mu;
-            private readonly uint[] _q1;
-            private readonly uint[] _q2;
+            private readonly ReadOnlySpan<uint> _modulus;
+            private readonly ReadOnlySpan<uint> _mu;
+            private readonly Span<uint> _q1;
+            private readonly Span<uint> _q2;
 
-            private readonly int _muLength;
-
-            public FastReducer(uint[] modulus)
+            public FastReducer(ReadOnlySpan<uint> modulus, Span<uint> r, Span<uint> mu, Span<uint> q1, Span<uint> q2)
             {
-                Debug.Assert(modulus != null);
+                Debug.Assert(!modulus.IsEmpty);
+                Debug.Assert(r.Length == modulus.Length * 2 + 1);
+                Debug.Assert(mu.Length == r.Length - modulus.Length + 1);
+                Debug.Assert(q1.Length == modulus.Length * 2 + 2);
+                Debug.Assert(q2.Length == modulus.Length * 2 + 2);
 
                 // Let r = 4^k, with 2^k > m
-                uint[] r = new uint[modulus.Length * 2 + 1];
                 r[r.Length - 1] = 1;
 
                 // Let mu = 4^k / m
-                _mu = Divide(r, modulus);
+                Divide(r, modulus, mu);
                 _modulus = modulus;
 
-                // Allocate memory for quotients once
-                _q1 = new uint[modulus.Length * 2 + 2];
-                _q2 = new uint[modulus.Length * 2 + 1];
+                _q1 = q1;
+                _q2 = q2;
 
-                _muLength = ActualLength(_mu);
+                _mu = mu.Slice(0, ActualLength(mu));
             }
 
-            public int Reduce(uint[] value, int length)
+            public int Reduce(Span<uint> value)
             {
-                Debug.Assert(value != null);
-                Debug.Assert(length <= value.Length);
                 Debug.Assert(value.Length <= _modulus.Length * 2);
 
                 // Trivial: value is shorter
-                if (length < _modulus.Length)
-                    return length;
+                if (value.Length < _modulus.Length)
+                    return value.Length;
 
                 // Let q1 = v/2^(k-1) * mu
-                int l1 = DivMul(value, length, _mu, _muLength,
-                                _q1, _modulus.Length - 1);
+                _q1.Clear();
+                int l1 = DivMul(value, _mu, _q1, _modulus.Length - 1);
 
                 // Let q2 = q1/2^(k+1) * m
-                int l2 = DivMul(_q1, l1, _modulus, _modulus.Length,
-                                _q2, _modulus.Length + 1);
+                _q2.Clear();
+                int l2 = DivMul(_q1.Slice(0, l1), _modulus, _q2, _modulus.Length + 1);
 
                 // Let v = (v - q2) % 2^(k+1) - i*m
-                return SubMod(value, length, _q2, l2,
-                              _modulus, _modulus.Length + 1);
+                var length = SubMod(value, _q2.Slice(0, l2), _modulus, _modulus.Length + 1);
+                value = value.Slice(length);
+                value.Clear();
+
+                return length;
             }
 
-            private static unsafe int DivMul(uint[] left, int leftLength,
-                                             uint[] right, int rightLength,
-                                             uint[] bits, int k)
+            private static int DivMul(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits, int k)
             {
-                Debug.Assert(left != null);
-                Debug.Assert(left.Length >= leftLength);
-                Debug.Assert(right != null);
-                Debug.Assert(right.Length >= rightLength);
-                Debug.Assert(bits != null);
-                Debug.Assert(bits.Length + k >= leftLength + rightLength);
+                Debug.Assert(!right.IsEmpty);
+                Debug.Assert(!bits.IsEmpty);
+                Debug.Assert(bits.Length + k >= left.Length + right.Length);
 
                 // Executes the multiplication algorithm for left and right,
                 // but skips the first k limbs of left, which is equivalent to
                 // preceding division by 2^(32*k). To spare memory allocations
                 // we write the result to an already allocated memory.
 
-                Array.Clear(bits);
-
-                if (leftLength > k)
+                if (left.Length > k)
                 {
-                    leftLength -= k;
+                    left = left.Slice(k);
 
-                    fixed (uint* l = left, r = right, b = bits)
+                    if (left.Length < right.Length)
                     {
-                        if (leftLength < rightLength)
-                        {
-                            Multiply(r, rightLength,
-                                     l + k, leftLength,
-                                     b, leftLength + rightLength);
-                        }
-                        else
-                        {
-                            Multiply(l + k, leftLength,
-                                     r, rightLength,
-                                     b, leftLength + rightLength);
-                        }
+                        Multiply(right,
+                                 left,
+                                 bits.Slice(0, left.Length + right.Length));
+                    }
+                    else
+                    {
+                        Multiply(left,
+                                 right,
+                                 bits.Slice(0, left.Length + right.Length));
                     }
 
-                    return ActualLength(bits, leftLength + rightLength);
+                    return ActualLength(bits.Slice(0, left.Length + right.Length));
                 }
 
                 return 0;
             }
 
-            private static unsafe int SubMod(uint[] left, int leftLength,
-                                             uint[] right, int rightLength,
-                                             uint[] modulus, int k)
+            private static int SubMod(Span<uint> left, ReadOnlySpan<uint> right, ReadOnlySpan<uint> modulus, int k)
             {
-                Debug.Assert(left != null);
-                Debug.Assert(left.Length >= leftLength);
-                Debug.Assert(right != null);
-                Debug.Assert(right.Length >= rightLength);
-
                 // Executes the subtraction algorithm for left and right,
                 // but considers only the first k limbs, which is equivalent to
                 // preceding reduction by 2^(32*k). Furthermore, if left is
                 // still greater than modulus, further subtractions are used.
 
-                if (leftLength > k)
-                    leftLength = k;
-                if (rightLength > k)
-                    rightLength = k;
+                if (left.Length > k)
+                    left = left.Slice(0, k);
+                if (right.Length > k)
+                    right = right.Slice(0, k);
 
-                fixed (uint* l = left, r = right, m = modulus)
+                SubtractSelf(left, right);
+                left = left.Slice(0, ActualLength(left));
+
+                while (Compare(left, modulus) >= 0)
                 {
-                    SubtractSelf(l, leftLength, r, rightLength);
-                    leftLength = ActualLength(left, leftLength);
-
-                    while (Compare(l, leftLength, m, modulus.Length) >= 0)
-                    {
-                        SubtractSelf(l, leftLength, m, modulus.Length);
-                        leftLength = ActualLength(left, leftLength);
-                    }
+                    SubtractSelf(left, modulus);
+                    left = left.Slice(0, ActualLength(left));
                 }
 
-                Array.Clear(left, leftLength, left.Length - leftLength);
-
-                return leftLength;
+                return left.Length;
             }
         }
     }

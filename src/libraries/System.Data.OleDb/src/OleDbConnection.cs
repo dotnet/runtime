@@ -587,32 +587,35 @@ namespace System.Data.OleDb
             OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((OleDbHResult.S_OK == hr) && (null != errorInfo))
             {
-                if (hresult < 0)
+                try
                 {
-                    // UNDONE: if authentication failed - throw a unique exception object type
-                    //if (/*OLEDB_Error.DB_SEC_E_AUTH_FAILED*/unchecked((int)0x80040E4D) == hr) {
-                    //}
-                    //else if (/*OLEDB_Error.DB_E_CANCELED*/unchecked((int)0x80040E4E) == hr) {
-                    //}
-                    // else {
-                    e = OleDbException.CreateException(errorInfo, hresult, null);
-                    //}
-
-                    if (OleDbHResult.DB_E_OBJECTOPEN == hresult)
+                    if (hresult < 0)
                     {
-                        e = ADP.OpenReaderExists(e);
-                    }
+                        // UNDONE: if authentication failed - throw a unique exception object type
+                        //if (/*OLEDB_Error.DB_SEC_E_AUTH_FAILED*/unchecked((int)0x80040E4D) == hr) {
+                        //}
+                        //else if (/*OLEDB_Error.DB_E_CANCELED*/unchecked((int)0x80040E4E) == hr) {
+                        //}
+                        // else {
+                        e = OleDbException.CreateException(errorInfo, hresult, null);
+                        //}
 
-                    ResetState(connection);
+                        if (OleDbHResult.DB_E_OBJECTOPEN == hresult)
+                        {
+                            e = ADP.OpenReaderExists(e);
+                        }
+
+                        ResetState(connection);
+                    }
+                    else if (null != connection)
+                    {
+                        connection.OnInfoMessage(errorInfo, hresult);
+                    }
                 }
-                else if (null != connection)
+                finally
                 {
-                    connection.OnInfoMessage(errorInfo, hresult);
+                    UnsafeNativeMethods.ReleaseErrorInfoObject(errorInfo);
                 }
-                else
-                {
-                }
-                Marshal.ReleaseComObject(errorInfo);
             }
             else if (0 < hresult)
             {

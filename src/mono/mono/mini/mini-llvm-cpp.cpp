@@ -575,14 +575,9 @@ mono_llvm_di_create_function (void *di_builder, void *cu, LLVMValueRef func, con
 	// FIXME: Share DIFile
 	di_file = builder->createFile (file, dir);
 	type = builder->createSubroutineType (builder->getOrCreateTypeArray (ArrayRef<Metadata*> ()));
-#if LLVM_API_VERSION >= 900
 	di_func = builder->createFunction (
 		di_file, name, mangled_name, di_file, line, type, 0,
 		DINode::FlagZero, DISubprogram::SPFlagDefinition | DISubprogram::SPFlagLocalToUnit);
-#else
-	di_func = builder->createFunction (di_file, name, mangled_name, di_file, line, type, true, true, 0);
-#endif
-
 	unwrap<Function>(func)->setMetadata ("dbg", di_func);
 
 	return di_func;
@@ -627,23 +622,8 @@ mono_llvm_di_builder_finalize (void *di_builder)
 LLVMValueRef
 mono_llvm_get_or_insert_gc_safepoint_poll (LLVMModuleRef module)
 {
-#if LLVM_API_VERSION >= 900
-
 	llvm::FunctionCallee callee = unwrap(module)->getOrInsertFunction("gc.safepoint_poll", FunctionType::get(unwrap(LLVMVoidType()), false));
 	return wrap (dyn_cast<llvm::Function> (callee.getCallee ()));
-#else
-	llvm::Function *SafepointPoll;
-	llvm::Constant *SafepointPollConstant;
-
-	SafepointPollConstant = unwrap(module)->getOrInsertFunction("gc.safepoint_poll", FunctionType::get(unwrap(LLVMVoidType()), false));
-	g_assert (SafepointPollConstant);
-
-	SafepointPoll = dyn_cast<llvm::Function>(SafepointPollConstant);
-	g_assert (SafepointPoll);
-	g_assert (SafepointPoll->empty());
-
-	return wrap(SafepointPoll);
-#endif
 }
 
 gboolean

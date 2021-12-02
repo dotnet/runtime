@@ -6,9 +6,9 @@
     <TestRuntime>true</TestRuntime>
     <Scenario>WasmTestOnBrowser</Scenario>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <!-- setting WasmXHarnessMonoArgs doesn't work here, but see runtime.js -->
+    <!-- setting WasmXHarnessMonoArgs doesn't work here, but see main.js -->
     <!-- <WasmXHarnessMonoArgs>- -setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs> -->
   </PropertyGroup>
   <ItemGroup>
@@ -16,12 +16,9 @@
     <Content Include="index.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <WasmExtraFilesToDeploy Include="index.html" />
     <ProjectReference Include="ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
   </ItemGroup>
-
-  <Target Name="AfterWasmBuildApp" AfterTargets="WasmBuildApp">
-    <Copy SourceFiles="$(OutDir)\index.html" DestinationFolder="$(WasmAppDir)" />
-  </Target>
 
   <Target Name="PreserveEnCAssembliesFromLinking"
           Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"

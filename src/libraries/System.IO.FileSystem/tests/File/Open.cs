@@ -42,15 +42,14 @@ namespace System.IO.Tests
         }
     }
 
-    public class File_Open_str_options_as : FileStream_ctor_options_as
+    public class File_Open_str_options : FileStream_ctor_options
     {
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
             return File.Open(path,
                 new FileStreamOptions {
                     Mode = mode,
-                    Access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite,
-                    PreallocationSize = PreallocationSize
+                    Access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite
                 });
         }
 
@@ -59,8 +58,7 @@ namespace System.IO.Tests
             return File.Open(path,
                 new FileStreamOptions {
                     Mode = mode,
-                    Access = access,
-                    PreallocationSize = PreallocationSize
+                    Access = access
                 });
         }
 
@@ -72,8 +70,20 @@ namespace System.IO.Tests
                     Access = access,
                     Share = share,
                     Options = options,
+                    BufferSize = bufferSize
+                });
+        }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+        {
+            return File.Open(path,
+                new FileStreamOptions {
+                    Mode = mode,
+                    Access = access,
+                    Share = share,
+                    Options = options,
                     BufferSize = bufferSize,
-                    PreallocationSize = PreallocationSize
+                    PreallocationSize = preallocationSize
                 });
         }
     }

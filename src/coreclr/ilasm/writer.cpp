@@ -212,26 +212,28 @@ HRESULT Assembler::CreateDebugDirectory()
     param.debugDirData = NULL;
 
     // get module ID
-    DWORD rsds = 0x53445352;
-    DWORD pdbAge = 0x1;
+    DWORD rsds = VAL32(0x53445352);
+    DWORD pdbAge = VAL32(0x1);
+    GUID pdbGuid = *m_pPortablePdbWriter->GetGuid();
+    SwapGuid(&pdbGuid);
     DWORD len = sizeof(rsds) + sizeof(GUID) + sizeof(pdbAge) + (DWORD)strlen(m_szPdbFileName) + 1;
     BYTE* dbgDirData = new BYTE[len];
 
     DWORD offset = 0;
     memcpy_s(dbgDirData + offset, len, &rsds, sizeof(rsds));                            // RSDS
     offset += sizeof(rsds);
-    memcpy_s(dbgDirData + offset, len, m_pPortablePdbWriter->GetGuid(), sizeof(GUID)); // PDB GUID
+    memcpy_s(dbgDirData + offset, len, &pdbGuid, sizeof(GUID));                         // PDB GUID
     offset += sizeof(GUID);
     memcpy_s(dbgDirData + offset, len, &pdbAge, sizeof(pdbAge));                        // PDB AGE
     offset += sizeof(pdbAge);
     memcpy_s(dbgDirData + offset, len, m_szPdbFileName, strlen(m_szPdbFileName) + 1);   // PDB PATH
 
     debugDirIDD.Characteristics = 0;
-    debugDirIDD.TimeDateStamp = m_pPortablePdbWriter->GetTimestamp();
-    debugDirIDD.MajorVersion = 0x100;
-    debugDirIDD.MinorVersion = 0x504d;
-    debugDirIDD.Type = IMAGE_DEBUG_TYPE_CODEVIEW;
-    debugDirIDD.SizeOfData = len;
+    debugDirIDD.TimeDateStamp = VAL32(m_pPortablePdbWriter->GetTimestamp());
+    debugDirIDD.MajorVersion = VAL16(0x100);
+    debugDirIDD.MinorVersion = VAL16(0x504d);
+    debugDirIDD.Type = VAL32(IMAGE_DEBUG_TYPE_CODEVIEW);
+    debugDirIDD.SizeOfData = VAL32(len);
     debugDirIDD.AddressOfRawData = 0; // will be updated bellow
     debugDirIDD.PointerToRawData = 0; // will be updated bellow
 

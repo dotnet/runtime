@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 rm -f /etc/samba/smb.conf
 # Configure domain and start daemons

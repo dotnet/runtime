@@ -1,16 +1,19 @@
 # This seems to update the machine cert store so that python can download the files as required by emscripten's install
+# Based on info at https://pypi.org/project/certifi/
+pip install certifi
+
 $WebsiteURL="storage.googleapis.com"
 Try {
-    $Conn = New-Object System.Net.Sockets.TcpClient($WebsiteURL,443) 
-  
+    $Conn = New-Object System.Net.Sockets.TcpClient($WebsiteURL,443)
+
     Try {
         $Stream = New-Object System.Net.Security.SslStream($Conn.GetStream())
-        $Stream.AuthenticateAsClient($WebsiteURL) 
-   
+        $Stream.AuthenticateAsClient($WebsiteURL)
+
         $Cert = $Stream.Get_RemoteCertificate()
- 
+
         $ValidTo = [datetime]::Parse($Cert.GetExpirationDatestring())
-   
+
         Write-Host "`nConnection Successfull" -ForegroundColor DarkGreen
         Write-Host "Website: $WebsiteURL"
     }

@@ -119,8 +119,6 @@
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -139,8 +137,6 @@
              Link="Common\Interop\Unix\Interop.GetHostName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerUserName.cs"
              Link="Common\Interop\Unix\Interop.GetPeerUserName.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDir.cs"
-             Link="Common\Interop\Unix\Interop.MkDir.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
              Link="Common\Interop\Unix\Interop.Open.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
@@ -168,13 +164,14 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />  
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading" />

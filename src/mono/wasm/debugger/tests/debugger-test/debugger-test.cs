@@ -782,3 +782,70 @@ public class LoopClass
     }
 }
 
+public class SteppingInto
+{
+    static int currentCount = 0;
+    static MyIncrementer incrementer = new MyIncrementer();
+    public static void MethodToStep()
+    {
+        currentCount = incrementer.Increment(currentCount);
+    }
+}
+
+public class MyIncrementer
+{
+    private Func<DateTime> todayFunc = () => DateTime.Now;
+
+    public int Increment(int count)
+    {
+        var today = todayFunc();
+        if (today.DayOfWeek == DayOfWeek.Sunday)
+        {
+            return count + 2;
+        }
+
+        return count + 1;
+    }
+}
+
+public class DebuggerAttribute
+{
+    static int currentCount = 0;
+
+    [System.Diagnostics.DebuggerHidden]
+    public static void HiddenMethod()
+    {
+        currentCount++;
+    }
+
+    [System.Diagnostics.DebuggerHidden]
+    public static void HiddenMethodDebuggerBreak()
+    {
+        var local_var = 12;
+        System.Diagnostics.Debugger.Break();
+        currentCount++;
+    }
+
+    public static void VisibleMethod()
+    {
+        currentCount++;
+    }
+
+    public static void VisibleMethodDebuggerBreak()
+    {
+        System.Diagnostics.Debugger.Break();
+        currentCount++;
+    }
+
+    public static void Run()
+    {
+        HiddenMethod();
+        VisibleMethod();
+    }
+
+    public static void RunDebuggerBreak()
+    {
+        HiddenMethodDebuggerBreak();
+        VisibleMethodDebuggerBreak();
+    }
+}

@@ -39,7 +39,6 @@ namespace Internal.Cryptography.Pal
                     }
                 }
 
-                Debug.Assert(certHandles.Length > 0);
                 return Interop.AndroidCrypto.X509ExportPkcs7(certHandles);
             }
 

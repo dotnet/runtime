@@ -58,7 +58,7 @@ namespace System.ComponentModel.Design
 #pragma warning restore SYSLIB0011
         }
 
-        private class StreamWrapper : Stream
+        private sealed class StreamWrapper : Stream
         {
             private Stream _stream;
             private bool _readFirstByte;

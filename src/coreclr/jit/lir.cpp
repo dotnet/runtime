@@ -154,7 +154,7 @@ void LIR::Use::AssertIsValid() const
 //
 //    GenTree* constantOne = compiler->gtNewIconNode(1);
 //    range.InsertAfter(opEq.Def(), constantOne);
-//    opEq.ReplaceWith(compiler, constantOne);
+//    opEq.ReplaceWith(constantOne);
 //
 // Which would produce something like the following LIR:
 //
@@ -179,13 +179,11 @@ void LIR::Use::AssertIsValid() const
 //          *  jmpTrue   void
 //
 // Arguments:
-//    compiler - The Compiler context.
 //    replacement - The replacement node.
 //
-void LIR::Use::ReplaceWith(Compiler* compiler, GenTree* replacement)
+void LIR::Use::ReplaceWith(GenTree* replacement)
 {
     assert(IsInitialized());
-    assert(compiler != nullptr);
     assert(replacement != nullptr);
     assert(IsDummyUse() || m_range->Contains(m_user));
     assert(m_range->Contains(replacement));
@@ -273,7 +271,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
 
     m_range->InsertAfter(node, store, load);
 
-    ReplaceWith(compiler, load);
+    ReplaceWith(load);
 
     JITDUMP("ReplaceWithLclVar created store :\n");
     DISPNODE(store);
@@ -1488,7 +1486,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         // Some nodes should never be marked unused, as they must be contained in the backend.
         // These may be marked as unused during dead code elimination traversal, but they *must* be subsequently
         // removed.
-        assert(!node->IsUnusedValue() || !node->OperIs(GT_FIELD_LIST, GT_LIST, GT_INIT_VAL));
+        assert(!node->IsUnusedValue() || !node->OperIs(GT_FIELD_LIST, GT_INIT_VAL));
 
         // Verify that the REVERSE_OPS flag is not set. NOTE: if we ever decide to reuse the bit assigned to
         // GTF_REVERSE_OPS for an LIR-only flag we will need to move this check to the points at which we

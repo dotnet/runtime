@@ -1459,16 +1459,17 @@ int MethodTable::GetVectorSize()
 
         if (strcmp(className, "Vector`1") == 0)
         {
-            vectorSize = GetNumInstanceFieldBytes();
             _ASSERTE(strcmp(namespaceName, "System.Numerics") == 0);
-            return vectorSize;
+            vectorSize = GetNumInstanceFieldBytes();
         }
-        if (strcmp(className, "Vector128`1") == 0)
+        else if (strcmp(className, "Vector128`1") == 0)
         {
+            _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
             vectorSize = 16;
         }
         else if (strcmp(className, "Vector64`1") == 0)
         {
+            _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
             vectorSize = 8;
         }
         if (vectorSize != 0)
@@ -1478,7 +1479,6 @@ int MethodTable::GetVectorSize()
             CorElementType corType = typeArg.GetSignatureCorElementType();
             if (((corType >= ELEMENT_TYPE_I1) && (corType <= ELEMENT_TYPE_R8)) || (corType == ELEMENT_TYPE_I) || (corType == ELEMENT_TYPE_U))
             {
-                _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
                 return vectorSize;
             }
         }
@@ -1877,7 +1877,7 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     if (it.Next())
     {
         // Can use GetInterfaceApprox, as there are no generic default interfaces
-        return TypeHandle(it.GetInterfaceApprox()); 
+        return TypeHandle(it.GetInterfaceApprox());
     }
     else
     {
@@ -2877,7 +2877,7 @@ DeepFieldDescIterator::Init(MethodTable* pMT, int iteratorType,
 
     while (pMT)
     {
-        if (m_numClasses < (int)NumItems(m_classes))
+        if (m_numClasses < (int)ARRAY_SIZE(m_classes))
         {
             m_classes[m_numClasses++] = pMT;
         }

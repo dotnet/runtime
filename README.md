@@ -9,7 +9,7 @@ all supported platforms, as well as the sources to .NET runtime and libraries.
 
 ## What is .NET?
 
-Official Starting Page: https://dotnet.microsoft.com/
+Official Starting Page: https://dotnet.microsoft.com
 
 * [How to use .NET](https://docs.microsoft.com/dotnet/core/get-started) (with VS, VS Code, command-line CLI)
   * [Install official releases](https://dotnet.microsoft.com/download)
@@ -24,7 +24,7 @@ Official Starting Page: https://dotnet.microsoft.com/
 
 We welcome contributions! Many people all over the world have helped make this project better.
 
-* [Contributing](CONTRIBUTING.md) explains what kinds of changes we welcome
+* [Contributing](CONTRIBUTING.md) explains what kinds of contributions we welcome
 - [Workflow Instructions](docs/workflow/README.md) explains how to build and test
 * [Get Up and Running on .NET Core](docs/project/dogfooding.md) explains how to get nightly builds of the runtime and its libraries to test them in your own projects.
 
@@ -46,8 +46,8 @@ For other issues, please use the following repos:
 ## Useful Links
 
 * [.NET Core source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
-* [API Reference docs](https://docs.microsoft.com/dotnet/api/?view=netcore-3.1)
-* [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
+* [API Reference docs](https://docs.microsoft.com/dotnet/api)
+* [.NET API Catalog](https://apisof.net) (incl. APIs from daily builds and API usage info)
 * [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
 * [.NET Discord Server](https://aka.ms/dotnet-discord) - a place to talk and hang out with .NET community
 
@@ -58,11 +58,11 @@ For other issues, please use the following repos:
 There are many .NET related projects on GitHub.
 
 - [.NET home repo](https://github.com/Microsoft/dotnet) - links to 100s of .NET projects, from Microsoft and the community.
-- [ASP.NET Core home](https://docs.microsoft.com/aspnet/core/?view=aspnetcore-3.1) - the best place to start learning about ASP.NET Core.
+- [ASP.NET Core home](https://docs.microsoft.com/aspnet/core) - the best place to start learning about ASP.NET Core.
 
-This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
+This project has adopted the code of conduct defined by the [Contributor Covenant](https://contributor-covenant.org) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](https://www.dotnetfoundation.org/code-of-conduct).
 
-General .NET OSS discussions: [.NET Foundation forums](https://forums.dotnetfoundation.org)
+General .NET OSS discussions: [.NET Foundation Discussions](https://github.com/dotnet-foundation/Home/discussions)
 
 ## License
 

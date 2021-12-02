@@ -34,6 +34,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public readonly SafeMsQuicConfigurationHandle? ConnectionConfiguration;
             public readonly Channel<MsQuicConnection> AcceptConnectionQueue;
+            // Pending connections are held back until they're ready to be used, which includes TLS negotiation.
+            // If the negotiation succeeds, the connection is put into the accept queue; otherwise, it's discarded.
             public readonly ConcurrentDictionary<IntPtr, MsQuicConnection> PendingConnections;
 
             public QuicOptions ConnectionOptions = new QuicOptions();

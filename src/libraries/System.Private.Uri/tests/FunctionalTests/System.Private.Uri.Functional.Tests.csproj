@@ -17,6 +17,7 @@
     <Compile Include="UriBuilderParameterTest.cs" />
     <Compile Include="UriBuilderRefreshTest.cs" />
     <Compile Include="UriBuilderTests.cs" />
+    <Compile Include="UriCreationOptionsTest.cs" />
     <Compile Include="UriEscapingTest.cs" />
     <Compile Include="UriGetComponentsTest.cs" />
     <Compile Include="UriIpHostTest.cs" />

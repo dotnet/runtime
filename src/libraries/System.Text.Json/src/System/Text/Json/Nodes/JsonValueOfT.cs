@@ -327,7 +327,7 @@ namespace System.Text.Json.Nodes
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"
         [DebuggerDisplay("{Json,nq}")]
-        private class DebugView
+        private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             public JsonValue<TValue> _node;

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <UsingToolXliff>true</UsingToolXliff>
+    <CLSCompliant>false</CLSCompliant>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CS0436;CS0649</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);REGEXGENERATOR</DefineConstants>
+    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Common generator support -->
+    <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+
+    <!-- Code included from System.Text.RegularExpressions -->
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <Compile Include="..\src\System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="..\src\System\Threading\StackHelper.cs" Link="Production\StackHelper.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.cs" Link="Production\RegexCharClass.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" Link="Production\RegexCharClass.MappingTable.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexCode.cs" Link="Production\RegexCode.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexFindOptimizations.cs" Link="Production\RegexFindOptimizations.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexNode.cs" Link="Production\RegexNode.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexOptions.cs" Link="Production\RegexOptions.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="Production\RegexParseError.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexParseException.cs" Link="Production\RegexParseException.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexParser.cs" Link="Production\RegexParser.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexPrefixAnalyzer.cs" Link="Production\RegexPrefixAnalyzer.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexTree.cs" Link="Production\RegexTree.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexWriter.cs" Link="Production\RegexWriter.cs" />
+  </ItemGroup>
+
+</Project>

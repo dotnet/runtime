@@ -33,50 +33,33 @@ internal class CustomAssemblyResolver : AssemblyLoadContext
 
     public CustomAssemblyResolver()
     {
-        Console.WriteLine("CustomAssemblyResolver initializing");
         _frameworkPath = Environment.GetEnvironmentVariable("BVT_ROOT");
         if (_frameworkPath == null)
         {
-            Console.WriteLine("CustomAssemblyResolver: BVT_ROOT not set");
             _frameworkPath = Environment.GetEnvironmentVariable("CORE_ROOT");
         }
 
         if (_frameworkPath == null)
         {
-            Console.WriteLine("CustomAssemblyResolver: CORE_ROOT not set");
             _frameworkPath = Directory.GetCurrentDirectory();
         }
 
-        Console.WriteLine("CustomAssemblyResolver: looking for framework libraries at path: {0}", _frameworkPath);
         string stressFrameworkDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        Console.WriteLine("CustomAssemblyResolver: currently executing assembly is at path: {0}", stressFrameworkDir);
         _testsPath = Path.Combine(stressFrameworkDir, "Tests");
-        Console.WriteLine("CustomAssemblyResolver: looking for tests in dir: {0}", _testsPath);
     }
 
     protected override Assembly Load(AssemblyName assemblyName)
     {
-        Console.WriteLine("CustomAssemblyLoader: Got request to load {0}", assemblyName.ToString());
-
         string strPath;
         if (assemblyName.Name.StartsWith("System."))
         {
-            Console.WriteLine("CustomAssemblyLoader: this looks like a framework assembly");
             strPath = Path.Combine(_frameworkPath, assemblyName.Name + ".dll");
         }
         else
         {
-            Console.WriteLine("CustomAssemblyLoader: this looks like a test");
             strPath = Path.Combine(_testsPath, assemblyName.Name + ".dll");
         }
-
-        Console.WriteLine("Incoming AssemblyName: {0}", assemblyName.ToString());
-        Console.WriteLine("Trying to Load: {0}", strPath);
-        Console.WriteLine("Computed AssemblyName: {0}", GetAssemblyName(strPath).ToString());
         Assembly asmLoaded = LoadFromAssemblyPath(strPath);
-
-        Console.WriteLine("Loaded {0} from {1}", asmLoaded.FullName, asmLoaded.Location);
-
         return asmLoaded;
     }
 }
@@ -125,6 +108,19 @@ public class ReliabilityFramework
     // support for running in automation
     internal static bool IsRunningAsUnitTest = false;
     internal static bool IsRunningLongGCTests = false;
+
+    internal MethodInfo _privateCollectionCountMethod;
+
+    private int PrivateCollectionCount(int generation)
+    {
+        if (_privateCollectionCountMethod == null)
+        {
+            _privateCollectionCountMethod = typeof(GC).GetMethod("_CollectionCount", BindingFlags.NonPublic | BindingFlags.Static);
+        }
+        object result = _privateCollectionCountMethod.Invoke(null, new object[] { generation, 1 });
+        int value = (int)result;
+        return value;
+    }
 
     /// <summary>
     /// Our main execution routine for the reliability framework.  Here we create an instance of the framework & run the reliability tests
@@ -600,8 +596,6 @@ public class ReliabilityFramework
         // so we start new tests sooner (so they start BEFORE we drop below our minimum CPU)
 
         //Console.WriteLine("RF - TestStarter found {0} tests to run", totalTestsToRun);
-        if ((_curTestSet.DefaultTestStartMode != TestStartModeEnum.AssemblyLoadContextLoader) && (_curTestSet.SuppressConsoleOutputFromTests))
-            Console.SetOut(System.IO.TextWriter.Null);
 
         /************************************************************************
          * loop until we've run out of time or have executed all of the tests.
@@ -851,11 +845,14 @@ public class ReliabilityFramework
             {
                 Thread.Sleep(secondsIter * 1000);
                 long currentAllocatedBytes = GC.GetTotalAllocatedBytes(false);
-                msg = String.Format("============current number of tests running {0,4}, allocated {1:n0} so far, {2:n0} since last; (GC {3}:{4}:{5}), waited {6}s",
+                msg = String.Format("============current number of tests running {0,4}, allocated {1:n0} so far, {2:n0} since last; (GC {3}:{4}:{5}/{6}:{7}:{8}), waited {9}s",
                     _testsRunningCount, currentAllocatedBytes, (currentAllocatedBytes - lastAllocatedBytes),
                     GC.CollectionCount(0),
                     GC.CollectionCount(1),
                     GC.CollectionCount(2),
+                    PrivateCollectionCount(0),
+                    PrivateCollectionCount(1),
+                    PrivateCollectionCount(2),
                     (waitCnt * secondsIter));
                 lastAllocatedBytes = currentAllocatedBytes;
                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
@@ -926,6 +923,7 @@ public class ReliabilityFramework
             }
 
             Thread newThread = new Thread(new ParameterizedThreadStart(this.StartTestWorker));
+            newThread.IsBackground = true;
 
             // check the thread requirements and set appropriately.
             switch ((test.TestAttrs & TestAttributes.RequiresThread))
@@ -1170,7 +1168,10 @@ public class ReliabilityFramework
                             {   // make sure no one accesses the assembly load context at the same time (between here & RunReliabilityTests)
                                 if (daTest.RunningCount == 1 && daTest.HasAssemblyLoadContext)
                                 {   // only unload when the last test finishes.
+                                    daTest.MyLoader = null;
+                                    daTest.TestObject = null;
                                     UnloadAssemblyLoadContext(daTest);
+                                    TestPreLoader(daTest, _curTestSet.DiscoveryPaths);  // need to reload assembly & AssemblyLoadContext
                                     RunCommands(daTest.PostCommands, "post", daTest);
                                 }
                             }
@@ -1356,8 +1357,10 @@ public class ReliabilityFramework
             if (alc != null)
             {
                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "FAILED unloading AssemblyLoadContext: " + alc.FriendlyName + " for " + test.Index.ToString());
+                return;
             }
         }
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "SUCCEED unloading AssemblyLoadContext for " + test.Index.ToString());
     }
 
     /// <summary>
@@ -1482,32 +1485,21 @@ public class ReliabilityFramework
     /// <param name="paths"></param>
     private void TestPreLoader_Process(ReliabilityTest test, string[] paths)
     {
-        Console.WriteLine("Preloading for process mode");
-
-        Console.WriteLine("basepath: {0}, asm: {1}", test.BasePath, test.Assembly);
-        foreach (var path in paths)
-        {
-            Console.WriteLine(" path: {0}", path);
-        }
         string realpath = ReliabilityConfig.ConvertPotentiallyRelativeFilenameToFullPath(test.BasePath, test.Assembly);
         Debug.Assert(test.TestObject == null);
-        Console.WriteLine("Real path: {0}", realpath);
         if (File.Exists(realpath))
         {
             test.TestObject = realpath;
         }
         else if (File.Exists((string)test.Assembly))
         {
-            Console.WriteLine("asm path: {0}", test.Assembly);
             test.TestObject = test.Assembly;
         }
         else
         {
             foreach (string path in paths)
             {
-                Console.WriteLine("Candidate path: {0}", path);
                 string fullPath = ReliabilityConfig.ConvertPotentiallyRelativeFilenameToFullPath(path, (string)test.Assembly);
-                Console.WriteLine("Candidate full path: {0}", fullPath);
                 if (File.Exists(fullPath))
                 {
                     test.TestObject = fullPath;
@@ -1530,6 +1522,18 @@ public class ReliabilityFramework
             Type[] testTypes = AssemblyExtensions.GetTypes(testAssembly);
             MethodInfo methodInfo = null;
 
+            if (test.SuppressConsoleOutput)
+            {
+                // Console.SetOut(System.IO.TextWriter.Null);
+                Assembly consoleAssembly = resolver.LoadFromAssemblyPath(typeof(Console).Assembly.Location);
+                Type consoleType = consoleAssembly.GetType("System.Console");
+                MethodInfo setOutMethod = consoleType.GetMethod("SetOut", BindingFlags.Public | BindingFlags.Static);
+                Type textWriterType = setOutMethod.GetParameters()[0].ParameterType;
+                FieldInfo nullField = textWriterType.GetField("Null", BindingFlags.Public | BindingFlags.Static);
+                object nullInstance = nullField.GetValue(null);
+                setOutMethod.Invoke(null, new object[] { nullInstance });
+            }
+
             if (testTypes != null)
             {
                 foreach (Type t in testTypes)
@@ -1546,7 +1550,7 @@ public class ReliabilityFramework
             test.EntryPointMethod = methodInfo;
         }
     }
-        /// <summary>
+    /// <summary>
     /// This method will send a failure message to the test owner that their test has failed.
     /// </summary>
     /// <param name="testCase">the test case which failed</param>

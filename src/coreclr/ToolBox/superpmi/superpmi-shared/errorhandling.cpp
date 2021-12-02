@@ -5,6 +5,7 @@
 #include "errorhandling.h"
 #include "logging.h"
 #include "runtimedetails.h"
+#include "spmiutil.h"
 
 void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode)
 {
@@ -18,6 +19,9 @@ void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, va_list 
     ULONG_PTR* ptr    = new ULONG_PTR();
     *ptr              = (ULONG_PTR)buffer;
     _vsnprintf_s(buffer, 8192, 8191, message, args);
+
+    if (BreakOnException())
+        __debugbreak();
 
     RaiseException(exceptionCode, 0, 1, ptr);
 }

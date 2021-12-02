@@ -7,6 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
 
   <ItemGroup>
@@ -132,6 +133,8 @@
              Link="Common\System\Net\Http\HttpClientHandlerTest.Cookies.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
     <Compile Include="SocketsHttpHandlerTest.Cancellation.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http2FlowControl.cs" />
@@ -185,6 +188,7 @@
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />
     <Compile Include="ResponseStreamConformanceTests.cs" />
+    <Compile Include="ResponseStreamZeroByteReadTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\SyncBlockingContent.cs"
              Link="Common\System\Net\Http\SyncBlockingContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\DefaultCredentialsTest.cs"

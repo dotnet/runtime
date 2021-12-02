@@ -5,12 +5,13 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
 #nullable enable
 
-namespace Wasm.Build.Tests
+namespace Wasm.Build.NativeRebuild.Tests
 {
     public class FlagsChangeRebuildTest : NativeRebuildTestsBase
     {
@@ -53,7 +54,7 @@ namespace Wasm.Build.Tests
             AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
 
             // ldflags: link step args change, so it should trigger relink
-            AssertSubstring("wasm-opt", output, contains: extraLDFlags.Length > 0);
+            AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
 
             if (buildArgs.AOT)
             {

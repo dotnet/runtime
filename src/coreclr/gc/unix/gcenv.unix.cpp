@@ -79,7 +79,7 @@ extern "C"
         if (machret != KERN_SUCCESS)                                        \
         {                                                                   \
             char _szError[1024];                                            \
-            snprintf(_szError, _countof(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            snprintf(_szError, ARRAY_SIZE(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
             mach_error(_szError, machret);                                  \
             abort();                                                        \
         }                                                                   \
@@ -781,8 +781,13 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     if (st != 0)
 #endif
     {
+#if HAVE_POSIX_MADVISE
         // In case the MADV_FREE is not supported, use MADV_DONTNEED
         st = posix_madvise(address, size, MADV_DONTNEED);
+#else
+        // If we don't have posix_madvise, report failure
+        st = EINVAL;
+#endif
     }
 
     return (st == 0);

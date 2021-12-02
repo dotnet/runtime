@@ -10,17 +10,17 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumDestroy")]
-        internal static extern void BigNumDestroy(IntPtr a);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumDestroy")]
+        internal static partial void BigNumDestroy(IntPtr a);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumFromBinary")]
-        private static extern unsafe IntPtr BigNumFromBinary(byte* s, int len);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumFromBinary")]
+        private static unsafe partial IntPtr BigNumFromBinary(byte* s, int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumToBinary")]
-        private static extern unsafe int BigNumToBinary(SafeBignumHandle a, byte* to);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumToBinary")]
+        private static unsafe partial int BigNumToBinary(SafeBignumHandle a, byte* to);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetBigNumBytes")]
-        private static extern int GetBigNumBytes(SafeBignumHandle a);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetBigNumBytes")]
+        private static partial int GetBigNumBytes(SafeBignumHandle a);
 
         private static unsafe IntPtr CreateBignumPtr(ReadOnlySpan<byte> bigEndianValue)
         {

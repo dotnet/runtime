@@ -31,9 +31,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass> MyNestedClass { get; }
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass.MyNestedNestedClass> MyNestedNestedClass { get; }
         public JsonTypeInfo<object[]> ObjectArray { get; }
+        public JsonTypeInfo<byte[]> ByteArray { get; }
         public JsonTypeInfo<string> String { get; }
         public JsonTypeInfo<(string Label1, int Label2, bool)> ValueTupleStringInt32Boolean { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
+        public JsonTypeInfo<RealWorldContextTests.ClassWithNullableProperties> ClassWithNullableProperties { get; }
         public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }
         public JsonTypeInfo<StructWithCustomConverter> StructWithCustomConverter { get; }
         public JsonTypeInfo<ClassWithCustomConverterFactory> ClassWithCustomConverterFactory { get; }
@@ -44,6 +46,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<StructWithCustomConverterPropertyFactory> StructWithCustomConverterPropertyFactory { get; }
         public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
         public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
+        public JsonTypeInfo<PersonStruct?> NullablePersonStruct { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext
@@ -57,13 +60,15 @@ namespace System.Text.Json.SourceGeneration.Tests
         private static JsonContext s_defaultContext;
         public static JsonContext Default => s_defaultContext ??= new JsonContext(new JsonSerializerOptions(s_defaultOptions));
 
-        public JsonContext() : base(null, s_defaultOptions)
+        public JsonContext() : base(null)
         {
         }
 
-        public JsonContext(JsonSerializerOptions options) : base(options, s_defaultOptions)
+        public JsonContext(JsonSerializerOptions options) : base(options)
         {
         }
+
+        protected override JsonSerializerOptions? GeneratedSerializerOptions => s_defaultOptions;
 
         public override JsonTypeInfo GetTypeInfo(global::System.Type type)
         {

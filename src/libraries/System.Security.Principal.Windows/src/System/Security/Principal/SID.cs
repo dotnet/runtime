@@ -1001,7 +1001,7 @@ namespace System.Security.Principal
                 // Open LSA policy (for lookup requires it)
                 //
 
-                LsaHandle = Win32.LsaOpenPolicy(null, PolicyRights.POLICY_LOOKUP_NAMES);
+                LsaHandle = Win32.LsaOpenPolicy(null, Interop.Advapi32.PolicyRights.POLICY_LOOKUP_NAMES);
 
                 //
                 // Perform the actual lookup
@@ -1040,7 +1040,7 @@ namespace System.Security.Principal
 
 
                 NamesPtr.Initialize((uint)sourceSids.Count, (uint)Marshal.SizeOf<Interop.LSA_TRANSLATED_NAME>());
-                Win32.InitializeReferencedDomainsPointer(ReferencedDomainsPtr);
+                ReferencedDomainsPtr.InitializeReferencedDomainsList();
 
                 //
                 // Interpret the results and generate NTAccount objects

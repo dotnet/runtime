@@ -26,6 +26,7 @@ artifacts/
 bld/
 [Bb]in/
 [Oo]bj/
+MSBuild_Logs/
 msbuild.log
 msbuild.err
 msbuild.wrn
@@ -185,6 +186,7 @@ node_modules/
 *.metaproj
 *.metaproj.tmp
 bin.localpkg/
+src/mono/wasm/runtime/dotnet.d.ts.sha256
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -278,7 +280,6 @@ Session.vim
 
 # Visual Studio Code
 .vscode/
-.devcontainer/
 
 # Private test configuration and binaries.
 config.ps1
@@ -354,3 +355,7 @@ src/coreclr/System.Private.CoreLib/common
 !src/coreclr/inc/obj/
 !src/coreclr/vm/.vscode/
 !src/coreclr/vm/.vscode/c_cpp_properties.json
+
+# Temporary artifacts from local libraries stress builds
+.dotnet-daily/
+run-stress-*

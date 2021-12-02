@@ -207,9 +207,6 @@ CorInfoInlineTypeCheck canInlineTypeCheck(
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
-bool isStructRequiringStackAllocRetBuf(
-          CORINFO_CLASS_HANDLE cls) override;
-
 CORINFO_MODULE_HANDLE getClassModule(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -634,6 +631,9 @@ bool convertPInvokeCalliToCall(
 bool notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
           bool supportEnabled) override;
+
+void updateEntryPointForTailCall(
+          CORINFO_CONST_LOOKUP* entryPoint) override;
 
 void allocMem(
           AllocMemArgs* pArgs) override;

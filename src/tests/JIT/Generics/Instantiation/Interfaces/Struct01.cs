@@ -269,7 +269,7 @@ public struct GenJaggedObjectArray : IGen<object[][]>
 }
 
 
-public class Test
+public class Test_Struct01
 {
     public static int counter = 0;
     public static bool result = true;

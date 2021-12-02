@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
   </PropertyGroup>
 
   <Import Project="System.Text.Json.SourceGeneration.Unit.Tests.targets" />

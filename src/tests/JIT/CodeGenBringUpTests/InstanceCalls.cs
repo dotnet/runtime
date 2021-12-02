@@ -72,7 +72,7 @@ public class MiscMethods
     }
 }
 
-public class BringUpTest
+public class BringUpTest_InstanceCalls
 {
     const int Pass = 100;
     const int Fail = -1;

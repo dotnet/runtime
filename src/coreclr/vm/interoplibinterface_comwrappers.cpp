@@ -53,6 +53,9 @@ namespace
             // The EOC is "detached" and no longer used to map between identity and a managed object.
             // This will only be set if the EOC was inserted into the cache.
             Flags_Detached = 8,
+
+            // This EOC is an aggregated instance
+            Flags_Aggregated = 16
         };
         DWORD Flags;
 
@@ -312,52 +315,100 @@ namespace
                 GC_TRIGGERS;
                 MODE_COOPERATIVE;
                 PRECONDITION(!IsLockHeld());
+                PRECONDITION(!(withFlags & ExternalObjectContext::Flags_Collected));
+                PRECONDITION(!(withFlags & ExternalObjectContext::Flags_Detached));
                 POSTCONDITION(RETVAL != NULL);
             }
             CONTRACT_END;
 
             struct
             {
+                PTRARRAYREF arrRefTmp;
                 PTRARRAYREF arrRef;
             } gc;
             ::ZeroMemory(&gc, sizeof(gc));
             GCPROTECT_BEGIN(gc);
 
-            CQuickArrayList<ExternalObjectContext*> localList;
+            // Only add objects that are in the correct thread
+            // context, haven't been detached from the cache, and have
+            // the appropriate flags set.
+            // Define a macro predicate since it used in multiple places.
+            // If an instance is in the hashmap, it is active. This invariant
+            // holds because the GC is what marks and removes from the cache.
+#define SELECT_OBJECT(XX) XX->ThreadContext == threadContext \
+                            && !XX->IsSet(ExternalObjectContext::Flags_Detached) \
+                            && (withFlags == ExternalObjectContext::Flags_None || XX->IsSet(withFlags))
 
-            // Determine objects to return
+            // Determine the count of objects to return.
+            SIZE_T objCountMax = 0;
             {
                 LockHolder lock(this);
                 Iterator end = _hashMap.End();
                 for (Iterator curr = _hashMap.Begin(); curr != end; ++curr)
                 {
                     ExternalObjectContext* inst = *curr;
-
-                    // Only add objects that are in the correct thread
-                    // context and have the appropriate flags set.
-                    if (inst->ThreadContext == threadContext
-                        && (withFlags == ExternalObjectContext::Flags_None || inst->IsSet(withFlags)))
+                    if (SELECT_OBJECT(inst))
                     {
-                        localList.Push(inst);
-                        STRESS_LOG1(LF_INTEROP, LL_INFO100, "Add EOC to Enumerable: 0x%p\n", inst);
+                        objCountMax++;
                     }
                 }
             }
 
             // Allocate enumerable type to return.
-            gc.arrRef = (PTRARRAYREF)AllocateObjectArray((DWORD)localList.Size(), g_pObjectClass);
+            gc.arrRef = (PTRARRAYREF)AllocateObjectArray((DWORD)objCountMax, g_pObjectClass);
 
-            // Insert objects into enumerable.
-            // The ExternalObjectContexts in the hashmap are only
-            // removed and associated objects collected during a GC. Since
-            // this code is running in Cooperative mode they will never
-            // be null.
-            for (SIZE_T i = 0; i < localList.Size(); i++)
+            CQuickArrayList<ExternalObjectContext*> localList;
+
+            // Iterate over the hashmap again while populating the above array
+            // using the same predicate as before and holding onto context instances.
+            SIZE_T objCount = 0;
+            if (0 < objCountMax)
             {
-                ExternalObjectContext* inst = localList[i];
-                gc.arrRef->SetAt(i, inst->GetObjectRef());
+                LockHolder lock(this);
+                Iterator end = _hashMap.End();
+                for (Iterator curr = _hashMap.Begin(); curr != end; ++curr)
+                {
+                    ExternalObjectContext* inst = *curr;
+                    if (SELECT_OBJECT(inst))
+                    {
+                        localList.Push(inst);
+
+                        gc.arrRef->SetAt(objCount, inst->GetObjectRef());
+                        objCount++;
+
+                        STRESS_LOG1(LF_INTEROP, LL_INFO1000, "Add EOC to Enumerable: 0x%p\n", inst);
+                    }
+
+                    // There is a chance more objects were added to the hash while the
+                    // lock was released during array allocation. Once we hit the computed max
+                    // we stop to avoid looking longer than needed.
+                    if (objCount == objCountMax)
+                        break;
+                }
             }
 
+#undef SELECT_OBJECT
+
+            // During the allocation of the array to return, a GC could have
+            // occurred and objects detached from this cache. In order to avoid
+            // having null array elements we will allocate a new array.
+            // This subsequent allocation is okay because the array we are
+            // replacing extends all object lifetimes.
+            if (objCount < objCountMax)
+            {
+                gc.arrRefTmp = (PTRARRAYREF)AllocateObjectArray((DWORD)objCount, g_pObjectClass);
+
+                void* dest = gc.arrRefTmp->GetDataPtr();
+                void* src = gc.arrRef->GetDataPtr();
+                SIZE_T elementSize = gc.arrRef->GetComponentSize();
+
+                memmoveGCRefs(dest, src, objCount * elementSize);
+                gc.arrRef = gc.arrRefTmp;
+            }
+
+            // All objects are now referenced from the array so won't be collected
+            // at this point. This means we can safely iterate over the ExternalObjectContext
+            // instances.
             {
                 // Separate the wrapper from the tracker runtime prior to
                 // passing them onto the caller. This call is okay to make
@@ -852,7 +903,11 @@ namespace
                                 : ExternalObjectContext::Flags_None) |
                             (uniqueInstance
                                 ? ExternalObjectContext::Flags_None
-                                : ExternalObjectContext::Flags_InCache);
+                                : ExternalObjectContext::Flags_InCache) |
+                            ((flags & CreateObjectFlags::CreateObjectFlags_Aggregated) != 0
+                                ? ExternalObjectContext::Flags_Aggregated
+                                : ExternalObjectContext::Flags_None);
+
                 ExternalObjectContext::Construct(
                     resultHolder.GetContext(),
                     identity,
@@ -1114,11 +1169,7 @@ namespace InteropLibImports
         bool isValid = false;
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
 
-        {
-            // Switch to cooperative mode so the handle can be safely inspected.
-            GCX_COOP_THREAD_EXISTS(GET_THREAD());
-            isValid = ObjectFromHandle(objectHandle) != NULL;
-        }
+        isValid = ObjectHandleIsNull(objectHandle) != FALSE;
 
         return isValid;
     }
@@ -1370,7 +1421,7 @@ namespace InteropLibImports
     }
 }
 
-BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ INT64 wrapperId,
     _In_ QCall::ObjectHandleOnStack instance,
@@ -1401,7 +1452,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
     return (success ? TRUE : FALSE);
 }
 
-BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetOrCreateObjectForComInstance(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ INT64 wrapperId,
     _In_ void* ext,
@@ -1457,7 +1508,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
     return (success ? TRUE : FALSE);
 }
 
-void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
+extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
         _Out_ void** fpQueryInterface,
         _Out_ void** fpAddRef,
         _Out_ void** fpRelease)
@@ -1560,7 +1611,7 @@ void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
     _ASSERTE(SUCCEEDED(hr) || hr == E_INVALIDARG);
 }
 
-void QCALLTYPE GlobalComWrappersForMarshalling::SetGlobalInstanceRegisteredForMarshalling(INT64 id)
+extern "C" void QCALLTYPE ComWrappers_SetGlobalInstanceRegisteredForMarshalling(INT64 id)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
@@ -1653,7 +1704,7 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     }
 }
 
-void QCALLTYPE GlobalComWrappersForTrackerSupport::SetGlobalInstanceRegisteredForTrackerSupport(INT64 id)
+extern "C" void QCALLTYPE ComWrappers_SetGlobalInstanceRegisteredForTrackerSupport(INT64 id)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
@@ -1726,7 +1777,7 @@ bool GlobalComWrappersForTrackerSupport::TryGetOrCreateObjectForComInstance(
         objRef);
 }
 
-IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId)
+IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId, _Out_ bool* isAggregated)
 {
     CONTRACTL
     {
@@ -1759,6 +1810,7 @@ IUnknown* ComWrappersNative::GetIdentityForObject(_In_ OBJECTREF* objectPROTECTE
     {
         ExternalObjectContext* context = reinterpret_cast<ExternalObjectContext*>(contextMaybe);
         *wrapperId = context->WrapperId;
+        *isAggregated = context->IsSet(ExternalObjectContext::Flags_Aggregated);
 
         IUnknown* identity = reinterpret_cast<IUnknown*>(context->Identity);
         GCX_PREEMP();

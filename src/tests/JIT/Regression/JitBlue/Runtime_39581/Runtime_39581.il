@@ -37,6 +37,7 @@
 .assembly Runtime_39581
 {
 }
+.assembly extern xunit.core {}
 
 .class private sequential ansi sealed beforefieldinit int32x8
        extends [System.Runtime]System.ValueType
@@ -101,6 +102,9 @@
 
   .method private hidebysig static int32 Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  6
     .locals init (valuetype int32x8 V_0)

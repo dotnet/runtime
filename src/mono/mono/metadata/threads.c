@@ -149,12 +149,12 @@ static MonoCoopMutex joinable_threads_mutex;
 static GSList *exiting_threads;
 static MonoCoopMutex exiting_threads_mutex;
 static inline void
-exiting_threads_lock ()
+exiting_threads_lock (void)
 {
 	mono_coop_mutex_lock (&exiting_threads_mutex);
 }
 static inline void
-exiting_threads_unlock ()
+exiting_threads_unlock (void)
 {
 	mono_coop_mutex_unlock (&exiting_threads_mutex);
 }

@@ -14,6 +14,7 @@
 .assembly 'ldsfld_mul'// as "ldsfld_mul"
 {
 }
+.assembly extern xunit.core {}
 .module 'ldsfld_mul.exe'
 // MVID: {B9439553-5220-4D6F-B7AA-E7754C5633EC}
 .namespace JitTest
@@ -75,6 +76,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       260 (0x104)
       .maxstack  2

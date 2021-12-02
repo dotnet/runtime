@@ -384,11 +384,13 @@ bool MethodContext::Equal(MethodContext* other)
     // Compare MethodInfo's first.
     CORINFO_METHOD_INFO otherInfo;
     unsigned            otherFlags = 0;
-    other->repCompileMethod(&otherInfo, &otherFlags);
+    CORINFO_OS          otherOs    = CORINFO_WINNT;
+    other->repCompileMethod(&otherInfo, &otherFlags, &otherOs);
 
     CORINFO_METHOD_INFO ourInfo;
     unsigned            ourFlags = 0;
-    repCompileMethod(&ourInfo, &ourFlags);
+    CORINFO_OS          ourOs    = CORINFO_WINNT;
+    repCompileMethod(&ourInfo, &ourFlags, &ourOs);
 
     if (otherInfo.ILCodeSize != ourInfo.ILCodeSize)
         return false;
@@ -418,6 +420,8 @@ bool MethodContext::Equal(MethodContext* other)
     if (otherInfo.locals.cbSig != ourInfo.locals.cbSig)
         return false;
     if (otherFlags != ourFlags)
+        return false;
+    if (otherOs != ourOs)
         return false;
 
 // Now compare the other maps to "estimate" equality.
@@ -643,7 +647,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
     return -1;
 }
 
-void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags)
+void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags, CORINFO_OS os)
 {
     if (CompileMethod == nullptr)
         CompileMethod = new LightWeightMap<DWORD, Agnostic_CompileMethod>();
@@ -662,6 +666,8 @@ void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags)
     value.info.args   = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(info->args, CompileMethod, SigInstHandleMap);
     value.info.locals = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(info->locals, CompileMethod, SigInstHandleMap);
 
+    value.os = (DWORD)os;
+
     value.flags = (DWORD)flags;
 
     CompileMethod->Add(0, value);
@@ -669,14 +675,14 @@ void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags)
 }
 void MethodContext::dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value)
 {
-    printf("CompileMethod key %u, value ftn-%016llX scp-%016llX ilo-%u ils-%u ms-%u ehc-%u opt-%u rk-%u args-%s locals-%s flg-%08X",
+    printf("CompileMethod key %u, value ftn-%016llX scp-%016llX ilo-%u ils-%u ms-%u ehc-%u opt-%u rk-%u args-%s locals-%s flg-%08X os-%u",
            key, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize, value.info.maxStack,
            value.info.EHcount, value.info.options, value.info.regionKind,
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.info.args, CompileMethod, SigInstHandleMap).c_str(),
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap).c_str(),
-           value.flags);
+           value.flags, value.os);
 }
-void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
+void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags, CORINFO_OS* os)
 {
     AssertMapAndKeyExistNoMessage(CompileMethod, 0);
 
@@ -699,6 +705,7 @@ void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
     info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap);
 
     *flags             = (unsigned)value.flags;
+    *os                = (CORINFO_OS)value.os;
 }
 
 void MethodContext::recGetMethodClass(CORINFO_METHOD_HANDLE methodHandle, CORINFO_CLASS_HANDLE classHandle)
@@ -1803,29 +1810,6 @@ bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
     AssertMapAndKeyExist(IsValueClass, key, ": key %016llX", key);
     DWORD value = IsValueClass->Get(key);
     DEBUG_REP(dmpIsValueClass(key, value));
-    return value != 0;
-}
-
-void MethodContext::recIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls, bool result)
-{
-    if (IsStructRequiringStackAllocRetBuf == nullptr)
-        IsStructRequiringStackAllocRetBuf = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORDLONG key = CastHandle(cls);
-    DWORD value = result ? 1 : 0;
-    IsStructRequiringStackAllocRetBuf->Add(key, value);
-    DEBUG_REC(dmpIsStructRequiringStackAllocRetBuf(key, value));
-}
-void MethodContext::dmpIsStructRequiringStackAllocRetBuf(DWORDLONG key, DWORD value)
-{
-    printf("IsStructRequiringStackAllocRetBuf key cls-%016llX, value res-%u", key, value);
-}
-bool MethodContext::repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
-{
-    DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(IsStructRequiringStackAllocRetBuf, key, ": key %016llX", key);
-    DWORD value = IsStructRequiringStackAllocRetBuf->Get(key);
-    DEBUG_REP(dmpIsStructRequiringStackAllocRetBuf(key, value));
     return value != 0;
 }
 
@@ -4188,7 +4172,9 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->osPageSize                                 = (size_t)0x1000;
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
         pEEInfoOut->targetAbi                                  = CORINFO_DESKTOP_ABI;
-#ifdef TARGET_UNIX
+#ifdef TARGET_OSX
+        pEEInfoOut->osType                                     = CORINFO_MACOS;
+#elif defined(TARGET_UNIX)
         pEEInfoOut->osType                                     = CORINFO_UNIX;
 #else
         pEEInfoOut->osType                                     = CORINFO_WINNT;
@@ -6599,6 +6585,41 @@ bool MethodContext::repGetTailCallHelpers(
     return true;
 }
 
+void MethodContext::recUpdateEntryPointForTailCall(
+    const CORINFO_CONST_LOOKUP& origEntryPoint,
+    const CORINFO_CONST_LOOKUP& newEntryPoint)
+{
+    if (UpdateEntryPointForTailCall == nullptr)
+        UpdateEntryPointForTailCall = new LightWeightMap<Agnostic_CORINFO_CONST_LOOKUP, Agnostic_CORINFO_CONST_LOOKUP>();
+
+    Agnostic_CORINFO_CONST_LOOKUP key = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&origEntryPoint);
+    Agnostic_CORINFO_CONST_LOOKUP value = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&newEntryPoint);
+    UpdateEntryPointForTailCall->Add(key, value);
+    DEBUG_REC(dmpUpdateEntryPointForTailCall(key, value));
+}
+
+void MethodContext::dmpUpdateEntryPointForTailCall(
+    const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint,
+    const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint)
+{
+    printf("UpdateEntryPointForTailcall orig=%s new=%s",
+        SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(origEntryPoint).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(newEntryPoint).c_str());
+}
+
+void MethodContext::repUpdateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
+{
+    AssertMapExistsNoMessage(UpdateEntryPointForTailCall);
+
+    Agnostic_CORINFO_CONST_LOOKUP key = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(entryPoint);
+    AssertKeyExistsNoMessage(UpdateEntryPointForTailCall, key);
+
+    Agnostic_CORINFO_CONST_LOOKUP value = UpdateEntryPointForTailCall->Get(key);
+    DEBUG_REP(dmpUpdateEntryPointForTailCall(key, value));
+
+    *entryPoint = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value);
+}
+
 void MethodContext::recGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod, mdMethodDef result)
 {
     if (GetMethodDefFromMethod == nullptr)
@@ -6848,7 +6869,8 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     }
     else
     {
-        repCompileMethod(&info, &flags);
+        CORINFO_OS os;
+        repCompileMethod(&info, &flags, &os);
         pInfo = &info;
     }
 
@@ -6982,7 +7004,8 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
     // Obtain the Method Info structure for this method
     CORINFO_METHOD_INFO  info;
     unsigned             flags = 0;
-    repCompileMethod(&info, &flags);
+    CORINFO_OS os;
+    repCompileMethod(&info, &flags, &os);
 
     if ((GetPgoInstrumentationResults != nullptr) &&
         (GetPgoInstrumentationResults->GetIndex(CastHandle(info.ftn)) != -1))

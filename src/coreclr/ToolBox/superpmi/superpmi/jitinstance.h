@@ -60,7 +60,7 @@ public:
 
     bool resetConfig(MethodContext* firstContext);
 
-    Result CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);
+    Result CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, class MetricsSummary* summary);
 
     const WCHAR* getForceOption(const WCHAR* key);
     const WCHAR* getOption(const WCHAR* key);

@@ -20,8 +20,6 @@ namespace System
             return _impl.Value;
         }
 
-        internal bool IsRuntimeImplemented() => this is RuntimeType;
-
         internal virtual bool IsTypeBuilder() => false;
 
         public bool IsInterface
@@ -133,29 +131,5 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Type internal_from_handle(IntPtr handle);
-
-        [Intrinsic]
-        public static bool operator ==(Type? left, Type? right)
-        {
-            if (object.ReferenceEquals(left, right))
-                return true;
-
-            if (left is null || right is null)
-                return false;
-
-            // CLR-compat: runtime types are never equal to non-runtime types
-            // If `left` is a non-runtime type with a weird Equals implementation
-            // this is where operator `==` would differ from `Equals` call.
-            if (left.IsRuntimeImplemented() || right.IsRuntimeImplemented())
-                return false;
-
-            return left.Equals(right);
-        }
-
-        [Intrinsic]
-        public static bool operator !=(Type? left, Type? right)
-        {
-            return !(left == right);
-        }
     }
 }

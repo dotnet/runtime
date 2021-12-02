@@ -35,7 +35,7 @@ namespace ILVerify
             int count = 0;
             for (int i = 0; i < s_genericRuntimeInterfacesNames.Length; ++i)
             {
-                MetadataType runtimeInterface =_systemModule.GetType("System.Collections.Generic", s_genericRuntimeInterfacesNames[i], NotFoundBehavior.ReturnNull);
+                MetadataType runtimeInterface =_systemModule.GetType("System.Collections.Generic", s_genericRuntimeInterfacesNames[i], throwIfNotFound: false);
                 if (runtimeInterface != null)
                     _genericRuntimeInterfaces[count++] = runtimeInterface;
             };

@@ -4,14 +4,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
+using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Configuration is mutable configuration object. It is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
+    /// ConfigurationManager is a mutable configuration object. It is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
     /// As sources are added, it updates its current view of configuration. Once Build is called, configuration is frozen.
     /// </summary>
     public sealed class ConfigurationManager : IConfigurationBuilder, IConfigurationRoot, IDisposable
@@ -33,13 +35,11 @@ namespace Microsoft.Extensions.Configuration
             _properties = new ConfigurationBuilderProperties(this);
 
             // Make sure there's some default storage since there are no default providers.
-            this.AddInMemoryCollection();
-
-            AddSource(_sources[0]);
+            _sources.Add(new MemoryConfigurationSource());
         }
 
         /// <inheritdoc/>
-        public string this[string key]
+        public string? this[string key]
         {
             get
             {
@@ -339,7 +339,7 @@ namespace Microsoft.Extensions.Configuration
                 return wasRemoved;
             }
 
-            public bool TryGetValue(string key, out object value)
+            public bool TryGetValue(string key, [NotNullWhen(true)] out object? value)
             {
                 return _properties.TryGetValue(key, out value);
             }

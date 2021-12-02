@@ -1060,7 +1060,7 @@ namespace System.Net.Http.Functional.Tests
 
             var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
 
-            Stream requestStream = await requestContent.GetStreamAsync();
+            Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10));;
             // Send headers
             await requestStream.FlushAsync();
 
@@ -1085,6 +1085,232 @@ namespace System.Net.Http.Functional.Tests
 
             await serverTask.WaitAsync(TimeSpan.FromSeconds(60));
 
+            serverStream.Dispose();
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
+        [ConditionalFact(nameof(IsMsQuicSupported))]
+        [OuterLoop("Uses Task.Delay")]
+        public async Task RequestContentStreaming_Timeout_BothClientAndServerReceiveCancellation()
+        {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            var message = new byte[1024];
+            var random = new Random(0);
+            random.NextBytes(message);
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            Http3LoopbackConnection connection = null;
+            Http3LoopbackStream serverStream = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                serverStream = await connection.AcceptRequestStreamAsync();
+
+                await serverStream.HandleRequestAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                StreamingHttpContent requestContent = new StreamingHttpContent();
+
+                using HttpClient client = CreateHttpClient();
+                client.Timeout = TimeSpan.FromSeconds(10); // set some timeout; big enough to send headers and first chunk of content
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = requestContent
+                };
+
+                var responseTask = client.SendAsync(request);
+
+                Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10)); // the stream is Http3WriteStream
+                // Send headers
+                await requestStream.FlushAsync();
+
+                await requestStream.WriteAsync(message);
+                await requestStream.FlushAsync();
+                
+                await Task.Delay(TimeSpan.FromSeconds(11)); // longer than client.Timeout
+
+                // Http3WriteStream is disposed after cancellation fired
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => requestStream.WriteAsync(message).AsTask());
+                // client is properly canceled on timeout
+                var tce = await Assert.ThrowsAsync<TaskCanceledException>(() => responseTask);
+                Assert.IsType<TimeoutException>(tce.InnerException);
+            });
+
+            await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
+
+            // server receives cancellation
+            var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
+            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ErrorCode);
+
+            Assert.NotNull(serverStream);
+            serverStream.Dispose();
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
+        [ConditionalFact(nameof(IsMsQuicSupported))]
+        public async Task RequestContentStreaming_Cancellation_BothClientAndServerReceiveCancellation()
+        {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            var message = new byte[1024];
+            var random = new Random(0);
+            random.NextBytes(message);
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            Http3LoopbackConnection connection = null;
+            Http3LoopbackStream serverStream = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                serverStream = await connection.AcceptRequestStreamAsync();
+
+                await serverStream.HandleRequestAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                StreamingHttpContent requestContent = new StreamingHttpContent();
+
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = requestContent
+                };
+
+                var cts = new CancellationTokenSource();
+
+                var responseTask = client.SendAsync(request, cts.Token);
+
+                Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10)); // the stream is Http3WriteStream
+                // Send headers
+                await requestStream.FlushAsync();
+
+                await requestStream.WriteAsync(message);
+                await requestStream.FlushAsync();
+                
+                cts.Cancel();
+                await Task.Delay(250);
+
+                // Http3WriteStream is disposed after cancellation fired
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => requestStream.WriteAsync(message).AsTask());
+                // client is properly canceled
+                await Assert.ThrowsAsync<TaskCanceledException>(() => responseTask);
+            });
+
+            await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
+
+            // server receives cancellation
+            var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
+            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ErrorCode);
+
+            Assert.NotNull(serverStream);
+            serverStream.Dispose();
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
+        [ConditionalFact(nameof(IsMsQuicSupported))]
+        public async Task DuplexStreaming_RequestCTCancellation_DoesNotApply()
+        {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            var message = new byte[1024];
+            var random = new Random(0);
+            random.NextBytes(message);
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            Http3LoopbackConnection connection = null;
+            Http3LoopbackStream serverStream = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                serverStream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData requestData = await serverStream.ReadRequestDataAsync(readBody: false).WaitAsync(TimeSpan.FromSeconds(30));
+
+                await serverStream.SendResponseHeadersAsync().ConfigureAwait(false);
+
+                // read all the content after sending back the headers
+                await serverStream.ReadRequestBodyAsync();
+
+                // send FIN
+                await serverStream.SendResponseBodyAsync(Array.Empty<byte>(), isFinal: true);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                StreamingHttpContent requestContent = new StreamingHttpContent();
+
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = requestContent
+                };
+
+                var cts = new CancellationTokenSource();
+
+                var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+
+                Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10)); // the stream is Http3WriteStream
+                // Send headers
+                await requestStream.FlushAsync();
+
+                using HttpResponseMessage response = await responseTask;
+
+                // start streaming
+                Stream responseStream = await response.Content.ReadAsStreamAsync();
+
+                await requestStream.WriteAsync(message);
+                await requestStream.FlushAsync();
+                
+                // cancelling after SendAsync finished should not apply -- nothing should happen
+                cts.Cancel();
+                await Task.Delay(250);
+
+                // streaming successfully continues after CT fired
+                await requestStream.WriteAsync(message);
+                await requestStream.FlushAsync();
+
+                // send FIN
+                requestContent.CompleteStream();
+                // Receive FIN
+                Assert.Equal(0, await responseStream.ReadAsync(new byte[1]));
+            });
+
+            await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
+
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(120));
+
+            Assert.NotNull(serverStream);
             serverStream.Dispose();
             Assert.NotNull(connection);
             connection.Dispose();
@@ -1140,11 +1366,7 @@ namespace System.Net.Http.Functional.Tests
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             _getStreamTcs.TrySetResult(stream);
-
-            var cancellationTcs = new TaskCompletionSource();
-            cancellationToken.Register(() => cancellationTcs.TrySetCanceled());
-
-            await Task.WhenAny(_completeTcs.Task, cancellationTcs.Task);
+            await _completeTcs.Task.WaitAsync(cancellationToken);
         }
 
         protected override bool TryComputeLength(out long length)

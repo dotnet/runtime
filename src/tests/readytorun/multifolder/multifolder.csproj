@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <!-- Running Crossgen2 under GCStress takes too long -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <CLRTestPriority>0</CLRTestPriority>
 
     <!-- Crossgen2 currently targets x64 and ARM64 only -->
     <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'">true</DisableProjectBuild>

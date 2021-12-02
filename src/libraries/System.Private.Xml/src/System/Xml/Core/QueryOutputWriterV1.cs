@@ -145,7 +145,7 @@ namespace System.Xml
                 if (ws == WriteState.Start || ws == WriteState.Prolog)
                 {
                     _wrapped.WriteDocType(
-                            string.IsNullOrEmpty(prefix) ? localName : prefix + ":" + localName,
+                            string.IsNullOrEmpty(prefix) ? localName : $"{prefix}:{localName}",
                             _publicId,
                             _systemId,
                             null);

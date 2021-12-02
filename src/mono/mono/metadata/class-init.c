@@ -493,7 +493,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 		if (mono_metadata_token_table (parent_token) == MONO_TABLE_TYPESPEC) {
 			/*WARNING: this must satisfy mono_metadata_type_hash*/
-			klass->this_arg.byref = 1;
+			klass->this_arg.byref__ = 1;
 			klass->this_arg.data.klass = klass;
 			klass->this_arg.type = MONO_TYPE_CLASS;
 			klass->_byval_arg.data.klass = klass;
@@ -846,7 +846,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->_byval_arg.type = MONO_TYPE_GENERICINST;
 	klass->this_arg.type = m_class_get_byval_arg (klass)->type;
 	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
-	klass->this_arg.byref = TRUE;
+	klass->this_arg.byref__ = TRUE;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
@@ -1148,7 +1148,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		klass->_byval_arg.data.klass = eclass;
 	}
 	klass->this_arg = klass->_byval_arg;
-	klass->this_arg.byref = 1;
+	klass->this_arg.byref__ = 1;
 
 	if (rank > 32) {
 		ERROR_DECL (prepared_error);
@@ -1321,7 +1321,7 @@ make_generic_param_class (MonoGenericParam *param)
 	klass->this_arg.type = t;
 	CHECKED_METADATA_WRITE_PTR ( klass->this_arg.data.generic_param ,  param );
 	CHECKED_METADATA_WRITE_PTR ( klass->_byval_arg.data.generic_param , param );
-	klass->this_arg.byref = TRUE;
+	klass->this_arg.byref__ = TRUE;
 
 	/* We don't use type_token for VAR since only classes can use it (not arrays, pointer, VARs, etc) */
 	klass->sizes.generic_param_token = !is_anonymous ? pinfo->token : 0;
@@ -1464,7 +1464,7 @@ mono_class_create_ptr (MonoType *type)
 
 	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
 	result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
-	result->this_arg.byref = TRUE;
+	result->this_arg.byref__ = TRUE;
 
 	mono_class_setup_supertypes (result);
 
@@ -1529,7 +1529,7 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->cast_class = result->element_class = result;
 	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
 	result->this_arg.data.method = result->_byval_arg.data.method = sig;
-	result->this_arg.byref = TRUE;
+	result->this_arg.byref__ = TRUE;
 	result->blittable = TRUE;
 	result->inited = TRUE;
 
@@ -1805,7 +1805,7 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 {
 	if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (klass, ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && class_has_references (mono_class_from_mono_type_internal (ftype)))))
 		return TRUE;
-	if (!ftype->byref && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
+	if (!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
 		MonoGenericParam *gparam = ftype->data.generic_param;
 
 		if (gparam->gshared_constraint)
@@ -1862,6 +1862,85 @@ mono_class_is_gparam_with_nonblittable_parent (MonoClass *klass)
 	 * in which case parent_class would be set to System.Object, or there is none at all.
 	 */
 	return parent_class != mono_defaults.object_class;
+}
+
+/**
+ * Checks if there are any overlapping object and non-object fields.
+ * The alignment of object reference fields is checked elswhere and this function assumes
+ * that all references are aligned correctly.
+ *
+ * \param layout_check A buffer to check which bytes hold object references or values
+ * \param klass Checked struct
+ * \param field_offsets Offsets of the klass' fields relative to the start of layout_check
+ * \param field_count Count of klass fields
+ * \param invalid_field_offset When the layout is invalid it will be set to the offset of the field which is invalid
+ * 
+ * \return True if the layout of the struct is valid, otherwise false.
+ */
+static gboolean
+validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClass *klass, const int *field_offsets, const int field_count, int *invalid_field_offset)
+{
+	MonoClassField *field;
+	MonoType *ftype;
+	int field_offset;
+
+	for (int i = 0; i < field_count && !mono_class_has_failure (klass); i++) {
+		// using mono_class_get_fields_internal isn't appropriate here because it will
+		// try to call mono_class_setup_fields which is what we're doing already
+		field = &m_class_get_fields (klass) [i];
+		field_offset = field_offsets [i];
+
+		if (!field)
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+
+		ftype = mono_type_get_underlying_type (field->type);
+		ftype = mono_type_get_basic_type_from_generic (ftype);
+
+		if (mono_type_is_struct (ftype)) {
+			// recursively check the layout of the embedded struct
+			MonoClass *embedded_class = mono_class_from_mono_type_internal (ftype);
+			g_assert (m_class_is_fields_inited (embedded_class));
+
+			const int embedded_fields_count = mono_class_get_field_count (embedded_class);
+			int *embedded_offsets = g_new0 (int, embedded_fields_count);
+			for (int j = 0; j < embedded_fields_count; ++j) {
+				embedded_offsets [j] = field_offset + m_class_get_fields (embedded_class) [j].offset - MONO_ABI_SIZEOF (MonoObject);
+			}
+
+			gboolean is_valid = validate_struct_fields_overlaps (layout_check, layout_size, embedded_class, embedded_offsets, embedded_fields_count, invalid_field_offset);
+			g_free (embedded_offsets);
+
+			if (!is_valid) {
+				// overwrite whatever was in the invalid_field_offset with the offset of the currently checked field
+				// we want to return the outer most invalid field
+				*invalid_field_offset = field_offset;
+				return FALSE;
+			}
+		} else {
+			int align = 0;
+			int size = mono_type_size (field->type, &align);
+			guint8 type = type_has_references (klass, ftype) ? 1 : 2;
+
+			// Mark the bytes used by this fields type based on if it contains references or not.
+			// Make sure there are no overlaps between object and non-object fields.
+			for (int j = 0; j < size; j++) {
+				int checked_byte = field_offset + j;
+				g_assert(checked_byte < layout_size);
+
+				if (layout_check [checked_byte] != 0 && layout_check [checked_byte] != type) {
+					*invalid_field_offset = field_offset;
+					return FALSE;
+				}
+				layout_check [checked_byte] = type;
+			}
+		}
+	}
+
+	return TRUE;
 }
 
 /*
@@ -1974,7 +2053,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (blittable) {
-			if (field->type->byref || MONO_TYPE_IS_REFERENCE (field->type)) {
+			if (m_type_is_byref (field->type) || MONO_TYPE_IS_REFERENCE (field->type)) {
 				blittable = FALSE;
 			} else if (mono_type_is_generic_parameter (field->type) &&
 				   mono_class_is_gparam_with_nonblittable_parent (mono_class_from_mono_type_internal (field->type))) {
@@ -2154,29 +2233,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 
 		/* check for incorrectly aligned or overlapped by a non-object field */
-		guint8 *layout_check;	
+		guint8 *layout_check;
 		if (has_references) {
 			layout_check = g_new0 (guint8, real_size);
-			for (i = 0; i < top && !mono_class_has_failure (klass); i++) {
-				field = &klass->fields [i];
-				if (!field)
-					continue;
-				if (mono_field_is_deleted (field))
-					continue;
-				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-					continue;
-				int align = 0;
-				int size = mono_type_size (field->type, &align);
-				MonoType *ftype = mono_type_get_underlying_type (field->type);
-				ftype = mono_type_get_basic_type_from_generic (ftype);
-				guint8 type =  type_has_references (klass, ftype) ? 1 : 2;				
-				for (int j = 0; j < size; j++) {
-					if (layout_check [field_offsets [i] + j] != 0 && layout_check [field_offsets [i] + j] != type) {
-						mono_class_set_type_load_failure (klass, "Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, field->offset);
-						break;
-					}
-					layout_check [field_offsets [i] + j] = type;
-				}
+			int invalid_field_offset;
+			if (!validate_struct_fields_overlaps (layout_check, real_size, klass, field_offsets, top, &invalid_field_offset)) {
+				mono_class_set_type_load_failure (klass, "Could not load type '%s' because it contains an object field at offset %d that is incorrectly aligned or overlapped by a non-object field.", klass->name, invalid_field_offset);
 			}
 			g_free (layout_check);
 		}
@@ -3102,7 +3164,7 @@ mono_class_setup_mono_type (MonoClass *klass)
 	const char *nspace = klass->name_space;
 	gboolean is_corlib = mono_is_corlib_image (klass->image);
 
-	klass->this_arg.byref = 1;
+	klass->this_arg.byref__ = 1;
 	klass->this_arg.data.klass = klass;
 	klass->this_arg.type = MONO_TYPE_CLASS;
 	klass->_byval_arg.data.klass = klass;

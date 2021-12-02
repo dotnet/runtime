@@ -31,6 +31,8 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/palinternal.h"
 
+#include <clrconfignocache.h>
+
 #include <errno.h>
 #include <signal.h>
 
@@ -145,9 +147,15 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     TRACE("Initializing signal handlers %04x\n", flags);
 
 #if !HAVE_MACH_EXCEPTIONS
-    char* enableAlternateStackCheck = getenv("COMPlus_EnableAlternateStackCheck");
+    g_enable_alternate_stack_check = false;
 
-    g_enable_alternate_stack_check = enableAlternateStackCheck && (strtoul(enableAlternateStackCheck, NULL, 10) != 0);
+    CLRConfigNoCache stackCheck = CLRConfigNoCache::Get("EnableAlternateStackCheck", /*noprefix*/ false, &getenv);
+    if (stackCheck.IsSet())
+    {
+        DWORD value;
+        if (stackCheck.TryAsInteger(10, value))
+            g_enable_alternate_stack_check = (value != 0);
+    }
 #endif
 
     if (flags & PAL_INITIALIZE_REGISTER_SIGNALS)

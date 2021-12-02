@@ -58,7 +58,21 @@ private:
     ArgIterator  m_argIterator;
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
     UINT64       m_bufferPos;
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+
+#if defined(UNIX_AMD64_ABI)
+    // On certain architectures we can pass args in non-sequential registers,
+    // this function will copy the struct so it is laid out as it would be in memory
+    // so it can be passed to the profiler
+    LPVOID CopyStructFromRegisters();
+#endif
+
+#if defined(TARGET_ARM64)
+    // On Arm64 the fields an HFA or an HVA argument will need to be copied
+    // to a temporary buffer in memory, so they are laid out contiguously in memory.
+    LPVOID CopyStructFromFPRegs(int idxFPReg, int cntFPRegs, int hfaFieldSize);
+#endif
+
+#endif // UNIX_AMD64_ABI || TARGET_ARM64
 
 public:
     ProfileArgIterator(MetaSig * pMetaSig, void* platformSpecificHandle);
@@ -73,13 +87,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_argIterator.NumFixedArgs();
     }
-
-#if defined(UNIX_AMD64_ABI)
-    // On certain architectures we can pass args in non-sequential registers,
-    // this function will copy the struct so it is laid out as it would be in memory
-    // so it can be passed to the profiler
-    LPVOID CopyStructFromRegisters();
-#endif // defined(UNIX_AMD64_ABI)
 
     //
     // After initialization, this method is called repeatedly until it

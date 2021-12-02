@@ -858,7 +858,7 @@ DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 DEFINE_VMPTR(class DomainAssembly,  PTR_DomainAssembly, VMPTR_DomainAssembly);
 DEFINE_VMPTR(class Assembly,        PTR_Assembly,       VMPTR_Assembly);
 
-DEFINE_VMPTR(class PEFile,          PTR_PEFile,         VMPTR_PEFile);
+DEFINE_VMPTR(class PEAssembly,      PTR_PEAssembly,     VMPTR_PEAssembly);
 DEFINE_VMPTR(class MethodDesc,      PTR_MethodDesc,     VMPTR_MethodDesc);
 DEFINE_VMPTR(class FieldDesc,       PTR_FieldDesc,      VMPTR_FieldDesc);
 

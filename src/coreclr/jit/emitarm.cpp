@@ -2167,7 +2167,7 @@ void emitter::emitIns_Mov(instruction ins,
         EXTEND_COMMON:
             if (canSkip && (dstReg == srcReg))
             {
-                // There are scenarios such as in genCallInstruction where the sign/zero extension should be elided
+                // There are scenarios such as in genCall where the sign/zero extension should be elided
                 return;
             }
 
@@ -4678,7 +4678,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
                            regMaskTP        byrefRegs,
-                           IL_OFFSETX       ilOffset /* = BAD_IL_OFFSET */,
+                           const DebugInfo& di /* = DebugInfo() */,
                            regNumber        ireg /* = REG_NA */,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
@@ -4688,10 +4688,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     /* Sanity check the arguments depending on callType */
 
     assert(callType < EC_COUNT);
-    assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_ADDR) ||
-           (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
-    assert(callType < EC_INDIR_R || addr == NULL);
-    assert(callType != EC_INDIR_R || (ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
+    assert((callType != EC_FUNC_TOKEN) || (addr != nullptr && ireg == REG_NA));
+    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT));
 
     // ARM never uses these
     assert(xreg == REG_NA && xmul == 0 && disp == 0);
@@ -4721,9 +4719,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
+    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
     {
-        codeGen->genIPmappingAdd(ilOffset, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*
@@ -4744,11 +4742,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(argSize % REGSIZE_BYTES == 0);
     int argCnt = argSize / REGSIZE_BYTES;
 
-    if (callType >= EC_INDIR_R)
+    if (callType == EC_INDIR_R)
     {
         /* Indirect call, virtual calls */
-
-        assert(callType == EC_INDIR_R);
 
         id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize);
     }
@@ -4757,7 +4753,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         /* Helper/static/nonvirtual/function calls (direct or through handle),
            and calls to an absolute addr. */
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN);
 
         id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize);
     }
@@ -4776,46 +4772,36 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Record the address: method, indirection, or funcptr */
 
-    if (callType > EC_FUNC_ADDR)
+    if (callType == EC_INDIR_R)
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
 
-        switch (callType)
+        id->idSetIsCallRegPtr();
+
+        if (isJump)
         {
-            case EC_INDIR_R: // the address is in a register
-
-                id->idSetIsCallRegPtr();
-
-                if (isJump)
-                {
-                    ins = INS_bx; // INS_bx  Reg
-                }
-                else
-                {
-                    ins = INS_blx; // INS_blx Reg
-                }
-                fmt = IF_T1_D2;
-
-                id->idIns(ins);
-                id->idInsFmt(fmt);
-                id->idInsSize(emitInsSize(fmt));
-                id->idReg3(ireg);
-                assert(xreg == REG_NA);
-                break;
-
-            default:
-                NO_WAY("unexpected instruction");
-                break;
+            ins = INS_bx; // INS_bx  Reg
         }
+        else
+        {
+            ins = INS_blx; // INS_blx Reg
+        }
+        fmt = IF_T1_D2;
+
+        id->idIns(ins);
+        id->idInsFmt(fmt);
+        id->idInsSize(emitInsSize(fmt));
+        id->idReg3(ireg);
+        assert(xreg == REG_NA);
     }
     else
     {
         /* This is a simple direct call: "call helper/method/addr" */
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR);
+        assert(callType == EC_FUNC_TOKEN);
 
         // if addr is nullptr then this call is treated as a recursive call.
-        assert(addr == nullptr || codeGen->arm_Valid_Imm_For_BL((ssize_t)addr));
+        assert(addr == nullptr || codeGen->validImmForBL((ssize_t)addr));
 
         if (isJump)
         {
@@ -4833,11 +4819,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idInsSize(emitInsSize(fmt));
 
         id->idAddr()->iiaAddr = (BYTE*)addr;
-
-        if (callType == EC_FUNC_ADDR)
-        {
-            id->idSetIsCallAddr();
-        }
 
         if (emitComp->opts.compReloc)
         {
@@ -7668,28 +7649,8 @@ void emitter::emitDispInsHelp(
 
         case IF_T2_J3:
         {
-            BYTE* addr;
-            if (id->idIsCallAddr())
-            {
-                addr       = id->idAddr()->iiaAddr;
-                methodName = "";
-            }
-            else
-            {
-                addr       = nullptr;
-                methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
-            }
-
-            if (addr)
-            {
-                if (id->idIsDspReloc())
-                    printf("reloc ");
-                printf("%p", dspPtr(addr));
-            }
-            else
-            {
-                printf("%s", methodName);
-            }
+            methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+            printf("%s", methodName);
         }
         break;
 
@@ -7709,6 +7670,22 @@ void emitter::emitDispInsHelp(
     printf("\n");
 }
 
+//--------------------------------------------------------------------
+// emitDispIns: Dump the given instruction to jitstdout.
+//
+// Arguments:
+//   id - The instruction
+//   isNew - Whether the instruction is newly generated (before encoding).
+//   doffs - If true, always display the passed-in offset.
+//   asmfm - Whether the instruction should be displayed in assembly format.
+//           If false some additional information may be printed for the instruction.
+//   offset - The offset of the instruction. Only displayed if doffs is true or if
+//            !isNew && !asmfm.
+//   code - Pointer to the actual code, used for displaying the address and encoded bytes
+//          if turned on.
+//   sz - The size of the instruction, used to display the encoded bytes.
+//   ig - The instruction group containing the instruction.
+//
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* code, size_t sz, insGroup* ig)
 {
@@ -7806,12 +7783,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     if (varx >= 0 && emitComp->opts.varNames)
     {
-        LclVarDsc*  varDsc;
-        const char* varName;
-
-        assert((unsigned)varx < emitComp->lvaCount);
-        varDsc  = emitComp->lvaTable + varx;
-        varName = emitComp->compLocalVarName(varx, offs);
+        const char* varName = emitComp->compLocalVarName(varx, offs);
 
         if (varName)
         {
@@ -8012,9 +7984,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             // no logic here to track local variable lifetime changes, like we do in the contained case
             // above. E.g., for a `str r0,[r1]` for byref `r1` to local `V01`, we won't store the local
             // `V01` and so the emitter can't update the GC lifetime for `V01` if this is a variable birth.
-            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-            unsigned             lclNum  = varNode->GetLclNum();
-            LclVarDsc*           varDsc  = emitComp->lvaGetDesc(lclNum);
+            LclVarDsc* varDsc = emitComp->lvaGetDesc(addr->AsLclVarCommon());
             assert(!varDsc->lvTracked);
         }
 #endif // DEBUG
@@ -8134,7 +8104,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     if (dst->gtSetFlags())
     {
         assert((ins == INS_add) || (ins == INS_adc) || (ins == INS_sub) || (ins == INS_sbc) || (ins == INS_and) ||
-               (ins == INS_orr) || (ins == INS_eor) || (ins == INS_orn));
+               (ins == INS_orr) || (ins == INS_eor) || (ins == INS_orn) || (ins == INS_bic));
         flags = INS_FLAGS_SET;
     }
 
