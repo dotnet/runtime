@@ -1520,7 +1520,7 @@ class SuperPMIReplayAsmDiffs:
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
                 # a standalone .mc for easy iteration.
-                if self.coreclr_args.diff_with_release is not True and is_nonzero_length_file(diff_mcl_file):
+                if is_nonzero_length_file(diff_mcl_file):
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
                     if return_code == 0:
@@ -1738,13 +1738,12 @@ class SuperPMIReplayAsmDiffs:
             for file in files_with_replay_failures:
                 logging.info("    %s", file)
 
-        if self.coreclr_args.diff_with_release is not True:
-            if len(files_with_asm_diffs) == 0:
-                logging.info("  No asm diffs")
-            else:
-                logging.info("  Asm diffs in %s MCH files:", len(files_with_asm_diffs))
-                for file in files_with_asm_diffs:
-                    logging.info("    %s", file)
+        if len(files_with_asm_diffs) == 0:
+            logging.info("  No asm diffs")
+        else:
+            logging.info("  Asm diffs in %s MCH files:", len(files_with_asm_diffs))
+            for file in files_with_asm_diffs:
+                logging.info("    %s", file)
 
         return result
         ################################################################################################ end of replay_with_asm_diffs()
@@ -3312,6 +3311,11 @@ def setup_args(args):
                             "retainOnlyTopFiles",
                             lambda unused: True,
                             "Unable to set retainOnlyTopFiles.")
+
+        coreclr_args.verify(args,
+                            "diff_with_release",
+                            lambda unused: True,
+                            "Unable to set diff_with_release.")
 
         process_base_jit_path_arg(coreclr_args)
 
