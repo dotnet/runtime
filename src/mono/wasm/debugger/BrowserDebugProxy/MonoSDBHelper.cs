@@ -2410,6 +2410,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             async Task<JArray> GetFieldsValues(List<FieldTypeClass> fields, bool isParent, bool isRootHidden = false, bool isArray = false)
             {
+                JArray objFields = new JArray();
+                if (fields.Count == 0)
+                    return objFields;
+
                 if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
                     fields = fields.Where(field => field.IsPublic).ToList();
 
@@ -2418,10 +2422,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 commandParamsWriter.Write(fields.Count);
                 foreach (var field in fields)
                     commandParamsWriter.Write(field.Id);
-
                 var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdObject.RefGetValues, commandParamsWriter, token);
 
-                JArray objFields = new JArray();
                 foreach (var field in fields)
                 {
                     long initialPos = retDebuggerCmdReader.BaseStream.Position;
