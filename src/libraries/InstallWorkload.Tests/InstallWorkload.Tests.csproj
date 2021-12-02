@@ -12,6 +12,7 @@
     <InstallWorkloadForTesting Condition="'$(InstallWorkloadForTesting)' == ''">true</InstallWorkloadForTesting>
 
     <IsWasmProject Condition="'$(TargetOS)' == 'Browser'">false</IsWasmProject>
+    <BundleTestApp>false</BundleTestApp>
   </PropertyGroup>
 
   <Target Name="TriggerInstall"
