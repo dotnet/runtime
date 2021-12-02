@@ -12,6 +12,7 @@ namespace System.Diagnostics.Tests
         private static readonly ManualResetEvent s_sleepEvent = new ManualResetEvent(false);
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62021", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser)]
         public static void GetTimestamp()
         {
             long ts1 = Stopwatch.GetTimestamp();
