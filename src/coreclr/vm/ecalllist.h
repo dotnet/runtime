@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ECallList.H
 //
 // This file contains definitions of FCall entrypoints
 //
-
-
-
 
 #ifndef FCFuncElement
 #define FCFuncElement(name, impl)
@@ -14,14 +12,6 @@
 
 #ifndef FCFuncElementSig
 #define FCFuncElementSig(name,sig,impl)
-#endif
-
-#ifndef FCIntrinsic
-#define FCIntrinsic(name,impl,intrinsicID)
-#endif
-
-#ifndef FCIntrinsicSig
-#define FCIntrinsicSig(name,sig,impl,intrinsicID)
 #endif
 
 #ifndef FCDynamic
@@ -54,8 +44,6 @@
 //
 //
 
-
-
 FCFuncStart(gDependentHandleFuncs)
     FCFuncElement("InternalInitialize",            DependentHandle::InternalInitialize)
     FCFuncElement("InternalGetTarget",             DependentHandle::InternalGetTarget)
@@ -66,10 +54,6 @@ FCFuncStart(gDependentHandleFuncs)
     FCFuncElement("InternalFree",                  DependentHandle::InternalFree)
 FCFuncEnd()
 
-
-
-
-
 FCFuncStart(gEnumFuncs)
     FCFuncElement("InternalGetUnderlyingType",  ReflectionEnum::InternalGetEnumUnderlyingType)
     FCFuncElement("InternalGetCorElementType",  ReflectionEnum::InternalGetCorElementType)
@@ -77,7 +61,7 @@ FCFuncStart(gEnumFuncs)
 FCFuncEnd()
 
 FCFuncStart(gObjectFuncs)
-    FCIntrinsic("GetType", ObjectNative::GetClass, CORINFO_INTRINSIC_Object_GetType)
+    FCFuncElement("GetType", ObjectNative::GetClass)
 FCFuncEnd()
 
 FCFuncStart(gStringFuncs)
@@ -192,7 +176,7 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("AllocateComObject", RuntimeTypeHandle::AllocateComObject)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
-    FCIntrinsic("GetValueInternal", RuntimeTypeHandle::GetValueInternal, CORINFO_INTRINSIC_RTH_GetValueInternal)
+    FCFuncElement("GetValueInternal", RuntimeTypeHandle::GetValueInternal)
     FCFuncElement("IsEquivalentTo", RuntimeTypeHandle::IsEquivalentTo)
 FCFuncEnd()
 
@@ -254,7 +238,6 @@ FCFuncStart(gRuntimeMethodHandle)
     FCFuncElement("GetLoaderAllocator", RuntimeMethodHandle::GetLoaderAllocator)
 FCFuncEnd()
 
-
 FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetValue", RuntimeFieldHandle::GetValue)
     FCFuncElement("SetValue", RuntimeFieldHandle::SetValue)
@@ -269,7 +252,6 @@ FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetStaticFieldForGenericType", RuntimeFieldHandle::GetStaticFieldForGenericType)
     FCFuncElement("AcquiresContextFromThis", RuntimeFieldHandle::AcquiresContextFromThis)
 FCFuncEnd()
-
 
 FCFuncStart(gCOMModuleFuncs)
     FCFuncElement("GetTypes", COMModule::GetTypes)
@@ -713,9 +695,9 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("ValidateObject", StubHelpers::ValidateObject)
     FCFuncElement("ValidateByref", StubHelpers::ValidateByref)
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
-    FCIntrinsic("GetStubContext", StubHelpers::GetStubContext, CORINFO_INTRINSIC_StubHelpers_GetStubContext)
+    FCFuncElement("GetStubContext", StubHelpers::GetStubContext)
 #ifdef TARGET_64BIT
-    FCIntrinsic("GetStubContextAddr", StubHelpers::GetStubContextAddr, CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr)
+    FCFuncElement("GetStubContextAddr", StubHelpers::GetStubContextAddr)
 #endif // TARGET_64BIT
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     FCFuncElement("ArrayTypeCheck", StubHelpers::ArrayTypeCheck)
@@ -723,7 +705,7 @@ FCFuncStart(gStubHelperFuncs)
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     FCFuncElement("MulticastDebuggerTraceHelper", StubHelpers::MulticastDebuggerTraceHelper)
 #endif //FEATURE_MULTICASTSTUB_AS_IL
-    FCIntrinsic("NextCallReturnAddress", StubHelpers::NextCallReturnAddress, CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress)
+    FCFuncElement("NextCallReturnAddress", StubHelpers::NextCallReturnAddress)
 FCFuncEnd()
 
 FCFuncStart(gGCHandleFuncs)
@@ -779,7 +761,6 @@ FCFuncEnd()
 #undef MNGSTDITF_END_INTERFACE
 
 #endif // FEATURE_COMINTEROP
-
 
 //
 //
@@ -839,7 +820,6 @@ FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
-
 FCClassElement("RegisteredWaitHandle", "System.Threading", gRegisteredWaitHandleFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
@@ -869,8 +849,6 @@ FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
 
 #undef FCFuncElement
 #undef FCFuncElementSig
-#undef FCIntrinsic
-#undef FCIntrinsicSig
 #undef FCDynamic
 #undef FCDynamicSig
 #undef FCUnreferenced

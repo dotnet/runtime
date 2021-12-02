@@ -281,12 +281,6 @@ const USHORT c_nCoreLibFieldDescriptions = ARRAY_SIZE(c_rgCoreLibFieldDescriptio
 #define FCFuncElementSig(name,sig,impl) \
     FCFuncFlag_HasSignature + FCFuncElement(name, impl) (LPVOID)sig,
 
-#define FCIntrinsic(name,impl,intrinsicID) FCFuncFlags(intrinsicID, ECall::InvalidDynamicFCallId), \
-    (LPVOID)GetEEFuncEntryPoint(impl), (LPVOID)name,
-
-#define FCIntrinsicSig(name,sig,impl,intrinsicID) \
-    FCFuncFlag_HasSignature + FCIntrinsic(name,impl,intrinsicID) (LPVOID)sig,
-
 #define FCDynamic(name,intrinsicID,dynamicID) FCFuncFlags(intrinsicID, dynamicID), \
     NULL, (LPVOID)name,
 

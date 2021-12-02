@@ -1349,6 +1349,7 @@ namespace System.StubHelpers
         internal static extern IntPtr GetStubContext();
 
 #if TARGET_64BIT
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContextAddr();
 #endif // TARGET_64BIT
@@ -1363,6 +1364,7 @@ namespace System.StubHelpers
         internal static extern void MulticastDebuggerTraceHelper(object o, int count);
 #endif
 
+        [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
     }  // class StubHelpers
