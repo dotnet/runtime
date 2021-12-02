@@ -717,8 +717,8 @@ namespace System.Numerics
 
             internal static uint Crc32C(uint crc, byte data)
             {
-                ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
 
                 return crc;
             }
@@ -726,11 +726,11 @@ namespace System.Numerics
             internal static uint Crc32C(uint crc, ushort data)
             {
 
-                ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
 
-                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
                 data >>= 8;
-                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
 
                 return crc;
             }
@@ -742,8 +742,8 @@ namespace System.Numerics
                     data = BinaryPrimitives.ReverseEndianness(data);
                 }
 
-                ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-                return Crc32CImpl(ref lut, crc, data);
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                return Crc32CImpl(ref lookupTable, crc, data);
             }
 
             internal static uint Crc32C(uint crc, ulong data)
@@ -753,25 +753,25 @@ namespace System.Numerics
                     data = BinaryPrimitives.ReverseEndianness(data);
                 }
 
-                ref uint lut = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
 
-                crc = Crc32CImpl(ref lut, crc, (uint)data);
+                crc = Crc32CImpl(ref lookupTable, crc, (uint)data);
                 data >>= 32;
-                crc = Crc32CImpl(ref lut, crc, (uint)data);
+                crc = Crc32CImpl(ref lookupTable, crc, (uint)data);
 
                 return crc;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static uint Crc32CImpl(ref uint lut, uint crc, uint data)
+            private static uint Crc32CImpl(ref uint lookupTable, uint crc, uint data)
             {
-                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
                 data >>= 8;
-                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
                 data >>= 8;
-                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
                 data >>= 8;
-                crc = Unsafe.Add(ref lut, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
 
                 return crc;
             }
