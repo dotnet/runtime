@@ -159,6 +159,7 @@
       <_WasmPropertyNames Include="WasmLinkIcalls" />
       <_WasmPropertyNames Include="WasmNativeStrip" />
       <_WasmPropertyNames Include="_WasmDevel" />
+      <_WasmPropertyNames Include="TestUsingWorkloads" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
