@@ -395,26 +395,6 @@ inline static CorInfoType toJitType(TypeHandle typeHnd, CORINFO_CLASS_HANDLE *cl
     return CEEInfo::asCorInfoType(typeHnd.GetInternalCorElementType(), typeHnd, clsRet);
 }
 
-inline static void TypeEquivalenceFixupSpecificationHelper(ICorDynamicInfo * pCorInfo, MethodDesc *pMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    // A fixup is necessary to ensure that the parameters to the method are loaded before the method
-    // is called. In these cases we will not perform the appropriate loading when we load parameter
-    // types because with type equivalence, the parameter types at the call site do not necessarily
-    // match that those in the actual function. (They must be equivalent, but not necessarily the same.)
-    // In non-ngen scenarios this code here will force the types to be loaded directly by the call to
-    // HasTypeEquivalentStructParameters.
-    if (pMD->IsVirtual())
-    {
-        if (pMD->GetMethodTable()->DependsOnEquivalentOrForwardedStructs())
-        {
-            if (pMD->HasTypeEquivalentStructParameters())
-                pCorInfo->classMustBeLoadedBeforeCodeIsRun((CORINFO_CLASS_HANDLE)pMD->GetMethodTable());
-        }
-    }
-}
-
 //---------------------------------------------------------------------------------------
 //
 //@GENERICS:
@@ -5032,11 +5012,9 @@ void CEEInfo::getCallInfo(
     bool resolvedCallVirt = false;
     bool callVirtCrossingVersionBubble = false;
 
-    // Delegate targets are always treated as direct calls here. (It would be nice to clean it up...).
     if (flags & CORINFO_CALLINFO_LDFTN)
     {
-        if (m_pOverride != NULL)
-            TypeEquivalenceFixupSpecificationHelper(m_pOverride, pTargetMD);
+        pTargetMD->PrepareForUseAsAFunctionPointer();
         directCall = true;
     }
     else
