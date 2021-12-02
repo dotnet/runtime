@@ -586,7 +586,7 @@ AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t
     if (rem > 0)
     {
         int32_t bytes_to_read = rem < length ? rem : length;
-        assert(bytes_to_read == rem && "buffer is not large enough");
+        assert(bytes_to_read == rem && "destination buffer is not large enough");
         data = make_java_byte_array(env, bytes_to_read);
         IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferGet, data));
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
