@@ -858,7 +858,6 @@ public class DebugTypeFull
         var myType = asm.GetType("DebuggerTests.ClassToInspectWithDebugTypeFull");
         var myMethod = myType.GetConstructor(new Type[] { });
         var a = myMethod.Invoke(new object[]{});
-        Console.WriteLine(a);
         System.Diagnostics.Debugger.Break();
     }
 }
