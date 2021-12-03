@@ -2483,25 +2483,42 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
-                // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length) goto doneLabel;
-                if (emitLengthCheck)
-                {
-                    EmitSpanLengthCheck(iterations);
-                }
-
                 if (iterations <= MaxUnrollSize)
                 {
-                    // if (textSpan[textSpanPos] != c1 ||
+                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length ||
+                    //     textSpan[textSpanPos] != c1 ||
                     //     textSpan[textSpanPos + 1] != c2 ||
                     //     ...)
-                    //       goto doneLabel;
-                    for (int i = 0; i < iterations; i++)
+                    // {
+                    //     goto doneLabel;
+                    // }
+                    writer.Write($"if (");
+                    if (emitLengthCheck)
                     {
-                        EmitSingleChar(node, emitLengthCheck: false);
+                        writer.WriteLine($"{SpanLengthCheck(iterations)} ||");
+                        writer.Write("    ");
+                    }
+                    EmitSingleChar(node, emitLengthCheck: false, clauseOnly: true);
+                    for (int i = 1; i < iterations; i++)
+                    {
+                        writer.WriteLine(" ||");
+                        writer.Write("    ");
+                        EmitSingleChar(node, emitLengthCheck: false, clauseOnly: true);
+                    }
+                    writer.WriteLine(")");
+                    using (EmitBlock(writer, null))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
                     }
                 }
                 else
                 {
+                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length) goto doneLabel;
+                    if (emitLengthCheck)
+                    {
+                        EmitSpanLengthCheck(iterations);
+                    }
+
                     string spanLocal = "slice"; // As this repeater doesn't wrap arbitrary node emits, this shouldn't conflict with anything
                     writer.WriteLine($"global::System.ReadOnlySpan<char> {spanLocal} = {textSpanLocal}.Slice({textSpanPos}, {iterations});");
                     string i = ReserveName("charrepeater_iteration");
