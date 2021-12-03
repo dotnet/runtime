@@ -771,10 +771,10 @@ namespace Mono.Linker.Dataflow
 			StackSlot destination = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 
 			foreach (var uniqueDestination in destination.Value) {
-				if (uniqueDestination.Kind == ValueNodeKind.LoadField) {
-					HandleStoreField (methodBody.Method, ((LoadFieldValue) uniqueDestination).Field, operation, valueToStore.Value);
-				} else if (uniqueDestination.Kind == ValueNodeKind.MethodParameter) {
-					HandleStoreParameter (methodBody.Method, ((MethodParameterValue) uniqueDestination).ParameterIndex, operation, valueToStore.Value);
+				if (uniqueDestination is LoadFieldValue fieldDestination) {
+					HandleStoreField (methodBody.Method, fieldDestination.Field, operation, valueToStore.Value);
+				} else if (uniqueDestination is MethodParameterValue parameterDestination) {
+					HandleStoreParameter (methodBody.Method, parameterDestination.ParameterIndex, operation, valueToStore.Value);
 				}
 			}
 
