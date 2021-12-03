@@ -9596,7 +9596,8 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         else
 #endif
         {
-            info.compCompHnd->getFunctionFixedEntryPoint(tree->AsFptrVal()->gtFptrMethod, prepareForUnsafeFunctionPointer, &addrInfo);
+            info.compCompHnd->getFunctionFixedEntryPoint(tree->AsFptrVal()->gtFptrMethod,
+                                                         prepareForUnsafeFunctionPointer, &addrInfo);
         }
 
         GenTree* indNode = nullptr;
