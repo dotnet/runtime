@@ -15018,6 +15018,29 @@ uint16_t allocator::count_largest_items (etw_bucket_info* bucket_info,
 }
 #endif //FEATURE_EVENT_TRACE
 
+bool allocator::have_enough_big_items_p (size_t min_item_size, size_t min_total_size)
+{
+    int low_bucket = first_suitable_bucket (min_item_size);
+    size_t total_size = 0;
+    for (int i = num_buckets-1; i >= low_bucket; i--)
+    {
+        for (uint8_t* free_item = alloc_list_head_of ((unsigned int)i);
+                        free_item != nullptr;
+                        free_item = free_list_slot (free_item))
+        {
+            assert (((CObjectHeader*)free_item)->IsFree());
+
+            size_t free_item_size = Align (size (free_item));
+            total_size += free_item_size;
+            if (total_size >= min_total_size)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
                                 alloc_context* acontext, uint32_t flags,
                                 heap_segment* seg, int align_const, int gen_number)
@@ -17730,10 +17753,15 @@ void gc_heap::init_free_and_plug()
     {
         generation* gen = generation_of (i);
 #ifdef DOUBLY_LINKED_FL
-        print_free_and_plug ("BGC");
-#else
-        memset (gen->gen_free_spaces, 0, sizeof (gen->gen_free_spaces));
+        if (settings.concurrent)
+        {
+            print_free_and_plug ("BGC");
+        }
+        else
 #endif //DOUBLY_LINKED_FL
+        {
+            memset (gen->gen_free_spaces, 0, sizeof (gen->gen_free_spaces));
+        }
         memset (gen->gen_plugs, 0, sizeof (gen->gen_plugs));
         memset (gen->gen_current_pinned_free_spaces, 0, sizeof (gen->gen_current_pinned_free_spaces));
     }
@@ -19830,13 +19858,16 @@ int gc_heap::generation_to_condemn (int n_initial,
             // a background gen 2 may create some fragmentation by freeing objects -
             // let's not trigger a blocking gen 2 unless enough gen 2 or uoh budget has been consumed
             dynamic_data* dd_max = dynamic_data_of (max_generation);
-            BOOL consumed_enough_gen2_budget = (n == max_generation) || consumed_enough_gen2_budget_p (dd_max, memory_load);
+            size_t gen1_size = generation_size (max_generation-1);
+            bool can_fit_gen1_p = generation_allocator (generation_of (max_generation))->have_enough_big_items_p (loh_size_threshold, gen1_size);
+            bool would_trigger_gen2_p = (n == max_generation) || consumed_enough_gen2_budget_p (dd_max, memory_load);
 
+            dprintf (GTC_LOG, ("would_trigger_gen2_p: %d maxgen_size_inc_per_heap_p: %d can_fit_gen1_p: %d", would_trigger_gen2_p, maxgen_size_inc_per_heap_p, can_fit_gen1_p))
             if (memory_load >= v_high_memory_load_th || low_memory_detected)
             {
                 // TODO: Perhaps in 64-bit we should be estimating gen1's fragmentation as well since
                 // gen1/gen0 may take a lot more memory than gen2.
-                if (!high_fragmentation && consumed_enough_gen2_budget && maxgen_size_inc_per_heap_p)
+                if (!high_fragmentation && (would_trigger_gen2_p || maxgen_size_inc_per_heap_p || !can_fit_gen1_p))
                 {
                     high_fragmentation = dt_estimate_reclaim_space_p (tuning_deciding_condemned_gen, max_generation);
                 }
@@ -19844,7 +19875,7 @@ int gc_heap::generation_to_condemn (int n_initial,
             }
             else
             {
-                if (!high_fragmentation && consumed_enough_gen2_budget && maxgen_size_inc_per_heap_p)
+                if (!high_fragmentation && (would_trigger_gen2_p || maxgen_size_inc_per_heap_p || !can_fit_gen1_p))
                 {
                     high_fragmentation = dt_estimate_high_frag_p (tuning_deciding_condemned_gen, max_generation, available_physical);
                 }
@@ -24886,10 +24917,10 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     static uint64_t last_mark_time = 0;
 #endif //FEATURE_EVENT_TRACE
 
+    if (condemned_gen_number >= (max_generation-1))
+        maxgen_size_inc_per_heap_p = false;
 #ifdef MULTIPLE_HEAPS
     gc_t_join.join(this, gc_join_begin_mark_phase);
-    if (condemned_gen_number == (max_generation-1))
-        maxgen_size_inc_per_heap_p = false;
     if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
@@ -28499,8 +28530,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
             dprintf (1, ("gen2 grew %Id (end seg alloc: %Id, condemned alloc: %Id",
                          growth, end_seg_allocated, condemned_allocated));
 
-            maxgen_size_inc_p = true;
-
             maxgen_size_inc_per_heap_p = true;
         }
         else
@@ -28668,6 +28697,19 @@ void gc_heap::plan_phase (int condemned_gen_number)
             }
         }
 
+        // count number of heaps seeing gen 2 growth
+        int maxgen_size_inc_count = 0;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            if (g_heaps [i]->maxgen_size_inc_per_heap_p)
+            {
+                maxgen_size_inc_count += 1;
+            }
+        }
+        // if it's the majority, set the global flag
+        if (maxgen_size_inc_count > (n_heaps / 2))
+            maxgen_size_inc_p = true;
+
         if (maxgen_size_inc_p && provisional_mode_triggered
 #ifdef BACKGROUND_GC
             && !is_bgc_in_progress()
@@ -28796,6 +28838,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
     {
         rearrange_uoh_segments ();
     }
+
+    maxgen_size_inc_p = maxgen_size_inc_per_heap_p;
 
     if (maxgen_size_inc_p && provisional_mode_triggered
 #ifdef BACKGROUND_GC
@@ -29974,6 +30018,13 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
     size_t saved_obj_brick = 0;
     size_t saved_next_obj_brick = 0;
 #endif //_DEBUG
+
+    if ((heap_segment_plan_gen_num (region) == max_generation) && (x < end))
+    {
+        dprintf (1, ("h%d gen2 grew because of SIP region %Ix->%Ix", heap_number, x, end));
+
+        maxgen_size_inc_per_heap_p = true;
+    }
 
     while (x < end)
     {
@@ -38258,19 +38309,41 @@ static size_t linear_allocation_model (float allocation_fraction, size_t new_all
 
 ptrdiff_t gc_heap::estimate_usable_free_list_space (int gen_number)
 {
-    size_t usable_free_list_space = generation_free_list_space (generation_of (gen_number)) / 2;
+    assert (gen_number >= max_generation);
+    size_t usable_free_list_space = 0;
     if (gen_number == max_generation)
     {
-        // in the case of SOH, take ephemeral free list space into account as well
+        // gen2 may be quite fragmented - only count the big free items
+        allocator* gen2_allocator = generation_allocator (generation_of (max_generation));
+        int low_bucket = gen2_allocator->first_suitable_bucket (loh_size_threshold);
+        for (int i = gen2_allocator->number_of_buckets()-1; i >= low_bucket; i--)
+        {
+            for (uint8_t* free_item = gen2_allocator->alloc_list_head_of ((unsigned int)i);
+                            free_item != nullptr;
+                            free_item = free_list_slot (free_item))
+            {
+                assert (((CObjectHeader*)free_item)->IsFree());
+
+                size_t free_item_size = Align (size (free_item));
+                usable_free_list_space += free_item_size;
+            }
+        }
+
+        // take ephemeral free list space into account as well
         for (int ephemeral_gen = 0; ephemeral_gen < max_generation; ephemeral_gen++)
         {
             // making the pessimistic assumption that only half of it usable,
-            // and subtract from that half the budget
+            // and subtract from that the remaining budget
             ptrdiff_t remaining_budget = dd_new_allocation (dynamic_data_of (ephemeral_gen));
             size_t usable_ephemeral_free_list_space = generation_free_list_space (generation_of (ephemeral_gen)) / 2;
             if (remaining_budget > 0 && usable_ephemeral_free_list_space > (size_t)remaining_budget)
                 usable_free_list_space += usable_ephemeral_free_list_space - remaining_budget;
         }
+    }
+    else
+    {
+        // in the case of LOH and POH, assume half the free list space can be used
+        usable_free_list_space = generation_free_list_space (generation_of (gen_number)) / 2;
     }
     return usable_free_list_space;
 }
@@ -38330,12 +38403,15 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                 // compute a conservative growth factor based on this fraction
                 float f_high_memory_load = 1.05f + free_fraction;
 
-                // look at free list space in this generation (and ephemeral generations) as well
+                // look at free list space in this generation (and possibly ephemeral generations) as well
                 size_t usable_free_list_space = estimate_usable_free_list_space (gen_number);
 
                 // compute another conservative growth factor based on usable free list space
                 float free_list_fraction = out > 0 ? (float)usable_free_list_space / (float)out : 1.0f;
                 float f_free_list = 1.0f + free_list_fraction;
+
+                dprintf (2, ("generation %d f: %d f_high_memory_load: %d f_free_list: %d",
+                             gen_number, f*100, f_high_memory_load*100, f_free_list*100));
 
                 // use the bigger factor
                 float f_conservative = max (f_high_memory_load, f_free_list);
@@ -39185,8 +39261,16 @@ size_t gc_heap::estimated_reclaim (int gen_number)
 {
     dynamic_data* dd = dynamic_data_of (gen_number);
     size_t gen_allocated = (dd_desired_allocation (dd) - dd_new_allocation (dd));
+
     size_t gen_total_size = gen_allocated + dd_current_size (dd);
-    size_t est_gen_surv = (size_t)((float) (gen_total_size) * dd_surv (dd));
+
+    // what fraction of the budget has been consumed?
+    float gen_allocated_fraction = (float)gen_allocated / (float)dd_desired_allocation (dd);
+
+    // estimate survival - the less budget we have consumed, the higher the estimated survival
+    float est_surv = 1.0f - ((1.0f - dd_surv (dd)) * gen_allocated_fraction);
+
+    size_t est_gen_surv = (size_t)((float) (gen_total_size) * est_surv);
     size_t est_gen_free = gen_total_size - est_gen_surv + dd_fragmentation (dd);
 
     dprintf (GTC_LOG, ("h%d gen%d total size: %Id, est dead space: %Id (s: %d, allocated: %Id), frag: %Id",
@@ -39379,7 +39463,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
             num_heaps = gc_heap::n_heaps;
 #endif // MULTIPLE_HEAPS
 
-            ptrdiff_t reclaim_space = generation_size(max_generation) - generation_plan_size(max_generation);
+            ptrdiff_t reclaim_space = fragmentation;
 
             if((settings.entry_memory_load >= high_memory_load_th) && (settings.entry_memory_load < v_high_memory_load_th))
             {
@@ -40905,6 +40989,11 @@ void gc_heap::background_sweep()
     // a segment that might've been deleted at the beginning of an FGC.
     current_sweep_seg = 0;
 #endif //DOUBLY_LINKED_FL
+
+    // we just finished sweeping and thus created more space in gen 2
+    // so turn off this flag which may have been turned on by a gen 1
+    // collection that occurred before or during this background GC
+    maxgen_size_inc_per_heap_p = false;
 
     enable_preemptive ();
 

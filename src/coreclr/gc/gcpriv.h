@@ -787,6 +787,7 @@ public:
                                   size_t max_item_count,
                                   size_t* recorded_fl_info_size);
 #endif //FEATURE_EVENT_TRACE
+    bool have_enough_big_items_p (size_t min_item_size, size_t min_total_size);
 };
 
 #define NUM_GEN_POWER2 (20)
