@@ -5857,7 +5857,7 @@ void emitter::emitIns_R_R_R(
 
         case INS_adds:
         case INS_subs:
-            emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, INS_OPTS_NONE);
+            emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, opt);
             return;
 
         case INS_cmeq:

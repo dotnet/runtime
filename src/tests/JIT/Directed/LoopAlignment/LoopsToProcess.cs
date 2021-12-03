@@ -134,8 +134,9 @@ public class TestClass_Loops
             return;
         }
     }
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         new TestClass_Loops().Method0();
+        return 100;
     }
 }
