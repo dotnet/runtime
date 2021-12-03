@@ -352,12 +352,12 @@ namespace System.IO
             return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: true);
         }
 
-        public static void Copy(string sourcePath, string destinationPath, bool recursive, bool skipExistingFiles = true, CancellationToken cancellationToken = default)
+        public static bool Copy(string sourcePath, string destinationPath, bool recursive, bool skipExistingFiles = true, CancellationToken cancellationToken = default)
         {
             string fullSourcePath = Path.GetFullPath(sourcePath);
             string fullDestinationPath = Path.GetFullPath(destinationPath);
 
-            FileSystem.Copy(sourcePath, destinationPath, recursive, skipExistingFiles, cancellationToken);
+            return FileSystem.Copy(sourcePath, destinationPath, recursive, skipExistingFiles, cancellationToken);
         }
     }
 }
