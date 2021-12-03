@@ -26,7 +26,7 @@ namespace System.IO
         }
 
         internal static bool Copy(string sourcePath, string destinationPath, bool recursive,
-            bool skipExistingFiles = true, CancellationToken cancellationToken = default)
+            bool skipExistingFiles, CancellationToken cancellationToken)
         {
             var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
             IEnumerable<string> directoryEnumeration;
