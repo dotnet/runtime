@@ -30,7 +30,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 			Call_CanSuppressWarningOnParameter ();
 			Call_CanSuppressWarningOnReturnType ();
 			Call_CanSuppressWithRequiresUnreferencedCode ();
-			Call_CanSuppressWithRequiresUnreferencedCodeInLambda ();
 			Call_CanSuppressPInvokeWithRequiresUnreferencedCode ();
 			Call_PInvokeWithRequiresUnreferencedCode ();
 		}
@@ -157,6 +156,8 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		static extern IFoo CanSuppressWarningOnReturnType ();
 
 		[RequiresUnreferencedCode ("test")]
+		// Bug https://github.com/dotnet/linker/issues/2378
+		[ExpectedWarning ("IL2050", ProducedBy = ProducedBy.Analyzer)]
 		static void Call_CanSuppressWithRequiresUnreferencedCode ()
 		{
 			CanSuppressWithRequiresUnreferencedCode (null);
@@ -166,6 +167,8 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		static extern void CanSuppressWithRequiresUnreferencedCode (IFoo foo);
 
 		[RequiresUnreferencedCode ("test")]
+		// Bug https://github.com/dotnet/linker/issues/2378
+		[ExpectedWarning ("IL2050", ProducedBy = ProducedBy.Analyzer)]
 		static void Call_CanSuppressPInvokeWithRequiresUnreferencedCode ()
 		{
 			CanSuppressPInvokeWithRequiresUnreferencedCode (null);
@@ -174,14 +177,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		[RequiresUnreferencedCode ("test")]
 		[DllImport ("Foo")]
 		static extern void CanSuppressPInvokeWithRequiresUnreferencedCode (IFoo foo);
-
-		[RequiresUnreferencedCode ("test")]
-		static void Call_CanSuppressWithRequiresUnreferencedCodeInLambda ()
-		{
-			var lambda = () => CanSuppressWithRequiresUnreferencedCode (null);
-			lambda ();
-		}
-
 
 		[ExpectedWarning ("IL2050")]
 		[ExpectedWarning ("IL2026")]
