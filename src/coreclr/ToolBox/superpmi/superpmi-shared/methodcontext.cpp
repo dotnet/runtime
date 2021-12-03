@@ -4553,9 +4553,9 @@ void MethodContext::dmpGetFunctionFixedEntryPoint(DWORDLONG key, const Agnostic_
 }
 void MethodContext::repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult)
 {
-    // The present, the isUnsafeFunctionPointer has no impact on the resulting value.
+    // The isUnsafeFunctionPointer has no impact on the resulting value.
     // It helps produce side-effects in the runtime only.
-    DWORDLONG key = CastHandle(ftn) | (DWORDLONG)isUnsafeFunctionPointer;
+    DWORDLONG key = CastHandle(ftn);
     AssertMapAndKeyExist(GetFunctionFixedEntryPoint, key, ": key %016llX", key);
     Agnostic_CORINFO_CONST_LOOKUP value = GetFunctionFixedEntryPoint->Get(key);
     DEBUG_REP(dmpGetFunctionFixedEntryPoint(key, value));
