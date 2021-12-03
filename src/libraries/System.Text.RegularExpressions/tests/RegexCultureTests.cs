@@ -403,6 +403,7 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>
         /// This test currently only works correctly in NonBacktracking mode.
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60753")]
         [OuterLoop("May take tens of seconds")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Theory]
