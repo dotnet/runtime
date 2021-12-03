@@ -1706,6 +1706,15 @@ namespace System.Collections.Immutable.Tests
                     Assert.Equal(destination.Skip(destinationIndex + array.Length), destinationArray.Skip(destinationIndex + array.Length));
                 });
 
+                CopyAndInvoke(destination, destinationArray =>
+                {
+                    array.CopyTo(new Span<int>(destinationArray, destinationIndex, array.Length));
+
+                    Assert.Equal(destination.Take(destinationIndex), destinationArray.Take(destinationIndex));
+                    Assert.Equal(source, destinationArray.Skip(destinationIndex).Take(array.Length));
+                    Assert.Equal(destination.Skip(destinationIndex + array.Length), destinationArray.Skip(destinationIndex + array.Length));
+                });
+
                 if (destinationIndex == 0)
                 {
                     CopyAndInvoke(destination, destinationArray =>
@@ -1753,6 +1762,7 @@ namespace System.Collections.Immutable.Tests
             if (array.Length > 0)
             {
                 AssertExtensions.Throws<ArgumentException>("destinationArray", string.Empty, () => array.CopyTo(array.Length - 1, new int[1], 1, 1)); // Not enough room in the destination.
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("destination", () => array.CopyTo(new Span<int>(new int[array.Length - 1]))); // Not enough room in the destination.
             }
         }
 
@@ -1772,6 +1782,8 @@ namespace System.Collections.Immutable.Tests
 
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.CopyTo(destination, destinationIndex));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.CopyTo(0, destination, destinationIndex, 0));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.CopyTo(new Span<int>(destination, destinationIndex, destinationLength - destinationIndex)));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.CopyTo(new Span<int>(destination, destinationIndex, 0)));
         }
 
         [Theory]

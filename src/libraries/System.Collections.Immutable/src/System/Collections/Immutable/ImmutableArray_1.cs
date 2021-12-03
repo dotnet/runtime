@@ -812,7 +812,7 @@ namespace System.Collections.Immutable
         public void CopyTo(Span<T> destination)
         {
             var self = this;
-            self.ThrowInvalidOperationIfNotInitialized();
+            self.ThrowNullRefIfNotInitialized();
             Requires.Range(self.Length <= destination.Length, nameof(destination));
 
             self.AsSpan().CopyTo(destination);
