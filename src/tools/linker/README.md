@@ -25,24 +25,6 @@ Another tool available for developers is implemented as [Roslyn Analyzer](src/IL
 
 We welcome contributions! Many developers have helped make this project better by reporting [issues](https://github.com/dotnet/linker/issues) or contributing [pull requests](https://github.com/dotnet/linker/pulls).
 
-## Clone the repo
-
-When cloning the repository, use the `--recurse-submodules` flag with git or the GitHub CLI to include the submodules. 
-
-```sh
-git clone https://github.com/dotnet/linker.git --recurse-submodules
-```
-
-```sh
-gh repo clone dotnet/linker --recurse-submodules
-```
-
-Alternatively, clone the repository without the flag and update the submodules separately.
-
-```sh
-git submodule update --init --recursive
-```
-
 ## How to build all projects
 
 There is a shell script available in the root folder which can build the whole project and much more (build.cmd on Windows).
