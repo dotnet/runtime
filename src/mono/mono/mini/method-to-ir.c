@@ -2624,7 +2624,7 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 
 	int table_size = mono_class_rgctx_get_array_size (0, entry->in_mrgctx);
 	if (entry->in_mrgctx)
-		table_size -= MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (TARGET_SIZEOF_VOID_P);
+		table_size -= MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / TARGET_SIZEOF_VOID_P;
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, slot_ins->dreg, table_size - 1);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBGE, slowpath_bb);
 
