@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             return false;
         }
 
-        [DllImport("libc", EntryPoint = "getppid")]
-        private static extern int GetParentPid();
+        [GeneratedDllImport("libc", EntryPoint = "getppid")]
+        private static partial int GetParentPid();
     }
 }
