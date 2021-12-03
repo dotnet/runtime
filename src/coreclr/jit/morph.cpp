@@ -9555,27 +9555,23 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
     }
     else if (tree->gtOper == GT_FTN_ADDR)
     {
-        // A function pointer address is being used. If this is as the target of a Delegate
-        // we don't need to prepare the method. However, if the function pointer is being used in
-        // an unsafe manner, as a raw function pointer, the signature should be walked.
-        bool isUnsafeFunctionPointer = true;
-        if (tree->gtFlags & GTF_DELEGATE_TGT)
-        {
-            isUnsafeFunctionPointer = false;
-        }
+        GenTreeFptrVal* fptrValTree = tree->AsFptrVal();
+
+        // A function pointer address is being used. Let the VM know if this is the
+        // target of a Delegate or a raw function pointer.
+        bool isUnsafeFunctionPointer = !fptrValTree->gtFptrDelegateTarget;
 
         CORINFO_CONST_LOOKUP addrInfo;
 
 #ifdef FEATURE_READYTORUN
-        if (tree->AsFptrVal()->gtEntryPoint.addr != nullptr)
+        if (fptrValTree->gtEntryPoint.addr != nullptr)
         {
-            addrInfo = tree->AsFptrVal()->gtEntryPoint;
+            addrInfo = fptrValTree->gtEntryPoint;
         }
         else
 #endif
         {
-            info.compCompHnd->getFunctionFixedEntryPoint(tree->AsFptrVal()->gtFptrMethod, isUnsafeFunctionPointer,
-                                                         &addrInfo);
+            info.compCompHnd->getFunctionFixedEntryPoint(fptrValTree->gtFptrMethod, isUnsafeFunctionPointer, &addrInfo);
         }
 
         GenTree* indNode = nullptr;

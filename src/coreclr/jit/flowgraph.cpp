@@ -1082,11 +1082,11 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     genTreeOps            oper            = targetMethod->OperGet();
     CORINFO_METHOD_HANDLE targetMethodHnd = nullptr;
     GenTree*              qmarkNode       = nullptr;
-
-    targetMethod->gtFlags |= GTF_DELEGATE_TGT;
     if (oper == GT_FTN_ADDR)
     {
-        targetMethodHnd = targetMethod->AsFptrVal()->gtFptrMethod;
+        GenTreeFptrVal* fptrValTree       = targetMethod->AsFptrVal();
+        fptrValTree->gtFptrDelegateTarget = true;
+        targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
     else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {

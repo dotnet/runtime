@@ -402,7 +402,6 @@ enum GenTreeFlags : unsigned int
                                   // With operators: the specified node is an unsigned operator
     GTF_LATE_ARG    = 0x00010000, // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
-    GTF_DELEGATE_TGT = 0x00040000, // The node is the target of a delegate
 
 // The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
 // that we are calling in the context of performing a CSE, thus we
@@ -413,7 +412,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_IS_IN_CSE   = GTF_BOOLEAN,
 
-    GTF_COMMON_MASK = 0x0007FFFF, // mask of all the flags above
+    GTF_COMMON_MASK = 0x0003FFFF, // mask of all the flags above
 
     GTF_REUSE_REG_VAL = 0x00800000, // This is set by the register allocator on nodes whose value already exists in the
                                     // register assigned to this node, so the code generator does not have to generate
@@ -4966,11 +4965,14 @@ struct GenTreeFptrVal : public GenTree
 {
     CORINFO_METHOD_HANDLE gtFptrMethod;
 
+    bool gtFptrDelegateTarget;
+
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
-    GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth)
+    GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth)
+        : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth), gtFptrDelegateTarget(false)
     {
 #ifdef FEATURE_READYTORUN
         gtEntryPoint.addr       = nullptr;
