@@ -939,18 +939,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (asm.TriedToLoadSymbolsOnDemand)
                 return null;
             asm.TriedToLoadSymbolsOnDemand = true;
-            var peReader = asm.peReader;
-            var entries = peReader.ReadDebugDirectory();
-            var codeView = entries[0];
-            var codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
-            int pdbAge = codeViewData.Age;
-            var pdbGuid = codeViewData.Guid;
-            string pdbName = codeViewData.Path;
-            pdbName = Path.GetFileName(pdbName);
+            var pdbName = Path.GetFileName(asm.PdbName);
 
             foreach (string urlSymbolServer in urlSymbolServerList)
             {
-                string downloadURL = $"{urlSymbolServer}/{pdbName}/{pdbGuid.ToString("N").ToUpper() + pdbAge}/{pdbName}";
+                string downloadURL = $"{urlSymbolServer}/{pdbName}/{asm.PdbGuid.ToString("N").ToUpper() + asm.PdbAge}/{pdbName}";
 
                 try
                 {

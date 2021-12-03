@@ -526,26 +526,32 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal string Url { get; }
         internal MetadataReader asmMetadataReader { get; }
         internal MetadataReader pdbMetadataReader { get; set; }
-        internal List<MemoryStream> enCMemoryStream  = new List<MemoryStream>();
         internal List<MetadataReader> enCMetadataReader  = new List<MetadataReader>();
-        internal PEReader peReader;
-        internal MemoryStream asmStream;
-        internal MemoryStream pdbStream;
         public int DebugId { get; set; }
+        internal int PdbAge { get; }
+        internal System.Guid PdbGuid { get; }
+        internal string PdbName { get; }
 
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         public unsafe AssemblyInfo(string url, byte[] assembly, byte[] pdb)
         {
             this.id = Interlocked.Increment(ref next_id);
-            asmStream = new MemoryStream(assembly);
-            peReader = new PEReader(asmStream);
+            var asmStream = new MemoryStream(assembly);
+            var peReader = new PEReader(asmStream);
+            var entries = peReader.ReadDebugDirectory();
+            var codeView = entries[0];
+            var codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
+            PdbAge = codeViewData.Age;
+            PdbGuid = codeViewData.Guid;
+            PdbName = codeViewData.Path;
             asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
-            Name = asmMetadataReader.GetAssemblyDefinition().GetAssemblyName().Name + ".dll";
-            AssemblyNameUnqualified = asmMetadataReader.GetAssemblyDefinition().GetAssemblyName().Name + ".dll";
+            var asmDef = asmMetadataReader.GetAssemblyDefinition();
+            Name = asmDef.GetAssemblyName().Name + ".dll";
+            AssemblyNameUnqualified = asmDef.GetAssemblyName().Name + ".dll";
             if (pdb != null)
             {
-                pdbStream = new MemoryStream(pdb);
+                var pdbStream = new MemoryStream(pdb);
                 try
                 {
                     pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
@@ -557,7 +563,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             else
             {
-                var entries = peReader.ReadDebugDirectory();
                 var embeddedPdbEntry = entries.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
                 if (embeddedPdbEntry.DataSize != 0)
                 {
@@ -573,8 +578,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             MetadataReader asmMetadataReader = MetadataReaderProvider.FromMetadataStream(asmStream).GetMetadataReader();
             var pdbStream = new MemoryStream(pdb);
             MetadataReader pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
-            enCMemoryStream.Add(asmStream);
-            enCMemoryStream.Add(pdbStream);
             enCMetadataReader.Add(asmMetadataReader);
             enCMetadataReader.Add(pdbMetadataReader);
             PopulateEnC(asmMetadataReader, pdbMetadataReader);
@@ -735,7 +738,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal void UpdatePdbInformation(Stream streamToReadFrom)
         {
-            pdbStream = new MemoryStream();
+            var pdbStream = new MemoryStream();
             streamToReadFrom.CopyTo(pdbStream);
             pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
         }
