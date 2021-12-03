@@ -68,19 +68,29 @@ namespace System.Collections.Immutable.Tests
         public void AsSpanRoundTripEmptyArrayTests()
         {
             ImmutableArray<int> immutableArray = ImmutableArray.Create(Array.Empty<int>());
+            
             ReadOnlySpan<int> span = immutableArray.AsSpan();
             Assert.Equal(immutableArray, span.ToArray());
             Assert.Equal(immutableArray.Length, span.Length);
+
+            ReadOnlySpan<int> rangedSpan = immutableArray.AsSpan(0, 0);
+            Assert.Equal(immutableArray, rangedSpan.ToArray());
+            Assert.Equal(immutableArray.Length, rangedSpan.Length);
         }
 
         [Fact]
         public void AsSpanRoundTripDefaultArrayTests()
         {
             ImmutableArray<int> immutableArray = new ImmutableArray<int>();
-            ReadOnlySpan<int> span = immutableArray.AsSpan();
             Assert.True(immutableArray.IsDefault);
+            
+            ReadOnlySpan<int> span = immutableArray.AsSpan();
             Assert.Equal(0, span.Length);
             Assert.True(span.IsEmpty);
+
+            ReadOnlySpan<int> rangeSpan = immutableArray.AsSpan(0, 0);
+            Assert.Equal(0, rangeSpan.Length);
+            Assert.True(rangeSpan.IsEmpty);
         }
 
         [Theory]
@@ -97,10 +107,15 @@ namespace System.Collections.Immutable.Tests
         public void AsSpanRoundTripDefaultArrayStringTests()
         {
             ImmutableArray<string> immutableArray = new ImmutableArray<string>();
-            ReadOnlySpan<string> span = immutableArray.AsSpan();
             Assert.True(immutableArray.IsDefault);
+            
+            ReadOnlySpan<string> span = immutableArray.AsSpan();
             Assert.Equal(0, span.Length);
             Assert.True(span.IsEmpty);
+
+            ReadOnlySpan<string> rangeSpan = immutableArray.AsSpan(0, 0);
+            Assert.Equal(0, rangeSpan.Length);
+            Assert.True(rangeSpan.IsEmpty);
         }
 
         [Theory]
@@ -1308,7 +1323,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Theory]
-        [MemberData(nameof(RemoveRangeIndexLengthData))]
+        [MemberData(nameof(RangeIndexLengthData))]
         public void RemoveRangeIndexLength(IEnumerable<int> source, int index, int length)
         {
             var array = source.ToImmutableArray();
@@ -1316,7 +1331,28 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(expected, array.RemoveRange(index, length));
         }
 
-        public static IEnumerable<object[]> RemoveRangeIndexLengthData()
+        [Theory]
+        [MemberData(nameof(RangeIndexLengthData))]
+        public void AsSpanStartLength(IEnumerable<int> source, int start, int length)
+        {
+            var array = source.ToImmutableArray();
+            var expected = source.Skip(start).Take(length);
+            Assert.Equal(expected, array.AsSpan(start, length).ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void AsSpanStartLengthInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(-1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(array.Length + 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(0, array.Length + 1));
+        }
+
+        public static IEnumerable<object[]> RangeIndexLengthData()
         {
             yield return new object[] { s_empty, 0, 0 };
             yield return new object[] { s_oneElement, 1, 0 };
