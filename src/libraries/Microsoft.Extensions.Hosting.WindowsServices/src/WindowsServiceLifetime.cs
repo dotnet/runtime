@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.Versioning;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.WindowsServices
 {
+    [SupportedOSPlatform("windows")]
     public class WindowsServiceLifetime : ServiceBase, IHostLifetime
     {
         private readonly TaskCompletionSource<object> _delayStart = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);

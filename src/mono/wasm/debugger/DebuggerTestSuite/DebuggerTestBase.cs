@@ -808,7 +808,7 @@ namespace DebuggerTests
                 return null;
 
             var locals = frame_props.Value["result"];
-            // FIXME: Should be done when generating the list in library-dotnet.js, but not sure yet
+            // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)
             {
@@ -835,6 +835,37 @@ namespace DebuggerTests
 
             var res = await cli.SendCommand("Debugger.evaluateOnCallFrame", evaluate_req, token);
             AssertEqual(expect_ok, res.IsOk, $"Debugger.evaluateOnCallFrame ('{expression}', scope: {id}) returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
+            if (res.IsOk)
+                return (res.Value["result"], res);
+
+            return (null, res);
+        }
+
+        internal async Task RuntimeEvaluateAndCheck(params (string expression, JObject expected)[] args)
+        {
+            foreach (var arg in args)
+            {
+                var (eval_val, _) = await RuntimeEvaluate(arg.expression);
+                try
+                {
+                    await CheckValue(eval_val, arg.expected, arg.expression);
+                }
+                catch
+                {
+                    Console.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
+                    throw;
+                }
+            }
+        }
+        internal async Task<(JToken, Result)> RuntimeEvaluate(string expression, bool expect_ok = true)
+        {
+            var evaluate_req = JObject.FromObject(new
+            {
+                expression = expression
+            });
+
+            var res = await cli.SendCommand("Runtime.evaluate", evaluate_req, token);
+            AssertEqual(expect_ok, res.IsOk, $"Runtime.evaluate ('{expression}') returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
             if (res.IsOk)
                 return (res.Value["result"], res);
 

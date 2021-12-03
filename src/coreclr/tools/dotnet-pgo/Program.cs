@@ -876,7 +876,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             for (int i = 0; i < schema.Length; i++)
             {
                 var elem = schema[i];
-                if (elem.ILOffset == ilOffset)
+                if (elem.ILOffset != ilOffset)
                     continue;
 
                 if (elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass)

@@ -237,10 +237,6 @@ public:
     void dmpIsValueClass(DWORDLONG key, DWORD value);
     bool repIsValueClass(CORINFO_CLASS_HANDLE cls);
 
-    void recIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls, bool result);
-    void dmpIsStructRequiringStackAllocRetBuf(DWORDLONG key, DWORD value);
-    bool repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls);
-
     void recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetClassSize(DWORDLONG key, DWORD val);
     unsigned repGetClassSize(CORINFO_CLASS_HANDLE cls);
@@ -1009,7 +1005,7 @@ enum mcPackets
     Packet_IsCompatibleDelegate = 99,
     //Packet_IsInstantiationOfVerifiedGeneric = 100,
     Packet_IsSDArray = 101,
-    Packet_IsStructRequiringStackAllocRetBuf = 102,
+    //Packet_IsStructRequiringStackAllocRetBuf = 102,
     Packet_IsValidStringRef = 103,
     //Retired6 = 104,
     Packet_IsValueClass = 105,

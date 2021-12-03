@@ -758,9 +758,7 @@ namespace System.Text.RegularExpressions.Tests
         // TODO: Figure out what to do with default timeouts for source generated regexes
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.None | RegexHelpers.RegexOptionDebug)]
         [InlineData(RegexOptions.Compiled)]
-        [InlineData(RegexOptions.Compiled | RegexHelpers.RegexOptionDebug)]
         public void Match_DefaultTimeout_Throws(RegexOptions options)
         {
             RemoteExecutor.Invoke(optionsString =>
@@ -1661,6 +1659,13 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "a[0-9]+?0", RegexOptions.None, "ababca123000xyz", new (int, int, string)[] { (5, 5, "a1230") } };
                 // Mixed lazy/eager loop
                 yield return new object[] { engine, "a[0-9]+?0|b[0-9]+0", RegexOptions.None, "ababca123000xyzababcb123000xyz", new (int, int, string)[] { (5, 5, "a1230"), (20, 7, "b123000") } };
+                // Loops around alternations
+                yield return new object[] { engine, "^(?:aaa|aa)*$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa)*?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){1,5}$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){1,5}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){4}$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){4}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
 
                 // Mostly empty matches using unusual regexes consisting mostly of anchors only
                 yield return new object[] { engine, "^", RegexOptions.None, "", new (int, int, string)[] { (0, 0, "") } };
@@ -1719,22 +1724,26 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        /// <summary>
-        /// Test that \w has the same meaning in backtracking as well as non-backtracking mode and compiled mode
-        /// </summary>
-        [Fact]
-        public async Task Match_Wordchar()
+        [Theory]
+        [InlineData(@"\w")]
+        [InlineData(@"\s")]
+        [InlineData(@"\d")]
+        public async Task StandardCharSets_SameMeaningAcrossAllEngines(string singleCharPattern)
         {
             var regexes = new List<Regex>();
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                regexes.Add(await RegexHelpers.GetRegexAsync(engine, @"\w"));
+                regexes.Add(await RegexHelpers.GetRegexAsync(engine, singleCharPattern));
             }
-            Assert.InRange(regexes.Count(), 1, int.MaxValue);
 
-            for (char c = '\0'; c < '\uFFFF'; c++)
+            if (regexes.Count < 2)
             {
-                string s = c.ToString();
+                return;
+            }
+
+            for (int c = '\0'; c <= '\uFFFF'; c++)
+            {
+                string s = ((char)c).ToString();
                 bool baseline = regexes[0].IsMatch(s);
                 for (int i = 1; i < regexes.Count; i++)
                 {

@@ -550,20 +550,6 @@ uint32_t interceptor_ICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-// Returns "TRUE" iff "cls" is a struct type such that return buffers used for returning a value
-// of this type must be stack-allocated.  This will generally be true only if the struct
-// contains GC pointers, and does not exceed some size limit.  Maintaining this as an invariant allows
-// an optimization: the JIT may assume that return buffer pointers for return types for which this predicate
-// returns TRUE are always stack allocated, and thus, that stores to the GC-pointer fields of such return
-// buffers do not require GC write barriers.
-bool interceptor_ICJI::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("isStructRequiringStackAllocRetBuf");
-    bool temp = original_ICorJitInfo->isStructRequiringStackAllocRetBuf(cls);
-    mc->recIsStructRequiringStackAllocRetBuf(cls, temp);
-    return temp;
-}
-
 CORINFO_MODULE_HANDLE interceptor_ICJI::getClassModule(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getClassModule");

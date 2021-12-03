@@ -5242,6 +5242,7 @@ void Compiler::placeLoopAlignInstructions()
     }
 
     int loopsToProcess = loopAlignCandidates;
+    JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
     weight_t    minBlockSoFar = BB_MAX_WEIGHT;
@@ -8985,8 +8986,6 @@ BasicBlock* dbBlock;
 
 GenTree* dFindTree(GenTree* tree, unsigned id)
 {
-    GenTree* child;
-
     if (tree == nullptr)
     {
         return nullptr;
@@ -8998,18 +8997,13 @@ GenTree* dFindTree(GenTree* tree, unsigned id)
         return tree;
     }
 
-    unsigned childCount = tree->NumChildren();
-    for (unsigned childIndex = 0; childIndex < childCount; childIndex++)
-    {
-        child = tree->GetChild(childIndex);
+    GenTree* child = nullptr;
+    tree->VisitOperands([&child, id](GenTree* operand) -> GenTree::VisitResult {
         child = dFindTree(child, id);
-        if (child != nullptr)
-        {
-            return child;
-        }
-    }
+        return (child != nullptr) ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    });
 
-    return nullptr;
+    return child;
 }
 
 GenTree* dFindTree(unsigned id)

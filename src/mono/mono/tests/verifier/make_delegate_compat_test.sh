@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -18,7 +18,7 @@ TEST_USE_NATIVE=$9
 TCONV_1="default"
 TCONV_2=""
 
-if [ "$TEST_CCONV1" != "" ]; then
+if [ -z "$TEST_CCONV1" ]; then
 	TCONV_1=$TEST_CCONV1
 	TCONV_2=$TEST_CCONV2
 fi
@@ -63,7 +63,7 @@ echo $TEST_FILE
 
 $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/RET_1/${TEST_RET_TYPE1}/g" -e "s/RET_2/${TEST_RET_TYPE2}/g" -e "s/PARAM_1/${TEST_PARAM_TYPE1}/g" -e "s/PARAM_2/${TEST_PARAM_TYPE2}/g"> $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'
@@ -113,23 +113,23 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/RET_1/${TEST_RET_TYPE1}/g" -e "s/R
 
 .class public auto ansi sealed TargetDelegate extends [mscorlib]System.MulticastDelegate
 {
-	.method public hidebysig  specialname  rtspecialname 
-		instance default void .ctor (object 'object', native int 'method')  runtime managed 
+	.method public hidebysig  specialname  rtspecialname
+		instance default void .ctor (object 'object', native int 'method')  runtime managed
 	{
 	}
 
 	.method public virtual  hidebysig  newslot
-		instance $TCONV_1 RET_1 Invoke (PARAM_1 V_0)  runtime managed 
+		instance $TCONV_1 RET_1 Invoke (PARAM_1 V_0)  runtime managed
 	{
 	}
 
- 	.method public virtual hidebysig  newslot 
-		instance default class [mscorlib]System.IAsyncResult BeginInvoke (class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed 
+ 	.method public virtual hidebysig  newslot
+		instance default class [mscorlib]System.IAsyncResult BeginInvoke (class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed
 	{
 	}
 
-	.method public virtual  hidebysig  newslot 
-		instance default RET_1 EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed 
+	.method public virtual  hidebysig  newslot
+		instance default RET_1 EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed
 	{
 	}
 }
@@ -139,9 +139,9 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/RET_1/${TEST_RET_TYPE1}/g" -e "s/R
 {
 	$MANAGED_METHOD
 
-	.method public static pinvokeimpl ("libtest" as "Bla" winapi) $TCONV_2 RET_2 NativeMethod (PARAM_2 V_0)  cil managed 
+	.method public static pinvokeimpl ("libtest" as "Bla" winapi) $TCONV_2 RET_2 NativeMethod (PARAM_2 V_0)  cil managed
     {
-    } 
+    }
 
 	.method public static int32 Foo() cil managed
 	{
@@ -150,7 +150,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/RET_1/${TEST_RET_TYPE1}/g" -e "s/R
 		.locals init ($LOCAL_PARAM_1 ARG)
 
 		ldnull
-		
+
 		$LDFTN
 		newobj instance void class TargetDelegate::.ctor(object, native int) // VALIDITY
 		ldloc.0
