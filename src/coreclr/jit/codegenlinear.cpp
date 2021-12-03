@@ -1643,7 +1643,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST, GT_NEG))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH))
         {
             genConsumeRegs(tree->gtGetOp1());
         }

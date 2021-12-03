@@ -1,28 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-declare interface ManagedPointer {
+export declare interface ManagedPointer {
     __brandManagedPointer: "ManagedPointer"
 }
 
-declare interface NativePointer {
+export declare interface NativePointer {
     __brandNativePointer: "NativePointer"
 }
 
-declare interface VoidPtr extends NativePointer {
+export declare interface VoidPtr extends NativePointer {
     __brand: "VoidPtr"
 }
-declare interface CharPtr extends NativePointer {
+export declare interface CharPtr extends NativePointer {
     __brand: "CharPtr"
 }
-declare interface Int32Ptr extends NativePointer {
+export declare interface Int32Ptr extends NativePointer {
     __brand: "Int32Ptr"
 }
-declare interface CharPtrPtr extends NativePointer {
+export declare interface CharPtrPtr extends NativePointer {
     __brand: "CharPtrPtr"
 }
 
-declare interface EmscriptenModule {
+export declare interface EmscriptenModule {
     HEAP8: Int8Array,
     HEAP16: Int16Array;
     HEAP32: Int32Array;
@@ -52,8 +52,12 @@ declare interface EmscriptenModule {
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
 
-    preInit?: (() => Promise<void>)[];
-    onRuntimeInitialized?: () => void;
+    ready: Promise<unknown>;
+    preInit?: (() => any)[];
+    preRun?: (() => any)[];
+    postRun?: (() => any)[];
+    onRuntimeInitialized?: () => any;
+    instantiateWasm: (imports: any, successCallback: Function) => any;
 }
 
-declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
+export declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;

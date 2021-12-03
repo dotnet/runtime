@@ -71,7 +71,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
         private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_stringIndexOfCharInt = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int) })!;
         private static readonly MethodInfo s_stringLastIndexOfCharIntInt = typeof(string).GetMethod("LastIndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
@@ -83,6 +82,7 @@ namespace System.Text.RegularExpressions
         private LocalBuilder? _runtextendLocal;
         private LocalBuilder? _runtextposLocal;
         private LocalBuilder? _runtextLocal;
+        private LocalBuilder? _runtextSpanLocal;
         private LocalBuilder? _runtrackposLocal;
         private LocalBuilder? _runtrackLocal;
         private LocalBuilder? _runstackposLocal;
@@ -927,7 +927,7 @@ namespace System.Text.RegularExpressions
             {
                 _runtextbegLocal = DeclareInt32();
             }
-            _runtextLocal = DeclareString();
+            _runtextSpanLocal = DeclareReadOnlySpanChar();
             _textInfoLocal = null;
             if ((_options & RegexOptions.CultureInvariant) == 0)
             {
@@ -954,8 +954,12 @@ namespace System.Text.RegularExpressions
             // Load necessary locals
             // int runtextpos = this.runtextpos;
             // int runtextend = this.runtextend;
+            // ReadOnlySpan<char> runtextSpan = this.runtext.AsSpan();
             Mvfldloc(s_runtextposField, _runtextposLocal);
             Mvfldloc(s_runtextendField, _runtextendLocal);
+            Ldthisfld(s_runtextField);
+            Call(s_stringAsSpanMethod);
+            Stloc(_runtextSpanLocal);
             if (_code.RightToLeft)
             {
                 Mvfldloc(s_runtextbegField, _runtextbegLocal!);
@@ -1139,9 +1143,10 @@ namespace System.Text.RegularExpressions
                                     Ldloc(_runtextposLocal);
                                     Ldloc(_runtextendLocal);
                                     Beq(l2);
-                                    Ldthisfld(s_runtextField);
+                                    Ldloca(_runtextSpanLocal);
                                     Ldloc(_runtextposLocal);
-                                    Call(s_stringGetCharsMethod);
+                                    Call(s_spanGetItemMethod);
+                                    LdindU2();
                                     Ldc('\n');
                                     Beq(l2);
                                     MarkLabel(l1);
@@ -1191,25 +1196,27 @@ namespace System.Text.RegularExpressions
                                 Ldthisfld(s_runtextbegField);
                                 Ble(atBeginningOfLine);
 
-                                // ... && runtext[runtextpos - 1] != '\n') { ... }
-                                Ldthisfld(s_runtextField);
+                                // ... && runtextSpan[runtextpos - 1] != '\n') { ... }
+                                Ldloca(_runtextSpanLocal);
                                 Ldloc(_runtextposLocal);
                                 Ldc(1);
                                 Sub();
-                                Call(s_stringGetCharsMethod);
+                                Call(s_spanGetItemMethod);
+                                LdindU2();
                                 Ldc('\n');
                                 Beq(atBeginningOfLine);
 
-                                // int tmp = runtext.IndexOf('\n', runtextpos);
-                                Ldthisfld(s_runtextField);
-                                Ldc('\n');
+                                // int tmp = runtextSpan.Slice(runtextpos).IndexOf('\n');
+                                Ldloca(_runtextSpanLocal);
                                 Ldloc(_runtextposLocal);
-                                Call(s_stringIndexOfCharInt);
+                                Call(s_spanSliceIntMethod);
+                                Ldc('\n');
+                                Call(s_spanIndexOfChar);
                                 using (RentedLocalBuilder newlinePos = RentInt32Local())
                                 {
                                     Stloc(newlinePos);
 
-                                    // if (newlinePos == -1 || newlinePos + 1 > runtextend)
+                                    // if (newlinePos == -1 || newlinePos + runtextpos + 1 > runtextend)
                                     // {
                                     //     runtextpos = runtextend;
                                     //     return false;
@@ -1218,13 +1225,17 @@ namespace System.Text.RegularExpressions
                                     Ldc(-1);
                                     Beq(returnFalse);
                                     Ldloc(newlinePos);
+                                    Ldloc(_runtextposLocal);
+                                    Add();
                                     Ldc(1);
                                     Add();
                                     Ldloc(_runtextendLocal);
                                     Bgt(returnFalse);
 
-                                    // runtextpos = newlinePos + 1;
+                                    // runtextpos = newlinePos + runtextpos + 1;
                                     Ldloc(newlinePos);
+                                    Ldloc(_runtextposLocal);
+                                    Add();
                                     Ldc(1);
                                     Add();
                                     Stloc(_runtextposLocal);
@@ -1243,14 +1254,13 @@ namespace System.Text.RegularExpressions
             {
                 using RentedLocalBuilder i = RentInt32Local();
 
-                // int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(prefix);
-                Ldthis();
-                Ldfld(s_runtextField);
+                // int i = runtextSpan.Slice(runtextpos, runtextend - runtextpos).IndexOf(prefix);
+                Ldloca(_runtextSpanLocal);
                 Ldloc(_runtextposLocal);
                 Ldloc(_runtextendLocal);
                 Ldloc(_runtextposLocal);
                 Sub();
-                Call(s_stringAsSpanIntIntMethod);
+                Call(s_spanSliceIntIntMethod);
                 Ldstr(prefix);
                 Call(s_stringAsSpanMethod);
                 Call(s_spanIndexOfSpan);
@@ -1276,14 +1286,13 @@ namespace System.Text.RegularExpressions
             {
                 using RentedLocalBuilder i = RentInt32Local();
 
-                // int i = runtext.AsSpan(runtextpos, runtextbeg, runtextpos - runtextbeg).LastIndexOf(prefix);
-                Ldthis();
-                Ldfld(s_runtextField);
+                // int i = runtextSpan.Slice(runtextbeg, runtextpos - runtextbeg).LastIndexOf(prefix);
+                Ldloca(_runtextSpanLocal);
                 Ldloc(_runtextbegLocal!);
                 Ldloc(_runtextposLocal);
                 Ldloc(_runtextbegLocal!);
                 Sub();
-                Call(s_stringAsSpanIntIntMethod);
+                Call(s_spanSliceIntIntMethod);
                 Ldstr(prefix);
                 Call(s_stringAsSpanMethod);
                 Call(s_spanLastIndexOfSpan);
@@ -1316,14 +1325,13 @@ namespace System.Text.RegularExpressions
 
                 if (set.Chars is { Length: 1 } && !set.CaseInsensitive)
                 {
-                    // int i = runtext.AsSpan(runtextpos, runtextbeg, runtextpos - runtextbeg).LastIndexOf(set.Chars[0]);
-                    Ldthis();
-                    Ldfld(s_runtextField);
+                    // int i = runtextSpan.Slice(runtextbeg, runtextpos - runtextbeg).LastIndexOf(set.Chars[0]);
+                    Ldloca(_runtextSpanLocal);
                     Ldloc(_runtextbegLocal!);
                     Ldloc(_runtextposLocal);
                     Ldloc(_runtextbegLocal!);
                     Sub();
-                    Call(s_stringAsSpanIntIntMethod);
+                    Call(s_spanSliceIntIntMethod);
                     Ldc(set.Chars[0]);
                     Call(s_spanLastIndexOfChar);
                     Stloc(i);
@@ -1351,8 +1359,6 @@ namespace System.Text.RegularExpressions
                     Label increment = DefineLabel();
                     Label body = DefineLabel();
 
-                    Mvfldloc(s_runtextField, _runtextLocal);
-
                     // for (int i = runtextpos - 1; ...
                     Ldloc(_runtextposLocal);
                     Ldc(1);
@@ -1360,11 +1366,12 @@ namespace System.Text.RegularExpressions
                     Stloc(i);
                     BrFar(condition);
 
-                    // if (MatchCharClass(runtext[i], set))
+                    // if (MatchCharClass(runtextSpan[i], set))
                     MarkLabel(body);
-                    Ldloc(_runtextLocal);
+                    Ldloca(_runtextSpanLocal);
                     Ldloc(i);
-                    Call(s_stringGetCharsMethod);
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
                     EmitMatchCharacterClass(set.Set, set.CaseInsensitive);
                     Brfalse(increment);
 
@@ -1405,13 +1412,13 @@ namespace System.Text.RegularExpressions
                 using RentedLocalBuilder iLocal = RentInt32Local();
                 using RentedLocalBuilder textSpanLocal = RentReadOnlySpanCharLocal();
 
-                // ReadOnlySpan<char> span = this.runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                Ldthisfld(s_runtextField);
+                // ReadOnlySpan<char> span = runtextSpan.Slice(runtextpos, runtextend - runtextpos);
+                Ldloca(_runtextSpanLocal);
                 Ldloc(_runtextposLocal);
                 Ldloc(_runtextendLocal);
                 Ldloc(_runtextposLocal);
                 Sub();
-                Call(s_stringAsSpanIntIntMethod);
+                Call(s_spanSliceIntIntMethod);
                 Stloc(textSpanLocal);
 
                 // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
