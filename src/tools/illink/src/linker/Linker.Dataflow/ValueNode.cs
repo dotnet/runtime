@@ -15,41 +15,13 @@ using TypeDefinition = Mono.Cecil.TypeDefinition;
 
 namespace Mono.Linker.Dataflow
 {
-	public enum ValueNodeKind
-	{
-		Invalid,                        // in case the Kind field is not initialized properly
-
-		Unknown,                        // unknown value, has StaticType from context
-
-		Null,                           // known value
-		SystemType,                     // known value - TypeRepresented
-		RuntimeTypeHandle,              // known value - TypeRepresented
-		KnownString,                    // known value - Contents
-		ConstInt,                       // known value - Int32
-		AnnotatedString,                // string with known annotation
-
-		MethodParameter,                // symbolic placeholder
-		MethodReturn,                   // symbolic placeholder
-
-		RuntimeMethodHandle,            // known value - MethodRepresented
-		SystemReflectionMethodBase,     // known value - MethodRepresented
-
-		RuntimeTypeHandleForGenericParameter, // symbolic placeholder for generic parameter
-		SystemTypeForGenericParameter,        // symbolic placeholder for generic parameter
-
-		MergePoint,                     // structural, multiplexer - Values
-		Array,                          // structural, could be known value - Array
-
-		LoadField,                      // structural, could be known value - InstanceValue
-	}
-
 	/// <summary>
 	/// A ValueNode represents a value in the IL dataflow analysis.  It may not contain complete information as it is a
 	/// best-effort representation.  Additionally, as the analysis is linear and does not account for control flow, any
 	/// given ValueNode may represent multiple values simultaneously.  (This occurs, for example, at control flow join
 	/// points when both paths yield values on the IL stack or in a local.)
 	/// </summary>
-	public abstract class ValueNode : IEquatable<ValueNode>
+	public abstract record ValueNode
 	{
 		public ValueNode ()
 		{
@@ -62,24 +34,10 @@ namespace Mono.Linker.Dataflow
 		}
 
 		/// <summary>
-		/// The 'kind' of value node -- this represents the most-derived type and allows us to switch over and do
-		/// equality checks without the cost of casting.  Intermediate non-leaf types in the ValueNode hierarchy should
-		/// be abstract.
-		/// </summary>
-		public ValueNodeKind Kind { get; protected set; }
-
-		/// <summary>
 		/// The IL type of the value, represented as closely as possible, but not always exact.  It can be null, for
 		/// example, when the analysis is imprecise or operating on malformed IL.
 		/// </summary>
-		public TypeDefinition? StaticType { get; protected set; }
-
-		public virtual bool Equals (ValueNode? other)
-		{
-			return other != null && this.Kind == other.Kind && this.StaticType == other.StaticType;
-		}
-
-		public abstract override int GetHashCode ();
+		public TypeDefinition? StaticType { get; init; }
 
 		/// <summary>
 		/// Each node type must implement this to stringize itself.  The expectation is that it is implemented using
@@ -93,14 +51,6 @@ namespace Mono.Linker.Dataflow
 		{
 			return NodeToString ();
 		}
-
-		public override bool Equals (object? other)
-		{
-			if (!(other is ValueNode))
-				return false;
-
-			return this.Equals ((ValueNode) other);
-		}
 	}
 
 	/// <summary>
@@ -111,7 +61,7 @@ namespace Mono.Linker.Dataflow
 	/// deriving from ValueNode may 'forget' to implement these things.  So this class allows them to remain abstract in
 	/// ValueNode while still having a common implementation for all the leaf nodes.
 	/// </summary>
-	public abstract class LeafValueNode : ValueNode
+	public abstract record LeafValueNode : ValueNode
 	{
 	}
 
@@ -142,31 +92,30 @@ namespace Mono.Linker.Dataflow
 			}
 
 			bool foundCycle = false;
-			switch (node.Kind) {
+			switch (node) {
 			//
 			// Leaf nodes
 			//
-			case ValueNodeKind.Unknown:
-			case ValueNodeKind.Null:
-			case ValueNodeKind.SystemType:
-			case ValueNodeKind.RuntimeTypeHandle:
-			case ValueNodeKind.KnownString:
-			case ValueNodeKind.AnnotatedString:
-			case ValueNodeKind.ConstInt:
-			case ValueNodeKind.MethodParameter:
-			case ValueNodeKind.MethodReturn:
-			case ValueNodeKind.SystemTypeForGenericParameter:
-			case ValueNodeKind.RuntimeTypeHandleForGenericParameter:
-			case ValueNodeKind.SystemReflectionMethodBase:
-			case ValueNodeKind.RuntimeMethodHandle:
-			case ValueNodeKind.LoadField:
+			case UnknownValue:
+			case NullValue:
+			case SystemTypeValue:
+			case RuntimeTypeHandleValue:
+			case KnownStringValue:
+			case AnnotatedStringValue:
+			case ConstIntValue:
+			case MethodParameterValue:
+			case MethodReturnValue:
+			case SystemTypeForGenericParameterValue:
+			case RuntimeTypeHandleForGenericParameterValue:
+			case SystemReflectionMethodBaseValue:
+			case RuntimeMethodHandleValue:
+			case LoadFieldValue:
 				break;
 
 			//
 			// Nodes with children
 			//
-
-			case ValueNodeKind.Array:
+			case ArrayValue:
 				ArrayValue av = (ArrayValue) node;
 				foundCycle = av.Size.DetectCycle (seenNodes, allNodesSeen);
 				foreach (ValueBasicBlockPair pair in av.IndexValues.Values) {
@@ -177,7 +126,7 @@ namespace Mono.Linker.Dataflow
 				break;
 
 			default:
-				throw new Exception (String.Format ("Unknown node kind: {0}", node.Kind));
+				throw new Exception (String.Format ("Unknown node type: {0}", node.GetType ().Name));
 			}
 			seenNodes.Remove (node);
 
@@ -217,7 +166,7 @@ namespace Mono.Linker.Dataflow
 				return "<null>";
 
 			StringBuilder sb = new StringBuilder ();
-			sb.Append (node.Kind.ToString ());
+			sb.Append (node.GetType ().Name);
 			sb.Append ("(");
 			if (args != null) {
 				for (int i = 0; i < args.Length; i++) {
@@ -234,27 +183,14 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// Represents an unknown value.
 	/// </summary>
-	class UnknownValue : LeafValueNode
+	record UnknownValue : LeafValueNode
 	{
 		private UnknownValue ()
 		{
-			Kind = ValueNodeKind.Unknown;
 			StaticType = null;
 		}
 
 		public static UnknownValue Instance { get; } = new UnknownValue ();
-
-		public override bool Equals (ValueNode? other)
-		{
-			return base.Equals (other);
-		}
-
-		public override int GetHashCode ()
-		{
-			// All instances of UnknownValue are equivalent, so they all hash to the same hashcode.  This one was
-			// chosen for no particular reason at all.
-			return 0x98052;
-		}
 
 		protected override string NodeToString ()
 		{
@@ -262,27 +198,14 @@ namespace Mono.Linker.Dataflow
 		}
 	}
 
-	class NullValue : LeafValueNode
+	record NullValue : LeafValueNode
 	{
 		private NullValue ()
 		{
-			Kind = ValueNodeKind.Null;
 			StaticType = null;
 		}
 
-		public override bool Equals (ValueNode? other)
-		{
-			return base.Equals (other);
-		}
-
 		public static NullValue Instance { get; } = new NullValue ();
-
-		public override int GetHashCode ()
-		{
-			// All instances of NullValue are equivalent, so they all hash to the same hashcode.  This one was
-			// chosen for no particular reason at all.
-			return 0x90210;
-		}
 
 		protected override string NodeToString ()
 		{
@@ -293,32 +216,17 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// This is a known System.Type value.  TypeRepresented is the 'value' of the System.Type.
 	/// </summary>
-	class SystemTypeValue : LeafValueNode
+	record SystemTypeValue : LeafValueNode
 	{
 		public SystemTypeValue (TypeDefinition typeRepresented)
 		{
-			Kind = ValueNodeKind.SystemType;
-
 			// Should be System.Type - but we don't have any use case where tracking it like that would matter
 			StaticType = null;
 
 			TypeRepresented = typeRepresented;
 		}
 
-		public TypeDefinition TypeRepresented { get; private set; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			return Equals (this.TypeRepresented, ((SystemTypeValue) other).TypeRepresented);
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, TypeRepresented);
-		}
+		public TypeDefinition TypeRepresented { get; }
 
 		protected override string NodeToString ()
 		{
@@ -329,12 +237,10 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="SystemTypeValue"/> node.
 	/// </summary>
-	class RuntimeTypeHandleValue : LeafValueNode
+	record RuntimeTypeHandleValue : LeafValueNode
 	{
 		public RuntimeTypeHandleValue (TypeDefinition typeRepresented)
 		{
-			Kind = ValueNodeKind.RuntimeTypeHandle;
-
 			// Should be System.RuntimeTypeHandle, but we don't have a use case for it like that
 			StaticType = null;
 
@@ -342,19 +248,6 @@ namespace Mono.Linker.Dataflow
 		}
 
 		public TypeDefinition TypeRepresented { get; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			return Equals (this.TypeRepresented, ((RuntimeTypeHandleValue) other).TypeRepresented);
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, TypeRepresented);
-		}
 
 		protected override string NodeToString ()
 		{
@@ -366,35 +259,18 @@ namespace Mono.Linker.Dataflow
 	/// This is a System.Type value which represents generic parameter (basically result of typeof(T))
 	/// Its actual type is unknown, but it can have annotations.
 	/// </summary>
-	class SystemTypeForGenericParameterValue : LeafValueWithDynamicallyAccessedMemberNode
+	record SystemTypeForGenericParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
 		public SystemTypeForGenericParameterValue (GenericParameter genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			: base (genericParameter)
+			: base (genericParameter, dynamicallyAccessedMemberTypes)
 		{
-			Kind = ValueNodeKind.SystemTypeForGenericParameter;
-
 			// Should be System.Type, but we don't have a use case for it
 			StaticType = null;
 
 			GenericParameter = genericParameter;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
 		public GenericParameter GenericParameter { get; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			var otherValue = (SystemTypeForGenericParameterValue) other;
-			return this.GenericParameter == otherValue.GenericParameter && this.DynamicallyAccessedMemberTypes == otherValue.DynamicallyAccessedMemberTypes;
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, GenericParameter, DynamicallyAccessedMemberTypes);
-		}
 
 		protected override string NodeToString ()
 		{
@@ -405,12 +281,10 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="SystemTypeForGenericParameterValue"/> node.
 	/// </summary>
-	class RuntimeTypeHandleForGenericParameterValue : LeafValueNode
+	record RuntimeTypeHandleForGenericParameterValue : LeafValueNode
 	{
 		public RuntimeTypeHandleForGenericParameterValue (GenericParameter genericParameter)
 		{
-			Kind = ValueNodeKind.RuntimeTypeHandleForGenericParameter;
-
 			// Should be System.RuntimeTypeHandle, but we don't have a use case for it
 			StaticType = null;
 
@@ -418,19 +292,6 @@ namespace Mono.Linker.Dataflow
 		}
 
 		public GenericParameter GenericParameter { get; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			return Equals (this.GenericParameter, ((RuntimeTypeHandleForGenericParameterValue) other).GenericParameter);
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, GenericParameter);
-		}
 
 		protected override string NodeToString ()
 		{
@@ -441,12 +302,10 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// This is the System.RuntimeMethodHandle equivalent to a <see cref="SystemReflectionMethodBaseValue"/> node.
 	/// </summary>
-	class RuntimeMethodHandleValue : LeafValueNode
+	record RuntimeMethodHandleValue : LeafValueNode
 	{
 		public RuntimeMethodHandleValue (MethodDefinition methodRepresented)
 		{
-			Kind = ValueNodeKind.RuntimeMethodHandle;
-
 			// Should be System.RuntimeMethodHandle, but we don't have a use case for it
 			StaticType = null;
 
@@ -454,19 +313,6 @@ namespace Mono.Linker.Dataflow
 		}
 
 		public MethodDefinition MethodRepresented { get; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			return Equals (this.MethodRepresented, ((RuntimeMethodHandleValue) other).MethodRepresented);
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, MethodRepresented);
-		}
 
 		protected override string NodeToString ()
 		{
@@ -477,32 +323,17 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// This is a known System.Reflection.MethodBase value.  MethodRepresented is the 'value' of the MethodBase.
 	/// </summary>
-	class SystemReflectionMethodBaseValue : LeafValueNode
+	record SystemReflectionMethodBaseValue : LeafValueNode
 	{
 		public SystemReflectionMethodBaseValue (MethodDefinition methodRepresented)
 		{
-			Kind = ValueNodeKind.SystemReflectionMethodBase;
-
 			// Should be System.Reflection.MethodBase, but we don't have a use case for it
 			StaticType = null;
 
 			MethodRepresented = methodRepresented;
 		}
 
-		public MethodDefinition MethodRepresented { get; private set; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			return Equals (this.MethodRepresented, ((SystemReflectionMethodBaseValue) other).MethodRepresented);
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, MethodRepresented);
-		}
+		public MethodDefinition MethodRepresented { get; }
 
 		protected override string NodeToString ()
 		{
@@ -513,12 +344,10 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// A known string - such as the result of a ldstr.
 	/// </summary>
-	class KnownStringValue : LeafValueNode
+	record KnownStringValue : LeafValueNode
 	{
 		public KnownStringValue (string contents)
 		{
-			Kind = ValueNodeKind.KnownString;
-
 			// Should be System.String, but we don't have a use case for it
 			StaticType = null;
 
@@ -526,19 +355,6 @@ namespace Mono.Linker.Dataflow
 		}
 
 		public string Contents { get; private set; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			return this.Contents == ((KnownStringValue) other).Contents;
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, Contents);
-		}
 
 		protected override string NodeToString ()
 		{
@@ -549,60 +365,35 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// Base class for all nodes which can have dynamically accessed member annotation.
 	/// </summary>
-	abstract class LeafValueWithDynamicallyAccessedMemberNode : LeafValueNode
+	abstract record LeafValueWithDynamicallyAccessedMemberNode : LeafValueNode
 	{
-		public LeafValueWithDynamicallyAccessedMemberNode (IMetadataTokenProvider sourceContext)
+		public LeafValueWithDynamicallyAccessedMemberNode (IMetadataTokenProvider sourceContext, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			SourceContext = sourceContext;
+			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
-		public IMetadataTokenProvider SourceContext { get; private set; }
+		public IMetadataTokenProvider SourceContext { get; }
 
 		/// <summary>
 		/// The bitfield of dynamically accessed member types the node guarantees
 		/// </summary>
-		public DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; protected set; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			var otherValue = (LeafValueWithDynamicallyAccessedMemberNode) other;
-			return SourceContext == otherValue.SourceContext
-				&& DynamicallyAccessedMemberTypes == otherValue.DynamicallyAccessedMemberTypes;
-		}
+		public DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 	}
 
 	/// <summary>
 	/// A value that came from a method parameter - such as the result of a ldarg.
 	/// </summary>
-	class MethodParameterValue : LeafValueWithDynamicallyAccessedMemberNode
+	record MethodParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
 		public MethodParameterValue (TypeDefinition? staticType, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
-			: base (sourceContext)
+			: base (sourceContext, dynamicallyAccessedMemberTypes)
 		{
-			Kind = ValueNodeKind.MethodParameter;
 			StaticType = staticType;
 			ParameterIndex = parameterIndex;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
 		public int ParameterIndex { get; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			var otherValue = (MethodParameterValue) other;
-			return this.ParameterIndex == otherValue.ParameterIndex;
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, ParameterIndex, DynamicallyAccessedMemberTypes);
-		}
 
 		protected override string NodeToString ()
 		{
@@ -613,27 +404,13 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// String with a known annotation.
 	/// </summary>
-	class AnnotatedStringValue : LeafValueWithDynamicallyAccessedMemberNode
+	record AnnotatedStringValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
 		public AnnotatedStringValue (IMetadataTokenProvider sourceContext, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			: base (sourceContext)
+			: base (sourceContext, dynamicallyAccessedMemberTypes)
 		{
-			Kind = ValueNodeKind.AnnotatedString;
-
 			// Should be System.String, but we don't have a use case for it
 			StaticType = null;
-
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
-
-		public override bool Equals (ValueNode? other)
-		{
-			return base.Equals (other);
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, DynamicallyAccessedMemberTypes);
 		}
 
 		protected override string NodeToString ()
@@ -645,24 +422,12 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// Return value from a method
 	/// </summary>
-	class MethodReturnValue : LeafValueWithDynamicallyAccessedMemberNode
+	record MethodReturnValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
 		public MethodReturnValue (TypeDefinition? staticType, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
-			: base (sourceContext)
+			: base (sourceContext, dynamicallyAccessedMemberTypes)
 		{
-			Kind = ValueNodeKind.MethodReturn;
 			StaticType = staticType;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
-
-		public override bool Equals (ValueNode? other)
-		{
-			return base.Equals (other);
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, DynamicallyAccessedMemberTypes);
 		}
 
 		protected override string NodeToString ()
@@ -675,32 +440,16 @@ namespace Mono.Linker.Dataflow
 	/// A representation of a ldfld.  Note that we don't have a representation of objects containing fields
 	/// so there isn't much that can be done with this node type yet.
 	/// </summary>
-	class LoadFieldValue : LeafValueWithDynamicallyAccessedMemberNode
+	record LoadFieldValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
 		public LoadFieldValue (TypeDefinition? staticType, FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			: base (fieldToLoad)
+			: base (fieldToLoad, dynamicallyAccessedMemberTypes)
 		{
-			Kind = ValueNodeKind.LoadField;
 			StaticType = staticType;
 			Field = fieldToLoad;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
-		public FieldDefinition Field { get; private set; }
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			LoadFieldValue otherLfv = (LoadFieldValue) other;
-			return Equals (this.Field, otherLfv.Field);
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, Field, DynamicallyAccessedMemberTypes);
-		}
+		public FieldDefinition Field { get; }
 
 		protected override string NodeToString ()
 		{
@@ -711,33 +460,17 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// Represents a ldc on an int32.
 	/// </summary>
-	class ConstIntValue : LeafValueNode
+	record ConstIntValue : LeafValueNode
 	{
 		public ConstIntValue (int value)
 		{
-			Kind = ValueNodeKind.ConstInt;
-
 			// Should be System.Int32, but we don't have a usecase for it right now
 			StaticType = null;
 
 			Value = value;
 		}
 
-		public int Value { get; private set; }
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, Value);
-		}
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			ConstIntValue otherCiv = (ConstIntValue) other;
-			return Value == otherCiv.Value;
-		}
+		public int Value { get; }
 
 		protected override string NodeToString ()
 		{
@@ -745,7 +478,7 @@ namespace Mono.Linker.Dataflow
 		}
 	}
 
-	class ArrayValue : ValueNode
+	record ArrayValue : ValueNode
 	{
 		static ValueSetLattice<ValueNode> MultiValueLattice => default;
 
@@ -769,8 +502,6 @@ namespace Mono.Linker.Dataflow
 		/// </summary>
 		private ArrayValue (ValueNode size, TypeReference elementType)
 		{
-			Kind = ValueNodeKind.Array;
-
 			// Should be System.Array (or similar), but we don't have a use case for it
 			StaticType = null;
 
@@ -785,15 +516,14 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			return HashCode.Combine (Kind, Size);
+			return HashCode.Combine (GetType ().GetHashCode (), Size);
 		}
 
-		public override bool Equals (ValueNode? other)
+		public virtual bool Equals (ArrayValue? otherArr)
 		{
-			if (!base.Equals (other))
+			if (otherArr == null)
 				return false;
 
-			ArrayValue otherArr = (ArrayValue) other;
 			bool equals = Size.Equals (otherArr.Size);
 			equals &= IndexValues.Count == otherArr.IndexValues.Count;
 			if (!equals)

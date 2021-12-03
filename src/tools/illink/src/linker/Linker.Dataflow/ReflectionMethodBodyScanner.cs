@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared;
-using ILLink.Shared.DataFlow;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
@@ -917,7 +916,7 @@ namespace Mono.Linker.Dataflow
 							if (value is SystemTypeValue systemTypeValue) {
 								foreach (var stringParam in methodParams[2]) {
 									if (stringParam is KnownStringValue stringValue) {
-										BindingFlags bindingFlags = methodParams[0].AsSingleValue ()?.Kind == ValueNodeKind.Null ? BindingFlags.Static : BindingFlags.Default;
+										BindingFlags bindingFlags = methodParams[0].AsSingleValue () is NullValue ? BindingFlags.Static : BindingFlags.Default;
 										if (fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property) {
 											MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
 										} else {
@@ -1859,17 +1858,18 @@ namespace Mono.Linker.Dataflow
 				return true;
 
 			foreach (var typesValue in arrayParam) {
-				if (typesValue.Kind != ValueNodeKind.Array) {
+				if (typesValue is not ArrayValue array) {
 					return false;
 				}
-				ArrayValue array = (ArrayValue) typesValue;
+
 				int? size = array.Size.AsConstInt ();
 				if (size == null || size != genericParameters.Count) {
 					return false;
 				}
+
 				bool allIndicesKnown = true;
 				for (int i = 0; i < size.Value; i++) {
-					if (!array.IndexValues.TryGetValue (i, out ValueBasicBlockPair value) || value.Value.IsEmpty () || value.Value.AsSingleValue () is { Kind: ValueNodeKind.Unknown }) {
+					if (!array.IndexValues.TryGetValue (i, out ValueBasicBlockPair value) || value.Value.IsEmpty () || value.Value.AsSingleValue () is UnknownValue) {
 						allIndicesKnown = false;
 						break;
 					}
