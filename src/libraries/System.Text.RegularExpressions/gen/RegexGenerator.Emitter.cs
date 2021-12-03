@@ -220,16 +220,11 @@ namespace System.Text.RegularExpressions.Generator
             // Main implementation methods
             writer.WriteLine($"            protected override void InitTrackCount() => base.runtrackcount = {rm.Code.TrackCount};");
             writer.WriteLine();
-#if DEBUG
-            writer.WriteLine("            // Node tree:");
-            var treeLineReader = new StringReader(rm.Code.Tree.ToString());
-            string? treeLine = null;
-            while ((treeLine = treeLineReader.ReadLine()) != null)
-            {
-                writer.WriteLine($"            // {treeLine}");
-            }
+
+            writer.WriteLine("            // Description:");
+            DescribeExpression(writer, rm.Code.Tree.Root, "            // ");
             writer.WriteLine();
-#endif
+
             writer.WriteLine($"            protected override bool FindFirstChar()");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
@@ -823,11 +818,11 @@ namespace System.Text.RegularExpressions.Generator
                             textSpanPos = startingTextSpanPos;
 
                             RegexNode child = node.Child(i);
-                            Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Concatenate, child.Description());
+                            Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Concatenate, DescribeNode(child));
                             Debug.Assert(child.Type is not RegexNode.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Type is RegexNode.One or RegexNode.Multi));
 
                             RegexNode? childStart = child.FindBranchOneOrMultiStart();
-                            Debug.Assert(childStart is not null, child.Description());
+                            Debug.Assert(childStart is not null, DescribeNode(child));
 
                             writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
                             writer.Indent++;
@@ -1495,8 +1490,6 @@ namespace System.Text.RegularExpressions.Generator
 
                 doneLabel = originalDoneLabel;
             }
-
-            static string DescribeNode(RegexNode node) => SymbolDisplay.FormatLiteral(node.Description(), quote: false);
 
             static bool PossiblyBacktracks(RegexNode node) => !(
                 // Certain nodes will never backtrack out of them
@@ -3099,9 +3092,113 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
+        /// <summary>Formats the character as valid C#.</summary>
         private static string Literal(char c) => SymbolDisplay.FormatLiteral(c, quote: true);
 
+        /// <summary>Formats the string as valid C#.</summary>
         private static string Literal(string s) => SymbolDisplay.FormatLiteral(s, quote: true);
+
+        /// <summary>Gets a textual description of the node fit for rendering in a comment in source.</summary>
+        private static string DescribeNode(RegexNode node) =>
+            node.Type switch
+            {
+                RegexNode.Alternate => $"Match one of {node.ChildCount()} alternative expressions.",
+                RegexNode.Atomic => $"Atomic group.",
+                RegexNode.Beginning => "Beginning of string anchor.",
+                RegexNode.Bol => "Beginning of line anchor.",
+                RegexNode.Boundary => $"Matches a word boundary.",
+                RegexNode.Capture when node.N != -1 => $"{DescribeNonNegative(node.M)} capturing group. Uncaptures the {DescribeNonNegative(node.N)} capturing group.",
+                RegexNode.Capture when node.N == -1 => $"{DescribeNonNegative(node.M)} capturing group.",
+                RegexNode.Concatenate => $"Match a sequence of expressions.",
+                RegexNode.ECMABoundary => $"Matches a word boundary (according to ECMAScript rules).",
+                RegexNode.Empty => $"Match empty.",
+                RegexNode.End => "End of string anchor.",
+                RegexNode.EndZ => "End of string or before ending newline anchor.",
+                RegexNode.Eol => "End of line anchor.",
+                RegexNode.Loop or RegexNode.Lazyloop => $"Loop {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
+                RegexNode.Multi => $"Match the string {Literal(node.Str!)}.",
+                RegexNode.NonBoundary => $"Matches anything other than a word boundary.",
+                RegexNode.NonECMABoundary => $"Matches anything other than a word boundary (according to ECMAScript rules).",
+                RegexNode.Nothing => $"Fail to match.",
+                RegexNode.Notone => $"Match any character other than {Literal(node.Ch)}.",
+                RegexNode.Notoneloop or RegexNode.Notoneloopatomic or RegexNode.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
+                RegexNode.One => $"Match {Literal(node.Ch)}.",
+                RegexNode.Oneloop or RegexNode.Oneloopatomic or RegexNode.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
+                RegexNode.Prevent => $"Zero-width negative lookahead assertion.",
+                RegexNode.Ref => $"Match the same text as matched by the {DescribeNonNegative(node.M)} capture group.",
+                RegexNode.Require => $"Zero-width positive lookahead assertion.",
+                RegexNode.Set => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)}.",
+                RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
+                RegexNode.Start => "Start position anchor",
+                RegexNode.Testgroup => $"Conditionally match {(node.ChildCount() == 2 ? "an expression" : "one of two expressions")} depending on whether an initial expression matches.",
+                RegexNode.Testref => $"Conditionally match {(node.ChildCount() == 1 ? "an expression" : "one of two expressions")} depending on whether the {DescribeNonNegative(node.M)} capture group matched.",
+                RegexNode.UpdateBumpalong => $"Advance the next matching position.",
+                _ => $"Unknown node type {node.Type}",
+            };
+
+        /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
+        /// <param name="writer">The writer to which the description should be written.</param>
+        /// <param name="node">The node being written.</param>
+        /// <param name="prefix">The prefix to write at the beginning of every line, including a "//" for a comment.</param>
+        /// <param name="depth">The depth of the current node.</param>
+        private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, int depth = 0)
+        {
+            // Write out the line for the node.
+            const char BulletPoint = '\u25CB';
+            writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {DescribeNode(node)}");
+
+            // Recur into each of its children.
+            int childCount = node.ChildCount();
+            if (childCount > 0)
+            {
+                for (int i = 0; i < childCount; i++)
+                {
+                    DescribeExpression(writer, node.Child(i), prefix, depth + 1);
+                }
+            }
+        }
+
+        /// <summary>Gets a textual description of a number, e.g. 3 => "3rd".</summary>
+        private static string DescribeNonNegative(int n)
+        {
+            if (n < 0)
+            {
+                return n.ToString(CultureInfo.InvariantCulture);
+            }
+
+            int tens = n % 10;
+            return tens is >= 1 and <= 3 && n % 100 is < 10 or > 20 ? // Ends in 1, 2, 3 but not 11, 12, or 13
+                tens switch
+                {
+                    1 => $"{n}st",
+                    2 => $"{n}nd",
+                    _ => $"{n}rd",
+                } :
+                $"{n}th";
+        }
+
+        /// <summary>Gets a textual description of loop node's consumption, e.g. "greedily".</summary>
+        private static string DescribeLoopConsumption(RegexNode node) =>
+            node.Type switch
+            {
+                RegexNode.Oneloopatomic or RegexNode.Notoneloopatomic or RegexNode.Setloopatomic => "atomically",
+                RegexNode.Oneloop or RegexNode.Notoneloop or RegexNode.Setloop => "greedily",
+                RegexNode.Onelazy or RegexNode.Notonelazy or RegexNode.Setlazy => "lazily",
+                RegexNode.Loop => node.IsAtomicByParent() ? "greedily and atomically" : "greedily",
+                _ /* RegexNode.Lazy */ => node.IsAtomicByParent() ? "lazily and atomically" : "lazily",
+            };
+
+        /// <summary>Gets a textual description of a loop node's bounds, e.g. "at least once".</summary>
+        private static string DescribeLoopBounds(RegexNode node) =>
+            node.M == node.N ? $"{node.M} times" :
+            (node.M, node.N) switch
+            {
+                (0, int.MaxValue) => "any number of times",
+                (1, int.MaxValue) => "at least once",
+                (0, 1) => "optionally",
+                (_, int.MaxValue) => $"at least {node.M} times",
+                _ => $"at least {node.M} and at most {node.N} times"
+            };
 
         private static FinishEmitScope EmitScope(IndentedTextWriter writer, string title, bool faux = false) => EmitBlock(writer, $"// {title}", appendBlankLine: true, faux);
 

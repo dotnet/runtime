@@ -2273,6 +2273,7 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
+#if DEBUG
         private string TypeName =>
             Type switch
             {
@@ -2390,7 +2391,6 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-#if DEBUG
         [ExcludeFromCodeCoverage]
         public void Dump() => Debug.WriteLine(ToString());
 
