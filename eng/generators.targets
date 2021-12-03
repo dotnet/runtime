@@ -4,6 +4,8 @@
     <EnableDllImportGenerator Condition="'$(EnableDllImportGenerator)' == ''
                         and '$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableDllImportGenerator>
     <EnableDllImportGenerator Condition="'$(EnableDllImportGenerator)' == ''
+                        and '$(IsFrameworkSupportFacade)' != 'true'
+                        and '$(IsSourceProject)' == 'true'
                         and '$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'
                         and '$(DisableImplicitFrameworkReferences)' != 'true'">true</EnableDllImportGenerator>
     <IncludeDllImportGeneratorSources Condition="'$(IncludeDllImportGeneratorSources)' == ''">true</IncludeDllImportGeneratorSources>
