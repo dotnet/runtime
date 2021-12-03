@@ -2495,7 +2495,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 foreach (var field in fields)
                 {
                     if (!typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state))
+                    {
+                        regularFields.Add(field);
                         continue;
+                    }
                     switch (state)
                     {
                         case DebuggerBrowsableState.Never:
