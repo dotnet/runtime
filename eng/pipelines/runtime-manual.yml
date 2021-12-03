@@ -356,6 +356,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -369,6 +370,7 @@ jobs:
           or(
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
 
 #
