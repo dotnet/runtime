@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -327,7 +328,9 @@ namespace System.Text.RegularExpressions.Tests
                     }
                 }
 
-                if (engine != RegexEngine.Interpreter && !PlatformDetection.IsNetFramework)
+#if !NETFRAMEWORK // these tests currently fail on .NET Framework, and we need to check IsDynamicCodeCompiled but that doesn't exist on .NET Framework
+                if (engine != RegexEngine.Interpreter && // these tests currently fail with RegexInterpreter
+                    RuntimeFeature.IsDynamicCodeCompiled) // if dynamic code isn't compiled, RegexOptions.Compiled falls back to the interpreter, for which these tests currently fail
                 {
                     // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
                     yield return new object[]
@@ -360,6 +363,7 @@ namespace System.Text.RegularExpressions.Tests
                         };
                     }
                 }
+#endif
             }
         }
 
