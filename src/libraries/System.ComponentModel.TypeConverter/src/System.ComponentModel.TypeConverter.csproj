@@ -10,6 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MS\Internal\Xml\Linq\ComponentModel\XComponentModel.cs" />
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
     <Compile Include="System\ComponentModel\BooleanConverter.cs" />

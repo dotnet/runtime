@@ -21,6 +21,7 @@
     <Compile Include="NestedContainerTests.cs" />
     <Compile Include="PasswordPropertyTextAttributeTests.cs" />
     <Compile Include="MarshalByValueComponentTests.cs" />
+    <Compile Include="ReflectTypeDescriptionProviderTests.cs" />
     <Compile Include="ToolboxItemAttributeTests.cs" />
     <Compile Include="ToolboxItemFilterAttributeTests.cs" />
     <Compile Include="WarningExceptionTests.cs" />
@@ -154,7 +155,7 @@
     <Compile Include="XTypeDescriptionProviderTests.cs" />
 
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
-        Link="Common\TestUtilities\System\DisableParallelization.cs" />
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -169,5 +170,8 @@
   </ItemGroup>
   <ItemGroup>
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ComponentModel.TypeConverter.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 </Project>
