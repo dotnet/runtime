@@ -1082,6 +1082,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     genTreeOps            oper            = targetMethod->OperGet();
     CORINFO_METHOD_HANDLE targetMethodHnd = nullptr;
     GenTree*              qmarkNode       = nullptr;
+
+    targetMethod->gtFlags |= GTF_DELEGATE_TGT;
     if (oper == GT_FTN_ADDR)
     {
         targetMethodHnd = targetMethod->AsFptrVal()->gtFptrMethod;

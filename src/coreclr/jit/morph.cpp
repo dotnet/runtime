@@ -9555,35 +9555,13 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
     }
     else if (tree->gtOper == GT_FTN_ADDR)
     {
-        // A function pointer address is being used. If this is for a Delegate scenario
+        // A function pointer address is being used. If this is as the target of a Delegate
         // we don't need to prepare the method. However, if the function pointer is being used in
-        // an unsafe manner, as a raw function pointer, the the signature should be walked.
-        // The below logic is attempting to see if the function pointer is being passed
-        // to a Delegate .ctor.
-        bool     prepareForUnsafeFunctionPointer = true;
-        GenTree* callMaybe                       = compCurStmt->GetRootNode();
-        if (callMaybe->OperGet() == GT_CALL)
+        // an unsafe manner, as a raw function pointer, the signature should be walked.
+        bool prepareForUnsafeFunctionPointer = true;
+        if (tree->gtFlags & GTF_DELEGATE_TGT)
         {
-            GenTreeCall*      call      = callMaybe->AsCall();
-            GenTreeCall::Use* thisMaybe = call->gtCallThisArg;
-            if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Managed && thisMaybe != nullptr &&
-                thisMaybe->GetNode()->OperGet() == GT_LCL_VAR)
-            {
-                GenTreeLclVar*       lcl         = thisMaybe->GetNode()->AsLclVar();
-                unsigned             lclNum      = lcl->GetLclNum();
-                LclVarDsc*           varDsc      = lvaGetDesc(lclNum);
-                CORINFO_CLASS_HANDLE clsHndMaybe = varDsc->lvClassHnd;
-                if (clsHndMaybe != nullptr)
-                {
-                    unsigned clsFlags = info.compCompHnd->getClassAttribs(clsHndMaybe);
-
-                    // The function pointer is for a delegate type not a function pointer.
-                    if (clsFlags & CORINFO_FLG_DELEGATE)
-                    {
-                        prepareForUnsafeFunctionPointer = false;
-                    }
-                }
-            }
+            prepareForUnsafeFunctionPointer = false;
         }
 
         CORINFO_CONST_LOOKUP addrInfo;

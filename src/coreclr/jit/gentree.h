@@ -402,6 +402,7 @@ enum GenTreeFlags : unsigned int
                                   // With operators: the specified node is an unsigned operator
     GTF_LATE_ARG    = 0x00010000, // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
+    GTF_DELEGATE_TGT = 0x00040000, // The node is the target of a delegate
 
 // The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
 // that we are calling in the context of performing a CSE, thus we

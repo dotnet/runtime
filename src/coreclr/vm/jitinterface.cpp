@@ -4991,6 +4991,14 @@ void CEEInfo::getCallInfo(
 
     if (flags & CORINFO_CALLINFO_LDFTN)
     {
+        // Since the ldvirtftn instruction resolves types
+        // at run-time we do this earlier than ldftn. The
+        // ldftn scenario is handled later when the fixed
+        // address is requested by in the JIT.
+        // See getFunctionFixedEntryPoint().
+        if (flags & CORINFO_CALLINFO_CALLVIRT)
+            pTargetMD->PrepareForUseAsAFunctionPointer();
+
         directCall = true;
     }
     else

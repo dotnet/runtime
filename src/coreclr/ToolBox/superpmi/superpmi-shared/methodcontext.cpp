@@ -4553,7 +4553,9 @@ void MethodContext::dmpGetFunctionFixedEntryPoint(DWORDLONG key, const Agnostic_
 }
 void MethodContext::repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool prepareForFPtr, CORINFO_CONST_LOOKUP* pResult)
 {
-    DWORDLONG key = CastHandle(ftn);
+    // The present, the prepareForFPtr has no impact on the resulting value.
+    // It helps produce side-effects in the runtime only.
+    DWORDLONG key = CastHandle(ftn) | (DWORDLONG)prepareForFPtr;
     AssertMapAndKeyExist(GetFunctionFixedEntryPoint, key, ": key %016llX", key);
     Agnostic_CORINFO_CONST_LOOKUP value = GetFunctionFixedEntryPoint->Get(key);
     DEBUG_REP(dmpGetFunctionFixedEntryPoint(key, value));
