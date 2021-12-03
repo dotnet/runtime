@@ -6417,6 +6417,8 @@ private:
     GenTree* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
+    GenTree* fgMorphReduceAddOps(GenTree* tree);
+
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
 
