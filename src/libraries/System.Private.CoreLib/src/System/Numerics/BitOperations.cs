@@ -778,7 +778,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Calculates the CRC (Cyclic redundancy check) checksum.
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
         ///
         /// Uses following Hardware Intrinsics, if supported:
         /// * uint32_t __crc32b (uint32_t a, uint8_t b)
@@ -806,7 +806,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Calculates the CRC (Cyclic redundancy check) checksum.
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
         ///
         /// Uses following Hardware Intrinsics, if supported:
         /// * unsigned int _mm_crc32_u16 (unsigned int crc, unsigned short v)
@@ -839,7 +839,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Calculates the CRC (Cyclic redundancy check) checksum.
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
         ///
         /// Uses following Hardware Intrinsics, if supported:
         /// * unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
@@ -867,7 +867,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Calculates the CRC (Cyclic redundancy check) checksum.
+        /// Accumulates the CRC (Cyclic redundancy check) checksum.
         ///
         /// Uses following Hardware Intrinsics, if supported:
         /// * unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)
@@ -893,11 +893,6 @@ namespace System.Numerics
             }
 
             // Software fallback
-            if (!BitConverter.IsLittleEndian)
-            {
-                data = BinaryPrimitives.ReverseEndianness(data);
-            }
-
             return Crc32Fallback.Crc32C(crc, data);
         }
     }
