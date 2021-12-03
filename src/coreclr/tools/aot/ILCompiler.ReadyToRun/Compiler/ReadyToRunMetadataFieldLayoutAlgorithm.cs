@@ -802,7 +802,7 @@ namespace ILCompiler
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
-            else if (type.IsEnum || (type.IsSequentialLayout && !type.ContainsGCPointers))
+            else if (type.IsSequentialLayout && !type.ContainsGCPointers)
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
