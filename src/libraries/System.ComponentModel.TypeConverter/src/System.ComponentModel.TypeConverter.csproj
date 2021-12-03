@@ -261,5 +261,6 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.XDocument" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

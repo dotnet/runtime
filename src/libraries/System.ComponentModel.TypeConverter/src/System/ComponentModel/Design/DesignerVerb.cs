@@ -6,6 +6,12 @@ using System.Text.RegularExpressions;
 
 namespace System.ComponentModel.Design
 {
+    internal static partial class DesignerVerbRegex
+    {
+        [RegexGenerator(@"\(\&.\)")]
+        internal static partial Regex GetParameterReplacementRegex();
+    }
+
     /// <summary>
     /// Represents a verb that can be executed by a component's designer.
     /// </summary>
@@ -16,7 +22,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerVerb(string text, EventHandler handler) : base(handler, StandardCommands.VerbFirst)
         {
-            Properties["Text"] = text == null ? null : Regex.Replace(text, @"\(\&.\)", "");
+            Properties["Text"] = ReplaceIfNotNull(text);
         }
 
         /// <summary>
@@ -25,7 +31,12 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerVerb(string text, EventHandler handler, CommandID startCommandID) : base(handler, startCommandID)
         {
-            Properties["Text"] = text == null ? null : Regex.Replace(text, @"\(\&.\)", "");
+            Properties["Text"] = ReplaceIfNotNull(text);
+        }
+
+        private static string? ReplaceIfNotNull(string? text)
+        {
+            return text == null ? null : DesignerVerbRegex.GetParameterReplacementRegex().Replace(text, "");
         }
 
         /// <summary>
