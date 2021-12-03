@@ -650,8 +650,8 @@ namespace System.Text.RegularExpressions.Generator
             var additionalDeclarations = new HashSet<string>();
 
             // Declare some locals.
-            string textSpanLocal = "textSpan";
-            writer.WriteLine("string runtext = base.runtext!;");
+            string textSpanLocal = "localSpan";
+            writer.WriteLine("global::System.ReadOnlySpan<char> runtextSpan = base.runtext;");
             writer.WriteLine("int runtextpos = base.runtextpos;");
             writer.WriteLine("int runtextend = base.runtextend;");
             writer.WriteLine($"int original_runtextpos = runtextpos;");
@@ -707,14 +707,14 @@ namespace System.Text.RegularExpressions.Generator
 
             static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
 
-            // Creates a span for runtext starting at runtextpos until base.runtextend.
+            // Creates a local span for runtextSpan starting at runtextpos until base.runtextend.
             void LoadTextSpanLocal(IndentedTextWriter writer, bool defineLocal = false)
             {
                 if (defineLocal)
                 {
                     writer.Write("global::System.ReadOnlySpan<char> ");
                 }
-                writer.WriteLine($"{textSpanLocal} = global::System.MemoryExtensions.AsSpan(runtext, runtextpos, runtextend - runtextpos);");
+                writer.WriteLine($"{textSpanLocal} = runtextSpan.Slice(runtextpos, runtextend - runtextpos);");
             }
 
             // Emits the sum of a constant and a value from a local.
@@ -736,7 +736,7 @@ namespace System.Text.RegularExpressions.Generator
             string SpanLengthCheck(int requiredLength, string? dynamicRequiredLength = null) =>
                 $"(uint){textSpanLocal}.Length < {Sum(textSpanPos + requiredLength, dynamicRequiredLength)}";
 
-            // Adds the value of textSpanPos into the runtextpos local, slices textspan by the corresponding amount,
+            // Adds the value of textSpanPos into the runtextpos local, slices localSpan by the corresponding amount,
             // and zeros out textSpanPos.
             void TransferTextSpanPosToRunTextPos()
             {
@@ -987,7 +987,7 @@ namespace System.Text.RegularExpressions.Generator
 
                         // Reset state for next branch and loop around to generate it.  This includes
                         // setting runtextpos back to what it was at the beginning of the alternation,
-                        // updating textSpan to be the full length it was, and if there's a capture that
+                        // updating localSpan to be the full length it was, and if there's a capture that
                         // needs to be reset, uncapturing it.
                         if (!isLastBranch)
                         {
@@ -1063,7 +1063,7 @@ namespace System.Text.RegularExpressions.Generator
                     string i = ReserveName("backreference_iteration");
                     using (EmitBlock(writer, $"for (int {i} = 0; {i} < {matchLength}; {i}++)"))
                     {
-                        using (EmitBlock(writer, $"if ({ToLowerIfNeeded(hasTextInfo, options, $"runtext[{matchIndex} + {i}]", IsCaseInsensitive(node))} != {ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{i}]", IsCaseInsensitive(node))})"))
+                        using (EmitBlock(writer, $"if ({ToLowerIfNeeded(hasTextInfo, options, $"runtextSpan[{matchIndex} + {i}]", IsCaseInsensitive(node))} != {ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{i}]", IsCaseInsensitive(node))})"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
@@ -1837,8 +1837,8 @@ namespace System.Text.RegularExpressions.Generator
                         }
                         else
                         {
-                            // We can't use our textSpan in this case, because we'd need to access textSpan[-1], so we access the runtext field directly:
-                            using (EmitBlock(writer, $"if (runtextpos > runtextbeg && runtext[runtextpos - 1] != '\\n')"))
+                            // We can't use our localSpan in this case, because we'd need to access localSpan[-1], so we access the runtextSpan field directly:
+                            using (EmitBlock(writer, $"if (runtextpos > runtextbeg && runtextSpan[runtextpos - 1] != '\\n')"))
                             {
                                 writer.WriteLine($"goto {doneLabel};");
                             }
@@ -2053,11 +2053,12 @@ namespace System.Text.RegularExpressions.Generator
                 if (subsequent?.FindStartingCharacter() is char subsequentCharacter)
                 {
                     writer.WriteLine();
-                    writer.WriteLine($"{endingPos} = runtext.LastIndexOf({Literal(subsequentCharacter)}, {endingPos} - 1, {endingPos} - {startingPos});");
+                    writer.WriteLine($"{endingPos} = global::System.MemoryExtensions.LastIndexOf(runtextSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(subsequentCharacter)});");
                     using (EmitBlock(writer, $"if ({endingPos} < 0)"))
                     {
                         writer.WriteLine($"goto {originalDoneLabel};");
                     }
+                    writer.WriteLine($"{endingPos} += {startingPos};");
                     writer.WriteLine($"runtextpos = {endingPos};");
                 }
                 else
@@ -2426,9 +2427,9 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (iterations <= MaxUnrollSize)
                 {
-                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length ||
-                    //     textSpan[textSpanPos] != c1 ||
-                    //     textSpan[textSpanPos + 1] != c2 ||
+                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)localSpan.Length ||
+                    //     localSpan[textSpanPos] != c1 ||
+                    //     localSpan[textSpanPos + 1] != c2 ||
                     //     ...)
                     // {
                     //     goto doneLabel;
@@ -2454,7 +2455,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length) goto doneLabel;
+                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)localSpan.Length) goto doneLabel;
                     if (emitLengthCheck)
                     {
                         EmitSpanLengthCheck(iterations);
