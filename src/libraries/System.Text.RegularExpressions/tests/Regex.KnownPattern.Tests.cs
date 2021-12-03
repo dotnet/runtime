@@ -1416,32 +1416,13 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(RegexEngine.Interpreter)]
         [InlineData(RegexEngine.Compiled)]
-        public void PatternsDataSet_ConstructRegexForAll(RegexEngine engine)
+        public async Task PatternsDataSet_ConstructRegexForAll(RegexEngine engine)
         {
-            Parallel.ForEach(s_patternsDataSet.Value, r =>
+            foreach (DataSetExpression exp in s_patternsDataSet.Value)
             {
-                try
-                {
-                    RegexHelpers.GetRegexAsync(engine, r.Pattern, r.Options).GetAwaiter().GetResult();
-                }
-                catch (Exception e) when (RegexHelpers.IsNonBacktracking(engine) && e.Message.Contains("NonBacktracking"))
-                {
-                    // Some tests aren't supported with RegexOptions.NonBacktracking.
-                }
-            });
+                await RegexHelpers.GetRegexAsync(engine, exp.Pattern, exp.Options);
+            }
         }
-
-        [OuterLoop("Takes many seconds")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NonBacktracking isn't supported on .NET Framework")]
-        [Fact]
-        public void PatternsDataSet_ConstructRegexForAll_NonBacktracking() =>
-            PatternsDataSet_ConstructRegexForAll(RegexEngine.NonBacktracking);
-
-        [OuterLoop("Takes minutes to generate and compile thousands of expressions")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Source generator isn't supported on .NET Framework")]
-        [Fact]
-        public void PatternsDataSet_ConstructRegexForAll_SourceGenerated() =>
-            PatternsDataSet_ConstructRegexForAll(RegexEngine.SourceGenerated);
 
         private static Lazy<DataSetExpression[]> s_patternsDataSet = new Lazy<DataSetExpression[]>(() =>
         {
@@ -1460,5 +1441,32 @@ namespace System.Text.RegularExpressions.Tests
                 other.Pattern == Pattern &&
                 (Options & ~RegexOptions.Compiled) == (other.Options & ~RegexOptions.Compiled); // Compiled doesn't affect semantics, so remove it from equality for our purposes
         }
+
+#if NETCOREAPP
+        [OuterLoop("Takes many seconds")]
+        [Fact]
+        public async Task PatternsDataSet_ConstructRegexForAll_NonBacktracking()
+        {
+            foreach (DataSetExpression exp in s_patternsDataSet.Value)
+            {
+                try
+                {
+                    await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, exp.Pattern, exp.Options);
+                }
+                catch (Exception e) when (e.Message.Contains(nameof(RegexOptions.NonBacktracking))) { }
+            }
+        }
+
+        [OuterLoop("Takes minutes to generate and compile thousands of expressions")]
+        [Fact]
+        public void PatternsDataSet_ConstructRegexForAll_SourceGenerated()
+        {
+            Parallel.ForEach(s_patternsDataSet.Value.Chunk(50), chunk =>
+            {
+                RegexHelpers.GetRegexesAsync(RegexEngine.SourceGenerated,
+                    chunk.Select(r => (r.Pattern, (RegexOptions?)r.Options, (TimeSpan?)null)).ToArray()).GetAwaiter().GetResult();
+            });
+        }
+#endif
     }
 }

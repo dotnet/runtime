@@ -126,6 +126,10 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>6003aa6296ad2bebdf8147de94afbea9b5f16264</Sha>
     </Dependency>
+    <Dependency Name="System.Text.RegularExpressions.TestData" Version="7.0.0-beta.21602.1">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>6003aa6296ad2bebdf8147de94afbea9b5f16264</Sha>
+    </Dependency>
     <Dependency Name="System.Windows.Extensions.TestData" Version="7.0.0-beta.21602.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>6003aa6296ad2bebdf8147de94afbea9b5f16264</Sha>
