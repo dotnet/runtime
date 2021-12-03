@@ -4087,7 +4087,7 @@ static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Modul
 #ifdef FEATURE_TYPEEQUIVALENCE
     *pHasEquivalentParam = IsTypeDefEquivalent(defToken, pDefModule);
 #else
-    _ASSERTE(*pHasEquivalentParam); // Assert this is always false.
+    _ASSERTE(*pHasEquivalentParam == FALSE); // Assert this is always false.
 #endif // FEATURE_TYPEEQUIVALENCE
 
     SigPointer sigPtr(*ptr);
