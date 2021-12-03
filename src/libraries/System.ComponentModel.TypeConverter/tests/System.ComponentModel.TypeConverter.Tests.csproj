@@ -155,7 +155,7 @@
     <Compile Include="XTypeDescriptionProviderTests.cs" />
 
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
-             Link="Common\TestUtilities\System\DisableParallelization.cs" />
+        Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>
   <ItemGroup>
