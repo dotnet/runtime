@@ -5014,7 +5014,6 @@ void CEEInfo::getCallInfo(
 
     if (flags & CORINFO_CALLINFO_LDFTN)
     {
-        pTargetMD->PrepareForUseAsAFunctionPointer();
         directCall = true;
     }
     else
@@ -8965,6 +8964,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
 /*********************************************************************/
 void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
+                                         bool prepareForFPtr,
                                          CORINFO_CONST_LOOKUP *  pResult)
 {
     CONTRACTL {
@@ -8976,6 +8976,9 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     JIT_TO_EE_TRANSITION();
 
     MethodDesc * pMD = GetMethod(ftn);
+
+    if (prepareForFPtr)
+        pMD->PrepareForUseAsAFunctionPointer();
 
     pResult->accessType = IAT_VALUE;
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();

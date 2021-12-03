@@ -1214,10 +1214,11 @@ void WrapICorJitInfo::getFunctionEntryPoint(
 
 void WrapICorJitInfo::getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
+          bool prepareForFPtr,
           CORINFO_CONST_LOOKUP* pResult)
 {
     API_ENTER(getFunctionFixedEntryPoint);
-    wrapHnd->getFunctionFixedEntryPoint(ftn, pResult);
+    wrapHnd->getFunctionFixedEntryPoint(ftn, prepareForFPtr, pResult);
     API_LEAVE(getFunctionFixedEntryPoint);
 }
 

@@ -4574,7 +4574,7 @@ void MethodContext::dmpGetFunctionFixedEntryPoint(DWORDLONG key, const Agnostic_
     printf("GetFunctionFixedEntryPoint key ftn-%016llX, value %s", key,
            SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value).c_str());
 }
-void MethodContext::repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult)
+void MethodContext::repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool prepareForFPtr, CORINFO_CONST_LOOKUP* pResult)
 {
     DWORDLONG key = CastHandle(ftn);
     AssertMapAndKeyExist(GetFunctionFixedEntryPoint, key, ": key %016llX", key);
