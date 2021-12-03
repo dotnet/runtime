@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Enumeration;
+using System.Threading;
 
 namespace System.IO
 {
@@ -349,6 +350,12 @@ namespace System.IO
         {
             FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
             return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: true);
+        }
+
+        public static void Copy(string sourcePath, string destinationPath, bool recursive, bool skipExistingFiles = true, CancellationToken cancellationToken = default)
+        {
+            string fullSourcePath = Path.GetFullPath(sourcePath);
+            string fullDestinationPath = Path.GetFullPath(destinationPath);
         }
     }
 }
