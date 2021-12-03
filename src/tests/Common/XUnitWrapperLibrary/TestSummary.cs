@@ -39,7 +39,7 @@ public class TestSummary
         _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, null, reason));
     }
 
-    public string GetTestResultOutput()
+    public string GetTestResultOutput(string assemblyName)
     {
         double totalRunSeconds = (DateTime.Now - _testRunStart).TotalSeconds;
         // using StringBuilder here for simplicity of loaded IL.
@@ -47,7 +47,7 @@ public class TestSummary
         resultsFile.AppendLine("<assemblies>");
         resultsFile.AppendLine($@"
 <assembly
-    name=""""
+    name=""{assemblyName}""
     test-framework=""XUnitWrapperGenerator-generated-runner""
     run-date=""{_testRunStart.ToString("yyy-mm-dd")}""
     run-time=""{_testRunStart.ToString("hh:mm:ss")}""

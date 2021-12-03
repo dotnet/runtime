@@ -1153,7 +1153,7 @@ def find_test_from_name(host_os, test_location, test_name):
 
     return location
 
-def parse_test_results(args):
+def parse_test_results(args, tests, assemblies):
     """ Parse the test results for test execution information
 
     Args:
@@ -1162,32 +1162,41 @@ def parse_test_results(args):
     log_path = os.path.join(args.logs_dir, "TestRunResults_%s_%s_%s" % (args.host_os, args.arch, args.build_type))
     print("Parsing test results from (%s)" % log_path)
 
-    tests = defaultdict(lambda: None)
     found = False
 
     for item in os.listdir(args.logs_dir):
         if item.lower().endswith("testrun.xml"):
             found = True
-            parse_test_results_xml_file(os.path.join(args.logs_dir, item), args, tests)
+            parse_test_results_xml_file(os.path.join(args.logs_dir, item), args, tests, assemblies)
 
     if not found:
         print("Unable to find testRun.xml. This normally means the tests did not run.")
         print("It could also mean there was a problem logging. Please run the tests again.")
         return
 
-    return tests
-
-def parse_test_results_xml_file(xml_result_file, args, tests):
+def parse_test_results_xml_file(xml_result_file, args, tests, assemblies):
     """ Parse test results from a single xml results file
     Args:
         xml_result_file      : results xml file to parse
         args                 : arguments
-        tests                : output dictionary of aggregated test results
+        tests                : dictionary of individual test results
+        assemblies           : dictionary of per-assembly aggregations
     """
 
     print("Analyzing {}".format(xml_result_file))
-    assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
-    for assembly in assemblies:
+    xml_assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
+    for assembly in xml_assemblies:
+        assembly_name = assembly.attrib["name"]
+        assembly_info = assemblies[assembly_name]
+        if assembly_info == None:
+            assembly_info = defaultdict(lambda: None, {
+                "name": assembly_name,
+                "time": 0.0,
+                "passed": 0,
+                "failed": 0,
+                "skipped": 0,
+            })
+        assembly_info["time"] = assembly_info["time"] + float(assembly.attrib["time"])
         for collection in assembly:
             if collection.tag == "errors" and collection.text != None:
                 # Something went wrong during running the tests.
@@ -1215,8 +1224,15 @@ def parse_test_results_xml_file(xml_result_file, args, tests):
                         "time": time,
                         "test_output": test_output
                     })
+                    if result == "Pass":
+                        assembly_info["passed"] += 1
+                    elif result == "Fail":
+                        assembly_info["failed"] += 1
+                    else:
+                        assembly_info["skipped"] += 1
+        assemblies[assembly_name] = assembly_info
 
-def print_summary(tests):
+def print_summary(tests, assemblies):
     """ Print a summary of the test results
 
     Args:
@@ -1226,92 +1242,16 @@ def print_summary(tests):
     """
 
     assert tests is not None
+    assert assemblies is not None
 
     failed_tests = []
-    passed_tests = []
-    skipped_tests = []
 
     for test in tests:
         test = tests[test]
-
         if test["result"] == "Fail":
-            failed_tests.append(test)
-        elif test["result"] == "Pass":
-            passed_tests.append(test)
-        else:
-            skipped_tests.append(test)
+            print("Failed test: %s" % test["name"])
 
-    failed_tests.sort(key=lambda item: item["time"], reverse=True)
-    passed_tests.sort(key=lambda item: item["time"], reverse=True)
-    skipped_tests.sort(key=lambda item: item["time"], reverse=True)
-
-    def print_tests_helper(tests, stop_count):
-        for index, item in enumerate(tests):
-            time = item["time"]
-            unit = "seconds"
-            time_remainder = ""
-            second_unit = ""
-            saved_time = time
-            remainder_str = ""
-
-            # If it can be expressed in hours
-            if time > 60**2:
-                time = saved_time / (60**2)
-                time_remainder = saved_time % (60**2)
-                time_remainder /= 60
-                time_remainder = math.floor(time_remainder)
-                unit = "hours"
-                second_unit = "minutes"
-
-                remainder_str = " %s %s" % (int(time_remainder), second_unit)
-
-            elif time > 60 and time < 60**2:
-                time = saved_time / 60
-                time_remainder = saved_time % 60
-                time_remainder = math.floor(time_remainder)
-                unit = "minutes"
-                second_unit = "seconds"
-
-                remainder_str = " %s %s" % (int(time_remainder), second_unit)
-
-            print("%s (%d %s%s)" % (item["test_path"] or item["name"], time, unit, remainder_str))
-
-            if stop_count != None:
-                if index >= stop_count:
-                    break
-
-    if len(failed_tests) > 0:
-        print("%d failed tests:" % len(failed_tests))
-        print("")
-        print_tests_helper(failed_tests, None)
-
-    # The following code is currently disabled, as it produces too much verbosity in a normal
-    # test run. It could be put under a switch, or else just enabled as needed when investigating
-    # test slowness.
-    #
-    # if len(passed_tests) > 50:
-    #     print("")
-    #     print("50 slowest passing tests:")
-    #     print("")
-    #     print_tests_helper(passed_tests, 50)
-
-    if len(failed_tests) > 0:
-        print("")
-        print("#################################################################")
-        print("Output of failing tests:")
-        print("")
-
-        for item in failed_tests:
-            print("[%s]: " % (item["test_path"] or item["name"]))
-            print("")
-
-            test_output = item["test_output"]
-
-            # XUnit results are captured as escaped characters.
-            #test_output = test_output.replace("\\r", "\r")
-            #test_output = test_output.replace("\\n", "\n")
-            #test_output = test_output.replace("/r", "\r")
-            #test_output = test_output.replace("/n", "\n")
+            test_output = test["test_output"]
 
             # Replace CR/LF by just LF; Python "print", below, will map as necessary on the platform.
             # If we don't do this, then Python on Windows will convert \r\n to \r\r\n on output.
@@ -1334,17 +1274,32 @@ def print_summary(tests):
                 print("# Test output recorded in log file.")
             print("")
 
-        print("")
-        print("#################################################################")
-        print("End of output of failing tests")
-        print("#################################################################")
-        print("")
+    print("Time [secs] | Total | Passed | Failed | Skipped | Assembly Execution Summary")
+    print("============================================================================")
 
-    print("")
-    print("Total tests run    : %d" % len(tests))
-    print("Total passing tests: %d" % len(passed_tests))
-    print("Total failed tests : %d" % len(failed_tests))
-    print("Total skipped tests: %d" % len(skipped_tests))
+    total_time = 0.0
+    total_total = 0
+    total_passed = 0
+    total_failed = 0
+    total_skipped = 0
+
+    for assembly in assemblies:
+        assembly = assemblies[assembly]
+        name = assembly["name"]
+        time = assembly["time"]
+        passed = assembly["passed"]
+        failed = assembly["failed"]
+        skipped = assembly["skipped"]
+        total = passed + failed + skipped
+        print("%11.3f | %5d | %6d | %6d | %7d | %s" % (time, total, passed, failed, skipped, name))
+        total_time += time
+        total_total += total
+        total_passed += passed
+        total_failed += failed
+        total_skipped += skipped
+
+    print("----------------------------------------------------------------------------")
+    print("%11.3f | %5d | %6d | %6d | %7d | (total)" % (total_time, total_total, total_passed, total_failed, total_skipped))
     print("")
 
 def create_repro(args, env, tests):
@@ -1403,10 +1358,11 @@ def main(args):
         print("Test run finished.")
 
     if not args.skip_test_run:
-        tests = parse_test_results(args)
-        if tests is not None:
-            print_summary(tests)
-            create_repro(args, env, tests)
+        assemblies = defaultdict(lambda: None)
+        tests = defaultdict(lambda: None)
+        parse_test_results(args, tests, assemblies)
+        print_summary(tests, assemblies)
+        create_repro(args, env, tests)
 
     return ret_code
 
