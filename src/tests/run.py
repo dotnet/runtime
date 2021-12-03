@@ -1147,7 +1147,6 @@ def find_test_from_name(host_os, test_location, test_name):
 
     location = starting_path
     if not os.path.isfile(location):
-        print("Warning: couldn't find test: %s" % test_name)
         return None
 
     assert(os.path.isfile(location))
