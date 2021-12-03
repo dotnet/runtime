@@ -24,7 +24,7 @@ public class PInvokeTableGenerator : Task
     [Output]
     public string FileWrites { get; private set; } = string.Empty;
 
-    private static char[] s_charsToReplace = new[] { '.', '-', };
+    private static char[] s_charsToReplace = new[] { '.', '-', '+' };
 
     public override bool Execute()
     {
@@ -244,7 +244,11 @@ public class PInvokeTableGenerator : Task
                 (b >= (byte)'A' && b <= (byte)'Z') ||
                 (b == (byte)'_'))
             {
-                sb.Append((char)b);
+                sb.Append((char) b);
+            }
+            else if (s_charsToReplace.Contains((char) b))
+            {
+                sb.Append('_');
             }
             else
             {
