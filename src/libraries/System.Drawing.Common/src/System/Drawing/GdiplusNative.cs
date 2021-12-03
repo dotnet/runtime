@@ -27,8 +27,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipEndContainer(HandleRef graphics, int state);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateAdjustableArrowCap(float height, float width, bool isFilled, out IntPtr adjustableArrowCap);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateAdjustableArrowCap(float height, float width, bool isFilled, out IntPtr adjustableArrowCap);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetAdjustableArrowCapHeight(HandleRef adjustableArrowCap, out float height);
@@ -54,14 +54,14 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetAdjustableArrowCapFillState(HandleRef adjustableArrowCap, out bool fillState);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetCustomLineCapType(IntPtr customCap, out CustomLineCapType capType);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipGetCustomLineCapType(IntPtr customCap, out CustomLineCapType capType);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateCustomLineCap(HandleRef fillpath, HandleRef strokepath, LineCap baseCap, float baseInset, out IntPtr customCap);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipDeleteCustomLineCap(IntPtr customCap);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipDeleteCustomLineCap(IntPtr customCap);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipDeleteCustomLineCap(HandleRef customCap);
@@ -138,8 +138,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipPathIterCopyData(HandleRef pathIter, out int resultCount, PointF* points, byte* types, int startIndex, int endIndex);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateHatchBrush(int hatchstyle, int forecol, int backcol, out IntPtr brush);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateHatchBrush(int hatchstyle, int forecol, int backcol, out IntPtr brush);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetHatchStyle(HandleRef brush, out int hatchstyle);
@@ -153,6 +153,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCloneBrush(HandleRef brush, out IntPtr clonebrush);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateLineBrush(ref PointF point1, ref PointF point2, int color1, int color2, WrapMode wrapMode, out IntPtr lineGradient);
 
@@ -170,6 +172,7 @@ namespace System.Drawing
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateLineBrushFromRectWithAngleI(ref Rectangle rect, int color1, int color2, float angle, bool isAngleScaleable, WrapMode wrapMode, out IntPtr lineGradient);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipSetLineColors(HandleRef brush, int color1, int color2);
@@ -237,11 +240,11 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipRotateLineTransform(HandleRef brush, float angle, MatrixOrder order);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreatePathGradient(PointF* points, int count, WrapMode wrapMode, out IntPtr brush);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreatePathGradient(PointF* points, int count, WrapMode wrapMode, out IntPtr brush);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreatePathGradientI(Point* points, int count, WrapMode wrapMode, out IntPtr brush);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreatePathGradientI(Point* points, int count, WrapMode wrapMode, out IntPtr brush);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreatePathGradientFromPath(HandleRef path, out IntPtr brush);
@@ -330,8 +333,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipSetPathGradientFocusScales(HandleRef brush, float xScale, float yScale);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateImageAttributes(out IntPtr imageattr);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateImageAttributes(out IntPtr imageattr);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCloneImageAttributes(HandleRef imageattr, out IntPtr cloneImageattr);
@@ -369,20 +372,20 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImageAttributesAdjustedPalette(HandleRef imageattr, IntPtr palette, ColorAdjustType type);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageDecodersSize(out int numDecoders, out int size);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipGetImageDecodersSize(out int numDecoders, out int size);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageDecoders(int numDecoders, int size, IntPtr decoders);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipGetImageDecoders(int numDecoders, int size, IntPtr decoders);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageEncodersSize(out int numEncoders, out int size);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipGetImageEncodersSize(out int numEncoders, out int size);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageEncoders(int numEncoders, int size, IntPtr encoders);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipGetImageEncoders(int numEncoders, int size, IntPtr encoders);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateSolidFill(int color, out IntPtr brush);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateSolidFill(int color, out IntPtr brush);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipSetSolidFillColor(HandleRef brush, int color);
@@ -442,20 +445,20 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetFontCollectionFamilyList(HandleRef fontCollection, int numSought, IntPtr[] gpfamilies, out int numFound);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCloneFontFamily(IntPtr fontfamily, out IntPtr clonefontfamily);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCloneFontFamily(IntPtr fontfamily, out IntPtr clonefontfamily);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipCreateFontFamilyFromName(string name, HandleRef fontCollection, out IntPtr FontFamily);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetGenericFontFamilySansSerif(out IntPtr fontfamily);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipGetGenericFontFamilySansSerif(out IntPtr fontfamily);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetGenericFontFamilySerif(out IntPtr fontfamily);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipGetGenericFontFamilySerif(out IntPtr fontfamily);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetGenericFontFamilyMonospace(out IntPtr fontfamily);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipGetGenericFontFamilyMonospace(out IntPtr fontfamily);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipDeleteFontFamily(HandleRef fontFamily);
@@ -478,14 +481,14 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetLineSpacing(HandleRef family, FontStyle style, out int LineSpaceing);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipNewInstalledFontCollection(out IntPtr fontCollection);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipNewInstalledFontCollection(out IntPtr fontCollection);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipNewPrivateFontCollection(out IntPtr fontCollection);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipNewPrivateFontCollection(out IntPtr fontCollection);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipDeletePrivateFontCollection(ref IntPtr fontCollection);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipDeletePrivateFontCollection(ref IntPtr fontCollection);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipPrivateAddFontFile(HandleRef fontCollection, string filename);
@@ -496,8 +499,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateFont(HandleRef fontFamily, float emSize, FontStyle style, GraphicsUnit unit, out IntPtr font);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFontFromDC(IntPtr hdc, ref IntPtr font);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateFontFromDC(IntPtr hdc, ref IntPtr font);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCloneFont(HandleRef font, out IntPtr cloneFont);
@@ -526,8 +529,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetLogFontW(HandleRef font, HandleRef graphics, ref Interop.User32.LOGFONT lf);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreatePen1(int argb, float width, int unit, out IntPtr pen);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreatePen1(int argb, float width, int unit, out IntPtr pen);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreatePen2(HandleRef brush, float width, int unit, out IntPtr pen);
@@ -748,17 +751,20 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetDpiY(HandleRef graphics, out float dpi);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateMatrix(out IntPtr matrix);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateMatrix(out IntPtr matrix);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateMatrix2(float m11, float m12, float m21, float m22, float dx, float dy, out IntPtr matrix);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateMatrix2(float m11, float m12, float m21, float m22, float dx, float dy, out IntPtr matrix);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateMatrix3(ref RectangleF rect, PointF* dstplg, out IntPtr matrix);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateMatrix3I(ref Rectangle rect, Point* dstplg, out IntPtr matrix);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCloneMatrix(HandleRef matrix, out IntPtr cloneMatrix);
@@ -811,23 +817,26 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipIsMatrixEqual(HandleRef matrix, HandleRef matrix2, out int boolean);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateRegion(out IntPtr region);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateRegion(out IntPtr region);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateRegionRect(ref RectangleF gprectf, out IntPtr region);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateRegionRectI(ref Rectangle gprect, out IntPtr region);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateRegionPath(HandleRef path, out IntPtr region);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateRegionRgnData(byte[] rgndata, int size, out IntPtr region);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateRegionRgnData(byte[] rgndata, int size, out IntPtr region);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateRegionHrgn(IntPtr hRgn, out IntPtr region);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateRegionHrgn(IntPtr hRgn, out IntPtr region);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCloneRegion(HandleRef region, out IntPtr cloneregion);
@@ -904,8 +913,8 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetRegionScans(HandleRef region, RectangleF* rects, out int count, HandleRef matrix);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFromHDC(IntPtr hdc, out IntPtr graphics);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateFromHDC(IntPtr hdc, out IntPtr graphics);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipSetClipGraphics(HandleRef graphics, HandleRef srcgraphics, CombineMode mode);
@@ -964,14 +973,14 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipSetStringFormatMeasurableCharacterRanges(HandleRef format, int rangeCount, [In] [Out] CharacterRange[] range);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateStringFormat(StringFormatFlags options, int language, out IntPtr format);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateStringFormat(StringFormatFlags options, int language, out IntPtr format);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipStringFormatGetGenericDefault(out IntPtr format);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipStringFormatGetGenericDefault(out IntPtr format);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipStringFormatGetGenericTypographic(out IntPtr format);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipStringFormatGetGenericTypographic(out IntPtr format);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipDeleteStringFormat(HandleRef format);
@@ -1087,35 +1096,35 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImageType(HandleRef image, out int type);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageType(IntPtr image, out int type);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipGetImageType(IntPtr image, out int type);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipDisposeImage(HandleRef image);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipDisposeImage(IntPtr image);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipDisposeImage(IntPtr image);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipCreateBitmapFromFile(string filename, out IntPtr bitmap);
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            internal static partial int GdipCreateBitmapFromFile(string filename, out IntPtr bitmap);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipCreateBitmapFromFileICM(string filename, out IntPtr bitmap);
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            internal static partial int GdipCreateBitmapFromFileICM(string filename, out IntPtr bitmap);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateBitmapFromScan0(int width, int height, int stride, int format, IntPtr scan0, out IntPtr bitmap);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateBitmapFromScan0(int width, int height, int stride, int format, IntPtr scan0, out IntPtr bitmap);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateBitmapFromGraphics(int width, int height, HandleRef graphics, out IntPtr bitmap);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateBitmapFromHBITMAP(IntPtr hbitmap, IntPtr hpalette, out IntPtr bitmap);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateBitmapFromHBITMAP(IntPtr hbitmap, IntPtr hpalette, out IntPtr bitmap);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateBitmapFromHICON(IntPtr hicon, out IntPtr bitmap);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateBitmapFromHICON(IntPtr hicon, out IntPtr bitmap);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateBitmapFromResource(IntPtr hresource, IntPtr name, out IntPtr bitmap);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateBitmapFromResource(IntPtr hresource, IntPtr name, out IntPtr bitmap);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateHBITMAPFromBitmap(HandleRef nativeBitmap, out IntPtr hbitmap, int argbBackground);
@@ -1150,32 +1159,41 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipImageGetFrameDimensionsList(HandleRef image, Guid* dimensionIDs, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateMetafileFromEmf(IntPtr hEnhMetafile, bool deleteEmf, out IntPtr metafile);
+            [GeneratedDllImport(LibraryName, ExactSpelling = true)]
+            internal static partial int GdipCreateMetafileFromEmf(IntPtr hEnhMetafile, bool deleteEmf, out IntPtr metafile);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipCreateMetafileFromWmf(IntPtr hMetafile, bool deleteWmf, WmfPlaceableFileHeader wmfplacealbeHeader, out IntPtr metafile);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipCreateMetafileFromFile(string file, out IntPtr metafile);
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            internal static partial int GdipCreateMetafileFromFile(string file, out IntPtr metafile);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            internal static partial int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
             internal static extern int GdipRecordMetafile(IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            [DllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
             internal static extern int GdipRecordMetafileI(IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            [DllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
             internal static extern int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            internal static partial int GdipRecordMetafileFileName(string fileName, IntPtr referenceHdc, EmfType emfType, IntPtr pframeRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
             internal static extern int GdipRecordMetafileFileNameI(string fileName, IntPtr referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipPlayMetafileRecord(HandleRef metafile, EmfPlusRecordType recordType, int flags, int dataSize, byte[] data);
@@ -1363,11 +1381,11 @@ namespace System.Drawing
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipTransformPointsI(HandleRef graphics, int destSpace, int srcSpace, Point* points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipLoadImageFromFileICM(string filename, out IntPtr image);
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            internal static partial int GdipLoadImageFromFileICM(string filename, out IntPtr image);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipLoadImageFromFile(string filename, out IntPtr image);
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            internal static partial int GdipLoadImageFromFile(string filename, out IntPtr image);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetEncoderParameterListSize(HandleRef image, ref Guid encoder, out int size);
