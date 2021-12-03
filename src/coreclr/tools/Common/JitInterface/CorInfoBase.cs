@@ -1832,12 +1832,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static void _getFunctionFixedEntryPoint(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte prepareForFPtr, CORINFO_CONST_LOOKUP* pResult)
+        static void _getFunctionFixedEntryPoint(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getFunctionFixedEntryPoint(ftn, prepareForFPtr != 0, ref *pResult);
+                _this.getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer != 0, ref *pResult);
             }
             catch (Exception ex)
             {

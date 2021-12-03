@@ -1274,11 +1274,11 @@ void MyICJI::getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn,     /* IN  */
 // guaranteed to be multi callable entrypoint.
 void MyICJI::getFunctionFixedEntryPoint(
                     CORINFO_METHOD_HANDLE ftn,
-                    bool prepareForFPtr,
+                    bool isUnsafeFunctionPointer,
                     CORINFO_CONST_LOOKUP* pResult)
 {
     jitInstance->mc->cr->AddCall("getFunctionFixedEntryPoint");
-    jitInstance->mc->repGetFunctionFixedEntryPoint(ftn, prepareForFPtr, pResult);
+    jitInstance->mc->repGetFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
 // get the synchronization handle that is passed to monXstatic function

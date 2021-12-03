@@ -3156,7 +3156,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool prepareForFPtr, ref CORINFO_CONST_LOOKUP pResult)
+        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
 
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)

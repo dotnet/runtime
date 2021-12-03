@@ -502,7 +502,7 @@ void getFunctionEntryPoint(
 
 void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
-          bool prepareForFPtr,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
 void* getMethodSync(

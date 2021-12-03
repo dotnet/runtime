@@ -1205,11 +1205,11 @@ void WrapICorJitInfo::getFunctionEntryPoint(
 
 void WrapICorJitInfo::getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
-          bool prepareForFPtr,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult)
 {
     API_ENTER(getFunctionFixedEntryPoint);
-    wrapHnd->getFunctionFixedEntryPoint(ftn, prepareForFPtr, pResult);
+    wrapHnd->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
     API_LEAVE(getFunctionFixedEntryPoint);
 }
 

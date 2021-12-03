@@ -413,7 +413,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_IS_IN_CSE   = GTF_BOOLEAN,
 
-    GTF_COMMON_MASK = 0x0003FFFF, // mask of all the flags above
+    GTF_COMMON_MASK = 0x0007FFFF, // mask of all the flags above
 
     GTF_REUSE_REG_VAL = 0x00800000, // This is set by the register allocator on nodes whose value already exists in the
                                     // register assigned to this node, so the code generator does not have to generate

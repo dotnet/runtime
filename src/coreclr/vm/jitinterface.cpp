@@ -8949,7 +8949,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
 /*********************************************************************/
 void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
-                                         bool prepareForFPtr,
+                                         bool isUnsafeFunctionPointer,
                                          CORINFO_CONST_LOOKUP *  pResult)
 {
     CONTRACTL {
@@ -8962,7 +8962,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
 
     MethodDesc * pMD = GetMethod(ftn);
 
-    if (prepareForFPtr)
+    if (isUnsafeFunctionPointer)
         pMD->PrepareForUseAsAFunctionPointer();
 
     pResult->accessType = IAT_VALUE;

@@ -1441,11 +1441,11 @@ void interceptor_ICJI::getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn,     /* I
 // guaranteed to be multi callable entrypoint.
 void interceptor_ICJI::getFunctionFixedEntryPoint(
             CORINFO_METHOD_HANDLE ftn,
-            bool prepareForFPtr,
+            bool isUnsafeFunctionPointer,
             CORINFO_CONST_LOOKUP* pResult)
 {
     mc->cr->AddCall("getFunctionFixedEntryPoint");
-    original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, prepareForFPtr, pResult);
+    original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
     mc->recGetFunctionFixedEntryPoint(ftn, pResult);
 }
 
