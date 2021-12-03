@@ -89,8 +89,8 @@
                              message="$(string.RuntimePublisher.JitInstrumentationDataKeywordMessage)" symbol="CLR_JITINSTRUMENTEDDATA_KEYWORD" />
                     <keyword name="ProfilerKeyword" mask="0x20000000000"
                              message="$(string.RuntimePublisher.ProfilerKeywordMessage)" symbol="CLR_PROFILER_KEYWORD" />
-                    <keyword name="NativeStubsKeyword" mask="0x40000000000"
-                             message="$(string.RuntimePublisher.NativeStubsKeywordMessage)" symbol="CLR_NATIVE_STUBS_KEYWORD"/>
+                    <keyword name="StubsKeyword" mask="0x40000000000"
+                             message="$(string.RuntimePublisher.StubsKeywordMessage)" symbol="CLR_STUBS_KEYWORD"/>
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -448,11 +448,11 @@
                         <opcodes>
                         </opcodes>
                     </task>
-                    <task name="NativeStubs" symbol="CLR_NATIVE_STUBS_TASK"
+                    <task name="Stubs" symbol="CLR_STUBS_TASK"
                           value="38" eventGUID="{DDD644B5-7D96-4294-9BE8-995BF99753B2}"
-                          message="$(string.RuntimePublisher.NativeStubsTaskMessage)">
+                          message="$(string.RuntimePublisher.StubsTaskMessage)">
                         <opcodes>
-                            <opcode name="VSDStubCreated" message="$(string.RuntimePublisher.VSDStubCreatedMessage)" symbol="CLR_VSD_STUB_CREATED_OPCODE" value="11"/>
+                            <opcode name="VSDStubCreated" message="$(string.RuntimePublisher.VSDStubCreatedOpcodeMessage)" symbol="CLR_VSD_STUB_CREATED_OPCODE" value="11"/>
                         </opcodes>
                     </task>
                     <!--Next available ID is 39-->
@@ -3051,30 +3051,30 @@
                       </UserData>
                     </template>
 
-                    <template tid="VSDStubCreated">
+                    <template tid="VSDStub">
                       <data name="ClrInstanceID" inType="win:UInt16"/>
                       <data name="VSDStubKind" map="VSDStubKindMap" inType="win:UInt8" />
                       <data name="StartAddress" inType="win:UInt64" outType="win:HexInt64" />
                       <data name="Size" inType="win:UInt32" outType="win:HexInt32" />
-                      <data name="DeclaringTypeID" inType="win:UInt64" outType="win:HexInt64" />
-                      <data name="DeclaredMethodID" inType="win:UInt64" outType="win:HexInt64" />
-                      <data name="DeclaredMethodNamespace" inType="win:UnicodeString" />
-                      <data name="DeclaredMethodName" inType="win:UnicodeString" />
-                      <data name="DeclaredMethodSignature" inType="win:UnicodeString" />
-                      <data name="GuessedTypeID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="VirtualTypeID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="VirtualMethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="VirtualMethodNamespace" inType="win:UnicodeString" />
+                      <data name="VirtualMethodName" inType="win:UnicodeString" />
+                      <data name="VirtualMethodSignature" inType="win:UnicodeString" />
+                      <data name="DispatchTypeID" inType="win:UInt64" outType="win:HexInt64" />
                       <UserData>
-                        <Settings xmlns="myNs">
+                        <VSDStub xmlns="myNs">
                           <ClrInstanceID> %1 </ClrInstanceID>
                           <VSDStubKind> %2 </VSDStubKind>
                           <StartAddress> %3 </StartAddress>
                           <Size> %4 </Size>
-                          <DeclaringTypeID> %5 </DeclaringTypeID>
-                          <DeclaredMethodID> %6 </DeclaredMethodID>
-                          <DeclaredMethodNamespace> %7 </DeclaredMethodNamespace>
-                          <DeclaredMethodName> %8 </DeclaredMethodName>
-                          <DeclaredMethodSignature> %9 </DeclaredMethodSignature>
-                          <GuessedTypeID> %10 </GuessedTypeID>
-                        </Settings>
+                          <VirtualTypeID> %5 </VirtualTypeID>
+                          <VirtualMethodID> %6 </VirtualMethodID>
+                          <VirtualMethodNamespace> %7 </VirtualMethodNamespace>
+                          <VirtualMethodName> %8 </VirtualMethodName>
+                          <VirtualMethodSignature> %9 </VirtualMethodSignature>
+                          <DispatchTypeID> %10 </DispatchTypeID>
+                        </VSDStub>
                       </UserData>
                     </template>
 
@@ -4149,10 +4149,10 @@
                            keywords ="PerfTrackKeyword" opcode="ExecutionCheckpoint" task="ExecutionCheckpoint" symbol="ExecutionCheckpoint"
                            message="$(string.RuntimePublisher.ExecutionCheckpointEventMessage)"/>
 
-                    <!-- Native stubs events, 310-320 -->
-                    <event value="310" version="0" level="win:Verbose"  template="VSDStubCreated"
-                           keywords="NativeStubsKeyword" opcode="VSDStubCreated"
-                           task="NativeStubs"
+                    <!-- Stubs events, 310-320 -->
+                    <event value="310" version="0" level="win:Informational"  template="VSDStub"
+                           keywords="StubsKeyword" opcode="VSDStubCreated"
+                           task="Stubs"
                            symbol="VSDStubCreated"
                            message="$(string.RuntimePublisher.VSDStubCreatedEventMessage)"/>
                 </events>
@@ -8437,7 +8437,7 @@
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStartEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2;%nJittedMethodCount=%3" />
                 <string id="RuntimePublisher.ExecutionCheckpointEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
-                <string id="RuntimePublisher.VSDStubCreatedEventMessage" value="ClrInstanceID=%1;%nVSDStubKind=%2;%nStartAddress=%3;%nSize=%4;%nDeclaringTypeID=%5;%nDeclaredMethodID=%6;%nDeclaredMethodNamespace=%7;%nDeclaredMethodName=%8;%nDeclaredMethodSignature=%9;%nGuessedTypeID=%10" />
+                <string id="RuntimePublisher.VSDStubCreatedEventMessage" value="ClrInstanceID=%1;%nVSDStubKind=%2;%nStartAddress=%3;%nSize=%4;%nVirtualTypeID=%5;%nVirtualMethodID=%6;%nVirtualMethodNamespace=%7;%nVirtualMethodName=%8;%nVirtualMethodSignature=%9;%nDispatchTypeID=%10" />
 
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
@@ -8608,7 +8608,7 @@
                 <string id="RuntimePublisher.ExecutionCheckpointTaskMessage" value="ExecutionCheckpoint" />
                 <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementTaskMessage" value="YieldProcessorMeasurement" />
-                <string id="RuntimePublisher.NativeStubsTaskMessage" value="NativeStubs" />
+                <string id="RuntimePublisher.StubsTaskMessage" value="Stubs" />
 
                 <string id="RundownPublisher.GCTaskMessage" value="GC" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
@@ -8798,9 +8798,9 @@
                 <string id="RuntimePublisher.ResolutionAttempted.Failure" value="Failure" />
                 <string id="RuntimePublisher.ResolutionAttempted.Exception" value="Exception" />
                 <string id="RuntimePublisher.VSDStubKind.Lookup" value="Lookup" />
-                <string id="RuntimePublisher.VSDStubKind.Dispatch" value="Lookup" />
-                <string id="RuntimePublisher.VSDStubKind.Resolve" value="Lookup" />
-                <string id="RuntimePublisher.VSDStubKind.VTableCall" value="Lookup" />
+                <string id="RuntimePublisher.VSDStubKind.Dispatch" value="Dispatch" />
+                <string id="RuntimePublisher.VSDStubKind.Resolve" value="Resolve" />
+                <string id="RuntimePublisher.VSDStubKind.VTableCall" value="VTableCall" />
 
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />
@@ -8952,7 +8952,7 @@
                 <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
                 <string id="RuntimePublisher.JitInstrumentationDataKeywordMessage" value="JitInstrumentationData" />
                 <string id="RuntimePublisher.ProfilerKeywordMessage" value="Profiler" />
-                <string id="RuntimePublisher.NativeStubsKeywordMessage" value="NativeStubs" />
+                <string id="RuntimePublisher.StubsKeywordMessage" value="Stubs" />
                 <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
                 <string id="RundownPublisher.GCKeywordMessage" value="GC" />
@@ -9101,7 +9101,7 @@
 
                 <string id="RuntimePublisher.ProfilerOpcodeMessage" value="ProfilerMessage" />
 
-                <string id="RuntimePublisher.VSDStubCreatedMessage" value="VSDStubCreated" />
+                <string id="RuntimePublisher.VSDStubCreatedOpcodeMessage" value="VSDStubCreated" />
 
                 <string id="RundownPublisher.GCSettingsOpcodeMessage" value="GCSettingsRundown" />
 

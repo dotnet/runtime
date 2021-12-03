@@ -492,7 +492,7 @@ private:
     bool ShouldFireVSDStubCreatedEvents()
     {
         LIMITED_METHOD_CONTRACT;
-        return !m_loaderAllocator->IsCollectible() && EventEnabledVSDStubCreated();
+        return EventEnabledVSDStubCreated();
     }
 
     // Fire a VSDStubCreated ETW event.
@@ -501,9 +501,9 @@ private:
         EtwStubKind kind,
         PCODE addr,
         size_t size,
-        MethodTable* pDeclaringMT,
-        MethodDesc* pDeclaredMD,
-        MethodTable* pGuessedMT);
+        MethodTable* pVirtualMT,
+        MethodDesc* pVirtualMD,
+        MethodTable* pDispatchMT);
 
     // Given a dispatch token and a method table for a derived or implementing
     // class, return the method table and method desc of the declaration that the
