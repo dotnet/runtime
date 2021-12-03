@@ -171,7 +171,4 @@
   <ItemGroup>
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\src\System.ComponentModel.TypeConverter.csproj" SkipUseReferenceAssembly="true" />
-  </ItemGroup>
 </Project>
