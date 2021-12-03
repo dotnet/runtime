@@ -86,8 +86,10 @@ namespace System.Threading.RateLimiting
                 throw new ArgumentOutOfRangeException(nameof(tokenCount), tokenCount, SR.Format(SR.TokenLimitExceeded, tokenCount, _options.TokenLimit));
             }
 
+            ThrowIfDisposed();
+
             // Return SuccessfulAcquisition if requestedCount is 0 and resources are available
-            if (tokenCount == 0 && _tokenCount > 0 && !_disposed)
+            if (tokenCount == 0 && _tokenCount > 0)
             {
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
@@ -139,11 +141,7 @@ namespace System.Threading.RateLimiting
 
         private bool TryLeaseUnsynchronized(int tokenCount, [NotNullWhen(true)] out RateLimitLease? lease)
         {
-            if (_disposed)
-            {
-                lease = FailedLease;
-                return true;
-            }
+            ThrowIfDisposed();
 
             // if permitCount is 0 we want to queue it if there are no available permits
             if (_tokenCount >= tokenCount && _tokenCount != 0)
@@ -311,6 +309,14 @@ namespace System.Threading.RateLimiting
             Dispose(true);
 
             return default;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(TokenBucketRateLimiter));
+            }
         }
 
         private sealed class TokenBucketLease : RateLimitLease

@@ -49,8 +49,10 @@ namespace System.Threading.RateLimiting
                 throw new ArgumentOutOfRangeException(nameof(permitCount), permitCount, SR.Format(SR.PermitLimitExceeded, permitCount, _options.PermitLimit));
             }
 
+            ThrowIfDisposed();
+
             // Return SuccessfulLease or FailedLease to indicate limiter state
-            if (permitCount == 0 && !_disposed)
+            if (permitCount == 0)
             {
                 return _permitCount > 0 ? SuccessfulLease : FailedLease;
             }
@@ -120,11 +122,7 @@ namespace System.Threading.RateLimiting
 
         private bool TryLeaseUnsynchronized(int permitCount, [NotNullWhen(true)] out RateLimitLease? lease)
         {
-            if (_disposed)
-            {
-                lease = FailedLease;
-                return true;
-            }
+            ThrowIfDisposed();
 
             // if permitCount is 0 we want to queue it if there are no available permits
             if (_permitCount >= permitCount && _permitCount != 0)
@@ -229,6 +227,14 @@ namespace System.Threading.RateLimiting
             Dispose(true);
 
             return default;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(ConcurrencyLimiter));
+            }
         }
 
         private sealed class ConcurrencyLease : RateLimitLease

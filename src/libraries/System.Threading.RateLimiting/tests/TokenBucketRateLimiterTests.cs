@@ -330,9 +330,9 @@ namespace System.Threading.RateLimiting.Test
             lease = await wait3;
             Assert.False(lease.IsAcquired);
 
-            // Can't acquire any leases after disposal
-            Assert.False(limiter.Acquire(1).IsAcquired);
-            Assert.False((await limiter.WaitAsync(1)).IsAcquired);
+            // Throws after disposal
+            Assert.Throws<ObjectDisposedException>(() => limiter.Acquire(1));
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAsync(1).AsTask());
         }
 
         [Fact]
@@ -357,9 +357,9 @@ namespace System.Threading.RateLimiting.Test
             lease = await wait3;
             Assert.False(lease.IsAcquired);
 
-            // Can't acquire any leases after disposal
-            Assert.False(limiter.Acquire(1).IsAcquired);
-            Assert.False((await limiter.WaitAsync(1)).IsAcquired);
+            // Throws after disposal
+            Assert.Throws<ObjectDisposedException>(() => limiter.Acquire(1));
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAsync(1).AsTask());
         }
 
         [Fact]

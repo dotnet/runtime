@@ -82,7 +82,7 @@ namespace System.Threading.RateLimiting
         protected virtual void Dispose(bool disposing) { }
 
         /// <summary>
-        /// Dispose the RateLimiter. This completes any queued acquires with a failed lease.
+        /// Disposes the RateLimiter. This completes any queued acquires with a failed lease.
         /// </summary>
         public void Dispose()
         {
@@ -100,7 +100,7 @@ namespace System.Threading.RateLimiting
         }
 
         /// <summary>
-        /// Diposes the RateLimiter asynchronously.
+        /// Disposes the RateLimiter asynchronously.
         /// </summary>
         /// <returns>ValueTask representin the completion of the disposal.</returns>
         public async ValueTask DisposeAsync()
