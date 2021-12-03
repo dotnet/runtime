@@ -376,8 +376,8 @@ namespace System.Runtime.Intrinsics
                 }
                 else
                 {
-                    lowerBits = Sse2.And(vector.AsInt32(), Create(0x00000000_FFFFFFFF).AsInt32());
-                    lowerBits = Sse2.Or(Create(0x43300000_00000000).AsInt32(), lowerBits);
+                    lowerBits = Sse2.And(vector, Create(0x00000000_FFFFFFFFL)).AsInt32();
+                    lowerBits = Sse2.Or(lowerBits, Create(0x43300000_00000000).AsInt32());
                 }
 
                 var upperBits = Sse2.ShiftRightLogical(vector, 32);                                             // Extract the 32 most significant bits of vector
@@ -423,12 +423,12 @@ namespace System.Runtime.Intrinsics
                 if (Avx2.IsSupported)
                 {
                     lowerBits = vector.AsUInt32();
-                    lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000UL).AsUInt32(), 0b1010);        // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)                                                 */
+                    lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000UL).AsUInt32(), 0b1010);        // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)
                 }
                 else
                 {
-                    lowerBits = Sse2.And(vector.AsUInt32(), Create(0x00000000_FFFFFFFF).AsUInt32());
-                    lowerBits = Sse2.Or(Create(0x43300000_00000000UL).AsUInt32(), lowerBits);
+                    lowerBits = Sse2.And(vector, Create(0x00000000_FFFFFFFFUL)).AsUInt32();
+                    lowerBits = Sse2.Or(lowerBits, Create(0x43300000_00000000UL).AsUInt32());
                 }
 
                 var upperBits = Sse2.ShiftRightLogical(vector, 32);                                             // Extract the 32 most significant bits of vector
