@@ -73,9 +73,15 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(immutableArray, span.ToArray());
             Assert.Equal(immutableArray.Length, span.Length);
 
-            ReadOnlySpan<int> rangedSpan = immutableArray.AsSpan(0, 0);
+            ReadOnlySpan<int> startRangedSpan = immutableArray.AsSpan(0, 0);
+            Assert.Equal(immutableArray, startRangedSpan.ToArray());
+            Assert.Equal(immutableArray.Length, startRangedSpan.Length);
+
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+            ReadOnlySpan<int> rangedSpan = immutableArray.AsSpan(new Range(0, 0));
             Assert.Equal(immutableArray, rangedSpan.ToArray());
             Assert.Equal(immutableArray.Length, rangedSpan.Length);
+#endif
         }
 
         [Fact]
@@ -88,9 +94,9 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(0, span.Length);
             Assert.True(span.IsEmpty);
 
-            ReadOnlySpan<int> rangeSpan = immutableArray.AsSpan(0, 0);
-            Assert.Equal(0, rangeSpan.Length);
-            Assert.True(rangeSpan.IsEmpty);
+            ReadOnlySpan<int> startRangeSpan = immutableArray.AsSpan(0, 0);
+            Assert.Equal(0, startRangeSpan.Length);
+            Assert.True(startRangeSpan.IsEmpty);
         }
 
         [Theory]
@@ -113,10 +119,18 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(0, span.Length);
             Assert.True(span.IsEmpty);
 
-            ReadOnlySpan<string> rangeSpan = immutableArray.AsSpan(0, 0);
-            Assert.Equal(0, rangeSpan.Length);
-            Assert.True(rangeSpan.IsEmpty);
+            ReadOnlySpan<string> startRangeSpan = immutableArray.AsSpan(0, 0);
+            Assert.Equal(0, startRangeSpan.Length);
+            Assert.True(startRangeSpan.IsEmpty);
         }
+
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        [Fact]
+        public void AsSpanEmptyRangeNotInitialized()
+        {
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AsSpan(new Range(0, 0)));
+        }
+#endif
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
@@ -1338,6 +1352,10 @@ namespace System.Collections.Immutable.Tests
             var array = source.ToImmutableArray();
             var expected = source.Skip(start).Take(length);
             Assert.Equal(expected, array.AsSpan(start, length).ToArray());
+
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+            Assert.Equal(expected, array.AsSpan(new Range(start, start + length)).ToArray());
+#endif
         }
 
         [Theory]
@@ -1350,6 +1368,13 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(array.Length + 1, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(0, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(0, array.Length + 1));
+
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(-1, 0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(array.Length + 1, array.Length + 2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(0, -1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(0, array.Length + 1)));
+#endif
         }
 
         public static IEnumerable<object[]> RangeIndexLengthData()
