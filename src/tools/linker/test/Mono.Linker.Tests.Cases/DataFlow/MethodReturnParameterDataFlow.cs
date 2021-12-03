@@ -189,11 +189,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			return null;
 		}
 
-		// https://github.com/dotnet/linker/issues/2025
-		// Ideally this should not warn
-		[ExpectedWarning ("IL2063",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnWithRequirementsAlwaysThrows) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		Type ReturnWithRequirementsAlwaysThrows ()
 		{

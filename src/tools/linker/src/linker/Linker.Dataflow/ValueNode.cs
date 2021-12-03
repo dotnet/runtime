@@ -3,13 +3,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+using ILLink.Shared.DataFlow;
 using Mono.Cecil;
 using FieldDefinition = Mono.Cecil.FieldDefinition;
 using GenericParameter = Mono.Cecil.GenericParameter;
+using MultiValue = ILLink.Shared.DataFlow.ValueSet<Mono.Linker.Dataflow.ValueNode>;
 using TypeDefinition = Mono.Cecil.TypeDefinition;
 
 namespace Mono.Linker.Dataflow
@@ -37,7 +38,6 @@ namespace Mono.Linker.Dataflow
 		SystemTypeForGenericParameter,        // symbolic placeholder for generic parameter
 
 		MergePoint,                     // structural, multiplexer - Values
-		GetTypeFromString,              // structural, could be known value - KnownString
 		Array,                          // structural, could be known value - Array
 
 		LoadField,                      // structural, could be known value - InstanceValue
@@ -74,54 +74,6 @@ namespace Mono.Linker.Dataflow
 		/// </summary>
 		public TypeDefinition? StaticType { get; protected set; }
 
-		/// <summary>
-		/// Allows the enumeration of the direct children of this node.  The ChildCollection struct returned here
-		/// supports 'foreach' without allocation.
-		/// </summary>
-		public ChildCollection Children { get { return new ChildCollection (this); } }
-
-		/// <summary>
-		/// This property allows you to enumerate all 'unique values' represented by a given ValueNode.  The basic idea
-		/// is that there will be no MergePointValues in the returned ValueNodes and all structural operations will be
-		/// applied so that each 'unique value' can be considered on its own without regard to the structure that led to
-		/// it.
-		/// </summary>
-		public UniqueValueCollection UniqueValuesInternal {
-			get {
-				return new UniqueValueCollection (this);
-			}
-		}
-
-		/// <summary>
-		/// This protected method is how nodes implement the UniqueValues property.  It is protected because it returns
-		/// an IEnumerable and we want to avoid allocating an enumerator for the exceedingly common case of there being
-		/// only one value in the enumeration.  The UniqueValueCollection returned by the UniqueValues property handles
-		/// this detail.
-		/// </summary>
-		protected abstract IEnumerable<ValueNode> EvaluateUniqueValues ();
-
-		/// <summary>
-		/// RepresentsExactlyOneValue is used by the UniqueValues property to allow us to bypass allocating an
-		/// enumerator to return just one value.  If a node returns 'true' from RepresentsExactlyOneValue, it must also
-		/// return that one value from GetSingleUniqueValue.  If it always returns 'false', it doesn't need to implement
-		/// GetSingleUniqueValue.
-		/// </summary>
-		protected virtual bool RepresentsExactlyOneValue { get { return false; } }
-
-		/// <summary>
-		/// GetSingleUniqueValue is called if, and only if, RepresentsExactlyOneValue returns true.  It allows us to
-		/// bypass the allocation of an enumerator for the common case of returning exactly one value.
-		/// </summary>
-		protected virtual ValueNode GetSingleUniqueValue ()
-		{
-			// Not implemented because RepresentsExactlyOneValue returns false and, therefore, this method should be
-			// unreachable.
-			throw new NotImplementedException ();
-		}
-
-		protected abstract int NumChildren { get; }
-		protected abstract ValueNode ChildAt (int index);
-
 		public virtual bool Equals (ValueNode? other)
 		{
 			return other != null && this.Kind == other.Kind && this.StaticType == other.StaticType;
@@ -149,177 +101,6 @@ namespace Mono.Linker.Dataflow
 
 			return this.Equals ((ValueNode) other);
 		}
-
-		#region Specialized Collection Nested Types
-		/// <summary>
-		/// ChildCollection struct is used to wrap the operations on a node involving its children.  In particular, the
-		/// struct implements a GetEnumerator method that is used to allow "foreach (ValueNode node in myNode.Children)"
-		/// without heap allocations.
-		/// </summary>
-		public struct ChildCollection : IEnumerable<ValueNode>
-		{
-			/// <summary>
-			/// Enumerator for children of a ValueNode.  Allows foreach(var child in node.Children) to work without
-			/// allocating a heap-based enumerator.
-			/// </summary>
-			public struct Enumerator : IEnumerator<ValueNode>
-			{
-				int _index;
-				readonly ValueNode _parent;
-
-				public Enumerator (ValueNode parent)
-				{
-					_parent = parent;
-					_index = -1;
-				}
-
-				public ValueNode Current { get { return _parent.ChildAt (_index); } }
-
-				object System.Collections.IEnumerator.Current { get { return Current; } }
-
-				public bool MoveNext ()
-				{
-					_index++;
-					return (_parent != null) ? (_index < _parent.NumChildren) : false;
-				}
-
-				public void Reset ()
-				{
-					_index = -1;
-				}
-
-				public void Dispose ()
-				{
-				}
-			}
-
-			readonly ValueNode _parentNode;
-
-			public ChildCollection (ValueNode parentNode) { _parentNode = parentNode; }
-
-			// Used by C# 'foreach', when strongly typed, to avoid allocation.
-			public Enumerator GetEnumerator ()
-			{
-				return new Enumerator (_parentNode);
-			}
-
-			IEnumerator<ValueNode> IEnumerable<ValueNode>.GetEnumerator ()
-			{
-				// note the boxing!
-				return new Enumerator (_parentNode);
-			}
-			System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator ()
-			{
-				// note the boxing!
-				return new Enumerator (_parentNode);
-			}
-
-			public int Count { get { return (_parentNode != null) ? _parentNode.NumChildren : 0; } }
-		}
-
-		/// <summary>
-		/// UniqueValueCollection is used to wrap calls to ValueNode.EvaluateUniqueValues.  If a ValueNode represents
-		/// only one value, then foreach(ValueNode value in node.UniqueValues) will not allocate a heap-based enumerator.
-		///
-		/// This is implented by having each ValueNode tell us whether or not it represents exactly one value or not.
-		/// If it does, we fetch it with ValueNode.GetSingleUniqueValue(), otherwise, we fall back to the usual heap-
-		/// based IEnumerable returned by ValueNode.EvaluateUniqueValues.
-		/// </summary>
-		public struct UniqueValueCollection : IEnumerable<ValueNode>
-		{
-			readonly IEnumerable<ValueNode>? _multiValueEnumerable;
-			readonly ValueNode? _treeNode;
-
-			public UniqueValueCollection (ValueNode node)
-			{
-				if (node.RepresentsExactlyOneValue) {
-					_multiValueEnumerable = null;
-					_treeNode = node;
-				} else {
-					_multiValueEnumerable = node.EvaluateUniqueValues ();
-					_treeNode = null;
-				}
-			}
-
-			public Enumerator GetEnumerator ()
-			{
-				return new Enumerator (_treeNode, _multiValueEnumerable);
-			}
-
-			IEnumerator<ValueNode> IEnumerable<ValueNode>.GetEnumerator ()
-			{
-				if (_multiValueEnumerable != null) {
-					return _multiValueEnumerable.GetEnumerator ();
-				}
-
-				// note the boxing!
-				return GetEnumerator ();
-			}
-
-			System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator ()
-			{
-				if (_multiValueEnumerable != null) {
-					return _multiValueEnumerable.GetEnumerator ();
-				}
-
-				// note the boxing!
-				return GetEnumerator ();
-			}
-
-
-			public struct Enumerator : IEnumerator<ValueNode>
-			{
-				readonly IEnumerator<ValueNode>? _multiValueEnumerator;
-				readonly ValueNode? _singleValueNode;
-				int _index;
-
-				public Enumerator (ValueNode? treeNode, IEnumerable<ValueNode>? multiValueEnumerable)
-				{
-					Debug.Assert (treeNode != null || multiValueEnumerable != null);
-					_singleValueNode = treeNode?.GetSingleUniqueValue ();
-					_multiValueEnumerator = multiValueEnumerable?.GetEnumerator ();
-					_index = -1;
-				}
-
-				public void Reset ()
-				{
-					if (_multiValueEnumerator != null) {
-						_multiValueEnumerator.Reset ();
-						return;
-					}
-
-					_index = -1;
-				}
-
-				public bool MoveNext ()
-				{
-					if (_multiValueEnumerator != null)
-						return _multiValueEnumerator.MoveNext ();
-
-					_index++;
-					return _index == 0;
-				}
-
-				public ValueNode Current {
-					get {
-						if (_multiValueEnumerator != null)
-							return _multiValueEnumerator.Current;
-
-						if (_index == 0)
-							return _singleValueNode!;
-
-						throw new InvalidOperationException ();
-					}
-				}
-
-				object System.Collections.IEnumerator.Current { get { return Current; } }
-
-				public void Dispose ()
-				{
-				}
-			}
-		}
-		#endregion
 	}
 
 	/// <summary>
@@ -332,20 +113,6 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	public abstract class LeafValueNode : ValueNode
 	{
-		protected override int NumChildren { get { return 0; } }
-		protected override ValueNode ChildAt (int index) { throw new InvalidOperationException (); }
-
-		protected override bool RepresentsExactlyOneValue { get { return true; } }
-
-		protected override ValueNode GetSingleUniqueValue () { return this; }
-
-
-		protected override IEnumerable<ValueNode> EvaluateUniqueValues ()
-		{
-			// Leaf values should not represent more than one value.  This method should be unreachable as long as
-			// RepresentsExactlyOneValue returns true.
-			throw new NotImplementedException ();
-		}
 	}
 
 	// These are extension methods because we want to allow the use of them on null 'this' pointers.
@@ -360,7 +127,7 @@ namespace Mono.Linker.Dataflow
 		/// and should not be used by the caller after returning</param>
 		/// <param name="allNodesSeen">Optional. The set of all nodes encountered during a walk after DetectCycle returns</param>
 		/// <returns></returns>
-		public static bool DetectCycle (this ValueNode? node, HashSet<ValueNode> seenNodes, HashSet<ValueNode>? allNodesSeen)
+		public static bool DetectCycle (this ValueNode node, HashSet<ValueNode> seenNodes, HashSet<ValueNode>? allNodesSeen)
 		{
 			if (node == null)
 				return false;
@@ -398,25 +165,14 @@ namespace Mono.Linker.Dataflow
 			//
 			// Nodes with children
 			//
-			case ValueNodeKind.MergePoint:
-				foreach (ValueNode val in ((MergePointValue) node).Values) {
-					if (val.DetectCycle (seenNodes, allNodesSeen)) {
-						foundCycle = true;
-					}
-				}
-				break;
-
-			case ValueNodeKind.GetTypeFromString:
-				GetTypeFromStringValue gtfsv = (GetTypeFromStringValue) node;
-				foundCycle = gtfsv.AssemblyIdentity.DetectCycle (seenNodes, allNodesSeen);
-				foundCycle |= gtfsv.NameString.DetectCycle (seenNodes, allNodesSeen);
-				break;
 
 			case ValueNodeKind.Array:
 				ArrayValue av = (ArrayValue) node;
 				foundCycle = av.Size.DetectCycle (seenNodes, allNodesSeen);
 				foreach (ValueBasicBlockPair pair in av.IndexValues.Values) {
-					foundCycle |= pair.Value.DetectCycle (seenNodes, allNodesSeen);
+					foreach (var v in pair.Value) {
+						foundCycle |= v.DetectCycle (seenNodes, allNodesSeen);
+					}
 				}
 				break;
 
@@ -428,25 +184,34 @@ namespace Mono.Linker.Dataflow
 			return foundCycle;
 		}
 
-		public static ValueNode.UniqueValueCollection UniqueValues (this ValueNode? node)
-		{
-			if (node == null)
-				return new ValueNode.UniqueValueCollection (UnknownValue.Instance);
-
-			return node.UniqueValuesInternal;
-		}
-
-		public static int? AsConstInt (this ValueNode? node)
+		public static int? AsConstInt (this ValueNode node)
 		{
 			if (node is ConstIntValue constInt)
 				return constInt.Value;
+
 			return null;
+		}
+
+		public static int? AsConstInt (this in MultiValue value)
+		{
+			if (value.AsSingleValue () is ConstIntValue constInt)
+				return constInt.Value;
+
+			return null;
+		}
+
+		public static ValueNode? AsSingleValue (this in MultiValue node)
+		{
+			if (node.Count () != 1)
+				return null;
+
+			return node.Single ();
 		}
 	}
 
 	internal static class ValueNodeDump
 	{
-		internal static string ValueNodeToString (ValueNode? node, params object[] args)
+		internal static string ValueNodeToString (ValueNode node, params object[] args)
 		{
 			if (node == null)
 				return "<null>";
@@ -463,31 +228,6 @@ namespace Mono.Linker.Dataflow
 			}
 			sb.Append (")");
 			return sb.ToString ();
-		}
-
-		static string GetIndent (int level)
-		{
-			StringBuilder sb = new StringBuilder (level * 2);
-			for (int i = 0; i < level; i++)
-				sb.Append ("  ");
-			return sb.ToString ();
-		}
-
-		public static void DumpTree (this ValueNode node, System.IO.TextWriter? writer = null, int indentLevel = 0)
-		{
-			if (writer == null)
-				writer = Console.Out;
-
-			writer.Write (GetIndent (indentLevel));
-			if (node == null) {
-				writer.WriteLine ("<null>");
-				return;
-			}
-
-			writer.WriteLine (node);
-			foreach (ValueNode child in node.Children) {
-				child.DumpTree (writer, indentLevel + 1);
-			}
 		}
 	}
 
@@ -932,215 +672,6 @@ namespace Mono.Linker.Dataflow
 	}
 
 	/// <summary>
-	/// A merge point commonly occurs due to control flow in a method body.  It represents a set of values
-	/// from different paths through the method.  It is the reason for EvaluateUniqueValues, which essentially
-	/// provides an enumeration over all the concrete values represented by a given ValueNode after 'erasing'
-	/// the merge point nodes.
-	/// </summary>
-	class MergePointValue : ValueNode
-	{
-		private MergePointValue (ValueNode one, ValueNode two)
-		{
-			Kind = ValueNodeKind.MergePoint;
-			StaticType = null;
-			m_values = new ValueNodeHashSet ();
-
-			if (one.Kind == ValueNodeKind.MergePoint) {
-				MergePointValue mpvOne = (MergePointValue) one;
-				foreach (ValueNode value in mpvOne.Values)
-					m_values.Add (value);
-			} else
-				m_values.Add (one);
-
-			if (two.Kind == ValueNodeKind.MergePoint) {
-				MergePointValue mpvTwo = (MergePointValue) two;
-				foreach (ValueNode value in mpvTwo.Values)
-					m_values.Add (value);
-			} else
-				m_values.Add (two);
-		}
-
-		public MergePointValue ()
-		{
-			Kind = ValueNodeKind.MergePoint;
-			m_values = new ValueNodeHashSet ();
-		}
-
-		public void AddValue (ValueNode node)
-		{
-			// we are mutating our state, so we must invalidate any cached knowledge
-			//InvalidateIsOpen ();
-
-			if (node.Kind == ValueNodeKind.MergePoint) {
-				foreach (ValueNode value in ((MergePointValue) node).Values)
-					m_values.Add (value);
-			} else
-				m_values.Add (node);
-
-#if false
-			if (this.DetectCycle(new HashSet<ValueNode>()))
-			{
-				throw new Exception("Found a cycle");
-			}
-#endif
-		}
-
-		readonly ValueNodeHashSet m_values;
-
-		public ValueNodeHashSet Values { get { return m_values; } }
-
-		protected override int NumChildren { get { return Values.Count; } }
-		protected override ValueNode ChildAt (int index)
-		{
-			if (index < NumChildren)
-				return Values.ElementAt (index);
-			throw new InvalidOperationException ();
-		}
-
-		public static ValueNode? MergeValues (ValueNode? one, ValueNode? two)
-		{
-			if (one == null)
-				return two;
-			else if (two == null)
-				return one;
-			else if (one.Equals (two))
-				return one;
-			else
-				return new MergePointValue (one, two);
-		}
-
-		protected override IEnumerable<ValueNode> EvaluateUniqueValues ()
-		{
-			foreach (ValueNode value in Values) {
-				foreach (ValueNode uniqueValue in value.UniqueValuesInternal) {
-					yield return uniqueValue;
-				}
-			}
-		}
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			MergePointValue otherMpv = (MergePointValue) other;
-			if (this.Values.Count != otherMpv.Values.Count)
-				return false;
-
-			foreach (ValueNode value in this.Values) {
-				if (!otherMpv.Values.Contains (value))
-					return false;
-			}
-			return true;
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, Values);
-		}
-
-		protected override string NodeToString ()
-		{
-			return ValueNodeDump.ValueNodeToString (this);
-		}
-	}
-
-	delegate TypeDefinition TypeResolver (string assemblyString, string typeString);
-
-	/// <summary>
-	/// The result of a Type.GetType.
-	/// AssemblyIdentity is the scope in which to resolve if the type name string is not assembly-qualified.
-	/// </summary>
-
-#pragma warning disable CA1812 // GetTypeFromStringValue is never instantiated
-	class GetTypeFromStringValue : ValueNode
-	{
-		private readonly TypeResolver _resolver;
-
-		public GetTypeFromStringValue (TypeResolver resolver, ValueNode assemblyIdentity, ValueNode nameString)
-		{
-			_resolver = resolver;
-			Kind = ValueNodeKind.GetTypeFromString;
-
-			// Should be System.Type, but we don't have a use case for it
-			StaticType = null;
-
-			AssemblyIdentity = assemblyIdentity;
-			NameString = nameString;
-		}
-
-		public ValueNode AssemblyIdentity { get; private set; }
-
-		public ValueNode NameString { get; private set; }
-
-		protected override int NumChildren { get { return 2; } }
-		protected override ValueNode ChildAt (int index)
-		{
-			if (index == 0) return AssemblyIdentity;
-			if (index == 1) return NameString;
-			throw new InvalidOperationException ();
-		}
-
-		protected override IEnumerable<ValueNode> EvaluateUniqueValues ()
-		{
-			HashSet<string>? names = null;
-
-			foreach (ValueNode nameStringValue in NameString.UniqueValuesInternal) {
-				if (nameStringValue.Kind == ValueNodeKind.KnownString) {
-					if (names == null) {
-						names = new HashSet<string> ();
-					}
-
-					string typeName = ((KnownStringValue) nameStringValue).Contents;
-					names.Add (typeName);
-				}
-			}
-
-			bool foundAtLeastOne = false;
-
-			if (names != null) {
-				foreach (ValueNode assemblyValue in AssemblyIdentity.UniqueValuesInternal) {
-					if (assemblyValue.Kind == ValueNodeKind.KnownString) {
-						string assemblyName = ((KnownStringValue) assemblyValue).Contents;
-
-						foreach (string name in names) {
-							TypeDefinition typeDefinition = _resolver (assemblyName, name);
-							if (typeDefinition != null) {
-								foundAtLeastOne = true;
-								yield return new SystemTypeValue (typeDefinition);
-							}
-						}
-					}
-				}
-			}
-
-			if (!foundAtLeastOne)
-				yield return UnknownValue.Instance;
-		}
-
-		public override bool Equals (ValueNode? other)
-		{
-			if (!base.Equals (other))
-				return false;
-
-			GetTypeFromStringValue otherGtfs = (GetTypeFromStringValue) other;
-
-			return this.AssemblyIdentity.Equals (otherGtfs.AssemblyIdentity) &&
-				this.NameString.Equals (otherGtfs.NameString);
-		}
-
-		public override int GetHashCode ()
-		{
-			return HashCode.Combine (Kind, AssemblyIdentity, NameString);
-		}
-
-		protected override string NodeToString ()
-		{
-			return ValueNodeDump.ValueNodeToString (this, NameString);
-		}
-	}
-
-	/// <summary>
 	/// A representation of a ldfld.  Note that we don't have a representation of objects containing fields
 	/// so there isn't much that can be done with this node type yet.
 	/// </summary>
@@ -1216,27 +747,36 @@ namespace Mono.Linker.Dataflow
 
 	class ArrayValue : ValueNode
 	{
-		protected override int NumChildren => 1 + IndexValues.Count;
+		static ValueSetLattice<ValueNode> MultiValueLattice => default;
+
+		public static MultiValue Create (MultiValue size, TypeReference elementType)
+		{
+			MultiValue result = MultiValueLattice.Top;
+			foreach (var sizeValue in size) {
+				result = MultiValueLattice.Meet (result, new MultiValue (new ArrayValue (sizeValue, elementType)));
+			}
+
+			return result;
+		}
+
+		public static MultiValue Create (int size, TypeReference elementType)
+		{
+			return new MultiValue (new ArrayValue (new ConstIntValue (size), elementType));
+		}
 
 		/// <summary>
 		/// Constructs an array value of the given size
 		/// </summary>
-		public ArrayValue (ValueNode? size, TypeReference elementType)
+		private ArrayValue (ValueNode size, TypeReference elementType)
 		{
 			Kind = ValueNodeKind.Array;
 
 			// Should be System.Array (or similar), but we don't have a use case for it
 			StaticType = null;
 
-			Size = size ?? UnknownValue.Instance;
+			Size = size;
 			ElementType = elementType;
 			IndexValues = new Dictionary<int, ValueBasicBlockPair> ();
-		}
-
-		private ArrayValue (ValueNode size, TypeReference elementType, Dictionary<int, ValueBasicBlockPair> indexValues)
-			: this (size, elementType)
-		{
-			IndexValues = indexValues;
 		}
 
 		public ValueNode Size { get; }
@@ -1268,28 +808,40 @@ namespace Mono.Linker.Dataflow
 
 		protected override string NodeToString ()
 		{
-			// TODO: Use StringBuilder and remove Linq usage.
-			return $"(Array Size:{ValueNodeDump.ValueNodeToString (this, Size)}, Values:({string.Join (',', IndexValues.Select (v => $"({v.Key},{ValueNodeDump.ValueNodeToString (v.Value.Value)})"))})";
-		}
+			StringBuilder result = new ();
+			result.Append ("Array Size:");
+			result.Append (ValueNodeDump.ValueNodeToString (this, Size));
 
-		protected override IEnumerable<ValueNode> EvaluateUniqueValues ()
-		{
-			foreach (var sizeConst in Size.UniqueValuesInternal)
-				yield return new ArrayValue (sizeConst, ElementType, IndexValues);
-		}
+			result.Append (", Values:(");
+			bool first = true;
+			foreach (var element in IndexValues) {
+				if (!first) {
+					result.Append (",");
+					first = false;
+				}
 
-		protected override ValueNode ChildAt (int index)
-		{
-			if (index == 0) return Size;
-			if (index - 1 <= IndexValues.Count)
-				return IndexValues.Values.ElementAt (index - 1).Value!;
+				result.Append ("(");
+				result.Append (element.Key);
+				result.Append (",(");
+				bool firstValue = true;
+				foreach (var v in element.Value.Value) {
+					if (firstValue) {
+						result.Append (",");
+						firstValue = false;
+					}
 
-			throw new InvalidOperationException ();
+					result.Append (ValueNodeDump.ValueNodeToString (v));
+				}
+				result.Append ("))");
+			}
+			result.Append (')');
+
+			return result.ToString ();
 		}
 	}
 
 	#region ValueNode Collections
-	public class ValueNodeList : List<ValueNode?>
+	public class ValueNodeList : List<MultiValue>
 	{
 		public ValueNodeList ()
 		{
@@ -1300,14 +852,17 @@ namespace Mono.Linker.Dataflow
 		{
 		}
 
-		public ValueNodeList (List<ValueNode> other)
+		public ValueNodeList (List<MultiValue> other)
 			: base (other)
 		{
 		}
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCodeEnumerable (this);
+			HashCode hashCode = new HashCode ();
+			foreach (var item in this)
+				hashCode.Add (item.GetHashCode ());
+			return hashCode.ToHashCode ();
 		}
 
 		public override bool Equals (object? other)
@@ -1319,35 +874,7 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			for (int i = 0; i < Count; i++) {
-				if (!(otherList[i]?.Equals (this[i]) ?? (this[i] is null)))
-					return false;
-			}
-			return true;
-		}
-	}
-
-	class ValueNodeHashSet : HashSet<ValueNode>
-	{
-		public override int GetHashCode ()
-		{
-			return HashUtils.CalcHashCodeEnumerable (this);
-		}
-
-		public override bool Equals (object? other)
-		{
-			if (!(other is ValueNodeHashSet otherSet))
-				return false;
-
-			if (otherSet.Count != Count)
-				return false;
-
-			IEnumerator<ValueNode> thisEnumerator = this.GetEnumerator ();
-			IEnumerator<ValueNode> otherEnumerator = otherSet.GetEnumerator ();
-
-			for (int i = 0; i < Count; i++) {
-				thisEnumerator.MoveNext ();
-				otherEnumerator.MoveNext ();
-				if (!thisEnumerator.Current.Equals (otherEnumerator.Current))
+				if (!otherList[i].Equals (this[i]))
 					return false;
 			}
 			return true;
@@ -1355,20 +882,10 @@ namespace Mono.Linker.Dataflow
 	}
 	#endregion
 
-	static class HashUtils
-	{
-		public static int CalcHashCodeEnumerable<T> (IEnumerable<T> list) where T : class?
-		{
-			HashCode hashCode = new HashCode ();
-			foreach (var item in list)
-				hashCode.Add (item);
-			return hashCode.ToHashCode ();
-		}
-	}
 
 	public struct ValueBasicBlockPair
 	{
-		public ValueNode? Value;
+		public MultiValue Value;
 		public int BasicBlockIndex;
 	}
 }
