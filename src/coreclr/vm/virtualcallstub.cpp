@@ -2616,10 +2616,7 @@ void VirtualCallStubManager::FireVSDStubCreatedEvent(
         SString virtualMethodNamespaceOrClassName;
         SString virtualMethodName;
         SString virtualMethodSignature;
-        if (pVirtualMD != NULL)
-        {
-            pVirtualMD->GetMethodInfo(virtualMethodNamespaceOrClassName, virtualMethodName, virtualMethodSignature);
-        }
+        pVirtualMD->GetMethodInfo(virtualMethodNamespaceOrClassName, virtualMethodName, virtualMethodSignature);
 
         FireEtwVSDStubCreated(
             GetClrInstanceId(),
