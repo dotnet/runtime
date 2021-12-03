@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -57,6 +58,20 @@ namespace System.Text.RegularExpressions.Tests
         internal static async Task<Regex[]> SourceGenRegexAsync(
             (string pattern, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
         {
+            // Un-ifdef to compile each regex individually, which can be useful if one regex among thousands is causing a failure.
+            // We compile them all en mass for test efficiency, but it can make it harder to debug a compilation failure in one of them.
+#if false
+            if (regexes.Length > 1)
+            {
+                var r = new List<Regex>();
+                foreach (var input in regexes)
+                {
+                    r.AddRange(await SourceGenRegexAsync(new[] { input }, cancellationToken));
+                }
+                return r.ToArray();
+            }
+#endif
+
             Debug.Assert(regexes.Length > 0);
 
             var code = new StringBuilder();
