@@ -523,7 +523,8 @@ namespace System.Text.RegularExpressions
         public bool IsAtomicByParent()
         {
             // Walk up the parent hierarchy.
-            for (RegexNode? parent = Next; parent is not null; parent = parent.Next)
+            RegexNode child = this;
+            for (RegexNode? parent = child.Next; parent is not null; child = parent, parent = child.Next)
             {
                 switch (parent.Type)
                 {
@@ -540,14 +541,14 @@ namespace System.Text.RegularExpressions
                         // so any atomicity applied to the alternation also applies to
                         // each individual branch.  This is true as well for conditional
                         // backreferences, where each of the yes/no branches are independent.
-                    case Testgroup when parent.Child(0) != this:
+                    case Testgroup when parent.Child(0) != child:
                         // As with alternations, each yes/no branch of an expression conditional
                         // are independent from each other, but the conditional expression itself
                         // can be backtracked into from each of the branches, so we can't make
                         // it atomic just because the whole conditional is.
                     case Capture:
                         // Skip captures. They don't affect atomicity.
-                    case Concatenate when parent.Child(parent.ChildCount() - 1) == this:
+                    case Concatenate when parent.Child(parent.ChildCount() - 1) == child:
                         // If the parent is a concatenation and this is the last node,
                         // any atomicity applying to the concatenation applies to this
                         // node, too.

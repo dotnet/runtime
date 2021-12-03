@@ -38,7 +38,6 @@ namespace System.Text.RegularExpressions
             }
 
             _code = code;
-            _codes = code.Codes;
             _options = options;
             _hasTimeout = hasTimeout;
 
@@ -54,10 +53,10 @@ namespace System.Text.RegularExpressions
             }
 
             DynamicMethod findFirstCharMethod = DefineDynamicMethod($"Regex{regexNum}_FindFirstChar{description}", typeof(bool), typeof(CompiledRegexRunner));
-            GenerateFindFirstChar();
+            EmitFindFirstChar();
 
             DynamicMethod goMethod = DefineDynamicMethod($"Regex{regexNum}_Go{description}", null, typeof(CompiledRegexRunner));
-            GenerateGo();
+            EmitGo();
 
             return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, code.TrackCount);
         }
