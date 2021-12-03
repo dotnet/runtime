@@ -317,6 +317,11 @@ nostack:TieredCompilation:::TieredCompilationBackgroundJitStart
 nomac:TieredCompilation:::TieredCompilationBackgroundJitStop
 nostack:TieredCompilation:::TieredCompilationBackgroundJitStop
 
+###########################
+# Stubs events
+###########################
+nostack:Stubs:::VSDStubCreated
+
 ##################################
 # Events from the rundown provider
 ##################################
