@@ -82,8 +82,13 @@ namespace System.Text.RegularExpressions
             else if (RuntimeFeature.IsDynamicCodeCompiled && UseOptionC())
             {
                 // If the compile option is set and compilation is supported, then compile the code.
+                // If the compiler can't compile this regex, it'll return null, and we'll fall back
+                // to the interpreter.
                 factory = Compile(pattern, _code, options, matchTimeout != InfiniteMatchTimeout);
-                _code = null;
+                if (factory is not null)
+                {
+                    _code = null;
+                }
             }
         }
 
@@ -215,7 +220,7 @@ namespace System.Text.RegularExpressions
         /// instantiating a non-compiled regex.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
+        private static RegexRunnerFactory? Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, code, options, hasTimeout);
 
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
