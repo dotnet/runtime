@@ -5007,7 +5007,6 @@ void CEEInfo::getCallInfo(
 
     bool directCall = false;
     bool resolvedCallVirt = false;
-    bool callVirtCrossingVersionBubble = false;
 
     // Delegate targets are always treated as direct calls here. (It would be nice to clean it up...).
     if (flags & CORINFO_CALLINFO_LDFTN)
