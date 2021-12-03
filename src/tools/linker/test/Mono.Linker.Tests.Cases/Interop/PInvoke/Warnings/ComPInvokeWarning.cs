@@ -178,8 +178,8 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		[RequiresUnreferencedCode ("test")]
 		static void Call_CanSuppressWithRequiresUnreferencedCodeInLambda ()
 		{
-			var lambda = () => CanSuppressWithRequiresUnreferencedCode (null);
-			lambda ();
+			Action<int> lambda = (x) => CanSuppressWithRequiresUnreferencedCode (null);
+			lambda (0);
 		}
 
 
