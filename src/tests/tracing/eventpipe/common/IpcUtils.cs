@@ -446,6 +446,12 @@ namespace Tracing.Tests.Common
                 namedPipe.Connect(3);
                 return namedPipe;
             }
+            else if (OperatingSystem.IsAndroid())
+            {
+                Int32 port = 9000;
+                TcpClient client = new TcpClient("127.0.0.1", port);
+                return client.GetStream();
+            }
             else
             {
                 string ipcPort;

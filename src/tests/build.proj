@@ -197,6 +197,8 @@
       <AppDir>$(BuildDir)\apk</AppDir>
       <FinalApkPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
       <StripDebugSymbols>False</StripDebugSymbols>
+      <RuntimeComponents>diagnostics_tracing</RuntimeComponents>
+      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
@@ -244,6 +246,8 @@
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         StripDebugSymbols="$(StripDebugSymbols)"
         ForceInterpreter="$(MonoInterp)"
         AppDir="$(BuildDir)"
