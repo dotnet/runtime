@@ -58,7 +58,7 @@ partial class Program
     {
         Console.WriteLine($"Running {nameof(Via_Ldftn_Generics)}...");
 
-        IntPtr fptr = B.Class.GetFunctionPointer<object>();
+        IntPtr fptr = B.Class.GetFunctionPointerGeneric();
         Assert.NotEqual(IntPtr.Zero, fptr);
         var b = new Caller.Struct<object>()
         {
@@ -90,7 +90,7 @@ partial class Program
         Console.WriteLine($"Running {nameof(Via_Ldvirtftn_Generics)}...");
 
         object inst = new C.Derived();
-        IntPtr fptr = C.Class.GetFunctionPointer<object>(inst);
+        IntPtr fptr = C.Class.GetFunctionPointerGeneric(inst);
         Assert.NotEqual(IntPtr.Zero, fptr);
         var b = new Caller.Struct<object>()
         {

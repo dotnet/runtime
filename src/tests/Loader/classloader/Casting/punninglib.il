@@ -138,9 +138,9 @@
         ret
     }
     .method public hidebysig static
-        native int GetFunctionPointer<T> () cil managed
+        native int GetFunctionPointerGeneric () cil managed
     {
-        ldftn int32 B.Class::GetFieldGeneric<!!T>(valuetype B.Struct`1<!!T>)
+        ldftn int32 B.Class::GetFieldGeneric<object>(valuetype B.Struct`1<!!0>)
         call native int [System.Runtime]System.IntPtr::op_Explicit(void*)
         ret
     }
@@ -189,10 +189,10 @@
         throw
     }
     .method public hidebysig static
-        native int GetFunctionPointer<T> ( object inst ) cil managed
+        native int GetFunctionPointerGeneric ( object inst ) cil managed
     {
         ldarg.0
-        ldvirtftn instance int32 C.Class::GetFieldGeneric<!!T>(valuetype C.Struct`1<!!T>)
+        ldvirtftn instance int32 C.Class::GetFieldGeneric<object>(valuetype C.Struct`1<!!0>)
         call native int [System.Runtime]System.IntPtr::op_Explicit(void*)
         ret
     }
