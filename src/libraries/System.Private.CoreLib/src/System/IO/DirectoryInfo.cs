@@ -6,6 +6,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Enumeration;
+using System.Threading;
 
 namespace System.IO
 {
@@ -232,6 +233,16 @@ namespace System.IO
         {
             FileSystem.RemoveDirectory(FullPath, recursive);
             Invalidate();
+        }
+
+        public bool CopyTo(string destinationPath, bool recursive, bool skipExistingFiles = true,
+            CancellationToken cancellationToken = default)
+        {
+            string fullSourcePath = FullPath;
+            string fullDestinationPath = Path.GetFullPath(destinationPath);
+
+            return FileSystem.Copy(fullSourcePath, fullDestinationPath, recursive, skipExistingFiles,
+                cancellationToken);
         }
     }
 }
