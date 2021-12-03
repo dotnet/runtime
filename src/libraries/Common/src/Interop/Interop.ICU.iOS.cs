@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICUData", CharSet = CharSet.Ansi)]
-        internal static extern int LoadICUData(string path);
+        internal static partial int LoadICUData(string path);
     }
 }
