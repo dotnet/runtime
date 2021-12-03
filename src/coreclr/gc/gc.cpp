@@ -17031,7 +17031,8 @@ exit:
     {
         assert (oom_r != oom_no_failure);
 
-        if ((oom_r != oom_cant_commit) && should_retry_other_heap (gen_number, size))
+        // Check that oom isnt due to unability to commit on regular or LOH heaps. 
+        if (((oom_r != oom_cant_commit) && (oom_r != oom_loh)) && should_retry_other_heap (gen_number, size))
         {
             uoh_alloc_state = a_state_retry_allocate;
         }
