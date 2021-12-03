@@ -271,7 +271,7 @@
       <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
     </ItemGroup>
 
-    <Exec Command="chmod +x %(_MergedWrapperRunScript.Identity)" Condition="'$(TargetOSSpec)' != 'windows'" />
+    <Exec Command="chmod a+rwx %(_MergedWrapperRunScript.Identity)" Condition="'$(TargetOSSpec)' != 'windows'" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectory"
@@ -435,13 +435,13 @@
     <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
 
     <MergedPayloads Update="@(MergedPayloads)">
-      <PayloadGroup>$([MSBuild]::MakeRelative($(MergedPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
       <PayloadDirectory>%(FullPath)</PayloadDirectory>
       <PayloadHelixCommandFile>$(MergedPayloadsRootDirectory)%(FileName)\HelixCommand.txt</PayloadHelixCommandFile>
     </MergedPayloads>
 
     <MergedPayloads Update="@(MergedPayloads)">
       <MergedTestHelixCommand>$([System.IO.File]::ReadAllText('%(PayloadHelixCommandFile)'))</MergedTestHelixCommand>
+      <PayloadGroup>$([System.IO.Path]::GetDirectoryName('%(MergedTestHelixCommand)'))</PayloadGroup>
       <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
     </MergedPayloads>
 

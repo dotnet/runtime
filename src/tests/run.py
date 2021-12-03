@@ -1162,29 +1162,31 @@ def parse_test_results(args):
     log_path = os.path.join(args.logs_dir, "TestRunResults_%s_%s_%s" % (args.host_os, args.arch, args.build_type))
     print("Parsing test results from (%s)" % log_path)
 
-    test_run_location = os.path.join(args.logs_dir, "testRun.xml")
-
-    if not os.path.isfile(test_run_location):
-        # Check if this is a casing issue
-
-        found = False
-        for item in os.listdir(args.logs_dir):
-            item_lower = item.lower()
-            if item_lower == "testrun.xml":
-                # Correct the name.
-                os.rename(os.path.join(args.logs_dir, item), test_run_location)
-                found = True
-                break
-
-        if not found:
-            print("Unable to find testRun.xml. This normally means the tests did not run.")
-            print("It could also mean there was a problem logging. Please run the tests again.")
-            return
-
-    print("Analyzing {}".format(test_run_location))
-    assemblies = xml.etree.ElementTree.parse(test_run_location).getroot()
-
     tests = defaultdict(lambda: None)
+    found = False
+
+    for item in os.listdir(args.logs_dir):
+        if item.lower().endswith("testrun.xml"):
+            found = True
+            parse_test_results_xml_file(os.path.join(args.logs_dir, item), args, tests)
+
+    if not found:
+        print("Unable to find testRun.xml. This normally means the tests did not run.")
+        print("It could also mean there was a problem logging. Please run the tests again.")
+        return
+
+    return tests
+
+def parse_test_results_xml_file(xml_result_file, args, tests):
+    """ Parse test results from a single xml results file
+    Args:
+        xml_result_file      : results xml file to parse
+        args                 : arguments
+        tests                : output dictionary of aggregated test results
+    """
+
+    print("Analyzing {}".format(xml_result_file))
+    assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
     for assembly in assemblies:
         for collection in assembly:
             if collection.tag == "errors" and collection.text != None:
@@ -1213,8 +1215,6 @@ def parse_test_results(args):
                         "time": time,
                         "test_output": test_output
                     })
-
-    return tests
 
 def print_summary(tests):
     """ Print a summary of the test results

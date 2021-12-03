@@ -29,6 +29,7 @@
       <MergedTestWrapperScripts Update="@(MergedTestWrapperScripts)">
         <RedirectOutputToFile>$([System.IO.Path]::ChangeExtension('%(MergedTestWrapperScripts.Identity)', '.log'))</RedirectOutputToFile>
         <TestResultsXmlFile>$([System.IO.Path]::ChangeExtension('%(MergedTestWrapperScripts.Identity)', '.testResults.xml'))</TestResultsXmlFile>
+        <TestResultsCopyTo>$(__LogsDir)\%(MergedTestWrapperScripts.FileName).testRun.xml</TestResultsCopyTo>
       </MergedTestWrapperScripts>
     </ItemGroup>
   </Target>
@@ -80,14 +81,13 @@
 
   <Target Name="RunSingleMergedTest">
     <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile)" WorkingDirectory="$(BaseOutputPathWithConfig)" />
-    <!-- TODO: this only works when running a single merged wrapper, we need to fix run.py to accept multiple results files -->
-    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(__TestRunXmlLog)" />
+    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" />
   </Target>
 
   <Target Name="RunMergedTests" DependsOnTargets="PrepareTestsToRun">
     <ItemGroup>
       <_ProjectsToBuild Include="$(MSBuildThisFileFullPath)">
-        <AdditionalProperties>TestWrapperScript=%(MergedTestWrapperScripts.Identity);RedirectOutputToFile=%(MergedTestWrapperScripts.RedirectOutputToFile);TestResultsXmlFile=%(MergedTestWrapperScripts.TestResultsXmlFile)</AdditionalProperties>
+        <AdditionalProperties>TestWrapperScript=%(MergedTestWrapperScripts.Identity);RedirectOutputToFile=%(MergedTestWrapperScripts.RedirectOutputToFile);TestResultsXmlFile=%(MergedTestWrapperScripts.TestResultsXmlFile);TestResultsCopyTo=%(MergedTestWrapperScripts.TestResultsCopyTo)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
