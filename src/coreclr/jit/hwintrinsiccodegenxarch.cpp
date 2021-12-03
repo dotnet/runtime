@@ -2097,16 +2097,25 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     }
     else
     {
-        // targetReg could be op1NodeReg, op2NodeReg, or not equal to any op
-        // op1 = (op1 * op2) + [op3] or op2 = (op1 * op2) + [op3]
-        // ? = (op1 * op2) + [op3] or ? = (op1 * op2) + op3
-        // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+        // targetReg could be op1NodeReg, op2NodeReg, op3NodeReg or not equal to any op
+        // op3 may or may not be isContained or isUsedFromSpillTemp, no extra work for both case
+        // op1/op2/op3/? = (op1 * op2) + [op3] or ? = (op1 * op2) + op3
         if (!copiesUpperBits && (targetReg == op2NodeReg))
         {
             // op2 = (op1 * op2) + [op3]
             // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
             std::swap(emitOp1, emitOp2);
         }
+        else if (!copiesUpperBits && (targetReg == op3NodeReg))
+        {
+            // op3 = (op1 * op2) + op3
+            // 231 form: XMM1 = (XMM2 * XMM3) + XMM1
+            std::swap(emitOp1, emitOp3);
+            ins = _231form;
+        }
+
+        // else, targetReg == op1NodeReg or targetReg == ?
+        // no extra work needed
     }
 
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3);
