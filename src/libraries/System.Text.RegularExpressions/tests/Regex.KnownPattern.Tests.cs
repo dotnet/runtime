@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -1404,6 +1406,59 @@ namespace System.Text.RegularExpressions.Tests
 
             // NonBacktracking needs way less than 1s
             Assert.False(re.Match(input).Success);
+        }
+
+        //
+        // dotnet/runtime-assets contains a set a regular expressions sourced from
+        // permissively-licensed packages.  Validate Regex behavior with those expressions.
+        //
+
+        [Theory]
+        [InlineData(RegexEngine.Interpreter)]
+        [InlineData(RegexEngine.Compiled)]
+        public void PatternsDataSet_ConstructRegexForAll(RegexEngine engine)
+        {
+            Parallel.ForEach(s_patternsDataSet.Value, r =>
+            {
+                try
+                {
+                    RegexHelpers.GetRegexAsync(engine, r.Pattern, r.Options).GetAwaiter().GetResult();
+                }
+                catch (Exception e) when (RegexHelpers.IsNonBacktracking(engine) && e.Message.Contains("NonBacktracking"))
+                {
+                    // Some tests aren't supported with RegexOptions.NonBacktracking.
+                }
+            });
+        }
+
+        [OuterLoop("Takes many seconds")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NonBacktracking isn't supported on .NET Framework")]
+        [Fact]
+        public void PatternsDataSet_ConstructRegexForAll_NonBacktracking() =>
+            PatternsDataSet_ConstructRegexForAll(RegexEngine.NonBacktracking);
+
+        [OuterLoop("Takes minutes to generate and compile thousands of expressions")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Source generator isn't supported on .NET Framework")]
+        [Fact]
+        public void PatternsDataSet_ConstructRegexForAll_SourceGenerated() =>
+            PatternsDataSet_ConstructRegexForAll(RegexEngine.SourceGenerated);
+
+        private static Lazy<DataSetExpression[]> s_patternsDataSet = new Lazy<DataSetExpression[]>(() =>
+        {
+            using Stream json = File.OpenRead("Regex_RealWorldPatterns.json");
+            return JsonSerializer.Deserialize<DataSetExpression[]>(json, new JsonSerializerOptions() { ReadCommentHandling = JsonCommentHandling.Skip }).Distinct().ToArray();
+        });
+
+        private sealed class DataSetExpression : IEquatable<DataSetExpression>
+        {
+            public int Count { get; set; }
+            public RegexOptions Options { get; set; }
+            public string Pattern { get; set; }
+
+            public bool Equals(DataSetExpression? other) =>
+                other is not null &&
+                other.Pattern == Pattern &&
+                (Options & ~RegexOptions.Compiled) == (other.Options & ~RegexOptions.Compiled); // Compiled doesn't affect semantics, so remove it from equality for our purposes
         }
     }
 }
