@@ -152,7 +152,7 @@ namespace System.Text.RegularExpressions.Generator
         private static ImmutableArray<Diagnostic> EmitRegexMethod(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             string patternExpression = Literal(rm.Pattern);
-            string optionsExpression = $"(global::System.Text.RegularExpressions.RegexOptions)({(int)rm.Options})";
+            string optionsExpression = Literal(rm.Options);
             string timeoutExpression = rm.MatchTimeout == Timeout.Infinite ?
                 "global::System.Threading.Timeout.InfiniteTimeSpan" :
                 $"global::System.TimeSpan.FromMilliseconds({rm.MatchTimeout.ToString(CultureInfo.InvariantCulture)})";
@@ -3097,6 +3097,26 @@ namespace System.Text.RegularExpressions.Generator
 
         /// <summary>Formats the string as valid C#.</summary>
         private static string Literal(string s) => SymbolDisplay.FormatLiteral(s, quote: true);
+
+        private static string Literal(RegexOptions options)
+        {
+            string s = options.ToString();
+            if (int.TryParse(s, out _))
+            {
+                // The options were formatted as an int, which means the runtime couldn't
+                // produce a textual representation.  So just output casting the value as an int.
+                return $"(global::System.Text.RegularExpressions.RegexOptions)({(int)options})";
+            }
+
+            // Parse the runtime-generated "Option1, Option2" into each piece and then concat
+            // them back together.
+            string[] parts = s.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                parts[i] = "global::System.Text.RegularExpressions.RegexOptions." + parts[i].Trim();
+            }
+            return string.Join(" | ", parts);
+        }
 
         /// <summary>Gets a textual description of the node fit for rendering in a comment in source.</summary>
         private static string DescribeNode(RegexNode node) =>
