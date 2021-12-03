@@ -5258,17 +5258,24 @@ void Compiler::placeLoopAlignInstructions()
 
     for (BasicBlock* const block : Blocks())
     {
+        if (currentAlignedLoopNum != BasicBlock::NOT_IN_LOOP)
+        {
+            // We've been processing blocks within an aligned loop. Are we out of that loop now?
+            if (currentAlignedLoopNum != block->bbNatLoopNum)
+            {
+                currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+            }
+        }
+
         // If there is a unconditional jump (which is not part of callf/always pair)
         if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
             {
-                // Idle blocks that ends with unconditional jumps:
-                // 1. Blocks that are not part of any loop.
-                // 2. They are not part of the loop that is part of any aligned loop.
-                if ((block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP) || (block->bbNatLoopNum != currentAlignedLoopNum))
+                if (currentAlignedLoopNum == BasicBlock::NOT_IN_LOOP)
                 {
+                    // Ok to insert align instruction in this block because it is not part of any aligned loop.
                     minBlockSoFar = block->bbWeight;
                     bbHavingAlign = block;
                     JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum,
@@ -5302,14 +5309,6 @@ void Compiler::placeLoopAlignInstructions()
             {
                 break;
             }
-        }
-
-        bool validJumpKind = (block->bbJumpKind == BBJ_COND) || (block->bbJumpKind == BBJ_ALWAYS);
-        if (validJumpKind && (block->bbJumpDest != nullptr) && (block->bbJumpDest->isLoopAlign()))
-        {
-            // This is the last block of current loop. Reset the latestLoopNum so we can resume
-            // placing the align behind jmp for subsequent loops.
-            currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
         }
     }
 
