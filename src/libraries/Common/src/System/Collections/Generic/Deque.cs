@@ -69,6 +69,17 @@ namespace System.Collections.Generic
             return _array[_head];
         }
 
+        public T PeekTail()
+        {
+            Debug.Assert(!IsEmpty); // caller's responsibility to make sure there are elements remaining
+            var index = _tail - 1;
+            if (index == -1)
+            {
+                index = _array.Length - 1;
+            }
+            return _array[index];
+        }
+
         public T DequeueTail()
         {
             Debug.Assert(!IsEmpty); // caller's responsibility to make sure there are elements remaining
