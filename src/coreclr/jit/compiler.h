@@ -10042,6 +10042,8 @@ public:
                             // and the VM expects that, or the JIT is a "self-host" compiler
                             // (e.g., x86 hosted targeting x86) and the VM expects that.
 
+        int compFrameType; // frame type used for prolog/epilog.
+
         /*  The following holds IL scope information about local variables.
          */
 

@@ -4068,6 +4068,10 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     assert(frameType != 0);
 
+    // Notify compiler what frame type was used.
+    //
+    compiler->info.compFrameType = frameType;
+
     JITDUMP("    offset=%d, calleeSaveSPDelta=%d\n", offset, calleeSaveSPDelta);
     genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSPDelta);
 
