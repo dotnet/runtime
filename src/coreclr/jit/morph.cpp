@@ -13417,7 +13417,6 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
                         // Transform to "X & (C2 - 1) ==/!= 0"
                         div->SetOper(GT_AND);
                         div->gtGetOp2()->AsIntConCommon()->SetIconValue(c2 - 1);
-                        fgUpdateConstTreeValueNumber(div->gtGetOp2());
                         cmp->gtOp1 = op1 = div;
 
                         JITDUMP("\ninto:\n");
