@@ -442,7 +442,6 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
         CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
         CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-        CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
         CORINFO_INTRINSIC_RTH_GetValueInternal,
         CORINFO_INTRINSIC_Object_GetType,
         CORINFO_INTRINSIC_StubHelpers_GetStubContext,

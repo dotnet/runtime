@@ -11,6 +11,8 @@ namespace Microsoft.Extensions.Configuration.Test
 {
     public class ConfigurationRootTest
     {
+        private const string SecretCover = "*****";
+
         [Fact]
         public void RootDisposesProviders()
         {
@@ -77,9 +79,53 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal(shouldDispose, provider.IsDisposed);
         }
 
+        [Fact]
+        public void SecretsAreConcealed()
+        {
+            var provider = new SecretConfigurationProvider("secret", "secret-value");
+
+            var config = new ConfigurationRoot(new IConfigurationProvider[] {
+                provider
+            });
+
+            var debugView = config.GetDebugView(ProcessValue);
+
+            Assert.Contains(SecretCover, debugView);
+        }
+
+        [Fact]
+        public void NonSecretsAreNotConcealed()
+        {
+            var provider = new TestConfigurationProvider("foo", "foo-value");
+
+            var config = new ConfigurationRoot(new IConfigurationProvider[] {
+                provider
+            });
+
+            var debugView = config.GetDebugView(ProcessValue);
+
+            Assert.DoesNotContain(SecretCover, debugView);
+        }
+
+        private string ProcessValue(ConfigurationDebugViewContext context)
+        {
+            if (context.ConfigurationProvider.ToString() == nameof(SecretConfigurationProvider))
+            {
+                return SecretCover;
+            }
+
+            return context.Value;
+        }
+
         private class TestConfigurationProvider : ConfigurationProvider
         {
             public TestConfigurationProvider(string key, string value)
+                => Data.Add(key, value);
+        }
+
+        private class SecretConfigurationProvider : ConfigurationProvider
+        {
+            public SecretConfigurationProvider(string key, string value)
                 => Data.Add(key, value);
         }
 

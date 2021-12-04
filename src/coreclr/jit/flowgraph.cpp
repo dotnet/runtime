@@ -4429,32 +4429,29 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
 // Return Value:
 //    The first node in execution order, that belongs to tree.
 //
-// Assumptions:
-//     'tree' must either be a leaf, or all of its constituent nodes must be contiguous
-//     in execution order.
-//     TODO-Cleanup: Add a debug-only method that verifies this.
-
-/* static */
-GenTree* Compiler::fgGetFirstNode(GenTree* tree)
+// Notes:
+//    This function is only correct for HIR trees.
+//
+/* static */ GenTree* Compiler::fgGetFirstNode(GenTree* tree)
 {
-    GenTree* child = tree;
-    while (child->NumChildren() > 0)
+    GenTree* firstNode = tree;
+    while (true)
     {
-        if ((child->OperIsBinary() || child->OperIsMultiOp()) && child->IsReverseOp())
+        auto operandsBegin = firstNode->OperandsBegin();
+        auto operandsEnd   = firstNode->OperandsEnd();
+
+        if (operandsBegin == operandsEnd)
         {
-            child = child->GetChild(1);
+            break;
         }
-        else
-        {
-            child = child->GetChild(0);
-        }
+
+        firstNode = *operandsBegin;
     }
-    return child;
+
+    return firstNode;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 
@@ -4496,9 +4493,7 @@ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
     return Compiler::WALK_CONTINUE;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 
@@ -4510,9 +4505,7 @@ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* da
     return Compiler::WALK_CONTINUE;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 
