@@ -16,6 +16,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		private static readonly ImmutableArray<DiagnosticAnalyzer> SupportedDiagnosticAnalyzers =
 			ImmutableArray.Create<DiagnosticAnalyzer> (
+				new RequiresDynamicCodeAnalyzer (),
 				new COMAnalyzer (),
 				new RequiresAssemblyFilesAnalyzer (),
 				new RequiresUnreferencedCodeAnalyzer ());

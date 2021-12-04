@@ -141,11 +141,23 @@
   <data name="RequiresAssemblyFilesMessage" xml:space="preserve">
     <value>Using member '{0}' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.{1}{2}</value>
   </data>
+ <data name="RequiresDynamicCodeTitle" xml:space="preserve">
+    <value>Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.</value>
+  </data>
+  <data name="RequiresDynamicCodeMessage" xml:space="preserve">
+    <value>Using member '{0}' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling.{1}{2}</value>
+  </data>
   <data name="RequiresUnreferencedCodeAttributeMismatchMessage" xml:space="preserve">
     <value>{0}. 'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
   <data name="RequiresUnreferencedCodeAttributeMismatchTitle" xml:space="preserve">
     <value>'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresDynamicCodeAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}. 'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresDynamicCodeAttributeMismatchTitle" xml:space="preserve">
+    <value>'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
   <data name="RequiresAssemblyFilesAttributeMismatchMessage" xml:space="preserve">
     <value>{0}. 'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
