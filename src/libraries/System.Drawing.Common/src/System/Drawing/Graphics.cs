@@ -711,6 +711,14 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of a rectangle specified by <paramref name="rect"/>.
         /// </summary>
+        public void DrawRectangle(Pen pen, RectangleF rect)
+        {
+            DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
+        }
+
+        /// <summary>
+        /// Draws the outline of a rectangle specified by <paramref name="rect"/>.
+        /// </summary>
         public void DrawRectangle(Pen pen, Rectangle rect)
         {
             DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
