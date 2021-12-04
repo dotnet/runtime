@@ -497,8 +497,14 @@ namespace System.IO
                     case Interop.Error.EACCES:
                     case Interop.Error.EPERM:
                     case Interop.Error.EROFS:
+                        // Prefer throwing DirectoryNotFoundException over UnauthorizedAccess IOException.
+                        if (topLevel && !DirectoryExists(fullPath, out Interop.ErrorInfo existErr) && existErr.Error == Interop.Error.ENOENT)
+                        {
+                            throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
+                        }
+                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
                     case Interop.Error.EISDIR:
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath)); // match Win32 exception
+                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
                     case Interop.Error.ENOENT:
                         // When we're recursing, don't throw for items that go missing.
                         if (!topLevel)
