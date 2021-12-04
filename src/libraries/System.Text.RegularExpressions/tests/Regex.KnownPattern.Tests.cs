@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -1405,5 +1407,66 @@ namespace System.Text.RegularExpressions.Tests
             // NonBacktracking needs way less than 1s
             Assert.False(re.Match(input).Success);
         }
+
+        //
+        // dotnet/runtime-assets contains a set a regular expressions sourced from
+        // permissively-licensed packages.  Validate Regex behavior with those expressions.
+        //
+
+        [Theory]
+        [InlineData(RegexEngine.Interpreter)]
+        [InlineData(RegexEngine.Compiled)]
+        public async Task PatternsDataSet_ConstructRegexForAll(RegexEngine engine)
+        {
+            foreach (DataSetExpression exp in s_patternsDataSet.Value)
+            {
+                await RegexHelpers.GetRegexAsync(engine, exp.Pattern, exp.Options);
+            }
+        }
+
+        private static Lazy<DataSetExpression[]> s_patternsDataSet = new Lazy<DataSetExpression[]>(() =>
+        {
+            using Stream json = File.OpenRead("Regex_RealWorldPatterns.json");
+            return JsonSerializer.Deserialize<DataSetExpression[]>(json, new JsonSerializerOptions() { ReadCommentHandling = JsonCommentHandling.Skip }).Distinct().ToArray();
+        });
+
+        private sealed class DataSetExpression : IEquatable<DataSetExpression>
+        {
+            public int Count { get; set; }
+            public RegexOptions Options { get; set; }
+            public string Pattern { get; set; }
+
+            public bool Equals(DataSetExpression? other) =>
+                other is not null &&
+                other.Pattern == Pattern &&
+                (Options & ~RegexOptions.Compiled) == (other.Options & ~RegexOptions.Compiled); // Compiled doesn't affect semantics, so remove it from equality for our purposes
+        }
+
+#if NETCOREAPP
+        [OuterLoop("Takes many seconds")]
+        [Fact]
+        public async Task PatternsDataSet_ConstructRegexForAll_NonBacktracking()
+        {
+            foreach (DataSetExpression exp in s_patternsDataSet.Value)
+            {
+                try
+                {
+                    await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, exp.Pattern, exp.Options);
+                }
+                catch (Exception e) when (e.Message.Contains(nameof(RegexOptions.NonBacktracking))) { }
+            }
+        }
+
+        [OuterLoop("Takes minutes to generate and compile thousands of expressions")]
+        [Fact]
+        public void PatternsDataSet_ConstructRegexForAll_SourceGenerated()
+        {
+            Parallel.ForEach(s_patternsDataSet.Value.Chunk(50), chunk =>
+            {
+                RegexHelpers.GetRegexesAsync(RegexEngine.SourceGenerated,
+                    chunk.Select(r => (r.Pattern, (RegexOptions?)r.Options, (TimeSpan?)null)).ToArray()).GetAwaiter().GetResult();
+            });
+        }
+#endif
     }
 }
