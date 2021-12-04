@@ -4996,8 +4996,19 @@ void CEEInfo::getCallInfo(
         // ldftn scenario is handled later when the fixed
         // address is requested by in the JIT.
         // See getFunctionFixedEntryPoint().
-        if (flags & CORINFO_CALLINFO_CALLVIRT)
+        //
+        // Using ldftn or ldvirtftn on a Generic method
+        // requires early type loading since instantiation
+        // occurs at run-time as opposed to JIT time. The
+        // GC special cases Generic types and relaxes the
+        // loaded type constraint to permit Generic types
+        // that are loaded with Canon as opposed to being
+        // instantiated with an actual type.
+        if ((flags & CORINFO_CALLINFO_CALLVIRT)
+            || pTargetMD->HasMethodInstantiation())
+        {
             pTargetMD->PrepareForUseAsAFunctionPointer();
+        }
 
         directCall = true;
     }
