@@ -1024,7 +1024,7 @@ namespace System.Tests
             Assert.Equal(expected, DateTime.Parse(expectedString, cultureInfo));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSXLike))]
         [InlineData("ar")]
         [InlineData("ar-EG")]
         [InlineData("ar-IQ")]

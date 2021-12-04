@@ -35,6 +35,7 @@ namespace System
 
         // OSX family
         public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
+        public static bool IsNotOSXLike => !IsOSXLike;
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
         public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
