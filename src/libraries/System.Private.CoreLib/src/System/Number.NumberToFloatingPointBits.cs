@@ -1037,7 +1037,7 @@ namespace System
                 p += 8;
             }
 
-            while (p!=end)
+            while (p != end)
             {
                 res = (10 * res) + p[0] - '0';
                 ++p;
