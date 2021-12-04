@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -107,9 +108,7 @@ namespace System
                 MaxExponentFastPath = maxExponentFastPath;
             }
         }
-
-        private static readonly float[] s_Pow10SingleTable = new float[]
-        {
+        private static ReadOnlySpan<float> s_Pow10SingleTable => new float[]{
             1e0f,   // 10^0
             1e1f,   // 10^1
             1e2f,   // 10^2
@@ -123,8 +122,7 @@ namespace System
             1e10f,  // 10^10
         };
 
-        private static readonly double[] s_Pow10DoubleTable = new double[]
-        {
+        private static ReadOnlySpan<double> s_Pow10DoubleTable => new double[] {
             1e0,    // 10^0
             1e1,    // 10^1
             1e2,    // 10^2
@@ -150,7 +148,7 @@ namespace System
             1e22,   // 10^22
         };
 
-        private static readonly ulong[] s_Pow5128Table = {
+        private static ReadOnlySpan<ulong> s_Pow5128Table => new ulong[] {
         0xeef453d6923bd65a, 0x113faa2906a13b3f,
         0x9558b4661b6565f8, 0x4ac7ca59a424c507,
         0xbaaee17fa23ebf76, 0x5d79bcf00d2df649,
@@ -1006,11 +1004,19 @@ namespace System
             Debug.Assert((1 <= count) && (count <= 9));
 
             byte* end = (p + count);
-            uint res = (uint)(p[0] - '0');
+            uint res = 0;
 
-            for (p++; p < end; p++)
+            // parse batches of 8 digits with SWAR
+            while (end - p >= 8)
+            {
+                res = (res * 100000000) + ParseEightDigitsUnrolled(p);
+                p += 8;
+            }
+
+            while (p != end)
             {
                 res = (10 * res) + p[0] - '0';
+                ++p;
             }
 
             return res;
@@ -1022,14 +1028,35 @@ namespace System
             Debug.Assert((1 <= count) && (count <= 19));
 
             byte* end = (p + count);
-            ulong res = (ulong)(p[0] - '0');
+            ulong res = 0;
 
-            for (p++; p < end; p++)
+            // parse batches of 8 digits with SWAR
+            while (end - p >= 8)
+            {
+                res = (res * 100000000) + ParseEightDigitsUnrolled(p);
+                p += 8;
+            }
+
+            while (p!=end)
             {
                 res = (10 * res) + p[0] - '0';
+                ++p;
             }
 
             return res;
+        }
+
+
+        internal static uint ParseEightDigitsUnrolled(byte* chars)
+        {
+            ulong val = Unsafe.ReadUnaligned<ulong>(chars);
+            const ulong mask = 0x000000FF000000FF;
+            const ulong mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+            const ulong mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+            val -= 0x3030303030303030;
+            val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
+            val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
+            return (uint)val;
         }
 
         private static ulong NumberToDoubleFloatingPointBits(ref NumberBuffer number, in FloatingPointInfo info)
@@ -1065,7 +1092,7 @@ namespace System
                 ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
 
                 int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-                uint fastExponent = (uint)(Math.Abs(exponent));
+                int fastExponent = (Math.Abs(exponent));
 
                 // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
                 // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
@@ -1137,7 +1164,7 @@ namespace System
             uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
 
             int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-            uint fastExponent = (uint)(Math.Abs(exponent));
+            int fastExponent = (Math.Abs(exponent));
 
             // Above 19 digits, we rely on slow path
             if (totalDigits <= 19)
@@ -1237,7 +1264,7 @@ namespace System
             uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
 
             int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-            uint fastExponent = (uint)(Math.Abs(exponent));
+            int fastExponent = (Math.Abs(exponent));
 
 
             // Above 19 digits, we rely on slow path
