@@ -1,6 +1,7 @@
 var AppStart = {
   Construct: function() {
     this._frame = document.createElement('iframe');
+    this._frame.referrerPolicy="no-referrer";
     document.body.appendChild(this._frame);
   },
 
