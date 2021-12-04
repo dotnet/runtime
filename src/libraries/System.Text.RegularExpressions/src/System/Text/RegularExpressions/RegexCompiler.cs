@@ -49,13 +49,12 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
-        private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_stringLastIndexOfCharIntInt = typeof(string).GetMethod("LastIndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
 
@@ -889,7 +888,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Initialize the main locals used throughout the implementation.
-            LocalBuilder runtextLocal = DeclareString();
+            LocalBuilder runtextSpanLocal = DeclareReadOnlySpanChar();
             LocalBuilder originalruntextposLocal = DeclareInt32();
             LocalBuilder runtextposLocal = DeclareInt32();
             LocalBuilder textSpanLocal = DeclareReadOnlySpanChar();
@@ -905,9 +904,11 @@ namespace System.Text.RegularExpressions
             // CultureInfo culture = CultureInfo.CurrentCulture; // only if the whole expression or any subportion is ignoring case, and we're not using invariant
             InitializeCultureForGoIfNecessary();
 
-            // string runtext = this.runtext;
+            // ReadOnlySpan<char> runtextSpan = this.runtext.AsSpan();
             // int runtextend = this.runtextend;
-            Mvfldloc(s_runtextField, runtextLocal);
+            Ldthisfld(s_runtextField);
+            Call(s_stringAsSpanMethod);
+            Stloc(runtextSpanLocal);
             Mvfldloc(s_runtextendField, runtextendLocal);
 
             // int runtextpos = this.runtextpos;
@@ -996,13 +997,13 @@ namespace System.Text.RegularExpressions
             // Creates a span for runtext starting at runtextpos until this.runtextend.
             void LoadTextSpanLocal()
             {
-                // textSpan = runtext.AsSpan(runtextpos, this.runtextend - runtextpos);
-                Ldloc(runtextLocal);
+                // textSpan = runtextSpan.Slice(runtextpos, this.runtextend - runtextpos);
+                Ldloca(runtextSpanLocal);
                 Ldloc(runtextposLocal);
                 Ldloc(runtextendLocal);
                 Ldloc(runtextposLocal);
                 Sub();
-                Call(s_stringAsSpanIntIntMethod);
+                Call(s_spanSliceIntIntMethod);
                 Stloc(textSpanLocal);
             }
 
@@ -1292,12 +1293,13 @@ namespace System.Text.RegularExpressions
 
                 MarkLabel(body);
 
-                // if (runtext[matchIndex + i] != textSpan[i]) goto doneLabel;
-                Ldloc(runtextLocal);
+                // if (runtextSpan[matchIndex + i] != textSpan[i]) goto doneLabel;
+                Ldloca(runtextSpanLocal);
                 Ldloc(matchIndex);
                 Ldloc(i);
                 Add();
-                Call(s_stringGetCharsMethod);
+                Call(s_spanGetItemMethod);
+                LdindU2();
                 if (IsCaseInsensitive(node))
                 {
                     CallToLower();
@@ -2092,11 +2094,12 @@ namespace System.Text.RegularExpressions
                             Ldloc(runtextposLocal);
                             Ldthisfld(s_runtextbegField);
                             Ble(success);
-                            Ldthisfld(s_runtextField);
+                            Ldloca(runtextSpanLocal);
                             Ldloc(runtextposLocal);
                             Ldc(1);
                             Sub();
-                            Call(s_stringGetCharsMethod);
+                            Call(s_spanGetItemMethod);
+                            LdindU2();
                             Ldc('\n');
                             BneFar(doneLabel);
                             MarkLabel(success);
@@ -2328,24 +2331,29 @@ namespace System.Text.RegularExpressions
 
                 if (subsequent?.FindStartingCharacter() is char subsequentCharacter)
                 {
-                    // endingPos = runtext.LastIndexOf(subsequentCharacter, endingPos - 1, endingPos - startingPos);
+                    // endingPos = runtextSpan.Slice(startingPos, endingPos - startingPos).LastIndexOf(subsequentCharacter);
                     // if (endingPos < 0)
                     // {
                     //     goto originalDoneLabel;
                     // }
-                    Ldloc(runtextLocal);
-                    Ldc(subsequentCharacter);
-                    Ldloc(endingPos);
-                    Ldc(1);
-                    Sub();
+                    Ldloca(runtextSpanLocal);
+                    Ldloc(startingPos);
                     Ldloc(endingPos);
                     Ldloc(startingPos);
                     Sub();
-                    Call(s_stringLastIndexOfCharIntInt);
+                    Call(s_spanSliceIntIntMethod);
+                    Ldc(subsequentCharacter);
+                    Call(s_spanLastIndexOfChar);
                     Stloc(endingPos);
                     Ldloc(endingPos);
                     Ldc(0);
                     BltFar(originalDoneLabel);
+
+                    // endingPos += startingPos;
+                    Ldloc(endingPos);
+                    Ldloc(startingPos);
+                    Add();
+                    Stloc(endingPos);
                 }
                 else
                 {

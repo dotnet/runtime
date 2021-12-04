@@ -650,8 +650,8 @@ namespace System.Text.RegularExpressions.Generator
             var additionalDeclarations = new HashSet<string>();
 
             // Declare some locals.
-            string textSpanLocal = "textSpan";
-            writer.WriteLine("string runtext = base.runtext!;");
+            string sliceSpan = "slice";
+            writer.WriteLine("global::System.ReadOnlySpan<char> runtextSpan = base.runtext;");
             writer.WriteLine("int runtextpos = base.runtextpos;");
             writer.WriteLine("int runtextend = base.runtextend;");
             writer.WriteLine($"int original_runtextpos = runtextpos;");
@@ -707,14 +707,14 @@ namespace System.Text.RegularExpressions.Generator
 
             static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
 
-            // Creates a span for runtext starting at runtextpos until base.runtextend.
+            // Creates a local span for runtextSpan starting at runtextpos until base.runtextend.
             void LoadTextSpanLocal(IndentedTextWriter writer, bool defineLocal = false)
             {
                 if (defineLocal)
                 {
                     writer.Write("global::System.ReadOnlySpan<char> ");
                 }
-                writer.WriteLine($"{textSpanLocal} = global::System.MemoryExtensions.AsSpan(runtext, runtextpos, runtextend - runtextpos);");
+                writer.WriteLine($"{sliceSpan} = runtextSpan.Slice(runtextpos, runtextend - runtextpos);");
             }
 
             // Emits the sum of a constant and a value from a local.
@@ -734,16 +734,16 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             string SpanLengthCheck(int requiredLength, string? dynamicRequiredLength = null) =>
-                $"(uint){textSpanLocal}.Length < {Sum(textSpanPos + requiredLength, dynamicRequiredLength)}";
+                $"(uint){sliceSpan}.Length < {Sum(textSpanPos + requiredLength, dynamicRequiredLength)}";
 
-            // Adds the value of textSpanPos into the runtextpos local, slices textspan by the corresponding amount,
+            // Adds the value of textSpanPos into the runtextpos local, slices slice by the corresponding amount,
             // and zeros out textSpanPos.
             void TransferTextSpanPosToRunTextPos()
             {
                 if (textSpanPos > 0)
                 {
                     EmitAdd(writer, "runtextpos", textSpanPos);
-                    writer.WriteLine($"{textSpanLocal} = {textSpanLocal}.Slice({textSpanPos});");
+                    writer.WriteLine($"{sliceSpan} = {sliceSpan}.Slice({textSpanPos});");
                     textSpanPos = 0;
                 }
             }
@@ -815,7 +815,7 @@ namespace System.Text.RegularExpressions.Generator
                     EmitSpanLengthCheck(1);
                     writer.WriteLine();
 
-                    using (EmitBlock(writer, $"switch ({ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos++}]", IsCaseInsensitive(node))})"))
+                    using (EmitBlock(writer, $"switch ({ToLowerIfNeeded(hasTextInfo, options, $"{sliceSpan}[{textSpanPos++}]", IsCaseInsensitive(node))})"))
                     {
                         int startingTextSpanPos = textSpanPos;
                         for (int i = 0; i < childCount; i++)
@@ -987,7 +987,7 @@ namespace System.Text.RegularExpressions.Generator
 
                         // Reset state for next branch and loop around to generate it.  This includes
                         // setting runtextpos back to what it was at the beginning of the alternation,
-                        // updating textSpan to be the full length it was, and if there's a capture that
+                        // updating slice to be the full length it was, and if there's a capture that
                         // needs to be reset, uncapturing it.
                         if (!isLastBranch)
                         {
@@ -1051,7 +1051,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     string matchLength = ReserveName("backreference_matchLength");
                     writer.WriteLine($"int {matchLength} = base.MatchLength({capnum});");
-                    using (EmitBlock(writer, $"if ({textSpanLocal}.Length < {matchLength})"))
+                    using (EmitBlock(writer, $"if ({sliceSpan}.Length < {matchLength})"))
                     {
                         writer.WriteLine($"goto {doneLabel};");
                     }
@@ -1063,7 +1063,7 @@ namespace System.Text.RegularExpressions.Generator
                     string i = ReserveName("backreference_iteration");
                     using (EmitBlock(writer, $"for (int {i} = 0; {i} < {matchLength}; {i}++)"))
                     {
-                        using (EmitBlock(writer, $"if ({ToLowerIfNeeded(hasTextInfo, options, $"runtext[{matchIndex} + {i}]", IsCaseInsensitive(node))} != {ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{i}]", IsCaseInsensitive(node))})"))
+                        using (EmitBlock(writer, $"if ({ToLowerIfNeeded(hasTextInfo, options, $"runtextSpan[{matchIndex} + {i}]", IsCaseInsensitive(node))} != {ToLowerIfNeeded(hasTextInfo, options, $"{sliceSpan}[{i}]", IsCaseInsensitive(node))})"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
@@ -1747,7 +1747,7 @@ namespace System.Text.RegularExpressions.Generator
                 // to generate the code for a single check, so we map those looping constructs to the
                 // appropriate single check.
 
-                string expr = $"{textSpanLocal}[{Sum(textSpanPos, offset)}]";
+                string expr = $"{sliceSpan}[{Sum(textSpanPos, offset)}]";
 
                 if (node.IsSetFamily)
                 {
@@ -1830,15 +1830,15 @@ namespace System.Text.RegularExpressions.Generator
                     case RegexNode.Bol:
                         if (textSpanPos > 0)
                         {
-                            using (EmitBlock(writer, $"if ({textSpanLocal}[{textSpanPos - 1}] != '\\n')"))
+                            using (EmitBlock(writer, $"if ({sliceSpan}[{textSpanPos - 1}] != '\\n')"))
                             {
                                 writer.WriteLine($"goto {doneLabel};");
                             }
                         }
                         else
                         {
-                            // We can't use our textSpan in this case, because we'd need to access textSpan[-1], so we access the runtext field directly:
-                            using (EmitBlock(writer, $"if (runtextpos > runtextbeg && runtext[runtextpos - 1] != '\\n')"))
+                            // We can't use our slice in this case, because we'd need to access slice[-1], so we access the runtextSpan field directly:
+                            using (EmitBlock(writer, $"if (runtextpos > runtextbeg && runtextSpan[runtextpos - 1] != '\\n')"))
                             {
                                 writer.WriteLine($"goto {doneLabel};");
                             }
@@ -1846,14 +1846,14 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNode.End:
-                        using (EmitBlock(writer, $"if ({textSpanLocal}.Length > {textSpanPos})"))
+                        using (EmitBlock(writer, $"if ({sliceSpan}.Length > {textSpanPos})"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
                         break;
 
                     case RegexNode.EndZ:
-                        writer.WriteLine($"if ({textSpanPos} < {textSpanLocal}.Length - 1 || ({textSpanPos} < {textSpanLocal}.Length && {textSpanLocal}[{textSpanPos}] != '\\n'))");
+                        writer.WriteLine($"if ({textSpanPos} < {sliceSpan}.Length - 1 || ({textSpanPos} < {sliceSpan}.Length && {sliceSpan}[{textSpanPos}] != '\\n'))");
                         using (EmitBlock(writer, null))
                         {
                             writer.WriteLine($"goto {doneLabel};");
@@ -1861,7 +1861,7 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNode.Eol:
-                        using (EmitBlock(writer, $"if ({textSpanPos} < {textSpanLocal}.Length && {textSpanLocal}[{textSpanPos}] != '\\n')"))
+                        using (EmitBlock(writer, $"if ({textSpanPos} < {sliceSpan}.Length && {sliceSpan}[{textSpanPos}] != '\\n')"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
@@ -1890,7 +1890,7 @@ namespace System.Text.RegularExpressions.Generator
                     if (useMultiCharReads)
                     {
                         additionalDeclarations.Add("global::System.ReadOnlySpan<byte> byteSpan;");
-                        writer.WriteLine($"byteSpan = global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({textSpanLocal});");
+                        writer.WriteLine($"byteSpan = global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({sliceSpan});");
                     }
 
                     writer.Write("if (");
@@ -1898,7 +1898,7 @@ namespace System.Text.RegularExpressions.Generator
                     bool emittedFirstCheck = false;
                     if (emitLengthCheck)
                     {
-                        writer.Write($"(uint){textSpanLocal}.Length < {textSpanPos + str.Length}");
+                        writer.Write($"(uint){sliceSpan}.Length < {textSpanPos + str.Length}");
                         emittedFirstCheck = true;
                     }
 
@@ -1937,7 +1937,7 @@ namespace System.Text.RegularExpressions.Generator
                     for (int i = (str.Length * sizeof(char) - byteStr.Length) / sizeof(char); i < str.Length; i++)
                     {
                         EmitOr();
-                        writer.Write($"{ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos}]", caseInsensitive)} != {Literal(str[i])}");
+                        writer.Write($"{ToLowerIfNeeded(hasTextInfo, options, $"{sliceSpan}[{textSpanPos}]", caseInsensitive)} != {Literal(str[i])}");
                         textSpanPos++;
                     }
 
@@ -1955,7 +1955,7 @@ namespace System.Text.RegularExpressions.Generator
                     // character-by-character while respecting the culture.
                     if (!caseInsensitive)
                     {
-                        string sourceSpan = textSpanPos > 0 ? $"{textSpanLocal}.Slice({textSpanPos})" : textSpanLocal;
+                        string sourceSpan = textSpanPos > 0 ? $"{sliceSpan}.Slice({textSpanPos})" : sliceSpan;
                         using (EmitBlock(writer, $"if (!global::System.MemoryExtensions.StartsWith({sourceSpan}, {Literal(node.Str)}))"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
@@ -1968,7 +1968,7 @@ namespace System.Text.RegularExpressions.Generator
                         using (EmitBlock(writer, $"for (int i = 0; i < {Literal(node.Str)}.Length; i++)"))
                         {
                             string textSpanIndex = textSpanPos > 0 ? $"i + {textSpanPos}" : "i";
-                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{textSpanLocal}[{textSpanIndex}]")} != {Literal(str)}[i])"))
+                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"{sliceSpan}[{textSpanIndex}]")} != {Literal(str)}[i])"))
                             {
                                 writer.WriteLine($"goto {doneLabel};");
                             }
@@ -2053,11 +2053,12 @@ namespace System.Text.RegularExpressions.Generator
                 if (subsequent?.FindStartingCharacter() is char subsequentCharacter)
                 {
                     writer.WriteLine();
-                    writer.WriteLine($"{endingPos} = runtext.LastIndexOf({Literal(subsequentCharacter)}, {endingPos} - 1, {endingPos} - {startingPos});");
+                    writer.WriteLine($"{endingPos} = global::System.MemoryExtensions.LastIndexOf(runtextSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(subsequentCharacter)});");
                     using (EmitBlock(writer, $"if ({endingPos} < 0)"))
                     {
                         writer.WriteLine($"goto {originalDoneLabel};");
                     }
+                    writer.WriteLine($"{endingPos} += {startingPos};");
                     writer.WriteLine($"runtextpos = {endingPos};");
                 }
                 else
@@ -2426,9 +2427,9 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (iterations <= MaxUnrollSize)
                 {
-                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length ||
-                    //     textSpan[textSpanPos] != c1 ||
-                    //     textSpan[textSpanPos + 1] != c2 ||
+                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)slice.Length ||
+                    //     slice[textSpanPos] != c1 ||
+                    //     slice[textSpanPos + 1] != c2 ||
                     //     ...)
                     // {
                     //     goto doneLabel;
@@ -2454,25 +2455,25 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length) goto doneLabel;
+                    // if ((uint)(textSpanPos + iterations - 1) >= (uint)slice.Length) goto doneLabel;
                     if (emitLengthCheck)
                     {
                         EmitSpanLengthCheck(iterations);
                     }
 
-                    string spanLocal = "slice"; // As this repeater doesn't wrap arbitrary node emits, this shouldn't conflict with anything
-                    writer.WriteLine($"global::System.ReadOnlySpan<char> {spanLocal} = {textSpanLocal}.Slice({textSpanPos}, {iterations});");
+                    string repeaterSpan = "repeaterSlice"; // As this repeater doesn't wrap arbitrary node emits, this shouldn't conflict with anything
+                    writer.WriteLine($"global::System.ReadOnlySpan<char> {repeaterSpan} = {sliceSpan}.Slice({textSpanPos}, {iterations});");
                     string i = ReserveName("charrepeater_iteration");
-                    using (EmitBlock(writer, $"for (int {i} = 0; {i} < {spanLocal}.Length; {i}++)"))
+                    using (EmitBlock(writer, $"for (int {i} = 0; {i} < {repeaterSpan}.Length; {i}++)"))
                     {
                         EmitTimeoutCheck(writer, hasTimeout);
 
-                        string tmpTextSpanLocal = textSpanLocal; // we want EmitSingleChar to refer to this temporary
+                        string tmpTextSpanLocal = sliceSpan; // we want EmitSingleChar to refer to this temporary
                         int tmpTextSpanPos = textSpanPos;
-                        textSpanLocal = spanLocal;
+                        sliceSpan = repeaterSpan;
                         textSpanPos = 0;
                         EmitSingleChar(node, emitLengthCheck: false, offset: i);
-                        textSpanLocal = tmpTextSpanLocal;
+                        sliceSpan = tmpTextSpanLocal;
                         textSpanPos = tmpTextSpanPos;
                     }
                     textSpanPos += iterations;
@@ -2514,7 +2515,7 @@ namespace System.Text.RegularExpressions.Generator
                     // restriction is purely for simplicity; it could be removed in the future with additional code to
                     // handle the unbounded case.
 
-                    writer.Write($"int {iterationLocal} = global::System.MemoryExtensions.IndexOf({textSpanLocal}");
+                    writer.Write($"int {iterationLocal} = global::System.MemoryExtensions.IndexOf({sliceSpan}");
                     if (textSpanPos > 0)
                     {
                         writer.Write($".Slice({textSpanPos})");
@@ -2524,8 +2525,8 @@ namespace System.Text.RegularExpressions.Generator
                     using (EmitBlock(writer, $"if ({iterationLocal} == -1)"))
                     {
                         writer.WriteLine(textSpanPos > 0 ?
-                            $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
-                            $"{iterationLocal} = {textSpanLocal}.Length;");
+                            $"{iterationLocal} = {sliceSpan}.Length - {textSpanPos};" :
+                            $"{iterationLocal} = {sliceSpan}.Length;");
                     }
                 }
                 else if (node.IsSetFamily &&
@@ -2539,7 +2540,7 @@ namespace System.Text.RegularExpressions.Generator
                     // As with the notoneloopatomic above, the unbounded constraint is purely for simplicity.
                     Debug.Assert(numSetChars > 1);
 
-                    writer.Write($"int {iterationLocal} = global::System.MemoryExtensions.IndexOfAny({textSpanLocal}");
+                    writer.Write($"int {iterationLocal} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}");
                     if (textSpanPos != 0)
                     {
                         writer.Write($".Slice({textSpanPos})");
@@ -2553,8 +2554,8 @@ namespace System.Text.RegularExpressions.Generator
                     using (EmitBlock(writer, $"if ({iterationLocal} == -1)"))
                     {
                         writer.WriteLine(textSpanPos > 0 ?
-                            $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
-                            $"{iterationLocal} = {textSpanLocal}.Length;");
+                            $"{iterationLocal} = {sliceSpan}.Length - {textSpanPos};" :
+                            $"{iterationLocal} = {sliceSpan}.Length;");
                     }
                 }
                 else if (node.IsSetFamily && maxIterations == int.MaxValue && node.Str == RegexCharClass.AnyClass)
@@ -2570,7 +2571,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     // For everything else, do a normal loop.
 
-                    string expr = $"{textSpanLocal}[{iterationLocal}]";
+                    string expr = $"{sliceSpan}[{iterationLocal}]";
                     if (node.IsSetFamily)
                     {
                         expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations);
@@ -2593,7 +2594,7 @@ namespace System.Text.RegularExpressions.Generator
                     textSpanPos = 0;
 
                     string maxClause = maxIterations != int.MaxValue ? $"{iterationLocal} < {maxIterations} && " : "";
-                    using (EmitBlock(writer, $"while ({maxClause}(uint){iterationLocal} < (uint){textSpanLocal}.Length && {expr})"))
+                    using (EmitBlock(writer, $"while ({maxClause}(uint){iterationLocal} < (uint){sliceSpan}.Length && {expr})"))
                     {
                         EmitTimeoutCheck(writer, hasTimeout);
                         writer.WriteLine($"{iterationLocal}++;");
@@ -2612,7 +2613,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Now that we've completed our optional iterations, advance the text span
                 // and runtextpos by the number of iterations completed.
 
-                writer.WriteLine($"{textSpanLocal} = {textSpanLocal}.Slice({iterationLocal});");
+                writer.WriteLine($"{sliceSpan} = {sliceSpan}.Slice({iterationLocal});");
                 writer.WriteLine($"runtextpos += {iterationLocal};");
             }
 
@@ -2621,7 +2622,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.M == 0 && node.N == 1);
 
-                string expr = $"{textSpanLocal}[{textSpanPos}]";
+                string expr = $"{sliceSpan}[{textSpanPos}]";
                 if (node.IsSetFamily)
                 {
                     expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations);
@@ -2632,9 +2633,9 @@ namespace System.Text.RegularExpressions.Generator
                     expr = $"{expr} {(node.IsOneFamily ? "==" : "!=")} {Literal(node.Ch)}";
                 }
 
-                using (EmitBlock(writer, $"if ((uint){textSpanPos} < (uint){textSpanLocal}.Length && {expr})"))
+                using (EmitBlock(writer, $"if ((uint){textSpanPos} < (uint){sliceSpan}.Length && {expr})"))
                 {
-                    writer.WriteLine($"{textSpanLocal} = {textSpanLocal}.Slice(1);");
+                    writer.WriteLine($"{sliceSpan} = {sliceSpan}.Slice(1);");
                     writer.WriteLine($"runtextpos++;");
                 }
             }
