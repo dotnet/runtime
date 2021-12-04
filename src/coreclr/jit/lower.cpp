@@ -1259,7 +1259,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 {
 #ifdef TARGET_ARM
                     assert((info->GetStackSlotsNumber() == 1) ||
-                           (arg->TypeGet() == TYP_DOUBLE) && (info->GetStackSlotsNumber() == 2));
+                           ((arg->TypeGet() == TYP_DOUBLE) && (info->GetStackSlotsNumber() == 2)));
 #else
                     assert(varTypeIsSIMD(arg) || (info->GetStackSlotsNumber() == 1));
 #endif
