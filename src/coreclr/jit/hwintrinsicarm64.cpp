@@ -322,6 +322,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         return gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
     }
 
+    assert(category != HW_Category_Scalar);
+    assert(!HWIntrinsicInfo::isScalarIsa(HWIntrinsicInfo::lookupIsa(intrinsic)));
+
     if (!featureSIMD || !IsBaselineSimdIsaSupported())
     {
         return nullptr;
