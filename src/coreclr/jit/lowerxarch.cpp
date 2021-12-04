@@ -5513,7 +5513,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
     if (!node->OperIsHWIntrinsic())
     {
-        return supportsGeneralLoads && IsContainableMemoryOp(node);
+        return supportsGeneralLoads && (IsContainableMemoryOp(node) || node->IsCnsNonZeroFltOrDbl());
     }
 
     // TODO-XArch: Update this to be table driven, if possible.
