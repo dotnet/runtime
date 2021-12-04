@@ -11447,6 +11447,36 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             {
                 return fgMorphTree(optimizedTree);
             }
+
+            // Pattern-matching optimization:
+            //    (a % c) ==/!= 0
+            // for power-of-2 constant `c`
+            // =>
+            //    a & (c - 1) ==/!= 0
+            // For integer `a`, even if negative.
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase)
+            {
+                assert(tree->OperIs(GT_EQ, GT_NE));
+                if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
+                {
+                    GenTree* op1op2 = op1->AsOp()->gtOp2;
+                    if (op1op2->IsCnsIntOrI())
+                    {
+                        ssize_t modValue = op1op2->AsIntCon()->IconValue();
+                        if (isPow2(modValue))
+                        {
+                            JITDUMP("\nTransforming:\n");
+                            DISPTREE(tree);
+
+                            op1->SetOper(GT_AND);                                 // Change % => &
+                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+
+                            JITDUMP("\ninto:\n");
+                            DISPTREE(tree);
+                        }
+                    }
+                }
+            }
         }
 
             FALLTHROUGH;
@@ -13354,78 +13384,6 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
     GenTree*             op1 = cmp->gtGetOp1();
     GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
-
-    // Pattern-matching optimization:
-    //    (a % c) ==/!= 0
-    // for power-of-2 constant `c`
-    // =>
-    //    a & (c - 1) ==/!= 0
-    // For integer `a`, even if negative.
-    if (opts.OptimizationEnabled())
-    {
-        if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
-        {
-            GenTree* op1op2 = op1->AsOp()->gtOp2;
-            if (op1op2->IsCnsIntOrI())
-            {
-                ssize_t modValue = op1op2->AsIntCon()->IconValue();
-                if (isPow2(modValue))
-                {
-                    JITDUMP("\nTransforming:\n");
-                    DISPTREE(cmp);
-
-                    op1->SetOper(GT_AND);                                 // Change % => &
-                    op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
-                    fgUpdateConstTreeValueNumber(op1op2);
-
-                    JITDUMP("\ninto:\n");
-                    DISPTREE(cmp);
-                }
-            }
-        }
-    }
-
-    // Now let's do the same but for a more complicated input:
-    //   (X - ((X / C1) << C2)) != 0
-    // where C1 is a power-of-two number and 1 << C2 equals C3.
-    // It is especially important for ARM64 where "X % POT_CNS ==/!= 0" is transformed to this pattern early
-    if (fgGlobalMorph && op2->IsIntegralConst(0) && op1->OperIs(GT_SUB) && !op1->gtOverflow() && varTypeIsIntegral(op1))
-    {
-        GenTree* lsh = op1->gtGetOp2();
-        if (lsh->OperIs(GT_LSH) && lsh->gtGetOp2()->IsCnsIntOrI() && lsh->gtGetOp1()->OperIs(GT_DIV))
-        {
-            GenTreeOp*    div = lsh->gtGetOp1()->AsOp();
-            const ssize_t c1  = lsh->gtGetOp2()->AsIntCon()->IconValue();
-            if (div->OperIs(GT_DIV) && div->gtGetOp2()->IsCnsIntOrI())
-            {
-                const ssize_t c2 = div->gtGetOp2()->AsIntCon()->IconValue();
-
-                // Same X is used twice, in the second case it can be a COMMA
-                if (op1->gtGetOp1()->OperIsLeaf() &&
-                    GenTree::Compare(op1->gtGetOp1(), div->gtGetOp1()->gtEffectiveVal(), false))
-                {
-                    if ((c2 > 1) && isPow2(c2) && ((1ULL << (size_t)c1) == (size_t)c2))
-                    {
-                        JITDUMP("\nTransforming:\n");
-                        DISPTREE(cmp);
-
-                        DEBUG_DESTROY_NODE(lsh->gtGetOp2());
-                        DEBUG_DESTROY_NODE(op1->gtGetOp1());
-                        DEBUG_DESTROY_NODE(lsh);
-                        DEBUG_DESTROY_NODE(op1);
-
-                        // Transform to "X & (C2 - 1) ==/!= 0"
-                        div->SetOper(GT_AND);
-                        div->gtGetOp2()->AsIntConCommon()->SetIconValue(c2 - 1);
-                        cmp->gtOp1 = op1 = div;
-
-                        JITDUMP("\ninto:\n");
-                        DISPTREE(cmp);
-                    }
-                }
-            }
-        }
-    }
 
     // Check for "(expr +/- icon1) ==/!= (non-zero-icon2)".
     if (op2->IsCnsIntOrI() && (op2->IconValue() != 0))
