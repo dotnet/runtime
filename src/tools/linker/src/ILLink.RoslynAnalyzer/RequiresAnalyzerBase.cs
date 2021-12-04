@@ -343,8 +343,8 @@ namespace ILLink.RoslynAnalyzer
 		/// </summary>
 		protected bool IsMemberInRequiresScope (ISymbol containingSymbol)
 		{
-			if (containingSymbol.HasAttribute (RequiresAttributeName) ||
-				containingSymbol.ContainingType.HasAttribute (RequiresAttributeName)) {
+			if (containingSymbol.HasAttribute (RequiresAttributeName) || (containingSymbol.ContainingType is not null &&
+				containingSymbol.ContainingType.HasAttribute (RequiresAttributeName))) {
 				return true;
 			}
 
