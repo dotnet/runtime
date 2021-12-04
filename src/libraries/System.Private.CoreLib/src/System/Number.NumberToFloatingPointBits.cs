@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System
 {
@@ -1056,61 +1057,57 @@ namespace System
             uint integerDigitsPresent = Math.Min(positiveExponent, totalDigits);
             uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
 
-            // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
-            // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
-            // on floating-point arithmetic to compute the correct result. This is
-            // because each floating-point precision values allows us to exactly represent
-            // different whole integers and certain powers of 10, depending on the underlying
-            // formats exact range. Additionally, IEEE operations dictate that the result is
-            // computed to the infinitely precise result and then rounded, which means that
-            // we can rely on it to produce the correct result when both inputs are exact.
-
-            byte* src = number.GetDigitsPointer();
-
-            ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
-
-            int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-            uint fastExponent = (uint)(Math.Abs(exponent));
-
-            if ((mantissa <= info.MaxMantissaFastPath) && (totalDigits <= 15) && (fastExponent <= info.MaxExponentFastPath))
+            // Above 19 digits, we rely on slow path
+            if (totalDigits <= 19)
             {
-                double mantissa_d = mantissa;
-                double scale = s_Pow10DoubleTable[fastExponent];
+                byte* src = number.GetDigitsPointer();
 
-                if (fractionalDigitsPresent != 0)
+                ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
+
+                int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
+                uint fastExponent = (uint)(Math.Abs(exponent));
+
+                // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
+                // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
+                // on floating-point arithmetic to compute the correct result. This is
+                // because each floating-point precision values allows us to exactly represent
+                // different whole integers and certain powers of 10, depending on the underlying
+                // formats exact range. Additionally, IEEE operations dictate that the result is
+                // computed to the infinitely precise result and then rounded, which means that
+                // we can rely on it to produce the correct result when both inputs are exact.
+                // This is known as Clinger's fast path
+
+                if ((mantissa <= info.MaxMantissaFastPath) && (totalDigits <= 15) && (fastExponent <= info.MaxExponentFastPath))
                 {
-                    mantissa_d /= scale;
+                    double mantissa_d = mantissa;
+                    double scale = s_Pow10DoubleTable[fastExponent];
+
+                    if (fractionalDigitsPresent != 0)
+                    {
+                        mantissa_d /= scale;
+                    }
+                    else
+                    {
+                        mantissa_d *= scale;
+                    }
+
+                    return BitConverter.DoubleToUInt64Bits(mantissa_d);
                 }
-                else
+
+                // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
+                // https://arxiv.org/abs/2101.11408
+                AdjustedMantissa am = ComputeFloat(exponent, mantissa, info);
+
+                // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
+                // then we need to go the long way around again. This is very uncommon.
+                if (am.power2 > 0)
                 {
-                    mantissa_d *= scale;
-                }
+                    ulong word = am.mantissa;
+                    word |= (ulong)(uint)(am.power2) << info.DenormalMantissaBits;
+                    return word;
 
-                return BitConverter.DoubleToUInt64Bits(mantissa_d);
-            }
-
-            // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
-            // https://arxiv.org/abs/2101.11408
-            AdjustedMantissa am = ComputeFloat(exponent, mantissa, info);
-
-            if (totalDigits > 19)
-            {
-                if (am != ComputeFloat(exponent, mantissa + 1, info))
-                {
-                    am.power2 = -1; // value is invalid.
                 }
             }
-
-            // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
-            // then we need to go the long way around again. This is very uncommon.
-            if (am.power2 > 0)
-            {
-                ulong word = am.mantissa;
-                word |= (ulong)(uint)(am.power2) << info.DenormalMantissaBits;
-                return word;
-
-            }
-
 
             return NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
         }
@@ -1142,80 +1139,75 @@ namespace System
             int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
             uint fastExponent = (uint)(Math.Abs(exponent));
 
-            byte* src = number.GetDigitsPointer();
-
-            if ((totalDigits <= 7) && (fastExponent <= 10))
+            // Above 19 digits, we rely on slow path
+            if (totalDigits <= 19)
             {
-                // It is only valid to do this optimization for half and single-precision floating-point
-                // values since we can lose some of the mantissa bits and would return the
-                // wrong value when upcasting to double.
+                byte* src = number.GetDigitsPointer();
 
-                float result = DigitsToUInt32(src, (int)(totalDigits));
-                float scale = s_Pow10SingleTable[fastExponent];
-
-                if (fractionalDigitsPresent != 0)
+                if ((totalDigits <= 7) && (fastExponent <= 10))
                 {
-                    result /= scale;
-                }
-                else
-                {
-                    result *= scale;
+                    // It is only valid to do this optimization for half and single-precision floating-point
+                    // values since we can lose some of the mantissa bits and would return the
+                    // wrong value when upcasting to double.
+
+                    float result = DigitsToUInt32(src, (int)(totalDigits));
+                    float scale = s_Pow10SingleTable[fastExponent];
+
+                    if (fractionalDigitsPresent != 0)
+                    {
+                        result /= scale;
+                    }
+                    else
+                    {
+                        result *= scale;
+                    }
+
+                    return BitConverter.HalfToUInt16Bits((Half)result);
                 }
 
-                return BitConverter.HalfToUInt16Bits((Half)result);
+                // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
+                // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
+                // on floating-point arithmetic to compute the correct result. This is
+                // because each floating-point precision values allows us to exactly represent
+                // different whole integers and certain powers of 10, depending on the underlying
+                // formats exact range. Additionally, IEEE operations dictate that the result is
+                // computed to the infinitely precise result and then rounded, which means that
+                // we can rely on it to produce the correct result when both inputs are exact.
+                // This is known as Clinger's fast path
+
+                ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
+
+                if ((mantissa <= info.MaxMantissaFastPath) && (totalDigits <= 15) && (fastExponent <= info.MaxExponentFastPath))
+                {
+                    double mantissa_d = mantissa;
+                    double scale = s_Pow10DoubleTable[fastExponent];
+
+                    if (fractionalDigitsPresent != 0)
+                    {
+                        mantissa_d /= scale;
+                    }
+                    else
+                    {
+                        mantissa_d *= scale;
+                    }
+
+                    return BitConverter.HalfToUInt16Bits((Half)(mantissa_d));
+                }
+
+                // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
+                // https://arxiv.org/abs/2101.11408
+                AdjustedMantissa am = ComputeFloat(exponent, mantissa, info);
+
+                // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
+                // then we need to go the long way around again. This is very uncommon.
+                if (am.power2 > 0)
+                {
+                    ulong word = am.mantissa;
+                    word |= (ulong)(uint)(am.power2) << info.DenormalMantissaBits;
+                    return (ushort)word;
+                }
+
             }
-
-            // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
-            // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
-            // on floating-point arithmetic to compute the correct result. This is
-            // because each floating-point precision values allows us to exactly represent
-            // different whole integers and certain powers of 10, depending on the underlying
-            // formats exact range. Additionally, IEEE operations dictate that the result is
-            // computed to the infinitely precise result and then rounded, which means that
-            // we can rely on it to produce the correct result when both inputs are exact.
-
-
-            ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
-
-            if ((mantissa <= info.MaxMantissaFastPath) && (totalDigits <= 15) && (fastExponent <= info.MaxExponentFastPath))
-            {
-                double mantissa_d = mantissa;
-                double scale = s_Pow10DoubleTable[fastExponent];
-
-                if (fractionalDigitsPresent != 0)
-                {
-                    mantissa_d /= scale;
-                }
-                else
-                {
-                    mantissa_d *= scale;
-                }
-
-                return BitConverter.HalfToUInt16Bits((Half)(mantissa_d));
-            }
-
-            // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
-            // https://arxiv.org/abs/2101.11408
-            AdjustedMantissa am = ComputeFloat(exponent, mantissa, info);
-
-            if (totalDigits > 19)
-            {
-                if (am != ComputeFloat(exponent, mantissa + 1, info))
-                {
-                    am.power2 = -1; // value is invalid.
-                }
-            }
-
-            // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
-            // then we need to go the long way around again. This is very uncommon.
-            if (am.power2 > 0)
-            {
-                ulong word = am.mantissa;
-                word |= (ulong)(uint)(am.power2) << info.DenormalMantissaBits;
-                return (ushort)word;
-            }
-
-
             return (ushort)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
         }
 
@@ -1247,79 +1239,77 @@ namespace System
             int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
             uint fastExponent = (uint)(Math.Abs(exponent));
 
-            byte* src = number.GetDigitsPointer();
 
-            if ((totalDigits <= 7) && (fastExponent <= 10))
+            // Above 19 digits, we rely on slow path
+            if (totalDigits <= 19)
             {
-                // It is only valid to do this optimization for single-precision floating-point
-                // values since we can lose some of the mantissa bits and would return the
-                // wrong value when upcasting to double.
 
-                float result = DigitsToUInt32(src, (int)(totalDigits));
-                float scale = s_Pow10SingleTable[fastExponent];
+                byte* src = number.GetDigitsPointer();
 
-                if (fractionalDigitsPresent != 0)
+                if ((totalDigits <= 7) && (fastExponent <= 10))
                 {
-                    result /= scale;
-                }
-                else
-                {
-                    result *= scale;
+                    // It is only valid to do this optimization for single-precision floating-point
+                    // values since we can lose some of the mantissa bits and would return the
+                    // wrong value when upcasting to double.
+
+                    float result = DigitsToUInt32(src, (int)(totalDigits));
+                    float scale = s_Pow10SingleTable[fastExponent];
+
+                    if (fractionalDigitsPresent != 0)
+                    {
+                        result /= scale;
+                    }
+                    else
+                    {
+                        result *= scale;
+                    }
+
+                    return BitConverter.SingleToUInt32Bits(result);
                 }
 
-                return BitConverter.SingleToUInt32Bits(result);
+                // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
+                // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
+                // on floating-point arithmetic to compute the correct result. This is
+                // because each floating-point precision values allows us to exactly represent
+                // different whole integers and certain powers of 10, depending on the underlying
+                // formats exact range. Additionally, IEEE operations dictate that the result is
+                // computed to the infinitely precise result and then rounded, which means that
+                // we can rely on it to produce the correct result when both inputs are exact.
+                // This is known as Clinger's fast path
+
+                ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
+
+                if ((mantissa <= info.MaxMantissaFastPath) && (totalDigits <= 15) && (fastExponent <= info.MaxExponentFastPath))
+                {
+                    double mantissa_d = mantissa;
+                    double scale = s_Pow10DoubleTable[fastExponent];
+
+                    if (fractionalDigitsPresent != 0)
+                    {
+                        mantissa_d /= scale;
+                    }
+                    else
+                    {
+                        mantissa_d *= scale;
+                    }
+
+                    return BitConverter.SingleToUInt32Bits((float)(mantissa_d));
+                }
+
+                // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
+                // https://arxiv.org/abs/2101.11408
+
+                AdjustedMantissa am = ComputeFloat(exponent, mantissa, info);
+
+                // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
+                // then we need to go the long way around again. This is very uncommon.
+                if (am.power2 > 0)
+                {
+                    ulong word = am.mantissa;
+                    word |= (ulong)(uint)(am.power2) << info.DenormalMantissaBits;
+                    return (uint)word;
+                }
             }
-
-            // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
-            // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
-            // on floating-point arithmetic to compute the correct result. This is
-            // because each floating-point precision values allows us to exactly represent
-            // different whole integers and certain powers of 10, depending on the underlying
-            // formats exact range. Additionally, IEEE operations dictate that the result is
-            // computed to the infinitely precise result and then rounded, which means that
-            // we can rely on it to produce the correct result when both inputs are exact.
-
-
-            ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
-
-            if ((mantissa <= info.MaxMantissaFastPath) && (totalDigits <= 15) && (fastExponent <= info.MaxExponentFastPath))
-            {
-                double mantissa_d = mantissa;
-                double scale = s_Pow10DoubleTable[fastExponent];
-
-                if (fractionalDigitsPresent != 0)
-                {
-                    mantissa_d /= scale;
-                }
-                else
-                {
-                    mantissa_d *= scale;
-                }
-
-                return BitConverter.SingleToUInt32Bits((float)(mantissa_d));
-            }
-
-            // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
-            // https://arxiv.org/abs/2101.11408
-            AdjustedMantissa am = ComputeFloat(exponent, mantissa, info);
-
-            if (totalDigits > 19)
-            {
-                if (am != ComputeFloat(exponent, mantissa + 1, info))
-                {
-                    am.power2 = -1; // value is invalid.
-                }
-            }
-
-            // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
-            // then we need to go the long way around again. This is very uncommon.
-            if (am.power2 > 0)
-            {
-                ulong word = am.mantissa;
-                word |= (ulong)(uint)(am.power2) << info.DenormalMantissaBits;
-                return (uint)word;
-            }
-
             return (uint)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
         }
 
@@ -1587,7 +1577,7 @@ namespace System
             // At this point in time q is in [smallest_power_of_five, largest_power_of_five].
 
             // We want the most significant bit of i to be 1. Shift if needed.
-            int lz = LeadingZeroCount(w);
+            int lz = BitOperations.LeadingZeroCount(w);
             w <<= lz;
 
             // The required precision is mantissa_explicit_bits() + 3 because
@@ -1675,40 +1665,6 @@ namespace System
             }
             return answer;
         }
-
-
-        private static int LeadingZeroCount(ulong value)
-        {
-#if HAS_BITOPERATIONS
-      return System.Numerics.BitOperations.LeadingZeroCount(value);
-#else
-            uint hi = (uint)(value >> 32);
-
-            if (hi == 0)
-            {
-                return 32 + Log2SoftwareFallback((uint)value);
-            }
-
-            return Log2SoftwareFallback(hi);
-
-            static int Log2SoftwareFallback(uint value)
-            {
-                if (value == 0)
-                {
-                    return 32;
-                }
-
-                int n = 1;
-                if (value >> 16 == 0) { n += 16; value <<= 16; }
-                if (value >> 24 == 0) { n += 8; value <<= 8; }
-                if (value >> 28 == 0) { n += 4; value <<= 4; }
-                if (value >> 30 == 0) { n += 2; value <<= 2; }
-                n -= (int)(value >> 31);
-                return n;
-
-            }
-#endif
-        }
         private static value128 ComputeProductApproximation(int bitPrecision, long q, ulong w)
         {
             int index = 2 * (int)(q - SmallestPowerOfFive);
@@ -1732,7 +1688,7 @@ namespace System
         internal static int CalculatePower(int q)
             => (((152170 + 65536) * q) >> 16) + 63;
 
-#if NET5_0_OR_GREATER
+
 
         internal static value128 FullMultiplication(ulong value1, ulong value2)
         {
@@ -1740,33 +1696,5 @@ namespace System
             return new value128(hi, lo);
         }
 
-#else
-        internal static value128 FullMultiplication(ulong value1, ulong value2)
-        {
-#if HAS_INTRINSICS
-      if(System.Runtime.Intrinsics.X86.Bmi2.X64.IsSupported)
-      {
-            ulong lo;
-            ulong hi = System.Runtime.Intrinsics.X86.Bmi2.X64.MultiplyNoFlags(value1, value2, &lo);
-            return new value128(hi, lo);
-      }
-#endif
-            return Emulate64x64to128(value1, value2);
-        }
-
-
-        internal static value128 Emulate64x64to128(ulong x, ulong y)
-        {
-            ulong x0 = (uint)x, x1 = x >> 32;
-            ulong y0 = (uint)y, y1 = y >> 32;
-            ulong p11 = x1 * y1, p01 = x0 * y1;
-            ulong p10 = x1 * y0, p00 = x0 * y0;
-
-            ulong middle = p10 + (p00 >> 32) + (uint)p01;
-
-            return new value128(h: p11 + (middle >> 32) + (p01 >> 32), l: (middle << 32) | (uint)p00);
-        }
-
-#endif
     }
 }
