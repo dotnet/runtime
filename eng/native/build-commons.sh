@@ -48,7 +48,9 @@ check_prereqs()
 
 build_native()
 {
-    eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+    if [[ ! -e "$__RepoRootDir/artifacts/obj/_version.c" ]]; then
+        eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+    fi
 
     targetOS="$1"
     platformArch="$2"
@@ -257,7 +259,7 @@ while :; do
         break
     fi
 
-    lowerI="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
+    lowerI="$(echo "${1/--/-}" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
         -\?|-h|--help)
             usage
@@ -452,7 +454,7 @@ if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
     # Darwin that doesn't use rootfs
-    if [[ ! -n "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
         export ROOTFS_DIR
     fi

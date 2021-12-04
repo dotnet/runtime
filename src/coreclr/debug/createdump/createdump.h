@@ -6,10 +6,6 @@
 #define ___in       _SAL1_Source_(__in, (), _In_)
 #define ___out      _SAL1_Source_(__out, (), _Out_)
 
-#ifndef _countof
-#define _countof(x) (sizeof(x)/sizeof(x[0]))
-#endif
-
 extern void trace_printf(const char* format, ...);
 extern void trace_verbose_printf(const char* format, ...);
 extern bool g_diagnostics;

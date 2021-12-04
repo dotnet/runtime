@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetSystemTimeAsTicks")]
+        [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetSystemTimeAsTicks")]
         [SuppressGCTransition]
-        internal static extern long GetSystemTimeAsTicks();
+        internal static partial long GetSystemTimeAsTicks();
     }
 }

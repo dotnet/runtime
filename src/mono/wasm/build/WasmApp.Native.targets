@@ -7,7 +7,6 @@
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
-      _CheckEmccIsExpectedVersion;
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
       _GeneratePInvokeTable;
@@ -107,6 +106,9 @@
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
+      <!-- need to re-link dotnet.js when targeting ES6 -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'true'" >true</WasmBuildNative>
+
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
 
@@ -115,6 +117,8 @@
       <!-- AOT==true overrides WasmBuildNative -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
+      <!-- need to re-link dotnet.js when targeting ES6 -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'true'" >true</WasmBuildNative>
 
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
@@ -182,6 +186,7 @@
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0" />
+      <_EmccCommonFlags Include="-s EXPORT_ES6=1"                   Condition="'$(WasmEnableES6)' == 'true'" />
       <_EmccCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
 
@@ -223,9 +228,22 @@
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-      <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" Exclude="$(_WasmRuntimePackSrcDir)\*.iffe.js"/>
-      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.iffe.js" Kind="pre-js" />
+      <!-- See src\mono\wasm\runtime\modularize-dotnet.md -->
+      <JSFileType Include="extpre.js"  Kind="extern-pre-js" />
+      <JSFileType Include="iffe.js"    Kind="extern-pre-js" />
+      <JSFileType Include="pre.js"     Kind="pre-js" />
+      <JSFileType Include="lib.js"     Kind="js-library" />
+      <JSFileType Include="post.js"    Kind="post-js" />
+      <JSFileType Include="extpost.js" Kind="extern-post-js" />
+
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.%(JSFileType.Identity)"     Kind="%(JSFileType.Kind)" />
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\cjs\*.%(JSFileType.Identity)" Kind="%(JSFileType.Kind)" Condition="'$(WasmEnableES6)' != 'true'" />
+      <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\es6\*.%(JSFileType.Identity)" Kind="%(JSFileType.Kind)" Condition="'$(WasmEnableES6)' == 'true'" />
+
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
+
+      <EmscriptenEnvVars Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
     </ItemGroup>
 
     <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
@@ -260,14 +278,17 @@
     <IcallTableGenerator
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
       Assemblies="@(_WasmAssembliesInternal)"
-      OutputPath="$(_WasmICallTablePath)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </IcallTableGenerator>
+      OutputPath="$(_WasmICallTablePath)" />
+
+    <!-- Writing this explicitly, so it gets picked up when the target is skipped -->
+    <ItemGroup>
+      <FileWrites Include="$(_WasmICallTablePath)" />
+    </ItemGroup>
   </Target>
 
-  <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == true" DependsOnTargets="_MonoSelectRuntimeComponents" />
+  <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
-  <Target Name="_WasmCompileNativeFiles">
+  <Target Name="_WasmCompileNativeFiles" DependsOnTargets="_CheckEmccIsExpectedVersion">
     <PropertyGroup>
       <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
       <_EmBuilder Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.py</_EmBuilder>
@@ -304,7 +325,7 @@
           Inputs="@(_BitcodeFile);$(_EmccDefaultFlagsRsp);$(_EmccCompileBitcodeRsp)"
           Outputs="@(_BitcodeFile->'%(ObjectFile)')"
           Condition="'$(_WasmShouldAOT)' == 'true' and @(_BitcodeFile->Count()) > 0"
-          DependsOnTargets="_WasmWriteRspForCompilingBitcode"
+          DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmWriteRspForCompilingBitcode"
           Returns="@(FileWrites)">
 
     <ItemGroup>
@@ -346,13 +367,9 @@
       <_WasmExtraJSFile Include="@(Content)" Condition="'%(Content.Extension)' == '.js'" />
 
       <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
-      <_EmccLinkStepArgs Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
-      <_WasmLinkDependencies Include="@(_DotnetJSSrcFile)" />
 
-      <_EmccLinkStepArgs Include="--js-library &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library'" />
-      <_EmccLinkStepArgs Include="--pre-js &quot;%(_WasmExtraJSFile.Identity)&quot;"     Condition="'%(_WasmExtraJSFile.Kind)' == 'pre-js'" />
-      <_EmccLinkStepArgs Include="--post-js &quot;%(_WasmExtraJSFile.Identity)&quot;"    Condition="'%(_WasmExtraJSFile.Kind)' == 'post-js'" />
-      <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" Condition="'%(_WasmExtraJSFile.Kind)' == 'js-library' or '%(_WasmExtraJSFile.Kind)' == 'pre-js' or '%(_WasmExtraJSFile.Kind)' == 'post-js'" />
+      <_EmccLinkStepArgs Include="--%(_WasmExtraJSFile.Kind) &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' != ''" />
+      <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" />
 
       <_EmccLinkStepArgs Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
@@ -372,7 +389,7 @@
   <Target Name="_WasmLinkDotNet"
           Inputs="@(_WasmLinkDependencies);$(_EmccDefaultFlagsRsp);$(_EmccLinkRsp)"
           Outputs="$(_WasmIntermediateOutputPath)dotnet.js;$(_WasmIntermediateOutputPath)dotnet.wasm"
-          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
+          DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmSelectRuntimeComponentsForLinking;_WasmCompileAssemblyBitCodeFilesForAOT;_WasmWriteRspFilesForLinking"
           Returns="@(FileWrites)" >
 
     <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />
@@ -427,9 +444,23 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Error Condition="'$(RuntimeEmccVersionRaw)' == ''"
            Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
 
-    <Exec Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
+    <PropertyGroup>
+      <_EmccVersionCommand>emcc --version</_EmccVersionCommand>
+    </PropertyGroup>
+
+    <Exec Command="$(_EmccVersionCommand)" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low" IgnoreExitCode="true">
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
+      <Output TaskParameter="ExitCode" PropertyName="_EmccVersionExitCode" />
     </Exec>
+
+    <!-- If `emcc -version` failed, then run it again, so we can surface the output as *Errors*. This allows the errors to show up correctly,
+         versus trying to use the output lines with the Error task -->
+    <Exec Condition="$(_EmccVersionExitCode) != '0'"
+          Command="$(_EmccVersionCommand)"
+          WorkingDirectory="$(_WasmIntermediateOutputPath)"
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          CustomErrorRegularExpression=".*"
+          />
 
     <!-- we want to get the first line from the output, which has the version.
          Rest of the lines are the license -->

@@ -37,7 +37,7 @@ import os
 import stat
 
 from coreclr_arguments import *
-from azdo_pipelines_util import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir
+from jitutil import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir
 
 
 # Start of parser object creation.
@@ -398,7 +398,7 @@ def main(main_args):
 
     # create superpmi directory
     print('Copying {} -> {}'.format(superpmi_src_directory, superpmi_dst_directory))
-    copy_directory(superpmi_src_directory, superpmi_dst_directory, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
+    copy_directory(superpmi_src_directory, superpmi_dst_directory, verbose_output=True, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
 
     if is_windows:
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
@@ -407,7 +407,7 @@ def main(main_args):
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
 
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
-    copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
+    copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, verbose_output=True, match_func=acceptable_copy)
 
     # Copy all the test files to CORE_ROOT
     # The reason is there are lot of dependencies with *.Tests.dll and to ensure we do not get
@@ -448,7 +448,7 @@ def main(main_args):
             run_command(["ls", "-l", folder_name])
 
         make_readable(coreclr_args.input_directory)
-        copy_directory(coreclr_args.input_directory, superpmi_dst_directory, match_func=acceptable_copy)
+        copy_directory(coreclr_args.input_directory, superpmi_dst_directory, verbose_output=True, match_func=acceptable_copy)
 
     # Workitem directories
     workitem_directory = os.path.join(source_directory, "workitem")

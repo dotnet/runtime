@@ -89,7 +89,7 @@ namespace Internal.Cryptography.Pal.Native
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     null,
                     ref cb))
                 {
@@ -103,7 +103,7 @@ namespace Internal.Cryptography.Pal.Native
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     decoded,
                     ref cb))
                 {
@@ -123,12 +123,12 @@ namespace Internal.Cryptography.Pal.Native
             {
                 int cb = 0;
 
-                if (!Interop.crypt32.CryptDecodeObjectPointer(
+                if (!Interop.Crypt32.CryptDecodeObjectPointer(
                     Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     null,
                     ref cb))
                 {
@@ -137,12 +137,12 @@ namespace Internal.Cryptography.Pal.Native
 
                 byte* decoded = stackalloc byte[cb];
 
-                if (!Interop.crypt32.CryptDecodeObjectPointer(
+                if (!Interop.Crypt32.CryptDecodeObjectPointer(
                     Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     decoded,
                     ref cb))
                 {
@@ -167,7 +167,7 @@ namespace Internal.Cryptography.Pal.Native
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     null,
                     ref cb))
                 {
@@ -181,7 +181,7 @@ namespace Internal.Cryptography.Pal.Native
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     decoded,
                     ref cb))
                 {

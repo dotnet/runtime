@@ -377,8 +377,8 @@ public:
                 goto exit;
             }
 
-            strncpy_s(dbiPath, _countof(dbiPath), pszModulePath, pszLast - pszModulePath);
-            strcat_s(dbiPath, _countof(dbiPath), DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("mscordbi"));
+            strncpy_s(dbiPath, ARRAY_SIZE(dbiPath), pszModulePath, pszLast - pszModulePath);
+            strcat_s(dbiPath, ARRAY_SIZE(dbiPath), DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("mscordbi"));
 
             hMod = LoadLibraryA(dbiPath);
             if (hMod == NULL)
@@ -580,7 +580,7 @@ public:
             {
                 *pCoreClrExists = TRUE;
 
-                hr = CreateVersionStringFromModule(m_processId, stringArray[i], verStr, _countof(verStr), &verLen);
+                hr = CreateVersionStringFromModule(m_processId, stringArray[i], verStr, ARRAY_SIZE(verStr), &verLen);
                 if (FAILED(hr))
                 {
                     goto exit;

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -15,25 +15,28 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             Span<byte> destination)
         {
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
+            if (Helpers.HasHMAC)
             {
-                return HMACSHA256.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return HMACSHA1.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return HMACSHA512.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return HMACSHA384.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return HMACMD5.HashData(key, source, destination);
+                if (hashAlgorithm == HashAlgorithmName.SHA256)
+                {
+                    return HMACSHA256.HashData(key, source, destination);
+                }
+                else if (hashAlgorithm == HashAlgorithmName.SHA1)
+                {
+                    return HMACSHA1.HashData(key, source, destination);
+                }
+                else if (hashAlgorithm == HashAlgorithmName.SHA512)
+                {
+                    return HMACSHA512.HashData(key, source, destination);
+                }
+                else if (hashAlgorithm == HashAlgorithmName.SHA384)
+                {
+                    return HMACSHA384.HashData(key, source, destination);
+                }
+                else if (hashAlgorithm == HashAlgorithmName.MD5)
+                {
+                    return HMACMD5.HashData(key, source, destination);
+                }
             }
 
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));

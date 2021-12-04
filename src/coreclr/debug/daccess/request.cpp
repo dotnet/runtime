@@ -631,7 +631,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, __out_z __inout_e
     if (callerFrame)
         regNum = -regNum-1;
 
-    if ((unsigned int)regNum >= _countof(regs))
+    if ((unsigned int)regNum >= ARRAY_SIZE(regs))
         return E_UNEXPECTED;
 
 
@@ -1371,8 +1371,8 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
             {
                 WCHAR path[MAX_LONGPATH];
                 COUNT_T nChars = 0;
-                if (pModule->GetPath().DacGetUnicode(NumItems(path), path, &nChars) &&
-                    nChars > 0 && nChars <= NumItems(path))
+                if (pModule->GetPath().DacGetUnicode(ARRAY_SIZE(path), path, &nChars) &&
+                    nChars > 0 && nChars <= ARRAY_SIZE(path))
                 {
                     WCHAR* pFile = path + nChars - 1;
                     while ((pFile >= path) && (*pFile != W('\\')))
@@ -3274,7 +3274,7 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 #endif // FEATURE_COMINTEROP
                             };
 
-    return GetHandleEnumForTypes(types, _countof(types), ppHandleEnum);
+    return GetHandleEnumForTypes(types, ARRAY_SIZE(types), ppHandleEnum);
 }
 
 HRESULT ClrDataAccess::GetHandleEnumForTypes(unsigned int types[], unsigned int count, ISOSHandleEnum **ppHandleEnum)
@@ -3317,7 +3317,7 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 
     DacHandleWalker *walker = new DacHandleWalker();
 
-    HRESULT hr = walker->Init(this, types, _countof(types), gen);
+    HRESULT hr = walker->Init(this, types, ARRAY_SIZE(types), gen);
     if (SUCCEEDED(hr))
         hr = walker->QueryInterface(__uuidof(ISOSHandleEnum), (void**)ppHandleEnum);
 
@@ -4156,12 +4156,18 @@ TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
     return managedObjectWrapperPtr;
 }
 
-HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
+HRESULT ClrDataAccess::DACTryGetComWrappersHandleFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTHANDLE* objHandle)
 {
-    if (ccwPtr == 0 || objRef == NULL)
-        return E_INVALIDARG;
+    HRESULT hr = E_FAIL;
+    TADDR ccw, managedObjectWrapperPtr;
+    ULONG32 bytesRead = 0;
+    OBJECTHANDLE handle;
 
-    SOSDacEnter();
+    if (ccwPtr == 0 || objHandle == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto ErrExit;
+    }
 
     if (!DACIsComWrappersCCW(ccwPtr))
     {
@@ -4169,18 +4175,16 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
         goto ErrExit;
     }
 
-    TADDR ccw = CLRDATA_ADDRESS_TO_TADDR(ccwPtr);
+    ccw = CLRDATA_ADDRESS_TO_TADDR(ccwPtr);
 
     // Return ManagedObjectWrapper as an OBJECTHANDLE. (The OBJECTHANDLE is guaranteed to live at offset 0).
-    TADDR managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccwPtr);
+    managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccwPtr);
     if (managedObjectWrapperPtr == NULL)
     {
         hr = E_FAIL;
         goto ErrExit;
     }
 
-    ULONG32 bytesRead = 0;
-    OBJECTHANDLE handle;
     IfFailGo(m_pTarget->ReadVirtual(managedObjectWrapperPtr, (PBYTE)&handle, sizeof(OBJECTHANDLE), &bytesRead));
     if (bytesRead != sizeof(OBJECTHANDLE))
     {
@@ -4188,9 +4192,31 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
         goto ErrExit;
     }
 
-    *objRef = ObjectFromHandle(handle);
+    *objHandle = handle;
 
-    SOSDacLeave();
+    return S_OK;
+
+ErrExit: return hr;
+}
+
+HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
+{
+    HRESULT hr = E_FAIL;
+
+    if (ccwPtr == 0 || objRef == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto ErrExit;
+    }
+
+    OBJECTHANDLE handle;
+    if (DACTryGetComWrappersHandleFromCCW(ccwPtr, &handle) != S_OK)
+    {
+        hr = E_FAIL;
+        goto ErrExit;
+    }
+
+    *objRef = ObjectFromHandle(handle);
 
     return S_OK;
 

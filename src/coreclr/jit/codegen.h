@@ -434,10 +434,10 @@ protected:
                      CORINFO_METHOD_HANDLE methHnd,
                      INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                      void*                 addr
-                     X86_ARG(int  argSize),
+                     X86_ARG(int argSize),
                      emitAttr              retSize
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                     IL_OFFSETX            ilOffset,
+                     const DebugInfo&      di,
                      regNumber             base,
                      bool                  isJump);
     // clang-format on
@@ -447,10 +447,10 @@ protected:
                           CORINFO_METHOD_HANDLE methHnd,
                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
                           GenTreeIndir*         indir
-                          X86_ARG(int  argSize),
+                          X86_ARG(int argSize),
                           emitAttr              retSize
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          IL_OFFSETX            ilOffset,
+                          const DebugInfo&      di,
                           bool                  isJump);
     // clang-format on
 
@@ -552,15 +552,21 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #ifdef DEBUG
-    void genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMapping);
+    void genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping);
     void genIPmappingListDisp();
 #endif // DEBUG
 
-    void genIPmappingAdd(IL_OFFSETX offset, bool isLabel);
-    void genIPmappingAddToFront(IL_OFFSETX offset);
+    void genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
+    void genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingGen();
 
-    void genEnsureCodeEmitted(IL_OFFSETX offsx);
+#ifdef DEBUG
+    void genDumpPreciseDebugInfo();
+    void genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first);
+    void genAddPreciseIPMappingHere(const DebugInfo& di);
+#endif
+
+    void genEnsureCodeEmitted(const DebugInfo& di);
 
     //-------------------------------------------------------------------------
     // scope info for the variables
@@ -967,9 +973,7 @@ protected:
                                regNumber       targetReg);
     void genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode);
     void genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode);
     void genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, regNumber tgtReg);
-    void genSIMDIntrinsicWiden(GenTreeSIMD* simdNode);
     void genSIMDIntrinsic(GenTreeSIMD* simdNode);
 
     // TYP_SIMD12 (i.e Vector3 of size 12 bytes) is not a hardware supported size and requires
@@ -1126,9 +1130,9 @@ protected:
 
     void genConsumeRegs(GenTree* tree);
     void genConsumeOperands(GenTreeOp* tree);
-#ifdef FEATURE_HW_INTRINSICS
-    void genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* tree);
-#endif // FEATURE_HW_INTRINSICS
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
+#endif
     void genEmitGSCookieCheck(bool pushReg);
     void genCodeForShift(GenTree* tree);
 
@@ -1248,6 +1252,9 @@ protected:
     void genCodeForJumpTrue(GenTreeOp* jtrue);
 #ifdef TARGET_ARM64
     void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForMadd(GenTreeOp* tree);
+    void genCodeForBfiz(GenTreeOp* tree);
+    void genCodeForAddEx(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1296,8 +1303,7 @@ protected:
         {
             return false;
         }
-        const LclVarDsc* varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
-        return (varDsc->lvIsRegCandidate());
+        return compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
@@ -1470,7 +1476,7 @@ public:
 
         static const GenConditionDesc& Get(GenCondition condition)
         {
-            assert(condition.GetCode() < _countof(map));
+            assert(condition.GetCode() < ArrLen(map));
             const GenConditionDesc& desc = map[condition.GetCode()];
             assert(desc.jumpKind1 != EJ_NONE);
             assert((desc.oper == GT_NONE) || (desc.oper == GT_AND) || (desc.oper == GT_OR));

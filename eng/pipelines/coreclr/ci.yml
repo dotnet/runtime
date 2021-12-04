@@ -111,8 +111,6 @@ jobs:
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     testGroup: outerloop
-    jobParameters:
-      liveLibrariesBuildConfig: Release
 
 #
 # Checked JIT test runs

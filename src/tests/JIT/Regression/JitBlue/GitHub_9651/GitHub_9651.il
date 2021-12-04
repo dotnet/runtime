@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly a {}
+.assembly extern xunit.core {}
 .module a.exe
 
 // Test case triggers reimportation of a leave,
@@ -12,6 +13,9 @@
 {
 .method static int32 Main(class [mscorlib]System.String[]) cil managed
 {
+   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+       01 00 00 00
+   )
    .entrypoint
    .locals init (int32 V0, native int V1)
    .try 

@@ -27,8 +27,8 @@ namespace DebuggerTests
 
             Assert.NotNull(loc["scriptId"]);
             Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts[loc["scriptId"]?.Value<string>()]);
-            Assert.Equal(10, loc["lineNumber"]);
-            Assert.Equal(8, loc["columnNumber"]);
+            Assert.Equal(10, (int)loc["lineNumber"]);
+            Assert.Equal(8, (int)loc["columnNumber"]);
         }
 
         [Fact]
@@ -36,7 +36,7 @@ namespace DebuggerTests
         {
             // Test that js breakpoints get set correctly
             // 13 24
-            // 13 33
+            // 13 53
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -45,10 +45,10 @@ namespace DebuggerTests
             var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc["scriptId"]);
-            Assert.Equal(13, loc["lineNumber"]);
-            Assert.Equal(24, loc["columnNumber"]);
+            Assert.Equal(13, (int)loc["lineNumber"]);
+            Assert.Equal(24, (int)loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 53);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -56,15 +56,15 @@ namespace DebuggerTests
             var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(33, loc2["columnNumber"]);
+            Assert.Equal(13, (int)loc2["lineNumber"]);
+            Assert.Equal(53, (int)loc2["columnNumber"]);
         }
 
         [Fact]
         public async Task CreateJS0Breakpoint()
         {
             // 13 24
-            // 13 33
+            // 13 53
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -73,10 +73,10 @@ namespace DebuggerTests
             var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc["scriptId"]);
-            Assert.Equal(13, loc["lineNumber"]);
-            Assert.Equal(24, loc["columnNumber"]);
+            Assert.Equal(13, (int)loc["lineNumber"]);
+            Assert.Equal(4, (int)loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 53);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -84,8 +84,8 @@ namespace DebuggerTests
             var loc2 = bp2_res.Value["locations"]?.Value<JArray>()[0];
 
             Assert.NotNull(loc2["scriptId"]);
-            Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(33, loc2["columnNumber"]);
+            Assert.Equal(13, (int)loc2["lineNumber"]);
+            Assert.Equal(53, (int)loc2["columnNumber"]);
         }
 
         [Theory]
@@ -651,12 +651,38 @@ namespace DebuggerTests
             var bp_visible = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "VisibleMethod", 1);
             Assert.Empty(bp_hidden.Value["locations"]);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:VisibleMethod'); }, 1);",
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:Run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_visible.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_visible.Value["locations"][0]["columnNumber"].Value<int>(),
                 "VisibleMethod"
             );
+        }
+
+        [Fact]
+        public async Task DebuggerAttributeStopOnDebuggerHiddenCallWithDebuggerBreakCall()
+        {
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerBreak", 0);
+            var init_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunDebuggerBreak'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunDebuggerBreak"
+            );
+            var pause_location = await SendCommandAndCheck(null, "Debugger.resume",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1,
+                8,
+                "RunDebuggerBreak");
+            Assert.Equal(init_location["callFrames"][0]["functionName"], pause_location["callFrames"][0]["functionName"]);
+            var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            await EvaluateOnCallFrame(id, "local_var", false);
+            await SendCommandAndCheck(null, "Debugger.resume",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                835,
+                8,
+                "VisibleMethodDebuggerBreak");
         }
     }
 }

@@ -11,12 +11,16 @@
   .ver 4:0:0:0
 }
 .assembly test {}
+.assembly extern xunit.core {}
 .module test_04a.exe
 
 .class private auto ansi beforefieldinit test extends [mscorlib]System.Object
 {
   .method public static int32 Main() cil managed
   {
+   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+       01 00 00 00
+   )
    .entrypoint
    .try
    {

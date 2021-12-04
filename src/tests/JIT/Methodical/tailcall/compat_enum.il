@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly compat_enum { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi serializable sealed TestEnum extends [mscorlib]System.Enum
@@ -38,6 +39,9 @@
     .method private hidebysig static 
             int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       40 (0x28)
       .maxstack  2

@@ -13,7 +13,7 @@ class Program
         }
         catch (Exception e)
         {
-            // When the Trimmer recieves the feature switch to use resource keys then exception
+            // When the Trimmer receives the feature switch to use resource keys then exception
             // messages shouldn't return the exception message resource, but instead the resource
             // key. This test is passing in the feature switch so we make sure that the resources
             // got trimmed correctly.

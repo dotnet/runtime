@@ -5,7 +5,7 @@
 
 
 
-.assembly ldloc_stloc.exe{
+.assembly ldloc_stloc{
 }
 
 .class public value sealed vclass{

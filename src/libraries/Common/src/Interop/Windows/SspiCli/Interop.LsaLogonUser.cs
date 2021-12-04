@@ -10,7 +10,9 @@ internal static partial class Interop
 {
     internal static partial class SspiCli
     {
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         [DllImport(Libraries.SspiCli)]
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         internal static extern int LsaLogonUser(
             [In]  SafeLsaHandle LsaHandle,
             [In]  ref Advapi32.LSA_STRING OriginName,
@@ -27,5 +29,6 @@ internal static partial class Interop
             [Out] out QUOTA_LIMITS Quotas,
             [Out] out int SubStatus
             );
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
     }
 }

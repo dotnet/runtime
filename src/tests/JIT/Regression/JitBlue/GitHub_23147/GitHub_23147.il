@@ -6,6 +6,7 @@
 .assembly GitHub_23147
 {
 }
+.assembly extern xunit.core {}
 .module GitHub_23147.exe
 
 .class private sequential ansi sealed beforefieldinit Test_GitHub_23147.HFA_f2
@@ -507,6 +508,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       579 (0x243)
     .maxstack  2
