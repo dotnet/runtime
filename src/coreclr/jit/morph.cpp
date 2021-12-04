@@ -11462,7 +11462,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     GenTree* op1op2 = op1->AsOp()->gtOp2;
                     if (op1op2->IsCnsIntOrI())
                     {
-                        ssize_t modValue = op1op2->AsIntCon()->IconValue();
+                        const ssize_t modValue = op1op2->AsIntCon()->IconValue();
                         if (isPow2(modValue))
                         {
                             JITDUMP("\nTransforming:\n");
@@ -11470,6 +11470,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                             op1->SetOper(GT_AND);                                 // Change % => &
                             op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                            fgUpdateConstTreeValueNumber(op1op2);
 
                             JITDUMP("\ninto:\n");
                             DISPTREE(tree);
