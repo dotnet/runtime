@@ -441,7 +441,7 @@
 
     <MergedPayloads Update="@(MergedPayloads)">
       <MergedTestHelixCommand>$([System.IO.File]::ReadAllText('%(PayloadHelixCommandFile)'))</MergedTestHelixCommand>
-      <PayloadGroup>$([System.IO.Path]::GetDirectoryName('%(MergedTestHelixCommand)'))</PayloadGroup>
+      <PayloadGroup>$([System.IO.Path]::GetDirectoryName('%(MergedTestHelixCommand)').Replace('/', '-').Replace('\', '-'))</PayloadGroup>
       <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
     </MergedPayloads>
 
