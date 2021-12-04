@@ -29,7 +29,10 @@
       <MergedTestWrapperScripts Update="@(MergedTestWrapperScripts)">
         <RedirectOutputToFile>$([System.IO.Path]::ChangeExtension('%(MergedTestWrapperScripts.Identity)', '.log'))</RedirectOutputToFile>
         <TestResultsXmlFile>$([System.IO.Path]::ChangeExtension('%(MergedTestWrapperScripts.Identity)', '.testResults.xml'))</TestResultsXmlFile>
-        <TestResultsCopyTo>$(__LogsDir)\%(MergedTestWrapperScripts.FileName).testRun.xml</TestResultsCopyTo>
+        <RelativeResultsPath>$([System.IO.Path]::GetRelativePath('$(TestBinDir)', $([System.IO.Path]::GetDirectoryName('%(MergedTestWrapperScripts.Identity)'))))</RelativeResultsPath>
+      </MergedTestWrapperScripts>
+      <MergedTestWrapperScripts Update="@(MergedTestWrapperScripts)">
+        <TestResultsCopyTo>$(__LogsDir)\$([MSBuild]::ValueOrDefault('%(MergedTestWrapperScripts.RelativeResultsPath)', '').Replace('/', '.').Replace('\', '.')).testRun.xml</TestResultsCopyTo>
       </MergedTestWrapperScripts>
     </ItemGroup>
   </Target>

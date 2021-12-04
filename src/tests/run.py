@@ -147,7 +147,7 @@ class DebugEnv:
             test ({})               : The test metadata
 
         """
-        self.unique_name = "%s_%s_%s_%s" % (test["name"],
+        self.unique_name = "%s_%s_%s_%s" % (test["test_path"],
                                             args.host_os,
                                             args.arch,
                                             args.build_type)
@@ -1165,16 +1165,20 @@ def parse_test_results(args, tests, assemblies):
     found = False
 
     for item in os.listdir(args.logs_dir):
-        if item.lower().endswith("testrun.xml"):
+        suffix_index = item.lower().find("testrun.xml")
+        if suffix_index >= 0:
             found = True
-            parse_test_results_xml_file(os.path.join(args.logs_dir, item), args, tests, assemblies)
+            item_name = ""
+            if suffix_index > 0:
+                item_name = item[:suffix_index - 1]
+            parse_test_results_xml_file(args, item, item_name, tests, assemblies)
 
     if not found:
         print("Unable to find testRun.xml. This normally means the tests did not run.")
         print("It could also mean there was a problem logging. Please run the tests again.")
         return
 
-def parse_test_results_xml_file(xml_result_file, args, tests, assemblies):
+def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     """ Parse test results from a single xml results file
     Args:
         xml_result_file      : results xml file to parse
@@ -1183,14 +1187,19 @@ def parse_test_results_xml_file(xml_result_file, args, tests, assemblies):
         assemblies           : dictionary of per-assembly aggregations
     """
 
+    xml_result_file = os.path.join(args.logs_dir, item)
     print("Analyzing {}".format(xml_result_file))
     xml_assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
     for assembly in xml_assemblies:
         assembly_name = assembly.attrib["name"]
         assembly_info = assemblies[assembly_name]
+        display_name = assembly_name
+        if len(item_name) > 0:
+            display_name = item_name
         if assembly_info == None:
             assembly_info = defaultdict(lambda: None, {
                 "name": assembly_name,
+                "display_name": display_name,
                 "time": 0.0,
                 "passed": 0,
                 "failed": 0,
@@ -1209,10 +1218,13 @@ def parse_test_results_xml_file(xml_result_file, args, tests, assemblies):
                     method = test.attrib["method"]
 
                     type = type.split("._")[0]
-                    test_name = type + method
+                    test_name = type + "::" + method
+                    name = test.attrib["name"]
+                    if len(name) > 0:
+                        test_name += " (" + name + ")"
                     result = test.attrib["result"]
                     time = float(collection.attrib["time"])
-                    test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, test_name)
+                    test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, name)
                     if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
                         test_location_on_filesystem = None
                     test_output = test.findtext("output")
@@ -1285,7 +1297,7 @@ def print_summary(tests, assemblies):
 
     for assembly in assemblies:
         assembly = assemblies[assembly]
-        name = assembly["name"]
+        name = assembly["display_name"]
         time = assembly["time"]
         passed = assembly["passed"]
         failed = assembly["failed"]
