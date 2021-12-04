@@ -2286,6 +2286,8 @@ public:
 
     bool IsInvariant() const;
 
+    bool IsNeverNegative() const;
+
     bool IsReuseRegVal() const
     {
         // This can be extended to non-constant nodes, but not to local or indir nodes.

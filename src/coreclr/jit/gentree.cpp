@@ -21967,3 +21967,27 @@ bool GenTree::IsInvariant() const
     GenTree* lclVarTree = nullptr;
     return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree);
 }
+
+//------------------------------------------------------------------------
+// IsNeverNegative: returns true if the given tree is known to be never
+//      negative such as: casts to unsiged, UDIV, UMOD, Array.Length
+//
+// Return Value:
+//      true if the given tree is known to be never negative
+//
+bool GenTree::IsNeverNegative() const
+{
+    if (IsUnsigned() || OperIs(GT_UMOD, GT_UDIV, GT_ARR_LENGTH))
+    {
+        return true;
+    }
+
+    if (IsIntegralConst())
+    {
+        return AsIntConCommon()->IconValue() >= 0;
+    }
+
+    // In theory we could rely on assertprop here but we're not quite there yet.
+
+    return false;
+}
