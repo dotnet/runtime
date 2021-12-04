@@ -31,7 +31,7 @@
 .module 'test.exe'
 .namespace JitTest
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static int32 
