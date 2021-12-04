@@ -63,8 +63,34 @@
                             and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EnabledGenerators Include="RegexGenerator" Condition="'$(EnableRegexGenerator)' == 'true'" />
+    <!-- Enable the RegexGenerator source generator when the project is a C# source project that references System.Text.RegularExpressions -->
+    <EnabledGenerators Include="RegexGenerator"
+                       Condition="'$(EnableRegexGenerator)' == ''
+                        and '$(IsFrameworkSupportFacade)' != 'true'
+                        and '$(IsSourceProject)' == 'true'
+                        and '$(MSBuildProjectExtension)' == '.csproj'
+                        and ('@(Reference)' != '' and @(Reference->AnyHaveMetadataValue('Identity', 'System.Text.RegularExpressions')))" />
+    <EnabledGenerators Include="RegexGenerator"
+                       Condition="'$(EnableRegexGenerator)' == ''
+                        and '$(IsFrameworkSupportFacade)' != 'true'
+                        and '$(IsSourceProject)' == 'true'
+                        and '$(MSBuildProjectExtension)' == '.csproj'
+                        and ('$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFrameworkIdentifier)' == '.NETFramework')" />
+  </ItemGroup>
+
+  <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
+  <ItemGroup Condition="'@(EnabledGenerators)' != ''
+                        and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'RegexGenerator'))">
+    <ProjectReference
+      Include="$(LibrariesProjectRoot)System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <Target Name="ConfigureGenerators"
-          DependsOnTargets="ConfigureDllImportGenerator"
+          DependsOnTargets="ConfigureDllImportGenerator;ConfigureRegexGenerator"
           BeforeTargets="CoreCompile" />
 
   <!-- Microsoft.Interop.DllImportGenerator -->
@@ -91,6 +117,16 @@
     </Copy>
     <PropertyGroup>
       <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_ENABLED</DefineConstants>
+    </PropertyGroup>
+  </Target>
+
+  <!-- System.Text.RegularExpressions -->
+  <Target Name="ConfigureRegexGenerator"
+          Condition="'@(EnabledGenerators)' != '' and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'RegexGenerator'))"
+          DependsOnTargets="ResolveProjectReferences"
+          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
+    <PropertyGroup>
+      <DefineConstants>$(DefineConstants);REGEXGENERATOR_ENABLED</DefineConstants>
     </PropertyGroup>
   </Target>
 
