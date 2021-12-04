@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.IO.Compression
@@ -194,56 +195,37 @@ namespace System.IO.Compression
             }
         }
 
-        // Converts the specified string into bytes using the optional specified encoding. If null, then the encoding is calculated from the string itself.
-        internal static byte[] EncodeStringToBytes(string? text, Encoding? encoding, out bool isUTF8)
+        internal static string GetTruncatedComment(string? comment, Encoding? archiveEncoding, int maxValue)
         {
-            if (text == null)
-            {
-                text = string.Empty;
-            }
-            if (encoding == null)
-            {
-                encoding = GetEncoding(text);
-            }
-            isUTF8 = encoding.CodePage == 65001;
-            return encoding.GetBytes(text);
-        }
-
-        internal static (string, byte[]) EncodeAndTruncateStringToBytes(string? text, Encoding? encoding, int maxBytes, out bool isUTF8)
-        {
-            if (text == null)
-            {
-                text = string.Empty;
-            }
-            if (encoding == null)
-            {
-                encoding = GetEncoding(text);
-            }
-            byte[] bytes = EncodeStringToBytes(text, encoding, out isUTF8);
-            string truncatedString = TruncateEncodedBytesAndReturnString(ref bytes, encoding, maxBytes);
-            return (truncatedString, bytes);
-        }
-
-        internal static string TruncateEncodedBytesAndReturnString(ref byte[] bytes, Encoding encoding, int maxBytes)
-        {
-            TruncateCommentIfNeeded(ref bytes, encoding, maxBytes);
+            byte[] bytes = GetEncodedTruncatedBytes(comment ?? string.Empty, archiveEncoding, maxValue, out bool isUTF8);
+            Encoding encoding = archiveEncoding ?? (isUTF8 ? Encoding.UTF8 : Encoding.ASCII);
             return encoding.GetString(bytes);
         }
 
-        // Truncate the string if larger that max total bytes allowed.
-        // Ensure we cut whole chars, which depend on encoding.
-        // Returns true if it had to be truncated.
-        internal static void TruncateCommentIfNeeded(ref byte[] bytes, Encoding encoding, int maxBytes)
+        // Converts the specified string into bytes using the optional specified encoding.
+        // If the encoding null, then the encoding is calculated from the string itself.
+        // If maxBytes is greater than zero, the returned string will be truncated to a total
+        // number of characters whose bytes do not add up to more than that number.
+        internal static byte[] GetEncodedTruncatedBytes(string? text, Encoding? encoding, int maxBytes, out bool isUTF8)
         {
-            if (bytes.Length > maxBytes)
+            text ??= string.Empty;
+            encoding ??= GetEncoding(text);
+
+            isUTF8 = encoding.CodePage == 65001;
+
+            byte[] bytes = encoding.GetBytes(text);
+
+            if (maxBytes > 0 && bytes.Length > maxBytes)
             {
                 int bytesPerChar = encoding.GetMaxByteCount(1);
 
                 int encodedCharsThatFit = maxBytes / bytesPerChar;
                 int totalBytesToTruncate = encodedCharsThatFit * bytesPerChar;
 
-                bytes = bytes[0..totalBytesToTruncate];
+                return bytes[0..totalBytesToTruncate];
             }
+
+            return bytes;
         }
     }
 }

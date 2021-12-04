@@ -40,11 +40,9 @@ namespace System.IO.Compression
         // only apply to update mode
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
-        private string? _fileCommentAsString;
-        private byte[]? _fileComment;
+        private string? _fileComment;
         private readonly CompressionLevel? _compressionLevel;
-        private bool _hasUnicodeEntryName;
-        private bool _hasUnicodeComment;
+        private bool _hasUnicodeEntryNameOrComment;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -83,21 +81,17 @@ namespace System.IO.Compression
 
             if (cd.FileComment.Length > 0)
             {
-                _fileComment = cd.FileComment;
-                _fileCommentAsString = ZipHelper.TruncateEncodedBytesAndReturnString(
-                    ref _fileComment,
-                    _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8,
-                    ushort.MaxValue);
+                Encoding encoding = _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8;
+                _fileComment = encoding.GetString(cd.FileComment);
             }
             else
             {
-                _fileCommentAsString = null;
                 _fileComment = null;
             }
 
             _compressionLevel = null;
 
-            _hasUnicodeEntryName = _hasUnicodeComment = IsGeneralPurposeUnicodeFlagSet();
+            _hasUnicodeEntryNameOrComment = IsGeneralPurposeUnicodeFlagSet();
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -144,7 +138,6 @@ namespace System.IO.Compression
             _cdUnknownExtraFields = null;
             _lhUnknownExtraFields = null;
 
-            _fileCommentAsString = null;
             _fileComment = null;
 
             _compressionLevel = null;
@@ -158,8 +151,7 @@ namespace System.IO.Compression
                 _archive.AcquireArchiveStream(this);
             }
 
-            _hasUnicodeEntryName = false;
-            _hasUnicodeComment = false;
+            _hasUnicodeEntryNameOrComment = false;
         }
 
         /// <summary>
@@ -199,14 +191,16 @@ namespace System.IO.Compression
 
         /// <summary>
         /// Gets or sets the optional entry comment.
-        /// The comment encoding is determined by the <c>entryNameEncoding</c> parameter of the <see cref="ZipArchive(Stream,ZipArchiveMode,bool,Encoding?)"/> constructor.
         /// </summary>
+        /// <remarks>
+        ///The comment encoding is determined by the <c>entryNameEncoding</c> parameter of the <see cref="ZipArchive(Stream,ZipArchiveMode,bool,Encoding?)"/> constructor.
+        /// If the comment byte length is larger than <see cref="ushort.MaxValue"/>, it will be truncated when disposing the archive.
+        /// </remarks>
         [AllowNull]
         public string Comment
         {
-            get => _fileCommentAsString ?? string.Empty;
-            set => (_fileCommentAsString, _fileComment) =
-                    ZipHelper.EncodeAndTruncateStringToBytes(value, _archive?.EntryNameAndCommentEncoding, ushort.MaxValue, out _hasUnicodeComment);
+            get => ZipHelper.GetTruncatedComment(_fileComment, _archive.EntryNameAndCommentEncoding, ushort.MaxValue);
+            set => _fileComment = value ?? string.Empty;
         }
 
         /// <summary>
@@ -226,7 +220,10 @@ namespace System.IO.Compression
                 if (value == null)
                     throw new ArgumentNullException(nameof(FullName));
 
-                _storedEntryNameBytes = ZipHelper.EncodeStringToBytes(value, _archive?.EntryNameAndCommentEncoding, out _hasUnicodeEntryName);
+                _storedEntryNameBytes = ZipHelper.GetEncodedTruncatedBytes(
+                    value, _archive.EntryNameAndCommentEncoding, 0 /* No truncation */, out bool hasUnicodeEntryName);
+
+                _hasUnicodeEntryNameOrComment |= hasUnicodeEntryName;
                 _storedEntryName = value;
 
                 if (ParseFileName(value, _versionMadeByPlatform) == "")
@@ -432,12 +429,12 @@ namespace System.IO.Compression
 
             Encoding encoding;
             // If the bit flag is not set, it either means we are adding a new entry, or
-            // this is an existing entry with non-unicode (ASCII) comment and fullname.
+            // this is an existing entry with ASCII comment and fullname.
             // If the user chose a default encoding in the ZipArchive.ctor, then we use it, otherwise
             // we default to UTF8.
             if (!IsGeneralPurposeUnicodeFlagSet())
             {
-                encoding = _archive?.EntryNameAndCommentEncoding ?? Encoding.UTF8;
+                encoding = _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8;
             }
             // If bit flag is set, it either means we opened an existing archive entry with the unicode flag set, or
             // we had already set the flag for this entry in a previous comment or fullname change.
@@ -536,7 +533,7 @@ namespace System.IO.Compression
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
 
-            if (_hasUnicodeEntryName || _hasUnicodeComment)
+            if (_hasUnicodeEntryNameOrComment)
                 _generalPurposeBitFlag |= BitFlagValues.UnicodeFileNameAndComment;
             else
                 _generalPurposeBitFlag &= ~BitFlagValues.UnicodeFileNameAndComment;
@@ -554,10 +551,13 @@ namespace System.IO.Compression
             writer.Write((ushort)_storedEntryNameBytes.Length);                 // File Name Length                         (2 bytes)
             writer.Write(extraFieldLength);                                     // Extra Field Length                       (2 bytes)
 
-            // This should hold because of how we read it originally in ZipCentralDirectoryFileHeader:
-            Debug.Assert((_fileComment == null) || (_fileComment.Length <= ushort.MaxValue));
+            byte[]? commentBytes = string.IsNullOrEmpty(_fileComment) ? null :
+                                   ZipHelper.GetEncodedTruncatedBytes(_fileComment, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out _);
 
-            writer.Write(_fileComment != null ? (ushort)_fileComment.Length : (ushort)0); // file comment length
+            // This should hold because of how we read it originally in ZipCentralDirectoryFileHeader:
+            Debug.Assert((commentBytes == null) || (commentBytes.Length <= ushort.MaxValue));
+
+            writer.Write(commentBytes != null ? (ushort)commentBytes.Length : (ushort)0); // file comment length
             writer.Write((ushort)0); // disk number start
             writer.Write((ushort)0); // internal file attributes
             writer.Write(_externalFileAttr); // external file attributes
@@ -571,8 +571,8 @@ namespace System.IO.Compression
             if (_cdUnknownExtraFields != null)
                 ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
 
-            if (_fileComment != null)
-                writer.Write(_fileComment);
+            if (commentBytes != null)
+                writer.Write(commentBytes);
         }
 
         // returns false if fails, will get called on every entry before closing in update mode
