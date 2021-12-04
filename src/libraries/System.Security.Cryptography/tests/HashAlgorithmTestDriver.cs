@@ -506,7 +506,7 @@ namespace System.Security.Cryptography.Tests
                 hash.Initialize();
                 hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                 hash.Initialize();
-                hash.TransformFinalBlock (hashInput, 0, hashInput.Length);
+                hash.TransformFinalBlock(hashInput, 0, hashInput.Length);
 
                 Assert.Equal(expectedDigest, hash.Hash);
             }
