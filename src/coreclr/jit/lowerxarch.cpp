@@ -5169,7 +5169,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 // Return Value:
 //    true if 'node' is a containable hardware intrinsic node; otherwise, false.
 //
-bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional)
+bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree*& node, bool* supportsRegOptional)
 {
     NamedIntrinsic      containingIntrinsicId = containingNode->GetHWIntrinsicId();
     HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingIntrinsicId);
@@ -5319,12 +5319,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                     {
                         assert(containingIntrinsicId == NI_SSE41_Insert);
 
-                        if (genTypeSize(node->TypeGet()) != 16)
-                        {
-                            // These intrinsics only expect 16-byte nodes for containment
-                            break;
-                        }
-
                         // Sse41.Insert(V128<float>, V128<float>, byte) is a bit special
                         // in that it has different behavior depending on whether the
                         // second operand is coming from a register or memory. When coming
@@ -5341,8 +5335,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                         GenTree* op1 = containingNode->Op(1);
                         GenTree* op2 = containingNode->Op(2);
                         GenTree* op3 = containingNode->Op(3);
-
-                        assert(node == op2);
 
                         // The upper two bits of the immediate value are ignored if
                         // op2 comes from memory. In order to support using the upper
@@ -5377,12 +5369,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
                 case NI_AVX_CompareScalar:
                 {
-                    if ((genTypeSize(node->TypeGet()) != 16) && (genTypeSize(node->TypeGet()) != 32))
-                    {
-                        // These intrinsics only expect 16 or 32-byte nodes for containment
-                        break;
-                    }
-
                     assert(supportsAlignedSIMDLoads == false);
                     assert(supportsUnalignedSIMDLoads == false);
 
@@ -5460,12 +5446,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
                 default:
                 {
-                    if ((genTypeSize(node->TypeGet()) != 16) && (genTypeSize(node->TypeGet()) != 32))
-                    {
-                        // These intrinsics only expect 16 or 32-byte nodes for containment
-                        break;
-                    }
-
                     supportsSIMDScalarLoads = true;
                     supportsGeneralLoads    = supportsSIMDScalarLoads;
                     break;
@@ -5518,10 +5498,43 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
     // TODO-XArch: Update this to be table driven, if possible.
 
-    NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->GetHWIntrinsicId();
+    GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
 
     switch (intrinsicId)
     {
+        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector256_CreateScalarUnsafe:
+        {
+            if (!supportsSIMDScalarLoads)
+            {
+                return false;
+            }
+            GenTree* op1 = hwintrinsic->Op(1);
+
+            bool op1SupportsRegOptional;
+            if (!IsContainableHWIntrinsicOp(containingNode, op1, &op1SupportsRegOptional))
+            {
+                return false;
+            }
+
+            LIR::Use use;
+            if (!BlockRange().TryGetUse(node, &use) || (use.User() != containingNode))
+            {
+                return false;
+            }
+
+            // We have CreateScalarUnsafe where the underlying scalar is directly containable
+            // by containingNode. As such, we'll just remove CreateScalarUnsafe and consume
+            // the value directly.
+
+            use.ReplaceWith(op1);
+            BlockRange().Remove(node);
+
+            node = op1;
+            return true;
+        }
+
         case NI_SSE_LoadAlignedVector128:
         case NI_SSE2_LoadAlignedVector128:
         case NI_AVX_LoadAlignedVector256:

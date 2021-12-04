@@ -565,7 +565,7 @@ public:
 
 #ifdef FEATURE_HW_INTRINSICS
     // Return true if 'node' is a containable HWIntrinsic op.
-    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional);
+    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree*& node, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
 
     static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
