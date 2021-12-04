@@ -413,19 +413,42 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
             continue;
         }
 
+        // Avoid printing to the JitDump unless we're actually going to change something.
+        // If we call reportBefore, then we're going to change the loop table, and we should print the
+        // `reportAfter` info as well. Only print the `reportBefore` info once, if multiple changes to
+        // the table are made.
+        INDEBUG(bool reportedBefore = false);
+
+        auto reportBefore = [&]() {
+#ifdef DEBUG
+            if (verbose && !reportedBefore)
+            {
+                printf("optUpdateLoopsBeforeRemoveBlock " FMT_BB " Before: ", block->bbNum);
+                optPrintLoopInfo(loopNum);
+                printf("\n");
+                reportedBefore = true;
+            }
+#endif // DEBUG
+        };
+
+        auto reportAfter = [&]() {
+#ifdef DEBUG
+            if (verbose && reportedBefore)
+            {
+                printf("optUpdateLoopsBeforeRemoveBlock " FMT_BB "  After: ", block->bbNum);
+                optPrintLoopInfo(loopNum);
+                printf("\n");
+            }
+#endif // DEBUG
+        };
+
         if (block == loop.lpEntry || block == loop.lpBottom)
         {
-            loop.lpFlags |= LPFLG_REMOVED;
+            reportBefore();
+            optMarkLoopRemoved(loopNum);
+            reportAfter();
             continue;
         }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nUpdateLoopsBeforeRemoveBlock Before: ");
-            optPrintLoopInfo(loopNum);
-        }
-#endif
 
         /* If the loop is still in the table
          * any block in the loop must be reachable !!! */
@@ -435,6 +458,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
         if (loop.lpExit == block)
         {
+            reportBefore();
             loop.lpExit = nullptr;
             loop.lpFlags &= ~LPFLG_ONE_EXIT;
         }
@@ -537,23 +561,18 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
             if (removeLoop)
             {
-                loop.lpFlags |= LPFLG_REMOVED;
+                reportBefore();
+                optMarkLoopRemoved(loopNum);
             }
         }
         else if (loop.lpHead == block)
         {
+            reportBefore();
             /* The loop has a new head - Just update the loop table */
             loop.lpHead = block->bbPrev;
         }
 
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nUpdateLoopsBeforeRemoveBlock After: ");
-            optPrintLoopInfo(loopNum);
-            printf("\n");
-        }
-#endif
+        reportAfter();
     }
 
     if ((skipUnmarkLoop == false) &&                                              //
@@ -575,43 +594,156 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
  *  Print loop info in an uniform way.
  */
 
-void Compiler::optPrintLoopInfo(unsigned      loopInd,
-                                BasicBlock*   lpHead,
-                                BasicBlock*   lpTop,
-                                BasicBlock*   lpEntry,
-                                BasicBlock*   lpBottom,
-                                unsigned char lpExitCnt,
-                                BasicBlock*   lpExit,
-                                unsigned      parentLoop) const
+void Compiler::optPrintLoopInfo(const LoopDsc* loop, bool printVerbose /* = false */)
 {
-    printf(FMT_LP ", from " FMT_BB " to " FMT_BB " (Head=" FMT_BB ", Entry=" FMT_BB ", ExitCnt=%d", loopInd,
-           lpTop->bbNum, lpBottom->bbNum, lpHead->bbNum, lpEntry->bbNum, lpExitCnt);
+    assert(optLoopTable != nullptr);
+    assert((&optLoopTable[0] <= loop) && (loop < &optLoopTable[optLoopCount]));
 
-    if (lpExitCnt == 1)
+    unsigned lnum = (unsigned)(loop - optLoopTable);
+    assert(lnum < optLoopCount);
+    assert(&optLoopTable[lnum] == loop);
+
+    if (loop->lpFlags & LPFLG_REMOVED)
     {
-        printf(" at " FMT_BB, lpExit->bbNum);
+        // If a loop has been removed, it might be dangerous to print its fields (e.g., loop unrolling
+        // nulls out the lpHead field).
+        printf(FMT_LP " REMOVED", lnum);
+        return;
     }
 
-    if (parentLoop != BasicBlock::NOT_IN_LOOP)
+    printf(FMT_LP ", from " FMT_BB " to " FMT_BB " (Head=" FMT_BB ", Entry=" FMT_BB, lnum, loop->lpTop->bbNum,
+           loop->lpBottom->bbNum, loop->lpHead->bbNum, loop->lpEntry->bbNum);
+
+    if (loop->lpExitCnt == 1)
     {
-        printf(", parent loop = " FMT_LP, parentLoop);
+        printf(", Exit=" FMT_BB, loop->lpExit->bbNum);
+    }
+    else
+    {
+        printf(", ExitCnt=%d", loop->lpExitCnt);
+    }
+
+    if (loop->lpParent != BasicBlock::NOT_IN_LOOP)
+    {
+        printf(", parent=" FMT_LP, loop->lpParent);
     }
     printf(")");
+
+    if (printVerbose)
+    {
+        if (loop->lpChild != BasicBlock::NOT_IN_LOOP)
+        {
+            printf(", child loop = " FMT_LP, loop->lpChild);
+        }
+        if (loop->lpSibling != BasicBlock::NOT_IN_LOOP)
+        {
+            printf(", sibling loop = " FMT_LP, loop->lpSibling);
+        }
+
+        // If an iterator loop print the iterator and the initialization.
+        if (loop->lpFlags & LPFLG_ITER)
+        {
+            printf(" [over V%02u", loop->lpIterVar());
+            printf(" (");
+            printf(GenTree::OpName(loop->lpIterOper()));
+            printf(" %d)", loop->lpIterConst());
+
+            if (loop->lpFlags & LPFLG_CONST_INIT)
+            {
+                printf(" from %d", loop->lpConstInit);
+            }
+            if (loop->lpFlags & LPFLG_VAR_INIT)
+            {
+                printf(" from V%02u", loop->lpVarInit);
+            }
+
+            // If a simple test condition print operator and the limits */
+            printf(" %s", GenTree::OpName(loop->lpTestOper()));
+
+            if (loop->lpFlags & LPFLG_CONST_LIMIT)
+            {
+                printf(" %d", loop->lpConstLimit());
+                if (loop->lpFlags & LPFLG_SIMD_LIMIT)
+                {
+                    printf(" (simd)");
+                }
+            }
+            if (loop->lpFlags & LPFLG_VAR_LIMIT)
+            {
+                printf(" V%02u", loop->lpVarLimit());
+            }
+            if (loop->lpFlags & LPFLG_ARRLEN_LIMIT)
+            {
+                ArrIndex* index = new (getAllocator(CMK_DebugOnly)) ArrIndex(getAllocator(CMK_DebugOnly));
+                if (loop->lpArrLenLimit(this, index))
+                {
+                    printf(" ");
+                    index->Print();
+                    printf(".Length");
+                }
+                else
+                {
+                    printf(" ???.Length");
+                }
+            }
+
+            printf("]");
+        }
+
+        // Print the flags
+
+        if (loop->lpContainsCall)
+        {
+            printf(" call");
+        }
+        if (loop->lpFlags & LPFLG_HAS_PREHEAD)
+        {
+            printf(" prehead");
+        }
+        if (loop->lpFlags & LPFLG_DONT_UNROLL)
+        {
+            printf(" !unroll");
+        }
+        if (loop->lpFlags & LPFLG_ASGVARS_YES)
+        {
+            printf(" avyes");
+        }
+        if (loop->lpFlags & LPFLG_ASGVARS_INC)
+        {
+            printf(" avinc");
+        }
+    }
 }
 
-/*****************************************************************************
- *
- *  Print loop information given the index of the loop in the loop table.
- */
-
-void Compiler::optPrintLoopInfo(unsigned lnum) const
+void Compiler::optPrintLoopInfo(unsigned lnum, bool printVerbose /* = false */)
 {
     assert(lnum < optLoopCount);
 
-    const LoopDsc* ldsc = &optLoopTable[lnum];
+    const LoopDsc& loop = optLoopTable[lnum];
+    optPrintLoopInfo(&loop, printVerbose);
+}
 
-    optPrintLoopInfo(lnum, ldsc->lpHead, ldsc->lpTop, ldsc->lpEntry, ldsc->lpBottom, ldsc->lpExitCnt, ldsc->lpExit,
-                     ldsc->lpParent);
+//------------------------------------------------------------------------
+// optPrintLoopTable: Print the loop table
+//
+void Compiler::optPrintLoopTable()
+{
+    printf("\n***************  Natural loop table\n");
+
+    if (optLoopCount == 0)
+    {
+        printf("No loops\n");
+    }
+    else
+    {
+        for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
+        {
+            optPrintLoopInfo(loopInd, /* verbose */ true);
+            printf("\n");
+        }
+    }
+
+    printf("\n");
 }
 
 #endif // DEBUG
@@ -1111,6 +1243,7 @@ bool Compiler::optRecordLoop(
     {
         optLoopTable[loopInd].lpLoopHasMemoryHavoc[memoryKind] = false;
     }
+    optLoopTable[loopInd].lpContainsCall           = false;
     optLoopTable[loopInd].lpFieldsModified         = nullptr;
     optLoopTable[loopInd].lpArrayElemTypesModified = nullptr;
 
@@ -1229,63 +1362,23 @@ bool Compiler::optRecordLoop(
     }
 
 DONE_LOOP:
-    DBEXEC(verbose, optPrintLoopRecording(loopInd));
+
+    bool loopInsertedAtEnd = (loopInd == optLoopCount);
     optLoopCount++;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Recorded loop %s", loopInsertedAtEnd ? "" : "(extended) ");
+        optPrintLoopInfo(loopInd, /* verbose */ true);
+        printf("\n");
+    }
+#endif // DEBUG
+
     return true;
 }
 
 #ifdef DEBUG
-//------------------------------------------------------------------------
-// optPrintLoopRecording: Print a recording of the loop.
-//
-// Arguments:
-//      loopInd     - loop index.
-//
-void Compiler::optPrintLoopRecording(unsigned loopInd) const
-{
-    const LoopDsc& loop = optLoopTable[loopInd];
-
-    printf("Recorded loop %s", (loopInd != optLoopCount ? "(extended) " : ""));
-    optPrintLoopInfo(optLoopCount, // Not necessarily the loop index, but the number of loops that have been added.
-                     loop.lpHead, loop.lpTop, loop.lpEntry, loop.lpBottom, loop.lpExitCnt, loop.lpExit);
-
-    // If an iterator loop print the iterator and the initialization.
-    if (loop.lpFlags & LPFLG_ITER)
-    {
-        printf(" [over V%02u", loop.lpIterVar());
-        printf(" (");
-        printf(GenTree::OpName(loop.lpIterOper()));
-        printf(" ");
-        printf("%d )", loop.lpIterConst());
-
-        if (loop.lpFlags & LPFLG_CONST_INIT)
-        {
-            printf(" from %d", loop.lpConstInit);
-        }
-        if (loop.lpFlags & LPFLG_VAR_INIT)
-        {
-            printf(" from V%02u", loop.lpVarInit);
-        }
-
-        // If a simple test condition print operator and the limits */
-        printf(GenTree::OpName(loop.lpTestOper()));
-
-        if (loop.lpFlags & LPFLG_CONST_LIMIT)
-        {
-            printf("%d ", loop.lpConstLimit());
-        }
-
-        if (loop.lpFlags & LPFLG_VAR_LIMIT)
-        {
-            printf("V%02u ", loop.lpVarLimit());
-        }
-
-        printf("]");
-    }
-
-    printf("\n");
-}
-
 void Compiler::optCheckPreds()
 {
     for (BasicBlock* const block : Blocks())
@@ -2476,12 +2569,7 @@ NO_MORE_LOOPS:
 #ifdef DEBUG
     if (verbose && (optLoopCount > 0))
     {
-        printf("\nFinal natural loop table:\n");
-        for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
-        {
-            optPrintLoopInfo(loopInd);
-            printf("\n");
-        }
+        optPrintLoopTable();
     }
 #endif // DEBUG
 }
@@ -2909,7 +2997,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 // Notes:
 //    A loop contains itself.
 //
-bool Compiler::optLoopContains(unsigned l1, unsigned l2)
+bool Compiler::optLoopContains(unsigned l1, unsigned l2) const
 {
     assert(l1 < optLoopCount);
     assert((l2 < optLoopCount) || (l2 == BasicBlock::NOT_IN_LOOP));
@@ -3501,6 +3589,8 @@ PhaseStatus Compiler::optUnrollLoops()
     /* Look for loop unrolling candidates */
 
     bool change = false;
+    INDEBUG(int unrollCount = 0);    // count of loops unrolled
+    INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
 
     static const unsigned ITER_LIMIT[COUNT_OPT_CODE + 1] = {
         10, // BLENDED_CODE
@@ -3568,6 +3658,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
         if ((loopFlags & requiredFlags) != requiredFlags)
         {
+            // Don't print to the JitDump about this common case.
             continue;
         }
 
@@ -3575,6 +3666,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
         if (loopFlags & (LPFLG_DONT_UNROLL | LPFLG_REMOVED))
         {
+            // Don't print to the JitDump about this common case.
             continue;
         }
 
@@ -3605,11 +3697,13 @@ PhaseStatus Compiler::optUnrollLoops()
         if (lvaTable[lvar].IsAddressExposed())
         {
             // If the loop iteration variable is address-exposed then bail
+            JITDUMP("Failed to unroll loop " FMT_LP ": V%02u is address exposed\n", lnum, lvar);
             continue;
         }
         if (lvaTable[lvar].lvIsStructField)
         {
             // If the loop iteration variable is a promoted field from a struct then bail
+            JITDUMP("Failed to unroll loop " FMT_LP ": V%02u is a promoted struct field\n", lnum, lvar);
             continue;
         }
 
@@ -3641,6 +3735,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
         if (!optComputeLoopRep(lbeg, llim, iterInc, iterOper, iterOperType, testOper, unsTest, dupCond, &totalIter))
         {
+            JITDUMP("Failed to unroll loop " FMT_LP ": not a constant iteration count\n", lnum);
             continue;
         }
 
@@ -3648,6 +3743,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
         if (totalIter > iterLimit)
         {
+            JITDUMP("Failed to unroll loop " FMT_LP ": too many iterations (%d > %d) (heuristic)\n", lnum, totalIter,
+                    iterLimit);
             continue;
         }
 
@@ -3668,6 +3765,7 @@ PhaseStatus Compiler::optUnrollLoops()
         {
             // Otherwise unroll only if limit is Vector_.Length
             // (as a heuristic, not for correctness/structural reasons)
+            JITDUMP("Failed to unroll loop " FMT_LP ": constant limit isn't Vector<T>.Length (heuristic)\n", lnum);
             continue;
         }
 
@@ -3676,6 +3774,8 @@ PhaseStatus Compiler::optUnrollLoops()
         // Don't unroll loops we don't understand.
         if (incr->gtOper != GT_ASG)
         {
+            JITDUMP("Failed to unroll loop " FMT_LP ": unknown increment op (%s)\n", lnum,
+                    GenTree::OpName(incr->gtOper));
             continue;
         }
         incr = incr->AsOp()->gtOp2;
@@ -3717,6 +3817,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 if (block->bbTryIndex != tryIndex)
                 {
                     // Unrolling would require cloning EH regions
+                    JITDUMP("Failed to unroll loop " FMT_LP ": EH constraint\n", lnum);
                     goto DONE_LOOP;
                 }
 
@@ -3741,6 +3842,7 @@ PhaseStatus Compiler::optUnrollLoops()
             if (fgReturnCount + loopRetCount * (totalIter - 1) > SET_EPILOGCNT_MAX)
             {
                 // Jit32 GC encoder can't report more than SET_EPILOGCNT_MAX epilogs.
+                JITDUMP("Failed to unroll loop " FMT_LP ": GC encoder max epilog constraint\n", lnum);
                 goto DONE_LOOP;
             }
 #endif // !JIT32_GCENCODER
@@ -3756,6 +3858,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
             if (unrollCostSz.IsOverflow() || (unrollCostSz.Value() > unrollLimitSz))
             {
+                JITDUMP("Failed to unroll loop " FMT_LP ": size constraint (%d > %d) (heuristic)\n", lnum,
+                        unrollCostSz.Value(), unrollLimitSz);
                 goto DONE_LOOP;
             }
 
@@ -3765,11 +3869,8 @@ PhaseStatus Compiler::optUnrollLoops()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("\nUnrolling loop " FMT_BB, head->bbNext->bbNum);
-                if (head->bbNext->bbNum != bottom->bbNum)
-                {
-                    printf(".." FMT_BB, bottom->bbNum);
-                }
+                printf("\nUnrolling loop ");
+                optPrintLoopInfo(&optLoopTable[lnum]);
                 printf(" over V%02u from %u to %u unrollCostSz = %d\n\n", lvar, lbeg, llim, unrollCostSz);
             }
 #endif
@@ -3807,6 +3908,9 @@ PhaseStatus Compiler::optUnrollLoops()
                         bottom->bbNext            = oldBottomNext;
                         oldBottomNext->bbPrev     = bottom;
                         optLoopTable[lnum].lpFlags |= LPFLG_DONT_UNROLL;
+                        INDEBUG(++unrollFailures);
+                        JITDUMP("Failed to unroll loop " FMT_LP ": block cloning failed on " FMT_BB "\n", lnum,
+                                block->bbNum);
                         goto DONE_LOOP;
                     }
 
@@ -3941,6 +4045,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
             // Note if we created new BBJ_RETURNs
             fgReturnCount += loopRetCount * (totalIter - 1);
+
+            INDEBUG(++unrollCount);
         }
 
     DONE_LOOP:;
@@ -3948,8 +4054,33 @@ PhaseStatus Compiler::optUnrollLoops()
 
     if (change)
     {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\nFinished unrolling %d loops", unrollCount);
+            if (unrollFailures > 0)
+            {
+                printf(", %d failures due to block cloning", unrollFailures);
+            }
+            printf("\n");
+        }
+#endif // DEBUG
+
         constexpr bool computePreds = true;
         fgUpdateChangedFlowGraph(computePreds);
+
+        DBEXEC(verbose, fgDispBasicBlocks());
+    }
+    else
+    {
+#ifdef DEBUG
+        assert(unrollCount == 0);
+
+        if (unrollFailures > 0)
+        {
+            printf("\nFinished loop unrolling, %d failures due to block cloning\n", unrollFailures);
+        }
+#endif // DEBUG
     }
 
 #ifdef DEBUG
@@ -4629,6 +4760,8 @@ void Compiler::optMarkLoopHeads()
     {
         printf("*************** In optMarkLoopHeads()\n");
     }
+
+    int loopHeadsMarked = 0;
 #endif
 
     bool hasLoops = false;
@@ -4653,12 +4786,14 @@ void Compiler::optMarkLoopHeads()
                 {
                     hasLoops = true;
                     block->bbFlags |= BBF_LOOP_HEAD;
+                    INDEBUG(++loopHeadsMarked);
                     break; // No need to look at more `block` predecessors
                 }
             }
         }
     }
 
+    JITDUMP("%d loop heads marked\n", loopHeadsMarked);
     fgHasLoops = hasLoops;
 }
 
@@ -5510,7 +5645,8 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     {
         printf("\nHoisting a copy of ");
         printTreeID(origExpr);
-        printf(" into PreHeader for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n", lnum, optLoopTable[lnum].lpTop->bbNum,
+        printf(" from " FMT_BB " into PreHeader " FMT_BB " for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n",
+               exprBb->bbNum, optLoopTable[lnum].lpHead->bbNum, lnum, optLoopTable[lnum].lpTop->bbNum,
                optLoopTable[lnum].lpBottom->bbNum);
         gtDispTree(origExpr);
         printf("\n");
@@ -5708,7 +5844,8 @@ void Compiler::optHoistLoopCode()
         printf("\n*************** In optHoistLoopCode()\n");
         printf("Blocks/Trees before phase\n");
         fgDispBasicBlocks(true);
-        printf("");
+        fgDispHandlerTab();
+        optPrintLoopTable();
     }
 #endif
 
@@ -5847,7 +5984,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // We must have a do-while loop
     if ((pLoopDsc->lpFlags & LPFLG_DO_WHILE) == 0)
     {
-        JITDUMP("   ... not hoisting " FMT_LP ": not do-while\n", lnum);
+        JITDUMP("   ... not hoisting " FMT_LP ": not top entry\n", lnum);
         return;
     }
 
@@ -5885,7 +6022,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("optHoistLoopCode for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n", lnum, begn, endn);
+        printf("optHoistThisLoop for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n", lnum, begn, endn);
         printf("  Loop body %s a call\n", pLoopDsc->lpContainsCall ? "contains" : "does not contain");
         printf("  Loop has %s\n", (pLoopDsc->lpFlags & LPFLG_ONE_EXIT) ? "single exit" : "multiple exits");
     }
@@ -6408,7 +6545,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 m_valueStack.Reset();
             }
 
-            // Only uncondtionally executed blocks in the loop are visited (see optHoistThisLoop)
+            // Only unconditionally executed blocks in the loop are visited (see optHoistThisLoop)
             // so after we're done visiting the first block we need to assume the worst, that the
             // blocks that are not visisted have side effects.
             m_beforeSideEffect = false;
@@ -6778,10 +6915,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         BasicBlock* block       = blocks->Pop();
         weight_t    blockWeight = block->getBBWeight(this);
 
-        JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB
-                ">, firstBlock is %s\n",
-                block->bbNum, refCntWtd2str(blockWeight), loopNum, loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum,
-                dspBool(block == loopDsc->lpEntry));
+        JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB ">\n",
+                block->bbNum, refCntWtd2str(blockWeight), loopNum, loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum);
 
         if (blockWeight < (BB_UNITY_WEIGHT / 10))
         {
@@ -7222,6 +7357,16 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
             }
         }
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        JITDUMP("*************** After fgCreateLoopPreHeader for " FMT_LP "\n", lnum);
+        fgDispBasicBlocks();
+        fgDispHandlerTab();
+        optPrintLoopTable();
+    }
+#endif
 }
 
 bool Compiler::optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum)
@@ -7290,8 +7435,8 @@ void Compiler::optComputeLoopSideEffects()
 
 void Compiler::optComputeLoopNestSideEffects(unsigned lnum)
 {
+    JITDUMP("optComputeLoopNestSideEffects for " FMT_LP "\n", lnum);
     assert(optLoopTable[lnum].lpParent == BasicBlock::NOT_IN_LOOP); // Requires: lnum is outermost.
-    JITDUMP("optComputeLoopSideEffects lnum is %d\n", lnum);
     for (BasicBlock* const bbInLoop : optLoopTable[lnum].LoopBlocks())
     {
         if (!optComputeLoopSideEffectsOfBlock(bbInLoop))
@@ -9121,4 +9266,68 @@ void Compiler::optRemoveRedundantZeroInits()
     {
         block->bbFlags &= ~BBF_MARKED;
     }
+}
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// optAnyChildNotRemoved: Recursively check the child loops of a loop to see if any of them
+// are still live (that is, not marked as LPFLG_REMOVED). This check is done when we are
+// removing a parent, just to notify that there is something odd about leaving a live child.
+//
+// Arguments:
+//      loopNum - the loop number to check
+//
+bool Compiler::optAnyChildNotRemoved(unsigned loopNum)
+{
+    assert(loopNum < optLoopCount);
+
+    // Now recursively mark the children.
+    for (BasicBlock::loopNumber l = optLoopTable[loopNum].lpChild; //
+         l != BasicBlock::NOT_IN_LOOP;                             //
+         l = optLoopTable[l].lpSibling)
+    {
+        if ((optLoopTable[l].lpFlags & LPFLG_REMOVED) == 0)
+        {
+            return true;
+        }
+
+        if (optAnyChildNotRemoved(l))
+        {
+            return true;
+        }
+    }
+
+    // All children were removed
+    return false;
+}
+
+#endif // DEBUG
+
+//------------------------------------------------------------------------
+// optMarkLoopRemoved: Mark the specified loop as removed (some optimization, such as unrolling, has made the
+// loop no longer exist). Note that only the given loop is marked as being removed; if it has any children,
+// they are not touched (but a warning message is output to the JitDump).
+//
+// Arguments:
+//      loopNum - the loop number to remove
+//
+void Compiler::optMarkLoopRemoved(unsigned loopNum)
+{
+    JITDUMP("Marking loop " FMT_LP " removed\n", loopNum);
+
+    assert(loopNum < optLoopCount);
+    LoopDsc& loop = optLoopTable[loopNum];
+    loop.lpFlags |= LPFLG_REMOVED;
+
+#ifdef DEBUG
+    if (optAnyChildNotRemoved(loopNum))
+    {
+        JITDUMP("Removed loop " FMT_LP " has one or more live children\n", loopNum);
+    }
+
+// Note: we can't call `fgDebugCheckLoopTable()` here because if there are live children, it will assert.
+// Assume the caller is going to fix up the table and `bbNatLoopNum` block annotations before the next time
+// `fgDebugCheckLoopTable()` is called.
+#endif // DEBUG
 }

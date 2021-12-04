@@ -6626,7 +6626,7 @@ private:
 
     // The statement nodes are doubly-linked. The first statement node in a block points
     // to the last node in the block via its `m_prev` link. Note that the last statement node
-    // does not point to the first: it's `m_next == nullptr`; that is, the list is not fully circular.
+    // does not point to the first: it has `m_next == nullptr`; that is, the list is not fully circular.
     Statement* m_next;
     Statement* m_prev;
 
