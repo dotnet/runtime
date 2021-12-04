@@ -6,24 +6,15 @@ using System.Text.RegularExpressions;
 
 namespace System.ComponentModel.Design
 {
-    internal static partial class DesignerVerbRegex
-    {
-        [RegexGenerator(@"\(\&.\)")]
-        internal static partial Regex GetParameterReplacementRegex();
-    }
-
     /// <summary>
     /// Represents a verb that can be executed by a component's designer.
     /// </summary>
-    public class DesignerVerb : MenuCommand
+    public partial class DesignerVerb : MenuCommand
     {
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.Design.DesignerVerb'/> class.
         /// </summary>
-        public DesignerVerb(string text, EventHandler handler) : base(handler, StandardCommands.VerbFirst)
-        {
-            Properties["Text"] = ReplaceIfNotNull(text);
-        }
+        public DesignerVerb(string text, EventHandler handler) : this(text, handler, StandardCommands.VerbFirst) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.Design.DesignerVerb'/>
@@ -31,13 +22,12 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerVerb(string text, EventHandler handler, CommandID startCommandID) : base(handler, startCommandID)
         {
-            Properties["Text"] = ReplaceIfNotNull(text);
+            Properties["Text"] = text == null ? null : GetParameterReplacementRegex().Replace(text, "");
         }
 
-        private static string? ReplaceIfNotNull(string? text)
-        {
-            return text == null ? null : DesignerVerbRegex.GetParameterReplacementRegex().Replace(text, "");
-        }
+        [RegexGenerator(@"\(\&.\)")]
+        private static partial Regex GetParameterReplacementRegex();
+
 
         /// <summary>
         /// Gets or sets the description of the menu item for the verb.
