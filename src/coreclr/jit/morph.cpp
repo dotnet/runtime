@@ -11131,10 +11131,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
 
             // Convert DIV to UDIV if boths op1 and op2 are known to be never negative
-            if (!optValnumCSE_phase && op1->IsNeverNegative() && op2->IsNeverNegative() && !varTypeIsFloating(tree))
+            if (!gtIsActiveCSE_Candidate(tree) && op1->IsNeverNegative(this) && op2->IsNeverNegative(this) &&
+                !varTypeIsFloating(tree))
             {
                 assert(tree->OperIs(GT_DIV));
-                tree->ChangeOper(GT_UDIV);
+                tree->ChangeOper(GT_UDIV, GenTree::PRESERVE_VN);
                 return fgMorphSmpOp(tree, mac);
             }
 
@@ -11198,10 +11199,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
 
             // Convert MOD to UMOD if boths op1 and op2 are known to be never negative
-            if (!optValnumCSE_phase && op1->IsNeverNegative() && op2->IsNeverNegative() && !varTypeIsFloating(tree))
+            if (!gtIsActiveCSE_Candidate(tree) && op1->IsNeverNegative(this) && op2->IsNeverNegative(this) &&
+                !varTypeIsFloating(tree))
             {
                 assert(tree->OperIs(GT_MOD));
-                tree->ChangeOper(GT_UMOD);
+                tree->ChangeOper(GT_UMOD, GenTree::PRESERVE_VN);
                 return fgMorphSmpOp(tree, mac);
             }
 

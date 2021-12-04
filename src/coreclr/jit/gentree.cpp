@@ -21972,22 +21972,18 @@ bool GenTree::IsInvariant() const
 // IsNeverNegative: returns true if the given tree is known to be never
 //      negative such as: casts to unsiged, UDIV, UMOD, Array.Length
 //
+// Arguments:
+//    comp - Compiler object, needed for IntegralRange::ForNode
+//
 // Return Value:
 //      true if the given tree is known to be never negative
 //
-bool GenTree::IsNeverNegative() const
+bool GenTree::IsNeverNegative(Compiler* comp) const
 {
-    if (IsUnsigned() || OperIs(GT_UMOD, GT_UDIV, GT_ARR_LENGTH))
+    if (IsCnsIntOrI())
     {
-        return true;
+        return AsIntCon()->IconValue() >= 0;
     }
-
-    if (IsIntegralConst())
-    {
-        return AsIntConCommon()->IconValue() >= 0;
-    }
-
-    // In theory we could rely on assertprop here but we're not quite there yet.
-
-    return false;
+    //TODO-Casts: extend IntegralRange to handle constants
+    return IntegralRange::ForNode((GenTree*)this, comp).IsPositive();
 }

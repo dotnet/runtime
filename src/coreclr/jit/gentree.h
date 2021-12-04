@@ -2286,7 +2286,7 @@ public:
 
     bool IsInvariant() const;
 
-    bool IsNeverNegative() const;
+    bool IsNeverNegative(Compiler* comp) const;
 
     bool IsReuseRegVal() const
     {
