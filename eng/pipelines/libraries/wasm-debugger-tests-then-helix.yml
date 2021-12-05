@@ -1,0 +1,48 @@
+parameters:
+  runtimeFlavor: ''
+  archType: ''
+  buildConfig: ''
+  creator: ''
+  helixQueues: ''
+  osGroup: ''
+  targetRid: ''
+  testRunNamePrefixSuffix: ''
+  testScope: 'innerloop' # innerloop | outerloop | all
+  interpreter: ''
+  condition: always()
+  extraHelixArguments: ''
+  shouldContinueOnError: false
+  scenarios: ''
+
+steps:
+  - script: $(_msbuildCommand) -restore
+            $(Build.SourcesDirectory)/src/mono/wasm/debugger/DebuggerTestSuite/DebuggerTestSuite.csproj
+            /p:Configuration=Debug
+            /p:RuntimeConfiguration=${{ parameters.buildConfig }} /p:ArchiveTests=true
+            /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Wasm.Debugger.Tests.binlog
+    displayName: Build Wasm.Debugger.Tests
+    condition: and(succeeded(), ${{ parameters.condition }})
+    continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
+
+  # Chain to helix
+  - template: /eng/pipelines/libraries/helix.yml
+    parameters:
+      archType: ${{ parameters.archType }}
+      buildConfig: ${{ parameters.buildConfig }}
+      condition: succeeded()
+      creator: ${{ parameters.creator }}
+      extraHelixArguments: ${{ parameters.extraHelixArguments }}
+      helixQueues: ${{ parameters.helixQueues }}
+      interpreter: ${{ parameters.interpreter }}
+      nameSuffix: ${{ parameters.nameSuffix }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      pgoType: ${{ parameters.pgoType }}
+      platform: ${{ parameters.platform }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
+      scenarios: ${{ parameters.scenarios }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      targetRid: ${{ parameters.targetRid }}
+      testRunNamePrefixSuffix: ${{ parameters.testRunNamePrefixSuffix }}
+      testScope: ${{ parameters.testScope }}

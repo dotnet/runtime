@@ -19,4 +19,46 @@
     <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
+  <Target Name="CopyAppZipToHelixTestDir"
+          Condition="'$(ArchiveTests)' == 'true'"
+          AfterTargets="Build">
+
+    <PropertyGroup>
+      <WasmHelixTestAppRelativeDir Condition="'$(WasmHelixTestAppRelativeDir)' == ''">$(MSBuildProjectName)</WasmHelixTestAppRelativeDir>
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'helix'))</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$([MSBuild]::NormalizeDirectory($(HelixArchiveRoot), 'runonly'))</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$([MSBuild]::NormalizeDirectory($(HelixArchiveRunOnlyRoot), $(OSPlatformConfig), $(WasmHelixTestAppRelativeDir)))</HelixArchiveRunOnlyAppsDir>
+
+      <_TmpDebuggerTestsDir>$(ArtifactsObjDir)WasmDebuggerTestsArchive\</_TmpDebuggerTestsDir>
+      <ZippedApp>$(ArtifactsDir)helix\tests\$(AssemblyName).zip</ZippedApp>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_FilesToCopy Include="$(OutputPath)\**\*" TargetPath="DebuggerTestSuite" />
+      <_FilesToCopy Include="$(ArtifactsBinDir)debugger-test\Debug\publish\**\*" TargetPath="debugger-test" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(_TmpDebuggerTestsDir)" />
+    <MakeDir Directories="$(_TmpDebuggerTestsDir)" />
+    <MakeDir Directories="$(ArtifactsDir)helix\tests" />
+
+    <Copy SourceFiles="@(_FilesToCopy)" DestinationFiles="$(_TmpDebuggerTestsDir)\%(TargetPath)\%(RecursiveDir)%(FileName)%(Extension)" />
+
+    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+      <ScriptCommand Include="#!/usr/bin/env bash" />
+
+      <!-- FIXME: windows -->
+      <!-- FIXME: Use the same setup for local runs.. via RunTEsts.sh -->
+      <ScriptCommand Include="export DEBUGGER_TEST_PATH=$PWD/debugger-test" />
+      <ScriptCommand Include="export CHROME_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
+      <ScriptCommand Include="export LOG_PATH=${HELIX_WORKITEM_UPLOAD_ROOT:-.}" />
+      <ScriptCommand Include="dotnet test DebuggerTestSuite/DebuggerTestSuite.dll -l:trx%3BLogFileName=testResults.xml--results-directory &quot;$LOG_PATH&quot; $TEST_FILTER 2&gt;&amp;1 | tee $LOG_PATH/console-output.txt" />
+    </ItemGroup>
+
+    <WriteLinesToFile Lines="@(ScriptCommand)" File="$(_TmpDebuggerTestsDir)\RunTests.sh" Overwrite="true" />
+    <Exec Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(_TmpDebuggerTestsDir)\RunTests.sh" />
+
+    <ZipDirectory SourceDirectory="$(_TmpDebuggerTestsDir)" DestinationFile="$(ZippedApp)" Overwrite="true" />
+  </Target>
 </Project>

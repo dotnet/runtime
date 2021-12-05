@@ -38,7 +38,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     })
                     .ConfigureLogging(logging =>
                     {
-                        logging.AddSimpleConsole(options => options.SingleLine = true)
+                        logging.AddSimpleConsole(options =>
+                                {
+                                    options.SingleLine = true;
+                                    options.TimestampFormat = "[HH:mm:ss] ";
+                                })
                                .AddFilter(null, LogLevel.Information);
                     })
                     .ConfigureServices((ctx, services) =>

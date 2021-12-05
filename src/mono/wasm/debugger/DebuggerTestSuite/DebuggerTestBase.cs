@@ -40,17 +40,23 @@ namespace DebuggerTests
 
         static protected string FindTestPath()
         {
-            var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string test_app_path = Environment.GetEnvironmentVariable("DEBUGGER_TEST_PATH");
+
+            if (string.IsNullOrEmpty(test_app_path))
+            {
+                var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 #if DEBUG
-            var config="Debug";
+                var config="Debug";
 #else
-            var config="Release";
-#endif            
-            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", config, "publish");
+                var config="Release";
+#endif
+                test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", config, "publish");
+            }
+
             if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
                 return test_app_path;
 
-            throw new Exception($"Could not figure out debugger-test app path ({test_app_path}) based on the test suite location ({asm_dir})");
+            throw new Exception($"Could not figure out debugger-test app path ({test_app_path})");//based on the test suite location ({asm_dir})");
         }
 
         static string[] PROBE_LIST = {
@@ -63,21 +69,32 @@ namespace DebuggerTests
         };
         static string chrome_path;
 
-        static string FindChromePath()
+        static string GetChromePath()
         {
-            if (chrome_path != null)
-                return chrome_path;
-
-            foreach (var s in PROBE_LIST)
+            if (string.IsNullOrEmpty(chrome_path))
             {
-                if (File.Exists(s))
-                {
-                    chrome_path = s;
-                    Console.WriteLine($"Using chrome path: ${s}");
-                    return s;
-                }
+                chrome_path = FindChromePath();
+                if (!string.IsNullOrEmpty(chrome_path))
+                    Console.WriteLine ($"** Using chrome from {chrome_path}");
+                else
+                    throw new Exception("Could not find an installed Chrome to use");
             }
-            throw new Exception("Could not find an installed Chrome to use");
+
+            return chrome_path;
+
+            string FindChromePath()
+            {
+                string chrome_path_env_var = Environment.GetEnvironmentVariable("CHROME_PATH_FOR_DEBUGGER_TESTS");
+                if (!string.IsNullOrEmpty(chrome_path_env_var))
+                {
+                    if (File.Exists(chrome_path_env_var))
+                        return chrome_path_env_var;
+
+                    Console.WriteLine ($"warning: Could not find CHROME_PATH_FOR_DEBUGGER_TESTS={chrome_path_env_var}");
+                }
+
+                return PROBE_LIST.FirstOrDefault(p => File.Exists(p));
+            }
         }
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
@@ -90,7 +107,7 @@ namespace DebuggerTests
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
 
-            startTask = TestHarnessProxy.Start(FindChromePath(), DebuggerTestAppPath, driver);
+            startTask = TestHarnessProxy.Start(GetChromePath(), DebuggerTestAppPath, driver);
         }
 
         public virtual async Task InitializeAsync()
