@@ -407,7 +407,7 @@ namespace System.Text.RegularExpressions.Generator
                             using (EmitBlock(writer, "if (runtextpos > runtextbeg && runtextSpan[runtextpos - 1] != '\\n')"))
                             {
                                 writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(runtextSpan.Slice(runtextpos), '\\n');");
-                                using (EmitBlock(writer, "if (newlinePos == -1 || newlinePos + runtextpos + 1 > runtextend)"))
+                                using (EmitBlock(writer, "if (newlinePos < 0 || newlinePos + runtextpos + 1 > runtextend)"))
                                 {
                                     writer.WriteLine("goto ReturnFalse;");
                                 }
@@ -2555,7 +2555,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.WriteLine($", {Literal(node.Ch)});");
                     
-                    using (EmitBlock(writer, $"if ({iterationLocal} == -1)"))
+                    using (EmitBlock(writer, $"if ({iterationLocal} < 0)"))
                     {
                         writer.WriteLine(textSpanPos > 0 ?
                             $"{iterationLocal} = {sliceSpan}.Length - {textSpanPos};" :
@@ -2584,7 +2584,7 @@ namespace System.Text.RegularExpressions.Generator
                         3 => $", {Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])});",
                         _ => $", {Literal(setChars.Slice(0, numSetChars).ToString())});",
                     });
-                    using (EmitBlock(writer, $"if ({iterationLocal} == -1)"))
+                    using (EmitBlock(writer, $"if ({iterationLocal} < 0)"))
                     {
                         writer.WriteLine(textSpanPos > 0 ?
                             $"{iterationLocal} = {sliceSpan}.Length - {textSpanPos};" :
@@ -2932,7 +2932,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 case RegexCharClass.AnyClass:
                     // ideally this could just be "return true;", but we need to evaluate the expression for its side effects
-                    return $"({chExpr} != -1)"; // a char is unsigned and thus won't ever be equal to -1, so this is equivalent to true
+                    return $"({chExpr} >= 0)"; // a char is unsigned and thus won't ever be negative, so this is equivalent to true
 
                 case RegexCharClass.DigitClass:
                     return $"char.IsDigit({chExpr})";

@@ -556,14 +556,14 @@ namespace System.Text.RegularExpressions
                                 {
                                     Stloc(newlinePos);
 
-                                    // if (newlinePos == -1 || newlinePos + runtextpos + 1 > runtextend)
+                                    // if (newlinePos < 0 || newlinePos + runtextpos + 1 > runtextend)
                                     // {
                                     //     runtextpos = runtextend;
                                     //     return false;
                                     // }
                                     Ldloc(newlinePos);
-                                    Ldc(-1);
-                                    Beq(returnFalse);
+                                    Ldc(0);
+                                    Blt(returnFalse);
                                     Ldloc(newlinePos);
                                     Ldloc(runtextpos);
                                     Add();
