@@ -31,7 +31,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    containingNode - The HWIntrinsic node that has the contained node
 //    containedNode  - The node that is contained
 //
-static void assertIsContainableHWIntrinsicOp(Lowering* lowering, GenTreeHWIntrinsic* containingNode, GenTree* containedNode)
+static void assertIsContainableHWIntrinsicOp(Lowering*           lowering,
+                                             GenTreeHWIntrinsic* containingNode,
+                                             GenTree*            containedNode)
 {
 #if DEBUG
     // The Lowering::IsContainableHWIntrinsicOp call is not quite right, since it follows pre-register allocation
@@ -44,7 +46,7 @@ static void assertIsContainableHWIntrinsicOp(Lowering* lowering, GenTreeHWIntrin
 
     GenTree* node                = containedNode;
     bool     supportsRegOptional = false;
-    bool     isContainable       = lowering->TryGetContainableHWIntrinsicOp(containingNode, &node, &supportsRegOptional);
+    bool     isContainable = lowering->TryGetContainableHWIntrinsicOp(containingNode, &node, &supportsRegOptional);
 
     assert(isContainable || supportsRegOptional);
     assert(node == containedNode);

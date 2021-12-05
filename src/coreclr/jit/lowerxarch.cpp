@@ -5175,7 +5175,9 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 //    When false is returned 'node' is not modified.
 //
-bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree** pNode, bool* supportsRegOptional)
+bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode,
+                                              GenTree**           pNode,
+                                              bool*               supportsRegOptional)
 {
     assert(containingNode != nullptr);
     assert((pNode != nullptr) && (*pNode != nullptr));
@@ -5257,26 +5259,33 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                             supportsUnalignedSIMDLoads = true;
                         }
 
-                        // General loads are a bit special where we need at least `sizeof(simdType) / (sizeof(baseType) * 2)` elements
+                        // General loads are a bit special where we need at least `sizeof(simdType) / (sizeof(baseType)
+                        // * 2)` elements
                         // For example:
-                        //  * ConvertToVector128Int16 - sizeof(simdType) = 16; sizeof(baseType) = 1;         expectedSize =  8
-                        //  * ConvertToVector128Int32 - sizeof(simdType) = 16; sizeof(baseType) = 1 | 2;     expectedSize =  8 | 4
-                        //  * ConvertToVector128Int64 - sizeof(simdType) = 16; sizeof(baseType) = 1 | 2 | 4; expectedSize =  8 | 4 | 2
-                        //  * ConvertToVector256Int16 - sizeof(simdType) = 32; sizeof(baseType) = 1;         expectedSize = 16
-                        //  * ConvertToVector256Int32 - sizeof(simdType) = 32; sizeof(baseType) = 1 | 2;     expectedSize = 16 | 8
-                        //  * ConvertToVector256Int64 - sizeof(simdType) = 32; sizeof(baseType) = 1 | 2 | 4; expectedSize = 16 | 8 | 4
+                        //  * ConvertToVector128Int16 - sizeof(simdType) = 16; sizeof(baseType) = 1; expectedSize =  8
+                        //  * ConvertToVector128Int32 - sizeof(simdType) = 16; sizeof(baseType) = 1 | 2;
+                        //  expectedSize =  8 | 4
+                        //  * ConvertToVector128Int64 - sizeof(simdType) = 16; sizeof(baseType) = 1 | 2 | 4;
+                        //  expectedSize =  8 | 4 | 2
+                        //  * ConvertToVector256Int16 - sizeof(simdType) = 32; sizeof(baseType) = 1; expectedSize = 16
+                        //  * ConvertToVector256Int32 - sizeof(simdType) = 32; sizeof(baseType) = 1 | 2;
+                        //  expectedSize = 16 | 8
+                        //  * ConvertToVector256Int64 - sizeof(simdType) = 32; sizeof(baseType) = 1 | 2 | 4;
+                        //  expectedSize = 16 | 8 | 4
 
                         const unsigned sizeof_simdType = genTypeSize(containingNode->TypeGet());
                         const unsigned sizeof_baseType = genTypeSize(containingNode->GetSimdBaseType());
 
                         assert((sizeof_simdType == 16) || (sizeof_simdType == 32));
-                        assert((sizeof_baseType ==  1) || (sizeof_baseType ==  2) || (sizeof_baseType == 4));
+                        assert((sizeof_baseType == 1) || (sizeof_baseType == 2) || (sizeof_baseType == 4));
 
                         const unsigned expectedSize = sizeof_simdType / (sizeof_baseType * 2);
                         const unsigned operandSize  = genTypeSize(node->TypeGet());
 
-                        assert((sizeof_simdType != 16) || (expectedSize ==  8) || (expectedSize == 4) || (expectedSize == 2));
-                        assert((sizeof_simdType != 32) || (expectedSize == 16) || (expectedSize == 8) || (expectedSize == 4));
+                        assert((sizeof_simdType != 16) || (expectedSize == 8) || (expectedSize == 4) ||
+                               (expectedSize == 2));
+                        assert((sizeof_simdType != 32) || (expectedSize == 16) || (expectedSize == 8) ||
+                               (expectedSize == 4));
 
                         supportsGeneralLoads = (operandSize >= expectedSize);
                     }
@@ -6131,7 +6140,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // result = (op1 * op2) + [op3]
                             MakeSrcContained(node, op3);
                         }
-                        else if (resultOpNum != 2 && TryGetContainableHWIntrinsicOp(node, &op2, &supportsOp2RegOptional))
+                        else if (resultOpNum != 2 &&
+                                 TryGetContainableHWIntrinsicOp(node, &op2, &supportsOp2RegOptional))
                         {
                             // result = (op1 * [op2]) + op3
                             MakeSrcContained(node, op2);
