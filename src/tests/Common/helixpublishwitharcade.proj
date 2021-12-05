@@ -444,7 +444,7 @@
     </MergedPayloads>
 
     <MergedPayloads Update="@(MergedPayloads)" Condition="'$(TargetOSSpec)' != 'windows'">
-      <MergedTestHelixCommand>chmod +x %(MergedPayloads.MergedTestHelixCommand) &amp;&amp; %(MergedPayloads.MergedTestHelixCommand)</MergedTestHelixCommand>
+      <MergedTestHelixCommand>chmod +x %(MergedPayloads.MergedTestHelixCommand)%0A%(MergedPayloads.MergedTestHelixCommand)</MergedTestHelixCommand>
     </MergedPayloads>
 
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
