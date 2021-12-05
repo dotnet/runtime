@@ -86,7 +86,7 @@ if (isDebug) {
         format: "es",
         file: "./dotnet.d.ts",
         banner: banner_generated,
-        plugins: [writeOnChangePlugin()],
+        plugins: [alwaysLF(), writeOnChangePlugin()],
     });
 }
 
@@ -100,6 +100,19 @@ function writeOnChangePlugin() {
     return {
         name: "writeOnChange",
         generateBundle: writeWhenChanged
+    };
+}
+
+// force always unix line ending
+function alwaysLF() {
+    return {
+        name: "writeOnChange",
+        generateBundle: (options, bundle) => {
+            const name = Object.keys(bundle)[0];
+            const asset = bundle[name];
+            const code = asset.code;
+            asset.code = code.replace(/\r/g, "");
+        }
     };
 }
 
