@@ -1249,14 +1249,11 @@ namespace System.Text.RegularExpressions.Generator
 
                 // The first child node is the conditional expression.  If this matches, then we branch to the "yes" branch.
                 // If it doesn't match, then we branch to the optional "no" branch if it exists, or simply skip the "yes"
-                // branch, otherwise. The conditional is treated as a positive lookahead.  If it's not already
-                // such a node, wrap it in one.
+                // branch, otherwise. The conditional is treated as a positive lookahead if it isn't already one.
                 RegexNode conditional = node.Child(0);
-                if (conditional is not { Type: RegexNode.Require })
+                if (conditional is { Type: RegexNode.Require })
                 {
-                    var newConditional = new RegexNode(RegexNode.Require, conditional.Options);
-                    newConditional.AddChild(conditional);
-                    conditional = newConditional;
+                    conditional = conditional.Child(0);
                 }
 
                 // Get the "yes" branch and the optional "no" branch, if it exists.
@@ -1280,7 +1277,7 @@ namespace System.Text.RegularExpressions.Generator
                 string originalDoneLabel = doneLabel;
                 string tmpDoneLabel = no ?? end;
                 doneLabel = tmpDoneLabel;
-                EmitPositiveLookaheadAssertion(conditional);
+                EmitPositiveLookaheadAssertionChild(conditional);
                 if (doneLabel == tmpDoneLabel)
                 {
                     doneLabel = originalDoneLabel;
@@ -1472,6 +1469,12 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code to handle a positive lookahead assertion.
             void EmitPositiveLookaheadAssertion(RegexNode node)
             {
+                EmitPositiveLookaheadAssertionChild(node.Child(0));
+            }
+
+            // Emits the code to handle a node as if it's wrapped in a positive lookahead assertion.
+            void EmitPositiveLookaheadAssertionChild(RegexNode child)
+            {
                 // Lookarounds are implicitly atomic.  Store the original done label to reset at the end.
                 string originalDoneLabel = doneLabel;
 
@@ -1482,7 +1485,7 @@ namespace System.Text.RegularExpressions.Generator
                 int startingTextSpanPos = textSpanPos;
 
                 // Emit the child.
-                EmitNode(node.Child(0));
+                EmitNode(child);
 
                 // After the child completes successfully, reset the text positions.
                 // Do not reset captures, which persist beyond the lookahead.
