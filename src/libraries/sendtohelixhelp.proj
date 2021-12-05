@@ -57,10 +57,12 @@
     <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
 
     <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
+    <WasmDebuggerTestsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\WasmDebuggerTestsJobsList.txt</WasmDebuggerTestsJobsList>
+    <DefaultHelixWorkItems Condition="'$(Scenario)' != 'BuildWasmApps' and '$(Scenario)' != 'WasmDebuggerTests'">true</DefaultHelixWorkItems>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
     <NeedsToBuildAppsOnHelix Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(NeedsToBuildAppsOnHelix)' == '' and '$(Scenario)' == 'BuildiOSApps'">true</NeedsToBuildAppsOnHelix>
-    
+
     <NeedsiOSSDK Condition="'$(NeedsToBuildAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsiOSSDK>
 
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
@@ -120,7 +122,7 @@
       We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
       For the HTTPS endpoint we need development SSL certificate.
     -->
-    <InstallDevCerts Condition="'$(Scenario)' != 'BuildWasmApps'">true</InstallDevCerts>
+    <InstallDevCerts Condition="'$(Scenario)' != 'BuildWasmApps' and '$(Scenario)' != 'WasmDebuggerTests'">true</InstallDevCerts>
 
     <!-- Install SDK so that, we could use `dotnet dev-certs https` -->
     <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
@@ -452,6 +454,10 @@
       <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
     </ReadLinesFromFile>
 
+    <ReadLinesFromFile File="$(WasmDebuggerTestsJobsList)" Condition="Exists($(WasmDebuggerTestsJobsList)) and '$(Scenario)' == 'WasmDebuggerTests'">
+      <Output TaskParameter="Lines" ItemName="WasmDebuggerTests_PerJobList" />
+    </ReadLinesFromFile>
+
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser' and '$(Scenario)' != 'BuildiOSApps'"
@@ -464,7 +470,7 @@
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
       <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
-      <HelixWorkItem Include="@(_WorkItem -> '$(WorkItemPrefix)%(FileName)')" Condition="'$(Scenario)' != 'BuildWasmApps'">
+      <HelixWorkItem Include="@(_WorkItem -> '$(WorkItemPrefix)%(FileName)')" Condition="'$(DefaultHelixWorkItems)' == 'true'">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
@@ -473,6 +479,7 @@
 
     <PropertyGroup>
       <_BuildWasmAppsPayloadArchive>@(_WorkItem)</_BuildWasmAppsPayloadArchive>
+      <_WasmDebuggerTestsPayloadArchive>@(_WorkItem)</_WasmDebuggerTestsPayloadArchive>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
@@ -480,6 +487,18 @@
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Scenario)' == 'WasmDebuggerTests'">
+      <HelixWorkItem Include="@(WasmDebuggerTests_PerJobList)">
+        <PayloadArchive>$(_WasmDebuggerTestsPayloadArchive)</PayloadArchive>
+        <!-- ClassNAme not supported for `dotnet test` for xunit -->
+        <PreCommands>export TEST_FILTER=&quot;--filter FilterQualifiedName~%(Identity)&quot;</PreCommands>
+        <!--<PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>-->
+        <!--<PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>-->
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
@@ -532,6 +551,7 @@
           IgnoreStandardErrorWarningFormat="true" />
 
     <Message Text="HelixCorrelationPayload: %(HelixCorrelationPayload.Identity)" Condition="'$(HelixDryRun)' == 'true'" Importance="High" />
+    <Message Text="HelixWorkItem: %(HelixWorkItem.Identity), Command: %(HelixWorkItem.Command), PreCommands: %(HelixWorkItem.PreCommands)" Condition="'$(HelixDryRun)' == 'true'" Importance="High" />
     <Error Text="Stopping the build for dry run" Condition="'$(HelixDryRun)' == 'true'" />
   </Target>
 

@@ -56,8 +56,8 @@
 
       <TestCommandArg Include="&quot;-l:trx%3BLogFileName=testResults.xml&quot;" />
       <TestCommandArg Include="--results-directory &quot;$LOG_PATH&quot;" />
-      <!--<TestCommandArg Include="$TEST_FILTER" />-->
-      <TestCommandArg Include="--filter FullyQualifiedName~InspectPrimitiveTypeArrayLocals" />
+      <TestCommandArg Include="$TEST_FILTER" />
+      <!--<TestCommandArg Include="filter FullyQualifiedName~InspectPrimitiveTypeArrayLocals" />-->
     </ItemGroup>
 
     <PropertyGroup>
