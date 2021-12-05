@@ -51,7 +51,7 @@ namespace System.Drawing.Imaging
         /// Also, in 64-bit platforms, 'Count' is aligned in 8 bytes (4 extra padding bytes) so we use IntPtr instead of Int32 to account for
         /// that.
         /// </summary>
-        internal IntPtr ConvertToMemory()
+        internal unsafe IntPtr ConvertToMemory()
         {
             int size = sizeof(EncoderParameterPrivate);
 
