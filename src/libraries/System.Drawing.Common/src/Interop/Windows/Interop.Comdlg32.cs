@@ -14,7 +14,7 @@ internal static partial class Interop
         [DllImport(Libraries.Comdlg32, SetLastError = true, CharSet = CharSet.Auto)]
         internal static extern bool PrintDlg([In, Out] PRINTDLGX86 lppd);
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential)]
         internal struct PRINTDLG
         {
             internal int lStructSize;
@@ -38,7 +38,7 @@ internal static partial class Interop
             internal IntPtr hSetupTemplate;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 1)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct PRINTDLGX86
         {
             internal int lStructSize;
