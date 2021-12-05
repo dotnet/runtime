@@ -856,35 +856,34 @@ namespace System.Text.RegularExpressions
             // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
 
-            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole thing.
-            // This is the case, in particular, for strings.  We can special case these to do essentially nothing
-            // in Go other than emit the capture.
-            if (!IsCaseInsensitive(node)) // FindFirstChar may yield false positives on these in some cultures when case-insensitive
+
+            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole expression.
+            // We can special case these to do essentially nothing in Go other than emit the capture.
+            switch (node.Type)
             {
-                switch (node.Type)
-                {
-                    case RegexNode.Multi:
-                    case RegexNode.Notone:
-                    case RegexNode.One:
-                    case RegexNode.Set:
-                        // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
-                        // base.runtextpos = base.runtextpos + node.Str.Length;
-                        // return;
-                        Ldthis();
-                        Dup();
-                        Ldc(0);
-                        Ldthisfld(s_runtextposField);
-                        Dup();
-                        Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
-                        Add();
-                        Call(s_captureMethod);
-                        Ldthisfld(s_runtextposField);
-                        Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
-                        Add();
-                        Stfld(s_runtextposField);
-                        Ret();
-                        return;
-                }
+                case RegexNode.Multi or RegexNode.Notone or RegexNode.One or RegexNode.Set when !IsCaseInsensitive(node):
+                    // This is the case for single and multiple characters, though the whole thing is only guaranteed
+                    // to have been validated in FindFirstChar when doing case-sensitive comparison.
+                    // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
+                    // base.runtextpos = base.runtextpos + node.Str.Length;
+                    // return;
+                    Ldthis();
+                    Dup();
+                    Ldc(0);
+                    Ldthisfld(s_runtextposField);
+                    Dup();
+                    Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
+                    Add();
+                    Call(s_captureMethod);
+                    Ldthisfld(s_runtextposField);
+                    Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
+                    Add();
+                    Stfld(s_runtextposField);
+                    Ret();
+                    return;
+
+                // The source generator special-cases RegexNode.Empty, for purposes of code learning rather than
+                // performance.  Since that's not applicable to RegexCompiler, that code isn't mirrored here.
             }
 
             // Initialize the main locals used throughout the implementation.
