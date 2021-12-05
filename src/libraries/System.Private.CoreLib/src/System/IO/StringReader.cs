@@ -193,9 +193,7 @@ namespace System.IO
             int foundLineLength = remaining.IndexOfAny('\r', '\n');
             if (foundLineLength >= 0)
             {
-                string result = foundLineLength == 0
-                    ? string.Empty
-                    : new string(remaining.Slice(0, foundLineLength));
+                string result = s.Substring(pos, foundLineLength);
 
                 char ch = remaining[foundLineLength];
                 pos += foundLineLength + 1;
@@ -207,17 +205,12 @@ namespace System.IO
                     }
                 }
                 _pos = pos;
+
                 return result;
-            }
-            else if (remaining.Length == s.Length)
-            {
-                // Return source string if only one line avoiding allocation
-                _pos = s.Length;
-                return s;
             }
             else
             {
-                string result = new string(remaining);
+                string result = s.Substring(pos);
                 _pos = s.Length;
                 return result;
             }
