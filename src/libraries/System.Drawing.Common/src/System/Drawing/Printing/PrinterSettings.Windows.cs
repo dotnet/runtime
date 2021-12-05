@@ -650,26 +650,12 @@ namespace System.Drawing.Printing
         private static Interop.Comdlg32.PRINTDLGX86 CreatePRINTDLGX86()
         {
             Interop.Comdlg32.PRINTDLGX86 data = new Interop.Comdlg32.PRINTDLGX86();
-            data.lStructSize = Marshal.SizeOf<Interop.Comdlg32.PRINTDLGX86>();
-            data.hwndOwner = IntPtr.Zero;
-            data.hDevMode = IntPtr.Zero;
-            data.hDevNames = IntPtr.Zero;
-            data.Flags = 0;
-            data.hwndOwner = IntPtr.Zero;
-            data.hDC = IntPtr.Zero;
+            data.lStructSize = sizeof(Interop.Comdlg32.PRINTDLGX86);
             data.nFromPage = 1;
             data.nToPage = 1;
             data.nMinPage = 0;
             data.nMaxPage = 9999;
             data.nCopies = 1;
-            data.hInstance = IntPtr.Zero;
-            data.lCustData = IntPtr.Zero;
-            data.lpfnPrintHook = IntPtr.Zero;
-            data.lpfnSetupHook = IntPtr.Zero;
-            data.lpPrintTemplateName = null;
-            data.lpSetupTemplateName = null;
-            data.hPrintTemplate = IntPtr.Zero;
-            data.hSetupTemplate = IntPtr.Zero;
             return data;
         }
 
@@ -679,26 +665,12 @@ namespace System.Drawing.Printing
         private static Interop.Comdlg32.PRINTDLG CreatePRINTDLG()
         {
             Interop.Comdlg32.PRINTDLG data = new Interop.Comdlg32.PRINTDLG();
-            data.lStructSize = Marshal.SizeOf<Interop.Comdlg32.PRINTDLG>();
-            data.hwndOwner = IntPtr.Zero;
-            data.hDevMode = IntPtr.Zero;
-            data.hDevNames = IntPtr.Zero;
-            data.Flags = 0;
-            data.hwndOwner = IntPtr.Zero;
-            data.hDC = IntPtr.Zero;
+            data.lStructSize = sizeof(Interop.Comdlg32.PRINTDLG);
             data.nFromPage = 1;
             data.nToPage = 1;
             data.nMinPage = 0;
             data.nMaxPage = 9999;
             data.nCopies = 1;
-            data.hInstance = IntPtr.Zero;
-            data.lCustData = IntPtr.Zero;
-            data.lpfnPrintHook = IntPtr.Zero;
-            data.lpfnSetupHook = IntPtr.Zero;
-            data.lpPrintTemplateName = null;
-            data.lpSetupTemplateName = null;
-            data.hPrintTemplate = IntPtr.Zero;
-            data.hSetupTemplate = IntPtr.Zero;
             return data;
         }
 

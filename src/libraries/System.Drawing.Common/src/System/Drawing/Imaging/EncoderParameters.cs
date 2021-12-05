@@ -53,7 +53,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         internal IntPtr ConvertToMemory()
         {
-            int size = Marshal.SizeOf<EncoderParameter>();
+            int size = sizeof(EncoderParameterPrivate);
 
             int length = _param.Length;
             IntPtr memory = Marshal.AllocHGlobal(checked(length * size + IntPtr.Size));
@@ -82,19 +82,13 @@ namespace System.Drawing.Imaging
             }
 
             int count = *(int*)memory;
-
+            EncoderParameterPrivate* params = (EncoderParameterPrivate*)((byte*)memory + IntPtr.Size);
             EncoderParameters p = new EncoderParameters(count);
-            int size = Marshal.SizeOf<EncoderParameter>();
-            long arrayOffset = (long)memory + IntPtr.Size;
-
             for (int i = 0; i < count; i++)
             {
-                Guid guid = *(Guid*)(IntPtr)(i * size + arrayOffset);
-                int numberOfValues = *(int*)(IntPtr)(i * size + arrayOffset + 16);
-                EncoderParameterValueType type = (EncoderParameterValueType)(*(int*)(IntPtr)(i * size + arrayOffset + 20));
-                IntPtr value = *(nint*)(IntPtr)(i * size + arrayOffset + 24);
+                ref readonly EncoderParameterPrivate param = ref params[i];
 
-                p._param[i] = new EncoderParameter(new Encoder(guid), numberOfValues, type, value);
+                p._param[i] = new EncoderParameter(new Encoder(param.ParameterGuid), param.NumberOfValues, param.ParameterValueType, param.ParameterValue);
             }
 
             return p;

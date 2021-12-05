@@ -374,7 +374,7 @@ namespace System.Drawing
             /// structures to minimize the risk of buffer overruns.  The affected managed classes
             /// are the following: ENHMETAHEADER, MetaHeader, MetafileHeaderWmf, MetafileHeaderEmf.
             public int iType;
-            public int nSize = 40; // ndirect.DllLib.sizeOf( this )
+            public int nSize;
             // rclBounds was a by-value RECTL structure
             public int rclBounds_left;
             public int rclBounds_top;
