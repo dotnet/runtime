@@ -1053,21 +1053,35 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     string matchLength = ReserveName("backreference_matchLength");
                     writer.WriteLine($"int {matchLength} = base.MatchLength({capnum});");
-                    using (EmitBlock(writer, $"if ({sliceSpan}.Length < {matchLength})"))
-                    {
-                        writer.WriteLine($"goto {doneLabel};");
-                    }
-                    writer.WriteLine();
 
-                    string matchIndex = ReserveName("backreference_matchIndex");
-                    writer.WriteLine($"int {matchIndex} = base.MatchIndex({capnum});");
-
-                    string i = ReserveName("backreference_iteration");
-                    using (EmitBlock(writer, $"for (int {i} = 0; {i} < {matchLength}; {i}++)"))
+                    if (!IsCaseInsensitive(node))
                     {
-                        using (EmitBlock(writer, $"if ({ToLowerIfNeeded(hasTextInfo, options, $"runtextSpan[{matchIndex} + {i}]", IsCaseInsensitive(node))} != {ToLowerIfNeeded(hasTextInfo, options, $"{sliceSpan}[{i}]", IsCaseInsensitive(node))})"))
+                        // If we're case-sensitive, we can simply validate that the remaining length of the slice is sufficient
+                        // to possibly match, and then do a SequenceEqual against the matched text.
+                        writer.WriteLine($"if ({sliceSpan}.Length < {matchLength} || ");
+                        using (EmitBlock(writer, $"    !global::System.MemoryExtensions.SequenceEqual(runtextSpan.Slice(base.MatchIndex({capnum}), {matchLength}), {sliceSpan}.Slice(0, {matchLength})))"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
+                        }
+                    }
+                    else
+                    {
+                        // For case-insensitive, we have to walk each character individually.
+                        string matchIndex = ReserveName("backreference_matchIndex");
+                        string i = ReserveName("backreference_iteration");
+
+                        using (EmitBlock(writer, $"if ({sliceSpan}.Length < {matchLength})"))
+                        {
+                            writer.WriteLine($"goto {doneLabel};");
+                        }
+                        writer.WriteLine();
+                        writer.WriteLine($"int {matchIndex} = base.MatchIndex({capnum});");
+                        using (EmitBlock(writer, $"for (int {i} = 0; {i} < {matchLength}; {i}++)"))
+                        {
+                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"runtextSpan[{matchIndex} + {i}]")} != {ToLower(hasTextInfo, options, $"{sliceSpan}[{i}]")})"))
+                            {
+                                writer.WriteLine($"goto {doneLabel};");
+                            }
                         }
                     }
                     writer.WriteLine();
