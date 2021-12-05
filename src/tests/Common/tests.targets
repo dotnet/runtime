@@ -83,6 +83,7 @@
   </Target>
 
   <Target Name="RunSingleMergedTest">
+    <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" Condition="'$(TargetOSSpec)' != 'windows'" />
     <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile)" WorkingDirectory="$(BaseOutputPathWithConfig)" />
     <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" />
   </Target>

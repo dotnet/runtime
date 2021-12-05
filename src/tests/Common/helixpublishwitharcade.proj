@@ -270,8 +270,6 @@
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" />
       <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
     </ItemGroup>
-
-    <Exec Command="chmod a+rwx %(_MergedWrapperRunScript.Identity)" Condition="'$(TargetOSSpec)' != 'windows'" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectory"
@@ -443,6 +441,10 @@
       <MergedTestHelixCommand>$([System.IO.File]::ReadAllText('%(PayloadHelixCommandFile)'))</MergedTestHelixCommand>
       <PayloadGroup>$([System.IO.Path]::GetDirectoryName('%(MergedTestHelixCommand)').Replace('/', '-').Replace('\', '-'))</PayloadGroup>
       <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
+    </MergedPayloads>
+
+    <MergedPayloads Update="@(MergedPayloads)" Condition="'$(TargetOSSpec)' != 'windows'">
+      <MergedTestHelixCommand>chmod +x %(MergedPayloads.MergedTestHelixCommand) && %(MergedPayloads.MergedTestHelixCommand)</MergedTestHelixCommand>
     </MergedPayloads>
 
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
