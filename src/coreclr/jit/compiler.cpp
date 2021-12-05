@@ -6281,6 +6281,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compHasBackwardJump          = false;
     compHasBackwardJumpInHandler = false;
+    compHasPinvokes              = false;
 
 #ifdef DEBUG
     compCurBB = nullptr;

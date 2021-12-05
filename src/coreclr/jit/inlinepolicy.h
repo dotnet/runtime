@@ -212,6 +212,7 @@ public:
         , m_NonGenericCallsGeneric(false)
         , m_IsCallsiteInNoReturnRegion(false)
         , m_HasProfile(false)
+        , m_HasPinvoke(false)
     {
         // Empty
     }
@@ -262,6 +263,7 @@ protected:
     bool     m_NonGenericCallsGeneric : 1;
     bool     m_IsCallsiteInNoReturnRegion : 1;
     bool     m_HasProfile : 1;
+    bool     m_HasPinvoke : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It

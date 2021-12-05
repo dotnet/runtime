@@ -1149,7 +1149,6 @@ inline GenTree* Compiler::gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree
 inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block)
 {
     GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
-    static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
     if (block != nullptr)
     {

@@ -143,6 +143,7 @@ namespace System
         /// </summary>
         public int Length
         {
+            [Intrinsic] // a hint for the inliner that this method is special
             [NonVersionable]
             get => _length;
         }

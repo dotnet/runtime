@@ -495,7 +495,6 @@ enum GenTreeFlags : unsigned int
     GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND   -- the target is not on the heap
     GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
     GTF_IND_NONFAULTING         = 0x20000000, // Operations for which OperIsIndir() is true  -- An indir that cannot fault.
-                                              // Same as GTF_ARRLEN_NONFAULTING.
     GTF_IND_TGTANYWHERE         = 0x10000000, // GT_IND   -- the target could be anywhere
     GTF_IND_TLS_REF             = 0x08000000, // GT_IND   -- the target is accessed via TLS
     GTF_IND_ASG_LHS             = 0x04000000, // GT_IND   -- this GT_IND node is (the effective val) of the LHS of an
@@ -581,7 +580,6 @@ enum GenTreeFlags : unsigned int
     GTF_ARR_BOUND_INBND         = 0x80000000, // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
 
     GTF_ARRLEN_ARR_IDX          = 0x80000000, // GT_ARR_LENGTH -- Length which feeds into an array index expression
-    GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                               //                   rather than from gtGetStructHandleForHWSIMD.

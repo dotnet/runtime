@@ -1301,6 +1301,10 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_Switch++;
             break;
 
+        case InlineObservation::CALLEE_HAS_PINVOKE:
+            m_HasPinvoke = value;
+            break;
+
         case InlineObservation::CALLSITE_DIV_BY_CNS:
             m_DivByCns++;
             break;
@@ -1485,7 +1489,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        multiplier += 3.0 + m_FoldableBranch;
+        multiplier += 3.0 + m_FoldableBranch * 1.5;
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
     }
@@ -1521,7 +1525,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 1.0 + m_Intrinsic * 0.3;
+        multiplier += 2.2 + m_Intrinsic * 0.5;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
@@ -1726,6 +1730,23 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nCallsite is in a no-return region.  Multiplier limited to %g.", multiplier);
     }
 
+    if (m_HasPinvoke)
+    {
+        // Callees with pinvokes will inject a lot of code into callers even if the path with this callsite
+        // is not always taken. However, it's OK if we already have pinvokes in the caller
+        // Pinvokes with SuppressGCTransition are always fine but they are expensive to check in the inliner.
+        if (m_RootCompiler->compHasPinvokes)
+        {
+            multiplier += 1.5;
+            JITDUMP("\nCallee and caller have pinvoke(s).  Multiplier increased to %g.", multiplier);
+        }
+        else
+        {
+            multiplier = 1.0;
+            JITDUMP("\nCallee has pinvoke(s).  Multiplier limited to %g.", multiplier);
+        }
+    }
+
 #ifdef DEBUG
 
     int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
@@ -1783,6 +1804,7 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_NonGenericCallsGeneric)
     XATTR_B(m_IsCallsiteInNoReturnRegion)
     XATTR_B(m_HasProfile)
+    XATTR_B(m_HasPinvoke)
 }
 #endif
 

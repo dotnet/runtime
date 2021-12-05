@@ -9423,6 +9423,7 @@ public:
     bool compSwitchedToOptimized;      // Codegen initially was Tier0 but jit switched to FullOpts
     bool compSwitchedToMinOpts;        // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
     bool compSuppressedZeroInit;       // There are vars with lvSuppressedZeroInit set
+    bool compHasPinvokes;              // Does the method have a pinvoke?
 
 // NOTE: These values are only reliable after
 //       the importing is completely finished.

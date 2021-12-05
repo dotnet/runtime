@@ -1101,6 +1101,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                 CORINFO_METHOD_HANDLE methodHnd      = nullptr;
                 bool                  isJitIntrinsic = false;
+                bool                  isPinvoke      = false;
                 NamedIntrinsic        ni             = NI_Illegal;
 
                 if (resolveTokens)
@@ -1108,6 +1109,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
                     methodHnd      = resolvedToken.hMethod;
                     isJitIntrinsic = eeIsJitIntrinsic(methodHnd);
+                    isPinvoke      = info.compCompHnd->getMethodAttribs(methodHnd) & CORINFO_FLG_PINVOKE;
                 }
 
                 if (isJitIntrinsic)
@@ -1238,6 +1240,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         }
                     }
                 }
+                else if (isPinvoke)
+                {
+                    compInlineResult->NoteBool(InlineObservation::CALLEE_HAS_PINVOKE, true);
+                }
 
                 if ((codeAddr < codeEndp - sz) && (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
                 {
@@ -1245,15 +1251,24 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     // it is a wrapper method.
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
-
-                if (!isJitIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()))
-                {
-                    // Optimistically assume that "call(arg)" returns something arg-dependent.
-                    // However, we don't know how many args it expects and its return type.
-                    handled = true;
-                }
             }
             break;
+
+            case CEE_LDSFLD:
+                if (resolveTokens && !isPreJit)
+                {
+                    // Push a constant to the stack for static readonly fields (initialized)
+                    // of primitive types.
+                    impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Field);
+                    CORINFO_FIELD_HANDLE fldHnd = resolvedToken.hField;
+                    bool                 inited = false;
+                    if ((info.compCompHnd->getStaticFieldCurrentClass(fldHnd, &inited) == NO_CLASS_HANDLE) && inited)
+                    {
+                        pushedStack.PushConstant();
+                        handled = true;
+                    }
+                }
+                break;
 
             case CEE_LDIND_I1:
             case CEE_LDIND_U1:

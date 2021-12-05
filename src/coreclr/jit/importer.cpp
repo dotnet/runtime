@@ -7735,6 +7735,7 @@ void Compiler::impCheckForPInvokeCall(
     if ((mflags & CORINFO_FLG_PINVOKE) != 0)
     {
         call->gtCallMoreFlags |= GTF_CALL_M_PINVOKE;
+        compHasPinvokes = true;
     }
 
     bool suppressGCTransition = false;
