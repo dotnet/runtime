@@ -1683,7 +1683,7 @@ LIR::Range LIR::SeqTree(Compiler* compiler, GenTree* tree)
     // point.
 
     compiler->gtSetEvalOrder(tree);
-    return Range(compiler->fgSetTreeSeq(tree, nullptr, true), tree);
+    return Range(compiler->fgSetTreeSeq(tree, /* isLIR */ true), tree);
 }
 
 //------------------------------------------------------------------------
