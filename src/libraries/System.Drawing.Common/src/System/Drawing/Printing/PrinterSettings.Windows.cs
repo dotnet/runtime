@@ -644,12 +644,11 @@ namespace System.Drawing.Printing
             return g;
         }
 
-
         // Create a PRINTDLG with a few useful defaults.
         // Try to keep this consistent with PrintDialog.CreatePRINTDLG.
         private static unsafe Interop.Comdlg32.PRINTDLGX86 CreatePRINTDLGX86()
         {
-            Interop.Comdlg32.PRINTDLGX86 data = new Interop.Comdlg32.PRINTDLGX86();
+            Interop.Comdlg32.PRINTDLGX86 data = default(Interop.Comdlg32.PRINTDLGX86);
             data.lStructSize = sizeof(Interop.Comdlg32.PRINTDLGX86);
             data.nFromPage = 1;
             data.nToPage = 1;
@@ -659,12 +658,11 @@ namespace System.Drawing.Printing
             return data;
         }
 
-
         // Create a PRINTDLG with a few useful defaults.
         // Try to keep this consistent with PrintDialog.CreatePRINTDLG.
         private static unsafe Interop.Comdlg32.PRINTDLG CreatePRINTDLG()
         {
-            Interop.Comdlg32.PRINTDLG data = new Interop.Comdlg32.PRINTDLG();
+            Interop.Comdlg32.PRINTDLG data = default(Interop.Comdlg32.PRINTDLG);
             data.lStructSize = sizeof(Interop.Comdlg32.PRINTDLG);
             data.nFromPage = 1;
             data.nToPage = 1;
