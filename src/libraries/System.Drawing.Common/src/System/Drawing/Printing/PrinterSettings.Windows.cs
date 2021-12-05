@@ -647,7 +647,7 @@ namespace System.Drawing.Printing
 
         // Create a PRINTDLG with a few useful defaults.
         // Try to keep this consistent with PrintDialog.CreatePRINTDLG.
-        private static Interop.Comdlg32.PRINTDLGX86 CreatePRINTDLGX86()
+        private static unsafe Interop.Comdlg32.PRINTDLGX86 CreatePRINTDLGX86()
         {
             Interop.Comdlg32.PRINTDLGX86 data = new Interop.Comdlg32.PRINTDLGX86();
             data.lStructSize = sizeof(Interop.Comdlg32.PRINTDLGX86);
@@ -662,7 +662,7 @@ namespace System.Drawing.Printing
 
         // Create a PRINTDLG with a few useful defaults.
         // Try to keep this consistent with PrintDialog.CreatePRINTDLG.
-        private static Interop.Comdlg32.PRINTDLG CreatePRINTDLG()
+        private static unsafe Interop.Comdlg32.PRINTDLG CreatePRINTDLG()
         {
             Interop.Comdlg32.PRINTDLG data = new Interop.Comdlg32.PRINTDLG();
             data.lStructSize = sizeof(Interop.Comdlg32.PRINTDLG);
