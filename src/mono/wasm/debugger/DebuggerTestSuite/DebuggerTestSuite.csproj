@@ -53,7 +53,7 @@
       <ScriptCommand Include="export DEBUGGER_TEST_PATH=$PWD/debugger-test" />
       <ScriptCommand Include="export CHROME_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
       <ScriptCommand Include="export LOG_PATH=${HELIX_WORKITEM_UPLOAD_ROOT:-.}" />
-      <ScriptCommand Include="dotnet test DebuggerTestSuite/DebuggerTestSuite.dll -l:trx%3BLogFileName=testResults.xml --results-directory &quot;$LOG_PATH&quot; $TEST_FILTER 2&gt;&amp;1 | tee $LOG_PATH/console-output.txt" />
+      <ScriptCommand Include="dotnet test DebuggerTestSuite/DebuggerTestSuite.dll &quot;-l:trx%3BLogFileName=testResults.xml&quot; --results-directory &quot;$LOG_PATH&quot; $TEST_FILTER 2&gt;&amp;1 | tee $LOG_PATH/console-output.txt" />
     </ItemGroup>
 
     <WriteLinesToFile Lines="@(ScriptCommand)" File="$(_TmpDebuggerTestsDir)\RunTests.sh" Overwrite="true" />
