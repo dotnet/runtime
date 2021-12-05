@@ -1024,7 +1024,9 @@ namespace System.Tests
             Assert.Equal(expected, DateTime.Parse(expectedString, cultureInfo));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSXLike))]
+        private static bool IsNotOSXOrBrowser => !PlatformDetection.IsOSXLike && !PlatformDetection.IsBrowser;
+
+        [ConditionalTheory(nameof(IsNotOSXOrBrowser))]
         [InlineData("ar")]
         [InlineData("ar-EG")]
         [InlineData("ar-IQ")]
