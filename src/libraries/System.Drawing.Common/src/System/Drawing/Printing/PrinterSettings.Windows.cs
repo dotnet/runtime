@@ -646,30 +646,26 @@ namespace System.Drawing.Printing
 
         // Create a PRINTDLG with a few useful defaults.
         // Try to keep this consistent with PrintDialog.CreatePRINTDLG.
-        private static unsafe ref Interop.Comdlg32.PRINTDLGX86 CreatePRINTDLGX86()
+        private static unsafe void CreatePRINTDLGX86(ref Interop.Comdlg32.PRINTDLGX86 data)
         {
-            Interop.Comdlg32.PRINTDLGX86 data = default;
             data.lStructSize = sizeof(Interop.Comdlg32.PRINTDLGX86);
             data.nFromPage = 1;
             data.nToPage = 1;
             data.nMinPage = 0;
             data.nMaxPage = 9999;
             data.nCopies = 1;
-            return data;
         }
 
         // Create a PRINTDLG with a few useful defaults.
         // Try to keep this consistent with PrintDialog.CreatePRINTDLG.
-        private static unsafe ref Interop.Comdlg32.PRINTDLG CreatePRINTDLG()
+        private static unsafe void CreatePRINTDLG(ref Interop.Comdlg32.PRINTDLG data)
         {
-            Interop.Comdlg32.PRINTDLG data = default;
             data.lStructSize = sizeof(Interop.Comdlg32.PRINTDLG);
             data.nFromPage = 1;
             data.nToPage = 1;
             data.nMinPage = 0;
             data.nMaxPage = 9999;
             data.nCopies = 1;
-            return data;
         }
 
         //  Use FastDeviceCapabilities where possible -- computing PrinterName is quite slow
@@ -695,7 +691,8 @@ namespace System.Drawing.Printing
         {
             if (IntPtr.Size == 8)
             {
-                ref Interop.Comdlg32.PRINTDLG data = ref CreatePRINTDLG();
+                Interop.Comdlg32.PRINTDLG data = default;
+                CreatePRINTDLG(ref data);
                 data.Flags = SafeNativeMethods.PD_RETURNDEFAULT;
                 bool status = Interop.Comdlg32.PrintDlg(ref data);
 
@@ -719,7 +716,8 @@ namespace System.Drawing.Printing
             }
             else
             {
-                ref Interop.Comdlg32.PRINTDLGX86 data = ref CreatePRINTDLGX86();
+                Interop.Comdlg32.PRINTDLGX86 data = default;
+                CreatePRINTDLGX86(ref data);
                 data.Flags = SafeNativeMethods.PD_RETURNDEFAULT;
                 bool status = Interop.Comdlg32.PrintDlg(ref data);
 
@@ -749,7 +747,8 @@ namespace System.Drawing.Printing
         {
             if (IntPtr.Size == 8)
             {
-                ref Interop.Comdlg32.PRINTDLG data = ref CreatePRINTDLG();
+                Interop.Comdlg32.PRINTDLG data = default;
+                CreatePRINTDLG(ref data);
                 data.Flags = SafeNativeMethods.PD_RETURNDEFAULT;
                 bool status = Interop.Comdlg32.PrintDlg(ref data);
                 if (!status)
@@ -773,7 +772,8 @@ namespace System.Drawing.Printing
             }
             else
             {
-                ref Interop.Comdlg32.PRINTDLGX86 data = ref CreatePRINTDLGX86();
+                Interop.Comdlg32.PRINTDLGX86 data = default;
+                CreatePRINTDLGX86(ref data);
                 data.Flags = SafeNativeMethods.PD_RETURNDEFAULT;
                 bool status = Interop.Comdlg32.PrintDlg(ref data);
 
