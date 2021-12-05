@@ -453,6 +453,11 @@ public:
         CORINFO_CLASS_HANDLE elemType
         );
 
+    CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClassHelper(
+        CORINFO_CLASS_HANDLE elemType
+        );
+
+
     CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
 
 protected:

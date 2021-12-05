@@ -3445,6 +3445,29 @@ CORINFO_CLASS_HANDLE MethodContext::repGetDefaultEqualityComparerClass(CORINFO_C
     return result;
 }
 
+void MethodContext::recGetSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetSZArrayHelperEnumeratorClass == nullptr)
+        GetSZArrayHelperEnumeratorClass = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = CastHandle(result);
+    GetSZArrayHelperEnumeratorClass->Add(key, value);
+    DEBUG_REC(dmpGetSZArrayHelperEnumeratorClass(key, value));
+}
+void MethodContext::dmpGetSZArrayHelperEnumeratorClass(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetSZArrayHelperEnumeratorClass key cls-%016" PRIX64 ", value cls-%016" PRIX64 "", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = LookupByKeyOrMiss(GetSZArrayHelperEnumeratorClass, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetSZArrayHelperEnumeratorClass(key, value));
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
+    return result;
+}
+
 void MethodContext::recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result)
 {
     if (GetTokenTypeAsHandle == nullptr)

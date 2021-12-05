@@ -1521,6 +1521,13 @@ namespace Internal.JitInterface
             return comparer != null ? ObjectToHandle(comparer) : null;
         }
 
+        private CORINFO_CLASS_STRUCT_* getSZArrayHelperEnumeratorClass(CORINFO_CLASS_STRUCT_* elemType)
+        {
+            // TBD
+            _ = HandleToObject(elemType);
+            return null;
+        }
+
         private bool isIntrinsicType(CORINFO_CLASS_STRUCT_* classHnd)
         {
             TypeDesc type = HandleToObject(classHnd);

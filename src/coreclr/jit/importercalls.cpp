@@ -969,6 +969,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // Devirtualization may change which method gets invoked. Update our local cache.
             //
             methHnd = callInfo->hMethod;
+
+            // If we devirtualized to an intrinsic, assume this is one of the special cases.
+            //
+            if ((callInfo->methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+            {
+                call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+            }
         }
         else if (call->AsCall()->IsDelegateInvoke())
         {
@@ -1346,12 +1353,26 @@ DONE_CALL:
             eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
         }
 
+        CORINFO_CLASS_HANDLE retTypeClass = sig->retTypeClass;
+
         // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
         if (!bIntrinsicImported)
         {
             assert(call->IsCall());
+            GenTreeCall* const origCall = call->AsCall();
 
-            GenTreeCall* origCall = call->AsCall();
+            // If the call is a special intrisic, we may know a more exact return type.
+            //
+            if (origCall->IsSpecialIntrinsic())
+            {
+                CORINFO_CLASS_HANDLE updatedRetTypeClass = impGetSpecialIntrinsicExactReturnType(origCall);
+
+                if (updatedRetTypeClass != NO_CLASS_HANDLE)
+                {
+                    JITDUMP("Updating method return type to %s\n", eeGetClassName(updatedRetTypeClass));
+                    retTypeClass = updatedRetTypeClass;
+                }
+            }
 
             const bool isFatPointerCandidate              = origCall->IsFatPointerCandidate();
             const bool isInlineCandidate                  = origCall->IsInlineCandidate();
@@ -1360,7 +1381,7 @@ DONE_CALL:
             if (varTypeIsStruct(callRetTyp))
             {
                 // Need to treat all "split tree" cases here, not just inline candidates
-                call       = impFixupCallStructReturn(call->AsCall(), sig->retTypeClass);
+                call       = impFixupCallStructReturn(call->AsCall(), retTypeClass);
                 callRetTyp = call->TypeGet();
             }
 
@@ -1513,7 +1534,7 @@ DONE_CALL:
             }
         }
 
-        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
+        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, retTypeClass);
         impPushOnStack(call, tiRetVal);
     }
 
@@ -4668,6 +4689,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     // We'll try to unroll this in lower for constant input.
                     isSpecial = true;
                 }
+                break;
+            }
+
+            case NI_System_SZArrayHelper_GetEnumerator:
+            {
+                // We may know the exact type this returns
+                isSpecial = true;
                 break;
             }
 
@@ -8089,8 +8117,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if (derivedMethod != nullptr)
     {
         assert(exactContext != nullptr);
-        assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-        derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+        if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
+        {
+            derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+        }
+        else
+        {
+            // Array interface devirt can return a generic method of the non-generic SZArrayHelper class.
+            //
+            assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+            derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
+        }
     }
 
     DWORD derivedMethodAttribs = 0;
@@ -8524,7 +8562,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if (pExactContextHandle != nullptr)
     {
-        *pExactContextHandle = MAKE_CLASSCONTEXT(derivedClass);
+        *pExactContextHandle = exactContext;
     }
 
     // We might have created a new recursive tail call candidate.
@@ -8715,6 +8753,43 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
                 assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
                 result = info.compCompHnd->getDefaultComparerClass(typeHnd);
             }
+
+            if (result != NO_CLASS_HANDLE)
+            {
+                JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
+                        result != nullptr ? eeGetClassName(result) : "unknown");
+            }
+            else
+            {
+                JITDUMP("Special intrinsic for type %s: type undetermined, so deferring opt\n",
+                        eeGetClassName(typeHnd));
+            }
+            break;
+        }
+
+        case NI_System_SZArrayHelper_GetEnumerator:
+        {
+            // Expect one method generic parameter; figure out which it is.
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(methodHnd, &sig);
+            assert(sig.sigInst.methInstCount == 1);
+            assert(sig.sigInst.classInstCount == 0);
+
+            CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.methInst[0];
+            assert(typeHnd != nullptr);
+
+            CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+            if (instParam != nullptr)
+            {
+                assert(instParam->GetNext() == nullptr);
+                CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
+                if (hClass != NO_CLASS_HANDLE)
+                {
+                    typeHnd = getTypeInstantiationArgument(hClass, 0);
+                }
+            }
+
+            result = info.compCompHnd->getSZArrayHelperEnumeratorClass(typeHnd);
 
             if (result != NO_CLASS_HANDLE)
             {
@@ -10212,6 +10287,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             result = NI_System_String_EndsWith;
                         }
                     }
+                    else if (strcmp(className, "SZArrayHelper") == 0)
+                    {
+                        if (strcmp(methodName, "GetEnumerator") == 0)
+                        {
+                            result = NI_System_SZArrayHelper_GetEnumerator;
+                        }
+                    }
+
                     break;
                 }
 

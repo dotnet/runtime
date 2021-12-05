@@ -251,6 +251,11 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,
+
+    //
+    // Array Intrinsics
+    //
+    NI_System_SZArrayHelper_GetEnumerator,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_

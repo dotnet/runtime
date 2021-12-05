@@ -2139,6 +2139,12 @@ public:
             CORINFO_CLASS_HANDLE elemType
             ) = 0;
 
+    // Given T, return the type of the SZArrayHelper enumerator
+    // Returns null if the type can't be determined exactly.
+    virtual CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
+            CORINFO_CLASS_HANDLE elemType
+            ) = 0;
+
     // Given resolved token that corresponds to an intrinsic classified to
     // get a raw handle (NI_System_Activator_AllocatorOf etc.), fetch the
     // handle associated with the token. If this is not possible at
