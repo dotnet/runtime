@@ -2078,7 +2078,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
             ins = _132form;
-            std::swap(emitOp2, emitOp3);
+            std::swap(emitOp1, emitOp2);
         }
     }
     else if (op3->isContained() || op3->isUsedFromSpillTemp())
