@@ -8,11 +8,11 @@ internal static partial class Interop
 {
     internal static partial class Comdlg32
     {
-        [DllImport(Libraries.Comdlg32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool PrintDlg([In, Out] PRINTDLG lppd);
+        [DllImport(Libraries.Comdlg32, SetLastError = true)]
+        internal static extern bool PrintDlg(ref PRINTDLG lppd);
 
-        [DllImport(Libraries.Comdlg32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool PrintDlg([In, Out] PRINTDLGX86 lppd);
+        [DllImport(Libraries.Comdlg32, SetLastError = true)]
+        internal static extern bool PrintDlg(ref PRINTDLGX86 lppd);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct PRINTDLG
