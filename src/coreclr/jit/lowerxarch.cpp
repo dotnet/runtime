@@ -5244,7 +5244,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 {
                     assert(!supportsSIMDScalarLoads);
 
-                    if (node->TypeGet() == TYP_SIMD16)
+                    if (!containingNode->OperIsMemoryLoad())
                     {
                         // The containable form is the one that takes a SIMD value, that may be in memory.
 
@@ -5297,18 +5297,35 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     break;
                 }
 
+                case NI_SSE2_ConvertToVector128Double:
+                case NI_SSE3_MoveAndDuplicate:
+                case NI_AVX_ConvertToVector256Double:
+                {
+                    assert(!supportsSIMDScalarLoads);
+
+                    // Most instructions under the non-VEX encoding require aligned operands.
+                    // Those used for Sse2.ConvertToVector128Double (CVTDQ2PD and CVTPS2PD)
+                    // and Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't fail for
+                    // unaligned inputs as they read mem64 (half the vector width) instead
+
+                    supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                    supportsUnalignedSIMDLoads = true;
+
+                    const unsigned expectedSize = genTypeSize(containingNode->TypeGet()) / 2;
+                    const unsigned operandSize  = genTypeSize(node->TypeGet());
+
+                    supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    break;
+                }
+
                 default:
                 {
                     assert(!supportsSIMDScalarLoads);
 
                     if (!comp->canUseVexEncoding())
                     {
-                        // Most instructions under the non-VEX encoding require aligned operands.
-                        // Those used for Sse2.ConvertToVector128Double (CVTDQ2PD and CVTPS2PD)
-                        // are exceptions and don't fail for unaligned inputs.
-
-                        supportsAlignedSIMDLoads   = (containingIntrinsicId != NI_SSE2_ConvertToVector128Double);
-                        supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
+                        assert(!supportsUnalignedSIMDLoads);
+                        supportsAlignedSIMDLoads   = true;
                     }
                     else
                     {
@@ -5493,7 +5510,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 {
-                    if (node->TypeGet() == TYP_SIMD16)
+                    if (!containingNode->OperIsMemoryLoad())
                     {
                         // The containable form is the one that takes a SIMD value, that may be in memory.
                         supportsSIMDScalarLoads = true;
@@ -5623,12 +5640,8 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
             BlockRange().Remove(node);
 
             node = op1;
+            node->ClearContained();
 
-            if (containingNode->OperIsMemoryLoad())
-            {
-                ContainCheckHWIntrinsicAddr(containingNode, op1);
-                return false;
-            }
             return true;
         }
 
@@ -5821,10 +5834,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (node->OperIsMemoryLoad())
                 {
-                    // We have two cases that can be potential memory loads
+                    // We have a few cases that can be potential memory loads
 
-                    assert((intrinsicId == NI_AVX2_BroadcastScalarToVector128) ||
-                           (intrinsicId == NI_AVX2_BroadcastScalarToVector256));
+                    assert((intrinsicId == NI_SSE41_ConvertToVector128Int16) ||
+                           (intrinsicId == NI_SSE41_ConvertToVector128Int32) ||
+                           (intrinsicId == NI_SSE41_ConvertToVector128Int64) ||
+                           (intrinsicId == NI_AVX2_BroadcastScalarToVector128) ||
+                           (intrinsicId == NI_AVX2_BroadcastScalarToVector256) ||
+                           (intrinsicId == NI_AVX2_ConvertToVector256Int16) ||
+                           (intrinsicId == NI_AVX2_ConvertToVector256Int32) ||
+                           (intrinsicId == NI_AVX2_ConvertToVector256Int64));
 
                     ContainCheckHWIntrinsicAddr(node, op1);
                 }
