@@ -22,9 +22,6 @@ const originalConsole = {
     error: console.error
 };
 
-let isXUnitDoneCheck = false;
-let isXmlDoneCheck = false;
-
 function proxyMethod(prefix, func, asJson) {
     return function () {
         const args = [...arguments];
@@ -369,20 +366,9 @@ async function loadDotnet(file) {
         };
     } else if (is_browser) { // vanila JS in browser
         loadScript = async function (file) {
-            const script = document.createElement("script");
-            script.src = file;
-            document.head.appendChild(script);
-            let timeout = 100;
-            // bysy spin waiting for script to load into global namespace
-            while (timeout > 0) {
-                if (globalThis.createDotnetRuntime) {
-                    return globalThis.createDotnetRuntime;
-                }
-                // delay 10ms
-                await new Promise(resolve => setTimeout(resolve, 10));
-                timeout--;
-            }
-            throw new Error("Can't load " + file);
+            globalThis.exports = {}; // if we are loading cjs file
+            const createDotnetRuntime = await import(file);
+            return typeof createDotnetRuntime === "function" ? createDotnetRuntime : globalThis.exports.createDotnetRuntime;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {
