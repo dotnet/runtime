@@ -1257,7 +1257,7 @@ void EEJitManager::SetCpuInfo()
 #endif // TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-     CPUCompileFlags.Set(InstructionSet_X86Base);
+    CPUCompileFlags.Set(InstructionSet_X86Base);
 
     // NOTE: The below checks are based on the information reported by
     //   Intel® 64 and IA-32 Architectures Software Developer’s Manual. Volume 2
@@ -1331,6 +1331,7 @@ void EEJitManager::SetCpuInfo()
         {
             CPUCompileFlags.Set(InstructionSet_SSE);
             CPUCompileFlags.Set(InstructionSet_SSE2);
+            CPUCompileFlags.Set(InstructionSet_Vector128);
 
             if ((cpuidInfo[ECX] & (1 << 25)) != 0)                                                          // AESNI
             {
@@ -1368,6 +1369,7 @@ void EEJitManager::SetCpuInfo()
                                 if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                       // XGETBV == 11
                                 {
                                     CPUCompileFlags.Set(InstructionSet_AVX);
+                                    CPUCompileFlags.Set(InstructionSet_Vector256);
 
                                     if ((cpuidInfo[ECX] & (1 << 12)) != 0)                                  // FMA
                                     {
@@ -1469,6 +1471,9 @@ void EEJitManager::SetCpuInfo()
     // FP and SIMD support are enabled by default
     CPUCompileFlags.Set(InstructionSet_ArmBase);
     CPUCompileFlags.Set(InstructionSet_AdvSimd);
+    CPUCompileFlags.Set(InstructionSet_Vector64);
+    CPUCompileFlags.Set(InstructionSet_Vector128);
+
     // PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE (30)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
