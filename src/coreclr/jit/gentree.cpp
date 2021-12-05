@@ -21079,7 +21079,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
             assert(GetOperandCount() == 1);
             return (GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128 ||
                     GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256) &&
-                   !Op(1)->TypeIs(TYP_SIMD16);
+                   Op(1)->TypeIs(TYP_I_IMPL, TYP_BYREF);
         }
         else if (category == HW_Category_IMM)
         {

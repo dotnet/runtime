@@ -5614,6 +5614,12 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
             BlockRange().Remove(node);
 
             node = op1;
+
+            if (containingNode->OperIsMemoryLoad())
+            {
+                ContainCheckHWIntrinsicAddr(containingNode, op1);
+                return false;
+            }
             return true;
         }
 
@@ -5804,7 +5810,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 bool supportsRegOptional = false;
 
-                if (TryGetContainableHWIntrinsicOp(node, &op1, &supportsRegOptional))
+                if (node->OperIsMemoryLoad())
+                {
+                    // We have two cases that can be potential memory loads
+
+                    assert((intrinsicId == NI_AVX2_BroadcastScalarToVector128) ||
+                           (intrinsicId == NI_AVX2_BroadcastScalarToVector256));
+
+                    ContainCheckHWIntrinsicAddr(node, op1);
+                }
+                else if (TryGetContainableHWIntrinsicOp(node, &op1, &supportsRegOptional))
                 {
                     MakeSrcContained(node, op1);
                 }
