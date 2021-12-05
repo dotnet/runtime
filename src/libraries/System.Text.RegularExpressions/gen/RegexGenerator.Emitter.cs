@@ -1088,17 +1088,40 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code for an if(backreference)-then-else conditional.
             void EmitBackreferenceConditional(RegexNode node)
             {
-                bool isAtomic = node.IsAtomicByParent();
-
                 // We're branching in a complicated fashion.  Make sure textSpanPos is 0.
                 TransferTextSpanPosToRunTextPos();
 
                 // Get the capture number to test.
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
 
+                // Get the "yes" branch and the optional "no" branch, if it exists.
+                RegexNode yesBranch = node.Child(0);
+                RegexNode? noBranch = node.ChildCount() > 1 && node.Child(1) is { Type: not RegexNode.Empty } childNo ? childNo : null;
                 string originalDoneLabel = doneLabel;
-                string endRef = ReserveName("ConditionalBackreferenceEnd");
-                bool hasNo = node.ChildCount() > 1 && node.Child(1).Type != RegexNode.Empty;
+
+                // If the child branches might backtrack, we can't emit the branches inside constructs that
+                // require braces, e.g. if/else, even though that would yield more idiomatic output.
+                // But if we know for certain they won't backtrack, we can output the nicer code.
+                if (node.IsAtomicByParent() || (!PossiblyBacktracks(yesBranch) && (noBranch is null || !PossiblyBacktracks(noBranch))))
+                {
+                    using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
+                    {
+                        EmitNode(yesBranch);
+                        TransferTextSpanPosToRunTextPos(); // make sure textSpanPos is 0 after each branch
+                    }
+
+                    if (noBranch is not null)
+                    {
+                        using (EmitBlock(writer, $"else"))
+                        {
+                            EmitNode(noBranch);
+                            TransferTextSpanPosToRunTextPos(); // make sure textSpanPos is 0 after each branch
+                        }
+                    }
+
+                    doneLabel = originalDoneLabel;
+                    return;
+                }
 
                 // As with alternations, we have potentially multiple branches, each of which may contain
                 // backtracking constructs, but the expression after the conditional needs a single target
@@ -1121,30 +1144,31 @@ namespace System.Text.RegularExpressions.Generator
 
                 // The specified capture was captured.  Run the "yes" branch.
                 // If it successfully matches, jump to the end.
-                EmitNode(node.Child(0));
+                EmitNode(yesBranch);
                 TransferTextSpanPosToRunTextPos(); // make sure textSpanPos is 0 after each branch
-                string postIfDoneLabel = doneLabel;
-                if (postIfDoneLabel != originalDoneLabel)
+                string postYesDoneLabel = doneLabel;
+                if (postYesDoneLabel != originalDoneLabel)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
-                if (postIfDoneLabel != originalDoneLabel || hasNo)
+                string endRef = ReserveName("ConditionalBackreferenceEnd");
+                if (postYesDoneLabel != originalDoneLabel || noBranch is not null)
                 {
                     writer.WriteLine($"goto {endRef};");
                     writer.WriteLine();
                 }
 
                 MarkLabel(refNotMatched);
-                string postElseDoneLabel = originalDoneLabel;
-                if (hasNo)
+                string postNoDoneLabel = originalDoneLabel;
+                if (noBranch is not null)
                 {
                     // The earlier base.IsMatched returning false will jump to here.
                     // Output the no branch.
                     doneLabel = originalDoneLabel;
-                    EmitNode(node.Child(1));
+                    EmitNode(noBranch);
                     TransferTextSpanPosToRunTextPos(); // make sure textSpanPos is 0 after each branch
-                    postElseDoneLabel = doneLabel;
-                    if (postElseDoneLabel != originalDoneLabel)
+                    postNoDoneLabel = doneLabel;
+                    if (postNoDoneLabel != originalDoneLabel)
                     {
                         writer.WriteLine($"{resumeAt} = 1;");
                     }
@@ -1154,59 +1178,49 @@ namespace System.Text.RegularExpressions.Generator
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (postIfDoneLabel != originalDoneLabel)
+                    if (postYesDoneLabel != originalDoneLabel)
                     {
                         writer.WriteLine($"{resumeAt} = 2;");
                     }
                 }
 
-                if (isAtomic)
+                // If either the yes branch or the no branch contained backtracking, subsequent expressions
+                // might try to backtrack to here, so output a backtracking map based on resumeAt.
+                if (postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel)
                 {
-                    doneLabel = originalDoneLabel;
-                }
-                else
-                {
-                    // If either the yes branch or the no branch contained backtracking, subsequent expressions
-                    // might try to backtrack to here, so output a backtracking map based on resumeAt.
-                    if (postIfDoneLabel != originalDoneLabel || postElseDoneLabel != originalDoneLabel)
+                    // Skip the backtracking section.
+                    writer.WriteLine($"goto {endRef};");
+                    writer.WriteLine();
+
+                    string backtrack = ReserveName("ConditionalBackreferenceBacktrack");
+                    doneLabel = backtrack;
+                    MarkLabel(backtrack);
+
+                    writer.WriteLine($"{resumeAt} = {RunstackPop()};");
+
+                    using (EmitBlock(writer, $"switch ({resumeAt})"))
                     {
-                        // Skip the backtracking section.
-                        writer.WriteLine($"goto {endRef};");
-                        writer.WriteLine();
-
-                        string backtrack = ReserveName("ConditionalBackreferenceBacktrack");
-                        doneLabel = backtrack;
-                        MarkLabel(backtrack);
-
-                        writer.WriteLine($"{resumeAt} = {RunstackPop()};");
-
-                        using (EmitBlock(writer, $"switch ({resumeAt})"))
+                        if (postYesDoneLabel != originalDoneLabel)
                         {
-                            if (postIfDoneLabel != originalDoneLabel)
-                            {
-                                writer.WriteLine($"case 0: goto {postIfDoneLabel};");
-                            }
-
-                            if (postElseDoneLabel != originalDoneLabel)
-                            {
-                                writer.WriteLine($"case 1: goto {postElseDoneLabel};");
-                            }
-
-                            writer.WriteLine($"default: goto {originalDoneLabel};");
+                            writer.WriteLine($"case 0: goto {postYesDoneLabel};");
                         }
+
+                        if (postNoDoneLabel != originalDoneLabel)
+                        {
+                            writer.WriteLine($"case 1: goto {postNoDoneLabel};");
+                        }
+
+                        writer.WriteLine($"default: goto {originalDoneLabel};");
                     }
                 }
 
-                if (postIfDoneLabel != originalDoneLabel || hasNo)
+                if (postYesDoneLabel != originalDoneLabel || noBranch is not null)
                 {
                     MarkLabel(endRef);
-                    if (!isAtomic)
+                    if (postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel)
                     {
-                        if (postIfDoneLabel != originalDoneLabel || postElseDoneLabel != originalDoneLabel)
-                        {
-                            EmitRunstackResizeIfNeeded(1);
-                            writer.WriteLine($"{RunstackPush()} = {resumeAt};");
-                        }
+                        EmitRunstackResizeIfNeeded(1);
+                        writer.WriteLine($"{RunstackPush()} = {resumeAt};");
                     }
                 }
             }
