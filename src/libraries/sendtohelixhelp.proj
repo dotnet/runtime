@@ -496,7 +496,7 @@
       <HelixWorkItem Include="@(WasmDebuggerTests_PerJobList)">
         <PayloadArchive>$(_WasmDebuggerTestsPayloadArchive)</PayloadArchive>
         <!-- ClassNAme not supported for `dotnet test` for xunit -->
-        <PreCommands>export TEST_FILTER=&quot;--filter FilterQualifiedName~%(Identity)&quot;</PreCommands>
+        <PreCommands>export TEST_FILTER=&quot;--filter FullyQualifiedName~%(Identity)&quot;</PreCommands>
         <!--<PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>-->
         <!--<PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>-->
         <Command>$(HelixCommand)</Command>
