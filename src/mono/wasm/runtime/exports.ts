@@ -171,10 +171,10 @@ function initializeImportsAndExports(
     }
 
     if (!module.print) {
-        module.print = console.log.bind(module);
+        module.print = console.log.bind(console);
     }
     if (!module.printErr) {
-        module.printErr = console.error.bind(module);
+        module.printErr = console.error.bind(console);
     }
     module.imports = module.imports || <DotnetModuleConfigImports>{};
     if (!module.imports.require) {
