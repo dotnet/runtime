@@ -5325,7 +5325,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     if (!comp->canUseVexEncoding())
                     {
                         assert(!supportsUnalignedSIMDLoads);
-                        supportsAlignedSIMDLoads   = true;
+                        supportsAlignedSIMDLoads = true;
                     }
                     else
                     {
