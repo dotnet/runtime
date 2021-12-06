@@ -537,7 +537,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
-        public unsafe AssemblyInfo(string url, byte[] assembly, byte[] pdb)
+        public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, CancellationToken token)
         {
             this.id = Interlocked.Increment(ref next_id);
             using var asmStream = new MemoryStream(assembly);
@@ -564,7 +564,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 catch (BadImageFormatException)
                 {
-                    Console.WriteLine($"Warning: Unable to read debug information of: {Name} (use DebugType=Portable/Embedded)");
+                    monoProxy.SendLog(sessionId, $"Warning: Unable to read debug information of: {Name} (use DebugType=Portable/Embedded)", token);
                 }
             }
             else
@@ -923,14 +923,16 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
         private readonly HttpClient client;
         private readonly ILogger logger;
+        private readonly MonoProxy monoProxy;
 
-        public DebugStore(ILogger logger, HttpClient client)
+        public DebugStore(MonoProxy monoProxy, ILogger logger, HttpClient client)
         {
             this.client = client;
             this.logger = logger;
+            this.monoProxy = monoProxy;
         }
 
-        public DebugStore(ILogger logger) : this(logger, new HttpClient())
+        public DebugStore(MonoProxy monoProxy, ILogger logger) : this(monoProxy, logger, new HttpClient())
         { }
 
         private class DebugItem
@@ -949,12 +951,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public IEnumerable<SourceFile> Add(string name, byte[] assembly_data, byte[] pdb_data)
+        public IEnumerable<SourceFile> Add(SessionId id, string name, byte[] assembly_data, byte[] pdb_data, CancellationToken token)
         {
             AssemblyInfo assembly = null;
             try
             {
-                assembly = new AssemblyInfo(name, assembly_data, pdb_data);
+                assembly = new AssemblyInfo(monoProxy, id, name, assembly_data, pdb_data, token);
             }
             catch (Exception e)
             {
@@ -978,7 +980,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async IAsyncEnumerable<SourceFile> Load(string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
         {
             var asm_files = new List<string>();
             var pdb_files = new List<string>();
@@ -1017,7 +1019,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 try
                 {
                     byte[][] bytes = await step.Data.ConfigureAwait(false);
-                    assembly = new AssemblyInfo(step.Url, bytes[0], bytes[1]);
+                    assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], token);
                 }
                 catch (Exception e)
                 {

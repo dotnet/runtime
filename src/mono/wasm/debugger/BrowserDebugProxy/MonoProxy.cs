@@ -50,6 +50,34 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
 
+        internal void SendLog(SessionId sessionId, string message, CancellationToken token)
+        {
+            if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                return;
+            /*var o = JObject.FromObject(new
+            {
+                entry = JObject.FromObject(new
+                {
+                    source = "recommendation",
+                    level = "warning",
+                    text = message
+                })
+            });
+            SendEvent(id, "Log.enabled", null, token);
+            SendEvent(id, "Log.entryAdded", o, token);*/
+            var o = JObject.FromObject(new
+            {
+                type = "warning",
+                args = new JArray(JObject.FromObject(new
+                                {
+                                    type = "string",
+                                    value = message,
+                                })),
+                executionContextId = context.Id
+            });
+            SendEvent(sessionId, "Runtime.consoleAPICalled", o, token);
+        }
+
         protected override async Task<bool> AcceptEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             switch (method)
@@ -1076,7 +1104,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var pdb_data = string.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
 
                 var context = GetContext(sessionId);
-                foreach (var source in store.Add(assembly_name, assembly_data, pdb_data))
+                foreach (var source in store.Add(sessionId, assembly_name, assembly_data, pdb_data, token))
                 {
                     await OnSourceFileAdded(sessionId, source, context, token);
                 }
@@ -1204,7 +1232,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             ExecutionContext context = GetContext(sessionId);
 
-            if (Interlocked.CompareExchange(ref context.store, new DebugStore(logger), null) != null)
+            if (Interlocked.CompareExchange(ref context.store, new DebugStore(this, logger), null) != null)
                 return await context.Source.Task;
 
             try
@@ -1218,7 +1246,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
 
                 await
-                foreach (SourceFile source in context.store.Load(loaded_files, token).WithCancellation(token))
+                foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
                 {
                     await OnSourceFileAdded(sessionId, source, context, token);
                 }
