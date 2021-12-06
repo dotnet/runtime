@@ -2269,6 +2269,9 @@ protected:
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     void sync_promoted_bytes();
+
+    PER_HEAP_ISOLATED
+    void equalize_promoted_bytes();
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)

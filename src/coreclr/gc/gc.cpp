@@ -22143,6 +22143,154 @@ void gc_heap::sync_promoted_bytes()
         }
     }
 }
+
+void gc_heap::equalize_promoted_bytes()
+{
+#ifdef MULTIPLE_HEAPS
+    // algorithm to roughly balance promoted bytes across heaps by moving regions between heaps
+    // goal is just to balance roughly, while keeping computational complexity low
+    // hope is to achieve better work balancing in relocate and compact phases
+    // 
+    // step 1:
+    //  compute total promoted bytes per gen
+    int condemned_gen_number = settings.condemned_generation;
+    int highest_gen_number = ((condemned_gen_number == max_generation) ?
+                              (total_generation_count - 1) : settings.condemned_generation);
+    int stop_gen_idx = get_stop_generation_index (condemned_gen_number);
+
+    for (int gen_idx = highest_gen_number; gen_idx >= stop_gen_idx; gen_idx--)
+    {
+        size_t total_surv = 0;
+        size_t max_surv_per_heap = 0;
+        size_t surv_per_heap[MAX_SUPPORTED_CPUS];
+        for (int i = 0; i < n_heaps; i++)
+        {
+            surv_per_heap[i] = 0;
+
+            gc_heap* hp = g_heaps[i];
+
+            generation* condemned_gen = hp->generation_of (gen_idx);
+            heap_segment* current_region = heap_segment_rw (generation_start_segment (condemned_gen));
+
+            while (current_region)
+            {
+                total_surv += heap_segment_survived (current_region);
+                surv_per_heap[i] += heap_segment_survived (current_region);
+                current_region = heap_segment_next (current_region);
+            }
+
+            if (max_surv_per_heap < surv_per_heap[i])
+            {
+                max_surv_per_heap = surv_per_heap[i];
+            }
+            dprintf (REGIONS_LOG, ("gen: %d heap %d surv: %Id", gen_idx, i, surv_per_heap[i]));
+        }
+        //  compute average promoted bytes per heap and per gen
+        size_t avg_surv_per_heap = total_surv / n_heaps;
+
+        if (avg_surv_per_heap != 0)
+        {
+            dprintf (REGIONS_LOG, ("gen: %d avg surv: %Id max_surv: %Id imbalance: %d", gen_idx, avg_surv_per_heap, max_surv_per_heap, max_surv_per_heap*100/avg_surv_per_heap));
+        }
+
+        // step 2:
+        int deficit_heaps[MAX_SUPPORTED_CPUS];
+        int num_deficit_heaps = 0;
+        int surplus_heaps[MAX_SUPPORTED_CPUS];
+        int num_surplus_heaps = 0;
+
+        //  go through all the heaps
+        for (int i = 0; i < n_heaps; i++)
+        {
+            //  heaps that have less than average promoted bytes go into deficit_heaps
+            if (surv_per_heap[i] < avg_surv_per_heap)
+            {
+                assert (num_deficit_heaps < MAX_SUPPORTED_CPUS-1);
+                deficit_heaps[num_deficit_heaps++] = i;
+            }
+
+            else
+            {
+                //  heaps that have average or more promoted bytes, and where we can remove the first region without
+                //  dipping below the average, go into surplus heaps
+                gc_heap* hp = g_heaps[i];
+                generation* condemned_gen = hp->generation_of (gen_idx);
+                heap_segment* first_region = heap_segment_rw (generation_start_segment (condemned_gen));
+                assert (surv_per_heap[i] >= heap_segment_survived (first_region));
+                if (surv_per_heap[i] - heap_segment_survived (first_region) >= avg_surv_per_heap)
+                {
+                    assert (num_surplus_heaps < MAX_SUPPORTED_CPUS-1);
+                    surplus_heaps[num_surplus_heaps++] = i;
+                }
+            }
+            //  all other heaps are not looked at further
+        }
+
+        // step 3:
+        //  as long as we have surplus heaps and deficit heaps,
+        //  move regions from surplus heaps to deficit heaps
+        while (num_surplus_heaps > 0 && num_deficit_heaps > 0)
+        {
+            // take one region from a surplus_heap and move it to a deficit heap
+            int surplus_heap_num = surplus_heaps[num_surplus_heaps-1];
+            gc_heap* surplus_heap = g_heaps[surplus_heap_num];
+            int deficit_heap_num = deficit_heaps[num_deficit_heaps-1];
+            gc_heap* deficit_heap = g_heaps[deficit_heap_num];
+
+            generation* surplus_condemned_gen = surplus_heap->generation_of (gen_idx);
+            heap_segment* first_region = heap_segment_rw (generation_start_segment (surplus_condemned_gen));
+            generation_start_segment (surplus_condemned_gen) = heap_segment_next (first_region);
+
+            generation* deficit_condemned_gen = deficit_heap->generation_of (gen_idx);
+            heap_segment_next (first_region) = generation_start_segment (deficit_condemned_gen);
+            generation_start_segment (deficit_condemned_gen) = first_region;
+
+            size_t region_index = get_basic_region_index_for_address (heap_segment_mem (first_region));
+
+            dprintf (REGIONS_LOG, ("gen: %d moving region %Id with %Id surviving bytes from heap %d (%Id bytes) to heap %d (%Id bytes)",
+                    gen_idx,
+                    region_index,
+                    heap_segment_survived (first_region),
+                    surplus_heap_num,
+                    surv_per_heap[surplus_heap_num],
+                    deficit_heap_num,
+                    surv_per_heap[deficit_heap_num]));
+
+            surv_per_heap[surplus_heap_num] -= heap_segment_survived (first_region);
+            surv_per_heap[deficit_heap_num] += heap_segment_survived (first_region);
+
+            // if the surplus heap will dip below average if we remove another region, remove it from surplus heaps
+            heap_segment* next_region = heap_segment_rw (generation_start_segment (surplus_condemned_gen));
+            if (surv_per_heap[surplus_heap_num] - heap_segment_survived (next_region) < avg_surv_per_heap)
+            {
+                dprintf (REGIONS_LOG, ("gen: %d heap %d ended up with %Id bytes", gen_idx, surplus_heap_num, surv_per_heap[surplus_heap_num]));
+                num_surplus_heaps--;
+            }
+
+            // if the deficit heap no longer has a deficit, remove it from deficit heaps
+            if (surv_per_heap[deficit_heap_num] >= avg_surv_per_heap)
+            {
+                dprintf (REGIONS_LOG, ("gen: %d heap %d ended up with %Id bytes", gen_idx, deficit_heap_num, surv_per_heap[deficit_heap_num]));
+                num_deficit_heaps--;
+            }
+        }
+#ifdef TRACE_GC
+        max_surv_per_heap = 0;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            if (max_surv_per_heap < surv_per_heap[i])
+            {
+                max_surv_per_heap = surv_per_heap[i];
+            }
+        }
+        if (avg_surv_per_heap != 0)
+        {
+            dprintf (REGIONS_LOG, ("after equalize: gen: %d avg surv: %Id max_surv: %Id imbalance: %d", gen_idx, avg_surv_per_heap, max_surv_per_heap, max_surv_per_heap*100/avg_surv_per_heap));
+        }
+#endif // TRACE_GC
+    }
+#endif //MULTIPLE_HEAPS
+}
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
@@ -25253,6 +25401,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
 #ifdef USE_REGIONS
         sync_promoted_bytes();
+        equalize_promoted_bytes();
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
