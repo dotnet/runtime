@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
   <PropertyGroup>
       <IncludeXHarnessCli>true</IncludeXHarnessCli>
-      <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21566.2</MicrosoftDotNetXHarnessCLIVersion>
+      <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21602.2</MicrosoftDotNetXHarnessCLIVersion>
       <XharnessPath>%HELIX_CORRELATION_PAYLOAD%\microsoft.dotnet.xharness.cli\$(MicrosoftDotNetXHarnessCLIVersion)\tools\net6.0\any\Microsoft.DotNet.XHarness.CLI.dll</XharnessPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
