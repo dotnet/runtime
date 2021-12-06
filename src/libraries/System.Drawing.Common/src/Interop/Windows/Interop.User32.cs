@@ -20,13 +20,13 @@ internal static partial class Interop
         [DllImport(Libraries.User32, SetLastError = true, ExactSpelling = true)]
         internal static extern bool GetIconInfo(HandleRef hIcon, ref ICONINFO info);
 
-        [GeneratedDllImport(Libraries.User32, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.User32, SetLastError = true)]
         public static partial int GetSystemMetrics(int nIndex);
 
         [DllImport(Libraries.User32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
         internal static extern bool DrawIconEx(HandleRef hDC, int x, int y, HandleRef hIcon, int width, int height, int iStepIfAniCursor, HandleRef hBrushFlickerFree, int diFlags);
 
-        [GeneratedDllImport(Libraries.User32, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.User32, SetLastError = true)]
         internal static unsafe partial IntPtr CreateIconFromResourceEx(byte* pbIconBits, uint cbIconBits, bool fIcon, int dwVersion, int csDesired, int cyDesired, int flags);
 
         [StructLayout(LayoutKind.Sequential)]

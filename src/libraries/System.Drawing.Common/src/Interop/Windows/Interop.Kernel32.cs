@@ -11,7 +11,7 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
         public static partial int GetSystemDefaultLCID();
 
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GlobalAlloc", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GlobalAlloc", SetLastError = true)]
         internal static partial IntPtr IntGlobalAlloc(int uFlags, UIntPtr dwBytes); // size should be 32/64bits compatible
 
         internal static IntPtr GlobalAlloc(int uFlags, uint dwBytes)
