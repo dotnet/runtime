@@ -238,9 +238,13 @@
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'armv6'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
-      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6+fp" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6zk" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mcpu=arm1176jzf-s" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfpu=vfp" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfloat-abi=hard" />
-      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6+fp" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6zk" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mcpu=arm1176jzf-s" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfpu=vfp" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfloat-abi=hard" />
     </ItemGroup>
 
