@@ -134,12 +134,26 @@ namespace DbConnectionStringBuilderTrimmingTests
 
     class TestSite : INestedSite
     {
+        private TestContainer _testContainer = new TestContainer();
+
         public string FullName => null;
         public IComponent Component => throw new NotImplementedException();
-        public IContainer Container => throw new NotImplementedException();
+        public IContainer Container => _testContainer;
         public bool DesignMode => throw new NotImplementedException();
         public string Name { get => "Test Component Name"; set => throw new NotImplementedException(); }
         public object GetService(Type serviceType) => null;
+    }
+
+    internal class TestContainer : IContainer
+    {
+        private List<IComponent> _components = new List<IComponent>();
+
+        public ComponentCollection Components => new ComponentCollection(_components.ToArray());
+
+        public void Add(IComponent? component) => _components.Add(component);
+        public void Add(IComponent? component, string? name) => _components.Add(component);
+        public void Dispose() => _components.Clear();
+        public void Remove(IComponent? component) => _components.Remove(component);
     }
 
     class TestAttribute : Attribute
