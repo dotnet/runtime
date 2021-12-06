@@ -64,6 +64,13 @@ const iffeConfig = {
             plugins,
         }
     ],
+    onwarn: (warning, handler) => {
+        if (warning.code === "EVAL" && warning.loc.file.indexOf("method-calls.ts") != -1) {
+            return;
+        }
+
+        handler(warning);
+    },
     plugins: [consts({ productVersion, configuration }), typescript()]
 };
 const typesConfig = {
