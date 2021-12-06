@@ -22,7 +22,7 @@ const originalConsole = {
     error: console.error
 };
 
-function proxyConsole(prefix, func, asJson) {
+function proxyConsoleMethod(prefix, func, asJson) {
     return function () {
         try {
             const args = [...arguments];
@@ -60,7 +60,7 @@ function proxyConsole(prefix, func, asJson) {
 const methods = ["debug", "trace", "warn", "info", "error"];
 for (let m of methods) {
     if (typeof (console[m]) !== "function") {
-        console[m] = proxyConsole(`console.${m}: `, console.log, false);
+        console[m] = proxyConsoleMethod(`console.${m}: `, console.log, false);
     }
 }
 
@@ -91,7 +91,7 @@ if (is_browser) {
 
     // redirect output early, so that when emscripten starts it's already redirected
     for (let m of ["log", ...methods])
-        console[m] = proxyConsole(`console.${m}`, send, true);
+        console[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 
 if (typeof globalThis.crypto === 'undefined') {
