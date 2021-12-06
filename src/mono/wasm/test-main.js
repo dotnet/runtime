@@ -22,37 +22,37 @@ const originalConsole = {
     error: console.error
 };
 
-function proxyMethod(prefix, func, asJson) {
+function proxyConsole(prefix, func, asJson) {
     return function () {
-        const args = [...arguments];
-        let payload = args[0];
-        if (payload === undefined) payload = 'undefined';
-        else if (payload === null) payload = 'null';
-        else if (typeof payload === 'function') payload = payload.toString();
-        else if (typeof payload !== 'string') {
-            try {
-                payload = JSON.stringify(payload);
-            } catch (e) {
-                payload = payload.toString();
+        try {
+            const args = [...arguments];
+            let payload = args[0];
+            if (payload === undefined) payload = 'undefined';
+            else if (payload === null) payload = 'null';
+            else if (typeof payload === 'function') payload = payload.toString();
+            else if (typeof payload !== 'string') {
+                try {
+                    payload = JSON.stringify(payload);
+                } catch (e) {
+                    payload = payload.toString();
+                }
             }
-        }
-        if (payload.indexOf("=== TEST EXECUTION SUMMARY ===") != -1) {
-            isXUnitDoneCheck = true;
-        }
 
-        if (payload.startsWith("STARTRESULTXML")) {
-            originalConsole.log('Sending RESULTXML')
-            isXmlDoneCheck = true;
-            func(payload);
-        }
-        else if (asJson) {
-            func(JSON.stringify({
-                method: prefix,
-                payload: payload,
-                arguments: args
-            }));
-        } else {
-            func([prefix + payload, ...args.slice(1)]);
+            if (payload.startsWith("STARTRESULTXML")) {
+                originalConsole.log('Sending RESULTXML')
+                func(payload);
+            }
+            else if (asJson) {
+                func(JSON.stringify({
+                    method: prefix,
+                    payload: payload,
+                    arguments: args
+                }));
+            } else {
+                func([prefix + payload, ...args.slice(1)]);
+            }
+        } catch (err) {
+            originalConsole.error(`proxyConsole failed: ${err}`)
         }
     };
 };
@@ -60,7 +60,7 @@ function proxyMethod(prefix, func, asJson) {
 const methods = ["debug", "trace", "warn", "info", "error"];
 for (let m of methods) {
     if (typeof (console[m]) !== "function") {
-        console[m] = proxyMethod(`console.${m}: `, console.log, false);
+        console[m] = proxyConsole(`console.${m}: `, console.log, false);
     }
 }
 
@@ -91,7 +91,7 @@ if (is_browser) {
 
     // redirect output early, so that when emscripten starts it's already redirected
     for (let m of ["log", ...methods])
-        console[m] = proxyMethod(`console.${m}`, send, true);
+        console[m] = proxyConsole(`console.${m}`, send, true);
 }
 
 if (typeof globalThis.crypto === 'undefined') {
