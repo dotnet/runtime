@@ -148,7 +148,8 @@ namespace System.Net.WebSockets.Compression
                 // exhausted the output buffer because after deflating we're
                 // always going to issue a flush and a flush with empty output
                 // is going to throw.
-                needsMoreBuffer = errorCode == ErrorCode.BufError || _stream.AvailIn > 0
+                needsMoreBuffer = errorCode == ErrorCode.BufError
+                    || _stream.AvailIn > 0
                     || written == output.Length;
             }
         }
