@@ -21,7 +21,6 @@ using Microsoft.CodeAnalysis.Debugging;
 using System.IO.Compression;
 using System.Reflection;
 using System.Diagnostics;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {

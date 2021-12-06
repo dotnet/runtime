@@ -874,7 +874,7 @@ namespace DebuggerTests
                 }, "testNoneProps#1");
            });
 
-         [Fact]
+        [Fact]
         public async Task EvaluateBrowsableFieldsNever() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 5, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
