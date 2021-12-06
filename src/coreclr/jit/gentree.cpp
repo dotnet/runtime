@@ -21970,7 +21970,8 @@ bool GenTree::IsInvariant() const
 
 //------------------------------------------------------------------------
 // IsNeverNegative: returns true if the given tree is known to be never
-//      negative such as: casts to unsiged, UDIV, UMOD, Array.Length
+//                  negative, i. e. the upper bit will always be zero.
+//                  Only valid for integral types.
 //
 // Arguments:
 //    comp - Compiler object, needed for IntegralRange::ForNode
@@ -21980,6 +21981,8 @@ bool GenTree::IsInvariant() const
 //
 bool GenTree::IsNeverNegative(Compiler* comp) const
 {
+    assert(varTypeIsIntegral(this));
+
     if (IsCnsIntOrI())
     {
         return AsIntCon()->IconValue() >= 0;
