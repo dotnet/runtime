@@ -1172,46 +1172,64 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void InsertRangeInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            var immutableArray = source.ToImmutableArray();
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.InsertRange(array.Length + 1, s_oneElement));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.InsertRange(-1, s_oneElement));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(immutableArray.Length + 1, s_oneElement));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(-1, s_oneElement));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.InsertRange(array.Length + 1, (IEnumerable<int>)s_oneElement));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.InsertRange(-1, (IEnumerable<int>)s_oneElement));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(immutableArray.Length + 1, (IEnumerable<int>)s_oneElement));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(-1, (IEnumerable<int>)s_oneElement));
+
+            int[] array = s_oneElement.ToArray();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(immutableArray.Length + 1, array));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(-1, array));
+            
+            var span = new ReadOnlySpan<int>(array);
+            AssertExtensions.Throws<ArgumentOutOfRangeException, int>("index", span, s => immutableArray.InsertRange(immutableArray.Length + 1, s));
+            AssertExtensions.Throws<ArgumentOutOfRangeException, int>("index", span, s => immutableArray.InsertRange(-1, s));
         }
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
         public void InsertRangeDefaultInvalid(IEnumerable<int> items)
         {
-            var array = items.ToImmutableArray();
+            var immutableArray = items.ToImmutableArray();
 
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(1, items));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(-1, items));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(0, items));
 
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(1, immutableArray));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(-1, immutableArray));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(0, immutableArray));
+
+            int[] array = items.ToArray();
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(1, array));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(-1, array));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.InsertRange(0, array));
 
-            TestExtensionsMethods.ValidateDefaultThisBehavior(() => array.InsertRange(1, s_emptyDefault));
-            TestExtensionsMethods.ValidateDefaultThisBehavior(() => array.InsertRange(-1, s_emptyDefault));
-            TestExtensionsMethods.ValidateDefaultThisBehavior(() => array.InsertRange(0, s_emptyDefault));
+            var span = new ReadOnlySpan<int>(array);
+            TestExtensionsMethods.ValidateDefaultThisBehavior(span, s => s_emptyDefault.InsertRange(1, s));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(span, s => s_emptyDefault.InsertRange(-1, s));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(span, s => s_emptyDefault.InsertRange(0, s));
 
-            if (array.Length > 0)
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => immutableArray.InsertRange(1, s_emptyDefault));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => immutableArray.InsertRange(-1, s_emptyDefault));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => immutableArray.InsertRange(0, s_emptyDefault));
+
+            if (immutableArray.Length > 0)
             {
-                Assert.Throws<InvalidOperationException>(() => array.InsertRange(1, (IEnumerable<int>)s_emptyDefault));
+                Assert.Throws<InvalidOperationException>(() => immutableArray.InsertRange(1, (IEnumerable<int>)s_emptyDefault));
             }
 
-            Assert.Throws<InvalidOperationException>(() => array.InsertRange(0, (IEnumerable<int>)s_emptyDefault));
+            Assert.Throws<InvalidOperationException>(() => immutableArray.InsertRange(0, (IEnumerable<int>)s_emptyDefault));
         }
 
         [Theory]
         [MemberData(nameof(InsertRangeData))]
         public void InsertRange(IEnumerable<int> source, int index, IEnumerable<int> items)
         {
-            var array = source.ToImmutableArray();
+            var immutableArray = source.ToImmutableArray();
 
             Assert.All(ChangeType(items), it =>
             {
@@ -1219,14 +1237,31 @@ namespace System.Collections.Immutable.Tests
                     .Concat(items)
                     .Concat(source.Skip(index));
 
-                Assert.Equal(expected, array.InsertRange(index, it)); // Enumerable overload
-                Assert.Equal(expected, array.InsertRange(index, it.ToImmutableArray())); // Struct overload
+                Assert.Equal(expected, immutableArray.InsertRange(index, it)); // Enumerable overload
+                Assert.Equal(expected, immutableArray.InsertRange(index, it.ToImmutableArray())); // ImmutableArray overload
 
-                if (index == array.Length)
+                int[] array;
+                if (items.GetType() == typeof(uint[]))
+                {
+                    array = it.Select(i => (int)i).ToArray();
+                }
+                else
+                {
+                    array = it.ToArray();
+                }
+                
+                Assert.Equal(expected, immutableArray.InsertRange(index, array)); // Array overload
+                Assert.Equal(expected, immutableArray.InsertRange(index, new ReadOnlySpan<int>(array))); // Span overload
+
+                if (index == immutableArray.Length)
                 {
                     // Insertion at the end is equivalent to adding.
-                    Assert.Equal(expected, array.InsertRange(index, it)); // Enumerable overload
-                    Assert.Equal(expected, array.InsertRange(index, it.ToImmutableArray())); // Struct overload
+                    expected = source.Concat(items);
+                    
+                    Assert.Equal(expected, immutableArray.InsertRange(index, it)); // Enumerable overload
+                    Assert.Equal(expected, immutableArray.InsertRange(index, it.ToImmutableArray())); // Struct overload
+                    Assert.Equal(expected, immutableArray.InsertRange(index, array)); // Array overload
+                    Assert.Equal(expected, immutableArray.InsertRange(index, new ReadOnlySpan<int>(array))); // Span overload
                 }
             });
         }
