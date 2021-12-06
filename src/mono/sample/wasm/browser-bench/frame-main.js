@@ -33,7 +33,6 @@ createDotnetRuntime(({ BINDING }) => {
             window.parent.resolveAppStartEvent("onDotnetReady");
             try {
                 await frameApp.init({ BINDING });
-                window.parent.resolveAppStartEvent("done");
             } catch (error) {
                 set_exit_code(1, error);
                 throw (error);
