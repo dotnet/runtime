@@ -5,6 +5,7 @@ using System;
 using System.Data.Common;
 using System.ComponentModel;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace DbConnectionStringBuilderTrimmingTests
 {
@@ -150,10 +151,10 @@ namespace DbConnectionStringBuilderTrimmingTests
 
         public ComponentCollection Components => new ComponentCollection(_components.ToArray());
 
-        public void Add(IComponent? component) => _components.Add(component);
-        public void Add(IComponent? component, string? name) => _components.Add(component);
+        public void Add(IComponent component) => _components.Add(component);
+        public void Add(IComponent component, string name) => _components.Add(component);
         public void Dispose() => _components.Clear();
-        public void Remove(IComponent? component) => _components.Remove(component);
+        public void Remove(IComponent component) => _components.Remove(component);
     }
 
     class TestAttribute : Attribute
