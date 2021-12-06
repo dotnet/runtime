@@ -4290,9 +4290,6 @@ protected:
 #ifdef USE_REGIONS
     PER_HEAP
     BOOL      background_overflow_p;
-
-    PER_HEAP
-    BOOL      background_eph_overflow_p;
 #else
     PER_HEAP
     uint8_t*  background_min_overflow_address;
