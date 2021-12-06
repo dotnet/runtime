@@ -506,6 +506,7 @@ namespace System.Drawing
         public void DrawPolygon(System.Drawing.Pen pen, System.Drawing.PointF[] points) { }
         public void DrawPolygon(System.Drawing.Pen pen, System.Drawing.Point[] points) { }
         public void DrawRectangle(System.Drawing.Pen pen, System.Drawing.Rectangle rect) { }
+        public void DrawRectangle(System.Drawing.Pen pen, System.Drawing.RectangleF rect) { }
         public void DrawRectangle(System.Drawing.Pen pen, int x, int y, int width, int height) { }
         public void DrawRectangle(System.Drawing.Pen pen, float x, float y, float width, float height) { }
         public void DrawRectangles(System.Drawing.Pen pen, System.Drawing.RectangleF[] rects) { }
