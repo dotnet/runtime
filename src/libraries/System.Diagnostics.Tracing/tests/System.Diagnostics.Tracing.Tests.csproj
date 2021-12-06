@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
   <!-- Windows only files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
