@@ -336,7 +336,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
 
 bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
 {
-    assert(binop->OperIs(GT_ADD) || binop->OperIs(GT_MUL) || binop->OperIs(GT_LSH));
+    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
