@@ -941,7 +941,8 @@
 		call void Generated42::ConstrainedCallsTest()
 		call void Generated42::StructConstrainedInterfaceCallsTest()
 		call void Generated42::CalliTest()
-		ldc.i4 101
+        ldnull
+		call instance int32 [mscorlib]System.String::get_Length()
 		ret
 	}
 }
