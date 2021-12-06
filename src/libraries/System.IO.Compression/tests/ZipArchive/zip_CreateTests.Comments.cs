@@ -16,12 +16,12 @@ namespace System.IO.Compression.Tests
         [InlineData("latin1", "LÄäÖöÕõÜü", "ascii", "ascii!!!")]
         [InlineData("utf-8", "UÄäÖöÕõÜü", "latin1", "LÄäÖöÕõÜü")]
         [InlineData("latin1", "LÄäÖöÕõÜü", "utf-8", "UÄäÖöÕõÜü")]
-        public static void Create_ZipArchiveEntry_DifferentEncodings_FullName_And_Comment(string en1, string s1, string en2, string s2)
+        public static void Create_ZipArchiveEntry_DifferentEncodings_FullName_And_Comment(string encodingName1, string text1, string encodingName2, string text2)
         {
-            Encoding e1 = Encoding.GetEncoding(en1);
-            Encoding e2 = Encoding.GetEncoding(en2);
-            string entryName = e1.GetString(e1.GetBytes(s1));
-            string comment = e2.GetString(e2.GetBytes(s2));
+            Encoding encoding1 = Encoding.GetEncoding(encodingName1);
+            Encoding encoding2 = Encoding.GetEncoding(encodingName2);
+            string entryName = encoding1.GetString(encoding1.GetBytes(text1));
+            string comment = encoding2.GetString(encoding2.GetBytes(text2));
 
             var stream = new MemoryStream();
             var testStream = new WrappedStream(stream, true, true, true, null);
