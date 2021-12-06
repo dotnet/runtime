@@ -537,11 +537,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         public unsafe AssemblyInfo(string url, byte[] assembly, byte[] pdb)
         {
             this.id = Interlocked.Increment(ref next_id);
-            var asmStream = new MemoryStream(assembly);
-            var peReader = new PEReader(asmStream);
-            var entries = peReader.ReadDebugDirectory();
+            using var asmStream = new MemoryStream(assembly);
+            using var peReader = new PEReader(asmStream);
+            ImmutableArray<DebugDirectoryEntry> entries = peReader.ReadDebugDirectory();
             var codeView = entries[0];
-            var codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
+            CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
             PdbAge = codeViewData.Age;
             PdbGuid = codeViewData.Guid;
             PdbName = codeViewData.Path;
@@ -554,6 +554,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var pdbStream = new MemoryStream(pdb);
                 try
                 {
+                    // MetadataReaderProvider.FromPortablePdbStream takes ownership of the stream
                     pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
                 }
                 catch (BadImageFormatException)
