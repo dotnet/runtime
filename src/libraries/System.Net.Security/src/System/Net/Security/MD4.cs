@@ -132,7 +132,7 @@ namespace System.Net.Security
 
         //--- private methods ---------------------------------------------------
 
-        private byte[] Padding(int nLength)
+        private static byte[] Padding(int nLength)
         {
             byte[] padding = new byte[nLength];
             padding[0] = 0x80;
@@ -140,48 +140,48 @@ namespace System.Net.Security
         }
 
         /* F, G and H are basic MD4 functions. */
-        private uint F(uint x, uint y, uint z)
+        private static uint F(uint x, uint y, uint z)
         {
             return (uint)(((x) & (y)) | ((~x) & (z)));
         }
 
-        private uint G(uint x, uint y, uint z)
+        private static uint G(uint x, uint y, uint z)
         {
             return (uint)(((x) & (y)) | ((x) & (z)) | ((y) & (z)));
         }
 
-        private uint H(uint x, uint y, uint z)
+        private static uint H(uint x, uint y, uint z)
         {
             return (uint)((x) ^ (y) ^ (z));
         }
 
         /* ROTATE_LEFT rotates x left n bits. */
-        private uint ROL(uint x, byte n)
+        private static uint ROL(uint x, byte n)
         {
             return (uint)(((x) << (n)) | ((x) >> (32 - (n))));
         }
 
         /* FF, GG and HH are transformations for rounds 1, 2 and 3 */
         /* Rotation is separate from addition to prevent recomputation */
-        private void FF(ref uint a, uint b, uint c, uint d, uint x, byte s)
+        private static void FF(ref uint a, uint b, uint c, uint d, uint x, byte s)
         {
             a += F(b, c, d) + x;
             a = ROL(a, s);
         }
 
-        private void GG(ref uint a, uint b, uint c, uint d, uint x, byte s)
+        private static void GG(ref uint a, uint b, uint c, uint d, uint x, byte s)
         {
             a += G(b, c, d) + x + 0x5a827999;
             a = ROL(a, s);
         }
 
-        private void HH(ref uint a, uint b, uint c, uint d, uint x, byte s)
+        private static void HH(ref uint a, uint b, uint c, uint d, uint x, byte s)
         {
             a += H(b, c, d) + x + 0x6ed9eba1;
             a = ROL(a, s);
         }
 
-        private void Encode(byte[] output, uint[] input)
+        private static void Encode(byte[] output, uint[] input)
         {
             for (int i = 0, j = 0; j < output.Length; i++, j += 4)
             {
@@ -192,7 +192,7 @@ namespace System.Net.Security
             }
         }
 
-        private void Decode(uint[] output, byte[] input, int index)
+        private static void Decode(uint[] output, byte[] input, int index)
         {
             for (int i = 0, j = index; i < output.Length; i++, j += 4)
             {
