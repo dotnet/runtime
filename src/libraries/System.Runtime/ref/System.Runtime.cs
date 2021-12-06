@@ -9192,6 +9192,12 @@ namespace System.Diagnostics.CodeAnalysis
         public string? Scope { get { throw null; } set { } }
         public string? Target { get { throw null; } set { } }
     }
+    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    public sealed class ConstantExpectedAttribute : Attribute
+    {
+        public object? Min { get { throw null; } set { } }
+        public object? Max { get { throw null; } set { } }
+    }
 }
 namespace System.Globalization
 {
