@@ -76,7 +76,7 @@ jobs:
       - MacCatalyst_arm64
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
+      nameSuffix: AllSubsets_Mono_AppSandbox
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true /p:EnableAppSandbox=true
       timeoutInMinutes: 180
       # extra steps, run tests
