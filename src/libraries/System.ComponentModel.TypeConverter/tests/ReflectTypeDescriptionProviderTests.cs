@@ -13,45 +13,51 @@ namespace System.ComponentModel.Tests
     public class ReflectTypeDescriptionProviderTests
     {
         [Fact]
-        public void GetAttributes_Skips_ComVisibleAttribute()
+        public void GetAttributes_Skips_ComVisibleAttribute_And_GuidAttribute_And_InterfaceTypeAttribute()
         {
-            Assembly srcAsssemby = Assembly.Load(Assembly.GetExecutingAssembly().GetReferencedAssemblies().FirstOrDefault(a => a.FullName.StartsWith("System.ComponentModel.TypeConverter")));
-            Type reflectTypeDescriptionProviderType = srcAsssemby.GetType("System.ComponentModel.ReflectTypeDescriptionProvider");
-            object provider = reflectTypeDescriptionProviderType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, new Type[0]).Invoke(new object[0]);
-            AttributeCollection attributeCollection = reflectTypeDescriptionProviderType.GetMethod("GetAttributes", BindingFlags.Instance | BindingFlags.NonPublic)
+            object provider = CreateReflectTypeDescriptionProviderInstance();
+            AttributeCollection attributeCollection = provider.GetType().GetMethod("GetAttributes", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(provider, new[] { typeof(TestClass1) }) as AttributeCollection;
             Assert.NotEmpty(attributeCollection);
-            Assert.Equal(3, attributeCollection.Count);
+            IEnumerable<Attribute> attributes = attributeCollection.Cast<Attribute>();
+            Attribute attribute =  Assert.Single(attributes);
+            Assert.IsType<DescriptionAttribute>(attribute);
             Assert.DoesNotContain(attributeCollection.Cast<Attribute>(), attr => attr.GetType() == typeof(ComVisibleAttribute));
+            Assert.DoesNotContain(attributeCollection.Cast<Attribute>(), attr => attr.GetType() == typeof(GuidAttribute));
+            Assert.DoesNotContain(attributeCollection.Cast<Attribute>(), attr => attr.GetType() == typeof(InterfaceTypeAttribute));
         }
 
         [Fact]
-        public void GetExtenderProviders_ReturnEmpty_WhenSiteServiceNull()
+        public void GetExtenderProviders_ReturnResultFromContainerComponents_WhenComponentSiteServiceNull()
         {
-            Assembly srcAsssemby = Assembly.Load(Assembly.GetExecutingAssembly().GetReferencedAssemblies().FirstOrDefault(a => a.FullName.StartsWith("System.ComponentModel.TypeConverter")));
-            Type reflectTypeDescriptionProviderType = srcAsssemby.GetType("System.ComponentModel.ReflectTypeDescriptionProvider");
-            object provider = reflectTypeDescriptionProviderType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, new Type[0]).Invoke(new object[0]);
+            object provider = CreateReflectTypeDescriptionProviderInstance();
             using TestComponent testComponent = new TestComponent();
-            testComponent.Site = new TestSite1();
+            testComponent.Site = new TestSiteWithoutService();
             testComponent.Disposed += (object obj, EventArgs args) => { };
-            IExtenderProvider[] extenderProviders = reflectTypeDescriptionProviderType.GetMethod("GetExtenderProviders", BindingFlags.Instance | BindingFlags.NonPublic)
+            IExtenderProvider[] extenderProviders = provider.GetType().GetMethod("GetExtenderProviders", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(provider, new[] { testComponent }) as IExtenderProvider[];
-            Assert.Empty(extenderProviders);
+            IExtenderProvider result = Assert.Single(extenderProviders);
+            Assert.IsType<ComponentExtendedProvider>(result);
         }
 
         [Fact]
-        public void GetExtenderProviders_ReturnResult_WhenSiteServiceNotNull()
+        public void GetExtenderProviders_ReturnResultFromComponentSiteService_WhenComponentSiteServiceNotNull()
         {
-            Assembly srcAsssemby = Assembly.Load(Assembly.GetExecutingAssembly().GetReferencedAssemblies().FirstOrDefault(a => a.FullName.StartsWith("System.ComponentModel.TypeConverter")));
-            Type reflectTypeDescriptionProviderType = srcAsssemby.GetType("System.ComponentModel.ReflectTypeDescriptionProvider");
-            object provider = reflectTypeDescriptionProviderType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, new Type[0]).Invoke(new object[0]);
+            object provider = CreateReflectTypeDescriptionProviderInstance();
             using TestComponent testComponent = new TestComponent();
-            testComponent.Site = new TestSite2();
+            testComponent.Site = new TestSiteWithService();
             testComponent.Disposed += (object obj, EventArgs args) => { };
-            IExtenderProvider[] extenderProviders = reflectTypeDescriptionProviderType.GetMethod("GetExtenderProviders", BindingFlags.Instance | BindingFlags.NonPublic)
+            IExtenderProvider[] extenderProviders = provider.GetType().GetMethod("GetExtenderProviders", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(provider, new[] { testComponent }) as IExtenderProvider[];
             IExtenderProvider result = Assert.Single(extenderProviders);
             Assert.IsType<TestExtenderProvider>(result);
+        }
+
+        private static object CreateReflectTypeDescriptionProviderInstance()
+        {
+            Assembly srcAsssemby = Assembly.Load(Assembly.GetExecutingAssembly().GetReferencedAssemblies().FirstOrDefault(a => a.FullName.StartsWith("System.ComponentModel.TypeConverter")));
+            Type reflectTypeDescriptionProviderType = srcAsssemby.GetType("System.ComponentModel.ReflectTypeDescriptionProvider");
+            return reflectTypeDescriptionProviderType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, new Type[0]).Invoke(new object[0]);
         }
 
         [ComVisible(true), Guid("4a223ebb-fe95-4649-94e5-2e5cc8f5f4e9"), InterfaceType(1)]
@@ -81,7 +87,24 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        internal class TestSite1 : ISite
+        internal class ComponentExtendedProvider : IComponent, IExtenderProvider
+        {
+            public ISite? Site { get; set; }
+
+            public event EventHandler? Disposed;
+
+            public bool CanExtend(object extendee) => true;
+
+            public void Dispose()
+            {
+                if (Disposed != null)
+                {
+                    Disposed(this, new EventArgs());
+                }
+            }
+        }
+
+        internal class TestSiteWithoutService : ISite
         {
             private TestComponent _testComponent = new TestComponent();
             private TestContainer _testContainer = new TestContainer();
@@ -97,7 +120,7 @@ namespace System.ComponentModel.Tests
             public object? GetService(Type serviceType) => null;
         }
 
-        internal class TestSite2 : ISite
+        internal class TestSiteWithService : ISite
         {
             private TestComponent _testComponent = new TestComponent();
             private TestContainer _testContainer = new TestContainer();
@@ -116,7 +139,7 @@ namespace System.ComponentModel.Tests
 
         internal class TestContainer : IContainer
         {
-            private List<IComponent> _components = new List<IComponent>();
+            private List<IComponent> _components = new List<IComponent> { new ComponentExtendedProvider() };
 
             public ComponentCollection Components => new ComponentCollection(_components.ToArray());
 

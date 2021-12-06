@@ -79,6 +79,8 @@ namespace System.ComponentModel
         {
             return new Type[]
             {
+                typeof(System.Runtime.InteropServices.GuidAttribute),
+                typeof(System.Runtime.InteropServices.InterfaceTypeAttribute),
                 typeof(System.Runtime.InteropServices.ComVisibleAttribute),
             };
         }
@@ -644,6 +646,14 @@ namespace System.ComponentModel
                 if (extenderList != null)
                 {
                     return GetExtenders(extenderList.GetExtenderProviders(), instance, cache);
+                }
+                else
+                {
+                    IContainer? cont = component.Site.Container;
+                    if (cont != null)
+                    {
+                        return GetExtenders(cont.Components, instance, cache);
+                    }
                 }
             }
             return Array.Empty<IExtenderProvider>();
