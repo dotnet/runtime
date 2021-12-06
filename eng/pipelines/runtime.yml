@@ -1078,7 +1078,10 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: llvmaot
       condition: >-
-        eq(variables['isFullMatrix'], true)
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
