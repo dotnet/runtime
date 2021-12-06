@@ -3192,7 +3192,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         /*=================================ParseSign==================================
         **Action: Parse a positive or a negative sign.
-        **Returns:      true if postive sign. false if negative sign.
+        **Returns:      true if positive sign. false if negative sign.
         **Arguments:    str: a __DTString. The parsing will start from the
         **              next character after str.Index.
         **Exceptions:   FormatException if end of string is encountered or a sign
