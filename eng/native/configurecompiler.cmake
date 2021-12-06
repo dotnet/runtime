@@ -512,8 +512,6 @@ if(CLR_CMAKE_HOST_UNIX_ARMV6)
    add_definitions(-DCLR_ARM_FPU_CAPABILITY=0x0)
    add_compile_options(-march=armv6+fp)
    add_compile_options(-mfloat-abi=hard)
-   add_compile_options(-Wno-atomic-alignment)
-   add_compile_options(-Wno-error=atomic-alignment)
 endif(CLR_CMAKE_HOST_UNIX_ARMV6)
 
 if(CLR_CMAKE_HOST_UNIX_X86)
