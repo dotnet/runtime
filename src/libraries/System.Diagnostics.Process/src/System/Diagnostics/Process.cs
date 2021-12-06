@@ -271,10 +271,10 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
-            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("freebsd")]
             [SupportedOSPlatform("macos")]
             [SupportedOSPlatform("maccatalyst")]
-            [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(null, value);
@@ -295,10 +295,10 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
-            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("freebsd")]
             [SupportedOSPlatform("macos")]
             [SupportedOSPlatform("maccatalyst")]
-            [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(value, null);
