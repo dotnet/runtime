@@ -401,7 +401,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         return await Step(id, StepKind.Over, token);
                     }
-
+                case "Runtime.evaluate":
+                    {
+                        if (context.CallStack != null)
+                        {
+                            Frame scope = context.CallStack.First<Frame>();
+                            return await OnEvaluateOnCallFrame(id,
+                                    scope.Id,
+                                    args?["expression"]?.Value<string>(), token);
+                        }
+                        break;
+                    }
                 case "Debugger.evaluateOnCallFrame":
                     {
                         if (!DotnetObjectId.TryParse(args?["callFrameId"], out DotnetObjectId objectId))
@@ -735,7 +745,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        private async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, IEnumerable<JObject> orig_callframes, CancellationToken token)
+        private async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, IEnumerable<JObject> orig_callframes, EventKind event_kind, CancellationToken token)
         {
             var callFrames = new List<object>();
             var frames = new List<Frame>();
@@ -753,6 +763,26 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var flags = retDebuggerCmdReader.ReadByte();
                 DebugStore store = await LoadStore(sessionId, token);
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
+
+                if (context.IsSkippingHiddenMethod == true)
+                {
+                    context.IsSkippingHiddenMethod = false;
+                    if (event_kind != EventKind.UserBreak)
+                    {
+                        await context.SdbAgent.Step(context.ThreadId, StepKind.Over, token);
+                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        return true;
+                    }
+                }
+
+                if (j == 0 && method?.Info.IsHiddenFromDebugger == true)
+                {
+                    if (event_kind == EventKind.Step)
+                        context.IsSkippingHiddenMethod = true;
+                    await context.SdbAgent.Step(context.ThreadId, StepKind.Out, token);
+                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                    return true;
+                }
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
 
@@ -881,7 +911,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             objectId = $"dotnet:object:{object_id}"
                         });
 
-                        var ret = await SendCallStack(sessionId, context, reason, thread_id, null, data, args?["callFrames"]?.Values<JObject>(), token);
+                        var ret = await SendCallStack(sessionId, context, reason, thread_id, null, data, args?["callFrames"]?.Values<JObject>(), event_kind, token);
                         return ret;
                     }
                     case EventKind.UserBreak:
@@ -893,7 +923,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int methodId = 0;
                         if (event_kind != EventKind.UserBreak)
                             methodId = retDebuggerCmdReader.ReadInt32();
-                        var ret = await SendCallStack(sessionId, context, reason, thread_id, bp, null, args?["callFrames"]?.Values<JObject>(), token);
+                        var ret = await SendCallStack(sessionId, context, reason, thread_id, bp, null, args?["callFrames"]?.Values<JObject>(), event_kind, token);
                         return ret;
                     }
                 }

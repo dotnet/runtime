@@ -2004,7 +2004,8 @@ namespace System.Net.Http
                 if (freeIndex < list.Count)
                 {
                     // We know the connection at freeIndex is unusable, so dispose of it.
-                    toDispose ??= new List<HttpConnectionBase> { list[freeIndex] };
+                    toDispose ??= new List<HttpConnectionBase>();
+                    toDispose.Add(list[freeIndex]);
 
                     // Find the first item after the one to be removed that should be kept.
                     int current = freeIndex + 1;

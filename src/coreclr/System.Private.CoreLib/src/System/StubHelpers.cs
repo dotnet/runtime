@@ -578,7 +578,7 @@ namespace System.StubHelpers
     }  // class DateMarshaler
 
 #if FEATURE_COMINTEROP
-    internal static class InterfaceMarshaler
+    internal static partial class InterfaceMarshaler
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr ConvertToNative(object objSrc, IntPtr itfMT, IntPtr classMT, int flags);
@@ -586,8 +586,8 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
-        internal static extern void ClearNative(IntPtr pUnk);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
+        internal static partial void ClearNative(IntPtr pUnk);
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP
 

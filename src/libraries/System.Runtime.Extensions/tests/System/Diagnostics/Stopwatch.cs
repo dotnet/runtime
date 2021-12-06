@@ -15,7 +15,15 @@ namespace System.Diagnostics.Tests
         public static void GetTimestamp()
         {
             long ts1 = Stopwatch.GetTimestamp();
-            Sleep();
+            if (PlatformDetection.IsBrowser)
+            {
+                // workaround for issue: https://github.com/dotnet/runtime/issues/62021
+                Sleep(5);
+            }
+            else
+            {
+                Sleep();
+            }
             long ts2 = Stopwatch.GetTimestamp();
             Assert.NotEqual(ts1, ts2);
         }

@@ -95,7 +95,7 @@ namespace System.Configuration
         {
             return string.Format(CultureInfo.InvariantCulture, EncryptedSectionTemplate,
                 sectionName, // The section to encrypt
-                BaseConfigurationRecord.ProtectionProviderAttibute, // protectionProvider keyword
+                BaseConfigurationRecord.ProtectionProviderAttribute, // protectionProvider keyword
                 providerName, // The provider name
                 encryptedXml // the encrypted xml
                 );

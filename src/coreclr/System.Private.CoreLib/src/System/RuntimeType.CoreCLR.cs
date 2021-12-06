@@ -4001,13 +4001,13 @@ namespace System
     }
 
     #region Library
-    internal readonly unsafe struct MdUtf8String
+    internal readonly unsafe partial struct MdUtf8String
     {
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
-        private static extern bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
-        private static extern uint HashCaseInsensitive(void* sz, int cSz);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
+        private static partial uint HashCaseInsensitive(void* sz, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;

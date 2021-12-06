@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/61945", TestPlatforms.Browser)]
     public static class SharedArrayBufferTests
     {
         private static Function _objectPrototype;

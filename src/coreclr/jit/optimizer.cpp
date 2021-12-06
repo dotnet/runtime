@@ -7539,6 +7539,15 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                         break;
 
+#ifdef FEATURE_HW_INTRINSICS
+                    case GT_HWINTRINSIC:
+                        if (tree->AsHWIntrinsic()->OperIsMemoryStore())
+                        {
+                            memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
+                        }
+                        break;
+#endif // FEATURE_HW_INTRINSICS
+
                     case GT_LOCKADD:
                     case GT_XORR:
                     case GT_XAND:
@@ -7547,7 +7556,6 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     case GT_CMPXCHG:
                     case GT_MEMORYBARRIER:
                     {
-                        assert(!tree->OperIs(GT_LOCKADD) && "LOCKADD should not appear before lowering");
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                     }
                     break;
@@ -7587,6 +7595,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
                     default:
                         // All other gtOper node kinds, leave 'memoryHavoc' unchanged (i.e. false)
+                        assert(!tree->OperRequiresAsgFlag());
                         break;
                 }
             }

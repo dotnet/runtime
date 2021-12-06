@@ -3105,7 +3105,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0)
                     {
-                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation
                         // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
@@ -3119,7 +3119,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
                     {
-                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation
                         // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
