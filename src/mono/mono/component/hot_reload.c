@@ -1317,6 +1317,17 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 #endif
 			/* handled above */
 			break;
+#ifdef ALLOW_FIELD_ADD
+		case MONO_TABLE_FIELD:
+			if (func_code == ENC_FUNC_DEFAULT)
+				continue; /* ok, allowed */
+#else
+			/* adding or modifying a field */
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding or modifying fields.", i, log_token);
+			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding or modifying fields. token=0x%08x", log_token);
+			unsupported_edits = TRUE;
+			break;
+#endif
 		case MONO_TABLE_PROPERTY: {
 			/* modifying a property, ok */
 			if (token_index <= table_info_get_rows (&image_base->tables [token_table]))
@@ -1437,6 +1448,22 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				int next_table = mono_metadata_token_table (next_token);
 				int next_index = mono_metadata_token_index (next_token);
 				g_assert (next_table == MONO_TABLE_METHOD);
+				g_assert (next_index > table_info_get_rows (&image_base->tables [next_table]));
+				i++; /* skip the next record */
+				continue;
+			}
+#endif
+#ifdef ALLOW_FIELD_ADD
+			if (!new_class && func_code == ENC_FUNC_ADD_FIELD) {
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x AddField to klass 0x%08x, skipping next EnClog record", i, log_token, token_index);
+				g_assert (i + 1 < rows);
+				guint32 next_cols [MONO_ENCLOG_SIZE];
+				mono_metadata_decode_row (table_enclog, i + 1, next_cols, MONO_ENCLOG_SIZE);
+				g_assert (next_cols [MONO_ENCLOG_FUNC_CODE] == ENC_FUNC_DEFAULT);
+				int next_token = next_cols [MONO_ENCLOG_TOKEN];
+				int next_table = mono_metadata_token_table (next_token);
+				int next_index = mono_metadata_token_index (next_token);
+				g_assert (next_table == MONO_TABLE_FIELD);
 				g_assert (next_index > table_info_get_rows (&image_base->tables [next_table]));
 				i++; /* skip the next record */
 				continue;
