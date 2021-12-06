@@ -66,10 +66,11 @@ is_scalar_vtype (MonoType *type)
 		nfields ++;
 		if (nfields > 1)
 			return FALSE;
-		if (MONO_TYPE_ISSTRUCT (field->type)) {
-			if (!is_scalar_vtype (field->type))
+		MonoType *t = mini_get_underlying_type (field->type);
+		if (MONO_TYPE_ISSTRUCT (t)) {
+			if (!is_scalar_vtype (t))
 				return FALSE;
-		} else if (!((MONO_TYPE_IS_PRIMITIVE (field->type) || MONO_TYPE_IS_REFERENCE (field->type)))) {
+		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t)))) {
 			return FALSE;
 		}
 	}
