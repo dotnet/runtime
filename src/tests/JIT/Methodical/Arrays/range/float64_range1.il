@@ -32,7 +32,7 @@
 .module 'test.exe'
 .namespace JitTest
 {
-  .class public auto ansi Test
+  .class private auto ansi Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static int32 
@@ -96,7 +96,7 @@
       ret
     } // end of method 'Test::try_index'
 
-    .method public hidebysig static int32
+    .method private hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
