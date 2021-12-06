@@ -3343,7 +3343,7 @@ void EEJitManager::Unload(LoaderAllocator *pAllocator)
         }
     }
 
-    ExecutableAllocator::ResetCodeAllocHint();
+    ExecutableAllocator::ResetLazyPreferredRangeHint();
 }
 
 EEJitManager::DomainCodeHeapList::DomainCodeHeapList()

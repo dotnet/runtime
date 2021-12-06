@@ -135,7 +135,7 @@ namespace System.Xml.Serialization
             if (qname == null || qname.IsEmpty)
                 return null;
 
-            string key = item.GetType().Name + ":" + qname.ToString();
+            string key = $"{item.GetType().Name}:{qname}";
             ArrayList? list = (ArrayList?)ObjectCache[key];
             if (list == null)
             {
@@ -156,7 +156,7 @@ namespace System.Xml.Serialization
                 else
                 {
                     Warnings.Add(SR.Format(SR.XmlMismatchSchemaObjects, item.GetType().Name, qname.Name, qname.Namespace));
-                    Warnings.Add("DEBUG:Cached item key:\r\n" + (string?)looks[cachedItem] + "\r\nnew item key:\r\n" + (string?)looks[item]);
+                    Warnings.Add($"DEBUG:Cached item key:\r\n{(string?)looks[cachedItem]}\r\nnew item key:\r\n{(string?)looks[item]}");
                 }
             }
             // no match found we need to insert the new type in the cache

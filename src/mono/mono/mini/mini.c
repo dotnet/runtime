@@ -3403,7 +3403,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		for (i = 0; verbose_method_names [i] != NULL; i++){
 			const char *name = verbose_method_names [i];
 
-			if ((strchr (name, '.') > name) || strchr (name, ':')) {
+			if ((strchr (name, '.') > name) || strchr (name, ':') || strchr (name, '*')) {
 				MonoMethodDesc *desc;
 				
 				desc = mono_method_desc_new (name, TRUE);

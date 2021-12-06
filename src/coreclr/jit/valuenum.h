@@ -57,17 +57,9 @@
 //    taken from another map at a given index. As such, it must have a type that corresponds
 //    to the "index/selector", in practical terms - the field's type.
 //
-// Note that the above constraints on the types for maps are not followed currently to the
-// letter by the implementation - "opaque" maps can and do have TYP_REF assigned to them
-// in various situations such as when initializing the "primary" VNs for loop entries.
-//
-// Note as well that the meaning of "the type" for a map is overloaded, because maps are used
-// both to represent memory "of all fields B of all objects that have this field in the heap"
-// and "the field B of this particular object on the heap". Only the latter maps can be used
-// as VNs for actual nodes, while the former are used for "the first field" maps and "array
-// equivalence type" maps, and, of course, for the heap VNs, which always have the placeholder
-// types of TYP_REF or TYP_UNKNOWN. In principle, placeholder types could be given to all the
-// maps of the former type.
+// Note that we give "placeholder" types (TYP_UNDEF and TYP_UNKNOWN as TYP_MEM and TYP_HEAP)
+// to maps that do not represent values found in IR. This is just to avoid confusion and
+// facilitate more precise validating checks.
 //
 // Let's review the following snippet to demonstrate how the MapSelect/MapStore machinery works
 // together to deliver the results that it does. Say we have this snippet of (C#) code:
@@ -195,6 +187,12 @@ struct VNFuncApp
 // We use a unique prefix character when printing value numbers in dumps:  i.e.  $1c0
 // This define is used with string concatenation to put this in printf format strings
 #define FMT_VN "$%x"
+
+// We will use this placeholder type for memory maps that do not represent IR values ("field maps", etc).
+static const var_types TYP_MEM = TYP_UNDEF;
+
+// We will use this placeholder type for memory maps representing "the heap" (GcHeap/ByrefExposed).
+static const var_types TYP_HEAP = TYP_UNKNOWN;
 
 class ValueNumStore
 {
@@ -420,13 +418,6 @@ public:
         return ValueNum(SRC_Null);
     }
 
-    // The zero map is the map that returns a zero "for the appropriate type" when indexed at any index.
-    static ValueNum VNForZeroMap()
-    {
-        // We reserve Chunk 0 for "special" VNs.  Let SRC_ZeroMap (== 1) be the zero map.
-        return ValueNum(SRC_ZeroMap);
-    }
-
     // The ROH map is the map for the "read-only heap".  We assume that this is never mutated, and always
     // has the same value number.
     static ValueNum VNForROH()
@@ -435,8 +426,8 @@ public:
         return ValueNum(SRC_ReadOnlyHeap);
     }
 
-    // A special value number for "void" -- sometimes a type-void thing is an argument to a
-    // GT_LIST, and we want the args to be non-NoVN.
+    // A special value number for "void" -- sometimes a type-void thing is an argument,
+    // and we want the args to be non-NoVN.
     static ValueNum VNForVoid()
     {
         // We reserve Chunk 0 for "special" VNs.  Let SRC_Void (== 4) be the value for "void".
@@ -463,9 +454,17 @@ public:
     // It has an unreached() for a "typ" that has no zero value, such as TYP_VOID.
     ValueNum VNZeroForType(var_types typ);
 
+    // Returns the value number for a zero-initialized struct.
+    ValueNum VNForZeroObj(CORINFO_CLASS_HANDLE structHnd);
+
     // Returns the value number for one of the given "typ".
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
     ValueNum VNOneForType(var_types typ);
+
+#ifdef FEATURE_SIMD
+    // A helper function for constructing VNF_SimdType VNs.
+    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
+#endif // FEATURE_SIMD
 
     // Create or return the existimg value number representing a singleton exception set
     // for the the exception value "x".
@@ -581,17 +580,16 @@ public:
     ValueNum VNForFunc(
         var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx, ValueNum op3VNwx, ValueNum op4VNwx);
 
-    // This requires a "ValueNumKind" because it will attempt, given "select(phi(m1, ..., mk), ind)", to evaluate
-    // "select(m1, ind)", ..., "select(mk, ind)" to see if they agree.  It needs to know which kind of value number
-    // (liberal/conservative) to read from the SSA def referenced in the phi argument.
-    ValueNum VNForMapSelect(ValueNumKind vnk, var_types typ, ValueNum op1VN, ValueNum op2VN);
+    ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
     // A method that does the work for VNForMapSelect and may call itself recursively.
     ValueNum VNForMapSelectWork(
-        ValueNumKind vnk, var_types typ, ValueNum op1VN, ValueNum op2VN, int* pBudget, bool* pUsedRecursiveVN);
+        ValueNumKind vnk, var_types type, ValueNum map, ValueNum index, int* pBudget, bool* pUsedRecursiveVN);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
-    ValueNum VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN);
+    ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
+
+    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, size_t* pStructSize = nullptr);
 
     // These functions parallel the ones above, except that they take liberal/conservative VN pairs
     // as arguments, and return such a pair (the pair of the function applied to the liberal args, and
@@ -633,40 +631,29 @@ public:
 // This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions.
 #define FEATURE_VN_TRACE_APPLY_SELECTORS 1
 
-    // Return the value number corresponding to constructing "MapSelect(map, f0)", where "f0" is the
-    // (value number of) the first field in "fieldSeq".  (The type of this application will be the type of "f0".)
-    // If there are no remaining fields in "fieldSeq", return that value number; otherwise, return VNApplySelectors
-    // applied to that value number and the remainder of "fieldSeq". When the 'fieldSeq' specifies a TYP_STRUCT
-    // then the size of the struct is returned by 'wbFinalStructSize' (when it is non-null)
     ValueNum VNApplySelectors(ValueNumKind  vnk,
                               ValueNum      map,
                               FieldSeqNode* fieldSeq,
                               size_t*       wbFinalStructSize = nullptr);
 
-    // Used after VNApplySelectors has determined that "selectedVN" is contained in a Map using VNForMapSelect
-    // It determines whether the 'selectedVN' is of an appropriate type to be read using and indirection of 'indType'
-    // If it is appropriate type then 'selectedVN' is returned, otherwise it may insert a cast to indType
-    // or return a unique value number for an incompatible indType.
-    ValueNum VNApplySelectorsTypeCheck(ValueNum selectedVN, var_types indType, size_t structSize);
+    ValueNum VNApplySelectorsTypeCheck(ValueNum value, var_types indType, size_t valueStructSize);
 
-    // Assumes that "map" represents a map that is addressable by the fields in "fieldSeq", to get
-    // to a value of the type of "rhs".  Returns an expression for the RHS of an assignment, in the given "block",
-    // to a location containing value "map" that will change the field addressed by "fieldSeq" to "rhs", leaving
-    // all other indices in "map" the same.
     ValueNum VNApplySelectorsAssign(
-        ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum rhs, var_types indType, BasicBlock* block);
+        ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum value, var_types dstIndType);
 
-    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum srcElem, var_types dstIndType, BasicBlock* block);
+    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum value, var_types dstIndType);
 
     ValueNumPair VNPairApplySelectors(ValueNumPair map, FieldSeqNode* fieldSeq, var_types indType);
 
-    ValueNumPair VNPairApplySelectorsAssign(
-        ValueNumPair map, FieldSeqNode* fieldSeq, ValueNumPair rhs, var_types indType, BasicBlock* block)
+    ValueNumPair VNPairApplySelectorsAssign(ValueNumPair  map,
+                                            FieldSeqNode* fieldSeq,
+                                            ValueNumPair  value,
+                                            var_types     dstIndType)
     {
-        return ValueNumPair(VNApplySelectorsAssign(VNK_Liberal, map.GetLiberal(), fieldSeq, rhs.GetLiberal(), indType,
-                                                   block),
+        return ValueNumPair(VNApplySelectorsAssign(VNK_Liberal, map.GetLiberal(), fieldSeq, value.GetLiberal(),
+                                                   dstIndType),
                             VNApplySelectorsAssign(VNK_Conservative, map.GetConservative(), fieldSeq,
-                                                   rhs.GetConservative(), indType, block));
+                                                   value.GetConservative(), dstIndType));
     }
 
     // Compute the ValueNumber for a cast
@@ -842,16 +829,24 @@ public:
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a relop
+    bool IsVNRelop(ValueNum vn);
+
     // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
     //
     // If vn is not a relop, return NoVN.
     //
     enum class VN_RELATION_KIND
     {
+        VRK_Same,       // (x >  y)
         VRK_Swap,       // (y >  x)
         VRK_Reverse,    // (x <= y)
         VRK_SwapReverse // (y >= x)
     };
+
+#ifdef DEBUG
+    static const char* VNRelationString(VN_RELATION_KIND vrk);
+#endif
 
     ValueNum GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk);
 
@@ -1032,14 +1027,19 @@ public:
     // Prints the cast's representation mirroring GT_CAST's dump format.
     void vnDumpCast(Compiler* comp, ValueNum castVN);
 
+    // Requires "zeroObj" to be a VNF_ZeroObj. Prints its representation.
+    void vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj);
+
     // Returns the string name of "vnf".
     static const char* VNFuncName(VNFunc vnf);
     // Used in the implementation of the above.
     static const char* VNFuncNameArr[];
 
+    // Returns a type name used for "maps", i. e. displays TYP_UNDEF and TYP_UNKNOWN as TYP_MEM and TYP_HEAP.
+    static const char* VNMapTypeName(var_types type);
+
     // Returns the string name of "vn" when it is a reserved value number, nullptr otherwise
     static const char* reservedName(ValueNum vn);
-
 #endif // DEBUG
 
     // Returns true if "vn" is a reserved value number
@@ -1460,7 +1460,6 @@ private:
     enum SpecialRefConsts
     {
         SRC_Null,
-        SRC_ZeroMap,
         SRC_ReadOnlyHeap,
         SRC_Void,
         SRC_EmptyExcSet,

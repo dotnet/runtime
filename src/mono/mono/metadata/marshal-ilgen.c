@@ -5398,7 +5398,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_CONV_OUT: {
 		/* The slot for the boolean is the next temporary created after conv_arg, see the CONV_IN code */
 		int dar_release_slot = conv_arg + 1;
-		int label_next;
+		int label_next = 0;
 
 		if (!sh_dangerous_release)
 			init_safe_handle ();
@@ -5455,7 +5455,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldloc (mb, conv_arg);
 				mono_mb_emit_byte (mb, CEE_STIND_I);
 
-				if (is_in (t)) {
+				if (is_in (t) && label_next) {
 					mono_mb_patch_branch (mb, label_next);
 				}
 			}

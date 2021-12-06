@@ -439,4 +439,4 @@ FAIL:
 	ret
 }
 }
-.assembly bgt_r8.exe{}
+.assembly bgt_r8{}

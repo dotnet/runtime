@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include "common.h"
 
 #include "appdomain.hpp"
@@ -1567,7 +1566,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     if (!VolatileLoad(&fInited))
     {
         // Make sure all types are loaded so that we can use faster GetExistingClass()
-        for (unsigned i = 0; i < NumItems(reflectionInvocationTypes); i++)
+        for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
             CoreLibBinder::GetClass(reflectionInvocationTypes[i]);
         }
@@ -1577,7 +1576,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     if (!pCaller->HasInstantiation())
     {
-        for (unsigned i = 0; i < NumItems(reflectionInvocationTypes); i++)
+        for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
             if (CoreLibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
                 return true;
@@ -2038,17 +2037,6 @@ void AppDomain::Init()
     m_pDelayedLoaderAllocatorUnloadList = NULL;
 
     SetStage( STAGE_CREATING);
-
-
-    // The lock is taken also during stack walking (GC or profiler)
-    //  - To prevent deadlock with GC thread, we cannot trigger GC while holding the lock
-    //  - To prevent deadlock with profiler thread, we cannot allow thread suspension
-    m_crstHostAssemblyMap.Init(
-        CrstHostAssemblyMap,
-        (CrstFlags)(CRST_GC_NOTRIGGER_WHEN_TAKEN
-                    | CRST_DEBUGGER_THREAD
-                    INDEBUG(| CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD)));
-    m_crstHostAssemblyMapAdd.Init(CrstHostAssemblyMapAdd);
 
     //Allocate the threadpool entry before the appdomain id list. Otherwise,
     //the thread pool list will be out of sync if insertion of id in
@@ -3196,10 +3184,9 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyO
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -3207,7 +3194,7 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyO
 
     if (pPEAssembly->HasHostAssembly())
     {
-        DomainAssembly * pDA = FindAssembly(pPEAssembly->GetHostAssembly());
+        DomainAssembly * pDA = pPEAssembly->GetHostAssembly()->GetDomainAssembly();
         if (pDA != nullptr && (pDA->IsLoaded() || (includeFailedToLoad && pDA->IsError())))
         {
             return pDA;
@@ -5336,99 +5323,6 @@ TypeEquivalenceHashTable * AppDomain::GetTypeEquivalenceCache()
 #endif //!DACCESS_COMPILE
 
 #endif //FEATURE_TYPEEQUIVALENCE
-
-#if !defined(DACCESS_COMPILE)
-
-//---------------------------------------------------------------------------------------------------------------------
-void AppDomain::PublishHostedAssembly(
-    DomainAssembly * pDomainAssembly)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    if (pDomainAssembly->GetPEAssembly()->HasHostAssembly())
-    {
-        // We have to serialize all Add operations
-        CrstHolder lockAdd(&m_crstHostAssemblyMapAdd);
-        _ASSERTE(m_hostAssemblyMap.Lookup(pDomainAssembly->GetPEAssembly()->GetHostAssembly()) == nullptr);
-
-        // Wrapper for m_hostAssemblyMap.Add that avoids call out into host
-        HostAssemblyMap::AddPhases addCall;
-
-        // 1. Preallocate one element
-        addCall.PreallocateForAdd(&m_hostAssemblyMap);
-        {
-            // 2. Take the reader lock which can be taken during stack walking
-            // We cannot call out into host from ForbidSuspend region (i.e. no allocations/deallocations)
-            ForbidSuspendThreadHolder suspend;
-            {
-                CrstHolder lock(&m_crstHostAssemblyMap);
-                // 3. Add the element to the hash table (no call out into host)
-                addCall.Add(pDomainAssembly);
-            }
-        }
-        // 4. Cleanup the old memory (if any)
-        addCall.DeleteOldTable();
-    }
-    else
-    {
-    }
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-void AppDomain::UnPublishHostedAssembly(
-    DomainAssembly * pAssembly)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END
-
-    if (pAssembly->GetPEAssembly()->HasHostAssembly())
-    {
-        ForbidSuspendThreadHolder suspend;
-        {
-            CrstHolder lock(&m_crstHostAssemblyMap);
-            _ASSERTE(m_hostAssemblyMap.Lookup(pAssembly->GetPEAssembly()->GetHostAssembly()) != nullptr);
-            m_hostAssemblyMap.Remove(pAssembly->GetPEAssembly()->GetHostAssembly());
-        }
-    }
-}
-
-#endif //!DACCESS_COMPILE
-
-//---------------------------------------------------------------------------------------------------------------------
-PTR_DomainAssembly AppDomain::FindAssembly(PTR_BINDER_SPACE_Assembly pHostAssembly)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    if (pHostAssembly == nullptr)
-        return NULL;
-
-    {
-        ForbidSuspendThreadHolder suspend;
-        {
-            CrstHolder lock(&m_crstHostAssemblyMap);
-            return m_hostAssemblyMap.Lookup(pHostAssembly);
-        }
-    }
-}
 
 #ifndef DACCESS_COMPILE
 // Return native image for a given composite image file name, NULL when not found.

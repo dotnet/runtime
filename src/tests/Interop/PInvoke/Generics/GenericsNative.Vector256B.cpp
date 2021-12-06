@@ -14,7 +14,7 @@
     #error Unsupported target architecture
 #endif
 
-#if defined(__AVX2__)
+#if defined(TARGET_XARCH)
     typedef __m256i Vector256B;
 #else
     typedef struct {

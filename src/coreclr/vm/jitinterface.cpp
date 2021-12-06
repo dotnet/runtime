@@ -3613,29 +3613,6 @@ uint32_t CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
     return ret;
 }
 
-
-/*********************************************************************/
-bool CEEInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE clsHnd)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool ret = 0;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    TypeHandle     VMClsHnd(clsHnd);
-    MethodTable * pMT = VMClsHnd.GetMethodTable();
-    ret = (pMT != NULL && pMT->IsStructRequiringStackAllocRetBuf());
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return ret;
-}
-
 /*********************************************************************/
 uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
 {
@@ -3689,7 +3666,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             ret |= CORINFO_FLG_VALUECLASS;
 
             if (pMT->IsByRefLike())
-                ret |= CORINFO_FLG_CONTAINS_STACK_PTR;
+                ret |= CORINFO_FLG_BYREF_LIKE;
 
             if ((pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize())) ||
                 pMT == g_TypedReferenceMT ||
@@ -6966,7 +6943,7 @@ bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
     };
 
     mdMethodDef md = ftn->GetMemberDef();
-    for (unsigned i = 0; i < NumItems(volatileImpls); i++)
+    for (unsigned i = 0; i < ARRAY_SIZE(volatileImpls); i++)
     {
         if (md == CoreLibBinder::GetMethod(volatileImpls[i].methodId)->GetMemberDef())
         {
@@ -7215,7 +7192,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
             int tokCompareTo = pCompareToMD->GetMemberDef();
 
             unsigned int index = (et - ELEMENT_TYPE_I1);
-            _ASSERTE(index < _countof(ilcode));
+            _ASSERTE(index < ARRAY_SIZE(ilcode));
 
             ilcode[index][0] = CEE_LDARGA_S;
             ilcode[index][1] = 0;
@@ -8082,7 +8059,7 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
             static const char * const tailCallType[] = {
                 "optimized tail call", "recursive loop", "helper assisted tailcall"
             };
-            _ASSERTE(tailCallResult >= 0 && (size_t)tailCallResult < _countof(tailCallType));
+            _ASSERTE(tailCallResult >= 0 && (size_t)tailCallResult < ARRAY_SIZE(tailCallType));
             LOG((LF_JIT, LL_INFO100000,
                  "While compiling '%S', %Splicit tail call from '%S' to '%S' generated as a %s.\n",
                  currentMethodName.GetUnicode(), fIsTailPrefix ? W("ex") : W("im"),
@@ -11410,6 +11387,25 @@ void CEEJitInfo::recordRelocation(void * location,
 #endif // HOST_64BIT
 }
 
+// Get a hint for whether the relocation kind to use for the target address.
+// Note that this is currently a best-guess effort as we do not know exactly
+// where the jitted code will end up at. Instead we try to keep executable code
+// and static fields in a preferred memory region and base the decision on this
+// region.
+//
+// If we guess wrong we will recover in recordRelocation if we notice that we
+// cannot actually use the kind of reloc: in that case we will rejit the
+// function and turn off the use of those relocs in the future. This scheme
+// works based on two assumptions:
+//
+// 1) The JIT will ask about relocs only for memory that was allocated by the
+//    loader heap in the preferred region.
+// 2) The loader heap allocates memory in the preferred region in a circular fashion;
+//    the region itself might be larger than 2 GB, but the current compilation should
+//    only be hitting the preferred region within 2 GB.
+//
+// Under these assumptions we should only hit the "recovery" case once the
+// preferred range is actually full.
 WORD CEEJitInfo::getRelocTypeHint(void * target)
 {
     CONTRACTL {
@@ -11421,7 +11417,6 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
 #ifdef TARGET_AMD64
     if (m_fAllowRel32)
     {
-        // The JIT calls this method for data addresses only. It always uses REL32s for direct code targets.
         if (ExecutableAllocator::IsPreferredExecutableRange(target))
             return IMAGE_REL_BASED_REL32;
     }
@@ -12514,6 +12509,7 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
     //
     // * We're writing pgo data and we're jitting at Tier0.
     // * Tiered PGO is enabled and we're jitting at Tier0.
+    // * Tiered PGO is enabled and we are jitting an OSR method.
     //
     if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0)
         && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
@@ -12521,7 +12517,7 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
     }
     else if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0)
-        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
+        && (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) || flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR)))
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
     }

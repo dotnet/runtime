@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +28,18 @@ namespace Microsoft.Interop.Analyzers
 
         public const string NoPreprocessorDefinesKey = "ConvertToGeneratedDllImport";
         public const string WithPreprocessorDefinesKey = "ConvertToGeneratedDllImportPreprocessor";
+
+        private static readonly string[] s_preferredAttributeArgumentOrder =
+            {
+                nameof(DllImportAttribute.EntryPoint),
+                nameof(DllImportAttribute.BestFitMapping),
+                nameof(DllImportAttribute.CallingConvention),
+                nameof(DllImportAttribute.CharSet),
+                nameof(DllImportAttribute.ExactSpelling),
+                nameof(DllImportAttribute.PreserveSig),
+                nameof(DllImportAttribute.SetLastError),
+                nameof(DllImportAttribute.ThrowOnUnmappableChar)
+            };
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -152,8 +165,11 @@ namespace Microsoft.Interop.Analyzers
                             SyntaxFactory.ElasticMarker
                         }));
 
+                // Sort attribute arguments so that GeneratedDllImport and DllImport match
+                MethodDeclarationSyntax updatedDeclaration = (MethodDeclarationSyntax)generator.ReplaceNode(methodSyntax, dllImportSyntax, SortDllImportAttributeArguments(dllImportSyntax, generator));
+
                 // Remove existing leading trivia - it will be on the GeneratedDllImport method
-                MethodDeclarationSyntax updatedDeclaration = methodSyntax.WithLeadingTrivia();
+                updatedDeclaration = updatedDeclaration.WithLeadingTrivia();
 
                 // #endif
                 updatedDeclaration = updatedDeclaration.WithTrailingTrivia(
@@ -225,7 +241,26 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            return generator.RemoveNodes(generatedDllImportSyntax, argumentsToRemove);
+            generatedDllImportSyntax = generator.RemoveNodes(generatedDllImportSyntax, argumentsToRemove);
+            return SortDllImportAttributeArguments((AttributeSyntax)generatedDllImportSyntax, generator);
+        }
+
+        private static SyntaxNode SortDllImportAttributeArguments(AttributeSyntax attribute, SyntaxGenerator generator)
+        {
+            AttributeArgumentListSyntax updatedArgList = attribute.ArgumentList.WithArguments(
+                SyntaxFactory.SeparatedList(
+                    attribute.ArgumentList.Arguments.OrderBy(arg =>
+                    {
+                        // Unnamed arguments first
+                        if (arg.NameEquals == null)
+                            return -1;
+
+                        // Named arguments in specified order, followed by any named arguments with no preferred order
+                        string name = arg.NameEquals.Name.Identifier.Text;
+                        int index = System.Array.IndexOf(s_preferredAttributeArgumentOrder, name);
+                        return index == -1 ? int.MaxValue : index;
+                    })));
+            return generator.ReplaceNode(attribute, attribute.ArgumentList, updatedArgList);
         }
 
         private bool TryCreateUnmanagedCallConvAttributeToEmit(

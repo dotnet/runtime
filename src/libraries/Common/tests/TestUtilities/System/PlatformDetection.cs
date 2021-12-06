@@ -38,8 +38,10 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
-        public static bool IsMobile => IsBrowser || IsMacCatalyst || IsiOS || IstvOS || IsAndroid;
+        public static bool IsMobile => IsBrowser || IsAppleMobile || IsAndroid;
         public static bool IsNotMobile => !IsMobile;
+        public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
+        public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
@@ -61,9 +63,10 @@ namespace System
 
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile;
+        public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
-        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS || IsMacCatalyst;
+        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsAppleMobile;
 
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
@@ -79,15 +82,7 @@ namespace System
         private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
         private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly()
         {
-            Type type = typeof(LambdaExpression);
-            if (type != null)
-            {
-                // The "Accept" method is under FEATURE_COMPILE conditional so it should not exist
-                MethodInfo methodInfo = type.GetMethod("Accept", BindingFlags.NonPublic | BindingFlags.Static);
-                return methodInfo == null;
-            }
-
-            return false;
+            return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
         // Please make sure that you have the libgdiplus dependency installed.
@@ -130,6 +125,7 @@ namespace System
 
 #if NETCOREAPP
         public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
+        public static bool IsNotReflectionEmitSupported => !IsReflectionEmitSupported;
 #else
         public static bool IsReflectionEmitSupported => true;
 #endif
@@ -138,7 +134,7 @@ namespace System
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
-        public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsInAppContainer;
+        public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsInAppContainer && IsReflectionEmitSupported;
 
         public static bool IsPreciseGcSupported => !IsMonoRuntime;
 

@@ -193,6 +193,8 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public DateTime StartTime
         {
             get
@@ -1039,6 +1041,8 @@ namespace System.Diagnostics
         ///       local computer. These process resources share the specified process name.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Process[] GetProcessesByName(string? processName)
         {
             return GetProcessesByName(processName, ".");
@@ -1050,6 +1054,8 @@ namespace System.Diagnostics
         ///       component for each process resource on the local computer.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Process[] GetProcesses()
         {
             return GetProcesses(".");
@@ -1062,6 +1068,8 @@ namespace System.Diagnostics
         ///       process resource on the specified computer.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Process[] GetProcesses(string machineName)
         {
             bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
@@ -1229,6 +1237,17 @@ namespace System.Diagnostics
             if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.HasArgumentList)
             {
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
+            }
+            if (startInfo.HasArgumentList)
+            {
+                int argumentCount = startInfo.ArgumentList.Count;
+                for (int i = 0; i < argumentCount; i++)
+                {
+                    if (startInfo.ArgumentList[i] is null)
+                    {
+                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
+                    }
+                }
             }
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.

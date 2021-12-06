@@ -111,6 +111,7 @@
   </data>
   <data name="InternalError_ScanRegex" xml:space="preserve">
     <value>Internal error in ScanRegex.</value>
+    <comment>{Locked="ScanRegex"}</comment>
   </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
@@ -225,12 +226,15 @@
   </data>
   <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
     <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="NotSupported_NonBacktrackingConflictingOption" xml:space="preserve">
     <value>RegexOptions.NonBacktracking is not supported in conjunction with RegexOptions.{0}.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="NotSupported_NonBacktrackingConflictingExpression" xml:space="preserve">
     <value>RegexOptions.NonBacktracking is not supported in conjunction with expressions containing: '{0}'.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="ExpressionDescription_Backreference" xml:space="preserve">
     <value>backreference (\\ number)</value>

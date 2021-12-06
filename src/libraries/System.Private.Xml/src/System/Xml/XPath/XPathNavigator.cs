@@ -1381,14 +1381,14 @@ namespace System.Xml.XPath
                 // Attributes and namespaces are not allowed at the top-level by the well-formed writer
                 if (NodeType == XPathNodeType.Attribute)
                 {
-                    return string.Concat(Name, "=\"", Value, "\"");
+                    return $"{Name}=\"{Value}\"";
                 }
                 else if (NodeType == XPathNodeType.Namespace)
                 {
                     if (LocalName.Length == 0)
-                        return string.Concat("xmlns=\"", Value, "\"");
+                        return $"xmlns=\"{Value}\"";
                     else
-                        return string.Concat("xmlns:", LocalName, "=\"", Value, "\"");
+                        return $"xmlns:{LocalName}=\"{Value}\"";
                 }
 
                 stringWriter = new StringWriter(CultureInfo.InvariantCulture);
@@ -2228,19 +2228,19 @@ namespace System.Xml.XPath
                 switch (_nav.NodeType)
                 {
                     case XPathNodeType.Element:
-                        result += ", Name=\"" + _nav.Name + '"';
+                        result += $", Name=\"{_nav.Name}\"";
                         break;
                     case XPathNodeType.Attribute:
                     case XPathNodeType.Namespace:
                     case XPathNodeType.ProcessingInstruction:
-                        result += ", Name=\"" + _nav.Name + '"';
-                        result += ", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_nav.Value) + '"';
+                        result += $", Name=\"{_nav.Name}\"";
+                        result += $", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_nav.Value)}\"";
                         break;
                     case XPathNodeType.Text:
                     case XPathNodeType.Whitespace:
                     case XPathNodeType.SignificantWhitespace:
                     case XPathNodeType.Comment:
-                        result += ", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_nav.Value) + '"';
+                        result += $", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_nav.Value)}\"";
                         break;
                 }
                 return result;

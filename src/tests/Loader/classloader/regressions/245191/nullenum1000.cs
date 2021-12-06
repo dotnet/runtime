@@ -1010,7 +1010,7 @@ public enum T997 { }
 public enum T998 { }
 public enum T999 { }
 
-public class Test {
+public class Test_nullenum1000 {
   public static int Main() 
   {
   	try

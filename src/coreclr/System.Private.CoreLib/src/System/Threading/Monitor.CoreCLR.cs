@@ -197,7 +197,7 @@ namespace System.Threading
         /// </summary>
         public static long LockContentionCount => GetLockContentionCount();
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern long GetLockContentionCount();
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorLockContentionCount")]
+        private static partial long GetLockContentionCount();
     }
 }

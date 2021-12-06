@@ -46,7 +46,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>
-#include <common/getexepath.h>
+#include <minipal/getexepath.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -80,13 +80,13 @@ static char* unquote (const char *str);
 static mono_mutex_t assemblies_mutex;
 
 static inline void
-mono_assemblies_lock ()
+mono_assemblies_lock (void)
 {
 	mono_os_mutex_lock (&assemblies_mutex);
 }
 
 static inline void
-mono_assemblies_unlock ()
+mono_assemblies_unlock (void)
 {
 	mono_os_mutex_unlock (&assemblies_mutex);
 }

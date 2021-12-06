@@ -15,32 +15,32 @@ internal static partial class Interop
         private static volatile IntPtr s_evpSha384;
         private static volatile IntPtr s_evpSha512;
 
-        [DllImport(Libraries.AndroidCryptoNative)]
-        private static extern IntPtr CryptoNative_EvpMd5();
+        [GeneratedDllImport(Libraries.AndroidCryptoNative)]
+        private static partial IntPtr CryptoNative_EvpMd5();
 
         internal static IntPtr EvpMd5() =>
             s_evpMd5 != IntPtr.Zero ? s_evpMd5 : (s_evpMd5 = CryptoNative_EvpMd5());
 
-        [DllImport(Libraries.AndroidCryptoNative)]
-        internal static extern IntPtr CryptoNative_EvpSha1();
+        [GeneratedDllImport(Libraries.AndroidCryptoNative)]
+        internal static partial IntPtr CryptoNative_EvpSha1();
 
         internal static IntPtr EvpSha1() =>
             s_evpSha1 != IntPtr.Zero ? s_evpSha1 : (s_evpSha1 = CryptoNative_EvpSha1());
 
-        [DllImport(Libraries.AndroidCryptoNative)]
-        internal static extern IntPtr CryptoNative_EvpSha256();
+        [GeneratedDllImport(Libraries.AndroidCryptoNative)]
+        internal static partial IntPtr CryptoNative_EvpSha256();
 
         internal static IntPtr EvpSha256() =>
             s_evpSha256 != IntPtr.Zero ? s_evpSha256 : (s_evpSha256 = CryptoNative_EvpSha256());
 
-        [DllImport(Libraries.AndroidCryptoNative)]
-        internal static extern IntPtr CryptoNative_EvpSha384();
+        [GeneratedDllImport(Libraries.AndroidCryptoNative)]
+        internal static partial IntPtr CryptoNative_EvpSha384();
 
         internal static IntPtr EvpSha384() =>
             s_evpSha384 != IntPtr.Zero ? s_evpSha384 : (s_evpSha384 = CryptoNative_EvpSha384());
 
-        [DllImport(Libraries.AndroidCryptoNative)]
-        internal static extern IntPtr CryptoNative_EvpSha512();
+        [GeneratedDllImport(Libraries.AndroidCryptoNative)]
+        internal static partial IntPtr CryptoNative_EvpSha512();
 
         internal static IntPtr EvpSha512() =>
             s_evpSha512 != IntPtr.Zero ? s_evpSha512 : (s_evpSha512 = CryptoNative_EvpSha512());

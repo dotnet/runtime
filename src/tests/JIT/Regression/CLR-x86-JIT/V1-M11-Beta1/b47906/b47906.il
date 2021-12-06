@@ -8,8 +8,12 @@
   .ver 4:0:0:0
 }
 .assembly ILGEN_0x50013a8e {}
+.assembly extern xunit.core {}
 .class ILGEN_0x50013a8e {
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	20
  .locals (float64[] local_0x6,float64[] local_0x7,unsigned int16[] local_0x8,int8 local_0xd)

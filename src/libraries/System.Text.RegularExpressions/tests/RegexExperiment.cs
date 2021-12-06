@@ -33,11 +33,14 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>Output directory for generated dgml files.</summary>
         private static string DgmlOutputDirectoryPath => Path.Combine(s_tmpWorkingDir, "dgml");
 
-        private static string ExperimentDirectoryPath => Path.Combine(s_tmpWorkingDir, "experiments");
-
-        [ConditionalFact(nameof(Enabled))]
+        [Fact]
         public void RegenerateUnicodeTables()
         {
+            if (!Enabled)
+            {
+                return;
+            }
+
             MethodInfo? genUnicode = typeof(Regex).GetMethod("GenerateUnicodeTables", BindingFlags.NonPublic | BindingFlags.Static);
             // GenerateUnicodeTables is not available in Release build
             if (genUnicode is not null)
@@ -45,9 +48,6 @@ namespace System.Text.RegularExpressions.Tests
                 genUnicode.Invoke(null, new object[] { s_tmpWorkingDir });
             }
         }
-
-        private static void WriteOutput(string message) =>
-            File.AppendAllText(OutputFilePath, message);
 
         /// <summary>Save the regex as a DFA in DGML format in the textwriter.</summary>
         private static bool TrySaveDGML(Regex regex, TextWriter writer, int bound = -1, bool hideStateInfo = false, bool addDotStar = false, bool inReverse = false, bool onlyDFAinfo = false, int maxLabelLength = -1, bool asNFA = false)
@@ -82,60 +82,6 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 File.WriteAllText(Path.Combine(DgmlOutputDirectoryPath, $"{(inReverse ? name + "r" : (addDotStar ? name + "1" : name))}.dgml"), sw.ToString());
-            }
-        }
-
-        /// <summary>
-        /// The intent is that this method is run in realease build for lightweight performance testing.
-        /// One can e.g. open the outputfile in emacs with AUTO-REVERT-ON in order to follow the progress in real time.
-        /// It will print timing info and match info for both DFA, Compiled option and None.
-        /// Place sample regexes in the regexesfile (one per line) and sample input in inputfile.
-        /// It will essentially produce a csv file with the info:
-        /// regexnr, matchtime_DFA, result_DFA, matchtime_Compiled, result_Compiled, matchtime_None, result_None,
-        /// where result_.. is one of
-        ///   Yes(index,length)
-        ///   No
-        ///   TIMEOUT
-        ///   ERROR 
-        ///  and in the case of TIMEOUT or ERROR time is 10000 (the timeout limit of 10sec)
-        /// </summary>
-        [ConditionalFact(nameof(Enabled))]
-        public void TestRunPerformance()
-        {
-            if (!Directory.Exists(ExperimentDirectoryPath))
-            {
-                Directory.CreateDirectory(ExperimentDirectoryPath);
-            }
-
-            string[] dirs = Directory.GetDirectories(ExperimentDirectoryPath);
-            if (dirs.Length == 0)
-            {
-                WriteOutput("\nExperiments directory is empty");
-                return;
-            }
-
-            DirectoryInfo experimentDI = Directory.GetParent(dirs[0]);
-            DirectoryInfo[] experiments =
-                Array.FindAll(experimentDI.GetDirectories(),
-                             di => ((di.Attributes & FileAttributes.Hidden) != (FileAttributes.Hidden)) &&
-                                   Array.Exists(di.GetFiles(), f => f.Name.Equals("regexes.txt")) &&
-                                   Array.Exists(di.GetFiles(), f => f.Name.Equals("input.txt")));
-            if (experiments.Length == 0)
-            {
-                WriteOutput("\nExperiments directory has no indiviual experiment subdirectories containing files 'regexes.txt' and 'input.txt'.");
-                return;
-            }
-
-            for (int i = 0; i < experiments.Length; i++)
-            {
-                string input = File.ReadAllText(Path.Combine(experiments[i].FullName, "input.txt"));
-                string[] rawRegexes = File.ReadAllLines(Path.Combine(experiments[i].FullName, "regexes.txt"));
-
-                WriteOutput($"\n---------- {experiments[i].Name} ----------");
-                for (int r = 0; r < rawRegexes.Length; r++)
-                {
-                    TestRunRegex((r + 1).ToString(), rawRegexes[r], input);
-                }
             }
         }
 
@@ -178,9 +124,14 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         private static string Not(string regex) => $"(?({regex})[0-[0]]|.*)";
 
-        [ConditionalFact(nameof(Enabled))]
+        [Fact]
         public void ViewSampleRegexInDGML()
         {
+            if (!Enabled)
+            {
+                return;
+            }
+
             try
             {
                 //string rawregex = @"\bis\w*\b";
@@ -230,45 +181,6 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 return false;
-            }
-        }
-
-        private void TestRunRegex(string name, string rawregex, string input, bool viewDGML = false, bool dotStar = false)
-        {
-            var reNone = new Regex(rawregex, RegexOptions.None, new TimeSpan(0, 0, 10));
-            var reCompiled = new Regex(rawregex, RegexOptions.Compiled, new TimeSpan(0, 0, 10));
-            var reNonBacktracking = new Regex(rawregex, RegexOptions.NonBacktracking);
-
-            if (viewDGML)
-                ViewDGML(reNonBacktracking, addDotStar: dotStar);
-            WriteOutput($"\n{name}");
-
-            // First call in each case is a warmup
-
-            // None
-            MeasureMatchTime(reNone, input, out _);
-            long tN = MeasureMatchTime(reNone, input, out Match mN);
-            WriteMatchOutput(tN, mN);
-
-            // Compiled
-            MeasureMatchTime(reCompiled, input, out _);
-            long tC = MeasureMatchTime(reCompiled, input, out Match mC);
-            WriteMatchOutput(tC, mC);
-
-            // Non-Backtracking
-            MeasureMatchTime(reNonBacktracking, input, out _);
-            long tD = MeasureMatchTime(reNonBacktracking, input, out Match mD);
-            WriteMatchOutput(tD, mD);
-
-            void WriteMatchOutput(long t, Match m)
-            {
-                WriteOutput(t switch
-                {
-                    -1 => ",10000,TIMEOUT",
-                    -2 => ",10000,ERROR",
-                    _ when m.Success => $",{t},Yes({m.Index}:{m.Length})",
-                    _ => $",{t},No"
-                });
             }
         }
 
@@ -346,9 +258,9 @@ namespace System.Text.RegularExpressions.Tests
                 string length = "[!-~]{8,12}";
 
                 // Just to make the chance that the randomly generated part actually has a match
-                // be astronomically unlikely require 'P' and 'r' to be present also,
+                // be astronomically unlikely require 'X' and 'r' to be present also,
                 // although this constraint is really bogus from password constraints point of view
-                string contains_first_P_and_then_r = ".*P.*r.*";
+                string contains_first_P_and_then_r = ".*X.*r.*";
 
                 // Conjunction of all the above constraints
                 string all = And(twoLower, twoUpper, threeDigits, oneSpecial, Not_countUp, Not_countDown, length, contains_first_P_and_then_r);
@@ -357,13 +269,13 @@ namespace System.Text.RegularExpressions.Tests
                 Regex re = new Regex($@"\b{all}\b", RegexHelpers.RegexOptionNonBacktracking | RegexOptions.Singleline);
 
                 // Does not qualify because of 123 and connot end between 2 and 3 because of \b
-                string almostPassw1 = "P@ssW0rd123";
+                string almost1 = "X@ssW0rd123";
                 // Does not have at least two uppercase
-                string almostPassw2 = "P@55w0rd";
+                string almost2 = "X@55w0rd";
 
                 // These two qualify
-                string password1 = "P@55W0rd";
-                string password2 = "Pa5$w00rD";
+                string matching1 = "X@55W0rd";
+                string matching2 = "Xa5$w00rD";
 
                 foreach (int k in new int[] { 500, 1000, 5000, 10000, 50000, 100000 })
                 {
@@ -378,13 +290,13 @@ namespace System.Text.RegularExpressions.Tests
                     string part2 = new string(Array.ConvertAll(buffer2, b => (char)b));
                     string part3 = new string(Array.ConvertAll(buffer3, b => (char)b));
 
-                    string input = $"{part1} {almostPassw1} {part2} {password1} {part3} {password2}, finally this {almostPassw2} does not qualify either";
+                    string input = $"{part1} {almost1} {part2} {matching1} {part3} {matching2}, finally this {almost2} does not qualify either";
 
-                    int expextedMatch1Index = (2 * k) + almostPassw1.Length + 3;
-                    int expextedMatch1Length = password1.Length;
+                    int expextedMatch1Index = (2 * k) + almost1.Length + 3;
+                    int expextedMatch1Length = matching1.Length;
 
-                    int expextedMatch2Index = (3 * k) + almostPassw1.Length + password1.Length + 5;
-                    int expextedMatch2Length = password2.Length;
+                    int expextedMatch2Index = (3 * k) + almost1.Length + matching1.Length + 5;
+                    int expextedMatch2Length = matching2.Length;
 
                     // Random text hiding almostPassw and password
                     int t = System.Environment.TickCount;
@@ -398,12 +310,12 @@ namespace System.Text.RegularExpressions.Tests
                     Assert.True(match1.Success);
                     Assert.Equal(expextedMatch1Index, match1.Index);
                     Assert.Equal(expextedMatch1Length, match1.Length);
-                    Assert.Equal(password1, match1.Value);
+                    Assert.Equal(matching1, match1.Value);
 
                     Assert.True(match2.Success);
                     Assert.Equal(expextedMatch2Index, match2.Index);
                     Assert.Equal(expextedMatch2Length, match2.Length);
-                    Assert.Equal(password2, match2.Value);
+                    Assert.Equal(matching2, match2.Value);
 
                     Assert.False(match3.Success);
                 }
@@ -432,7 +344,7 @@ namespace System.Text.RegularExpressions.Tests
                 // Just to make the chance that the randomly generated part actually has a match
                 // be astronomically unlikely require 'P' and 'r' to be present also,
                 // although this constraint is really bogus from password constraints point of view
-                string Not_contains_first_P_and_then_r = Not(".*P.*r.*");
+                string Not_contains_first_P_and_then_r = Not(".*X.*r.*");
 
                 // Negated disjunction of all the above constraints
                 // By deMorgan's laws we know that ~(A|B|...|C) = ~A&~B&...&~C and ~~A = A
@@ -443,13 +355,13 @@ namespace System.Text.RegularExpressions.Tests
                 Regex re = new Regex($@"\b{all}\b", RegexHelpers.RegexOptionNonBacktracking | RegexOptions.Singleline);
 
                 // Does not qualify because of 123 and connot end between 2 and 3 because of \b
-                string almostPassw1 = "P@ssW0rd123";
+                string almost1 = "X@ssW0rd123";
                 // Does not have at least two uppercase
-                string almostPassw2 = "P@55w0rd";
+                string almost2 = "X@55w0rd";
 
                 // These two qualify
-                string password1 = "P@55W0rd";
-                string password2 = "Pa5$w00rD";
+                string matching1 = "X@55W0rd";
+                string matching2 = "Xa5$w00rD";
 
                 foreach (int k in new int[] { 500, 1000, 5000, 10000, 50000, 100000 })
                 {
@@ -464,15 +376,15 @@ namespace System.Text.RegularExpressions.Tests
                     string part2 = new string(Array.ConvertAll(buffer2, b => (char)b));
                     string part3 = new string(Array.ConvertAll(buffer3, b => (char)b));
 
-                    string input = $"{part1} {almostPassw1} {part2} {password1} {part3} {password2}, finally this {almostPassw2} does not qualify either";
+                    string input = $"{part1} {almost1} {part2} {matching1} {part3} {matching2}, finally this {almost2} does not qualify either";
 
-                    int expectedMatch1Index = (2 * k) + almostPassw1.Length + 3;
-                    int expectedMatch1Length = password1.Length;
+                    int expectedMatch1Index = (2 * k) + almost1.Length + 3;
+                    int expectedMatch1Length = matching1.Length;
 
-                    int expectedMatch2Index = (3 * k) + almostPassw1.Length + password1.Length + 5;
-                    int expectedMatch2Length = password2.Length;
+                    int expectedMatch2Index = (3 * k) + almost1.Length + matching1.Length + 5;
+                    int expectedMatch2Length = matching2.Length;
 
-                    // Random text hiding almostPassw and password
+                    // Random text hiding almost and matching strings
                     int t = System.Environment.TickCount;
                     Match match1 = re.Match(input);
                     Match match2 = match1.NextMatch();
@@ -484,12 +396,12 @@ namespace System.Text.RegularExpressions.Tests
                     Assert.True(match1.Success);
                     Assert.Equal(expectedMatch1Index, match1.Index);
                     Assert.Equal(expectedMatch1Length, match1.Length);
-                    Assert.Equal(password1, match1.Value);
+                    Assert.Equal(matching1, match1.Value);
 
                     Assert.True(match2.Success);
                     Assert.Equal(expectedMatch2Index, match2.Index);
                     Assert.Equal(expectedMatch2Length, match2.Length);
-                    Assert.Equal(password2, match2.Value);
+                    Assert.Equal(matching2, match2.Value);
 
                     Assert.False(match3.Success);
                 }
@@ -520,8 +432,9 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Contains("conditional", e.Message);
             }
         }
+        #endregion
 
-
+        #region Random input generation tests
         public static IEnumerable<object[]> GenerateRandomMembers_TestData()
         {
             string[] patterns = new string[] { @"pa[5\$s]{2}w[o0]rd$", @"\w\d+", @"\d{10}" };
@@ -536,7 +449,7 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         foreach (string input in inputs)
                         {
-                            yield return new object[] {engine, pattern, input, !negative };
+                            yield return new object[] { engine, pattern, input, !negative };
                         }
                     }
                 }

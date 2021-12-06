@@ -14,7 +14,7 @@ namespace DllImportGenerator.UnitTests
 {
     public class AttributeForwarding
     {
-        [Theory]
+        [ConditionalTheory]
         [InlineData("SuppressGCTransition", "System.Runtime.InteropServices.SuppressGCTransitionAttribute")]
         [InlineData("UnmanagedCallConv", "System.Runtime.InteropServices.UnmanagedCallConvAttribute")]
         public async Task KnownParameterlessAttribute(string attributeSourceName, string attributeMetadataName)
@@ -54,7 +54,7 @@ struct Native
                 attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task UnmanagedCallConvAttribute_EmptyCallConvArray()
         {
             string source = @"
@@ -96,7 +96,7 @@ struct Native
                     && attr.NamedArguments[0].Value.Values.Length == 0);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task UnmanagedCallConvAttribute_SingleCallConvType()
         {
             string source = @"
@@ -142,7 +142,7 @@ struct Native
                         callConvType));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task UnmanagedCallConvAttribute_MultipleCallConvTypes()
         {
             string source = @"
@@ -192,7 +192,7 @@ struct Native
                         callConvType2));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task OtherAttributeType()
         {
             string source = @"

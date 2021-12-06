@@ -6055,7 +6055,7 @@ HRESULT EEToProfInterfaceImpl::EventPipeProviderCreated(EventPipeProvider *provi
 #endif // FEATURE_PERFTRACING
 }
 
-HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
+HRESULT EEToProfInterfaceImpl::LoadAsNotificationOnly(BOOL *pbNotificationOnly)
 {
     CONTRACTL
     {
@@ -6071,7 +6071,7 @@ HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
 
     LOG((LF_CORPROF,
         LL_INFO1000,
-        "**PROF: LoadAsNotficationOnly.\n"));
+        "**PROF: LoadAsNotificationOnly.\n"));
 
     if (m_pCallback11 == NULL)
     {
@@ -6079,7 +6079,7 @@ HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
         return S_OK;
     }
 
-    return m_pCallback11->LoadAsNotficationOnly(pbNotificationOnly);
+    return m_pCallback11->LoadAsNotificationOnly(pbNotificationOnly);
 }
 
 #endif // PROFILING_SUPPORTED

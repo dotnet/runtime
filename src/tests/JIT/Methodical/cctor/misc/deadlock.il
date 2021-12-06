@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly deadlock {}
+.assembly extern xunit.core {}
 .class public A extends [mscorlib]System.Object
 {
 .field static public class A a
@@ -38,6 +39,9 @@ ret
 
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 ldsfld class B A::b
 pop

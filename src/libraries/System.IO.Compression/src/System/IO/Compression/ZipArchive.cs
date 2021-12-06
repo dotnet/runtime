@@ -388,6 +388,11 @@ namespace System.IO.Compression
             if (_mode == ZipArchiveMode.Read)
                 throw new NotSupportedException(SR.CreateInReadMode);
 
+            if (_entriesDictionary.ContainsKey(entryName))
+            {
+                throw new InvalidOperationException(string.Format(SR.EntryNameAlreadyExists, entryName));
+            }
+
             ThrowIfDisposed();
 
 
@@ -421,12 +426,7 @@ namespace System.IO.Compression
         private void AddEntry(ZipArchiveEntry entry)
         {
             _entries.Add(entry);
-
-            string entryName = entry.FullName;
-            if (!_entriesDictionary.ContainsKey(entryName))
-            {
-                _entriesDictionary.Add(entryName, entry);
-            }
+            _entriesDictionary.TryAdd(entry.FullName, entry);
         }
 
         [Conditional("DEBUG")]

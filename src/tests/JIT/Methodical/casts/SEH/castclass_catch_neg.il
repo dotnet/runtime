@@ -9,6 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly castclass_catch_neg { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi beforefieldinit Test
@@ -17,6 +18,9 @@
     .method private hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  3
       .locals (int32 V_0,

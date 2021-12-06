@@ -451,7 +451,6 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 							MonoInst **args, MonoInst *this_ins, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
 	gboolean virtual_ = this_ins != NULL;
-	int context_used;
 	MonoCallInst *call;
 	int rgctx_reg = 0;
 	gboolean need_unbox_trampoline;
@@ -473,7 +472,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		sig = ctor_sig;
 	}
 
-	context_used = mini_method_check_context_used (cfg, method);
+	mini_method_check_context_used (cfg, method);
 
 	if (cfg->llvm_only && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 		return mini_emit_llvmonly_virtual_call (cfg, method, sig, 0, args);

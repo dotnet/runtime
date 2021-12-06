@@ -29,7 +29,6 @@ set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vm)
 set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
-set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/dlls/mscordac/palredefines.S)
 
 # Avoid logging when skipping up-to-date copies
@@ -85,12 +84,7 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
     set(STATIC_LIBS_ONLY 1)
-
-    if(CLR_CMAKE_TARGET_WIN32)
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Windows Native.Windows)
-    else()
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix Native.Unix)
-    endif()
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 #-----------------------------------------
@@ -135,7 +129,7 @@ endif()
 #-------------------------------------
 # Include the basic prebuilt headers - required for getting fileversion resource details.
 include_directories("pal/prebuilt/inc")
-include_directories("${CLR_REPO_ROOT_DIR}/artifacts/obj/coreclr")
+include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
 add_subdirectory(tools/aot/jitinterface)
 

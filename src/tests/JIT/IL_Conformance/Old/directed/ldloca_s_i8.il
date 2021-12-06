@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly ldloca_s_i8.exe {}
+.assembly ldloca_s_i8 {}
 .class ldloca_s_i8 {
 
 .method public static int32 test_int64()

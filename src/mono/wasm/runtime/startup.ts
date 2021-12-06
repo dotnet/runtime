@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module, runtimeHelpers } from "./modules";
-import { AssetEntry, CharPtr, CharPtrNull, Int32Ptr, MonoConfig, MonoString, MonoStringNull, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
+import { AllAssetEntryTypes, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol } from "./types";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -10,82 +10,55 @@ import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
-import { conv_string } from "./strings";
+import { find_corlib_class } from "./class-loader";
+import { VoidPtr, CharPtr } from "./types/emscripten";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
-    try {
-        const blazorExports = (<any>globalThis).Blazor;
-        if (!blazorExports) {
-            throw new Error("The blazor.webassembly.js library is not loaded.");
-        }
+export let runtime_is_initialized_resolve: Function;
+export let runtime_is_initialized_reject: Function;
+export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) => {
+    runtime_is_initialized_resolve = resolve;
+    runtime_is_initialized_reject = reject;
+});
 
-        return blazorExports._internal.invokeJSFromDotNet(callInfo, arg0, arg1, arg2);
-    } catch (ex: any) {
-        const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return 0;
+
+export async function mono_wasm_pre_init(): Promise<void> {
+    const moduleExt = Module as DotnetModule;
+    if (!moduleExt.configSrc) {
+        return;
     }
+
+    try {
+        // sets MONO.config implicitly
+        await mono_wasm_load_config(moduleExt.configSrc);
+    }
+    catch (err: any) {
+        runtime_is_initialized_reject(err);
+        throw err;
+    }
+
+    if (moduleExt.onConfigLoaded) {
+        try {
+            moduleExt.onConfigLoaded();
+        }
+        catch (err: any) {
+            Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
+            Module.printErr("MONO_WASM: Stacktrace: \n");
+            Module.printErr(err.stack);
+            runtime_is_initialized_reject(err);
+            throw err;
+        }
+    }
+
 }
 
-// This is for back-compat only and will eventually be removed
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_wasm_invoke_js_marshalled(exceptionMessage: Int32Ptr, asyncHandleLongPtr: number, functionName: MonoString, argsJson: MonoString, treatResultAsVoid: boolean): MonoString {
-    try {
-        // Passing a .NET long into JS via Emscripten is tricky. The method here is to pass
-        // as pointer to the long, then combine two reads from the HEAPU32 array.
-        // Even though JS numbers can't represent the full range of a .NET long, it's OK
-        // because we'll never exceed Number.MAX_SAFE_INTEGER (2^53 - 1) in this case.
-        //var u32Index = $1 >> 2;
-        const u32Index = asyncHandleLongPtr >> 2;
-        const asyncHandleJsNumber = Module.HEAPU32[u32Index + 1] * 4294967296 + Module.HEAPU32[u32Index];
-
-        // var funcNameJsString = UTF8ToString (functionName);
-        // var argsJsonJsString = argsJson && UTF8ToString (argsJson);
-        const funcNameJsString = conv_string(functionName);
-        const argsJsonJsString = argsJson && conv_string(argsJson);
-
-        const dotNetExports = (<any>globalThis).DotNet;
-        if (!dotNetExports) {
-            throw new Error("The Microsoft.JSInterop.js library is not loaded.");
-        }
-
-        if (asyncHandleJsNumber) {
-            dotNetExports.jsCallDispatcher.beginInvokeJSFromDotNet(asyncHandleJsNumber, funcNameJsString, argsJsonJsString, treatResultAsVoid);
-            return MonoStringNull;
-        } else {
-            const resultJson = dotNetExports.jsCallDispatcher.invokeJSFromDotNet(funcNameJsString, argsJsonJsString, treatResultAsVoid);
-            return resultJson === null ? MonoStringNull : cwraps.mono_wasm_string_from_js(resultJson);
-        }
-    } catch (ex: any) {
-        const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return MonoStringNull;
+export async function mono_wasm_on_runtime_initialized(): Promise<void> {
+    if (!Module.config || Module.config.isError) {
+        return;
     }
+    await mono_load_runtime_and_bcl_args(Module.config);
+    finalize_startup(Module.config);
 }
 
-// This is for back-compat only and will eventually be removed
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_wasm_invoke_js_unmarshalled(exceptionMessage: Int32Ptr, funcName: MonoString, arg0: any, arg1: any, arg2: any): void | number {
-    try {
-        // Get the function you're trying to invoke
-        const funcNameJsString = conv_string(funcName);
-        const dotNetExports = (<any>globalThis).DotNet;
-        if (!dotNetExports) {
-            throw new Error("The Microsoft.JSInterop.js library is not loaded.");
-        }
-        const funcInstance = dotNetExports.jsCallDispatcher.findJSFunction(funcNameJsString);
-
-        return funcInstance.call(null, arg0, arg1, arg2);
-    } catch (ex: any) {
-        const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return 0;
-    }
-}
 
 // Set environment variable NAME to VALUE
 // Should be called before mono_load_runtime_and_bcl () in most cases
@@ -103,7 +76,7 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
 }
 
-function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: string, blob: ArrayBuffer) {
+function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: string, blob: ArrayBuffer) {
     const bytes = new Uint8Array(blob);
     if (ctx.tracing)
         console.log(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
@@ -169,158 +142,100 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
     }
     else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
-            console.error(`Error loading ICU asset ${asset.name}`);
+            console.error(`MONO_WASM: Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
     }
 }
 
-// Initializes the runtime and loads assemblies, debug information, and other files.
-// @args is a dictionary-style Object with the following properties:
-//    assembly_root: (required) the subfolder containing managed assemblies and pdbs
-//    debug_level or enable_debugging: (required)
-//    assets: (required) a list of assets to load along with the runtime. each asset
-//     is a dictionary-style Object with the following properties:
-//        name: (required) the name of the asset, including extension.
-//        behavior: (required) determines how the asset will be handled once loaded:
-//          "heap": store asset into the native heap
-//          "assembly": load asset as a managed assembly (or debugging information)
-//          "resource": load asset as a managed resource assembly
-//          "icu": load asset as an ICU data archive
-//          "vfs": load asset into the virtual filesystem (for fopen, File.Open, etc)
-//        load_remote: (optional) if true, an attempt will be made to load the asset
-//          from each location in @args.remote_sources.
-//        virtual_path: (optional) if specified, overrides the path of the asset in
-//          the virtual filesystem and similar data structures once loaded.
-//        is_optional: (optional) if true, any failure to load this asset will be ignored.
-//    loaded_cb: (required) a function () invoked when loading has completed.
-//    fetch_file_cb: (optional) a function (string) invoked to fetch a given file.
-//      If no callback is provided a default implementation appropriate for the current
-//      environment will be selected (readFileSync in node, fetch elsewhere).
-//      If no default implementation is available this call will fail.
-//    remote_sources: (optional) additional search locations for assets.
-//      sources will be checked in sequential order until the asset is found.
-//      the string "./" indicates to load from the application directory (as with the
-//      files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates
-//      that asset loads can be attempted from a remote server. Sources must end with a "/".
-//    environment_variables: (optional) dictionary-style Object containing environment variables
-//    runtime_options: (optional) array of runtime options as strings
-//    aot_profiler_options: (optional) dictionary-style Object. see the comments for
-//      mono_wasm_init_aot_profiler. If omitted, aot profiler will not be initialized.
-//    coverage_profiler_options: (optional) dictionary-style Object. see the comments for
-//      mono_wasm_init_coverage_profiler. If omitted, coverage profiler will not be initialized.
-//    globalization_mode: (optional) configures the runtime's globalization mode:
-//      "icu": load ICU globalization data from any runtime assets with behavior "icu".
-//      "invariant": operate in invariant globalization mode.
-//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
-//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
-export function mono_load_runtime_and_bcl_args(args: MonoConfig): void {
+function _apply_configuration_from_args(config: MonoConfig) {
+    for (const k in (config.environment_variables || {}))
+        mono_wasm_setenv(k, config.environment_variables![k]);
+
+    if (config.runtime_options)
+        mono_wasm_set_runtime_options(config.runtime_options);
+
+    if (config.aot_profiler_options)
+        mono_wasm_init_aot_profiler(config.aot_profiler_options);
+
+    if (config.coverage_profiler_options)
+        mono_wasm_init_coverage_profiler(config.coverage_profiler_options);
+}
+
+function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {
     try {
-        return _load_assets_and_runtime(args);
-    } catch (exc: any) {
-        console.error("error in mono_load_runtime_and_bcl_args:", exc);
-        throw exc;
-    }
-}
-
-function _apply_configuration_from_args(args: MonoConfig) {
-    for (const k in (args.environment_variables || {}))
-        mono_wasm_setenv(k, args.environment_variables![k]);
-
-    if (args.runtime_options)
-        mono_wasm_set_runtime_options(args.runtime_options);
-
-    if (args.aot_profiler_options)
-        mono_wasm_init_aot_profiler(args.aot_profiler_options);
-
-    if (args.coverage_profiler_options)
-        mono_wasm_init_coverage_profiler(args.coverage_profiler_options);
-}
-
-function _get_fetch_file_cb_from_args(args: MonoConfig): (asset: string) => Promise<Response> {
-    if (typeof (args.fetch_file_cb) === "function")
-        return args.fetch_file_cb;
-
-    if (ENVIRONMENT_IS_NODE) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const fs = require("fs");
-        return function (asset) {
-            console.debug("MONO_WASM: Loading... " + asset);
-            const binary = fs.readFileSync(asset);
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const resolve_func2 = function (resolve: Function, reject: Function) {
-                resolve(new Uint8Array(binary));
-            };
-
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const resolve_func1 = function (resolve: Function, reject: Function) {
-                const response = {
-                    ok: true,
-                    url: asset,
-                    arrayBuffer: function () {
-                        return new Promise(resolve_func2);
-                    }
-                };
-                resolve(response);
-            };
-
-            return new Promise(resolve_func1);
-        };
-    } else if (typeof (fetch) === "function") {
-        return function (asset) {
-            return fetch(asset, { credentials: "same-origin" });
-        };
-    } else {
-        throw new Error("No fetch_file_cb was provided and this environment does not expose 'fetch'.");
-    }
-}
-
-function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
-    ctx.loaded_files.forEach(value => runtimeHelpers.loaded_files.push(value.url));
-    if (ctx.tracing) {
-        console.log("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
-        console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
-    }
-
-    console.debug("MONO_WASM: Initializing mono runtime");
-
-    mono_wasm_globalization_init(args.globalization_mode!);
-
-    if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
-        try {
-            cwraps.mono_wasm_load_runtime("unused", args.debug_level || 0);
-        } catch (ex: any) {
-            Module.print("MONO_WASM: load_runtime () failed: " + ex);
-            Module.print("MONO_WASM: Stacktrace: \n");
-            Module.print(ex.stack);
-
-            const wasm_exit = cwraps.mono_wasm_exit;
-            wasm_exit(1);
+        if (!config || config.isError) {
+            return;
         }
-    } else {
-        cwraps.mono_wasm_load_runtime("unused", args.debug_level || 0);
+        if (config.diagnostic_tracing) {
+            console.debug("MONO_WASM: Initializing mono runtime");
+        }
+
+        const moduleExt = Module as DotnetModule;
+
+        try {
+            _apply_configuration_from_args(config);
+
+            mono_wasm_globalization_init(config.globalization_mode!, config.diagnostic_tracing!);
+            cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
+        } catch (err: any) {
+            Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
+            Module.printErr("MONO_WASM: Stacktrace: \n");
+            Module.printErr(err.stack);
+
+            runtime_is_initialized_reject(err);
+            if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
+                const wasm_exit = cwraps.mono_wasm_exit;
+                wasm_exit(1);
+            }
+        }
+
+        bindings_lazy_init();
+
+        let tz;
+        try {
+            tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        } catch {
+            //swallow
+        }
+        mono_wasm_setenv("TZ", tz || "UTC");
+        mono_wasm_runtime_ready();
+
+        //legacy config loading
+        const argsAny: any = config;
+        if (argsAny.loaded_cb) {
+            try {
+                argsAny.loaded_cb();
+            }
+            catch (err: any) {
+                Module.printErr("MONO_WASM: loaded_cb () failed: " + err);
+                Module.printErr("MONO_WASM: Stacktrace: \n");
+                Module.printErr(err.stack);
+                runtime_is_initialized_reject(err);
+                throw err;
+            }
+        }
+
+        if (moduleExt.onDotnetReady) {
+            try {
+                moduleExt.onDotnetReady();
+            }
+            catch (err: any) {
+                Module.printErr("MONO_WASM: onDotnetReady () failed: " + err);
+                Module.printErr("MONO_WASM: Stacktrace: \n");
+                Module.printErr(err.stack);
+                runtime_is_initialized_reject(err);
+                throw err;
+            }
+        }
+
+        runtime_is_initialized_resolve();
+    } catch (err: any) {
+        console.error("MONO_WASM: Error in finalize_startup:", err);
+        runtime_is_initialized_reject(err);
+        throw err;
     }
-
-    bindings_lazy_init();
-
-    let tz;
-    try {
-        tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    } catch {
-        //swallow
-    }
-    mono_wasm_setenv("TZ", tz || "UTC");
-    mono_wasm_runtime_ready();
-    args.loaded_cb();
-}
-
-
-export function mono_bindings_init(binding_asm?: string): void {
-    if (binding_asm) {
-        INTERNAL.BINDING_ASM = binding_asm;
-    }
-
 }
 
 export function bindings_lazy_init(): void {
@@ -347,12 +262,14 @@ export function bindings_lazy_init(): void {
     (<any>Float32Array.prototype)[wasm_type_symbol] = 17;
     (<any>Float64Array.prototype)[wasm_type_symbol] = 18;
 
-    runtimeHelpers._box_buffer = Module._malloc(16);
-    runtimeHelpers._unbox_buffer = Module._malloc(16);
-    runtimeHelpers._class_int32 = cwraps.mono_wasm_find_corlib_class("System", "Int32");
-    runtimeHelpers._class_uint32 = cwraps.mono_wasm_find_corlib_class("System", "UInt32");
-    runtimeHelpers._class_double = cwraps.mono_wasm_find_corlib_class("System", "Double");
-    runtimeHelpers._class_boolean = cwraps.mono_wasm_find_corlib_class("System", "Boolean");
+    runtimeHelpers._box_buffer_size = 65536;
+    runtimeHelpers._unbox_buffer_size = 65536;
+    runtimeHelpers._box_buffer = Module._malloc(runtimeHelpers._box_buffer_size);
+    runtimeHelpers._unbox_buffer = Module._malloc(runtimeHelpers._unbox_buffer_size);
+    runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
+    runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
+    runtimeHelpers._class_double = find_corlib_class("System", "Double");
+    runtimeHelpers._class_boolean = find_corlib_class("System", "Boolean");
     runtimeHelpers.bind_runtime_method = bind_runtime_method;
 
     const bindingAssembly = INTERNAL.BINDING_ASM;
@@ -382,145 +299,114 @@ export function bindings_lazy_init(): void {
 
     _create_primitive_converters();
 }
-function _load_assets_and_runtime(args: MonoConfig) {
-    if (args.enable_debugging)
-        args.debug_level = args.enable_debugging;
-    if (args.assembly_list)
-        throw new Error("Invalid args (assembly_list was replaced by assets)");
-    if (args.runtime_assets)
-        throw new Error("Invalid args (runtime_assets was replaced by assets)");
-    if (args.runtime_asset_sources)
-        throw new Error("Invalid args (runtime_asset_sources was replaced by remote_sources)");
-    if (!args.loaded_cb)
-        throw new Error("loaded_cb not provided");
 
-    const ctx: MonoInitContext = {
-        tracing: args.diagnostic_tracing || false,
-        pending_count: args.assets.length,
-        loaded_assets: Object.create(null),
-        // dlls and pdbs, used by blazor and the debugger
-        loaded_files: [],
-        createPath: Module.FS_createPath,
-        createDataFile: Module.FS_createDataFile
-    };
+// Initializes the runtime and loads assemblies, debug information, and other files.
+export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoConfigError | undefined): Promise<void> {
+    if (!config || config.isError) {
+        return;
+    }
 
-    if (ctx.tracing)
-        console.log("mono_wasm_load_runtime_with_args", JSON.stringify(args));
+    try {
+        if (config.enable_debugging)
+            config.debug_level = config.enable_debugging;
 
-    _apply_configuration_from_args(args);
 
-    const fetch_file_cb = _get_fetch_file_cb_from_args(args);
-
-    const onPendingRequestComplete = function () {
-        --ctx.pending_count;
-
-        if (ctx.pending_count === 0) {
-            try {
-                _finalize_startup(args, ctx);
-            } catch (exc: any) {
-                console.error("Unhandled exception in _finalize_startup", exc);
-                console.log(exc.stack);
-                throw exc;
-            }
-        }
-    };
-
-    const processFetchResponseBuffer = function (asset: AssetEntry, url: string, buffer: ArrayBuffer) {
-        try {
-            _handle_loaded_asset(ctx, asset, url, buffer);
-        } catch (exc) {
-            console.error(`Unhandled exception in processFetchResponseBuffer ${url}`, exc);
-            throw exc;
-        } finally {
-            onPendingRequestComplete();
-        }
-    };
-
-    args.assets.forEach(function (asset: AssetEntry) {
-        let sourceIndex = 0;
-        const sourcesList = asset.load_remote ? args.remote_sources! : [""];
-
-        const handleFetchResponse = function (response: Response) {
-            if (!response.ok) {
-                try {
-                    attemptNextSource();
-                    return;
-                } catch (exc) {
-                    console.error(`MONO_WASM: Unhandled exception in handleFetchResponse attemptNextSource for asset ${asset.name}`, exc);
-                    throw exc;
-                }
-            }
-
-            try {
-                const bufferPromise = response.arrayBuffer();
-                bufferPromise.then((data) => processFetchResponseBuffer(asset, response.url, data));
-            } catch (exc) {
-                console.error(`MONO_WASM: Unhandled exception in handleFetchResponse for asset ${asset.name}`, exc);
-                attemptNextSource();
-            }
+        config.diagnostic_tracing = config.diagnostic_tracing || false;
+        const ctx: MonoInitContext = {
+            tracing: config.diagnostic_tracing,
+            pending_count: config.assets.length,
+            loaded_assets: Object.create(null),
+            // dlls and pdbs, used by blazor and the debugger
+            loaded_files: [],
+            createPath: Module.FS_createPath,
+            createDataFile: Module.FS_createDataFile
         };
 
-        const attemptNextSource = function () {
-            if (sourceIndex >= sourcesList.length) {
-                const msg = `MONO_WASM: Failed to load ${asset.name}`;
-                try {
-                    const isOk = asset.is_optional ||
-                        (asset.name.match(/\.pdb$/) && args.ignore_pdb_load_errors);
+        // fetch_file_cb is legacy do we really want to support it ?
+        if (!Module.imports!.fetch && typeof ((<any>config).fetch_file_cb) === "function") {
+            runtimeHelpers.fetch = (<any>config).fetch_file_cb;
+        }
 
-                    if (isOk)
-                        console.debug(msg);
-                    else {
-                        console.error(msg);
-                        throw new Error(msg);
+        const load_asset = async (config: MonoConfig, asset: AllAssetEntryTypes): Promise<void> => {
+            // TODO Module.addRunDependency(asset.name);
+
+            const sourcesList = asset.load_remote ? config.remote_sources! : [""];
+            let error = undefined;
+            for (let sourcePrefix of sourcesList) {
+                // HACK: Special-case because MSBuild doesn't allow "" as an attribute
+                if (sourcePrefix === "./")
+                    sourcePrefix = "";
+
+                let attemptUrl;
+                if (sourcePrefix.trim() === "") {
+                    if (asset.behavior === "assembly")
+                        attemptUrl = locateFile(config.assembly_root + "/" + asset.name);
+                    else if (asset.behavior === "resource") {
+                        const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
+                        attemptUrl = locateFile(config.assembly_root + "/" + path);
                     }
-                } finally {
-                    onPendingRequestComplete();
+                    else
+                        attemptUrl = asset.name;
+                } else {
+                    attemptUrl = sourcePrefix + asset.name;
                 }
-            }
-
-            let sourcePrefix = sourcesList[sourceIndex];
-            sourceIndex++;
-
-            // HACK: Special-case because MSBuild doesn't allow "" as an attribute
-            if (sourcePrefix === "./")
-                sourcePrefix = "";
-
-            let attemptUrl;
-            if (sourcePrefix.trim() === "") {
-                if (asset.behavior === "assembly")
-                    attemptUrl = locateFile(args.assembly_root + "/" + asset.name);
-                else if (asset.behavior === "resource") {
-                    const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
-                    attemptUrl = locateFile(args.assembly_root + "/" + path);
-                }
-                else
-                    attemptUrl = asset.name;
-            } else {
-                attemptUrl = sourcePrefix + asset.name;
-            }
-
-            try {
                 if (asset.name === attemptUrl) {
                     if (ctx.tracing)
-                        console.log(`Attempting to fetch '${attemptUrl}'`);
+                        console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}'`);
                 } else {
                     if (ctx.tracing)
-                        console.log(`Attempting to fetch '${attemptUrl}' for ${asset.name}`);
+                        console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}' for ${asset.name}`);
                 }
-                const fetch_promise = fetch_file_cb(attemptUrl);
-                fetch_promise.then(handleFetchResponse);
-            } catch (exc) {
-                console.error(`MONO_WASM: Error fetching ${attemptUrl}`, exc);
-                attemptNextSource();
-            }
-        };
+                try {
+                    const response = await runtimeHelpers.fetch(attemptUrl);
+                    if (!response.ok) {
+                        error = new Error(`MONO_WASM: Fetch '${attemptUrl}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+                        continue;// next source
+                    }
 
-        attemptNextSource();
-    });
+                    const buffer = await response.arrayBuffer();
+                    _handle_fetched_asset(ctx, asset, attemptUrl, buffer);
+                    --ctx.pending_count;
+                    error = undefined;
+                }
+                catch (err) {
+                    error = new Error(`MONO_WASM: Fetch '${attemptUrl}' for ${asset.name} failed ${err}`);
+                    continue; //next source
+                }
+
+                if (!error) {
+                    break; // this source worked, stop searching
+                }
+            }
+            if (error) {
+                const isOkToFail = asset.is_optional || (asset.name.match(/\.pdb$/) && config.ignore_pdb_load_errors);
+                if (!isOkToFail)
+                    throw error;
+            }
+            // TODO Module.removeRunDependency(asset.name);
+        };
+        const fetch_promises: Promise<void>[] = [];
+        // start fetching all assets in parallel
+        for (const asset of config.assets) {
+            fetch_promises.push(load_asset(config, asset));
+        }
+
+        await Promise.all(fetch_promises);
+
+        ctx.loaded_files.forEach(value => MONO.loaded_files.push(value.url));
+        if (ctx.tracing) {
+            console.log("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
+            console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
+        }
+    } catch (err: any) {
+        console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", err);
+        runtime_is_initialized_reject(err);
+        throw err;
+    }
 }
 
-// used from ASP.NET
-export function mono_wasm_load_data_archive(data: TypedArray, prefix: string): boolean {
+// used from Blazor
+export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean {
     if (data.length < 8)
         return false;
 
@@ -584,21 +470,22 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
     const module = Module;
     module.addRunDependency(configFilePath);
     try {
-        let config = null;
         // NOTE: when we add nodejs make sure to include the nodejs fetch package
-        if (ENVIRONMENT_IS_WEB) {
-            const configRaw = await fetch(configFilePath);
-            config = await configRaw.json();
-        } else if (ENVIRONMENT_IS_NODE) {
-            config = require(configFilePath);
-        } else { // shell or worker
-            config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
-        }
+        const configRaw = await runtimeHelpers.fetch(configFilePath);
+        const config = await configRaw.json();
+
         runtimeHelpers.config = config;
-    } catch (e) {
-        const errMessage = "failed to load config file " + configFilePath;
+        config.environment_variables = config.environment_variables || {};
+        config.assets = config.assets || [];
+        config.runtime_options = config.runtime_options || [];
+        config.globalization_mode = config.globalization_mode || GlobalizationMode.AUTO;
+
+    } catch (err) {
+        const errMessage = `Failed to load config file ${configFilePath} ${err}`;
         console.error(errMessage);
-        runtimeHelpers.config = { message: errMessage, error: e };
+        runtimeHelpers.config = { message: errMessage, error: err, isError: true };
+        runtime_is_initialized_reject(err);
+        throw err;
     } finally {
         Module.removeRunDependency(configFilePath);
     }
@@ -631,16 +518,16 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
     const main_argc = allRuntimeArguments.length + 1;
     const main_argv = <any>Module._malloc(main_argc * 4);
     let aindex = 0;
-    Module.setValue(main_argv + (aindex * 4), INTERNAL.mono_wasm_strdup(name), "i32");
+    Module.setValue(main_argv + (aindex * 4), cwraps.mono_wasm_strdup(name), "i32");
     aindex += 1;
     for (let i = 0; i < allRuntimeArguments.length; ++i) {
-        Module.setValue(main_argv + (aindex * 4), INTERNAL.mono_wasm_strdup(allRuntimeArguments[i]), "i32");
+        Module.setValue(main_argv + (aindex * 4), cwraps.mono_wasm_strdup(allRuntimeArguments[i]), "i32");
         aindex += 1;
     }
     cwraps.mono_wasm_set_main_args(main_argc, main_argv);
 }
 
-type MonoInitContext = {
+export type MonoInitContext = {
     tracing: boolean,
     pending_count: number,
     loaded_files: { url: string, file: string }[],

@@ -19,7 +19,7 @@ namespace DllImportGenerator.UnitTests
         public const string RequiresIncrementalSyntaxTreeModifySupport = "The GeneratorDriver treats all SyntaxTree replace operations on a Compilation as an Add/Remove operation instead of a Modify operation"
             + ", so all cached results based on that input are thrown out. As a result, we cannot validate that unrelated changes within the same SyntaxTree do not cause regeneration.";
 
-        [Fact]
+        [ConditionalFact]
         public async Task AddingNewUnrelatedType_DoesNotRegenerateSource()
         {
             string source = CodeSnippets.BasicParametersAndModifiers<int>();
@@ -44,7 +44,7 @@ namespace DllImportGenerator.UnitTests
         }
 
 #pragma warning disable xUnit1004 // Test methods should not be skipped. These tests will be updated to use the new incremental work tracking APIs and enabled then.
-        [Fact(Skip = RequiresIncrementalSyntaxTreeModifySupport)]
+        [ConditionalFact(Skip = RequiresIncrementalSyntaxTreeModifySupport)]
 #pragma warning restore
         public async Task AppendingUnrelatedSource_DoesNotRegenerateSource()
         {
@@ -73,7 +73,7 @@ namespace DllImportGenerator.UnitTests
                 });
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task AddingFileWithNewGeneratedDllImport_DoesNotRegenerateOriginalMethod()
         {
             string source = CodeSnippets.BasicParametersAndModifiers<int>();
@@ -97,7 +97,7 @@ namespace DllImportGenerator.UnitTests
             Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.OutputSourceFile));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task ReplacingFileWithNewGeneratedDllImport_DoesNotRegenerateStubsInOtherFiles()
         {
             string source = CodeSnippets.BasicParametersAndModifiers<int>();
@@ -121,7 +121,7 @@ namespace DllImportGenerator.UnitTests
             Assert.Equal(1, generator.IncrementalTracker.ExecutedSteps.Count(s => s.Step == IncrementalityTracker.StepName.OutputSourceFile));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task ChangingMarshallingStrategy_RegeneratesStub()
         {
             string stubSource = CodeSnippets.BasicParametersAndModifiers("CustomType");
@@ -170,7 +170,7 @@ namespace DllImportGenerator.UnitTests
         }
 
 #pragma warning disable xUnit1004 // Test methods should not be skipped. These tests will be updated to use the new incremental work tracking APIs and enabled then.
-        [Fact(Skip = RequiresIncrementalSyntaxTreeModifySupport)]
+        [ConditionalFact(Skip = RequiresIncrementalSyntaxTreeModifySupport)]
 #pragma warning restore
         public async Task ChangingMarshallingAttributes_SameStrategy_DoesNotRegenerate()
         {
