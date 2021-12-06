@@ -182,9 +182,8 @@
     <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false</CLRTestMSBuildArgs>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <BuildAsStandalone Condition="'$(BuildAsStandalone)' == '' and '$(IsTestsCommonProject)' == 'true'">false</BuildAsStandalone>
-    <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">false</BuildAsStandalone>
+  <PropertyGroup Condition="'$(IsTestsCommonProject)' != 'true'">
+    <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">true</BuildAsStandalone>
     <OutputType Condition="$(BuildAsStandalone)">Exe</OutputType>
   </PropertyGroup>
 </Project>

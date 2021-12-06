@@ -556,13 +556,10 @@
 		)
 		.entrypoint
 		.maxstack  10
-    L1:
 		call void Generated142::MethodCallingTest()
 		call void Generated142::ConstrainedCallsTest()
 		call void Generated142::StructConstrainedInterfaceCallsTest()
 		call void Generated142::CalliTest()
-        ldc.i4 1
-        brtrue.s L1
 		ldc.i4 100
 		ret
 	}
