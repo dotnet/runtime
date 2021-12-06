@@ -20,6 +20,7 @@ using System.Reflection.Metadata.Ecma335;
 using Microsoft.CodeAnalysis.Debugging;
 using System.IO.Compression;
 using System.Reflection;
+using System.Collections.Immutable;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -524,6 +525,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Dictionary<string, string> sourceLinkMappings = new Dictionary<string, string>();
         private readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
+        //The caller must keep the PEReader alive and undisposed throughout the lifetime of the metadata reader
+        internal PEReader peReader;
         internal MetadataReader asmMetadataReader { get; }
         internal MetadataReader pdbMetadataReader { get; set; }
         internal List<MetadataReader> enCMetadataReader  = new List<MetadataReader>();
@@ -538,17 +541,19 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             this.id = Interlocked.Increment(ref next_id);
             using var asmStream = new MemoryStream(assembly);
-            using var peReader = new PEReader(asmStream);
-            ImmutableArray<DebugDirectoryEntry> entries = peReader.ReadDebugDirectory();
-            var codeView = entries[0];
-            CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
-            PdbAge = codeViewData.Age;
-            PdbGuid = codeViewData.Guid;
-            PdbName = codeViewData.Path;
+            peReader = new PEReader(asmStream);
+            var entries = peReader.ReadDebugDirectory();
+            if (entries.Length > 0)
+            {
+                var codeView = entries[0];
+                CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
+                PdbAge = codeViewData.Age;
+                PdbGuid = codeViewData.Guid;
+                PdbName = codeViewData.Path;
+            }
             asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
             var asmDef = asmMetadataReader.GetAssemblyDefinition();
             Name = asmDef.GetAssemblyName().Name + ".dll";
-            AssemblyNameUnqualified = asmDef.GetAssemblyName().Name + ".dll";
             if (pdb != null)
             {
                 var pdbStream = new MemoryStream(pdb);
@@ -960,7 +965,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (assembly == null)
                 yield break;
 
-            if (GetAssemblyByUnqualifiedName(assembly.AssemblyNameUnqualified) != null)
+            if (GetAssemblyByName(assembly.Name) != null)
             {
                 logger.LogDebug($"Skipping adding {assembly.Name} into the debug store, as it already exists");
                 yield break;
@@ -1021,7 +1026,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (assembly == null)
                     continue;
 
-                if (GetAssemblyByUnqualifiedName(assembly.AssemblyNameUnqualified) != null)
+                if (GetAssemblyByName(assembly.Name) != null)
                 {
                     logger.LogDebug($"Skipping loading {assembly.Name} into the debug store, as it already exists");
                     continue;
@@ -1039,7 +1044,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => a.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
-        public AssemblyInfo GetAssemblyByUnqualifiedName(string name) => assemblies.FirstOrDefault(a => a.AssemblyNameUnqualified.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
         /*
         V8 uses zero based indexing for both line and column.

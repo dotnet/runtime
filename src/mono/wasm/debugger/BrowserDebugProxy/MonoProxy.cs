@@ -1057,7 +1057,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var store = await LoadStore(sessionId, token);
                 var assembly_name = eventArgs?["assembly_name"]?.Value<string>();
 
-                if (store.GetAssemblyByUnqualifiedName(assembly_name) != null)
+                if (store.GetAssemblyByName(assembly_name) != null)
                 {
                     Log("debug", $"Got AssemblyLoaded event for {assembly_name}, but skipping it as it has already been loaded.");
                     return true;
