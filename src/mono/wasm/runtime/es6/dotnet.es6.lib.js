@@ -15,12 +15,13 @@ const DotnetSupportLib = {
         __dotnet_replacements);
     
     // here we replace things which are not exposed in another way
-    __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory; 
+    scriptDirectory = __dotnet_replacements.scriptDirectory;
     readAsync = __dotnet_replacements.readAsync;
     var fetch = __dotnet_replacements.fetch;
 
     // here we replace things which are broken on NodeJS for ES6
     if (ENVIRONMENT_IS_NODE) {
+        __dirname = __dotnet_replacements.scriptDirectory;
         getBinaryPromise = async () => {
             if (!wasmBinary) {
                 try {
