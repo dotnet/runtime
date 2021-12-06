@@ -21977,16 +21977,16 @@ bool GenTree::IsInvariant() const
 //    comp - Compiler object, needed for IntegralRange::ForNode
 //
 // Return Value:
-//      true if the given tree is known to be never negative
+//    true if the given tree is known to be never negative
 //
 bool GenTree::IsNeverNegative(Compiler* comp) const
 {
     assert(varTypeIsIntegral(this));
 
-    if (IsCnsIntOrI())
+    if (IsIntegralConst())
     {
-        return AsIntCon()->IconValue() >= 0;
+        return AsIntConCommon()->IconValue() >= 0;
     }
-    //TODO-Casts: extend IntegralRange to handle constants
+    // TODO-Casts: extend IntegralRange to handle constants
     return IntegralRange::ForNode((GenTree*)this, comp).IsPositive();
 }
