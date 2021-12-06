@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Security.Cryptography
+namespace System.Net.Security
 {
     internal sealed class MD4
     {
