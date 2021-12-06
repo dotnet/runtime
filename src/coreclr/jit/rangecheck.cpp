@@ -420,7 +420,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         return (ssaDef != nullptr) &&
                IsMonotonicallyIncreasing(ssaDef->GetAssignment()->gtGetOp2(), rejectNegativeConst);
     }
-    else if (expr->OperGet() == GT_ADD || expr->OperGet() == GT_MUL || expr->OperGet() == GT_LSH)
+    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
     {
         return IsBinOpMonotonicallyIncreasing(expr->AsOp());
     }
