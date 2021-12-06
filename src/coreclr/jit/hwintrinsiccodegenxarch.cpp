@@ -2114,8 +2114,9 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     }
     else
     {
-        // containedOpNum == 0
-        // no extra work when resultOpNum is 0 or 1
+        // When we don't have a contained operand we still want to
+        // preference based on the target register if possible.
+
         if (targetReg == op2NodeReg)
         {
             ins = _213form;
