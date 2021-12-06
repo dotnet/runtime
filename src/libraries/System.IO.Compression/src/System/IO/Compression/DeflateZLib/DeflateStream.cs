@@ -281,7 +281,7 @@ namespace System.IO.Compression
                     int n = _stream.Read(_buffer, 0, _buffer.Length);
                     if (n <= 0)
                     {
-                        if (!_inflater.Finished() && _inflater.NonZeroInput() && _inflater.AvailableOutput > 0)
+                        if (!_inflater.Finished() && _inflater.NonEmptyInput() && _inflater.AvailableOutput > 0)
                         {
                             ThrowGenericInvalidData();
                         }
@@ -425,7 +425,7 @@ namespace System.IO.Compression
                             int n = await _stream.ReadAsync(new Memory<byte>(_buffer, 0, _buffer.Length), cancellationToken).ConfigureAwait(false);
                             if (n <= 0)
                             {
-                                if (!_inflater.Finished() && _inflater.NonZeroInput() && _inflater.AvailableOutput > 0)
+                                if (!_inflater.Finished() && _inflater.NonEmptyInput() && _inflater.AvailableOutput > 0)
                                 {
                                     ThrowGenericInvalidData();
                                 }
