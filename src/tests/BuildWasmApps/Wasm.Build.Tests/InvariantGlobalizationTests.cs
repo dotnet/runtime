@@ -74,10 +74,11 @@ namespace Wasm.Build.Tests
             ";
 
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        id: id,
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                        hasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                                HasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false));
 
             if (invariantGlobalization == true)
             {
