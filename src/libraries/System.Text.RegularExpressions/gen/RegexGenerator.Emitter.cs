@@ -932,12 +932,12 @@ namespace System.Text.RegularExpressions.Generator
                     // of the alternation, which will again dutifully unwind the remaining captures until
                     // what they were at the start of the alternation.  Of course, if there are no captures
                     // anywhere in the regex, we don't have to do any of that.
-                    string? startingCrawlPos = null;
+                    string? startingCapturePos = null;
                     if (expressionHasCaptures && ((node.Options & RegexNode.HasCapturesFlag) != 0 || !isAtomic))
                     {
-                        startingCrawlPos = ReserveName("alternation_starting_crawlpos");
-                        additionalDeclarations.Add($"int {startingCrawlPos} = 0;");
-                        writer.WriteLine($"{startingCrawlPos} = base.Crawlpos();");
+                        startingCapturePos = ReserveName("alternation_starting_capturepos");
+                        additionalDeclarations.Add($"int {startingCapturePos} = 0;");
+                        writer.WriteLine($"{startingCapturePos} = base.Crawlpos();");
                     }
                     writer.WriteLine();
 
@@ -981,8 +981,8 @@ namespace System.Text.RegularExpressions.Generator
                         // still points to the nextBranch, which similarly is where we'll want to jump to.
                         if (!isAtomic)
                         {
-                            EmitStackPush(startingCrawlPos is not null ?
-                                new[] { i.ToString(), startingRunTextPos, startingCrawlPos } :
+                            EmitStackPush(startingCapturePos is not null ?
+                                new[] { i.ToString(), startingRunTextPos, startingCapturePos } :
                                 new[] { i.ToString(), startingRunTextPos });
                         }
                         labelMap[i] = doneLabel;
@@ -1005,9 +1005,9 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine($"pos = {startingRunTextPos};");
                             LoadTextSpanLocal(writer);
                             textSpanPos = startingTextSpanPos;
-                            if (startingCrawlPos is not null)
+                            if (startingCapturePos is not null)
                             {
-                                EmitUncaptureUntil(startingCrawlPos);
+                                EmitUncaptureUntil(startingCapturePos);
                             }
                         }
                     }
@@ -1028,8 +1028,8 @@ namespace System.Text.RegularExpressions.Generator
                         doneLabel = backtrackLabel;
                         MarkLabel(backtrackLabel, emitSemicolon: false);
 
-                        EmitStackPop(startingCrawlPos is not null ?
-                            new[] { startingCrawlPos, startingRunTextPos } :
+                        EmitStackPop(startingCapturePos is not null ?
+                            new[] { startingCapturePos, startingRunTextPos } :
                             new[] { startingRunTextPos});
                         using (EmitBlock(writer, $"switch ({StackPop()})"))
                         {
@@ -1268,11 +1268,11 @@ namespace System.Text.RegularExpressions.Generator
                 string? no = noBranch is not null ? ReserveName("ConditionalExpressionNoBranch") : null;
 
                 // If the conditional expression has captures, we'll need to uncapture them in the case of no match.
-                string? startingCrawlPos = null;
+                string? startingCapturePos = null;
                 if ((conditional.Options & RegexNode.HasCapturesFlag) != 0)
                 {
-                    startingCrawlPos = ReserveName("conditionalexpression_starting_crawlpos");
-                    writer.WriteLine($"int {startingCrawlPos} = base.Crawlpos();");
+                    startingCapturePos = ReserveName("conditionalexpression_starting_capturepos");
+                    writer.WriteLine($"int {startingCapturePos} = base.Crawlpos();");
                     writer.WriteLine();
                 }
 
@@ -1319,10 +1319,10 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Emit the no branch, first uncapturing any captures from the expression condition that failed
                     // to match and emit the branch.
-                    MarkLabel(no, emitSemicolon: startingCrawlPos is null);
-                    if (startingCrawlPos is not null)
+                    MarkLabel(no, emitSemicolon: startingCapturePos is null);
+                    if (startingCapturePos is not null)
                     {
-                        EmitUncaptureUntil(startingCrawlPos);
+                        EmitUncaptureUntil(startingCapturePos);
                     }
 
                     doneLabel = postConditionalDoneLabel;
@@ -2050,12 +2050,12 @@ namespace System.Text.RegularExpressions.Generator
                 TransferTextSpanPosToRunTextPos();
                 writer.WriteLine($"{endingPos} = pos;");
 
-                string? crawlPos = null;
+                string? capturePos = null;
                 if (expressionHasCaptures)
                 {
-                    crawlPos = ReserveName("charloop_crawlpos");
-                    additionalDeclarations.Add($"int {crawlPos} = 0;");
-                    writer.WriteLine($"{crawlPos} = base.Crawlpos();");
+                    capturePos = ReserveName("charloop_capturepos");
+                    additionalDeclarations.Add($"int {capturePos} = 0;");
+                    writer.WriteLine($"{capturePos} = base.Crawlpos();");
                 }
 
                 if (node.M > 0)
@@ -2070,10 +2070,10 @@ namespace System.Text.RegularExpressions.Generator
                 // point we decrement the matched count as long as it's above the minimum
                 // required, and try again by flowing to everything that comes after this.
                 MarkLabel(backtrackingLabel, emitSemicolon: false);
-                if (crawlPos is not null)
+                if (capturePos is not null)
                 {
-                    EmitStackPop(crawlPos, endingPos, startingPos);
-                    EmitUncaptureUntil(crawlPos);
+                    EmitStackPop(capturePos, endingPos, startingPos);
+                    EmitUncaptureUntil(capturePos);
                 }
                 else
                 {
@@ -2107,8 +2107,8 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
 
                 MarkLabel(endLoop);
-                EmitStackPush(crawlPos is not null ?
-                    new[] { startingPos, endingPos, crawlPos } :
+                EmitStackPush(capturePos is not null ?
+                    new[] { startingPos, endingPos, capturePos } :
                     new[] { startingPos, endingPos });
             }
 
@@ -2150,11 +2150,11 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Track the current crawl position.  Upon backtracking, we'll unwind any captures beyond this point.
-                string? crawlPos = null;
+                string? capturePos = null;
                 if (expressionHasCaptures)
                 {
-                    crawlPos = ReserveName("lazyloop_crawlpos");
-                    additionalDeclarations.Add($"int {crawlPos} = 0;");
+                    capturePos = ReserveName("lazyloop_capturepos");
+                    additionalDeclarations.Add($"int {capturePos} = 0;");
                 }
 
                 // Track the current pos.  Each time we backtrack, we'll reset to the stored position, which
@@ -2175,9 +2175,9 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Uncapture any captures if the expression has any.  It's possible the captures it has
                 // are before this node, in which case this is wasted effort, but still functionally correct.
-                if (crawlPos is not null)
+                if (capturePos is not null)
                 {
-                    EmitUncaptureUntil(crawlPos);
+                    EmitUncaptureUntil(capturePos);
                 }
 
                 // If there's a max number of iterations, see if we've exceeded the maximum number of characters
@@ -2207,9 +2207,9 @@ namespace System.Text.RegularExpressions.Generator
 
                 writer.WriteLine();
                 MarkLabel(endLoopLabel);
-                if (crawlPos is not null)
+                if (capturePos is not null)
                 {
-                    writer.WriteLine($"{crawlPos} = base.Crawlpos();");
+                    writer.WriteLine($"{capturePos} = base.Crawlpos();");
                 }
 
                 if (node.IsInLoop())
@@ -2218,9 +2218,9 @@ namespace System.Text.RegularExpressions.Generator
 
                     // Store the capture's state
                     var toPushPop = new List<string>(3) { startingRunTextPos };
-                    if (crawlPos is not null)
+                    if (capturePos is not null)
                     {
-                        toPushPop.Add(crawlPos);
+                        toPushPop.Add(capturePos);
                     }
                     if (iterationCount is not null)
                     {
@@ -2373,9 +2373,9 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPop(sawEmpty, "pos", startingRunTextPos);
                 if (expressionHasCaptures)
                 {
-                    string poppedCrawlPos = ReserveName("lazyloop_crawlpos");
-                    writer.WriteLine($"int {poppedCrawlPos} = {StackPop()};");
-                    EmitUncaptureUntil(poppedCrawlPos);
+                    string poppedCapturePos = ReserveName("lazyloop_capturepos");
+                    writer.WriteLine($"int {poppedCapturePos} = {StackPop()};");
+                    EmitUncaptureUntil(poppedCapturePos);
                 }
                 LoadTextSpanLocal(writer);
                 if (doneLabel == originalDoneLabel)
@@ -2751,9 +2751,9 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPop("pos", startingRunTextPos);
                 if (expressionHasCaptures)
                 {
-                    string poppedCrawlPos = ReserveName("loop_crawlpos");
-                    writer.WriteLine($"int {poppedCrawlPos} = {StackPop()};");
-                    EmitUncaptureUntil(poppedCrawlPos);
+                    string poppedCapturePos = ReserveName("loop_capturepos");
+                    writer.WriteLine($"int {poppedCapturePos} = {StackPop()};");
+                    EmitUncaptureUntil(poppedCapturePos);
                 }
                 LoadTextSpanLocal(writer);
 
