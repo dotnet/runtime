@@ -279,7 +279,6 @@
     <Compile Include="System\Security\Cryptography\KeyedHashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\KeySizes.cs" />
     <Compile Include="System\Security\Cryptography\MaskGenerationMethod.cs" />
-    <Compile Include="System\Security\Cryptography\MD4.cs" />
     <Compile Include="System\Security\Cryptography\MD5.cs" />
     <Compile Include="System\Security\Cryptography\Oid.cs" />
     <Compile Include="System\Security\Cryptography\OidCollection.cs" />

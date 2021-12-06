@@ -18,6 +18,7 @@
     <DefineConstants>$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
+    <Compile Include="System\Net\Security\MD4.cs" />
     <Compile Include="System\Net\CertificateValidationPal.cs" />
     <Compile Include="System\Net\Logging\NetEventSource.cs" />
     <Compile Include="System\Net\SslStreamContext.cs" />
