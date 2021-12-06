@@ -11,7 +11,6 @@ namespace System.Diagnostics.Tests
     {
         private static readonly ManualResetEvent s_sleepEvent = new ManualResetEvent(false);
 
-        // workaround for issue: https://github.com/dotnet/runtime/issues/62021
         private static readonly int s_defaultSleepTimeMs = PlatformDetection.IsBrowser ? 5 : 1;
 
         [Fact]
