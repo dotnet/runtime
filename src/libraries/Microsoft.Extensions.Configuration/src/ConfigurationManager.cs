@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
@@ -19,15 +18,15 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public sealed class ConfigurationManager : IConfigurationBuilder, IConfigurationRoot, IDisposable
     {
-        // Concurrently modifying config sources is not thread-safe. However, it is thread-safe to read config while modifying sources.
+        // Concurrently modifying config sources or properties is not thread-safe. However, it is thread-safe to read config while modifying sources or properties.
         private readonly ConfigurationSources _sources;
         private readonly ConfigurationBuilderProperties _properties;
 
-        // ProviderManager provides copy-on-write references to support concurrently reading config while modifying sources.
-        // It waits until all readers unreference it before disposing any providers.
-        private readonly ProviderManager _providerManager = new();
+        // ReferenceCountedProviderManager manages copy-on-write references to support concurrently reading config while modifying sources.
+        // It waits for readers to unreference the providers before disposing them without blocking on any concurrent operations.
+        private readonly ReferenceCountedProviderManager _providerManager = new();
 
-        // _changeTokenRegistrations are only modified when config sources are modified and are not referenced during read operations.
+        // _changeTokenRegistrations is only modified when config sources are modified. It is not referenced by any read operations.
         // Because modify config sources is not thread-safe, modifying _changeTokenRegistrations does not need to be thread-safe either.
         private readonly List<IDisposable> _changeTokenRegistrations = new();
         private ConfigurationReloadToken _changeToken = new();
@@ -63,11 +62,7 @@ namespace Microsoft.Extensions.Configuration
         public IConfigurationSection GetSection(string key) => new ConfigurationSection(this, key);
 
         /// <inheritdoc/>
-        public IEnumerable<IConfigurationSection> GetChildren()
-        {
-            using ReferenceCountedProviders reference = _providerManager.GetReference();
-            return this.GetChildrenImplementation(reference.Providers, path: null);
-        }
+        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
 
         IDictionary<string, object> IConfigurationBuilder.Properties => _properties;
 
@@ -76,7 +71,7 @@ namespace Microsoft.Extensions.Configuration
         // We cannot track the duration of the reference to the providers if this property is used.
         // If a configuration source is removed after this is accessed but before it's completely enumerated,
         // this may allow access to a disposed provider.
-        IEnumerable<IConfigurationProvider> IConfigurationRoot.Providers => _providerManager.NonRefCountedProviders;
+        IEnumerable<IConfigurationProvider> IConfigurationRoot.Providers => _providerManager.NonReferenceCountedProviders;
 
         /// <inheritdoc/>
         public void Dispose()
@@ -107,6 +102,8 @@ namespace Microsoft.Extensions.Configuration
 
             RaiseChanged();
         }
+
+        internal ReferenceCountedProviders GetProvidersReference() => _providerManager.GetReference();
 
         private void RaiseChanged()
         {
@@ -146,7 +143,7 @@ namespace Microsoft.Extensions.Configuration
                 _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
             }
 
-            _providerManager.ReplaceReferenceCountedProviders(newProvidersList);
+            _providerManager.ReplaceProviders(newProvidersList);
             RaiseChanged();
         }
 
@@ -237,94 +234,6 @@ namespace Microsoft.Extensions.Configuration
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return GetEnumerator();
-            }
-        }
-
-        private sealed class ProviderManager : IDisposable
-        {
-            private readonly object _replaceProvidersLock = new object();
-            private ReferenceCountedProviders _refCountedProviders = new(new List<IConfigurationProvider>());
-
-            // This is only used to support IConfigurationRoot.Providers because we cannot track the lifetime of that reference.
-            public IEnumerable<IConfigurationProvider> NonRefCountedProviders => _refCountedProviders.NonRefCountedProviders;
-
-            public ReferenceCountedProviders GetReference()
-            {
-                // Lock to ensure oldRefCountedProviders.Dispose() in ReplaceProviders() doesn't decrement ref count to zero
-                // before calling _refCountedProviders.AddRef().
-                lock (_replaceProvidersLock)
-                {
-                    _refCountedProviders.AddReference();
-                    return _refCountedProviders;
-                }
-            }
-
-            // Providers should never be concurrently modified. Reading during modification is allowed.
-            public void ReplaceReferenceCountedProviders(List<IConfigurationProvider> providers)
-            {
-                ReferenceCountedProviders oldRefCountedProviders = _refCountedProviders;
-
-                lock (_replaceProvidersLock)
-                {
-                    _refCountedProviders = new ReferenceCountedProviders(providers);
-                }
-
-                oldRefCountedProviders.Dispose();
-            }
-
-            public void AddProvider(IConfigurationProvider provider)
-            {
-                // Maintain existing references, but replace list with copy containing new item.
-                _refCountedProviders.ReplaceProvidersList(new List<IConfigurationProvider>(_refCountedProviders.Providers)
-                {
-                    provider
-                });
-            }
-
-            public void Dispose() => _refCountedProviders.Dispose();
-        }
-
-        private sealed class ReferenceCountedProviders : IDisposable
-        {
-            private long _refCount = 1;
-            private volatile List<IConfigurationProvider> _providers;
-
-            public ReferenceCountedProviders(List<IConfigurationProvider> providers)
-            {
-                _providers = providers;
-            }
-
-            public List<IConfigurationProvider> Providers
-            {
-                get
-                {
-                    Debug.Assert(_refCount > 0);
-                    return _providers;
-                }
-            }
-
-            public List<IConfigurationProvider> NonRefCountedProviders => _providers;
-
-            public void AddReference()
-            {
-                // This is always called with a lock to ensure _refCount hasn't already decremented to zero.
-                Interlocked.Increment(ref _refCount);
-            }
-
-            public void ReplaceProvidersList(List<IConfigurationProvider> providers)
-            {
-                _providers = providers;
-            }
-
-            public void Dispose()
-            {
-                if (Interlocked.Decrement(ref _refCount) == 0)
-                {
-                    foreach (var provider in Providers)
-                    {
-                        (provider as IDisposable)?.Dispose();
-                    }
-                }
             }
         }
 
