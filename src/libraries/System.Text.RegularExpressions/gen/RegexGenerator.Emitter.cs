@@ -10,6 +10,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -650,6 +651,7 @@ namespace System.Text.RegularExpressions.Generator
             // delete it if no additional declarations are required, or we replace it with the list of additional declarations
             // built up while generating code.
             var additionalDeclarations = new HashSet<string>();
+            var additionalLocalFunctions = new Dictionary<string, string[]>();
 
             // Declare some locals.
             string sliceSpan = "slice";
@@ -658,7 +660,6 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("int runtextend = base.runtextend;");
             writer.WriteLine($"int original_runtextpos = runtextpos;");
             hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
-            writer.Write("int runstackpos = 0;");
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
@@ -703,8 +704,21 @@ namespace System.Text.RegularExpressions.Generator
                 EmitUncaptureUntil("0");
             }
 
-            // We're done.  Patch up any additional declarations.
+            // We're done with the match.
+
+            // Patch up any additional declarations.
             ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
+
+            // And emit any required helpers.
+            foreach (KeyValuePair<string, string[]> localFunctions in additionalLocalFunctions.OrderBy(k => k.Key))
+            {
+                writer.WriteLine();
+                foreach (string line in localFunctions.Value)
+                {
+                    writer.WriteLine(line);
+                }
+            }
+
             return;
 
             static bool IsCaseInsensitive(RegexNode node) => (node.Options & RegexOptions.IgnoreCase) != 0;
@@ -969,13 +983,9 @@ namespace System.Text.RegularExpressions.Generator
                         // still points to the nextBranch, which similarly is where we'll want to jump to.
                         if (!isAtomic)
                         {
-                            EmitRunstackResizeIfNeeded(2);
-                            writer.WriteLine($"{RunstackPush()} = {i};");
-                            if (startingCrawlPos is not null)
-                            {
-                                writer.WriteLine($"{RunstackPush()} = {startingCrawlPos};");
-                            }
-                            writer.WriteLine($"{RunstackPush()} = {startingRunTextPos};");
+                            EmitStackPush(startingCrawlPos is not null ?
+                                new[] { i.ToString(), startingRunTextPos, startingCrawlPos } :
+                                new[] { i.ToString(), startingRunTextPos });
                         }
                         labelMap[i] = doneLabel;
 
@@ -1020,12 +1030,10 @@ namespace System.Text.RegularExpressions.Generator
                         doneLabel = backtrackLabel;
                         MarkLabel(backtrackLabel, emitSemicolon: false);
 
-                        writer.WriteLine($"{startingRunTextPos} = {RunstackPop()};");
-                        if (startingCrawlPos is not null)
-                        {
-                            writer.WriteLine($"{startingCrawlPos} = {RunstackPop()};");
-                        }
-                        using (EmitBlock(writer, $"switch ({RunstackPop()})"))
+                        EmitStackPop(startingCrawlPos is not null ?
+                            new[] { startingCrawlPos, startingRunTextPos } :
+                            new[] { startingRunTextPos});
+                        using (EmitBlock(writer, $"switch ({StackPop()})"))
                         {
                             for (int i = 0; i < labelMap.Length; i++)
                             {
@@ -1210,8 +1218,7 @@ namespace System.Text.RegularExpressions.Generator
                     doneLabel = backtrack;
                     MarkLabel(backtrack);
 
-                    writer.WriteLine($"{resumeAt} = {RunstackPop()};");
-
+                    EmitStackPop(resumeAt);
                     using (EmitBlock(writer, $"switch ({resumeAt})"))
                     {
                         if (postYesDoneLabel != originalDoneLabel)
@@ -1233,8 +1240,7 @@ namespace System.Text.RegularExpressions.Generator
                     MarkLabel(endRef);
                     if (postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel)
                     {
-                        EmitRunstackResizeIfNeeded(1);
-                        writer.WriteLine($"{RunstackPush()} = {resumeAt};");
+                        EmitStackPush(resumeAt);
                     }
                 }
             }
@@ -1358,7 +1364,7 @@ namespace System.Text.RegularExpressions.Generator
                         doneLabel = backtrack;
                         MarkLabel(backtrack);
 
-                        using (EmitBlock(writer, $"switch ({RunstackPop()})"))
+                        using (EmitBlock(writer, $"switch ({StackPop()})"))
                         {
                             if (postYesDoneLabel != postConditionalDoneLabel)
                             {
@@ -1376,8 +1382,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     if (postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel)
                     {
-                        EmitRunstackResizeIfNeeded(1);
-                        writer.WriteLine($"{RunstackPush()} = {resumeAt};");
+                        EmitStackPush(resumeAt);
                     }
                 }
 
@@ -1428,8 +1433,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     writer.WriteLine();
 
-                    EmitRunstackResizeIfNeeded(1);
-                    writer.WriteLine($"{RunstackPush()} = {startingRunTextPos};");
+                    EmitStackPush(startingRunTextPos);
 
                     // Skip past the backtracking section
                     string end = ReserveName("SkipBacktrack");
@@ -1439,7 +1443,7 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                     string backtrack = ReserveName($"CaptureBacktrack");
                     MarkLabel(backtrack);
-                    writer.WriteLine($"{startingRunTextPos} = {RunstackPop()};");
+                    EmitStackPop(startingRunTextPos);
                     if (!childBacktracks)
                     {
                         writer.WriteLine($"runtextpos = {startingRunTextPos};");
@@ -2070,11 +2074,13 @@ namespace System.Text.RegularExpressions.Generator
                 MarkLabel(backtrackingLabel, emitSemicolon: false);
                 if (crawlPos is not null)
                 {
-                    writer.WriteLine($"{crawlPos} = {RunstackPop()};");
+                    EmitStackPop(crawlPos, endingPos, startingPos);
                     EmitUncaptureUntil(crawlPos);
                 }
-                writer.WriteLine($"{endingPos} = {RunstackPop()};");
-                writer.WriteLine($"{startingPos} = {RunstackPop()};");
+                else
+                {
+                    EmitStackPop(endingPos, startingPos);
+                }
 
                 string originalDoneLabel = doneLabel;
                 using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
@@ -2103,13 +2109,9 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
 
                 MarkLabel(endLoop);
-                EmitRunstackResizeIfNeeded(expressionHasCaptures ? 3 : 2);
-                writer.WriteLine($"{RunstackPush()} = {startingPos};");
-                writer.WriteLine($"{RunstackPush()} = {endingPos};");
-                if (crawlPos is not null)
-                {
-                    writer.WriteLine($"{RunstackPush()} = {crawlPos};");
-                }
+                EmitStackPush(crawlPos is not null ?
+                    new[] { startingPos, endingPos, crawlPos } :
+                    new[] { startingPos, endingPos });
             }
 
             void EmitSingleCharLazy(RegexNode node, bool emitLengthChecksIfRequired = true)
@@ -2217,16 +2219,17 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
 
                     // Store the capture's state
-                    EmitRunstackResizeIfNeeded(3);
-                    writer.WriteLine($"{RunstackPush()} = {startingRunTextPos};");
+                    var toPushPop = new List<string>(3) { startingRunTextPos };
                     if (crawlPos is not null)
                     {
-                        writer.WriteLine($"{RunstackPush()} = {crawlPos};");
+                        toPushPop.Add(crawlPos);
                     }
                     if (iterationCount is not null)
                     {
-                        writer.WriteLine($"{RunstackPush()} = {iterationCount};");
+                        toPushPop.Add(iterationCount);
                     }
+                    string[] toPushPopArray = toPushPop.ToArray();
+                    EmitStackPush(toPushPopArray);
 
                     // Skip past the backtracking section
                     string end = ReserveName("SkipBacktrack");
@@ -2236,15 +2239,9 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                     string backtrack = ReserveName("CharLazyBacktrack");
                     MarkLabel(backtrack);
-                    if (iterationCount is not null)
-                    {
-                        writer.WriteLine($"{iterationCount} = {RunstackPop()};");
-                    }
-                    if (crawlPos is not null)
-                    {
-                        writer.WriteLine($"{crawlPos} = {RunstackPop()};");
-                    }
-                    writer.WriteLine($"{startingRunTextPos} = {RunstackPop()};");
+
+                    Array.Reverse(toPushPopArray);
+                    EmitStackPop(toPushPopArray);
 
                     writer.WriteLine($"goto {doneLabel};");
                     writer.WriteLine();
@@ -2312,14 +2309,10 @@ namespace System.Text.RegularExpressions.Generator
                 // We need to store the starting runtextpos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
                 // the iteration we're leaving, so it's pushed before updating it to runtextpos.
-                EmitRunstackResizeIfNeeded(3);
-                if (expressionHasCaptures)
-                {
-                    writer.WriteLine($"{RunstackPush()} = base.Crawlpos();");
-                }
-                writer.WriteLine($"{RunstackPush()} = {startingRunTextPos};");
-                writer.WriteLine($"{RunstackPush()} = runtextpos;");
-                writer.WriteLine($"{RunstackPush()} = {sawEmpty};");
+                EmitStackPush(expressionHasCaptures ?
+                    new[] { "base.Crawlpos()", startingRunTextPos, "runtextpos", sawEmpty } :
+                    new[] { startingRunTextPos, "runtextpos", sawEmpty });
+
                 writer.WriteLine();
 
                 // Save off some state.  We need to store the current runtextpos so we can compare it against
@@ -2379,13 +2372,11 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     writer.WriteLine($"goto {originalDoneLabel};");
                 }
-                writer.WriteLine($"{sawEmpty} = {RunstackPop()};");
-                writer.WriteLine($"runtextpos = {RunstackPop()};");
-                writer.WriteLine($"{startingRunTextPos} = {RunstackPop()};");
+                EmitStackPop(sawEmpty, "runtextpos", startingRunTextPos);
                 if (expressionHasCaptures)
                 {
                     string poppedCrawlPos = ReserveName("lazyloop_crawlpos");
-                    writer.WriteLine($"int {poppedCrawlPos} = {RunstackPop()};");
+                    writer.WriteLine($"int {poppedCrawlPos} = {StackPop()};");
                     EmitUncaptureUntil(poppedCrawlPos);
                 }
                 LoadTextSpanLocal(writer);
@@ -2408,10 +2399,8 @@ namespace System.Text.RegularExpressions.Generator
                 if (!isAtomic)
                 {
                     // Store the capture's state and skip the backtracking section
-                    EmitRunstackResizeIfNeeded(3);
-                    writer.WriteLine($"{RunstackPush()} = {startingRunTextPos};");
-                    writer.WriteLine($"{RunstackPush()} = {iterationCount};");
-                    writer.WriteLine($"{RunstackPush()} = {sawEmpty};");
+                    EmitStackPush(startingRunTextPos, iterationCount, sawEmpty);
+
                     string skipBacktrack = ReserveName("SkipBacktrack");
                     writer.WriteLine($"goto {skipBacktrack};");
                     writer.WriteLine();
@@ -2420,9 +2409,7 @@ namespace System.Text.RegularExpressions.Generator
                     string backtrack = ReserveName($"LazyLoopBacktrack");
                     MarkLabel(backtrack);
 
-                    writer.WriteLine($"{sawEmpty} = {RunstackPop()};");
-                    writer.WriteLine($"{iterationCount} = {RunstackPop()};");
-                    writer.WriteLine($"{startingRunTextPos} = {RunstackPop()};");
+                    EmitStackPop(sawEmpty, iterationCount, startingRunTextPos);
 
                     if (maxIterations == int.MaxValue)
                     {
@@ -2706,13 +2693,9 @@ namespace System.Text.RegularExpressions.Generator
                 // We need to store the starting runtextpos and crawl position so that it may
                 // be backtracked through later.  This needs to be the starting position from
                 // the iteration we're leaving, so it's pushed before updating it to runtextpos.
-                EmitRunstackResizeIfNeeded(3);
-                if (expressionHasCaptures)
-                {
-                    writer.WriteLine($"{RunstackPush()} = base.Crawlpos();");
-                }
-                writer.WriteLine($"{RunstackPush()} = {startingRunTextPos};");
-                writer.WriteLine($"{RunstackPush()} = runtextpos;");
+                EmitStackPush(expressionHasCaptures ?
+                    new[] { "base.Crawlpos()", startingRunTextPos, "runtextpos" } :
+                    new[] { startingRunTextPos, "runtextpos" });
                 writer.WriteLine();
 
                 // Save off some state.  We need to store the current runtextpos so we can compare it against
@@ -2767,12 +2750,11 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     writer.WriteLine($"goto {originalDoneLabel};");
                 }
-                writer.WriteLine($"runtextpos = {RunstackPop()};");
-                writer.WriteLine($"{startingRunTextPos} = {RunstackPop()};");
+                EmitStackPop("runtextpos", startingRunTextPos);
                 if (expressionHasCaptures)
                 {
                     string poppedCrawlPos = ReserveName("loop_crawlpos");
-                    writer.WriteLine($"int {poppedCrawlPos} = {RunstackPop()};");
+                    writer.WriteLine($"int {poppedCrawlPos} = {StackPop()};");
                     EmitUncaptureUntil(poppedCrawlPos);
                 }
                 LoadTextSpanLocal(writer);
@@ -2819,9 +2801,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine();
 
                         // Store the capture's state
-                        EmitRunstackResizeIfNeeded(3);
-                        writer.WriteLine($"{RunstackPush()} = {startingRunTextPos};");
-                        writer.WriteLine($"{RunstackPush()} = {iterationCount};");
+                        EmitStackPush(startingRunTextPos, iterationCount);
 
                         // Skip past the backtracking section
                         string end = ReserveName("SkipBacktrack");
@@ -2831,8 +2811,7 @@ namespace System.Text.RegularExpressions.Generator
                         // Emit a backtracking section that restores the capture's state and then jumps to the previous done label
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack);
-                        writer.WriteLine($"{iterationCount} = {RunstackPop()};");
-                        writer.WriteLine($"{startingRunTextPos} = {RunstackPop()};");
+                        EmitStackPop(iterationCount, startingRunTextPos);
 
                         writer.WriteLine($"goto {doneLabel};");
                         writer.WriteLine();
@@ -2843,17 +2822,91 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            void EmitRunstackResizeIfNeeded(int count)
+            /// <summary>Pushes values on to the backtracking stack.</summary>
+            void EmitStackPush(params string[] args)
             {
-                string subCount = count > 1 ? $" - {count - 1}" : "";
-                using (EmitBlock(writer, $"if (runstackpos >= base.runstack!.Length{subCount})"))
+                Debug.Assert(args.Length is >= 1);
+                string function = $"StackPush{args.Length}";
+
+                additionalDeclarations.Add("int stackpos = 0;");
+
+                if (!additionalLocalFunctions.ContainsKey(function))
                 {
-                    writer.WriteLine("global::System.Array.Resize(ref base.runstack, base.runstack.Length * 2);");
+                    var lines = new string[24 + args.Length];
+                    lines[0] = $"// <summary>Push {args.Length} value{(args.Length == 1 ? "" : "s")} onto the backtracking stack.</summary>";
+                    lines[1] = $"[global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]";
+                    lines[2] = $"static void {function}(ref int[] stack, ref int pos{FormatN(", int arg{0}", args.Length)})";
+                    lines[3] = $"{{";
+                    lines[4] = $"    // If there's space available for {(args.Length > 1 ? $"all {args.Length} values, store them" : "the value, store it")}.";
+                    lines[5] = $"    int[] s = stack;";
+                    lines[6] = $"    int p = pos;";
+                    lines[7] = $"    if ((uint){(args.Length > 1 ? $"(p + {args.Length - 1})" : "p")} < (uint)s.Length)";
+                    lines[8] = $"    {{";
+                    for (int i = 0; i < args.Length; i++)
+                    {
+                        lines[9 + i] = $"        s[p{(i == 0 ? "" : $" + {i}")}] = arg{i};";
+                    }
+                    lines[9 + args.Length] = args.Length > 1 ? $"        pos += {args.Length};" : "        pos++;";
+                    lines[10 + args.Length] = $"        return;";
+                    lines[11 + args.Length] = $"    }}";
+                    lines[12 + args.Length] = $"";
+                    lines[13 + args.Length] = $"    // Otherwise, resize the stack to make room and try again.";
+                    lines[14 + args.Length] = $"    WithResize(ref stack, ref pos{FormatN(", arg{0}", args.Length)});";
+                    lines[15 + args.Length] = $"";
+                    lines[16 + args.Length] = $"    // <summary>Resize the backtracking stack array and push {args.Length} value{(args.Length == 1 ? "" : "s")} onto the stack.</summary>";
+                    lines[17 + args.Length] = $"    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]";
+                    lines[18 + args.Length] = $"    static void WithResize(ref int[] stack, ref int pos{FormatN(", int arg{0}", args.Length)})";
+                    lines[19 + args.Length] = $"    {{";
+                    lines[20 + args.Length] = $"        global::System.Array.Resize(ref stack, (pos + {args.Length - 1}) * 2);";
+                    lines[21 + args.Length] = $"        {function}(ref stack, ref pos{FormatN(", arg{0}", args.Length)});";
+                    lines[22 + args.Length] = $"    }}";
+                    lines[23 + args.Length] = $"}}";
+
+                    additionalLocalFunctions.Add(function, lines);
                 }
+
+                writer.WriteLine($"{function}(ref base.runstack!, ref stackpos, {string.Join(", ", args)});");
             }
 
-            string RunstackPush() => "base.runstack[runstackpos++]";
-            string RunstackPop() => "base.runstack![--runstackpos]";
+            /// <summary>Pops values from the backtracking stack into the specified locations.</summary>
+            void EmitStackPop(params string[] args)
+            {
+                Debug.Assert(args.Length is >= 1);
+
+                if (args.Length == 1)
+                {
+                    writer.WriteLine($"{args[0]} = {StackPop()};");
+                    return;
+                }
+
+                string function = $"StackPop{args.Length}";
+
+                if (!additionalLocalFunctions.ContainsKey(function))
+                {
+                    var lines = new string[5 + args.Length];
+                    lines[0] = $"// <summary>Pop {args.Length} value{(args.Length == 1 ? "" : "s")} from the backtracking stack.</summary>";
+                    lines[1] = $"[global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]";
+                    lines[2] = $"static void {function}(int[] stack, ref int pos{FormatN(", out int arg{0}", args.Length)})";
+                    lines[3] = $"{{";
+                    for (int i = 0; i < args.Length; i++)
+                    {
+                        lines[4 + i] = $"    arg{i} = stack[--pos];";
+                    }
+                    lines[4 + args.Length] = $"}}";
+
+                    additionalLocalFunctions.Add(function, lines);
+                }
+
+                writer.WriteLine($"{function}(base.runstack, ref stackpos, out {string.Join(", out ", args)});");
+            }
+
+            /// <summary>Expression for popping the next item from the backtracking stack.</summary>
+            string StackPop() => "base.runstack![--stackpos]";
+
+            /// <summary>Concatenates the strings resulting from formatting the format string with the values [0, count).</summary>
+            static string FormatN(string format, int count) =>
+                string.Concat(from i in Enumerable.Range(0, count)
+                              select string.Format(format, i));
         }
 
         private static bool EmitLoopTimeoutCounterIfNeeded(IndentedTextWriter writer, RegexMethod rm)
@@ -3114,12 +3167,8 @@ namespace System.Text.RegularExpressions.Generator
         {
             if (declarations.Count != 0)
             {
-                var arr = new string[declarations.Count];
-                declarations.CopyTo(arr);
-                Array.Sort(arr);
-
                 StringBuilder tmp = new StringBuilder().AppendLine();
-                foreach (string decl in arr)
+                foreach (string decl in declarations.OrderBy(s => s))
                 {
                     for (int i = 0; i < indent; i++)
                     {
