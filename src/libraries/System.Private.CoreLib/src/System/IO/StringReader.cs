@@ -69,7 +69,7 @@ namespace System.IO
             }
 
             int pos = _pos;
-            if ((uint)pos < s.Length)
+            if ((uint)pos < (uint)s.Length)
             {
                 _pos++;
                 return s[pos];
