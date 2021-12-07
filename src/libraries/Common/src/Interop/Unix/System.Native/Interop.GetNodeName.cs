@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNodeName", SetLastError = true)]
-        private static extern unsafe int GetNodeName(char* name, out int len);
+        private static partial unsafe int GetNodeName(char* name, out int len);
 
         internal static unsafe string GetNodeName()
         {
