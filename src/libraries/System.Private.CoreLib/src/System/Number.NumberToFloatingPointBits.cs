@@ -75,7 +75,7 @@ namespace System
             public int MaxExponentFastPath { get; }
 
             public int LargerPowerOfTen { get; }
-            public ulong MaxMantissaFastPath { get => (ulong)2 << ExponentBits; }
+            public ulong MaxMantissaFastPath { get => (ulong)2 << DenormalMantissaBits; }
             public ushort ExponentBits { get; }
 
             public FloatingPointInfo(ushort denormalMantissaBits, ushort exponentBits, int maxBinaryExponent, int exponentBias, ulong infinityBits, int smallerPowerOfTen, int largerPowerOfTen, int infinitePower, int minExponentRoundToEven, int maxExponentRoundToEven, int maxExponentFastPath)
@@ -108,7 +108,7 @@ namespace System
                 MaxExponentFastPath = maxExponentFastPath;
             }
         }
-        private static ReadOnlySpan<float> s_Pow10SingleTable => new float[]{
+        private static float[] s_Pow10SingleTable = {
             1e0f,   // 10^0
             1e1f,   // 10^1
             1e2f,   // 10^2
@@ -122,7 +122,7 @@ namespace System
             1e10f,  // 10^10
         };
 
-        private static ReadOnlySpan<double> s_Pow10DoubleTable => new double[] {
+        private static double[] s_Pow10DoubleTable =  {
             1e0,    // 10^0
             1e1,    // 10^1
             1e2,    // 10^2
@@ -148,7 +148,7 @@ namespace System
             1e22,   // 10^22
         };
 
-        private static ReadOnlySpan<ulong> s_Pow5128Table => new ulong[] {
+        private static ulong[] s_Pow5128Table = {
         0xeef453d6923bd65a, 0x113faa2906a13b3f,
         0x9558b4661b6565f8, 0x4ac7ca59a424c507,
         0xbaaee17fa23ebf76, 0x5d79bcf00d2df649,
