@@ -40,7 +40,7 @@ namespace System.IO.Compression
         // only apply to update mode
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
-        private string? _fileComment;
+        private byte[] _fileComment;
         private readonly CompressionLevel? _compressionLevel;
         private bool _hasUnicodeEntryNameOrComment;
 
@@ -79,15 +79,7 @@ namespace System.IO.Compression
             // the cd should have this as null if we aren't in Update mode
             _cdUnknownExtraFields = cd.ExtraFields;
 
-            if (cd.FileComment.Length > 0)
-            {
-                Encoding encoding = _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8;
-                _fileComment = encoding.GetString(cd.FileComment);
-            }
-            else
-            {
-                _fileComment = null;
-            }
+            _fileComment = ZipHelper.GetEncodedTruncatedBytes(cd.FileComment, _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8, ushort.MaxValue);
 
             _compressionLevel = null;
 
@@ -138,7 +130,7 @@ namespace System.IO.Compression
             _cdUnknownExtraFields = null;
             _lhUnknownExtraFields = null;
 
-            _fileComment = null;
+            _fileComment = Array.Empty<byte>();
 
             _compressionLevel = null;
 
@@ -199,8 +191,12 @@ namespace System.IO.Compression
         [AllowNull]
         public string Comment
         {
-            get => ZipHelper.GetTruncatedComment(_fileComment, _archive.EntryNameAndCommentEncoding, ushort.MaxValue);
-            set => _fileComment = value ?? string.Empty;
+            get => (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_fileComment);
+            set
+            {
+                _fileComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out bool isUTF8);
+                _hasUnicodeEntryNameOrComment |= isUTF8;
+            }
         }
 
         /// <summary>
@@ -220,7 +216,7 @@ namespace System.IO.Compression
                 if (value == null)
                     throw new ArgumentNullException(nameof(FullName));
 
-                _storedEntryNameBytes = ZipHelper.GetEncodedTruncatedBytes(
+                _storedEntryNameBytes = ZipHelper.GetEncodedTruncatedBytesFromString(
                     value, _archive.EntryNameAndCommentEncoding, 0 /* No truncation */, out bool hasUnicodeEntryName);
 
                 _hasUnicodeEntryNameOrComment |= hasUnicodeEntryName;
@@ -551,13 +547,9 @@ namespace System.IO.Compression
             writer.Write((ushort)_storedEntryNameBytes.Length);                 // File Name Length                         (2 bytes)
             writer.Write(extraFieldLength);                                     // Extra Field Length                       (2 bytes)
 
-            byte[]? commentBytes = string.IsNullOrEmpty(_fileComment) ? null :
-                                   ZipHelper.GetEncodedTruncatedBytes(_fileComment, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out _);
+            Debug.Assert(_fileComment.Length <= ushort.MaxValue);
 
-            // This should hold because of how we read it originally in ZipCentralDirectoryFileHeader:
-            Debug.Assert((commentBytes == null) || (commentBytes.Length <= ushort.MaxValue));
-
-            writer.Write(commentBytes != null ? (ushort)commentBytes.Length : (ushort)0); // file comment length
+            writer.Write((ushort)_fileComment.Length);
             writer.Write((ushort)0); // disk number start
             writer.Write((ushort)0); // internal file attributes
             writer.Write(_externalFileAttr); // external file attributes
@@ -571,8 +563,7 @@ namespace System.IO.Compression
             if (_cdUnknownExtraFields != null)
                 ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
 
-            if (commentBytes != null)
-                writer.Write(commentBytes);
+            writer.Write(_fileComment);
         }
 
         // returns false if fails, will get called on every entry before closing in update mode

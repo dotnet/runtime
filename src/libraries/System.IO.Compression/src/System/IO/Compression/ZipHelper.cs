@@ -195,25 +195,38 @@ namespace System.IO.Compression
             }
         }
 
-        internal static string GetTruncatedComment(string? comment, Encoding? archiveEncoding, int maxValue)
-        {
-            byte[] bytes = GetEncodedTruncatedBytes(comment ?? string.Empty, archiveEncoding, maxValue, out bool isUTF8);
-            Encoding encoding = archiveEncoding ?? (isUTF8 ? Encoding.UTF8 : Encoding.ASCII);
-            return encoding.GetString(bytes);
-        }
+        // internal static string GetTruncatedComment(string? comment, Encoding? archiveEncoding, int maxValue)
+        // {
+        //     byte[] bytes = GetEncodedTruncatedBytesFromString(comment ?? string.Empty, archiveEncoding, maxValue, out bool isUTF8);
+        //     Encoding encoding = archiveEncoding ?? (isUTF8 ? Encoding.UTF8 : Encoding.ASCII);
+        //     return encoding.GetString(bytes);
+        // }
 
         // Converts the specified string into bytes using the optional specified encoding.
         // If the encoding null, then the encoding is calculated from the string itself.
         // If maxBytes is greater than zero, the returned string will be truncated to a total
         // number of characters whose bytes do not add up to more than that number.
-        internal static byte[] GetEncodedTruncatedBytes(string? text, Encoding? encoding, int maxBytes, out bool isUTF8)
+        internal static byte[] GetEncodedTruncatedBytesFromString(string? text, Encoding? encoding, int maxBytes, out bool isUTF8)
         {
-            text ??= string.Empty;
+            if (string.IsNullOrEmpty(text))
+            {
+                isUTF8 = false;
+                return Array.Empty<byte>();
+            }
+
             encoding ??= GetEncoding(text);
-
             isUTF8 = encoding.CodePage == 65001;
-
             byte[] bytes = encoding.GetBytes(text);
+
+            return GetEncodedTruncatedBytes(bytes, encoding, maxBytes);
+        }
+
+        internal static byte[] GetEncodedTruncatedBytes(byte[] bytes, Encoding encoding, int maxBytes)
+        {
+            if (bytes.Length == 0)
+            {
+                return bytes;
+            }
 
             if (maxBytes > 0 && bytes.Length > maxBytes)
             {
