@@ -108,7 +108,10 @@ namespace System.Diagnostics
                 // local case: do not use performance counter and also attempt to get the matching (by pid) process only
 
                 string? processName = Interop.Kernel32.GetProcessName((uint)processId);
-                return NtProcessInfoHelper.GetProcessShortName(processName);
+                if (processName is not null)
+                {
+                    return NtProcessInfoHelper.GetProcessShortName(processName);
+                }
             }
 
             return null;
