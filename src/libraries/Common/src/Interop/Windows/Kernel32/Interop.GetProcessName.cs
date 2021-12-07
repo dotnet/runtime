@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "QueryFullProcessImageNameW", ExactSpelling = true)]
         private static extern bool QueryFullProcessImageName(
-            IntPtr hProcess,
+            SafeHandle hProcess,
             uint dwFlags,
             ref char lpBuffer,
             ref uint lpdwSize);
@@ -27,7 +27,7 @@ internal static partial class Interop
                 uint length = (uint)buffer.Length;
 
                 bool queried = QueryFullProcessImageName(
-                    h.DangerousGetHandle(),
+                    h,
                     0,
                     ref MemoryMarshal.GetReference(buffer),
                     ref length);
