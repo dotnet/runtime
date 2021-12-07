@@ -443,7 +443,7 @@
       <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
     </MergedPayloads>
 
-    <MergedPayloads Update="@(MergedPayloads)" Condition="'$(TargetOSSpec)' != 'windows'">
+    <MergedPayloads Update="@(MergedPayloads)" Condition="'$(TargetOS)' != 'windows'">
       <MergedTestHelixCommand>chmod +x %(MergedPayloads.MergedTestHelixCommand)%0A%(MergedPayloads.MergedTestHelixCommand)</MergedTestHelixCommand>
     </MergedPayloads>
 
