@@ -21985,7 +21985,7 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
 
     if (IsIntegralConst())
     {
-        return AsIntConCommon()->IconValue() >= 0;
+        return AsIntConCommon()->IntegralValue() >= 0;
     }
     // TODO-Casts: extend IntegralRange to handle constants
     return IntegralRange::ForNode((GenTree*)this, comp).IsPositive();
