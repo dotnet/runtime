@@ -129,7 +129,7 @@ jobs:
         - task: Cache@2
           displayName: Cache libraries build
           inputs:
-            key: '"libraries-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+            key: '"libraries-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | "${{ parameters.framework }}" | $(CommitsOutputFile)'
             path: $(Build.StagingDirectory)
             cacheHitVar: BUILD_CACHE_RESTORED
           condition: eq(variables.UsePipelineCache, 'true')
@@ -137,7 +137,7 @@ jobs:
         - task: Cache@2
           displayName: Cache libraries build logs
           inputs:
-            key: '"libraries-logs" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+            key: '"libraries-logs" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | "${{ parameters.framework }}" | $(CommitsOutputFile)'
             path: $(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)
             cacheHitVar: BUILD_LOGS_RESTORED
             condition: eq(variables.UsePipelineCache, 'true')

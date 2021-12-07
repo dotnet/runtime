@@ -203,7 +203,7 @@ jobs:
     - task: Cache@2
       displayName: Cache coreclr build
       inputs:
-        key: '" coreclr-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+        key: '" coreclr-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | "${{ parameters.pgoType }}" | $(CommitsOutputFile)'
         path: $(Build.StagingDirectory)
         cacheHitVar: BUILD_CACHE_RESTORED
       condition: eq(variables.UsePipelineCache, 'true')
@@ -212,7 +212,7 @@ jobs:
       - task: Cache@2
         displayName: Cache cross DAC build
         inputs:
-          key: '" crossDAC-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+          key: '" crossDAC-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | "${{ parameters.pgoType }}" | $(CommitsOutputFile)'
           path: $(crossDacArtifactPath)
           cacheHitVar: DAC_BUILD_CACHE_RESTORED
         condition: eq(variables.UsePipelineCache, 'true')
@@ -220,7 +220,7 @@ jobs:
     - task: Cache@2
       displayName: Cache coreclr build logs
       inputs:
-        key: '"coreclr-logs" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+        key: '"coreclr-logs" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | "${{ parameters.pgoType }}" | $(CommitsOutputFile)'
         path: $(Build.SourcesDirectory)/artifacts/log/
         cacheHitVar: BUILD_LOGS_RESTORED
         condition: eq(variables.UsePipelineCache, 'true')
