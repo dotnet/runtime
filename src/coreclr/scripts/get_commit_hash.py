@@ -29,7 +29,7 @@ paths = {
         'Directory.Build.targets',
         'Directory.Build.props',
         'Directory.Solution.props',
-        'eng'
+#        'eng'
     ],
     'coreclr': [
         'src/coreclr',
@@ -93,6 +93,10 @@ def create_commits_file(run_types, source_directory, output_file):
                     git_output = "grafted{}".format(os.linesep)
 
                 of.write("'{}': {}".format(git_path, git_output))
+
+    print(" -- {} contents: ".format(output_file))
+    with open(output_file, 'r') as of:
+        print(of.read())
 
 def main(main_args):
     """Main entrypoint
