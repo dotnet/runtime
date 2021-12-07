@@ -4967,11 +4967,14 @@ struct GenTreeFptrVal : public GenTree
 {
     CORINFO_METHOD_HANDLE gtFptrMethod;
 
+    bool gtFptrDelegateTarget;
+
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
-    GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth)
+    GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth)
+        : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth), gtFptrDelegateTarget(false)
     {
 #ifdef FEATURE_READYTORUN
         gtEntryPoint.addr       = nullptr;

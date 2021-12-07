@@ -2981,7 +2981,7 @@ namespace Internal.JitInterface
 
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
-            return target.IsWindows ? CORINFO_OS.CORINFO_WINNT : 
+            return target.IsWindows ? CORINFO_OS.CORINFO_WINNT :
                    target.IsOSX ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
         }
 
@@ -3156,7 +3156,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
+        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
 
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
@@ -3820,7 +3820,7 @@ namespace Internal.JitInterface
             instrumentationData = msInstrumentationData.ToArray();
         }
 
-        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData, 
+        private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData,
             ref PgoSource pPgoSource)
         {
             MethodDesc methodDesc = HandleToObject(ftnHnd);

@@ -1832,12 +1832,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static void _getFunctionFixedEntryPoint(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_CONST_LOOKUP* pResult)
+        static void _getFunctionFixedEntryPoint(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, byte isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getFunctionFixedEntryPoint(ftn, ref *pResult);
+                _this.getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer != 0, ref *pResult);
             }
             catch (Exception ex)
             {
@@ -2691,7 +2691,7 @@ namespace Internal.JitInterface
             callbacks[120] = (delegate* unmanaged<IntPtr, IntPtr*, void**, int*>)&_getAddrOfCaptureThreadGlobal;
             callbacks[121] = (delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, void**, void*>)&_getHelperFtn;
             callbacks[122] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, CORINFO_ACCESS_FLAGS, void>)&_getFunctionEntryPoint;
-            callbacks[123] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, void>)&_getFunctionFixedEntryPoint;
+            callbacks[123] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte, CORINFO_CONST_LOOKUP*, void>)&_getFunctionFixedEntryPoint;
             callbacks[124] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, void**, void*>)&_getMethodSync;
             callbacks[125] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, CorInfoHelpFunc>)&_getLazyStringLiteralHelper;
             callbacks[126] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, void**, CORINFO_MODULE_STRUCT_*>)&_embedModuleHandle;
