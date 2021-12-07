@@ -1031,7 +1031,7 @@ namespace System
             ulong res = 0;
 
             // parse batches of 8 digits with SWAR
-            while (end - p >= 8)
+            while (p <= end - 8)
             {
                 res = (res * 100000000) + ParseEightDigitsUnrolled(p);
                 p += 8;

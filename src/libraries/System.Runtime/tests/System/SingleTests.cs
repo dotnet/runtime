@@ -15,6 +15,15 @@ namespace System.Tests
     {
         // NOTE: Consider duplicating any tests added here in DoubleTests.cs
 
+
+        [Fact]
+        public static void Test_parse8_SWAR()
+        {
+
+            Assert.Equal(100000000, float.Parse("100000000"));
+
+        }
+
         [Theory]
         [InlineData("a")]
         [InlineData(234.0)]
@@ -245,6 +254,8 @@ namespace System.Tests
             Assert.Equal(-1.0f / 0.0f, float.NegativeInfinity);
             Assert.Equal(0xFF800000u, BitConverter.SingleToUInt32Bits(float.NegativeInfinity));
         }
+
+        
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
