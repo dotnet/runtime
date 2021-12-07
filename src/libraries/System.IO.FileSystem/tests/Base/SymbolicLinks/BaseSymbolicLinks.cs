@@ -18,7 +18,7 @@ namespace System.IO.Tests
         protected DirectoryInfo CreateDirectoryContainingSelfReferencingSymbolicLink()
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetRandomDirPath());
-            string pathToLink = Path.Join(testDirectory.FullName, GetRandomDirName(), ".link");
+            string pathToLink = Path.Join(testDirectory.FullName, GetRandomDirName() + ".link");
             Assert.True(MountHelper.CreateSymbolicLink(pathToLink, pathToLink, isDirectory: true)); // Create a symlink cycle
             return testDirectory;
         }
