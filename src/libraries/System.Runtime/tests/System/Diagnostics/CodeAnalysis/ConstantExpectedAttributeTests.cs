@@ -29,7 +29,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
                 Min = min
             };
 
-            Assert.Equal(min, attr.Min);
+            Assert.Same(min, attr.Min);
         }
 
         [Theory]
@@ -45,7 +45,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
                 Max = max
             };
 
-            Assert.Equal(max, attr.Max);
+            Assert.Same(max, attr.Max);
         }
 
         [Theory]
@@ -53,6 +53,8 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(10000, 20000)]
         [InlineData(0.5f, 2.0f)]
         [InlineData(null, null)]
+        [InlineData(10, 0)]
+        [InlineData(10, "https://dot.net")]
         public void TestSetMinAndMax(object min, object max)
         {
             var attr = new ConstantExpectedAttribute
@@ -61,8 +63,8 @@ namespace System.Diagnostics.CodeAnalysis.Tests
                 Max = max
             };
 
-            Assert.Equal(min, attr.Min);
-            Assert.Equal(max, attr.Max);
+            Assert.Same(min, attr.Min);
+            Assert.Same(max, attr.Max);
         }
     }
 }
