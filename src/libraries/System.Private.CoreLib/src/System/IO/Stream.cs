@@ -738,7 +738,7 @@ namespace System.IO
         /// <paramref name="offset"/> and <paramref name="count"/> exceed the length of <paramref name="buffer"/>.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static void ValidateBufferArguments(byte[] buffer, int offset, int count)
+        protected static void ValidateBufferArguments([NotNull] byte[]? buffer, int offset, int count)
         {
             if (buffer is null)
             {
@@ -763,7 +763,7 @@ namespace System.IO
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="bufferSize"/> was not a positive value.</exception>
         /// <exception cref="NotSupportedException"><paramref name="destination"/> does not support writing.</exception>
         /// <exception cref="ObjectDisposedException"><paramref name="destination"/> does not support writing or reading.</exception>
-        protected static void ValidateCopyToArguments(Stream destination, int bufferSize)
+        protected static void ValidateCopyToArguments([NotNull] Stream? destination, int bufferSize)
         {
             if (destination is null)
             {
