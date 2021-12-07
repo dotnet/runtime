@@ -219,6 +219,7 @@
         MainLibraryFileName="$(MainLibraryFileName)"
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        EnableAppSandbox="$(EnableAppSandbox)"
         InvariantGlobalization="$(InvariantGlobalization)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="$(GenerateXcodeProject)"
