@@ -1007,7 +1007,7 @@ namespace System
             uint res = 0;
 
             // parse batches of 8 digits with SWAR
-            while (end - p >= 8)
+            while (p <= end - 8)
             {
                 res = (res * 100000000) + ParseEightDigitsUnrolled(p);
                 p += 8;
@@ -1037,7 +1037,7 @@ namespace System
                 p += 8;
             }
 
-            while (p!=end)
+            while (p != end)
             {
                 res = (10 * res) + p[0] - '0';
                 ++p;
