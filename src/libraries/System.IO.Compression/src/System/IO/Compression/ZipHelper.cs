@@ -223,11 +223,6 @@ namespace System.IO.Compression
 
         internal static byte[] GetEncodedTruncatedBytes(byte[] bytes, Encoding encoding, int maxBytes)
         {
-            if (bytes.Length == 0)
-            {
-                return bytes;
-            }
-
             if (maxBytes > 0 && bytes.Length > maxBytes)
             {
                 int bytesPerChar = encoding.GetMaxByteCount(1);
