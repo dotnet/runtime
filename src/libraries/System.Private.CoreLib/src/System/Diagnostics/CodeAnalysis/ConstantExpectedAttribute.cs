@@ -20,6 +20,5 @@ namespace System.Diagnostics.CodeAnalysis
         /// Indicates the maximum inclusive bound of the constant expected
         /// </summary>
         public object? Max { get; set; }
-        
     }
 }
