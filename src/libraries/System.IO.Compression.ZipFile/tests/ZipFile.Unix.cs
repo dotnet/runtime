@@ -155,7 +155,7 @@ namespace System.IO.Compression.Tests
             await Task.WhenAll(
                 Task.Run(() =>
                 {
-                    using FileStream fs = new (fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read);
+                    using FileStream fs = new (fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read, bufferSize: 0);
                     foreach (byte content in contentBytes)
                     {
                         fs.WriteByte(content);
