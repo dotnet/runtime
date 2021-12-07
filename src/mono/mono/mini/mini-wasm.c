@@ -676,8 +676,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 
 G_BEGIN_DECLS
 
-void * getgrnam (const char *name);
-void * getgrgid (gid_t gid);
 int inotify_init (void);
 int inotify_rm_watch (int fd, int wd);
 int inotify_add_watch (int fd, const char *pathname, uint32_t mask);
@@ -708,13 +706,6 @@ pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *pa
 }
 
 int
-pthread_sigmask (int how, const sigset_t *set, sigset_t *oset)
-{
-	return 0;
-}
-
-
-int
 sigsuspend(const sigset_t *sigmask)
 {
 	g_error ("sigsuspend");
@@ -725,18 +716,6 @@ int
 getdtablesize (void)
 {
 	return 256; //random constant that is the fd limit
-}
-
-void *
-getgrnam (const char *name)
-{
-	return NULL;
-}
-
-void *
-getgrgid (gid_t gid)
-{
-	return NULL;
 }
 
 int
@@ -774,22 +753,6 @@ ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
 {
 	errno = ENOTSUP;
 	return -1;
-}
-
-int
-getpwnam_r (const char *name, struct passwd *pwd, char *buffer, size_t bufsize,
-			struct passwd **result)
-{
-	*result = NULL;
-	return ENOTSUP;
-}
-
-int
-getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
-			struct passwd **result)
-{
-	*result = NULL;
-	return ENOTSUP;
 }
 
 G_END_DECLS

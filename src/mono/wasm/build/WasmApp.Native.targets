@@ -216,6 +216,7 @@
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
+      <_EmccLDFlags Include="-Wl,--allow-undefined" />
       <_EmccLDFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
 
       <!-- ILLinker should have removed unused imports, so error for Publish -->
