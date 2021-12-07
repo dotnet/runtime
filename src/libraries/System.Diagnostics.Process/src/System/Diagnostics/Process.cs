@@ -271,10 +271,6 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
-            [SupportedOSPlatform("freebsd")]
-            [SupportedOSPlatform("macos")]
-            [SupportedOSPlatform("maccatalyst")]
-            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(null, value);
