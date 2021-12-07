@@ -202,7 +202,7 @@ namespace System.IO
                 pos += foundLineLength + 1;
                 if (ch == '\r')
                 {
-                    if ((uint)pos < s.Length && s[pos] == '\n')
+                    if ((uint)pos < (uint)s.Length && s[pos] == '\n')
                     {
                         pos++;
                     }
