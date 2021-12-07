@@ -185,7 +185,7 @@ namespace System.IO
             {
                 ThrowObjectDisposedException_ReaderClosed();
             }
-            var pos = _pos;
+            int pos = _pos;
             if ((uint)pos >= (uint)s.Length)
                 return null;
 
