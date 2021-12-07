@@ -726,6 +726,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 							int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
 							string expectedOrigin = null;
+							if (expectedMessageContains.Length > 0 && expectedMessageContains[0] == "DerivedClassWithAllWarnings.VirtualMethod()") {
+								_ = 0;
+							}
 
 							var matchedMessages = loggedMessages.Where (mc => {
 								if (mc.Category != MessageCategory.Warning || mc.Code != expectedWarningCodeNumber)
