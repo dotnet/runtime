@@ -513,21 +513,6 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>
         ///       Gets
-        ///       the friendly name of the process.
-        ///    </para>
-        /// </devdoc>
-        public string ProcessName
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.ProcessName;
-            }
-        }
-
-        /// <devdoc>
-        ///    <para>
-        ///       Gets
         ///       or sets which processors the threads in this process can be scheduled to run on.
         ///    </para>
         /// </devdoc>

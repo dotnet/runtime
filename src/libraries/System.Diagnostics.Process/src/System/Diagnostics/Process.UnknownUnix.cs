@@ -86,5 +86,15 @@ namespace System.Diagnostics
         }
 
         private int ParentProcessId => throw new PlatformNotSupportedException();
+
+        /// <summary>Gets the friendly name of the process.</summary>
+        public string ProcessName
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return _processInfo!.ProcessName;
+            }
+        }
     }
 }

@@ -159,6 +159,8 @@
              Link="Common\Interop\Windows\Advapi32\Interop.AdjustTokenPrivileges.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetComputerName.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetComputerName.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessName.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetProcessName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleCP.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetConsoleCP.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleOutputCP.cs"

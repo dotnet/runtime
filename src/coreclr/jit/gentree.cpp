@@ -2620,29 +2620,58 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
     unsigned level  = 0;
     unsigned lvl2   = 0;
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-    if (multiOp->OperIs(GT_HWINTRINSIC) && (multiOp->GetOperandCount() == 1) &&
-        multiOp->AsHWIntrinsic()->OperIsMemoryLoadOrStore())
+#if defined(FEATURE_HW_INTRINSICS)
+    if (multiOp->OperIs(GT_HWINTRINSIC))
     {
-        costEx = IND_COST_EX;
-        costSz = 2;
-
-        GenTree* addr = multiOp->Op(1)->gtEffectiveVal();
-        level         = gtSetEvalOrder(addr);
-
-        // See if we can form a complex addressing mode.
-        if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, multiOp->TypeGet()))
+        GenTreeHWIntrinsic* hwTree = multiOp->AsHWIntrinsic();
+#if defined(TARGET_XARCH)
+        if ((hwTree->GetOperandCount() == 1) && hwTree->OperIsMemoryLoadOrStore())
         {
-            // Nothing to do, costs have been set.
-        }
-        else
-        {
-            costEx += addr->GetCostEx();
-            costSz += addr->GetCostSz();
-        }
+            costEx = IND_COST_EX;
+            costSz = 2;
 
-        multiOp->SetCosts(costEx, costSz);
-        return level;
+            GenTree* addr = hwTree->Op(1)->gtEffectiveVal();
+            level         = gtSetEvalOrder(addr);
+
+            // See if we can form a complex addressing mode.
+            if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
+            {
+                // Nothing to do, costs have been set.
+            }
+            else
+            {
+                costEx += addr->GetCostEx();
+                costSz += addr->GetCostSz();
+            }
+
+            hwTree->SetCosts(costEx, costSz);
+            return level;
+        }
+#endif
+        switch (hwTree->GetHWIntrinsicId())
+        {
+#if defined(TARGET_XARCH)
+            case NI_Vector128_Create:
+            case NI_Vector256_Create:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_Create:
+            case NI_Vector128_Create:
+#endif
+            {
+                if ((hwTree->GetOperandCount() == 1) && hwTree->Op(1)->OperIsConst())
+                {
+                    // Vector.Create(cns) is cheap but not that cheap to be (1,1)
+                    costEx = IND_COST_EX;
+                    costSz = 2;
+                    level  = gtSetEvalOrder(hwTree->Op(1));
+                    hwTree->SetCosts(costEx, costSz);
+                    return level;
+                }
+                break;
+            }
+            default:
+                break;
+        }
     }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
