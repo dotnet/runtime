@@ -282,8 +282,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Emit locals initialization
             writer.WriteLine("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
-            writer.WriteLine("int pos = base.runtextpos;");
-            writer.Write($"int end = base.runtextend;");
+            writer.WriteLine("int pos = base.runtextpos, end = base.runtextend;");
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
             int additionalDeclarationsIndent = writer.Indent;
@@ -646,8 +645,7 @@ namespace System.Text.RegularExpressions.Generator
             // Declare some locals.
             string sliceSpan = "slice";
             writer.WriteLine("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
-            writer.WriteLine("int pos = base.runtextpos;");
-            writer.WriteLine("int end = base.runtextend;");
+            writer.WriteLine("int pos = base.runtextpos, end = base.runtextend;");
             writer.WriteLine($"int original_pos = pos;");
             hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
             writer.Flush();
