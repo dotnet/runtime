@@ -2316,7 +2316,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var debuggerProxy = await GetValuesFromDebuggerProxyAttribute(objectId, typeId[0], token);
                 if (debuggerProxy != null)
                     return sortByAccessLevel ?
-                        new JArray(JObject.FromObject( new { result = debuggerProxy, internalProperties = new JArray(), privateProperties = new JArray() } )) :
+                        new JArray(JObject.FromObject(new { result = debuggerProxy, internalProperties = new JArray(), privateProperties = new JArray() })) :
                         debuggerProxy;
             }
             var className = await GetTypeName(typeId[0], token);

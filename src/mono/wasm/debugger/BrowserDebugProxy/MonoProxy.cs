@@ -433,12 +433,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!DotnetObjectId.TryParse(args?["objectId"], out DotnetObjectId objectId))
                             break;
 
-                        var ret = await RuntimeGetPropertiesInternal(id, objectId, args, token);
+                        var ret = await RuntimeGetPropertiesInternal(id, objectId, args, token, true);
                         if (ret == null) {
                             SendResponse(id, Result.Err($"Unable to RuntimeGetProperties '{objectId}'"), token);
                         }
                         else
-                            SendResponse(id, Result.OkFromObject(new { result = ret }), token);
+                        {
+                            ret = ret.Any() ? ret[0] : ret;
+                            SendResponse(id, Result.OkFromObject(ret), token);
+                        }
                         return true;
                     }
 
@@ -629,7 +632,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<JToken> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token)
+        internal async Task<JToken> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
         {
             var context = GetContext(id);
             var accessorPropertiesOnly = false;
@@ -660,7 +663,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "array":
                         return await context.SdbAgent.GetArrayValues(int.Parse(objectId.Value), token);
                     case "object":
-                        return await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), objectValuesOpt, token);
+                        return await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), objectValuesOpt, token, sortByAccessLevel);
                     case "pointer":
                         return new JArray{await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token)};
                     case "cfo_res":
