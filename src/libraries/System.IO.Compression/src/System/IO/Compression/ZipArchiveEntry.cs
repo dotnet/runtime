@@ -563,7 +563,8 @@ namespace System.IO.Compression
             if (_cdUnknownExtraFields != null)
                 ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
 
-            writer.Write(_fileComment);
+            if (_fileComment.Length > 0)
+                writer.Write(_fileComment);
         }
 
         // returns false if fails, will get called on every entry before closing in update mode
