@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions.Symbolic.Unicode;
 
@@ -16,7 +17,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly ISymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
-        public SymbolicRegexRunnerFactory(RegexCode code, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
+        public SymbolicRegexRunnerFactory(RegexCode code, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture, int capsize)
         {
             // RightToLeft and ECMAScript are currently not supported in conjunction with NonBacktracking.
             if ((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0)
@@ -45,7 +46,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // Convert the BDD-based AST to BV-based AST
                 SymbolicRegexNode<BV> rootBV = converter._builder.Transform(root, builderBV, bdd => builderBV._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<BV>(rootBV, code, solver, minterms, matchTimeout, culture);
+                _matcher = new SymbolicRegexMatcher<BV>(rootBV, code, solver, minterms, matchTimeout, culture, capsize);
             }
             else
             {
@@ -61,7 +62,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // Convert the BDD-based AST to ulong-based AST
                 SymbolicRegexNode<ulong> root64 = converter._builder.Transform(root, builder64, bdd => builder64._solver.ConvertFromCharSet(solver, bdd));
-                _matcher = new SymbolicRegexMatcher<ulong>(root64, code, solver, minterms, matchTimeout, culture);
+                _matcher = new SymbolicRegexMatcher<ulong>(root64, code, solver, minterms, matchTimeout, culture, capsize);
             }
         }
 
@@ -103,6 +104,19 @@ namespace System.Text.RegularExpressions.Symbolic
                     int end = start + pos.Length;
                     Capture(0, start, end);
                     runtextpos = end;
+                    if (pos.CaptureStarts != null)
+                    {
+                        Debug.Assert(pos.CaptureEnds != null);
+                        Debug.Assert(pos.CaptureStarts.Length == pos.CaptureEnds.Length);
+                        for (int cap = 0; cap < pos.CaptureStarts.Length; ++cap)
+                        {
+                            if (pos.CaptureStarts[cap] >= 0)
+                            {
+                                Debug.Assert(pos.CaptureEnds[cap] >= 0);
+                                runmatch!.AddMatch(cap, pos.CaptureStarts[cap], pos.CaptureEnds[cap]);
+                            }
+                        }
+                    }
                 }
                 else
                 {

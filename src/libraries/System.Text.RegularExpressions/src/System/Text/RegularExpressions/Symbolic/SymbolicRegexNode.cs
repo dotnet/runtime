@@ -436,6 +436,12 @@ namespace System.Text.RegularExpressions.Symbolic
             return MkCollection(builder, SymbolicRegexKind.And, conjuncts, SymbolicRegexInfo.And(GetInfos(conjuncts)));
         }
 
+        internal static SymbolicRegexNode<S> MkCaptureStart(SymbolicRegexBuilder<S> builder, int captureNum) =>
+            Create(builder, SymbolicRegexKind.CaptureStart, null, null, captureNum, -1, default, null, SymbolicRegexInfo.Mk());
+
+        internal static SymbolicRegexNode<S> MkCaptureEnd(SymbolicRegexBuilder<S> builder, int captureNum) =>
+            Create(builder, SymbolicRegexKind.CaptureEnd, null, null, captureNum, -1, default, null, SymbolicRegexInfo.Mk());
+
         private static SymbolicRegexNode<S> MkCollection(SymbolicRegexBuilder<S> builder, SymbolicRegexKind kind, SymbolicRegexSet<S> alts, SymbolicRegexInfo info) =>
             alts.IsNothing ? builder._nothing :
             alts.IsEverything ? builder._anyStar :
@@ -799,6 +805,14 @@ namespace System.Text.RegularExpressions.Symbolic
                         #endregion
                     }
 
+                case SymbolicRegexKind.CaptureStart:
+                case SymbolicRegexKind.CaptureEnd:
+                    {
+                        // Capture nodes are no-ops here since there's nothing to record their effect into
+                        deriv = _builder._epsilon;
+                        break;
+                    }
+
                 default:
                     deriv = _builder._nothing;
                     break;
@@ -904,6 +918,16 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.Not:
                     Debug.Assert(_left is not null);
                     _transitionRegex = ~_left.MkDerivative();
+                    break;
+
+                case SymbolicRegexKind.CaptureStart:
+                    _transitionRegex = TransitionRegex<S>.Effect(TransitionRegex<S>.Leaf(_builder._epsilon),
+                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lower));
+                    break;
+
+                case SymbolicRegexKind.CaptureEnd:
+                    _transitionRegex = TransitionRegex<S>.Effect(TransitionRegex<S>.Leaf(_builder._epsilon),
+                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lower));
                     break;
 
                 default:

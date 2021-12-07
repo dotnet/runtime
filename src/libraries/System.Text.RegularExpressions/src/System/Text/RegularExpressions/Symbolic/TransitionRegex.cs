@@ -18,6 +18,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public readonly TransitionRegex<S>? _first;
         public readonly TransitionRegex<S>? _second;
         public readonly SymbolicRegexNode<S>? _node;
+        public readonly DerivativeEffect? _effect;
 
         private readonly int _hashCode;
 
@@ -47,31 +48,33 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private TransitionRegex(SymbolicRegexBuilder<S> builder, TransitionRegexKind kind, S? test, TransitionRegex<S>? first, TransitionRegex<S>? second, SymbolicRegexNode<S>? node)
+        private TransitionRegex(SymbolicRegexBuilder<S> builder, TransitionRegexKind kind, S? test, TransitionRegex<S>? first, TransitionRegex<S>? second, SymbolicRegexNode<S>? node, DerivativeEffect? effect)
         {
             Debug.Assert(builder is not null);
             Debug.Assert(
-                kind is TransitionRegexKind.Leaf && node is not null && Equals(test, default(S)) && first is null && second is null ||
-                kind is TransitionRegexKind.Conditional && test is not null && first is not null && second is not null && node is null ||
-                kind is TransitionRegexKind.Union && Equals(test, default(S)) && first is not null && second is not null && node is null ||
-                kind is TransitionRegexKind.Lookaround && Equals(test, default(S)) && first is not null && second is not null && node is not null);
+                kind is TransitionRegexKind.Leaf && node is not null && Equals(test, default(S)) && first is null && second is null && effect is null ||
+                kind is TransitionRegexKind.Conditional && test is not null && first is not null && second is not null && node is null && effect is null ||
+                kind is TransitionRegexKind.Union && Equals(test, default(S)) && first is not null && second is not null && node is null && effect is null ||
+                kind is TransitionRegexKind.Lookaround && Equals(test, default(S)) && first is not null && second is not null && node is not null && effect is null ||
+                kind is TransitionRegexKind.Effect && Equals(test, default(S)) && first is not null && second is null && node is null && effect is not null);
             _builder = builder;
             _kind = kind;
             _test = test;
             _first = first;
             _second = second;
             _node = node;
+            _effect = effect;
             _hashCode = HashCode.Combine(kind, test, first, second, node);
         }
 
-        private static TransitionRegex<S> Create(SymbolicRegexBuilder<S> builder, TransitionRegexKind kind, S? test, TransitionRegex<S>? one, TransitionRegex<S>? two, SymbolicRegexNode<S>? node)
+        private static TransitionRegex<S> Create(SymbolicRegexBuilder<S> builder, TransitionRegexKind kind, S? test, TransitionRegex<S>? one, TransitionRegex<S>? two, SymbolicRegexNode<S>? node, DerivativeEffect? effect = null)
         {
             // Keep transition regexes internalized using the builder
-            (TransitionRegexKind, S?, TransitionRegex<S>?, TransitionRegex<S>?, SymbolicRegexNode<S>?) key = (kind, test, one, two, node);
+            (TransitionRegexKind, S?, TransitionRegex<S>?, TransitionRegex<S>?, SymbolicRegexNode<S>?, DerivativeEffect?) key = (kind, test, one, two, node, effect);
             TransitionRegex<S>? tr;
             if (!builder._trCache.TryGetValue(key, out tr))
             {
-                tr = new TransitionRegex<S>(builder, kind, test, one, two, node);
+                tr = new TransitionRegex<S>(builder, kind, test, one, two, node, effect);
                 builder._trCache[key] = tr;
             }
             return tr;
@@ -271,6 +274,9 @@ namespace System.Text.RegularExpressions.Symbolic
         public static TransitionRegex<S> Lookaround(SymbolicRegexNode<S> nullabilityTest, TransitionRegex<S> thencase, TransitionRegex<S> elsecase) =>
             (thencase == elsecase) ? thencase : Create(thencase._builder, TransitionRegexKind.Lookaround, default(S), thencase, elsecase, nullabilityTest);
 
+        public static TransitionRegex<S> Effect(TransitionRegex<S> child, DerivativeEffect effect) =>
+            Create(child._builder, TransitionRegexKind.Effect, default(S), child, null, null, effect);
+
         /// <summary>Intersection of transition regexes</summary>
         public static TransitionRegex<S> operator &(TransitionRegex<S> one, TransitionRegex<S> two) => Intersect(one, two);
 
@@ -431,6 +437,12 @@ namespace System.Text.RegularExpressions.Symbolic
                         todo.Push(top._first);
                         break;
 
+                    case TransitionRegexKind.Effect:
+                        // Effects are ignored here
+                        Debug.Assert(top._first is not null && top._effect is not null);
+                        todo.Push(top._first);
+                        break;
+
                     default:
                         Debug.Assert(top._kind is TransitionRegexKind.Lookaround && top._node is not null && top._first is not null && top._second is not null);
                         // Branch according to the result of nullability
@@ -452,6 +464,74 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
             return target;
+        }
+
+        public IEnumerable<(SymbolicRegexNode<S>, List<DerivativeEffect>)> TransitionsWithEffects(S minterm, uint context)
+        {
+            // Collect the union of all target leaves
+            Stack<(TransitionRegex<S>, List<DerivativeEffect>)> todo = new();
+            todo.Push((this, new List<DerivativeEffect>()));
+            while (todo.Count > 0)
+            {
+                (TransitionRegex<S> top, List<DerivativeEffect> effects) = todo.Pop();
+                switch (top._kind)
+                {
+                    case TransitionRegexKind.Leaf:
+                        Debug.Assert(top._node is not null);
+                        yield return (top._node, effects);
+                        break;
+
+                    case TransitionRegexKind.Conditional:
+                        Debug.Assert(top._test is not null && top._first is not null && top._second is not null);
+                        if (_builder._solver.IsSatisfiable(_builder._solver.And(minterm, top._test)))
+                        {
+                            if (!top._first.IsNothing)
+                            {
+                                todo.Push((top._first, new List<DerivativeEffect>(effects)));
+                            }
+                        }
+                        else
+                        {
+                            if (!top._second.IsNothing)
+                            {
+                                todo.Push((top._second, effects));
+                            }
+                        }
+                        break;
+
+                    case TransitionRegexKind.Union:
+                        // Observe that without Union Transition returns excatly one of the leaves
+                        Debug.Assert(top._first is not null && top._second is not null);
+                        todo.Push((top._second, new List<DerivativeEffect>(effects)));
+                        todo.Push((top._first, effects));
+                        break;
+
+                    case TransitionRegexKind.Effect:
+                        Debug.Assert(top._first is not null && top._effect is not null);
+                        effects.Add((DerivativeEffect)top._effect);
+                        todo.Push((top._first, effects));
+                        break;
+
+                    default:
+                        Debug.Assert(top._kind is TransitionRegexKind.Lookaround && top._node is not null && top._first is not null && top._second is not null);
+                        // Branch according to the result of nullability
+                        if (top._node.IsNullableFor(context))
+                        {
+                            if (!top._first.IsNothing)
+                            {
+                                todo.Push((top._first, new List<DerivativeEffect>(effects)));
+                            }
+                        }
+                        else
+                        {
+                            if (!top._second.IsNothing)
+                            {
+                                todo.Push((top._second, effects));
+                            }
+                        }
+                        break;
+                }
+            }
         }
     }
 }

@@ -231,7 +231,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder._bolAnchor;
 
                 case RegexNodeKind.Capture when node.N == -1:
-                    return Convert(node.Child(0), topLevel); // treat as non-capturing group (...)
+                    return _builder.MkCapture(Convert(node.Child(0), topLevel: false), node.M);
 
                 case RegexNodeKind.Concatenate:
                     {

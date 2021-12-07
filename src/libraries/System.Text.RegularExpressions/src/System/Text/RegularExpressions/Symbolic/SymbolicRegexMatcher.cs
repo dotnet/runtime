@@ -138,6 +138,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <remarks>Non-null iff the pattern contains anchors; otherwise, it's unused.</remarks>
         private readonly uint[]? _asciiCharKinds;
 
+        private readonly int _capsize;
+
         /// <summary>Get the minterm of <paramref name="c"/>.</summary>
         /// <param name="c">character code</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -148,7 +150,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, CharSetSolver css, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture)
+        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, CharSetSolver css, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture, int capsize)
         {
             Debug.Assert(sr._builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {sr._builder._solver}");
 
@@ -162,6 +164,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 BVAlgebra bv => bv._classifier,
                 _ => new MintermClassifier((CharSetSolver)(object)_builder._solver, minterms),
             };
+            _capsize = capsize;
 
             if (code.FindOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
                 code.FindOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
@@ -265,6 +268,73 @@ namespace System.Text.RegularExpressions.Symbolic
             return default(TTransition).TakeTransition(this, sourceState, mintermId, minterm);
         }
 
+        private struct Registers
+        {
+            public int[] captureStarts;
+            public int[] captureEnds;
+
+            public void ApplyEffects(List<DerivativeEffect> effects, int i)
+            {
+                foreach (DerivativeEffect effect in effects)
+                {
+                    switch (effect.Kind)
+                    {
+                        case DerivativeEffect.EffectKind.CaptureStart:
+                            captureStarts[effect.IntArg0] = i;
+                            break;
+                        case DerivativeEffect.EffectKind.CaptureEnd:
+                            captureEnds[effect.IntArg0] = i;
+                            break;
+                    }
+                }
+            }
+
+            public Registers Clone() => new Registers
+            {
+                captureStarts = (int[])captureStarts.Clone(),
+                captureEnds = (int[])captureEnds.Clone(),
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void CapturingDelta(string input, int i, Dictionary<DfaMatchingState<TSetType>, Registers> sourceStates, Dictionary<DfaMatchingState<TSetType>, Registers> targetStates)
+        {
+            Debug.Assert(targetStates.Count == 0);
+
+            TSetType[]? minterms = _builder._minterms;
+            Debug.Assert(minterms is not null);
+
+            int c = input[i];
+
+            foreach (var (sourceState, sourceRegisters) in sourceStates)
+            {
+                int mintermId = c == '\n' && i == input.Length - 1 && sourceState.StartsWithLineAnchor ?
+                    minterms.Length : // mintermId = minterms.Length represents \Z (last \n)
+                    _partitions.GetMintermID(c);
+
+                TSetType minterm = (uint)mintermId < (uint)minterms.Length ?
+                    minterms[mintermId] :
+                    _builder._solver.False; // minterm=False represents \Z
+
+                int offset = (sourceState.Id << _builder._mintermsCount) | mintermId;
+                Debug.Assert(_builder._capturingDelta is not null);
+                var transitions = Volatile.Read(ref _builder._capturingDelta[offset]) ?? CreateNewCapturingTransitions(sourceState, minterm, offset);
+
+                foreach (var (targetState, effects) in transitions) {
+                    if (!targetStates.TryGetValue(targetState, out Registers existingRegisters))
+                    {
+                        // TODO: choose intelligently between registers
+                    }
+                    else
+                    {
+                        Registers newRegisters = sourceRegisters.Clone(); // TODO: avoid this the last time
+                        newRegisters.ApplyEffects(effects, i);
+                        targetStates.Add(targetState, newRegisters);
+                    }
+                }
+            }
+        }
+
         /// <summary>Transition for Brzozowski-style derivatives (i.e. a DFA).</summary>
         private readonly struct BrzozowskiTransition : ITransition
         {
@@ -343,6 +413,23 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+        private List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)> CreateNewCapturingTransitions(DfaMatchingState<TSetType> state, TSetType minterm, int offset)
+        {
+            Debug.Assert(_builder._capturingDelta is not null);
+            lock (this)
+            {
+                // check if meanwhile delta[offset] has become defined possibly by another thread
+                List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)> p = _builder._capturingDelta[offset];
+                if (p is null)
+                {
+                    // this is the only place in code where the Next method is called in the matcher
+                    _builder._capturingDelta[offset] = p = new List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>(state.AntimirovNextWithEffects(minterm));
+                }
+
+                return p;
+            }
+        }
+
         private void DoCheckTimeout(int timeoutOccursAt)
         {
             // This logic is identical to RegexRunner.DoCheckTimeout, with the exception of check skipping. RegexRunner calls
@@ -398,12 +485,9 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             int i_start;
-            int i_end;
-
             if (watchdog >= 0)
             {
                 i_start = i - watchdog + 1;
-                i_end = i;
             }
             else
             {
@@ -411,10 +495,26 @@ namespace System.Text.RegularExpressions.Symbolic
                 i_start = i < startat ?
                     startat :
                     FindStartPosition(input, i, i_q0_A1); // Walk in reverse to locate the start position of the match
-                i_end = FindEndPosition(input, i_start);
             }
 
-            return new SymbolicMatch(i_start, i_end + 1 - i_start);
+            int i_end;
+            if (_capsize == 0)
+            {
+                if (watchdog >= 0)
+                {
+                    i_end = i;
+                }
+                else
+                {
+                    i_end = FindEndPosition(input, end, i_start);
+                }
+                return new SymbolicMatch(i_start, i_end + 1 - i_start);
+            }
+            else
+            {
+                i_end = FindEndPositionCapturing(input, end, i_start, out Registers endRegisters);
+                return new SymbolicMatch(i_start, i_end + 1 - i_start, endRegisters.captureStarts, endRegisters.captureEnds);
+            }
         }
 
         /// <summary>Find match end position using the original pattern, end position is known to exist.</summary>
@@ -489,6 +589,79 @@ namespace System.Text.RegularExpressions.Symbolic
             while (i < j);
 
             return false;
+        }
+
+        private int FindEndPositionCapturing(string input, int exclusiveEnd, int i, out Registers endRegisters)
+        {
+            int i_end = exclusiveEnd;
+
+            // Pick the correct start state based on previous character kind.
+            uint prevCharKind = GetCharKind(input, i - 1);
+            DfaMatchingState<TSetType> state = _initialStates[prevCharKind];
+            Registers initialRegisters = new Registers
+            {
+                captureStarts = new int[_capsize],
+                captureEnds = new int[_capsize],
+            };
+            Array.Fill(initialRegisters.captureStarts, -1);
+            Array.Fill(initialRegisters.captureEnds, -1);
+
+            if (state.IsNullable(GetCharKind(input, i)))
+            {
+                // Empty match exists because the initial state is accepting.
+                i_end = i - 1;
+
+                // Stop here if q is lazy.
+                if (state.IsLazy)
+                {
+                    endRegisters = initialRegisters;
+                    return i_end;
+                }
+            }
+
+            Dictionary<DfaMatchingState<TSetType>, Registers> current = new(), next = new();
+            current.Add(state, initialRegisters);
+
+            while (i < exclusiveEnd)
+            {
+                CapturingDelta(input, i, current, next);
+                var tmp = current;
+                current = next;
+                next = tmp;
+                next.Clear();
+
+                foreach (var (q, registers) in current)
+                {
+                    if (q.IsNullable(GetCharKind(input, i + 1)))
+                    {
+                        // Accepting state has been reached. Record the position.
+                        i_end = i;
+
+                        // Stop here if q is lazy.
+                        if (q.IsLazy)
+                        {
+                            endRegisters = registers;
+                            Debug.Assert(i_end != exclusiveEnd);
+                            return i_end;
+                        }
+                    }
+                    else if (q.IsDeadend)
+                    {
+                        // Non-accepting sink state (deadend) has been reached in the original pattern.
+                        // So the match ended when the last i_end was updated.
+                        endRegisters = registers;
+                        Debug.Assert(i_end != exclusiveEnd);
+                        return i_end;
+                    }
+                }
+
+                i++;
+            }
+
+            // This should never happen, as a final state is already known to exist.
+            Debug.Assert(false);
+            endRegisters = default(Registers);
+            return i_end;
         }
 
         /// <summary>Walk back in reverse using the reverse pattern to find the start position of match, start position is known to exist.</summary>

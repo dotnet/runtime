@@ -54,7 +54,8 @@ namespace System.Text.RegularExpressions.Symbolic
             TElement?,                                     // _test
             TransitionRegex<TElement>?,                    // _first
             TransitionRegex<TElement>?,                    // _second
-            SymbolicRegexNode<TElement>?),                 // _leaf
+            SymbolicRegexNode<TElement>?,                  // _leaf
+            DerivativeEffect?),                            // _effect
             TransitionRegex<TElement>> _trCache = new();
 
         /// <summary>
@@ -63,6 +64,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal DfaMatchingState<TElement>[]? _statearray;
         internal DfaMatchingState<TElement>[]? _delta;
+        internal List<(DfaMatchingState<TElement>, List<DerivativeEffect>)>[]? _capturingDelta;
         private const int InitialStateLimit = 1024;
 
         /// <summary>
@@ -112,6 +114,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
                 _mintermsCount = mintermsCount;
                 _delta = new DfaMatchingState<TElement>[InitialStateLimit << _mintermsCount];
+                _capturingDelta = new List<(DfaMatchingState<TElement>, List<DerivativeEffect>)>[InitialStateLimit << _mintermsCount];
             }
 
             // initialized to False but updated later to the actual condition ony if \b or \B occurs anywhere in the regex
@@ -294,6 +297,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <returns></returns>
         internal SymbolicRegexNode<TElement> MkNot(SymbolicRegexNode<TElement> node) => SymbolicRegexNode<TElement>.MkNot(this, node);
 
+        internal SymbolicRegexNode<TElement> MkCapture(SymbolicRegexNode<TElement> child, int captureNum) => MkConcat(SymbolicRegexNode<TElement>.MkCaptureStart(this, captureNum), MkConcat(child, SymbolicRegexNode<TElement>.MkCaptureEnd(this, captureNum)));
+
         internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builderT, Func<TElement, T> predicateTransformer) where T : notnull
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
@@ -414,6 +419,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     int newsize = _statearray.Length + 1024;
                     Array.Resize(ref _statearray, newsize);
                     Array.Resize(ref _delta, newsize << _mintermsCount);
+                    Array.Resize(ref _capturingDelta, newsize << _mintermsCount);
                 }
                 _statearray[state.Id] = state;
                 return state;
