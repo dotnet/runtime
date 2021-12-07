@@ -16,6 +16,9 @@
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree">
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm main.js -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
+  <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree">
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm main.js -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
+  </Target>
   <Target Name="CheckServe">
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
   </Target>

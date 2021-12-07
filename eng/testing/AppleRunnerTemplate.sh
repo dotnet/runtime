@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 
 # NOTE: this script is only used locally, on CI we use the Helix SDK from arcade
 
@@ -54,7 +54,7 @@ while true; do
     fi
 done
 
-if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+if [[ -n "$XHARNESS_CLI_PATH" ]]; then
     # Allow overriding the path to the XHarness CLI DLL,
     # we need to call it directly via dotnet exec
     HARNESS_RUNNER="dotnet exec $XHARNESS_CLI_PATH"

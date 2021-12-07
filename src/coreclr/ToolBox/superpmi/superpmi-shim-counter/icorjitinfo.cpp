@@ -378,13 +378,6 @@ uint32_t interceptor_ICJI::getClassAttribs(
     return original_ICorJitInfo->getClassAttribs(cls);
 }
 
-bool interceptor_ICJI::isStructRequiringStackAllocRetBuf(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("isStructRequiringStackAllocRetBuf");
-    return original_ICorJitInfo->isStructRequiringStackAllocRetBuf(cls);
-}
-
 CORINFO_MODULE_HANDLE interceptor_ICJI::getClassModule(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -992,10 +985,11 @@ void interceptor_ICJI::getFunctionEntryPoint(
 
 void interceptor_ICJI::getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult)
 {
     mcs->AddCall("getFunctionFixedEntryPoint");
-    original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, pResult);
+    original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
 void* interceptor_ICJI::getMethodSync(

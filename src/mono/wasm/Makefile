@@ -93,7 +93,7 @@ $(NATIVE_BIN_DIR)/include/wasm:
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
-$(NATIVE_BIN_DIR)/dotnet.js: runtime/driver.c runtime/pinvoke.c runtime/pinvoke.h runtime/corebindings.c $(NATIVE_BIN_DIR)/src/runtime.iffe.js runtime/library-dotnet.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(MONO_LIBS) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
+$(NATIVE_BIN_DIR)/dotnet.js: runtime/driver.c runtime/pinvoke.c runtime/pinvoke.h runtime/corebindings.c $(NATIVE_BIN_DIR)/src/cjs/runtime.cjs.iffe.js runtime/cjs/dotnet.cjs.lib.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.lib.js $(MONO_LIBS) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
 	$(DOTNET) build $(CURDIR)/wasm.proj $(_MSBUILD_WASM_BUILD_ARGS) /t:BuildWasmRuntimes $(MSBUILD_ARGS)
 
 $(EMCC_DEFAULT_RSP): $(CURDIR)/wasm.proj | $(NATIVE_BIN_DIR)/src Makefile
@@ -113,7 +113,7 @@ clean:
 icu-files: $(wildcard $(ICU_LIBDIR)/*.dat) $(ICU_LIBDIR)/libicuuc.a $(ICU_LIBDIR)/libicui18n.a | $(NATIVE_BIN_DIR)
 	cp $^ $(NATIVE_BIN_DIR)
 
-source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/library-dotnet.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js | $(NATIVE_BIN_DIR)/src
+source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/cjs/dotnet.cjs.lib.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.lib.js | $(NATIVE_BIN_DIR)/src
 	cp $^ $(NATIVE_BIN_DIR)/src
 
 header-files: runtime/pinvoke.h | $(NATIVE_BIN_DIR)/include/wasm

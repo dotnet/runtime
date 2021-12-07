@@ -942,6 +942,38 @@ ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, size_t byte_lengt
 	memset (p, 0, byte_length);
 }
 
+gpointer
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoClassField *field_handle, MonoType_ptr targetTypeHandle, gpointer countPtr, MonoError *error)
+{
+	gint32* count = (gint32*)countPtr;
+	MonoType *field_type = mono_field_get_type_checked (field_handle, error);
+	if (!field_type) {
+		mono_error_set_argument (error, "fldHandle", "fldHandle invalid");
+		return NULL;
+	}
+
+	if (!(field_type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
+		mono_error_set_argument_format (error, "field_handle", "Field '%s' doesn't have an RVA", mono_field_get_name (field_handle));
+		return NULL;
+	}
+
+	MonoType *type = targetTypeHandle;
+	if (MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_VALUETYPE) {
+		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
+		return NULL;
+	}
+
+	int swizzle = 1;
+	int align;
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	swizzle = mono_type_size (type, &align);
+#endif
+
+	int dummy;
+	*count = mono_type_size (field_type, &dummy)/mono_type_size (type, &align);
+	return (gpointer)mono_field_get_rva (field_handle, swizzle);
+}
+
 void
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArrayHandle array, MonoClassField *field_handle, MonoError *error)
 {

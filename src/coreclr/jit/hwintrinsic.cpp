@@ -747,10 +747,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
-    HWIntrinsicCategory category        = HWIntrinsicInfo::lookupCategory(intrinsic);
-    int                 numArgs         = sig->numArgs;
-    var_types           retType         = JITtype2varType(sig->retType);
-    CorInfoType         simdBaseJitType = CORINFO_TYPE_UNDEF;
+    HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
+    CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
+    int                    numArgs         = sig->numArgs;
+    var_types              retType         = JITtype2varType(sig->retType);
+    CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
 
     if ((retType == TYP_STRUCT) && featureSIMD)
     {
@@ -771,20 +772,27 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)
     {
-        if (category != HW_Category_Scalar)
+        if ((category == HW_Category_Scalar) || HWIntrinsicInfo::isScalarIsa(isa))
         {
-            unsigned int sizeBytes;
-            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+            simdBaseJitType = sig->retType;
+
+            if (simdBaseJitType == CORINFO_TYPE_VOID)
+            {
+                simdBaseJitType = CORINFO_TYPE_UNDEF;
+            }
         }
         else
         {
-            simdBaseJitType = sig->retType;
+            assert(featureSIMD);
+            unsigned int sizeBytes;
+
+            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
+            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
         }
     }
 
     // Immediately return if the category is other than scalar/special and this is not a supported base type.
-    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) &&
+    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) && !HWIntrinsicInfo::isScalarIsa(isa) &&
         !isSupportedBaseType(intrinsic, simdBaseJitType))
     {
         return nullptr;

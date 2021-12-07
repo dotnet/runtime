@@ -3,7 +3,7 @@
 
 import { mono_wasm_new_root, WasmRoot } from "./roots";
 import {
-    GCHandle, Int32Ptr, JSHandleDisposed, MonoArray,
+    GCHandle, JSHandleDisposed, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
     MonoType, MonoTypeNull
 } from "./types";
@@ -16,6 +16,7 @@ import { mono_method_get_call_signature, call_method, wrap_error } from "./metho
 import { _js_to_mono_obj } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
 import { getU32, getI32, getF32, getF64 } from "./memory";
+import { Int32Ptr, VoidPtr } from "./types/emscripten";
 
 // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
 export enum MarshalType {

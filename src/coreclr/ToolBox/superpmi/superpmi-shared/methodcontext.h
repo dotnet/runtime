@@ -237,10 +237,6 @@ public:
     void dmpIsValueClass(DWORDLONG key, DWORD value);
     bool repIsValueClass(CORINFO_CLASS_HANDLE cls);
 
-    void recIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls, bool result);
-    void dmpIsStructRequiringStackAllocRetBuf(DWORDLONG key, DWORD value);
-    bool repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls);
-
     void recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetClassSize(DWORDLONG key, DWORD val);
     unsigned repGetClassSize(CORINFO_CLASS_HANDLE cls);
@@ -573,7 +569,7 @@ public:
 
     void recGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult);
     void dmpGetFunctionFixedEntryPoint(DWORDLONG key, const Agnostic_CORINFO_CONST_LOOKUP& value);
-    void repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult);
+    void repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
 
     void recGetFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num, CORINFO_FIELD_HANDLE result);
     void dmpGetFieldInClass(DLD key, DWORDLONG value);
@@ -1009,7 +1005,7 @@ enum mcPackets
     Packet_IsCompatibleDelegate = 99,
     //Packet_IsInstantiationOfVerifiedGeneric = 100,
     Packet_IsSDArray = 101,
-    Packet_IsStructRequiringStackAllocRetBuf = 102,
+    //Packet_IsStructRequiringStackAllocRetBuf = 102,
     Packet_IsValidStringRef = 103,
     //Retired6 = 104,
     Packet_IsValueClass = 105,
@@ -1071,7 +1067,7 @@ enum mcPackets
     Packet_GetMethodNameFromMetadata = 161,
     Packet_GetDefaultEqualityComparerClass = 162,
     Packet_CompareTypesForCast = 163,
-    Packet_CompareTypesForEquality = 164, 
+    Packet_CompareTypesForEquality = 164,
     Packet_GetUnboxedEntry = 165,
     Packet_GetClassNameFromMetadata = 166,
     Packet_GetTypeInstantiationArgument = 167,

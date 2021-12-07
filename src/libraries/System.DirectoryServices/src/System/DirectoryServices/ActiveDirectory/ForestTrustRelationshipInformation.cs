@@ -5,6 +5,8 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Specialized;
 
+using Microsoft.Win32.SafeHandles;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
     public class ForestTrustRelationshipInformation : TrustRelationshipInformation
@@ -82,8 +84,7 @@ namespace System.DirectoryServices.ActiveDirectory
             int currentCount = 0;
             IntPtr tmpPtr = (IntPtr)0;
             IntPtr forestInfo = (IntPtr)0;
-            PolicySafeHandle? handle = null;
-            LSA_UNICODE_STRING trustedDomainName;
+            SafeLsaPolicyHandle? handle = null;
             IntPtr collisionInfo = (IntPtr)0;
             ArrayList ptrList = new ArrayList();
             ArrayList sidList = new ArrayList();
@@ -135,10 +136,9 @@ namespace System.DirectoryServices.ActiveDirectory
                         record.ForestTrustType = LSA_FOREST_TRUST_RECORD_TYPE.ForestTrustTopLevelName;
                         TopLevelName TLN = _topLevelNames[i];
                         record.Time = TLN.time;
-                        record.TopLevelName = new LSA_UNICODE_STRING();
                         ptr = Marshal.StringToHGlobalUni(TLN.Name);
                         ptrList.Add(ptr);
-                        UnsafeNativeMethods.RtlInitUnicodeString(record.TopLevelName, ptr);
+                        UnsafeNativeMethods.RtlInitUnicodeString(out record.TopLevelName, ptr);
 
                         tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
@@ -165,10 +165,10 @@ namespace System.DirectoryServices.ActiveDirectory
                             record.Time.lowPart = currentTime.lower;
                             record.Time.highPart = currentTime.higher;
                         }
-                        record.TopLevelName = new LSA_UNICODE_STRING();
+
                         ptr = Marshal.StringToHGlobalUni(_excludedNames[i]);
                         ptrList.Add(ptr);
-                        UnsafeNativeMethods.RtlInitUnicodeString(record.TopLevelName, ptr);
+                        UnsafeNativeMethods.RtlInitUnicodeString(out record.TopLevelName, ptr);
                         tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
@@ -187,11 +187,8 @@ namespace System.DirectoryServices.ActiveDirectory
                         ForestTrustDomainInformation tmp = _domainInfo[i];
                         record.Time = tmp.time;
                         IntPtr pSid = (IntPtr)0;
-                        IntPtr stringSid = (IntPtr)0;
-                        stringSid = Marshal.StringToHGlobalUni(tmp.DomainSid);
-                        ptrList.Add(stringSid);
-                        int result = UnsafeNativeMethods.ConvertStringSidToSidW(stringSid, ref pSid);
-                        if (result == 0)
+                        global::Interop.BOOL result = global::Interop.Advapi32.ConvertStringSidToSid(tmp.DomainSid, out pSid);
+                        if (result == global::Interop.BOOL.FALSE)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                         }
@@ -268,18 +265,18 @@ namespace System.DirectoryServices.ActiveDirectory
                     impersonated = Utils.Impersonate(context);
 
                     // get the policy handle
-                    handle = new PolicySafeHandle(Utils.GetPolicyHandle(serverName));
+                    handle = Utils.GetPolicyHandle(serverName);
 
                     // get the target name
-                    trustedDomainName = new LSA_UNICODE_STRING();
+                    global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(TargetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(trustedDomainName, target);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // call the unmanaged function
-                    int error = UnsafeNativeMethods.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 1, out collisionInfo);
+                    uint error = UnsafeNativeMethods.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 1, out collisionInfo);
                     if (error != 0)
                     {
-                        throw ExceptionHelper.GetExceptionFromErrorCode(UnsafeNativeMethods.LsaNtStatusToWinError(error), serverName);
+                        throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(error), serverName);
                     }
 
                     // there is collision, throw proper exception so user can deal with it
@@ -292,7 +289,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     error = UnsafeNativeMethods.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 0, out collisionInfo);
                     if (error != 0)
                     {
-                        throw ExceptionHelper.GetExceptionFromErrorCode(error, serverName);
+                        throw ExceptionHelper.GetExceptionFromErrorCode((int)error, serverName);
                     }
 
                     // now next time property is invoked, we need to go to the server
@@ -311,7 +308,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     for (int i = 0; i < sidList.Count; i++)
                     {
-                        UnsafeNativeMethods.LocalFree((IntPtr)sidList[i]!);
+                        global::Interop.Kernel32.LocalFree((IntPtr)sidList[i]!);
                     }
 
                     if (records != (IntPtr)0)
@@ -325,7 +322,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     if (collisionInfo != (IntPtr)0)
-                        UnsafeNativeMethods.LsaFreeMemory(collisionInfo);
+                        global::Interop.Advapi32.LsaFreeMemory(collisionInfo);
 
                     if (target != (IntPtr)0)
                         Marshal.FreeHGlobal(target);
@@ -340,8 +337,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private void GetForestTrustInfoHelper()
         {
             IntPtr forestTrustInfo = (IntPtr)0;
-            PolicySafeHandle? handle = null;
-            LSA_UNICODE_STRING? tmpName = null;
+            SafeLsaPolicyHandle? handle = null;
             bool impersonated = false;
             IntPtr targetPtr = (IntPtr)0;
             string? serverName = null;
@@ -360,9 +356,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     // get the target name
-                    tmpName = new LSA_UNICODE_STRING();
+                    global::Interop.UNICODE_STRING tmpName;
                     targetPtr = Marshal.StringToHGlobalUni(TargetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(tmpName, targetPtr);
+                    UnsafeNativeMethods.RtlInitUnicodeString(out tmpName, targetPtr);
 
                     serverName = Utils.GetPolicyServerName(context, true, false, source);
 
@@ -370,16 +366,16 @@ namespace System.DirectoryServices.ActiveDirectory
                     impersonated = Utils.Impersonate(context);
 
                     // get the policy handle
-                    handle = new PolicySafeHandle(Utils.GetPolicyHandle(serverName));
+                    handle = Utils.GetPolicyHandle(serverName);
 
-                    int result = UnsafeNativeMethods.LsaQueryForestTrustInformation(handle, tmpName, ref forestTrustInfo);
+                    uint result = UnsafeNativeMethods.LsaQueryForestTrustInformation(handle, tmpName, ref forestTrustInfo);
                     // check the result
                     if (result != 0)
                     {
-                        int win32Error = UnsafeNativeMethods.LsaNtStatusToWinError(result);
+                        uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
                         if (win32Error != 0)
                         {
-                            throw ExceptionHelper.GetExceptionFromErrorCode(win32Error, serverName);
+                            throw ExceptionHelper.GetExceptionFromErrorCode((int)win32Error, serverName);
                         }
                     }
 
@@ -440,7 +436,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     finally
                     {
-                        UnsafeNativeMethods.LsaFreeMemory(forestTrustInfo);
+                        global::Interop.Advapi32.LsaFreeMemory(forestTrustInfo);
                     }
 
                     _topLevelNames = tmpTLNs;
