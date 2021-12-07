@@ -865,65 +865,73 @@ namespace System.IO
             return task;
         }
 
-        private async Task<string?> ReadLineAsyncInternal()
+        private Task<string?> ReadLineAsyncInternal()
         {
-            if (_charPos == _charLen && (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) == 0)
+            async Task<string?> ReadInternalFast()
             {
-                return null;
+                if (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) == 0)
+                    return null;
+
+                return await ReadInternalLoop().ConfigureAwait(false);
             }
 
-            StringBuilder? sb = null;
 
-            do
+            async Task<string?> ReadInternalLoop()
             {
-                char[] tmpCharBuffer = _charBuffer;
-                int tmpCharLen = _charLen;
-                int tmpCharPos = _charPos;
-                int i = tmpCharPos;
-
+                StringBuilder? sb = null;
                 do
                 {
-                    char ch = tmpCharBuffer[i];
+                    char[] tmpCharBuffer = _charBuffer;
+                    int tmpCharLen = _charLen;
+                    int tmpCharPos = _charPos;
+                    int i = tmpCharPos;
 
-                    // Note the following common line feed chars:
-                    // \n - UNIX   \r\n - DOS   \r - Mac
-                    if (ch == '\r' || ch == '\n')
+                    do
                     {
-                        string s;
+                        char ch = tmpCharBuffer[i];
 
-                        if (sb != null)
+                        // Note the following common line feed chars:
+                        // \n - UNIX   \r\n - DOS   \r - Mac
+                        if (ch is '\r' or '\n')
                         {
-                            sb.Append(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
-                            s = sb.ToString();
-                        }
-                        else
-                        {
-                            s = new string(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
-                        }
+                            string s;
 
-                        _charPos = tmpCharPos = i + 1;
-
-                        if (ch == '\r' && (tmpCharPos < tmpCharLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
-                        {
-                            tmpCharPos = _charPos;
-                            if (_charBuffer[tmpCharPos] == '\n')
+                            if (sb != null)
                             {
-                                _charPos = ++tmpCharPos;
+                                sb.Append(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
+                                s = sb.ToString();
                             }
+                            else
+                            {
+                                s = new string(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
+                            }
+
+                            _charPos = tmpCharPos = i + 1;
+
+                            if (ch == '\r' && (tmpCharPos < tmpCharLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
+                            {
+                                tmpCharPos = _charPos;
+                                if (_charBuffer[tmpCharPos] == '\n')
+                                {
+                                    _charPos = ++tmpCharPos;
+                                }
+                            }
+
+                            return s;
                         }
 
-                        return s;
-                    }
+                        i++;
+                    } while (i < tmpCharLen);
 
-                    i++;
-                } while (i < tmpCharLen);
+                    i = tmpCharLen - tmpCharPos;
+                    sb ??= new StringBuilder(i + 80);
+                    sb.Append(tmpCharBuffer, tmpCharPos, i);
+                } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
 
-                i = tmpCharLen - tmpCharPos;
-                sb ??= new StringBuilder(i + 80);
-                sb.Append(tmpCharBuffer, tmpCharPos, i);
-            } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
+                return sb.ToString();
+            }
 
-            return sb.ToString();
+            return _charPos == _charLen ? ReadInternalFast() : ReadInternalLoop();
         }
 
         public override Task<string> ReadToEndAsync()
