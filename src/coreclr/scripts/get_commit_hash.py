@@ -104,6 +104,8 @@ def main(main_args):
     print("Source directory: {}".format(source_directory))
 
     run_command(["git", "--version"], source_directory, _exit_on_fail=True)
+
+    print(" -- Printing commit history")
     run_command(["git", "--no-pager", "log", "-100", "--oneline"], source_directory, _exit_on_fail=True)
 
     # We fetch upto 20 commits only when the repository is cloned. All the commits past 20 commits are grafted. If
@@ -112,16 +114,20 @@ def main(main_args):
     #
     # If the PR branch has 100+ commits, we might still see similar issue, but changes are rare to have
     # a PR having 100+ commits. In such case, the commit hash will be "grafted" everytime.
-    print("Fetching history of 80 more commits from HEAD, so we can find the correct hash.")
+    print(" -- Fetching history of 80 more commits from HEAD, so we can find the correct hash.")
     _, _, return_code = run_command(["git", "fetch", "--depth=80", repo_url, "HEAD"], source_directory)
 
-    print("Printing logs of Directory* files")
+    print(" -- Printing commit history")
+    run_command(["git", "--no-pager", "log", "-100", "--oneline"], source_directory, _exit_on_fail=True)
+
+    print(" -- Printing logs of Directory* files")
     run_command(["git", "--no-pager", "log", "-10", "--oneline", "--", os.path.join(source_directory, "Directory.Build.targets")], source_directory, _exit_on_fail=True)
     run_command(["git", "--no-pager", "log", "-10", "--oneline", "--", os.path.join(source_directory, "Directory.Solution.props")], source_directory, _exit_on_fail=True)
 
     if return_code != 0:
         print("git fetch failed. Use grafted commit hashes.")
 
+    print(" -- Creating commits file")
     create_commits_file(['common', run_type], source_directory, output_file)
 
 if __name__ == "__main__":
