@@ -2110,14 +2110,6 @@ namespace System.Text.RegularExpressions.Generator
                 TransferSliceStaticPosToPos();
                 writer.WriteLine($"{endingPos} = pos;");
 
-                string? capturePos = null;
-                if (expressionHasCaptures)
-                {
-                    capturePos = ReserveName("charloop_capturepos");
-                    additionalDeclarations.Add($"int {capturePos} = 0;");
-                    writer.WriteLine($"{capturePos} = base.Crawlpos();");
-                }
-
                 if (node.M > 0)
                 {
                     writer.WriteLine($"{startingPos} += {node.M};");
@@ -2130,10 +2122,10 @@ namespace System.Text.RegularExpressions.Generator
                 // point we decrement the matched count as long as it's above the minimum
                 // required, and try again by flowing to everything that comes after this.
                 MarkLabel(backtrackingLabel, emitSemicolon: false);
-                if (capturePos is not null)
+                if (expressionHasCaptures)
                 {
-                    EmitStackPop(capturePos, endingPos, startingPos);
-                    EmitUncaptureUntil(capturePos);
+                    EmitUncaptureUntil(StackPop());
+                    EmitStackPop(endingPos, startingPos);
                 }
                 else
                 {
@@ -2167,8 +2159,8 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
 
                 MarkLabel(endLoop);
-                EmitStackPush(capturePos is not null ?
-                    new[] { startingPos, endingPos, capturePos } :
+                EmitStackPush(expressionHasCaptures ?
+                    new[] { startingPos, endingPos, "base.Crawlpos()" } :
                     new[] { startingPos, endingPos });
             }
 
@@ -2435,9 +2427,7 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPop(sawEmpty, "pos", startingPos);
                 if (expressionHasCaptures)
                 {
-                    string poppedCapturePos = ReserveName("lazyloop_capturepos");
-                    writer.WriteLine($"int {poppedCapturePos} = {StackPop()};");
-                    EmitUncaptureUntil(poppedCapturePos);
+                    EmitUncaptureUntil(StackPop());
                 }
                 SliceInputSpan(writer);
                 if (doneLabel == originalDoneLabel)
@@ -2823,9 +2813,7 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPop("pos", startingPos);
                 if (expressionHasCaptures)
                 {
-                    string poppedCapturePos = ReserveName("loop_capturepos");
-                    writer.WriteLine($"int {poppedCapturePos} = {StackPop()};");
-                    EmitUncaptureUntil(poppedCapturePos);
+                    EmitUncaptureUntil(StackPop());
                 }
                 SliceInputSpan(writer);
 
