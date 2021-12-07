@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -15,9 +14,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void GetAttributes_Skips_ComVisibleAttribute_And_GuidAttribute_And_InterfaceTypeAttribute()
         {
-            object provider = CreateReflectTypeDescriptionProviderInstance();
-            AttributeCollection attributeCollection = provider.GetType().GetMethod("GetAttributes", BindingFlags.Instance | BindingFlags.NonPublic)
-                .Invoke(provider, new[] { typeof(TestClass1) }) as AttributeCollection;
+            AttributeCollection attributeCollection = TypeDescriptor.GetAttributes(typeof(TestClass1));
             Assert.NotEmpty(attributeCollection);
             IEnumerable<Attribute> attributes = attributeCollection.Cast<Attribute>();
             Attribute attribute =  Assert.Single(attributes);
@@ -30,34 +27,29 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void GetExtenderProviders_ReturnResultFromContainerComponents_WhenComponentSiteServiceNull()
         {
-            object provider = CreateReflectTypeDescriptionProviderInstance();
-            using TestComponent testComponent = new TestComponent();
+            using ComponentExtendedProvider testComponent = new ComponentExtendedProvider();
             testComponent.Site = new TestSiteWithoutService();
             testComponent.Disposed += (object obj, EventArgs args) => { };
-            IExtenderProvider[] extenderProviders = provider.GetType().GetMethod("GetExtenderProviders", BindingFlags.Instance | BindingFlags.NonPublic)
-                .Invoke(provider, new[] { testComponent }) as IExtenderProvider[];
-            IExtenderProvider result = Assert.Single(extenderProviders);
-            Assert.IsType<ComponentExtendedProvider>(result);
+            PropertyDescriptorCollection propertyDescriptorCollection = TypeDescriptor.GetProperties(testComponent);
+            PropertyDescriptor testPropDescriptor = propertyDescriptorCollection["TestProp"];
+            Assert.NotNull(testPropDescriptor);
+            ExtenderProvidedPropertyAttribute extenderProvidedPropertyAttribute = testPropDescriptor.Attributes[typeof(ExtenderProvidedPropertyAttribute)] as ExtenderProvidedPropertyAttribute;
+            Assert.NotNull(extenderProvidedPropertyAttribute);
+            Assert.IsType<ComponentExtendedProvider>(extenderProvidedPropertyAttribute.Provider);
         }
 
         [Fact]
         public void GetExtenderProviders_ReturnResultFromComponentSiteService_WhenComponentSiteServiceNotNull()
         {
-            object provider = CreateReflectTypeDescriptionProviderInstance();
             using TestComponent testComponent = new TestComponent();
             testComponent.Site = new TestSiteWithService();
             testComponent.Disposed += (object obj, EventArgs args) => { };
-            IExtenderProvider[] extenderProviders = provider.GetType().GetMethod("GetExtenderProviders", BindingFlags.Instance | BindingFlags.NonPublic)
-                .Invoke(provider, new[] { testComponent }) as IExtenderProvider[];
-            IExtenderProvider result = Assert.Single(extenderProviders);
-            Assert.IsType<TestExtenderProvider>(result);
-        }
-
-        private static object CreateReflectTypeDescriptionProviderInstance()
-        {
-            Assembly srcAsssemby = Assembly.Load(Assembly.GetExecutingAssembly().GetReferencedAssemblies().FirstOrDefault(a => a.FullName.StartsWith("System.ComponentModel.TypeConverter")));
-            Type reflectTypeDescriptionProviderType = srcAsssemby.GetType("System.ComponentModel.ReflectTypeDescriptionProvider");
-            return reflectTypeDescriptionProviderType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, new Type[0]).Invoke(new object[0]);
+            PropertyDescriptorCollection propertyDescriptorCollection = TypeDescriptor.GetProperties(testComponent);
+            PropertyDescriptor testPropDescriptor = propertyDescriptorCollection["TestProp"];
+            Assert.NotNull(testPropDescriptor);
+            ExtenderProvidedPropertyAttribute extenderProvidedPropertyAttribute = testPropDescriptor.Attributes[typeof(ExtenderProvidedPropertyAttribute)] as ExtenderProvidedPropertyAttribute;
+            Assert.NotNull(extenderProvidedPropertyAttribute);
+            Assert.IsType<TestExtenderProvider>(extenderProvidedPropertyAttribute.Provider);
         }
 
         [ComVisible(true), Guid("4a223ebb-fe95-4649-94e5-2e5cc8f5f4e9"), InterfaceType(1)]
@@ -87,13 +79,23 @@ namespace System.ComponentModel.Tests
             }
         }
 
+        [ProvideProperty("TestProp", "System.Object")]
         internal class ComponentExtendedProvider : IComponent, IExtenderProvider
         {
+            private int _testProp;
+
             public ISite? Site { get; set; }
 
             public event EventHandler? Disposed;
 
             public bool CanExtend(object extendee) => true;
+
+            public int GetTestProp(object extendee) => _testProp;
+
+            public void SetTestProp(object extendee, int value)
+            {
+                _testProp = value;
+            }
 
             public void Dispose()
             {
@@ -149,9 +151,19 @@ namespace System.ComponentModel.Tests
             public void Remove(IComponent? component) => _components.Remove(component);
         }
 
+        [ProvideProperty("TestProp", "System.Object")]
         internal class TestExtenderProvider : IExtenderProvider
         {
+            private int _testProp;
+
             public bool CanExtend(object extendee) => true;
+
+            public int GetTestProp(object extendee) => _testProp;
+
+            public void SetTestProp(object extendee, int value)
+            {
+                _testProp = value;
+            }
         }
 
         internal class TestExtenderListService : IExtenderListService

@@ -164,12 +164,10 @@ namespace System.ComponentModel.Tests
 
         private class TestSite : ISite
         {
-            private TestContainer _testContainer = new TestContainer();
-
             public bool DesignMode { get; set; }
 
             public IComponent Component => throw new NotImplementedException();
-            public IContainer Container => _testContainer;
+            public IContainer Container => null;
             public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
             public object GetService(Type serviceType) => null;
         }
@@ -185,18 +183,6 @@ namespace System.ComponentModel.Tests
             public void Dispose() { }
 
             public string GetSetProperty { get; set; }
-        }
-
-        internal class TestContainer : IContainer
-        {
-            private List<IComponent> _components = new List<IComponent>();
-
-            public ComponentCollection Components => new ComponentCollection(_components.ToArray());
-
-            public void Add(IComponent? component) => _components.Add(component);
-            public void Add(IComponent? component, string? name) => _components.Add(component);
-            public void Dispose() => _components.Clear();
-            public void Remove(IComponent? component) => _components.Remove(component);
         }
 
         [Theory]
