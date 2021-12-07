@@ -2663,7 +2663,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     // Vector.Create(cns) is cheap but not that cheap to be (1,1)
                     costEx = IND_COST_EX;
                     costSz = 2;
-                    level = gtSetEvalOrder(hwTree->Op(1));
+                    level  = gtSetEvalOrder(hwTree->Op(1));
                     hwTree->SetCosts(costEx, costSz);
                     return level;
                 }
