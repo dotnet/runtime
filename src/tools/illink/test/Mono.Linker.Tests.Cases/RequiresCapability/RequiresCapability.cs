@@ -1285,6 +1285,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				RequirePublicMethods (typeof (BaseClassWithoutRequires));
 				RequirePublicMethods (typeof (DerivedClassWithRequires));
 				RequirePublicMethods (typeof (DerivedClassWithoutRequires));
+				RequirePublicMethods (typeof (DerivedClassWithAllWarnings));
 				RequirePublicMethods (typeof (IBaseWithRequires));
 				RequirePublicMethods (typeof (IBaseWithoutRequires));
 				RequirePublicMethods (typeof (ImplementationClassWithRequires));

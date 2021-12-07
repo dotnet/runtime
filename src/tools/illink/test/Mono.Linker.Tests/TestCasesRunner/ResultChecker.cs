@@ -1075,6 +1075,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				// Compensate for cases where for some reason the OM doesn't preserve the declaring types
 				// on certain things after trimming.
+				//var actualDeclaringType = actualMember?.DeclaringType;
+				//var expectedDeclaringType = expectedOriginMember?.DeclaringType;
+				//while (actualDeclaringType != null && expectedDeclaringType != null) {
+				//	actualDeclaringType = actualDeclaringType.DeclaringType;
+				//	expectedDeclaringType = expectedDeclaringType.DeclaringType;
+				//}
 				if (actualMember != null && actualMember?.DeclaringType == null &&
 					actualMember?.Name == expectedOriginMember.Name)
 					return true;
