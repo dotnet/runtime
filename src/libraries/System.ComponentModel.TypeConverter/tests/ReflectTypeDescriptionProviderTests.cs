@@ -19,9 +19,9 @@ namespace System.ComponentModel.Tests
             IEnumerable<Attribute> attributes = attributeCollection.Cast<Attribute>();
             Attribute attribute =  Assert.Single(attributes);
             Assert.IsType<DescriptionAttribute>(attribute);
-            Assert.DoesNotContain(attributeCollection.Cast<Attribute>(), attr => attr.GetType() == typeof(ComVisibleAttribute));
-            Assert.DoesNotContain(attributeCollection.Cast<Attribute>(), attr => attr.GetType() == typeof(GuidAttribute));
-            Assert.DoesNotContain(attributeCollection.Cast<Attribute>(), attr => attr.GetType() == typeof(InterfaceTypeAttribute));
+            Assert.DoesNotContain(attributes, attr => attr.GetType() == typeof(ComVisibleAttribute));
+            Assert.DoesNotContain(attributes, attr => attr.GetType() == typeof(GuidAttribute));
+            Assert.DoesNotContain(attributes, attr => attr.GetType() == typeof(InterfaceTypeAttribute));
         }
 
         [Fact]
