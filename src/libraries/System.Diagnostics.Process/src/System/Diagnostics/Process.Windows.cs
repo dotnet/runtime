@@ -888,9 +888,7 @@ namespace System.Diagnostics
 
         private static string GetErrorMessage(int error) => Interop.Kernel32.GetMessage(error);
 
-        /// <devdoc>
-        ///    <para>Gets the friendly name of the process.</para>
-        /// </devdoc>
+        /// <summary>Gets the friendly name of the process.</summary>
         public string ProcessName
         {
             get
