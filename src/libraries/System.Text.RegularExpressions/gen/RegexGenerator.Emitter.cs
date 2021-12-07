@@ -3298,21 +3298,20 @@ namespace System.Text.RegularExpressions.Generator
             {
                 RegexNode.Alternate => $"Match with {node.ChildCount()} alternative expressions.",
                 RegexNode.Atomic => $"Atomic group.",
-                RegexNode.Beginning => "Beginning of string anchor.",
-                RegexNode.Bol => "Beginning of line anchor.",
-                RegexNode.Boundary => $"Match a word boundary.",
+                RegexNode.Beginning => "Match if at the beginning of the string.",
+                RegexNode.Bol => "Match if at the beginning of a line.",
+                RegexNode.Boundary => $"Match if at a word boundary.",
                 RegexNode.Capture when node.N != -1 => $"{DescribeNonNegative(node.M)} capturing group. Uncaptures the {DescribeNonNegative(node.N)} capturing group.",
                 RegexNode.Capture when node.N == -1 => $"{DescribeNonNegative(node.M)} capturing group.",
-                RegexNode.Concatenate => $"Match a sequence of expressions.",
-                RegexNode.ECMABoundary => $"Match a word boundary (according to ECMAScript rules).",
-                RegexNode.Empty => $"Match empty.",
-                RegexNode.End => "End of string anchor.",
-                RegexNode.EndZ => "End of string or before ending newline anchor.",
-                RegexNode.Eol => "End of line anchor.",
+                RegexNode.ECMABoundary => $"Match if at a word boundary (according to ECMAScript rules).",
+                RegexNode.Empty => $"Match an empty string.",
+                RegexNode.End => "Match if at the end of the string.",
+                RegexNode.EndZ => "Match if at the end of the string or if before an ending newline.",
+                RegexNode.Eol => "Match if at the end of a line.",
                 RegexNode.Loop or RegexNode.Lazyloop => $"Loop {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
                 RegexNode.Multi => $"Match the string {Literal(node.Str!)}.",
-                RegexNode.NonBoundary => $"Match anything other than a word boundary.",
-                RegexNode.NonECMABoundary => $"Match anything other than a word boundary (according to ECMAScript rules).",
+                RegexNode.NonBoundary => $"Match if at anything other than a word boundary.",
+                RegexNode.NonECMABoundary => $"Match if at anything other than a word boundary (according to ECMAScript rules).",
                 RegexNode.Nothing => $"Fail to match.",
                 RegexNode.Notone => $"Match any character other than {Literal(node.Ch)}.",
                 RegexNode.Notoneloop or RegexNode.Notoneloopatomic or RegexNode.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
@@ -3323,11 +3322,13 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.Require => $"Zero-width positive lookahead assertion.",
                 RegexNode.Set => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)}.",
                 RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
-                RegexNode.Start => "Start position anchor",
+                RegexNode.Start => "Match if at the start position.",
                 RegexNode.Testgroup => $"Conditionally match {(node.ChildCount() == 2 ? "an expression" : "one of two expressions")} depending on whether an initial expression matches.",
                 RegexNode.Testref => $"Conditionally match {(node.ChildCount() == 1 ? "an expression" : "one of two expressions")} depending on whether the {DescribeNonNegative(node.M)} capture group matched.",
                 RegexNode.UpdateBumpalong => $"Advance the next matching position.",
                 _ => $"Unknown node type {node.Type}",
+
+                // Concatenation
             };
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
@@ -3337,9 +3338,12 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="depth">The depth of the current node.</param>
         private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, int depth = 0)
         {
-            // Write out the line for the node.
-            const char BulletPoint = '\u25CB';
-            writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {DescribeNode(node)}");
+            if (node.Type != RegexNode.Concatenate)
+            {
+                // Write out the line for the node.
+                const char BulletPoint = '\u25CB';
+                writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {DescribeNode(node)}");
+            }
 
             // Recur into each of its children.
             int childCount = node.ChildCount();
@@ -3347,7 +3351,8 @@ namespace System.Text.RegularExpressions.Generator
             {
                 for (int i = 0; i < childCount; i++)
                 {
-                    DescribeExpression(writer, node.Child(i), prefix, depth + 1);
+                    int childDepth = node.Type == RegexNode.Concatenate ? depth : depth + 1;
+                    DescribeExpression(writer, node.Child(i), prefix, childDepth);
                 }
             }
         }
@@ -3394,7 +3399,7 @@ namespace System.Text.RegularExpressions.Generator
                 _ => $"at least {node.M} and at most {node.N} times"
             };
 
-        private static FinishEmitScope EmitScope(IndentedTextWriter writer, string title, bool faux = false) => EmitBlock(writer, $"// {title}", appendBlankLine: true, faux);
+        private static FinishEmitScope EmitScope(IndentedTextWriter writer, string title, bool faux = false) => EmitBlock(writer, $"// {title}", appendBlankLine: true, faux: faux);
 
         private static FinishEmitScope EmitBlock(IndentedTextWriter writer, string? clause, bool appendBlankLine = false, bool faux = false)
         {
