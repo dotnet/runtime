@@ -125,6 +125,7 @@ namespace System.Diagnostics
             _haveMainWindow = false;
             _mainWindowTitle = null;
             _haveResponding = false;
+            _processName = null;
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
