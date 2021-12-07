@@ -534,7 +534,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal int PdbAge { get; }
         internal System.Guid PdbGuid { get; }
         internal string PdbName { get; }
-
+        internal bool PdbInformationAvailable { get; }
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, CancellationToken token)
@@ -550,6 +550,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 PdbAge = codeViewData.Age;
                 PdbGuid = codeViewData.Guid;
                 PdbName = codeViewData.Path;
+                PdbInformationAvailable = true;
             }
             asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
             var asmDef = asmMetadataReader.GetAssemblyDefinition();
