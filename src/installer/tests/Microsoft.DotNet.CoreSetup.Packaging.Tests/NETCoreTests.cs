@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 "Microsoft.NETCore.App.Ref"))
             {
                 // Allow no targeting pack in case this is a servicing build.
-                // This condition should be tightened: https://github.com/dotnet/core-setup/issues/8830
+                // This condition should be tightened: https://github.com/dotnet/runtime/issues/3836
                 if (tester == null)
                 {
                     return;
