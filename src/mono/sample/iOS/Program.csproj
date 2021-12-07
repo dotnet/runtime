@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
