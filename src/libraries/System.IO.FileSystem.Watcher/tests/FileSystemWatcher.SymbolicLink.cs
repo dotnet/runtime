@@ -112,7 +112,7 @@ namespace System.IO.Tests
             using var dirA = new TempDirectory(GetTestFilePath());
             using var dirB = new TempDirectory(GetTestFilePath());
 
-            string linkPath = Path.Combine(dirA.Path, Path.ChangeExtension("linkToDirB", ".link"));
+            string linkPath = Path.Combine(dirA.Path, GetRandomDirName() + ".link"));
             CreateSymbolicLinkToTarget(dirB.Path, isDirectory: true, linkPath);
 
             using var watcher = new FileSystemWatcher(dirA.Path);

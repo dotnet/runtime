@@ -70,7 +70,7 @@ namespace System.IO.Tests
                 // Setup the watcher
                 watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size;
                 watcher.IncludeSubdirectories = true;
-                Assert.True(MountHelper.CreateSymbolicLink(Path.Combine(dir.Path, ".link"), tempDir.Path, true));
+                Assert.True(MountHelper.CreateSymbolicLink(Path.Combine(dir.Path, GetRandomLinkName()), tempDir.Path, true));
 
                 Action action = () => File.AppendAllText(file.Path, "longtext");
                 Action cleanup = () => File.AppendAllText(file.Path, "short");

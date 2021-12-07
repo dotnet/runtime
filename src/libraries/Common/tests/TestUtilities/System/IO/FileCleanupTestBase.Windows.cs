@@ -21,9 +21,6 @@ namespace System.IO
         // So instead of using TestDirectory directly, we retrieve the real path with proper casing of the initial folder path.
         private unsafe string GetTestDirectoryActualCasing()
         {
-            if (!PlatformDetection.IsWindows)
-                return TestDirectory;
-
             try
             {
                 using SafeFileHandle handle = Interop.Kernel32.CreateFile(

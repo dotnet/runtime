@@ -97,15 +97,7 @@ public static class MountHelper
         symLinkProcess.StartInfo.UseShellExecute = false;
         symLinkProcess.StartInfo.RedirectStandardOutput = true;
 
-        // symLinkProcess.StartInfo.RedirectStandardError = true;
-        // string output = "";
-        // symLinkProcess.OutputDataReceived += new DataReceivedEventHandler((sender, e) => { output += e.Data; });
-
         symLinkProcess.Start();
-
-        // symLinkProcess.BeginOutputReadLine();
-        // string error = symLinkProcess.StandardError.ReadToEnd();
-        // Debug.WriteLine($"{error} \n {output}");
 
         symLinkProcess.WaitForExit();
 
