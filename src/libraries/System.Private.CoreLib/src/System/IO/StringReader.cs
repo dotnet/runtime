@@ -129,12 +129,13 @@ namespace System.IO
                 return base.Read(buffer);
             }
 
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
                 ThrowObjectDisposedException_ReaderClosed();
             }
 
-            int n = _s.Length - _pos;
+            int n = s.Length - _pos;
             if (n > 0)
             {
                 if (n > buffer.Length)
@@ -142,7 +143,7 @@ namespace System.IO
                     n = buffer.Length;
                 }
 
-                _s.AsSpan(_pos, n).CopyTo(buffer);
+                s.AsSpan(_pos, n).CopyTo(buffer);
                 _pos += n;
             }
 
@@ -153,22 +154,20 @@ namespace System.IO
 
         public override string ReadToEnd()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
                 ThrowObjectDisposedException_ReaderClosed();
             }
 
-            string s;
-            if (_pos == 0)
+            int pos = _pos;
+            _pos = s.Length;
+
+            if (pos != 0)
             {
-                s = _s;
-            }
-            else
-            {
-                s = _s.Substring(_pos);
+                s = s.Substring(pos);
             }
 
-            _pos = _s.Length;
             return s;
         }
 
