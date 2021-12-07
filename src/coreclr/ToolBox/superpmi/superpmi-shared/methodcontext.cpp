@@ -4551,8 +4551,10 @@ void MethodContext::dmpGetFunctionFixedEntryPoint(DWORDLONG key, const Agnostic_
     printf("GetFunctionFixedEntryPoint key ftn-%016llX, value %s", key,
            SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value).c_str());
 }
-void MethodContext::repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult)
+void MethodContext::repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult)
 {
+    // The isUnsafeFunctionPointer has no impact on the resulting value.
+    // It helps produce side-effects in the runtime only.
     DWORDLONG key = CastHandle(ftn);
     AssertMapAndKeyExist(GetFunctionFixedEntryPoint, key, ": key %016llX", key);
     Agnostic_CORINFO_CONST_LOOKUP value = GetFunctionFixedEntryPoint->Get(key);

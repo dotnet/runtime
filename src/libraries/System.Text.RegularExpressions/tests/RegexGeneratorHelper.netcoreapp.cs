@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -123,11 +123,12 @@ namespace System.Text.RegularExpressions.Tests
 
             // Run the generator
             GeneratorDriverRunResult generatorResults = s_generatorDriver.RunGenerators(comp!, cancellationToken).GetRunResult();
-            if (generatorResults.Diagnostics.Length != 0)
+            ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Info);
+            if (generatorDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
-                    string.Join(Environment.NewLine, generatorResults.Diagnostics));
+                    string.Join(Environment.NewLine, generatorDiagnostics));
             }
 
             // Compile the assembly to a stream
@@ -138,7 +139,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
-                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorResults.Diagnostics)));
+                    string.Join(Environment.NewLine, results.Diagnostics.Concat(generatorDiagnostics)));
             }
             dll.Position = 0;
 
