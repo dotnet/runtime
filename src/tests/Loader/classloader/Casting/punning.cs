@@ -69,6 +69,22 @@ partial class Program
     }
 
     [Fact]
+    static void Via_Ldftn_Generics_Virtual()
+    {
+        Console.WriteLine($"Running {nameof(Via_Ldftn_Generics_Virtual)}...");
+
+        object inst = new B.Derived();
+        IntPtr fptr = B.Class.GetFunctionPointerGeneric(inst);
+        Assert.NotEqual(IntPtr.Zero, fptr);
+        var b = new Caller.Struct<object>()
+        {
+            Field = 0x55
+        };
+        int fieldValue = Caller.Class.CallGetField(b, fptr, inst);
+        Assert.Equal(b.Field, fieldValue);
+    }
+
+    [Fact]
     static void Via_Ldftn_Generics_EarlyLoad()
     {
         Console.WriteLine($"Running {nameof(Via_Ldftn_Generics_EarlyLoad)}...");
@@ -80,6 +96,22 @@ partial class Program
             Field = 0x55
         };
         int fieldValue = Caller.Class.CallGetField(b, fptr, null);
+        Assert.Equal(b.Field, fieldValue);
+    }
+
+    [Fact]
+    static void Via_Ldftn_Generics_Virtual_EarlyLoad()
+    {
+        Console.WriteLine($"Running {nameof(Via_Ldftn_Generics_Virtual_EarlyLoad)}...");
+
+        object inst = new B.Derived();
+        IntPtr fptr = B.Class.GetFunctionPointer<object>(inst);
+        Assert.NotEqual(IntPtr.Zero, fptr);
+        var b = new Caller.Struct<object>()
+        {
+            Field = 0x55
+        };
+        int fieldValue = Caller.Class.CallGetField(b, fptr, inst);
         Assert.Equal(b.Field, fieldValue);
     }
 

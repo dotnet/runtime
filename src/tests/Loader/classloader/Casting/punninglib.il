@@ -124,6 +124,14 @@
 {
     .field public int32 Field
 }
+.class public sequential ansi sealed beforefieldinit B.Struct`3<T, U, V> extends [System.Runtime]System.ValueType
+{
+    .field public int32 Field
+}
+.class public sequential ansi sealed beforefieldinit B.Struct`4<T, U, V, W> extends [System.Runtime]System.ValueType
+{
+    .field public int32 Field
+}
 .class public auto ansi beforefieldinit B.Class
     extends [System.Runtime]System.Object
 {
@@ -169,11 +177,50 @@
         ldfld int32 valuetype B.Struct`2<!!T, !!T>::Field
         ret
     }
+    .method public hidebysig static
+        native int GetFunctionPointerGeneric ( object inst ) cil managed
+    {
+        ldftn instance int32 B.Class::GetFieldGeneric<object>(valuetype B.Struct`3<!!0, !!0, !!0>)
+        call native int [System.Runtime]System.IntPtr::op_Explicit(void*)
+        ret
+    }
+    .method public hidebysig newslot virtual
+        instance int32 GetFieldGeneric<T> (valuetype B.Struct`3<!!T, !!T, !!T> s) cil managed
+    {
+        ldarg.1
+        ldfld int32 valuetype B.Struct`3<!!T, !!T, !!T>::Field
+        ret
+    }
+    .method public hidebysig static
+        native int GetFunctionPointer<T> ( object inst ) cil managed
+    {
+        ldftn instance int32 B.Class::GetFieldGeneric<!!T>(valuetype B.Struct`4<!!T, !!T, !!T, !!T>)
+        call native int [System.Runtime]System.IntPtr::op_Explicit(void*)
+        ret
+    }
+    .method public hidebysig newslot virtual
+        instance int32 GetFieldGeneric<T> (valuetype B.Struct`4<!!T, !!T, !!T, !!T> s) cil managed
+    {
+        ldarg.1
+        ldfld int32 valuetype B.Struct`4<!!T, !!T, !!T, !!T>::Field
+        ret
+    }
     .method public hidebysig specialname rtspecialname
         instance void .ctor () cil managed
     {
         ldarg.0
         call instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+}
+.class public auto ansi beforefieldinit B.Derived
+    extends B.Class
+{
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor () cil managed
+    {
+        ldarg.0
+        call instance void B.Class::.ctor()
         ret
     }
 }
