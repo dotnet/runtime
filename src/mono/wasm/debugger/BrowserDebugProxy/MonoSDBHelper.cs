@@ -646,12 +646,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string Name { get; }
         public int TypeId { get; }
         public bool IsPublic { get; }
-        public FieldTypeClass(int id, string name, int typeId, bool isPublic)
+        public MethodAttributes ProtectionLevel { get; }
+        public FieldTypeClass(int id, string name, int typeId, bool isPublic, MethodAttributes protectionLevel)
         {
             Id = id;
             Name = name;
             TypeId = typeId;
             IsPublic = isPublic;
+            ProtectionLevel = protectionLevel;
         }
     }
     internal class ValueTypeClass
@@ -1250,7 +1252,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     fieldNameStr = fieldNameStr.Replace("<", "");
                     fieldNameStr = fieldNameStr.Replace(">", "");
                 }
-                ret.Add(new FieldTypeClass(fieldId, fieldNameStr, fieldTypeId, isPublic));
+                ret.Add(new FieldTypeClass(fieldId, fieldNameStr, fieldTypeId, isPublic, (MethodAttributes)((attrs) & (int)MethodAttributes.MemberAccessMask)));
             }
             typeInfo.FieldsList = ret;
             return ret;
@@ -2306,17 +2308,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<JArray> GetObjectValues(int objectId, GetObjectCommandOptions getCommandType, CancellationToken token)
+        public async Task<JArray> GetObjectValues(int objectId, GetObjectCommandOptions getCommandType, CancellationToken token, bool sortByAccessLevel = false)
         {
             var typeId = await GetTypeIdFromObject(objectId, true, token);
             if (!getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute))
             {
                 var debuggerProxy = await GetValuesFromDebuggerProxyAttribute(objectId, typeId[0], token);
                 if (debuggerProxy != null)
-                    return debuggerProxy;
+                    return sortByAccessLevel ?
+                        new JArray(JObject.FromObject( new { result = debuggerProxy, internalProperties = new JArray(), privateProperties = new JArray() } )) :
+                        debuggerProxy;
             }
             var className = await GetTypeName(typeId[0], token);
-            JArray ret = new JArray();
+
+            JArray publicProperties = new JArray();
+            JArray privateProperties = new JArray();
+            JArray protectedAndInternalProperties = new JArray();
             if (await IsDelegate(objectId, token))
             {
                 var description = await GetDelegateMethodDescription(objectId, token);
@@ -2330,8 +2337,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                             },
                             name = "Target"
                         });
-                ret.Add(obj);
-                return ret;
+                publicProperties.Add(obj);
+                return sortByAccessLevel ?
+                    new JArray(JObject.FromObject(new { result = publicProperties, internalProperties = new JArray(), privateProperties = new JArray() })) :
+                    publicProperties;
             }
             for (int i = 0; i < typeId.Count; i++)
             {
@@ -2339,66 +2348,99 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     className = await GetTypeName(typeId[i], token);
                     var fields = await GetTypeFields(typeId[i], token);
-                    if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
-                        fields = fields.Where(field => field.IsPublic).ToList();
-                    JArray objectFields = new JArray();
-
-                    using var commandParamsWriter = new MonoBinaryWriter();
-                    commandParamsWriter.Write(objectId);
-                    commandParamsWriter.Write(fields.Count);
-                    foreach (var field in fields)
-                    {
-                        commandParamsWriter.Write(field.Id);
-                    }
-
-                    using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdObject.RefGetValues, commandParamsWriter, token);
-
-                    foreach (var field in fields)
-                    {
-                        long initialPos = retDebuggerCmdReader.BaseStream.Position;
-                        int valtype = retDebuggerCmdReader.ReadByte();
-                        retDebuggerCmdReader.BaseStream.Position = initialPos;
-                        var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, i == 0, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
-                        if (ret.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any()) {
-                            continue;
-                        }
-                        if (getCommandType.HasFlag(GetObjectCommandOptions.WithSetter))
-                        {
-                            var command_params_writer_to_set = new MonoBinaryWriter();
-                            command_params_writer_to_set.Write(objectId);
-                            command_params_writer_to_set.Write(1);
-                            command_params_writer_to_set.Write(field.Id);
-                            var (data, length) = command_params_writer_to_set.ToBase64();
-
-                            fieldValue.Add("set", JObject.FromObject(new {
-                                        commandSet = CommandSet.ObjectRef,
-                                        command = CmdObject.RefSetValues,
-                                        buffer = data,
-                                        valtype,
-                                        length = length
-                                }));
-                        }
-                        objectFields.Add(fieldValue);
-                    }
-                    ret = new JArray(ret.Union(objectFields));
+                    var pubFields = fields.Where(field => field.ProtectionLevel == MethodAttributes.Public).ToList();
+                    var privFields = fields.Where(field => field.ProtectionLevel == MethodAttributes.Private).ToList();
+                    //protected == family, internal == assembly
+                    var protectedAndInternalFields = fields.Where(field => field.ProtectionLevel == MethodAttributes.Family || field.ProtectionLevel == MethodAttributes.Assembly).ToList();
+                    publicProperties = await GetNotOnlyAccessorProperties(pubFields, publicProperties, typeId[i], i == 0, token);
+                    privateProperties = await GetNotOnlyAccessorProperties(privFields, privateProperties, typeId[i], i == 0, token);
+                    protectedAndInternalProperties = await GetNotOnlyAccessorProperties(protectedAndInternalFields, protectedAndInternalProperties, typeId[i], i == 0, token);
                 }
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
-                    return ret;
-                using var commandParamsObjWriter = new MonoBinaryWriter();
-                commandParamsObjWriter.WriteObj(new DotnetObjectId("object", $"{objectId}"), this);
-                var props = await CreateJArrayForProperties(typeId[i], commandParamsObjWriter.GetParameterBuffer(), ret, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute), $"dotnet:object:{objectId}", i == 0, token);
-                ret = new JArray(ret.Union(props));
+                    return sortByAccessLevel ?
+                        new JArray(JObject.FromObject(new { result = publicProperties, internalProperties = protectedAndInternalProperties, privateProperties = privateProperties })) :
+                        new JArray(publicProperties.Union(protectedAndInternalProperties).Union(privateProperties));
+
+                publicProperties = await AppendProperties(typeId[i], publicProperties, i == 0, token);
+                privateProperties = await AppendProperties(typeId[i], privateProperties, i == 0, token);
+                protectedAndInternalProperties = await AppendProperties(typeId[i], protectedAndInternalProperties, i == 0, token);
 
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,
                 // but we are going to ignore that here, because otherwise vscode/chrome don't
                 // seem to ask for inherited fields at all.
                 //if (ownProperties)
-                    //break;
+                //break;
                 /*if (accessorPropertiesOnly)
                     break;*/
             }
             if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
+            {
+                publicProperties = await RemoveFields(publicProperties, token);
+                privateProperties = await RemoveFields(privateProperties, token);
+                protectedAndInternalProperties = await RemoveFields(protectedAndInternalProperties, token);
+            }
+            return sortByAccessLevel ?
+                    new JArray(JObject.FromObject(new { result = publicProperties, internalProperties = protectedAndInternalProperties, privateProperties = privateProperties })) :
+                    new JArray(publicProperties.Union(protectedAndInternalProperties).Union(privateProperties));
+
+            async Task<JArray> AppendProperties(int typeId, JArray properties, bool isParent, CancellationToken token)
+            {
+                using var commandParamsObjWriter = new MonoBinaryWriter();
+                commandParamsObjWriter.WriteObj(new DotnetObjectId("object", $"{objectId}"), this);
+                var props = await CreateJArrayForProperties(typeId, commandParamsObjWriter.GetParameterBuffer(), properties, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute), $"dotnet:object:{objectId}", isParent, token);
+                return new JArray(properties.Union(props));
+            }
+
+            async Task<JArray> GetNotOnlyAccessorProperties(List<FieldTypeClass> fields, JArray properties, int typeId, bool isParent, CancellationToken token)
+            {
+                if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
+                    fields = fields.Where(field => field.IsPublic).ToList();
+                JArray objectFields = new JArray();
+
+                using var commandParamsWriter = new MonoBinaryWriter();
+                commandParamsWriter.Write(objectId);
+                commandParamsWriter.Write(fields.Count);
+                foreach (var field in fields)
+                {
+                    commandParamsWriter.Write(field.Id);
+                }
+
+                using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdObject.RefGetValues, commandParamsWriter, token);
+
+                foreach (var field in fields)
+                {
+                    long initialPos = retDebuggerCmdReader.BaseStream.Position;
+                    int valtype = retDebuggerCmdReader.ReadByte();
+                    retDebuggerCmdReader.BaseStream.Position = initialPos;
+                    var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, isParent, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
+                    if (properties.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any())
+                    {
+                        continue;
+                    }
+                    if (getCommandType.HasFlag(GetObjectCommandOptions.WithSetter))
+                    {
+                        var command_params_writer_to_set = new MonoBinaryWriter();
+                        command_params_writer_to_set.Write(objectId);
+                        command_params_writer_to_set.Write(1);
+                        command_params_writer_to_set.Write(field.Id);
+                        var (data, length) = command_params_writer_to_set.ToBase64();
+
+                        fieldValue.Add("set", JObject.FromObject(new
+                        {
+                            commandSet = CommandSet.ObjectRef,
+                            command = CmdObject.RefSetValues,
+                            buffer = data,
+                            valtype,
+                            length = length
+                        }));
+                    }
+                    objectFields.Add(fieldValue);
+                }
+                return new JArray(properties.Union(objectFields));
+            }
+
+            async Task<JArray> RemoveFields(JArray properties, CancellationToken token)
             {
                 var retAfterRemove = new JArray();
                 List<List<FieldTypeClass>> allFields = new List<List<FieldTypeClass>>();
@@ -2407,14 +2449,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var fields = await GetTypeFields(typeId[i], token);
                     allFields.Add(fields);
                 }
-                foreach (var item in ret)
+                foreach (var item in properties)
                 {
                     bool foundField = false;
-                    for (int j = 0 ; j <  allFields.Count; j++)
+                    for (int j = 0; j < allFields.Count; j++)
                     {
                         foreach (var field in allFields[j])
                         {
-                            if (field.Name.Equals(item["name"].Value<string>())) {
+                            if (field.Name.Equals(item["name"].Value<string>()))
+                            {
                                 if (item["isOwn"] == null || (item["isOwn"].Value<bool>() && j == 0) || !item["isOwn"].Value<bool>())
                                     foundField = true;
                                 break;
@@ -2423,13 +2466,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (foundField)
                             break;
                     }
-                    if (!foundField) {
+                    if (!foundField)
+                    {
                         retAfterRemove.Add(item);
                     }
                 }
-                ret = retAfterRemove;
+                return retAfterRemove;
             }
-            return ret;
         }
 
         public async Task<JArray> GetObjectProxy(int objectId, CancellationToken token)
