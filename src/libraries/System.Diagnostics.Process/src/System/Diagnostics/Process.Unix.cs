@@ -1114,7 +1114,7 @@ namespace System.Diagnostics
                 s_processStartLock.ExitWriteLock();
             }
         }
-        
+
         /// <summary>Gets the friendly name of the process.</summary>
         public string ProcessName
         {
