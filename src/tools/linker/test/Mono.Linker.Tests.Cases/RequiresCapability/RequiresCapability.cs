@@ -1005,10 +1005,57 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
 					[ExpectedWarning ("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Analyzer)]
 					get;
+					set;
+				}
+			}
+
+			class DerivedClassWithAllWarnings : BaseClassWithRequires
+			{
+				[ExpectedWarning ("IL2046", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()")]
+				[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3051", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Analyzer)]
+				public override void VirtualMethod ()
+				{
+				}
+
+				private string name;
+
+				[RequiresAssemblyFiles("Message")]
+				[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor", ProducedBy = ProducedBy.Analyzer)]
+				public override string VirtualPropertyAnnotationInAccesor {
+					[ExpectedWarning ("IL2046", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
+					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL3051", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Analyzer)]
+					get { return name; }
+					[RequiresAssemblyFiles ("Message")]
 					[RequiresUnreferencedCode("Message")]
-					[RequiresAssemblyFiles("Message")]
+					[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInAccesor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.set")]
+					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.set", ProducedBy = ProducedBy.Analyzer)]
+					set { name = value; }
+				}
+
+				[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", ProducedBy = ProducedBy.Analyzer)]
+				public override string VirtualPropertyAnnotationInProperty {
+					[RequiresAssemblyFiles ("Message")]
+					[RequiresUnreferencedCode ("Message")]
+					[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInProperty.get", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty.get")]
+					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInProperty.get", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty.get", ProducedBy = ProducedBy.Analyzer)]
+					get;
+					[RequiresAssemblyFiles ("Message")]
+					[RequiresUnreferencedCode ("Message")]
+					[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInProperty.set", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty.set")]
+					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInProperty.set", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty.set", ProducedBy = ProducedBy.Analyzer)]
+					set; }
+
+				[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInPropertyAndAccessor", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor", ProducedBy = ProducedBy.Analyzer)]
+				public override string VirtualPropertyAnnotationInPropertyAndAccessor {
+					[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
+					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Analyzer)]
+					get;
+					[RequiresAssemblyFiles ("Message")]
+					[RequiresUnreferencedCode ("Message")]
 					[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.set")]
-					[ExpectedWarning ("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.set", ProducedBy = ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInPropertyAndAccessor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.set", ProducedBy = ProducedBy.Analyzer)]
 					set;
 				}
 			}
