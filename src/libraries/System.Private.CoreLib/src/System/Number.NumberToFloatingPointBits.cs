@@ -1092,7 +1092,7 @@ namespace System
                 ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
 
                 int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-                int fastExponent = (Math.Abs(exponent));
+                int fastExponent = Math.Abs(exponent);
 
                 // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
                 // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
@@ -1104,7 +1104,7 @@ namespace System
                 // we can rely on it to produce the correct result when both inputs are exact.
                 // This is known as Clinger's fast path
 
-                if ((mantissa <= info.MaxMantissaFastPath) && (totalDigits <= 15) && (fastExponent <= info.MaxExponentFastPath))
+                if ((mantissa <= info.MaxMantissaFastPath) && (fastExponent <= info.MaxExponentFastPath))
                 {
                     double mantissa_d = mantissa;
                     double scale = s_Pow10DoubleTable[fastExponent];
@@ -1164,7 +1164,7 @@ namespace System
             uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
 
             int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-            int fastExponent = (Math.Abs(exponent));
+            int fastExponent = Math.Abs(exponent);
 
             // Above 19 digits, we rely on slow path
             if (totalDigits <= 19)
@@ -1204,7 +1204,7 @@ namespace System
 
                 ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
 
-                if ((mantissa <= info.MaxMantissaFastPath) && (totalDigits <= 15) && (fastExponent <= info.MaxExponentFastPath))
+                if ((mantissa <= info.MaxMantissaFastPath) && (fastExponent <= info.MaxExponentFastPath))
                 {
                     double mantissa_d = mantissa;
                     double scale = s_Pow10DoubleTable[fastExponent];
@@ -1264,7 +1264,7 @@ namespace System
             uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
 
             int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-            int fastExponent = (Math.Abs(exponent));
+            int fastExponent = Math.Abs(exponent);
 
 
             // Above 19 digits, we rely on slow path
@@ -1278,7 +1278,7 @@ namespace System
                     // It is only valid to do this optimization for single-precision floating-point
                     // values since we can lose some of the mantissa bits and would return the
                     // wrong value when upcasting to double.
-
+                    //
                     float result = DigitsToUInt32(src, (int)(totalDigits));
                     float scale = s_Pow10SingleTable[fastExponent];
 
@@ -1306,7 +1306,7 @@ namespace System
 
                 ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
 
-                if ((mantissa <= info.MaxMantissaFastPath) && (totalDigits <= 15) && (fastExponent <= info.MaxExponentFastPath))
+                if ((mantissa <= info.MaxMantissaFastPath) && (fastExponent <= info.MaxExponentFastPath))
                 {
                     double mantissa_d = mantissa;
                     double scale = s_Pow10DoubleTable[fastExponent];
