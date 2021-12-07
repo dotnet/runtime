@@ -255,7 +255,6 @@
 
   <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
     <ItemGroup>
-      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
         <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups);IsMergedTestWrapper=true</AdditionalProperties>
@@ -282,6 +281,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)**" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
