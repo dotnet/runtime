@@ -81,11 +81,11 @@ namespace System.IO.Tests
             Assert.Throws<UnauthorizedAccessException>(() => Delete(TestDirectory));
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void DeletingSymLinkDoesntDeleteTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             File.Create(path).Dispose();
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));

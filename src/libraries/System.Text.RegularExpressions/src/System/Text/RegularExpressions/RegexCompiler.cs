@@ -354,7 +354,7 @@ namespace System.Text.RegularExpressions
             _int32LocalsPool?.Clear();
             _readOnlySpanCharLocalsPool?.Clear();
 
-            LocalBuilder runtextSpan = DeclareReadOnlySpanChar();
+            LocalBuilder inputSpan = DeclareReadOnlySpanChar();
             LocalBuilder runtextpos = DeclareInt32();
             LocalBuilder runtextend = DeclareInt32();
 
@@ -382,12 +382,12 @@ namespace System.Text.RegularExpressions
             // Load necessary locals
             // int runtextpos = this.runtextpos;
             // int runtextend = this.runtextend;
-            // ReadOnlySpan<char> runtextSpan = this.runtext.AsSpan();
+            // ReadOnlySpan<char> inputSpan = this.runtext.AsSpan();
             Mvfldloc(s_runtextposField, runtextpos);
             Mvfldloc(s_runtextendField, runtextend);
             Ldthisfld(s_runtextField);
             Call(s_stringAsSpanMethod);
-            Stloc(runtextSpan);
+            Stloc(inputSpan);
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
@@ -536,8 +536,8 @@ namespace System.Text.RegularExpressions
                                 Ldthisfld(s_runtextbegField);
                                 Ble(atBeginningOfLine);
 
-                                // ... && runtextSpan[runtextpos - 1] != '\n') { ... }
-                                Ldloca(runtextSpan);
+                                // ... && inputSpan[runtextpos - 1] != '\n') { ... }
+                                Ldloca(inputSpan);
                                 Ldloc(runtextpos);
                                 Ldc(1);
                                 Sub();
@@ -546,8 +546,8 @@ namespace System.Text.RegularExpressions
                                 Ldc('\n');
                                 Beq(atBeginningOfLine);
 
-                                // int tmp = runtextSpan.Slice(runtextpos).IndexOf('\n');
-                                Ldloca(runtextSpan);
+                                // int tmp = inputSpan.Slice(runtextpos).IndexOf('\n');
+                                Ldloca(inputSpan);
                                 Ldloc(runtextpos);
                                 Call(s_spanSliceIntMethod);
                                 Ldc('\n');
@@ -556,14 +556,14 @@ namespace System.Text.RegularExpressions
                                 {
                                     Stloc(newlinePos);
 
-                                    // if (newlinePos == -1 || newlinePos + runtextpos + 1 > runtextend)
+                                    // if (newlinePos < 0 || newlinePos + runtextpos + 1 > runtextend)
                                     // {
                                     //     runtextpos = runtextend;
                                     //     return false;
                                     // }
                                     Ldloc(newlinePos);
-                                    Ldc(-1);
-                                    Beq(returnFalse);
+                                    Ldc(0);
+                                    Blt(returnFalse);
                                     Ldloc(newlinePos);
                                     Ldloc(runtextpos);
                                     Add();
@@ -594,8 +594,8 @@ namespace System.Text.RegularExpressions
             {
                 using RentedLocalBuilder i = RentInt32Local();
 
-                // int i = runtextSpan.Slice(runtextpos, runtextend - runtextpos).IndexOf(prefix);
-                Ldloca(runtextSpan);
+                // int i = inputSpan.Slice(runtextpos, runtextend - runtextpos).IndexOf(prefix);
+                Ldloca(inputSpan);
                 Ldloc(runtextpos);
                 Ldloc(runtextend);
                 Ldloc(runtextpos);
@@ -632,8 +632,8 @@ namespace System.Text.RegularExpressions
                 using RentedLocalBuilder iLocal = RentInt32Local();
                 using RentedLocalBuilder textSpanLocal = RentReadOnlySpanCharLocal();
 
-                // ReadOnlySpan<char> span = runtextSpan.Slice(runtextpos, runtextend - runtextpos);
-                Ldloca(runtextSpan);
+                // ReadOnlySpan<char> span = inputSpan.Slice(runtextpos, runtextend - runtextpos);
+                Ldloca(inputSpan);
                 Ldloc(runtextpos);
                 Ldloc(runtextend);
                 Ldloc(runtextpos);
@@ -856,35 +856,34 @@ namespace System.Text.RegularExpressions
             // Skip the Capture node. We handle the implicit root capture specially.
             node = node.Child(0);
 
-            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole thing.
-            // This is the case, in particular, for strings.  We can special case these to do essentially nothing
-            // in Go other than emit the capture.
-            if (!IsCaseInsensitive(node)) // FindFirstChar may yield false positives on these in some cultures when case-insensitive
+
+            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole expression.
+            // We can special case these to do essentially nothing in Go other than emit the capture.
+            switch (node.Type)
             {
-                switch (node.Type)
-                {
-                    case RegexNode.Multi:
-                    case RegexNode.Notone:
-                    case RegexNode.One:
-                    case RegexNode.Set:
-                        // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
-                        // base.runtextpos = base.runtextpos + node.Str.Length;
-                        // return;
-                        Ldthis();
-                        Dup();
-                        Ldc(0);
-                        Ldthisfld(s_runtextposField);
-                        Dup();
-                        Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
-                        Add();
-                        Call(s_captureMethod);
-                        Ldthisfld(s_runtextposField);
-                        Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
-                        Add();
-                        Stfld(s_runtextposField);
-                        Ret();
-                        return;
-                }
+                case RegexNode.Multi or RegexNode.Notone or RegexNode.One or RegexNode.Set when !IsCaseInsensitive(node):
+                    // This is the case for single and multiple characters, though the whole thing is only guaranteed
+                    // to have been validated in FindFirstChar when doing case-sensitive comparison.
+                    // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
+                    // base.runtextpos = base.runtextpos + node.Str.Length;
+                    // return;
+                    Ldthis();
+                    Dup();
+                    Ldc(0);
+                    Ldthisfld(s_runtextposField);
+                    Dup();
+                    Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
+                    Add();
+                    Call(s_captureMethod);
+                    Ldthisfld(s_runtextposField);
+                    Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
+                    Add();
+                    Stfld(s_runtextposField);
+                    Ret();
+                    return;
+
+                // The source generator special-cases RegexNode.Empty, for purposes of code learning rather than
+                // performance.  Since that's not applicable to RegexCompiler, that code isn't mirrored here.
             }
 
             // Initialize the main locals used throughout the implementation.
@@ -904,7 +903,7 @@ namespace System.Text.RegularExpressions
             // CultureInfo culture = CultureInfo.CurrentCulture; // only if the whole expression or any subportion is ignoring case, and we're not using invariant
             InitializeCultureForGoIfNecessary();
 
-            // ReadOnlySpan<char> runtextSpan = this.runtext.AsSpan();
+            // ReadOnlySpan<char> inputSpan = this.runtext.AsSpan();
             // int runtextend = this.runtextend;
             Ldthisfld(s_runtextField);
             Call(s_stringAsSpanMethod);
@@ -997,7 +996,7 @@ namespace System.Text.RegularExpressions
             // Creates a span for runtext starting at runtextpos until this.runtextend.
             void LoadTextSpanLocal()
             {
-                // textSpan = runtextSpan.Slice(runtextpos, this.runtextend - runtextpos);
+                // textSpan = inputSpan.Slice(runtextpos, this.runtextend - runtextpos);
                 Ldloca(runtextSpanLocal);
                 Ldloc(runtextposLocal);
                 Ldloc(runtextendLocal);
@@ -1293,7 +1292,7 @@ namespace System.Text.RegularExpressions
 
                 MarkLabel(body);
 
-                // if (runtextSpan[matchIndex + i] != textSpan[i]) goto doneLabel;
+                // if (inputSpan[matchIndex + i] != textSpan[i]) goto doneLabel;
                 Ldloca(runtextSpanLocal);
                 Ldloc(matchIndex);
                 Ldloc(i);
@@ -2331,7 +2330,7 @@ namespace System.Text.RegularExpressions
 
                 if (subsequent?.FindStartingCharacter() is char subsequentCharacter)
                 {
-                    // endingPos = runtextSpan.Slice(startingPos, endingPos - startingPos).LastIndexOf(subsequentCharacter);
+                    // endingPos = inputSpan.Slice(startingPos, endingPos - startingPos).LastIndexOf(subsequentCharacter);
                     // if (endingPos < 0)
                     // {
                     //     goto originalDoneLabel;
