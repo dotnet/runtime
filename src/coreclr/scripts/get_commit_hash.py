@@ -18,7 +18,6 @@ import os
 from coreclr_arguments import *
 from jitutil import run_command
 
-
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-run_type", help="Type of run. Options: 'coreclr', 'libraries'")
@@ -32,15 +31,16 @@ paths = {
         'Directory.Solution.props',
         'eng'
     ],
-    'coreclr' : [
+    'coreclr': [
         'src/coreclr',
         'src/native',
     ],
-    'libraries' : [
+    'libraries': [
         'src/libraries',
         'src/coreclr/System.Private.CoreLib',
     ]
 }
+
 
 def setup_args(args):
     """ Setup the args
@@ -67,22 +67,32 @@ def setup_args(args):
 
     return coreclr_args
 
+
 def create_commits_file(run_types, source_directory, output_file):
     """Creates a commit file containing hashes for all the paths specific
     to the run_types specified
 
     Args:
-        run_types ([string]): Array of run_types
+        run_types ([string]): Array of run_types.
+        run_types (string): Name of source directory.
+        run_types (string): Name of output file.
     """
 
     with open(output_file, 'w') as of:
         for run_type in run_types:
             for git_path in paths[run_type]:
-                git_path = os.path.join(source_directory, git_path)
-                if not os.path.exists(git_path):
+                file_path = os.path.join(source_directory, git_path)
+                if not os.path.exists(file_path):
                     continue
-                git_output, _, _ = run_command(["git", "--no-pager", "log", "-n", "1", "--oneline", "--", git_path])
-                of.write(git_output.decode("utf-8"))
+                git_output, _, _ = run_command(["git", "--no-pager", "log", "-n", "1", "--oneline", "--decorate", "--", file_path])
+                git_output = git_output.decode("utf-8")
+
+                if "(grafted)" in git_output:
+                    # If the latest commit for git_path is the 'grafted', then just print 'grafted' instead of
+                    # the actual commit, because it will change in every run and hence cache key will always be different.
+                    git_output = "grafted{}".format(os.linesep)
+
+                of.write("'{}': {}".format(git_path, git_output))
 
 def main(main_args):
     """Main entrypoint
@@ -114,21 +124,19 @@ def main(main_args):
     #
     # If the PR branch has 100+ commits, we might still see similar issue, but changes are rare to have
     # a PR having 100+ commits. In such case, the commit hash will be "grafted" everytime.
-    print(" -- Fetching history of 80 more commits from HEAD, so we can find the correct hash.")
-    _, _, return_code = run_command(["git", "fetch", "--depth=80", repo_url, "HEAD"], source_directory)
-
-    print(" -- Printing commit history")
-    run_command(["git", "--no-pager", "log", "-100", "--oneline"], source_directory, _exit_on_fail=True)
-
-    print(" -- Printing logs of Directory* files")
-    run_command(["git", "--no-pager", "log", "-10", "--oneline", "--", os.path.join(source_directory, "Directory.Build.targets")], source_directory, _exit_on_fail=True)
-    run_command(["git", "--no-pager", "log", "-10", "--oneline", "--", os.path.join(source_directory, "Directory.Solution.props")], source_directory, _exit_on_fail=True)
+    print(" -- Fetching history of 200 commits from HEAD, so we can find the correct hash.")
+    _, _, return_code = run_command(["git", "fetch", "--depth=100", repo_url, "HEAD"], source_directory)
 
     if return_code != 0:
         print("git fetch failed. Use grafted commit hashes.")
 
+    print(" -- Printing commit history")
+    run_command(["git", "--no-pager", "log", "-1000", "--oneline"], source_directory,
+                                   _exit_on_fail=True)
+
     print(" -- Creating commits file")
     create_commits_file(['common', run_type], source_directory, output_file)
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
