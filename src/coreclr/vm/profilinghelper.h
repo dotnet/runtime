@@ -136,11 +136,4 @@ private:
     DWORD      m_dwOriginalFullState;
 };
 
-FORCEINLINE void DeregisterProfilerIfNotificationOnly(ProfilerInfo *pProfilerInfo) 
-{
-    g_profControlBlock.DeRegisterProfilerInfo(pProfilerInfo);
-}
-
-typedef Wrapper<ProfilerInfo *, DoNothing, DeregisterProfilerIfNotificationOnly> ProfilerInfoHolder;
-
 #endif //__PROFILING_HELPER_H__

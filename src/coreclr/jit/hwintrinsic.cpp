@@ -367,92 +367,6 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
 }
 
 //------------------------------------------------------------------------
-// lookupNumArgs: Gets the number of args for a given HWIntrinsic node
-//
-// Arguments:
-//    node -- The HWIntrinsic node to get the number of args for
-//
-// Return Value:
-//    The number of args for the HWIntrinsic associated with node
-int HWIntrinsicInfo::lookupNumArgs(const GenTreeHWIntrinsic* node)
-{
-    assert(node != nullptr);
-
-    NamedIntrinsic id      = node->gtHWIntrinsicId;
-    int            numArgs = lookupNumArgs(id);
-
-    if (numArgs >= 0)
-    {
-        return numArgs;
-    }
-
-    assert(numArgs == -1);
-
-    GenTree* op1 = node->gtGetOp1();
-
-    if (op1 == nullptr)
-    {
-        return 0;
-    }
-
-    if (op1->OperIsList())
-    {
-        GenTreeArgList* list = op1->AsArgList();
-        numArgs              = 0;
-
-        do
-        {
-            numArgs++;
-            list = list->Rest();
-        } while (list != nullptr);
-
-        return numArgs;
-    }
-
-    GenTree* op2 = node->gtGetOp2();
-
-    return (op2 == nullptr) ? 1 : 2;
-}
-
-//------------------------------------------------------------------------
-// lookupLastOp: Gets the last operand for a given HWIntrinsic node
-//
-// Arguments:
-//    node   -- The HWIntrinsic node to get the last operand for
-//
-// Return Value:
-//     The last operand for node
-GenTree* HWIntrinsicInfo::lookupLastOp(const GenTreeHWIntrinsic* node)
-{
-    assert(node != nullptr);
-
-    GenTree* op1 = node->gtGetOp1();
-
-    if (op1 == nullptr)
-    {
-        return nullptr;
-    }
-
-    if (op1->OperIsList())
-    {
-        GenTreeArgList* list = op1->AsArgList();
-        GenTree*        last;
-
-        do
-        {
-            last = list->Current();
-            list = list->Rest();
-        } while (list != nullptr);
-
-        return last;
-    }
-
-    GenTree* op2 = node->gtGetOp2();
-
-    return (op2 == nullptr) ? op1 : op2;
-}
-
-//------------------------------------------------------------------------
 // isImmOp: Checks whether the HWIntrinsic node has an imm operand
 //
 // Arguments:
@@ -626,8 +540,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
     }
 
     GenTreeBoundsChk* hwIntrinsicChk = new (this, GT_HW_INTRINSIC_CHK)
-        GenTreeBoundsChk(GT_HW_INTRINSIC_CHK, TYP_VOID, immOpDup, adjustedUpperBoundNode, SCK_RNGCHK_FAIL);
-    hwIntrinsicChk->gtThrowKind = SCK_ARG_RNG_EXCPN;
+        GenTreeBoundsChk(GT_HW_INTRINSIC_CHK, TYP_VOID, immOpDup, adjustedUpperBoundNode, SCK_ARG_RNG_EXCPN);
 
     return gtNewOperNode(GT_COMMA, immOp->TypeGet(), hwIntrinsicChk, immOp);
 }
@@ -834,10 +747,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
-    HWIntrinsicCategory category        = HWIntrinsicInfo::lookupCategory(intrinsic);
-    int                 numArgs         = sig->numArgs;
-    var_types           retType         = JITtype2varType(sig->retType);
-    CorInfoType         simdBaseJitType = CORINFO_TYPE_UNDEF;
+    HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
+    CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
+    int                    numArgs         = sig->numArgs;
+    var_types              retType         = JITtype2varType(sig->retType);
+    CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
 
     if ((retType == TYP_STRUCT) && featureSIMD)
     {
@@ -858,20 +772,27 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)
     {
-        if (category != HW_Category_Scalar)
+        if ((category == HW_Category_Scalar) || HWIntrinsicInfo::isScalarIsa(isa))
         {
-            unsigned int sizeBytes;
-            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-            assert((category == HW_Category_Special) || (sizeBytes != 0));
+            simdBaseJitType = sig->retType;
+
+            if (simdBaseJitType == CORINFO_TYPE_VOID)
+            {
+                simdBaseJitType = CORINFO_TYPE_UNDEF;
+            }
         }
         else
         {
-            simdBaseJitType = sig->retType;
+            assert(featureSIMD);
+            unsigned int sizeBytes;
+
+            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
+            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
         }
     }
 
     // Immediately return if the category is other than scalar/special and this is not a supported base type.
-    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) &&
+    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) && !HWIntrinsicInfo::isScalarIsa(isa) &&
         !isSupportedBaseType(intrinsic, simdBaseJitType))
     {
         return nullptr;

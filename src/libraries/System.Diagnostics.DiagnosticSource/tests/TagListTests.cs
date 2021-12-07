@@ -105,7 +105,7 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(i, list[i].Value);
             }
 
-            // Insert at begining
+            // Insert at beginning
             int count = list.Count;
             for (int i = 1; i < 10; i++)
             {

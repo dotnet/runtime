@@ -15,6 +15,7 @@
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Emitter.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Parser.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 </Project>

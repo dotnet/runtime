@@ -48,11 +48,12 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
             buildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        dotnetWasmFromRuntimePack: false,
-                        hasIcudt: !invariant,
-                        id: id,
-                        createProject: true);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: false,
+                                HasIcudt: !invariant,
+                                CreateProject: true));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.V8, id: id);
             return (buildArgs, GetBuildPaths(buildArgs));
@@ -77,13 +78,15 @@ namespace Wasm.Build.NativeRebuild.Tests
             buildArgs = newBuildArgs;
 
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
+            Console.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             (_, string output) = BuildProject(buildArgs,
                                             id: id,
-                                            dotnetWasmFromRuntimePack: false,
-                                            hasIcudt: !invariant,
-                                            createProject: false,
-                                            useCache: false,
-                                            verbosity: verbosity);
+                                            new BuildProjectOptions(
+                                                DotnetWasmFromRuntimePack: false,
+                                                HasIcudt: !invariant,
+                                                CreateProject: false,
+                                                UseCache: false,
+                                                Verbosity: verbosity));
 
             return output;
         }
@@ -135,6 +138,18 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             if (msg.Length > 0)
                 throw new XunitException($"CompareStat failed:{Environment.NewLine}{msg}");
+        }
+
+        internal IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(bool unchanged, params string[] baseDirs)
+        {
+            var dict = new Dictionary<string, (string fullPath, bool unchanged)>();
+            foreach (var baseDir in baseDirs)
+            {
+                foreach (var file in Directory.EnumerateFiles(baseDir, "*", new EnumerationOptions { RecurseSubdirectories = true }))
+                    dict[Path.GetFileName(file)] = (file, unchanged);
+            }
+
+            return dict;
         }
 
         internal IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(BuildArgs buildArgs, BuildPaths paths, bool unchanged)

@@ -278,7 +278,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             if (nextStmt != nullptr)
             {
                 // Is it possible for gtNextStmt to be NULL?
-                newStmt->SetILOffsetX(nextStmt->GetILOffsetX());
+                newStmt->SetDebugInfo(nextStmt->GetDebugInfo());
             }
         }
 
@@ -524,6 +524,9 @@ bool Compiler::fgCanSwitchToOptimized()
 //------------------------------------------------------------------------
 // fgSwitchToOptimized: Switch the opt level from tier 0 to optimized
 //
+// Arguments:
+//    reason - reason why opt level was switched
+//
 // Assumptions:
 //    - fgCanSwitchToOptimized() is true
 //    - compSetOptimizationLevel() has not been called
@@ -532,15 +535,16 @@ bool Compiler::fgCanSwitchToOptimized()
 //    This method is to be called at some point before compSetOptimizationLevel() to switch the opt level to optimized
 //    based on information gathered in early phases.
 
-void Compiler::fgSwitchToOptimized()
+void Compiler::fgSwitchToOptimized(const char* reason)
 {
     assert(fgCanSwitchToOptimized());
 
     // Switch to optimized and re-init options
-    JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because of loop\n****\n");
+    JITDUMP("****\n**** JIT Tier0 jit request switching to Tier1 because: %s\n****\n", reason);
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
 
     // Leave a note for jit diagnostics
     compSwitchedToOptimized = true;
@@ -976,7 +980,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return false;
         }
 
-        LclVarDsc* varDsc = &lvaTable[varNum];
+        LclVarDsc* varDsc = lvaGetDesc(varNum);
 
         if (varDsc->lvStackByref)
         {
@@ -1080,7 +1084,9 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     GenTree*              qmarkNode       = nullptr;
     if (oper == GT_FTN_ADDR)
     {
-        targetMethodHnd = targetMethod->AsFptrVal()->gtFptrMethod;
+        GenTreeFptrVal* fptrValTree       = targetMethod->AsFptrVal();
+        fptrValTree->gtFptrDelegateTarget = true;
+        targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
     else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
@@ -1333,8 +1339,7 @@ GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
             // Small-typed arguments and aliased locals are normalized on load.
             // Other small-typed locals are normalized on store.
             // If it is an assignment to one of the latter, insert the cast on RHS
-            unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = &lvaTable[varNum];
+            LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon()->GetLclNum());
 
             if (varDsc->lvNormalizeOnStore())
             {
@@ -1362,7 +1367,7 @@ GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
  *  execute a call or not.
  */
 
-inline void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
+void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
 {
     /* Bail if this is not a backward edge */
 
@@ -1436,7 +1441,7 @@ void Compiler::fgLoopCallMark()
  *  Note the fact that the given block is a loop header.
  */
 
-inline void Compiler::fgMarkLoopHead(BasicBlock* block)
+void Compiler::fgMarkLoopHead(BasicBlock* block)
 {
 #ifdef DEBUG
     if (verbose)
@@ -1683,12 +1688,9 @@ void Compiler::fgAddSyncMethodEnterExit()
 
     // Create a block for the start of the try region, where the monitor enter call
     // will go.
-
-    assert(fgFirstBB->bbFallsThrough());
-
-    BasicBlock* tryBegBB  = fgNewBBafter(BBJ_NONE, fgFirstBB, false);
-    BasicBlock* tryNextBB = tryBegBB->bbNext;
-    BasicBlock* tryLastBB = fgLastBB;
+    BasicBlock* const tryBegBB  = fgSplitBlockAtEnd(fgFirstBB);
+    BasicBlock* const tryNextBB = tryBegBB->bbNext;
+    BasicBlock* const tryLastBB = fgLastBB;
 
     // If we have profile data the new block will inherit the next block's weight
     if (tryNextBB->hasProfileWeight())
@@ -1799,10 +1801,10 @@ void Compiler::fgAddSyncMethodEnterExit()
 
     lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
 
-    { // Scope the variables of the variable initialization
-
-        // Initialize the 'acquired' boolean.
-
+    // Create IR to initialize the 'acquired' boolean.
+    //
+    if (!opts.IsOSR())
+    {
         GenTree* zero     = gtNewZeroConNode(genActualType(typeMonAcquired));
         GenTree* varNode  = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
         GenTree* initNode = gtNewAssignNode(varNode, zero);
@@ -1825,7 +1827,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     unsigned lvaCopyThis = 0;
     if (!info.compIsStatic)
     {
-        lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+        lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
 
         GenTree* thisNode = gtNewLclvNode(info.compThisArg, TYP_REF);
@@ -1835,7 +1837,12 @@ void Compiler::fgAddSyncMethodEnterExit()
         fgNewStmtAtEnd(tryBegBB, initNode);
     }
 
-    fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, tryBegBB, true /*enter*/);
+    // For OSR, we do not need the enter tree as the monitor is acquired by the original method.
+    //
+    if (!opts.IsOSR())
+    {
+        fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, tryBegBB, true /*enter*/);
+    }
 
     // exceptional case
     fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);
@@ -1994,7 +2001,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     lvaReversePInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Reverse Pinvoke FrameVar"));
 
-    LclVarDsc* varDsc   = &lvaTable[lvaReversePInvokeFrameVar];
+    LclVarDsc* varDsc   = lvaGetDesc(lvaReversePInvokeFrameVar);
     varDsc->lvType      = TYP_BLK;
     varDsc->lvExactSize = eeGetEEInfo()->sizeOfReversePInvokeFrame;
 
@@ -2750,14 +2757,17 @@ void Compiler::fgAddInternal()
         if (!opts.ShouldUsePInvokeHelpers())
         {
             info.compLvFrameListRoot           = lvaGrabTemp(false DEBUGARG("Pinvoke FrameListRoot"));
-            LclVarDsc* rootVarDsc              = &lvaTable[info.compLvFrameListRoot];
+            LclVarDsc* rootVarDsc              = lvaGetDesc(info.compLvFrameListRoot);
             rootVarDsc->lvType                 = TYP_I_IMPL;
             rootVarDsc->lvImplicitlyReferenced = 1;
         }
 
         lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Pinvoke FrameVar"));
 
-        LclVarDsc* varDsc = &lvaTable[lvaInlinedPInvokeFrameVar];
+        // Lowering::InsertPInvokeMethodProlog will create a call with this local addr as an argument.
+        lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+
+        LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.
         varDsc->lvExactSize = eeGetEEInfo()->inlinedCallFrameInfo.size;
@@ -2768,7 +2778,7 @@ void Compiler::fgAddInternal()
         if (!opts.ShouldUsePInvokeHelpers() && compJmpOpUsed)
         {
             lvaPInvokeFrameRegSaveVar = lvaGrabTempWithImplicitUse(false DEBUGARG("PInvokeFrameRegSave Var"));
-            varDsc                    = &lvaTable[lvaPInvokeFrameRegSaveVar];
+            varDsc                    = lvaGetDesc(lvaPInvokeFrameRegSaveVar);
             varDsc->lvType            = TYP_BLK;
             varDsc->lvExactSize       = 2 * REGSIZE_BYTES;
         }
@@ -2801,7 +2811,7 @@ void Compiler::fgAddInternal()
         // Stick the conditional call at the start of the method
 
         fgEnsureFirstBBisScratch();
-        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback));
+        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
     }
 
 #if !defined(FEATURE_EH_FUNCLETS)
@@ -2927,7 +2937,7 @@ void Compiler::fgFindOperOrder()
 
 //------------------------------------------------------------------------
 // fgSimpleLowering: do full walk of all IR, lowering selected operations
-// and computing lvaOutgoingArgumentAreaSize.
+// and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
 //    Lowers GT_ARR_LENGTH, GT_ARR_BOUNDS_CHECK, and GT_SIMD_CHK.
@@ -2938,7 +2948,7 @@ void Compiler::fgFindOperOrder()
 //    Outgoing arg area size is computed here because we want to run it
 //    after optimization (in case calls are removed) and need to look at
 //    all possible calls in the method.
-
+//
 void Compiler::fgSimpleLowering()
 {
 #if FEATURE_FIXED_OUT_ARGS
@@ -3020,9 +3030,9 @@ void Compiler::fgSimpleLowering()
 
                         if (thisCallOutAreaSize > outgoingArgSpaceSize)
                         {
+                            JITDUMP("Bumping outgoingArgSpaceSize from %u to %u for call [%06d]\n",
+                                    outgoingArgSpaceSize, thisCallOutAreaSize, dspTreeID(tree));
                             outgoingArgSpaceSize = thisCallOutAreaSize;
-                            JITDUMP("Bumping outgoingArgSpaceSize to %u for call [%06d]\n", outgoingArgSpaceSize,
-                                    dspTreeID(tree));
                         }
                         else
                         {
@@ -3051,18 +3061,25 @@ void Compiler::fgSimpleLowering()
     // Finish computing the outgoing args area size
     //
     // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
-    // 1. there are calls to THROW_HEPLPER methods.
+    // 1. there are calls to THROW_HELPER methods.
     // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
     //    that even methods without any calls will have outgoing arg area space allocated.
+    // 3. We will be generating calls to PInvoke helpers. TODO: This shouldn't be required because
+    //    if there are any calls to PInvoke methods, there should be a call that we processed
+    //    above. However, we still generate calls to PInvoke prolog helpers even if we have dead code
+    //    eliminated all the calls.
+    // 4. We will be generating a stack cookie check. In this case we can call a helper to fail fast.
     //
     // An example for these two cases is Windows Amd64, where the ABI requires to have 4 slots for
     // the outgoing arg space if the method makes any calls.
     if (outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
-        if (compUsesThrowHelper || compIsProfilerHookNeeded())
+        if (compUsesThrowHelper || compIsProfilerHookNeeded() ||
+            (compMethodRequiresPInvokeFrame() && !opts.ShouldUsePInvokeHelpers()) || getNeedsGSSecurityCookie())
         {
             outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
-            JITDUMP("Bumping outgoingArgSpaceSize to %u for throw helper or profile hook", outgoingArgSpaceSize);
+            JITDUMP("Bumping outgoingArgSpaceSize to %u for possible helper or profile hook call",
+                    outgoingArgSpaceSize);
         }
     }
 
@@ -3891,6 +3908,7 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, GenTree* prevTree, bool isLIR)
 
 void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 {
+    // TODO-List-Cleanup: measure what using GenTreeVisitor here brings.
     genTreeOps oper;
     unsigned   kind;
 
@@ -3949,40 +3967,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
     {
         GenTree* op1 = tree->AsOp()->gtOp1;
         GenTree* op2 = tree->gtGetOp2IfPresent();
-
-        // Special handling for GT_LIST
-        if (tree->OperGet() == GT_LIST)
-        {
-            // First, handle the list items, which will be linked in forward order.
-            // As we go, we will link the GT_LIST nodes in reverse order - we will number
-            // them and update fgTreeSeqList in a subsequent traversal.
-            GenTree* nextList = tree;
-            GenTree* list     = nullptr;
-            while (nextList != nullptr && nextList->OperGet() == GT_LIST)
-            {
-                list              = nextList;
-                GenTree* listItem = list->AsOp()->gtOp1;
-                fgSetTreeSeqHelper(listItem, isLIR);
-                nextList = list->AsOp()->gtOp2;
-                if (nextList != nullptr)
-                {
-                    nextList->gtNext = list;
-                }
-                list->gtPrev = nextList;
-            }
-            // Next, handle the GT_LIST nodes.
-            // Note that fgSetTreeSeqFinish() sets the gtNext to null, so we need to capture the nextList
-            // before we call that method.
-            nextList = list;
-            do
-            {
-                assert(list != nullptr);
-                list     = nextList;
-                nextList = list->gtNext;
-                fgSetTreeSeqFinish(list, isLIR);
-            } while (list != tree);
-            return;
-        }
 
         /* Special handling for AddrMode */
         if (tree->OperIsAddrMode())
@@ -4050,10 +4034,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 
     switch (oper)
     {
-        case GT_FIELD:
-            noway_assert(tree->AsField()->gtFldObj == nullptr);
-            break;
-
         case GT_CALL:
 
             /* We'll evaluate the 'this' argument value first */
@@ -4088,6 +4068,29 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             }
 
             break;
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+        case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            if (tree->IsReverseOp())
+            {
+                assert(tree->AsMultiOp()->GetOperandCount() == 2);
+                fgSetTreeSeqHelper(tree->AsMultiOp()->Op(2), isLIR);
+                fgSetTreeSeqHelper(tree->AsMultiOp()->Op(1), isLIR);
+            }
+            else
+            {
+                for (GenTree* operand : tree->AsMultiOp()->Operands())
+                {
+                    fgSetTreeSeqHelper(operand, isLIR);
+                }
+            }
+            break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         case GT_ARR_ELEM:
 
@@ -4128,28 +4131,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpComparand, isLIR);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            // Evaluate the trees left to right
-            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtIndex, isLIR);
-            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtArrLen, isLIR);
-            break;
-
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
             noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
-            break;
-
-        case GT_INDEX_ADDR:
-            // Evaluate the array first, then the index....
-            assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-            fgSetTreeSeqHelper(tree->AsIndexAddr()->Arr(), isLIR);
-            fgSetTreeSeqHelper(tree->AsIndexAddr()->Index(), isLIR);
             break;
 
         default:
@@ -4172,7 +4156,7 @@ void Compiler::fgSetTreeSeqFinish(GenTree* tree, bool isLIR)
     {
         tree->gtFlags &= ~GTF_REVERSE_OPS;
 
-        if (tree->OperIs(GT_LIST, GT_ARGPLACE))
+        if (tree->OperIs(GT_ARGPLACE))
         {
             return;
         }
@@ -4447,32 +4431,29 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
 // Return Value:
 //    The first node in execution order, that belongs to tree.
 //
-// Assumptions:
-//     'tree' must either be a leaf, or all of its constituent nodes must be contiguous
-//     in execution order.
-//     TODO-Cleanup: Add a debug-only method that verifies this.
-
-/* static */
-GenTree* Compiler::fgGetFirstNode(GenTree* tree)
+// Notes:
+//    This function is only correct for HIR trees.
+//
+/* static */ GenTree* Compiler::fgGetFirstNode(GenTree* tree)
 {
-    GenTree* child = tree;
-    while (child->NumChildren() > 0)
+    GenTree* firstNode = tree;
+    while (true)
     {
-        if (child->OperIsBinary() && child->IsReverseOp())
+        auto operandsBegin = firstNode->OperandsBegin();
+        auto operandsEnd   = firstNode->OperandsEnd();
+
+        if (operandsBegin == operandsEnd)
         {
-            child = child->GetChild(1);
+            break;
         }
-        else
-        {
-            child = child->GetChild(0);
-        }
+
+        firstNode = *operandsBegin;
     }
-    return child;
+
+    return firstNode;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 
@@ -4514,9 +4495,7 @@ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
     return Compiler::WALK_CONTINUE;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 
@@ -4528,9 +4507,7 @@ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* da
     return Compiler::WALK_CONTINUE;
 }
 
-/*****************************************************************************/
-/*static*/
-Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
+/*static*/ Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
 

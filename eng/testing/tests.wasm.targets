@@ -5,9 +5,15 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
     <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
          so, just setting it true by default -->
     <IncludeSatelliteAssembliesInVFS Condition="'$(IncludeSatelliteAssembliesInVFS)' == ''">true</IncludeSatelliteAssembliesInVFS>
+
+    <!-- Run only if previous command succeeded -->
+    <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
+    <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
+    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -23,13 +29,13 @@
     <_XHarnessArgs Condition="'$(OS)' != 'Windows_NT'">wasm $XHARNESS_COMMAND --app=. --output-directory=$XHARNESS_OUT</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(OS)' == 'Windows_NT'">wasm %XHARNESS_COMMAND% --app=. --output-directory=%XHARNESS_OUT%</_XHarnessArgs>
 
-    <_XHarnessArgs Condition="'$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">$(_XHarnessArgs) --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">$(_XHarnessArgs) --engine=$(JSEngine) $(JSEngineArgs) --js-file=main.js</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(BrowserHost)' == 'windows'">$(_XHarnessArgs) --browser=chrome --browser-path=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
 
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">--run WasmTestRunner.dll $(AssemblyName).dll</_AppArgs>
-    <_AppArgs Condition="'$(IsFunctionalTest)' == 'true'">--run $(AssemblyName).dll --testing</_AppArgs>
+    <_AppArgs Condition="'$(IsFunctionalTest)' == 'true'">--run $(AssemblyName).dll</_AppArgs>
 
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
@@ -38,16 +44,19 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
-    <_AOTBuildCommand>dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(BrowserHost)' != 'windows'">_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj $XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(BrowserHost)' == 'windows'">dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:%XHARNESS_OUT%/AOTBuild.binlog</_AOTBuildCommand>
+
+    <_AOTBuildCommand  Condition="'$(BrowserHost)' == 'windows'">$(_AOTBuildCommand) &quot;/p:WasmCachePath=%USERPROFILE%\.emscripten-cache&quot;</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
 
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation) /p:EmccLinkOptimizationFlag='-Oz -Wl%252C-O0 -Wl%252C-lto-O0'</_AOTBuildCommand>
-    <_AOTBuildCommand>$(_AOTBuildCommand) &amp;&amp; cd wasm_build/AppBundle</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) $(_ShellCommandSeparator) cd wasm_build/AppBundle</_AOTBuildCommand>
 
     <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>
-    <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) &amp;&amp; $(RunScriptCommand)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) $(_ShellCommandSeparator) $(RunScriptCommand)</RunScriptCommand>
   </PropertyGroup>
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
@@ -87,9 +96,15 @@
              AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
+    <PropertyGroup Condition="'$(IsHighAotMemoryUsageTest)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true'">
+      <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">true</DisableParallelEmccCompile>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O2</EmccLinkOptimizationFlag>
+    </PropertyGroup>
+
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl%252C-O0 -Wl%252C-lto-O0</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <Error Text="Item WasmAssembliesToBundle is empty. This is likely an authoring error." Condition="@(WasmAssembliesToBundle->Count()) == 0" />
@@ -111,15 +126,21 @@
     <!-- To recreate the original project on helix, we need to set the wasm properties also, same as the
          library test project. Eg. $(InvariantGlobalization) -->
     <ItemGroup>
-      <_WasmPropertyNames Include="InvariantGlobalization" />
       <_WasmPropertyNames Include="AOTMode" />
-      <_WasmPropertyNames Include="WasmDebugLevel" />
-      <_WasmPropertyNames Include="WasmBuildNative" />
-      <_WasmPropertyNames Include="_WasmDevel" />
-      <_WasmPropertyNames Include="WasmLinkIcalls" />
-      <_WasmPropertyNames Include="WasmDedup" />
-      <_WasmPropertyNames Include="IncludeSatelliteAssembliesInVFS" />
       <_WasmPropertyNames Include="AssemblyName" />
+      <_WasmPropertyNames Include="DisableParallelAot" />
+      <_WasmPropertyNames Include="DisableParallelEmccCompile" />
+      <_WasmPropertyNames Include="EmccCompileOptimizationFlag" />
+      <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
+      <_WasmPropertyNames Include="IncludeSatelliteAssembliesInVFS" />
+      <_WasmPropertyNames Include="InvariantGlobalization" />
+      <_WasmPropertyNames Include="WasmBuildNative" />
+      <_WasmPropertyNames Include="WasmDebugLevel" />
+      <_WasmPropertyNames Include="WasmDedup" />
+      <_WasmPropertyNames Include="WasmLinkIcalls" />
+      <_WasmPropertyNames Include="WasmNativeStrip" />
+      <_WasmPropertyNames Include="WasmEnableES6" />
+      <_WasmPropertyNames Include="_WasmDevel" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
@@ -150,7 +171,7 @@
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
+      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
       <WasmNativeStrip>false</WasmNativeStrip>
@@ -159,7 +180,7 @@
       <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
       <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
       <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
       <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />

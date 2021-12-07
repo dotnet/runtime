@@ -109,6 +109,30 @@ namespace System.Text.Json.Reflection
             return false;
         }
 
+        public static bool CanContainNullableReferenceTypeAnnotations(this Type type)
+        {
+            // Returns true iff Type instance has potential for receiving nullable reference type annotations,
+            // i.e. the type is a reference type or contains generic parameters that are reference types.
+
+            if (!type.IsValueType)
+            {
+                return true;
+            }
+
+            if (type.IsGenericType)
+            {
+                foreach (Type genericParam in type.GetGenericArguments())
+                {
+                    if (CanContainNullableReferenceTypeAnnotations(genericParam))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         public static bool IsObjectType(this Type type) => type.FullName == "System.Object";
 
         public static bool IsStringType(this Type type) => type.FullName == "System.String";

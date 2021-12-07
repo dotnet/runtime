@@ -167,8 +167,122 @@ namespace
             return UnknownImpl::DoRelease();
         }
     };
+
+    struct WeakReferenceSource : public IWeakReferenceSource, public IInspectable
+    {
+    private:
+        IUnknown* _outerUnknown;
+        ComSmartPtr<WeakReference> _weakReference;
+    public:
+        WeakReferenceSource(IUnknown* outerUnknown)
+            :_outerUnknown(outerUnknown),
+            _weakReference(new WeakReference(this, 1))
+        {
+        }
+
+        STDMETHOD(GetWeakReference)(IWeakReference** ppWeakReference)
+        {
+            _weakReference->AddRef();
+            *ppWeakReference = _weakReference;
+            return S_OK;
+        }
+
+        STDMETHOD(QueryInterface)(
+            /* [in] */ REFIID riid,
+            /* [iid_is][out] */ void ** ppvObject)
+        {
+            if (riid == __uuidof(IWeakReferenceSource))
+            {
+                *ppvObject = static_cast<IWeakReferenceSource*>(this);
+                _weakReference->AddStrongRef();
+                return S_OK;
+            }
+            return _outerUnknown->QueryInterface(riid, ppvObject);
+        }
+        STDMETHOD_(ULONG, AddRef)(void)
+        {
+            return _weakReference->AddStrongRef();
+        }
+        STDMETHOD_(ULONG, Release)(void)
+        {
+            return _weakReference->ReleaseStrongRef();
+        }
+
+        STDMETHOD(GetRuntimeClassName)(HSTRING* pRuntimeClassName)
+        {
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(GetIids)(
+            ULONG *iidCount,
+            IID   **iids)
+        {
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(GetTrustLevel)(TrustLevel *trustLevel)
+        {
+            *trustLevel = FullTrust;
+            return S_OK;
+        }
+    };
+
+    struct AggregatedWeakReferenceSource : IInspectable
+    {
+    private:
+        IUnknown* _outerUnknown;
+        ComSmartPtr<WeakReferenceSource> _weakReference;
+    public:
+        AggregatedWeakReferenceSource(IUnknown* outerUnknown)
+            :_outerUnknown(outerUnknown),
+            _weakReference(new WeakReferenceSource(outerUnknown))
+        {
+        }
+
+        STDMETHOD(GetRuntimeClassName)(HSTRING* pRuntimeClassName)
+        {
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(GetIids)(
+            ULONG *iidCount,
+            IID   **iids)
+        {
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(GetTrustLevel)(TrustLevel *trustLevel)
+        {
+            *trustLevel = FullTrust;
+            return S_OK;
+        }
+
+        STDMETHOD(QueryInterface)(
+            /* [in] */ REFIID riid,
+            /* [iid_is][out] */ void ** ppvObject)
+        {
+            if (riid == __uuidof(IWeakReferenceSource))
+            {
+                return _weakReference->QueryInterface(riid, ppvObject);
+            }
+            return _outerUnknown->QueryInterface(riid, ppvObject);
+        }
+        STDMETHOD_(ULONG, AddRef)(void)
+        {
+            return _outerUnknown->AddRef();
+        }
+        STDMETHOD_(ULONG, Release)(void)
+        {
+            return _outerUnknown->Release();
+        }
+    };
 }
 extern "C" DLL_EXPORT WeakReferencableObject* STDMETHODCALLTYPE CreateWeakReferencableObject()
 {
     return new WeakReferencableObject();
+}
+
+extern "C" DLL_EXPORT AggregatedWeakReferenceSource* STDMETHODCALLTYPE CreateAggregatedWeakReferenceObject(IUnknown* pOuter)
+{
+    return new AggregatedWeakReferenceSource(pOuter);
 }

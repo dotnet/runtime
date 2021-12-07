@@ -183,6 +183,7 @@
 #include "utilcode.h" // this defines assert as _ASSERTE
 #include "host.h"     // this redefines assert for the JIT to use assertAbort
 #include "utils.h"
+#include "targetosarch.h"
 
 #ifdef DEBUG
 #define INDEBUG(x) x
@@ -206,17 +207,17 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(DEBUG) && !defined(OSX_ARM64_ABI)
-// On all platforms except Arm64 OSX arguments on the stack are taking
-// register size slots. On these platforms we could check that stack slots count
-// matches our new byte size calculations.
+#if defined(DEBUG)
 #define DEBUG_ARG_SLOTS
 #endif
 
 #if defined(DEBUG_ARG_SLOTS)
 #define DEBUG_ARG_SLOTS_ARG(x) , x
 #define DEBUG_ARG_SLOTS_ONLY(x) x
-#define DEBUG_ARG_SLOTS_ASSERT(x) assert(x)
+// On all platforms except Arm64 OSX arguments on the stack are taking
+// register size slots. On these platforms we could check that stack slots count
+// matches our new byte size calculations.
+#define DEBUG_ARG_SLOTS_ASSERT(x) assert(compMacOsArm64Abi() || (x))
 #else
 #define DEBUG_ARG_SLOTS_ARG(x)
 #define DEBUG_ARG_SLOTS_ONLY(x)
@@ -248,11 +249,11 @@
 // Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from
 // the official Arm64 ABI.
 // Case: splitting 16 byte struct between x7 and stack
-#if (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
 #define FEATURE_ARG_SPLIT 1
 #else
 #define FEATURE_ARG_SPLIT 0
-#endif // (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
+#endif
 
 // To get rid of warning 4701 : local variable may be used without being initialized
 #define DUMMY_INIT(x) (x)
@@ -287,41 +288,9 @@ const CORINFO_CLASS_HANDLE NO_CLASS_HANDLE = (CORINFO_CLASS_HANDLE) nullptr;
 
 /*****************************************************************************/
 
-// We define two IL offset types, as follows:
-//
-// IL_OFFSET:  either a distinguished value, or an IL offset.
-// IL_OFFSETX: either a distinguished value, or the top two bits are a flags, and the remaining bottom
-//             bits are a IL offset.
-//
-// In both cases, the set of legal distinguished values is:
-//     BAD_IL_OFFSET             -- A unique illegal IL offset number. Note that it must be different from
-//                                  the ICorDebugInfo values, below, and must also not be a legal IL offset.
-//     ICorDebugInfo::NO_MAPPING -- The IL offset corresponds to no source code (such as EH step blocks).
-//     ICorDebugInfo::PROLOG     -- The IL offset indicates a prolog
-//     ICorDebugInfo::EPILOG     -- The IL offset indicates an epilog
-//
-// The IL offset must be in the range [0 .. 0x3fffffff]. This is because we steal
-// the top two bits in IL_OFFSETX for flags, but we want the maximum range to be the same
-// for both types. The IL value can't be larger than the maximum IL offset of the function
-// being compiled.
-//
-// Blocks and statements never store one of the ICorDebugInfo values, even for IL_OFFSETX types. These are
-// only stored in the IPmappingDsc struct, ipmdILoffsx field.
-
 typedef unsigned IL_OFFSET;
 
-const IL_OFFSET BAD_IL_OFFSET = 0x80000000;
-const IL_OFFSET MAX_IL_OFFSET = 0x3fffffff;
-
-typedef unsigned IL_OFFSETX;                                 // IL_OFFSET with stack-empty or call-instruction bit
-const IL_OFFSETX IL_OFFSETX_STKBIT             = 0x80000000; // Note: this bit is set when the stack is NOT empty!
-const IL_OFFSETX IL_OFFSETX_CALLINSTRUCTIONBIT = 0x40000000; // Set when the IL offset is for a call instruction.
-const IL_OFFSETX IL_OFFSETX_BITS               = IL_OFFSETX_STKBIT | IL_OFFSETX_CALLINSTRUCTIONBIT;
-
-IL_OFFSET jitGetILoffs(IL_OFFSETX offsx);
-IL_OFFSET jitGetILoffsAny(IL_OFFSETX offsx);
-bool jitIsStackEmpty(IL_OFFSETX offsx);
-bool jitIsCallInstruction(IL_OFFSETX offsx);
+const IL_OFFSET BAD_IL_OFFSET = 0xffffffff;
 
 const unsigned BAD_VAR_NUM = UINT_MAX;
 
@@ -528,6 +497,9 @@ const bool dspGCtbls = true;
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->fgTableDispBasicBlock(b);
 #define VERBOSE JitTls::GetCompiler()->verbose
+// Development-time only macros, simplify guards for specified IL methods one wants to debug/add log messages for
+#define ISMETHOD(name) (strcmp(JitTls::GetCompiler()->impInlineRoot()->info.compMethodName, name) == 0)
+#define ISMETHODHASH(hash) (JitTls::GetCompiler()->impInlineRoot()->info.compMethodHash() == hash)
 #else // !DEBUG
 #define JITDUMP(...)
 #define JITDUMPEXEC(x)
@@ -697,7 +669,7 @@ private:
 #define CLFLG_STRUCTPROMOTE 0x00000
 #endif
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #define FEATURE_LOOP_ALIGN 1
 #else
 #define FEATURE_LOOP_ALIGN 0

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 namespace DebuggerTests
 {
@@ -377,6 +378,11 @@ namespace DebuggerTests
                 return str + parm;
             }
 
+            public string CallMethodWithParmString_λ(string parm)
+            {
+                return "λ_" + parm;
+            }
+
             public string CallMethodWithParmBool(bool parm)
             {
                 if (parm)
@@ -402,6 +408,14 @@ namespace DebuggerTests
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
+            DebuggerTestsV2.EvaluateStaticClass.Run();
+            var a = 0;
+        }
+
+        public static void EvaluateAsyncMethods()
+        {
+            var staticClass = new EvaluateNonStaticClassWithStaticFields();
+            staticClass.run();
         }
 
     }
@@ -410,7 +424,114 @@ namespace DebuggerTests
     {
         public static int StaticField1 = 10;
         public static string StaticProperty1 => "StaticProperty1";
-		public static string StaticPropertyWithError => throw new Exception("not implemented");
+        public static string StaticPropertyWithError => throw new Exception("not implemented");
+
+        public static class NestedClass1
+        {
+            public static class NestedClass2
+            {
+                public static class NestedClass3
+                {
+                    public static int StaticField1 = 3;
+                    public static string StaticProperty1 => "StaticProperty3";
+                    public static string StaticPropertyWithError => throw new Exception("not implemented 3");
+                }
+            }
+        }
+    }
+
+    public class EvaluateNonStaticClassWithStaticFields
+    {
+        public static int StaticField1 = 10;
+        public static string StaticProperty1 => "StaticProperty1";
+        public static string StaticPropertyWithError => throw new Exception("not implemented");
+
+        private int HelperMethod()
+        {
+            return 5;
+        }
+
+        public async void run()
+        {
+            var makeAwaitable = await Task.Run(() => HelperMethod());
+        }
+    }
+
+    public class EvaluateLocalsWithElementAccessTests
+    {
+        public class TestEvaluate
+        {
+            public List<int> numList;
+            public List<string> textList;
+            public int[] numArray;
+            public string[] textArray;
+            public int[][] numArrayOfArrays;
+            public List<List<int>> numListOfLists;
+            public string[][] textArrayOfArrays;
+            public List<List<string>> textListOfLists;
+            public int idx0;
+            public int idx1;
+
+            public void run()
+            {
+                numList = new List<int> { 1, 2 };
+                textList = new List<string> { "1", "2" };
+                numArray = new int[] { 1, 2 };
+                textArray = new string[] { "1", "2" };
+                numArrayOfArrays = new int[][] { numArray, numArray };
+                numListOfLists = new List<List<int>> { numList, numList };
+                textArrayOfArrays = new string[][] { textArray, textArray };
+                textListOfLists = new List<List<string>> { textList, textList };
+                idx0 = 0;
+                idx1 = 1;
+            }        
+        }
+
+        public static void EvaluateLocals()
+        {
+            int i = 0;
+            int j = 1;
+            TestEvaluate f = new TestEvaluate();
+            f.run();
+        }
     }
 
 }
+
+namespace DebuggerTestsV2
+{
+    public static class EvaluateStaticClass
+    {
+        public static int StaticField1 = 20;
+        public static string StaticProperty1 => "StaticProperty2";
+        public static string StaticPropertyWithError => throw new Exception("not implemented");
+
+        public static void Run()
+        {
+            var a = 0;
+        }
+    }
+}
+
+
+public static class NoNamespaceClass
+{
+    public static void EvaluateMethods()
+    {
+        var stopHere = true;
+    }
+    
+    public static class NestedClass1
+    {
+        public static class NestedClass2
+        {
+            public static class NestedClass3
+            {
+                public static int StaticField1 = 30;
+                public static string StaticProperty1 => "StaticProperty30";
+                public static string StaticPropertyWithError => throw new Exception("not implemented 30");
+            }
+        }
+    }
+}
+

@@ -268,6 +268,7 @@ namespace System.Security.Cryptography.X509Certificates
         public static System.Security.Cryptography.X509Certificates.X509Certificate2 CreateFromPem(System.ReadOnlySpan<char> certPem) { throw null; }
         public static System.Security.Cryptography.X509Certificates.X509Certificate2 CreateFromPem(System.ReadOnlySpan<char> certPem, System.ReadOnlySpan<char> keyPem) { throw null; }
         public static System.Security.Cryptography.X509Certificates.X509Certificate2 CreateFromPemFile(string certPemFilePath, string? keyPemFilePath = null) { throw null; }
+        public string ExportCertificatePem() { throw null; }
         public static System.Security.Cryptography.X509Certificates.X509ContentType GetCertContentType(byte[] rawData) { throw null; }
         public static System.Security.Cryptography.X509Certificates.X509ContentType GetCertContentType(System.ReadOnlySpan<byte> rawData) { throw null; }
         public static System.Security.Cryptography.X509Certificates.X509ContentType GetCertContentType(string fileName) { throw null; }
@@ -291,6 +292,7 @@ namespace System.Security.Cryptography.X509Certificates
         public override void Reset() { }
         public override string ToString() { throw null; }
         public override string ToString(bool verbose) { throw null; }
+        public bool TryExportCertificatePem(System.Span<char> destination, out int charsWritten) { throw null; }
         public bool Verify() { throw null; }
     }
     public partial class X509Certificate2Collection : System.Security.Cryptography.X509Certificates.X509CertificateCollection, System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X509Certificate2>, System.Collections.IEnumerable
@@ -306,6 +308,10 @@ namespace System.Security.Cryptography.X509Certificates
         public bool Contains(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
         public byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType) { throw null; }
         public byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string? password) { throw null; }
+        public string ExportCertificatePems() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public string ExportPkcs7Pem() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Find(System.Security.Cryptography.X509Certificates.X509FindType findType, object findValue, bool validOnly) { throw null; }
         public new System.Security.Cryptography.X509Certificates.X509Certificate2Enumerator GetEnumerator() { throw null; }
         public void Import(byte[] rawData) { }
@@ -323,6 +329,10 @@ namespace System.Security.Cryptography.X509Certificates
         public void RemoveRange(System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates) { }
         public void RemoveRange(System.Security.Cryptography.X509Certificates.X509Certificate2[] certificates) { }
         System.Collections.Generic.IEnumerator<System.Security.Cryptography.X509Certificates.X509Certificate2> System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X509Certificate2>.GetEnumerator() { throw null; }
+        public bool TryExportCertificatePems(System.Span<char> destination, out int charsWritten) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public bool TryExportPkcs7Pem(System.Span<char> destination, out int charsWritten) { throw null; }
     }
     public sealed partial class X509Certificate2Enumerator : System.Collections.Generic.IEnumerator<System.Security.Cryptography.X509Certificates.X509Certificate2>, System.Collections.IEnumerator, System.IDisposable
     {

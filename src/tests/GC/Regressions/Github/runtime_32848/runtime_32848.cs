@@ -52,7 +52,7 @@ class DerivedCreator : StructCreator
     }
 }
 
-public class Test
+public class Test_runtime_32848
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static string RunTest()

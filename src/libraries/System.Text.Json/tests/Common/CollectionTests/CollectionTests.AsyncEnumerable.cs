@@ -252,6 +252,24 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [Fact]
+        public async Task RegressionTest_ExceptionOnFirstMoveNextShouldNotFlushBuffer()
+        {
+            // Regression test for https://github.com/dotnet/aspnetcore/issues/36977
+            using var stream = new MemoryStream();
+            await Assert.ThrowsAsync<NotImplementedException>(async () => await JsonSerializer.SerializeAsync(stream, new { Data = GetFailingAsyncEnumerable() }));
+            Assert.Equal(0, stream.Length);
+
+            static async IAsyncEnumerable<int> GetFailingAsyncEnumerable()
+            {
+                await Task.Yield();
+                throw new NotImplementedException();
+#pragma warning disable CS0162 // Unreachable code detected
+                yield break;
+#pragma warning restore CS0162 // Unreachable code detected
+            }
+        }
+
         public class MockedAsyncEnumerable<TElement> : IAsyncEnumerable<TElement>, IEnumerable<TElement>
         {
             private readonly IEnumerable<TElement> _source;

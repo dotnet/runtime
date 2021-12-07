@@ -156,7 +156,7 @@
     <RuntimeGroup Include="osx">
       <Parent>unix</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>10.10;10.11;10.12;10.13;10.14;10.15;10.16;11.0</Versions>
+      <Versions>10.10;10.11;10.12;10.13;10.14;10.15;10.16;11.0;12</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="freebsd">
@@ -214,6 +214,14 @@
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
       <Versions>9</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="rocky">
+      <Parent>rhel</Parent>
+      <Architectures>x64;arm64</Architectures>
+      <Versions>8;9</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
     <RuntimeGroup Include="sles">

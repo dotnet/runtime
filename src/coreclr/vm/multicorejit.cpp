@@ -117,9 +117,9 @@ void _MulticoreJitTrace(const char * format, ...)
 
     int len;
 
-    len  =  sprintf_s(buffer,       _countof(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
-    len += _vsnprintf_s(buffer + len, _countof(buffer) - len, format, args);
-    len +=  sprintf_s(buffer + len, _countof(buffer) - len, ", (time=%d ms)\r\n", GetTickCount() - s_startTick);
+    len  =  sprintf_s(buffer,       ARRAY_SIZE(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
+    len += _vsnprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, format, args);
+    len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", GetTickCount() - s_startTick);
 
     OutputDebugStringA(buffer);
 #endif
@@ -255,25 +255,20 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
     // GetMVID can throw exception
     EX_TRY
     {
-        PEFile * pFile = pModule->GetFile();
+        PEAssembly * pAsm = pModule->GetPEAssembly();
 
-        if (pFile != NULL)
+        if (pAsm != NULL)
         {
-            PEAssembly * pAsm = pFile->GetAssembly();
+            // CorAssemblyFlags, only 16-bit used
+            versionFlags = pAsm->GetFlags();
 
-            if (pAsm != NULL)
-            {
-                // CorAssemblyFlags, only 16-bit used
-                versionFlags = pAsm->GetFlags();
+            _ASSERTE((versionFlags & 0x80000000) == 0);
 
-                _ASSERTE((versionFlags & 0x80000000) == 0);
+            pAsm->GetVersion(&major, &minor, &build, &revision);
 
-                pAsm->GetVersion(& major, & minor, & build, & revision);
+            pAsm->GetMVID(&mvid);
 
-                pAsm->GetMVID(& mvid);
-
-                hr = S_OK;
-            }
+            hr = S_OK;
         }
 
         // If the load context is LOADFROM, store it in the flags.
@@ -1556,7 +1551,7 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
 //    wszProfile  - profile name
 //    ptrNativeAssemblyBinder - the binding context
 //
-void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
 {
     QCALL_CONTRACT;
 
@@ -1575,7 +1570,7 @@ void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfil
 }
 
 
-void QCALLTYPE MultiCoreJITNative::InternalSetProfileRoot(__in_z LPCWSTR wszProfilePath)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(__in_z LPCWSTR wszProfilePath)
 {
     QCALL_CONTRACT;
 

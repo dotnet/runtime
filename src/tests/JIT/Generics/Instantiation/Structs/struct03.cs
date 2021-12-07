@@ -60,7 +60,7 @@ public struct Gen<T, U, V>
     }
 }
 
-public class Test
+public class Test_struct03
 {
     public static int counter = 0;
     public static bool result = true;

@@ -21,6 +21,7 @@ namespace Wasm.Build.Tests
                 .UnwrapItemsAsArrays();
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void TopLevelMain(BuildArgs buildArgs, RunHost host, string id)
@@ -29,6 +30,7 @@ namespace Wasm.Build.Tests
                     buildArgs, host, id);
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void AsyncMain(BuildArgs buildArgs, RunHost host, string id)
@@ -110,13 +112,14 @@ namespace Wasm.Build.Tests
             }";
 
             BuildProject(buildArgs,
-                        initProject: () =>
-                        {
-                            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
-                            File.WriteAllText(Path.Combine(_projectDir!, "runtimeconfig.template.json"), runtimeConfigTemplateJson);
-                        },
-                        id: id,
-                        dotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release"));
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () =>
+                                {
+                                    File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                                    File.WriteAllText(Path.Combine(_projectDir!, "runtimeconfig.template.json"), runtimeConfigTemplateJson);
+                                },
+                                DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("test_runtimeconfig_json: 25", output), host: host, id: id);
@@ -139,12 +142,13 @@ namespace Wasm.Build.Tests
             ";
 
             BuildProject(buildArgs,
-                        initProject: () =>
-                        {
-                            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
-                        },
-                        id: id,
-                        dotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release"));
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () =>
+                                {
+                                    File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                                },
+                                DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("System.Threading.ThreadPool.MaxThreads: 20", output), host: host, id: id);
@@ -165,9 +169,10 @@ namespace Wasm.Build.Tests
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        id: id,
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("Hello, World!", output), host: host, id: id);

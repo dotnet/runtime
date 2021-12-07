@@ -20,7 +20,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(IsSupported))]
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public class MsQuicTests : QuicTestBase<MsQuicProviderFactory>
     {
         private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
@@ -58,6 +58,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task ConnectWithCertificateChain()
         {
             (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost", longChain: true);
@@ -431,7 +432,7 @@ namespace System.Net.Quic.Tests
             listenerOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
-            await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
+            await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
             serverConnection.Dispose();
             clientConnection.Dispose();
         }

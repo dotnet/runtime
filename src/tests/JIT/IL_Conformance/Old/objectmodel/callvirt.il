@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly callvirt.exe{}
+.assembly 'callvirt'{}
 
 
 .class public TestClass {

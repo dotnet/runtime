@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Tests;
 using Xunit;
 
 namespace System.ComponentModel.TypeConverterTests
@@ -137,8 +138,6 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(_image.Height, newImage.Height);
             Assert.Equal(_image.Width, newImage.Width);
 
-            Assert.Equal("(none)", _imgConvFrmTD.ConvertTo(null, CultureInfo.InvariantCulture, null, typeof(string)));
-
             newImage = (Image)_imgConvFrmTD.ConvertFrom(null, CultureInfo.InvariantCulture, _imageBytes);
 
             Assert.Equal(_image.Height, newImage.Height);
@@ -170,6 +169,15 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(_imageStr, (string)_imgConv.ConvertTo(_image, typeof(string)));
             Assert.Equal(_imageStr, (string)_imgConvFrmTD.ConvertTo(null, CultureInfo.InvariantCulture, _image, typeof(string)));
             Assert.Equal(_imageStr, (string)_imgConvFrmTD.ConvertTo(_image, typeof(string)));
+
+            using (new ThreadCultureChange(CultureInfo.CreateSpecificCulture("fr-FR"), CultureInfo.InvariantCulture))
+            {
+                Assert.Equal("(none)", (string)_imgConv.ConvertTo(null, typeof(string)));
+                Assert.Equal("(none)", (string)_imgConv.ConvertTo(null, CultureInfo.CreateSpecificCulture("ru-RU"), null, typeof(string)));
+
+                Assert.Equal("(none)", (string)_imgConvFrmTD.ConvertTo(null, typeof(string)));
+                Assert.Equal("(none)", (string)_imgConvFrmTD.ConvertTo(null, CultureInfo.CreateSpecificCulture("de-DE"), null, typeof(string)));
+            }
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

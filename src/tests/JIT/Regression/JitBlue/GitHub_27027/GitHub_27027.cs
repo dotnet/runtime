@@ -10,7 +10,7 @@ public struct S
     public int j;
 }
 
-public class Test
+public class Test_GitHub_27027
 {
     public S s;
 
@@ -31,7 +31,7 @@ public class Test
     }
  
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Run(Test test, int j)
+    public static int Run(Test_GitHub_27027 test, int j)
     {
         int k = test.s.i + 1/j;
         return k;

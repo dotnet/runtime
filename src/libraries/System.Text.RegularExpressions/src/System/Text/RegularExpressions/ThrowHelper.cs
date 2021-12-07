@@ -57,7 +57,6 @@ namespace System.Text.RegularExpressions
                 ExceptionResource.BeginIndexNotNegative => SR.BeginIndexNotNegative,
                 ExceptionResource.CountTooSmall => SR.CountTooSmall,
                 ExceptionResource.LengthNotNegative => SR.LengthNotNegative,
-                ExceptionResource.OnlyAllowedOnce => SR.OnlyAllowedOnce,
                 ExceptionResource.ReplacementError => SR.ReplacementError,
                 _ => null
             };
@@ -90,7 +89,6 @@ namespace System.Text.RegularExpressions
         BeginIndexNotNegative,
         CountTooSmall,
         LengthNotNegative,
-        OnlyAllowedOnce,
         ReplacementError,
     }
 }

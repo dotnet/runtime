@@ -126,7 +126,7 @@ ProfileArgIterator::ProfileArgIterator(MetaSig * pSig, void * platformSpecificHa
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = (PROFILE_PLATFORM_SPECIFIC_DATA*)m_handle;
 #ifdef UNIX_AMD64_ABI
     m_bufferPos = 0;
-    ZeroMemory(pData->buffer, PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE * sizeof(UINT64)); 
+    ZeroMemory(pData->buffer, PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE * sizeof(UINT64));
 #endif // UNIX_AMD64_ABI
 
     // unwind a frame and get the Rsp for the profiled method to make sure it matches
@@ -484,37 +484,58 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         // by our calling convention, but is required by our profiler spec.
         return (LPVOID)pData->rax;
     }
-    
-    CorElementType t = m_argIterator.GetSig()->GetReturnType();
+
+    TypeHandle thReturnType;
+    CorElementType t = m_argIterator.GetSig()->GetReturnTypeNormalized(&thReturnType);
+
     if (ELEMENT_TYPE_VOID == t)
     {
         return NULL;
     }
 
 #ifdef UNIX_AMD64_ABI
-    if (m_argIterator.GetSig()->GetReturnTypeSize() == 16)
+    if (ELEMENT_TYPE_VALUETYPE == t)
     {
-        _ASSERTE(m_bufferPos == 0 && "Nothing else should be using the scratch space during a return");
+        // The Unix x64 ABI has a special case where a struct that is no larger than 16 bytes is returned in registers
+        // and if the classes of each eightbyte in the struct are different (i.e. INTEGER and SSE or SSE and INTEGER)
+        // they will be passed in rax/rdx and xmm0/xmm1, which means the values are noncontiguous.
+        // Just like the argument passing above we copy it in to the buffer to fake it being contiguous.
 
-        // The unix x64 ABI has a special case where a 16 byte struct will be passed in registers
-        // and if there are integer and float args it will be passed in rax/etc and xmm/etc, respectively
-        // which means the values are noncontiguous. Just like the argument passing above
-        // we copy it in to the buffer to fake it being contiguous.
-        UINT flags = m_argIterator.GetFPReturnSize();
+        MethodTable* pMT = thReturnType.AsMethodTable();
+        _ASSERTE(pMT->IsRegPassedStruct());
 
-        // The lower two bits are used to indicate whether struct args are floating point or integer
-        if (flags & 1)
+        EEClass* eeClass = pMT->GetClass();
+        UINT fpReturnSize = m_argIterator.GetFPReturnSize();
+
+        if (eeClass->GetNumberEightBytes() == 1)
         {
-            pData->buffer[0] = pData->flt0;
-            pData->buffer[1] = (flags & 2) ? pData->flt1 : pData->rax;
+            if (fpReturnSize != 0)
+            {
+                return &pData->flt0;
+            }
+            else
+            {
+                return &pData->rax;
+            }
         }
         else
         {
-            pData->buffer[0] = pData->rax;
-            pData->buffer[1] = (flags & 2) ? pData->flt0 : pData->rdx;
-        }
+            _ASSERTE(m_bufferPos == 0 && "Nothing else should be using the scratch space during a return");
 
-        return pData->buffer;
+            // The lower two bits are used to indicate whether struct args are floating point or integer
+            if (fpReturnSize & 1)
+            {
+                pData->buffer[0] = pData->flt0;
+                pData->buffer[1] = (fpReturnSize & 2) ? pData->flt1 : pData->rax;
+            }
+            else
+            {
+                pData->buffer[0] = pData->rax;
+                pData->buffer[1] = (fpReturnSize & 2) ? pData->flt0 : pData->rdx;
+            }
+
+            return pData->buffer;
+        }
     }
 #endif // UNIX_AMD64_ABI
 
@@ -522,7 +543,7 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
     {
         pData->rax = pData->flt0;
     }
-    
+
     return &(pData->rax);
 }
 

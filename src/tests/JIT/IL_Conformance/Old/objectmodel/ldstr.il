@@ -9,7 +9,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly ldstr.exe{}
+.assembly 'ldstr'{}
 
 .class public	_ldstr {
 

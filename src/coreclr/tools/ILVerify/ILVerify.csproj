@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseAppHost>false</UseAppHost>
     <RollForward>Major</RollForward>
+    <DefineConstants>ILVERIFY;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <Import Project="..\ILVerification\ILVerification.projitems" />

@@ -30,8 +30,7 @@ namespace System.Speech.Internal
         #region internal Methods
         internal void ReadArray<T>(T[] ao, int c)
         {
-            Type type = typeof(T);
-            int sizeOfOne = Marshal.SizeOf(type);
+            int sizeOfOne = Marshal.SizeOf<T>();
             int sizeObject = sizeOfOne * c;
             byte[] ab = Helpers.ReadStreamToByteArray(_stream, sizeObject);
 
@@ -40,21 +39,20 @@ namespace System.Speech.Internal
             Marshal.Copy(ab, 0, buffer, sizeObject);
             for (int i = 0; i < c; i++)
             {
-                ao[i] = (T)Marshal.PtrToStructure((IntPtr)((long)buffer + i * sizeOfOne), type);
+                ao[i] = Marshal.PtrToStructure<T>((IntPtr)((long)buffer + i * sizeOfOne));
             }
         }
 
         internal void WriteArray<T>(T[] ao, int c)
         {
-            Type type = typeof(T);
-            int sizeOfOne = Marshal.SizeOf(type);
+            int sizeOfOne = Marshal.SizeOf<T>();
             int sizeObject = sizeOfOne * c;
             byte[] ab = new byte[sizeObject];
             IntPtr buffer = _safeHMem.Buffer(sizeObject);
 
             for (int i = 0; i < c; i++)
             {
-                Marshal.StructureToPtr(ao[i], (IntPtr)((long)buffer + i * sizeOfOne), false);
+                Marshal.StructureToPtr<T>(ao[i], (IntPtr)((long)buffer + i * sizeOfOne), false);
             }
 
             Marshal.Copy(buffer, ab, 0, sizeObject);
@@ -116,24 +114,24 @@ namespace System.Speech.Internal
             }
         }
 
-        internal void ReadStream(object o)
+        internal void ReadStream<T>(T o)
         {
-            int sizeObject = Marshal.SizeOf(o.GetType());
+            int sizeObject = Marshal.SizeOf<T>();
             byte[] ab = Helpers.ReadStreamToByteArray(_stream, sizeObject);
 
             IntPtr buffer = _safeHMem.Buffer(sizeObject);
 
             Marshal.Copy(ab, 0, buffer, sizeObject);
-            Marshal.PtrToStructure(buffer, o);
+            Marshal.PtrToStructure<T>(buffer, o);
         }
 
-        internal void WriteStream(object o)
+        internal void WriteStream<T>(T o)
         {
-            int sizeObject = Marshal.SizeOf(o.GetType());
+            int sizeObject = Marshal.SizeOf<T>();
             byte[] ab = new byte[sizeObject];
             IntPtr buffer = _safeHMem.Buffer(sizeObject);
 
-            Marshal.StructureToPtr(o, buffer, false);
+            Marshal.StructureToPtr<T>(o, buffer, false);
             Marshal.Copy(buffer, ab, 0, sizeObject);
 
             // Read the Header

@@ -26,6 +26,7 @@ namespace R2RTest
         public bool Pdb { get; set; }
 
         public bool Perfmap { get; set; }
+        public int PerfmapFormatVersion { get; set; } = 1;
         public FileInfo PackageList { get; set; }
         public int DegreeOfParallelism { get; set; }
         public bool Sequential { get; set; }

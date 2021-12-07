@@ -2,13 +2,13 @@
 #ifndef __DIAGNOSTICS_RT_MONO_H__
 #define __DIAGNOSTICS_RT_MONO_H__
 
-#include "ds-rt-config.h"
+#include <eventpipe/ds-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
-#include "ds-process-protocol.h"
-#include "ds-profiler-protocol.h"
-#include "ds-dump-protocol.h"
+#include <eventpipe/ds-process-protocol.h>
+#include <eventpipe/ds-profiler-protocol.h>
+#include <eventpipe/ds-dump-protocol.h>
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -188,16 +188,22 @@ ds_rt_config_value_get_default_port_suspend (void)
 
 static
 ds_ipc_result_t
-ds_rt_generate_core_dump (DiagnosticsGenerateCoreDumpCommandPayload *payload)
+ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerateCoreDumpCommandPayload *payload)
 {
 	STATIC_CONTRACT_NOTHROW;
 
 	ds_ipc_result_t result = DS_IPC_E_FAIL;
 	EX_TRY
 	{
+		uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
+ 		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
+ 		{
+ 			// For the old commmand, this payload field is a bool of whether to enable logging
+ 			flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
+		}
 		if (GenerateDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
 			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-			(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
+			flags))
 			result = DS_IPC_S_OK;
 	}
 	EX_CATCH {}
@@ -300,7 +306,7 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 	STATIC_CONTRACT_NOTHROW;
 
 	HRESULT hr = S_OK;
-	EX_TRY {        
+	EX_TRY {
 		StoredProfilerNode *profilerData = new StoredProfilerNode();
 		profilerData->guid = *(reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)));
 		profilerData->path.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));

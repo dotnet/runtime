@@ -10,7 +10,7 @@ using NuGet.RuntimeModel;
 
 namespace Microsoft.NET.Build.Tasks
 {
-    internal class RuntimeGraphCache
+    internal sealed class RuntimeGraphCache
     {
         private IBuildEngine4 _buildEngine;
         private Logger _log;

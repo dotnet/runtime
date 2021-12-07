@@ -4,7 +4,9 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
+
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
@@ -31,21 +33,95 @@ namespace System.Runtime.Intrinsics
     {
         internal const int Size = 32;
 
-        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{U}" />.</summary>
-        /// <typeparam name="T">The type of the input vector.</typeparam>
-        /// <typeparam name="U">The type of the vector <paramref name="vector" /> should be reinterpreted as.</typeparam>
-        /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{U}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) or the type of the target (<typeparamref name="U" />) is not supported.</exception>
+        /// <summary>Gets a value that indicates whether 256-bit vector operations are subject to hardware acceleration through JIT intrinsic support.</summary>
+        /// <value><see langword="true" /> if 256-bit vector operations are subject to hardware acceleration; otherwise, <see langword="false" />.</value>
+        /// <remarks>256-bit vector operations are subject to hardware acceleration on systems that support Single Instruction, Multiple Data (SIMD) instructions for 256-bit vectors and the RyuJIT just-in-time compiler is used to compile managed code.</remarks>
+        public static bool IsHardwareAccelerated
+        {
+            [Intrinsic]
+            get => false;
+        }
+
+        /// <summary>Computes the absolute value of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its absolute value computed.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are the absolute value of the elements in <paramref name="vector" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<U> As<T, U>(this Vector256<T> vector)
+        public static Vector256<T> Abs<T>(Vector256<T> vector)
             where T : struct
-            where U : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<U>();
-            return Unsafe.As<Vector256<T>, Vector256<U>>(ref vector);
+            if (typeof(T) == typeof(byte))
+            {
+                return vector;
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return vector;
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                return vector;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                return vector;
+            }
+            else
+            {
+                return SoftwareFallback(vector);
+            }
+
+            static Vector256<T> SoftwareFallback(Vector256<T> vector)
+            {
+                Unsafe.SkipInit(out Vector256<T> result);
+
+                for (int index = 0; index < Vector256<T>.Count; index++)
+                {
+                    var value = Scalar<T>.Abs(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <summary>Adds two vectors to compute their sum.</summary>
+        /// <param name="left">The vector to add with <paramref name="right" />.</param>
+        /// <param name="right">The vector to add with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Add<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => left + right;
+
+        /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
+        /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
+        /// <param name="right">The vector to that is ones-complemented before being bitwise-and with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The bitwise-and of <paramref name="left" /> and the ones-complement of <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> AndNot<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => left & ~right;
+
+        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{U}" />.</summary>
+        /// <typeparam name="TFrom">The type of the input vector.</typeparam>
+        /// <typeparam name="TTo">The type of the vector <paramref name="vector" /> should be reinterpreted as.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{U}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="TFrom" />) or the type of the target (<typeparamref name="TTo" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<TTo> As<TFrom, TTo>(this Vector256<TFrom> vector)
+            where TFrom : struct
+            where TTo : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TFrom>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TTo>();
+
+            return Unsafe.As<Vector256<TFrom>, Vector256<TTo>>(ref vector);
         }
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Byte}" />.</summary>
@@ -55,10 +131,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<byte> AsByte<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, byte>();
-        }
+            where T : struct => vector.As<T, byte>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Double}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -67,10 +140,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<double> AsDouble<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, double>();
-        }
+            where T : struct => vector.As<T, double>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Int16}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -79,10 +149,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<short> AsInt16<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, short>();
-        }
+            where T : struct => vector.As<T, short>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Int32}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -91,10 +158,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<int> AsInt32<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, int>();
-        }
+            where T : struct => vector.As<T, int>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Int64}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -103,10 +167,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<long> AsInt64<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, long>();
-        }
+            where T : struct => vector.As<T, long>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{SByte}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -116,10 +177,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<sbyte> AsSByte<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, sbyte>();
-        }
+            where T : struct => vector.As<T, sbyte>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Single}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -128,10 +186,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<float> AsSingle<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, float>();
-        }
+            where T : struct => vector.As<T, float>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UInt16}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -141,10 +196,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<ushort> AsUInt16<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, ushort>();
-        }
+            where T : struct => vector.As<T, ushort>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UInt32}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -154,10 +206,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<uint> AsUInt32<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, uint>();
-        }
+            where T : struct => vector.As<T, uint>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UInt64}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -167,12 +216,9 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<ulong> AsUInt64<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            return vector.As<T, ulong>();
-        }
+            where T : struct => vector.As<T, ulong>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector256{T}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{T}" />.</summary>
         /// <typeparam name="T">The type of the vectors.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector256{T}" />.</returns>
@@ -182,25 +228,345 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
             Vector256<T> result = default;
             Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<T>, byte>(ref result), value);
             return result;
         }
 
-        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector{T}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{T}" />.</summary>
         /// <typeparam name="T">The type of the vectors.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{T}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector256{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<T> AsVector<T>(this Vector256<T> value)
             where T : struct
         {
             Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             return Unsafe.As<Vector256<T>, Vector<T>>(ref value);
+        }
+
+        /// <summary>Computes the bitwise-and of two vectors.</summary>
+        /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
+        /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> BitwiseAnd<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => left & right;
+
+        /// <summary>Computes the bitwise-or of two vectors.</summary>
+        /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
+        /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> BitwiseOr<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => left | right;
+
+        /// <summary>Computes the ceiling of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its ceiling computed.</param>
+        /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
+        /// <seealso cref="MathF.Ceiling(float)" />
+        [Intrinsic]
+        public static Vector256<float> Ceiling(Vector256<float> vector)
+        {
+            Unsafe.SkipInit(out Vector256<float> result);
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                var value = Scalar<float>.Ceiling(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the ceiling of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its ceiling computed.</param>
+        /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
+        /// <seealso cref="Math.Ceiling(double)" />
+        [Intrinsic]
+        public static Vector256<double> Ceiling(Vector256<double> vector)
+        {
+            Unsafe.SkipInit(out Vector256<double> result);
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                var value = Scalar<double>.Ceiling(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
+        /// <param name="condition">The mask that is used to select a value from <paramref name="left" /> or <paramref name="right" />.</param>
+        /// <param name="left">The vector that is selected when the corresponding bit in <paramref name="condition" /> is one.</param>
+        /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> ConditionalSelect<T>(Vector256<T> condition, Vector256<T> left, Vector256<T> right)
+            where T : struct => (left & condition) | (right & ~condition);
+
+        /// <summary>Converts a <see cref="Vector256{Int64}" /> to a <see cref="Vector256{Double}" />.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static unsafe Vector256<double> ConvertToDouble(Vector256<long> vector)
+        {
+            Unsafe.SkipInit(out Vector256<double> result);
+
+            for (int i = 0; i < Vector256<double>.Count; i++)
+            {
+                var value = (double)vector.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector256{UInt64}" /> to a <see cref="Vector256{Double}" />.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector256<double> ConvertToDouble(Vector256<ulong> vector)
+        {
+            Unsafe.SkipInit(out Vector256<double> result);
+
+            for (int i = 0; i < Vector256<double>.Count; i++)
+            {
+                var value = (double)vector.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector256{Single}" /> to a <see cref="Vector256{Int32}" />.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static unsafe Vector256<int> ConvertToInt32(Vector256<float> vector)
+        {
+            Unsafe.SkipInit(out Vector256<int> result);
+
+            for (int i = 0; i < Vector256<int>.Count; i++)
+            {
+                var value = (int)vector.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector256{Double}" /> to a <see cref="Vector256{Int64}" />.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static unsafe Vector256<long> ConvertToInt64(Vector256<double> vector)
+        {
+            Unsafe.SkipInit(out Vector256<long> result);
+
+            for (int i = 0; i < Vector256<long>.Count; i++)
+            {
+                var value = (long)vector.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector256{Int32}" /> to a <see cref="Vector256{Single}" />.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static unsafe Vector256<float> ConvertToSingle(Vector256<int> vector)
+        {
+            Unsafe.SkipInit(out Vector256<float> result);
+
+            for (int i = 0; i < Vector256<float>.Count; i++)
+            {
+                var value = (float)vector.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector256{UInt32}" /> to a <see cref="Vector256{Single}" />.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector256<float> ConvertToSingle(Vector256<uint> vector)
+        {
+            Unsafe.SkipInit(out Vector256<float> result);
+
+            for (int i = 0; i < Vector256<float>.Count; i++)
+            {
+                var value = (float)vector.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector256{Single}" /> to a <see cref="Vector256{UInt32}" />.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector256<uint> ConvertToUInt32(Vector256<float> vector)
+        {
+            Unsafe.SkipInit(out Vector256<uint> result);
+
+            for (int i = 0; i < Vector256<uint>.Count; i++)
+            {
+                var value = (uint)vector.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector256{Double}" /> to a <see cref="Vector256{UInt64}" />.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector256<ulong> ConvertToUInt64(Vector256<double> vector)
+        {
+            Unsafe.SkipInit(out Vector256<ulong> result);
+
+            for (int i = 0; i < Vector256<ulong>.Count; i++)
+            {
+                var value = (ulong)vector.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Copies a <see cref="Vector256{T}" /> to a given array.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="vector">The vector to be copied.</param>
+        /// <param name="destination">The array to which <paramref name="vector" /> is copied.</param>
+        /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector256{T}.Count" />.</exception>
+        public static void CopyTo<T>(this Vector256<T> vector, T[] destination)
+            where T : struct => vector.CopyTo(destination, startIndex: 0);
+
+        /// <summary>Copies a <see cref="Vector256{T}" /> to a given array starting at the specified index.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="vector">The vector to be copied.</param>
+        /// <param name="destination">The array to which <paramref name="vector" /> is copied.</param>
+        /// <param name="startIndex">The starting index of <paramref name="destination" /> which <paramref name="vector" /> will be copied to.</param>
+        /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector256{T}.Count" />.</exception>
+        /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex" /> is negative or greater than the length of <paramref name="destination" />.</exception>
+        public static unsafe void CopyTo<T>(this Vector256<T> vector, T[] destination, int startIndex)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            if (destination is null)
+            {
+                ThrowHelper.ThrowNullReferenceException();
+            }
+
+            if ((uint)startIndex >= (uint)destination.Length)
+            {
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+            }
+
+            if ((destination.Length - startIndex) < Vector256<T>.Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[startIndex]), vector);
+        }
+
+        /// <summary>Copies a <see cref="Vector256{T}" /> to a given span.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="vector">The vector to be copied.</param>
+        /// <param name="destination">The span to which the <paramref name="vector" /> is copied.</param>
+        /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector256{T}.Count" />.</exception>
+        public static void CopyTo<T>(this Vector256<T> vector, Span<T> destination)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            if ((uint)destination.Length < (uint)Vector256<T>.Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
+        }
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A new <see cref="Vector256{T}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector256<T> Create<T>(T value)
+            where T : struct
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return Create((byte)(object)value).As<byte, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Create((double)(object)value).As<double, T>();
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return Create((short)(object)value).As<short, T>();
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return Create((int)(object)value).As<int, T>();
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return Create((long)(object)value).As<long, T>();
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return Create((sbyte)(object)value).As<sbyte, T>();
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return Create((float)(object)value).As<float, T>();
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return Create((ushort)(object)value).As<ushort, T>();
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                return Create((uint)(object)value).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                return Create((ulong)(object)value).As<ulong, T>();
+            }
+            else
+            {
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with all elements initialized to the specified value.</summary>
@@ -577,6 +943,58 @@ namespace System.Runtime.Intrinsics
 
                 return Unsafe.AsRef<Vector256<ulong>>(pResult);
             }
+        }
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> from a given array.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="values">The array from which the vector is created.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> with its elements set to the first <see cref="Vector256{T}.Count" /> elements from <paramref name="values" />.</returns>
+        /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector256{T}.Count" />.</exception>
+        public static Vector256<T> Create<T>(T[] values)
+            where T : struct => Create(values, index: 0);
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> from a given array.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="values">The array from which the vector is created.</param>
+        /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> with its elements set to the first <see cref="Vector128{T}.Count" /> elements from <paramref name="values" />.</returns>
+        /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector256{T}.Count" />.</exception>
+        public static Vector256<T> Create<T>(T[] values, int index)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            if (values is null)
+            {
+                ThrowHelper.ThrowNullReferenceException();
+            }
+
+            if ((index < 0) || ((values.Length - index) < Vector256<T>.Count))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+            }
+
+            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref values[index]));
+        }
+
+        /// <summary>Creates a new <see cref="Vector256{T}" /> from a given readonly span.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="values">The readonly span from which the vector is created.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> with its elements set to the first <see cref="Vector256{T}.Count" /> elements from <paramref name="values" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector256{T}.Count" />.</exception>
+        public static Vector256<T> Create<T>(ReadOnlySpan<T> values)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            if (values.Length < Vector256<T>.Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
+            }
+
+            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1713,6 +2131,112 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector256<ulong>>(pResult);
         }
 
+        /// <summary>Divides two vectors to compute their quotient.</summary>
+        /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
+        /// <param name="right">The vector that will divide <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Divide<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => left / right;
+
+        /// <summary>Computes the dot product of two vectors.</summary>
+        /// <param name="left">The vector that will be dotted with <paramref name="right" />.</param>
+        /// <param name="right">The vector that will be dotted with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The dot product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        public static T Dot<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct
+        {
+            T result = default;
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                result = Scalar<T>.Add(result, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Compares two vectors to determine if they are equal on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were equal.</returns>
+        [Intrinsic]
+        public static Vector256<T> Equals<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                var value = Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Compares two vectors to determine if all elements are equal.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if all elements in <paramref name="left" /> were equal to the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool EqualsAll<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => left == right;
+
+        /// <summary>Compares two vectors to determine if any elements are equal.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if any elements in <paramref name="left" /> was equal to the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool EqualsAny<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => Equals(left, right).As<T, ulong>() != Vector256<ulong>.Zero;
+
+        /// <summary>Computes the floor of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its floor computed.</param>
+        /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
+        /// <seealso cref="MathF.Floor(float)" />
+        [Intrinsic]
+        public static Vector256<float> Floor(Vector256<float> vector)
+        {
+            Unsafe.SkipInit(out Vector256<float> result);
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                var value = Scalar<float>.Floor(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the floor of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its floor computed.</param>
+        /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
+        /// <seealso cref="Math.Floor(double)" />
+        [Intrinsic]
+        public static Vector256<double> Floor(Vector256<double> vector)
+        {
+            Unsafe.SkipInit(out Vector256<double> result);
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                var value = Scalar<double>.Floor(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
         /// <summary>Gets the element at the specified index.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the element from.</param>
@@ -1724,16 +2248,587 @@ namespace System.Runtime.Intrinsics
         public static T GetElement<T>(this Vector256<T> vector, int index)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            ref T e0 = ref Unsafe.As<Vector256<T>, T>(ref vector);
-            return Unsafe.Add(ref e0, index);
+            return vector.GetElementUnsafe(index);
         }
+
+        /// <summary>Gets the value of the lower 128-bits as a new <see cref="Vector128{T}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the lower 128-bits from.</param>
+        /// <returns>The value of the lower 128-bits as a new <see cref="Vector128{T}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector128<T> GetLower<T>(this Vector256<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+            return Unsafe.As<Vector256<T>, Vector128<T>>(ref vector);
+        }
+
+        /// <summary>Gets the value of the upper 128-bits as a new <see cref="Vector128{T}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the upper 128-bits from.</param>
+        /// <returns>The value of the upper 128-bits as a new <see cref="Vector128{T}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> GetUpper<T>(this Vector256<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
+            {
+                // All integral types generate the same instruction, so just pick one rather than handling each T separately
+                return Avx2.ExtractVector128(vector.AsByte(), 1).As<byte, T>();
+            }
+
+            if (Avx.IsSupported)
+            {
+                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
+                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
+                return Avx.ExtractVector128(vector.AsSingle(), 1).As<float, T>();
+            }
+
+            return SoftwareFallback(vector);
+
+            static Vector128<T> SoftwareFallback(Vector256<T> vector)
+            {
+                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref vector);
+                return Unsafe.Add(ref lower, 1);
+            }
+        }
+
+        /// <summary>Compares two vectors to determine which is greater on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="left" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="right" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater.</returns>
+        [Intrinsic]
+        public static Vector256<T> GreaterThan<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                T value = Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Compares two vectors to determine if all elements are greater.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if all elements in <paramref name="left" /> were greater than the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GreaterThanAll<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => GreaterThan(left, right).As<T, ulong>() == Vector256<ulong>.AllBitsSet;
+
+        /// <summary>Compares two vectors to determine if any elements are greater.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if any elements in <paramref name="left" /> was greater than the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GreaterThanAny<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => GreaterThan(left, right).As<T, ulong>() != Vector256<ulong>.Zero;
+
+        /// <summary>Compares two vectors to determine which is greater or equal on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="left" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="right" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater or equal.</returns>
+        [Intrinsic]
+        public static Vector256<T> GreaterThanOrEqual<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                T value = Scalar<T>.GreaterThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Compares two vectors to determine if all elements are greater or equal.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if all elements in <paramref name="left" /> were greater than or equal to the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GreaterThanOrEqualAll<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => GreaterThanOrEqual(left, right).As<T, ulong>() == Vector256<ulong>.AllBitsSet;
+
+        /// <summary>Compares two vectors to determine if any elements are greater or equal.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if any elements in <paramref name="left" /> was greater than or equal to the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GreaterThanOrEqualAny<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => GreaterThanOrEqual(left, right).As<T, ulong>() != Vector256<ulong>.Zero;
+
+        /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="left" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="right" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less.</returns>
+        [Intrinsic]
+        public static Vector256<T> LessThan<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                T value = Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Compares two vectors to determine if all elements are less.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if all elements in <paramref name="left" /> were less than the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool LessThanAll<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => LessThan(left, right).As<T, ulong>() == Vector256<ulong>.AllBitsSet;
+
+        /// <summary>Compares two vectors to determine if any elements are less.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if any elements in <paramref name="left" /> was less than the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool LessThanAny<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => LessThan(left, right).As<T, ulong>() != Vector256<ulong>.Zero;
+
+        /// <summary>Compares two vectors to determine which is less or equal on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="left" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="right" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less or equal.</returns>
+        [Intrinsic]
+        public static Vector256<T> LessThanOrEqual<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                T value = Scalar<T>.LessThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Compares two vectors to determine if all elements are less or equal.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if all elements in <paramref name="left" /> were less than or equal to the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool LessThanOrEqualAll<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => LessThanOrEqual(left, right).As<T, ulong>() == Vector256<ulong>.AllBitsSet;
+
+        /// <summary>Compares two vectors to determine if any elements are less or equal.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns><c>true</c> if any elements in <paramref name="left" /> was less than or equal to the corresponding element in <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool LessThanOrEqualAny<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => LessThanOrEqual(left, right).As<T, ulong>() != Vector256<ulong>.Zero;
+
+        /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are the maximum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        public static Vector256<T> Max<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                T value = Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? left.GetElementUnsafe(index) : right.GetElementUnsafe(index);
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the minimum of two vectors on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are the minimum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        public static Vector256<T> Min<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                T value = Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? left.GetElementUnsafe(index) : right.GetElementUnsafe(index);
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
+        /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The vector to multiply with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The element-wise product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Multiply<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => left * right;
+
+        /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
+        /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The scalar to multiply with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Multiply<T>(Vector256<T> left, T right)
+            where T : struct => left * right;
+
+        /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
+        /// <param name="left">The scalar to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The vector to multiply with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Multiply<T>(T left, Vector256<T> right)
+            where T : struct => left * right;
+
+        /// <summary>Narrows two <see cref="Vector256{Double}"/> instances into one <see cref="Vector256{Single}" />.</summary>
+        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
+        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
+        /// <returns>A <see cref="Vector256{Single}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector256<float> Narrow(Vector256<double> lower, Vector256<double> upper)
+        {
+            Unsafe.SkipInit(out Vector256<float> result);
+
+            for (int i = 0; i < Vector256<double>.Count; i++)
+            {
+                var value = (float)lower.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector256<double>.Count; i < Vector256<float>.Count; i++)
+            {
+                var value = (float)upper.GetElementUnsafe(i - Vector256<double>.Count);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Narrows two <see cref="Vector256{Int16}"/> instances into one <see cref="Vector256{SByte}" />.</summary>
+        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
+        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
+        /// <returns>A <see cref="Vector256{SByte}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector256<sbyte> Narrow(Vector256<short> lower, Vector256<short> upper)
+        {
+            Unsafe.SkipInit(out Vector256<sbyte> result);
+
+            for (int i = 0; i < Vector256<short>.Count; i++)
+            {
+                var value = (sbyte)lower.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector256<short>.Count; i < Vector256<sbyte>.Count; i++)
+            {
+                var value = (sbyte)upper.GetElementUnsafe(i - Vector256<short>.Count);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Narrows two <see cref="Vector256{Int32}"/> instances into one <see cref="Vector256{Int16}" />.</summary>
+        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
+        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
+        /// <returns>A <see cref="Vector256{Int16}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector256<short> Narrow(Vector256<int> lower, Vector256<int> upper)
+        {
+            Unsafe.SkipInit(out Vector256<short> result);
+
+            for (int i = 0; i < Vector256<int>.Count; i++)
+            {
+                var value = (short)lower.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector256<int>.Count; i < Vector256<short>.Count; i++)
+            {
+                var value = (short)upper.GetElementUnsafe(i - Vector256<int>.Count);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Narrows two <see cref="Vector256{Int64}"/> instances into one <see cref="Vector256{Int32}" />.</summary>
+        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
+        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
+        /// <returns>A <see cref="Vector256{Int32}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector256<int> Narrow(Vector256<long> lower, Vector256<long> upper)
+        {
+            Unsafe.SkipInit(out Vector256<int> result);
+
+            for (int i = 0; i < Vector256<long>.Count; i++)
+            {
+                var value = (int)lower.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector256<long>.Count; i < Vector256<int>.Count; i++)
+            {
+                var value = (int)upper.GetElementUnsafe(i - Vector256<long>.Count);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Narrows two <see cref="Vector256{UInt16}"/> instances into one <see cref="Vector256{Byte}" />.</summary>
+        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
+        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
+        /// <returns>A <see cref="Vector256{Byte}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector256<byte> Narrow(Vector256<ushort> lower, Vector256<ushort> upper)
+        {
+            Unsafe.SkipInit(out Vector256<byte> result);
+
+            for (int i = 0; i < Vector256<ushort>.Count; i++)
+            {
+                var value = (byte)lower.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector256<ushort>.Count; i < Vector256<byte>.Count; i++)
+            {
+                var value = (byte)upper.GetElementUnsafe(i - Vector256<ushort>.Count);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Narrows two <see cref="Vector256{UInt32}"/> instances into one <see cref="Vector256{UInt16}" />.</summary>
+        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
+        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
+        /// <returns>A <see cref="Vector256{UInt16}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector256<ushort> Narrow(Vector256<uint> lower, Vector256<uint> upper)
+        {
+            Unsafe.SkipInit(out Vector256<ushort> result);
+
+            for (int i = 0; i < Vector256<uint>.Count; i++)
+            {
+                var value = (ushort)lower.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector256<uint>.Count; i < Vector256<ushort>.Count; i++)
+            {
+                var value = (ushort)upper.GetElementUnsafe(i - Vector256<uint>.Count);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Narrows two <see cref="Vector256{UInt64}"/> instances into one <see cref="Vector256{UInt32}" />.</summary>
+        /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
+        /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
+        /// <returns>A <see cref="Vector256{UInt32}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [CLSCompliant(false)]
+        [Intrinsic]
+        public static unsafe Vector256<uint> Narrow(Vector256<ulong> lower, Vector256<ulong> upper)
+        {
+            Unsafe.SkipInit(out Vector256<uint> result);
+
+            for (int i = 0; i < Vector256<ulong>.Count; i++)
+            {
+                var value = (uint)lower.GetElementUnsafe(i);
+                result.SetElementUnsafe(i, value);
+            }
+
+            for (int i = Vector256<ulong>.Count; i < Vector256<uint>.Count; i++)
+            {
+                var value = (uint)upper.GetElementUnsafe(i - Vector256<ulong>.Count);
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Negates a vector.</summary>
+        /// <param name="vector">The vector to negate.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are the negation of the corresponding elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Negate<T>(Vector256<T> vector)
+            where T : struct => -vector;
+
+        /// <summary>Computes the ones-complement of a vector.</summary>
+        /// <param name="vector">The vector whose ones-complement is to be computed.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> OnesComplement<T>(Vector256<T> vector)
+            where T : struct => ~vector;
+
+        /// <summary>Computes the square root of a vector on a per-element basis.</summary>
+        /// <param name="vector">The vector whose square root is to be computed.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>A vector whose elements are the square root of the corresponding elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        public static Vector256<T> Sqrt<T>(Vector256<T> vector)
+            where T : struct
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                var value = Scalar<T>.Sqrt(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Subtracts two vectors to compute their difference.</summary>
+        /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
+        /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Subtract<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => left - right;
+
+        /// <summary>Converts the given vector to a scalar containing the value of the first element.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the first element from.</param>
+        /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static T ToScalar<T>(this Vector256<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+            return vector.GetElementUnsafe(0);
+        }
+
+        /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
+        /// <param name="vector">The vector to copy.</param>
+        /// <param name="destination">The span to which <paramref name="destination" /> is copied.</param>
+        /// <returns><c>true</c> if <paramref name="vector" /> was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector256{T}.Count" />.</returns>
+        public static bool TryCopyTo<T>(this Vector256<T> vector, Span<T> destination)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            if ((uint)destination.Length < (uint)Vector256<T>.Count)
+            {
+                return false;
+            }
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
+            return true;
+        }
+
+        /// <summary>Widens a <see cref="Vector256{Byte}" /> into two <see cref="Vector256{UInt16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [CLSCompliant(false)]
+        public static unsafe (Vector256<ushort> Lower, Vector256<ushort> Upper) Widen(Vector256<byte> source)
+            => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector256{Int16}" /> into two <see cref="Vector256{Int32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        public static unsafe (Vector256<int> Lower, Vector256<int> Upper) Widen(Vector256<short> source)
+            => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector256{Int32}" /> into two <see cref="Vector256{Int64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        public static unsafe (Vector256<long> Lower, Vector256<long> Upper) Widen(Vector256<int> source)
+            => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector256{SByte}" /> into two <see cref="Vector256{Int16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [CLSCompliant(false)]
+        public static unsafe (Vector256<short> Lower, Vector256<short> Upper) Widen(Vector256<sbyte> source)
+            => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector256{Single}" /> into two <see cref="Vector256{Double} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        public static unsafe (Vector256<double> Lower, Vector256<double> Upper) Widen(Vector256<float> source)
+            => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector256{UInt16}" /> into two <see cref="Vector256{UInt32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [CLSCompliant(false)]
+        public static unsafe (Vector256<uint> Lower, Vector256<uint> Upper) Widen(Vector256<ushort> source)
+            => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector256{UInt32}" /> into two <see cref="Vector256{UInt64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [CLSCompliant(false)]
+        public static unsafe (Vector256<ulong> Lower, Vector256<ulong> Upper) Widen(Vector256<uint> source)
+            => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -1747,7 +2842,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> WithElement<T>(this Vector256<T> vector, int index, T value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
@@ -1755,22 +2850,8 @@ namespace System.Runtime.Intrinsics
             }
 
             Vector256<T> result = vector;
-            ref T e0 = ref Unsafe.As<Vector256<T>, T>(ref result);
-            Unsafe.Add(ref e0, index) = value;
+            result.SetElementUnsafe(index, value);
             return result;
-        }
-
-        /// <summary>Gets the value of the lower 128-bits as a new <see cref="Vector128{T}" />.</summary>
-        /// <typeparam name="T">The type of the input vector.</typeparam>
-        /// <param name="vector">The vector to get the lower 128-bits from.</param>
-        /// <returns>The value of the lower 128-bits as a new <see cref="Vector128{T}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        public static Vector128<T> GetLower<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
-            return Unsafe.As<Vector256<T>, Vector128<T>>(ref vector);
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> with the lower 128-bits set to the specified value and the upper 128-bits set to the same value as that in the given vector.</summary>
@@ -1783,7 +2864,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> WithLower<T>(this Vector256<T> vector, Vector128<T> value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
             if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
             {
@@ -1808,39 +2889,6 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Gets the value of the upper 128-bits as a new <see cref="Vector128{T}" />.</summary>
-        /// <typeparam name="T">The type of the input vector.</typeparam>
-        /// <param name="vector">The vector to get the upper 128-bits from.</param>
-        /// <returns>The value of the upper 128-bits as a new <see cref="Vector128{T}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> GetUpper<T>(this Vector256<T> vector)
-            where T : struct
-        {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
-
-            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
-            {
-                // All integral types generate the same instruction, so just pick one rather than handling each T separately
-                return Avx2.ExtractVector128(vector.AsByte(), 1).As<byte, T>();
-            }
-
-            if (Avx.IsSupported)
-            {
-                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
-                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
-                return Avx.ExtractVector128(vector.AsSingle(), 1).As<float, T>();
-            }
-
-            return SoftwareFallback(vector);
-
-            static Vector128<T> SoftwareFallback(Vector256<T> vector)
-            {
-                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref vector);
-                return Unsafe.Add(ref lower, 1);
-            }
-        }
-
         /// <summary>Creates a new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the upper 128-bits set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the lower 128-bits from.</param>
@@ -1851,7 +2899,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> WithUpper<T>(this Vector256<T> vector, Vector128<T> value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
             if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
             {
@@ -1877,17 +2925,226 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Converts the given vector to a scalar containing the value of the first element.</summary>
-        /// <typeparam name="T">The type of the input vector.</typeparam>
-        /// <param name="vector">The vector to get the first element from.</param>
-        /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <summary>Computes the exclusive-or of two vectors.</summary>
+        /// <param name="left">The vector to exclusive-or with <paramref name="right" />.</param>
+        /// <param name="right">The vector to exclusive-or with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        public static T ToScalar<T>(this Vector256<T> vector)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right)
+            where T : struct => left ^ right;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static T GetElementUnsafe<T>(in this Vector256<T> vector, int index)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
-            return Unsafe.As<Vector256<T>, T>(ref vector);
+            Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
+            return Unsafe.Add(ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector)), index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void SetElementUnsafe<T>(in this Vector256<T> vector, int index, T value)
+            where T : struct
+        {
+            Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
+            Unsafe.Add(ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector)), index) = value;
+        }
+
+        [Intrinsic]
+        internal static Vector256<ushort> WidenLower(Vector256<byte> source)
+        {
+            Unsafe.SkipInit(out Vector256<ushort> lower);
+
+            for (int i = 0; i < Vector256<ushort>.Count; i++)
+            {
+                var value = (ushort)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<int> WidenLower(Vector256<short> source)
+        {
+            Unsafe.SkipInit(out Vector256<int> lower);
+
+            for (int i = 0; i < Vector256<int>.Count; i++)
+            {
+                var value = (int)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<long> WidenLower(Vector256<int> source)
+        {
+            Unsafe.SkipInit(out Vector256<long> lower);
+
+            for (int i = 0; i < Vector256<long>.Count; i++)
+            {
+                var value = (long)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<short> WidenLower(Vector256<sbyte> source)
+        {
+            Unsafe.SkipInit(out Vector256<short> lower);
+
+            for (int i = 0; i < Vector256<short>.Count; i++)
+            {
+                var value = (short)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<double> WidenLower(Vector256<float> source)
+        {
+            Unsafe.SkipInit(out Vector256<double> lower);
+
+            for (int i = 0; i < Vector256<double>.Count; i++)
+            {
+                var value = (double)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<uint> WidenLower(Vector256<ushort> source)
+        {
+            Unsafe.SkipInit(out Vector256<uint> lower);
+
+            for (int i = 0; i < Vector256<uint>.Count; i++)
+            {
+                var value = (uint)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<ulong> WidenLower(Vector256<uint> source)
+        {
+            Unsafe.SkipInit(out Vector256<ulong> lower);
+
+            for (int i = 0; i < Vector256<ulong>.Count; i++)
+            {
+                var value = (ulong)source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        [Intrinsic]
+        internal static Vector256<ushort> WidenUpper(Vector256<byte> source)
+        {
+            Unsafe.SkipInit(out Vector256<ushort> upper);
+
+            for (int i = Vector256<ushort>.Count; i < Vector256<byte>.Count; i++)
+            {
+                var value = (ushort)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<ushort>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<int> WidenUpper(Vector256<short> source)
+        {
+            Unsafe.SkipInit(out Vector256<int> upper);
+
+            for (int i = Vector256<int>.Count; i < Vector256<short>.Count; i++)
+            {
+                var value = (int)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<int>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<long> WidenUpper(Vector256<int> source)
+        {
+            Unsafe.SkipInit(out Vector256<long> upper);
+
+            for (int i = Vector256<long>.Count; i < Vector256<int>.Count; i++)
+            {
+                var value = (long)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<long>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<short> WidenUpper(Vector256<sbyte> source)
+        {
+            Unsafe.SkipInit(out Vector256<short> upper);
+
+            for (int i = Vector256<short>.Count; i < Vector256<sbyte>.Count; i++)
+            {
+                var value = (short)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<short>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<double> WidenUpper(Vector256<float> source)
+        {
+            Unsafe.SkipInit(out Vector256<double> upper);
+
+            for (int i = Vector256<double>.Count; i < Vector256<float>.Count; i++)
+            {
+                var value = (double)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<double>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<uint> WidenUpper(Vector256<ushort> source)
+        {
+            Unsafe.SkipInit(out Vector256<uint> upper);
+
+            for (int i = Vector256<uint>.Count; i < Vector256<ushort>.Count; i++)
+            {
+                var value = (uint)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<uint>.Count, value);
+            }
+
+            return upper;
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector256<ulong> WidenUpper(Vector256<uint> source)
+        {
+            Unsafe.SkipInit(out Vector256<ulong> upper);
+
+            for (int i = Vector256<ulong>.Count; i < Vector256<uint>.Count; i++)
+            {
+                var value = (ulong)source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector256<ulong>.Count, value);
+            }
+
+            return upper;
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -17,6 +18,11 @@ namespace System.Text.Json.SourceGeneration
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
         /// </summary>
         public string TypeRef { get; private set; }
+
+        /// <summary>
+        /// If specified as a root type via <c>JsonSerializableAttribute</c>, specifies the location of the attribute application.
+        /// </summary>
+        public Location? AttributeLocation { get; set; }
 
         /// <summary>
         /// The name of the public <c>JsonTypeInfo&lt;T&gt;</c> property for this type on the generated context class.
@@ -72,6 +78,11 @@ namespace System.Text.Json.SourceGeneration
         public bool HasPropertyFactoryConverters { get; private set; }
         public bool HasTypeFactoryConverter { get; private set; }
 
+        // The spec is derived from cached `System.Type` instances, which are generally annotation-agnostic.
+        // Hence we can only record the potential for nullable annotations being possible for the runtime type.
+        // TODO: consider deriving the generation spec from the Roslyn symbols directly.
+        public bool CanContainNullableReferenceAnnotations { get; private set; }
+
         public string? ImmutableCollectionBuilderName
         {
             get
@@ -114,6 +125,7 @@ namespace System.Text.Json.SourceGeneration
             bool implementsIJsonOnSerialized,
             bool implementsIJsonOnSerializing,
             bool hasTypeFactoryConverter,
+            bool canContainNullableReferenceAnnotations,
             bool hasPropertyFactoryConverters)
         {
             GenerationMode = generationMode;
@@ -136,6 +148,7 @@ namespace System.Text.Json.SourceGeneration
             ConverterInstantiationLogic = converterInstantiationLogic;
             ImplementsIJsonOnSerialized = implementsIJsonOnSerialized;
             ImplementsIJsonOnSerializing = implementsIJsonOnSerializing;
+            CanContainNullableReferenceAnnotations = canContainNullableReferenceAnnotations;
             HasTypeFactoryConverter = hasTypeFactoryConverter;
             HasPropertyFactoryConverters = hasPropertyFactoryConverters;
         }

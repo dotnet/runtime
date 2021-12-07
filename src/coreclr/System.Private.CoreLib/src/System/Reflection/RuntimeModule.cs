@@ -9,19 +9,19 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    internal class RuntimeModule : Module
+    internal partial class RuntimeModule : Module
     {
         internal RuntimeModule() { throw new NotSupportedException(); }
 
         #region FCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetType(QCallModule module, string className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetType", CharSet = CharSet.Unicode)]
+        private static partial void GetType(QCallModule module, string className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetScopeName(QCallModule module, StringHandleOnStack retString);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
+        private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
+        private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern RuntimeType[] GetTypes(RuntimeModule module);
@@ -30,9 +30,6 @@ namespace System.Reflection
         {
             return GetTypes(this);
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsResource(RuntimeModule module);
         #endregion
 
         #region Module overrides
@@ -472,7 +469,8 @@ namespace System.Reflection
 
         public override bool IsResource()
         {
-            return IsResource(this);
+            // CoreClr does not support resource-only modules.
+            return false;
         }
 
         [RequiresUnreferencedCode("Fields might be removed")]

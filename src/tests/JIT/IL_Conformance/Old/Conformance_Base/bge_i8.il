@@ -306,4 +306,4 @@ FAIL:
 	ret
 }
 }
-.assembly bge_i8.exe{}
+.assembly bge_i8{}

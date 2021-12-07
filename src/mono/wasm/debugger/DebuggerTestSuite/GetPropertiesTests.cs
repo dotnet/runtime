@@ -285,7 +285,7 @@ namespace DebuggerTests
             string eval_expr;
             if (test_js)
             {
-                await SetBreakpoint("/other.js", 93, 1);
+                await SetBreakpoint("/other.js", 95, 1);
                 eval_expr = "window.setTimeout(function() { get_properties_test (); }, 1)";
             }
             else

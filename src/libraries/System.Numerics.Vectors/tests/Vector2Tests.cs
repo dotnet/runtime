@@ -7,13 +7,42 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class Vector2Tests
+    public sealed class Vector2Tests
     {
         [Fact]
         public void Vector2MarshalSizeTest()
         {
             Assert.Equal(8, Marshal.SizeOf<Vector2>());
             Assert.Equal(8, Marshal.SizeOf<Vector2>(new Vector2()));
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f)]
+        public void Vector2IndexerGetTest(float x, float y)
+        {
+            var vector = new Vector2(x, y);
+
+            Assert.Equal(x, vector[0]);
+            Assert.Equal(y, vector[1]);
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f)]
+        public void Vector2IndexerSetTest(float x, float y)
+        {
+            var vector = new Vector2(0.0f, 0.0f);
+
+            vector[0] = x;
+            vector[1] = y;
+
+            Assert.Equal(x, vector[0]);
+            Assert.Equal(y, vector[1]);
         }
 
         [Fact]
@@ -27,7 +56,7 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => v1.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, a.Length));
-            AssertExtensions.Throws<ArgumentException>(null, () => v1.CopyTo(a, 2));
+            Assert.Throws<ArgumentException>(() => v1.CopyTo(a, 2));
 
             v1.CopyTo(a, 1);
             v1.CopyTo(b);
@@ -873,7 +902,7 @@ namespace System.Numerics.Tests
             Vector2 expected = new Vector2(value);
 
             Assert.Equal(expected, target);
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector2(new float[1]));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector2(new float[1]));
         }
 
         // A test for Add (Vector2f, Vector2f)

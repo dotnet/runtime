@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // MyBar is an abstract class which declares an abstract method MyBar::DoBar().
 // MyBar also DoSelfBar() that explicitly overrides DoBar().
 // BarImpl extends MyBar and also overrides DoBar().
@@ -84,6 +85,9 @@
 {
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       66 (0x42)
     .maxstack  2

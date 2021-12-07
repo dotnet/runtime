@@ -283,6 +283,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 state.ConnectTcs = null;
             }
 
+            // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
+            // it wasn't our side who shutdown the connection.
+            // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
+            // See: https://github.com/dotnet/runtime/issues/60133
+            state.AbortErrorCode = 0;
             state.AcceptQueue.Writer.TryComplete();
             return MsQuicStatusCodes.Success;
         }
@@ -391,6 +396,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             X509Chain? chain = null;
             X509Certificate2? certificate = null;
             X509Certificate2Collection? additionalCertificates = null;
+            IntPtr certificateBuffer = IntPtr.Zero;
+            int certificateLength = 0;
 
             try
             {
@@ -406,6 +413,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                         {
                             ReadOnlySpan<QuicBuffer> quicBuffer = new ReadOnlySpan<QuicBuffer>((void*)connectionEvent.Data.PeerCertificateReceived.PlatformCertificateHandle, sizeof(QuicBuffer));
                             certificate = new X509Certificate2(new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length));
+                            certificateBuffer = (IntPtr)quicBuffer[0].Buffer;
+                            certificateLength = (int)quicBuffer[0].Length;
 
                             if (connectionEvent.Data.PeerCertificateReceived.PlatformCertificateChainHandle != IntPtr.Zero)
                             {
@@ -437,7 +446,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
                     }
 
-                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain, certificate, true, state.IsServer, state.TargetHost);
+                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain, certificate, true, state.IsServer, state.TargetHost, certificateBuffer, certificateLength);
                 }
 
                 if (!state.RemoteCertificateRequired)

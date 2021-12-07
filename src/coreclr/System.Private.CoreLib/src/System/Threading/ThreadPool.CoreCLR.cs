@@ -157,10 +157,7 @@ namespace System.Threading
             _state = state;
         }
 
-        void IThreadPoolWorkItem.Execute() => ExecuteUnmanagedThreadPoolWorkItem(_callback, _state);
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void ExecuteUnmanagedThreadPoolWorkItem(IntPtr callback, IntPtr state);
+        unsafe void IThreadPoolWorkItem.Execute() => ((delegate* unmanaged<IntPtr, int>)_callback)(_state);
     }
 
     public static partial class ThreadPool
@@ -345,8 +342,8 @@ namespace System.Threading
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern long GetCompletedWorkItemCount();
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_GetCompletedWorkItemCount")]
+        private static partial long GetCompletedWorkItemCount();
 
         private static long PendingUnmanagedWorkItemCount => UsePortableThreadPool ? 0 : GetPendingUnmanagedWorkItemCount();
 
@@ -422,8 +419,8 @@ namespace System.Threading
             RequestWorkerThreadNative();
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern Interop.BOOL RequestWorkerThreadNative();
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_RequestWorkerThread")]
+        private static partial Interop.BOOL RequestWorkerThreadNative();
 
         // Entry point from unmanaged code
         private static void EnsureGateThreadRunning()
@@ -443,8 +440,8 @@ namespace System.Threading
             return PerformRuntimeSpecificGateActivitiesNative(cpuUtilization) != Interop.BOOL.FALSE;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern Interop.BOOL PerformRuntimeSpecificGateActivitiesNative(int cpuUtilization);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_PerformGateActivities")]
+        private static partial Interop.BOOL PerformRuntimeSpecificGateActivitiesNative(int cpuUtilization);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);

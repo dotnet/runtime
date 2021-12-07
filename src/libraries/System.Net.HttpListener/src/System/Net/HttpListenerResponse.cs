@@ -297,10 +297,7 @@ namespace System.Net
 
         private void CheckDisposed()
         {
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
         }
 
         private void CheckSentHeaders()

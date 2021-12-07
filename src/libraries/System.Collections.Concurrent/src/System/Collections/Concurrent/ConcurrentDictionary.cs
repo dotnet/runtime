@@ -1987,9 +1987,6 @@ namespace System.Collections.Concurrent
                     _budget = int.MaxValue;
                 }
 
-                // Now acquire all other locks for the table
-                AcquireLocks(1, tables._locks.Length, ref locksAcquired);
-
                 object[] newLocks = tables._locks;
 
                 // Add more locks
@@ -2006,6 +2003,9 @@ namespace System.Collections.Concurrent
                 var newBuckets = new Node[newLength];
                 var newCountPerLock = new int[newLocks.Length];
                 var newTables = new Tables(newBuckets, newLocks, newCountPerLock);
+
+                // Now acquire all other locks for the table
+                AcquireLocks(1, tables._locks.Length, ref locksAcquired);
 
                 // Copy all data into a new table, creating new nodes for all elements
                 foreach (Node? bucket in tables._buckets)

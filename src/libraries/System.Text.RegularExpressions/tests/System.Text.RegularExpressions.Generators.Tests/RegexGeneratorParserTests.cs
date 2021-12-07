@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
         }
 
         [Theory]
-        [InlineData(128)]
+        [InlineData(0x800)]
         public async Task Diagnostic_InvalidRegexOptions(int options)
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@$"
@@ -161,6 +161,66 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", langVersion: LanguageVersion.CSharp9);
 
             Assert.Equal("SYSLIB1044", Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public async Task Diagnostic_RightToLeft_LimitedSupport()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(""ab"", RegexOptions.RightToLeft)]
+                    private static partial Regex RightToLeftNotSupported();
+                }
+            ");
+
+            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public async Task Diagnostic_NonBacktracking_LimitedSupport()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(""ab"", RegexOptions.NonBacktracking)]
+                    private static partial Regex RightToLeftNotSupported();
+                }
+            ");
+
+            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public async Task Diagnostic_PositiveLookbehind_LimitedSupport()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(""(?<=\b20)\d{2}\b"")]
+                    private static partial Regex PositiveLookbehindNotSupported();
+                }
+            ");
+
+            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public async Task Diagnostic_NegativeLookbehind_LimitedSupport()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(""(?<!(Saturday|Sunday) )\b\w+ \d{1,2}, \d{4}\b"")]
+                    private static partial Regex NegativeLookbehindNotSupported();
+                }
+            ");
+
+            Assert.Equal("SYSLIB1045", Assert.Single(diagnostics).Id);
         }
 
         [Fact]
@@ -475,13 +535,34 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", compile: true));
         }
 
+        [Fact]
+        public async Task MultipleTypeDefinitions_DoesntBreakGeneration()
+        {
+            byte[] referencedAssembly = CreateAssemblyImage(@"
+                namespace System.Text.RegularExpressions;
+
+                [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+                internal sealed class RegexGeneratorAttribute : Attribute
+                {
+                    public RegexGeneratorAttribute(string pattern){}
+                }", "TestAssembly");
+
+            Assert.Empty(await RunGenerator(@"
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [RegexGenerator(""abc"")]
+                    private static partial Regex Valid();
+                }", compile: true, additionalRefs: new[] { MetadataReference.CreateFromImage(referencedAssembly) }));
+        }
+
         private async Task<IReadOnlyList<Diagnostic>> RunGenerator(
-            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, CancellationToken cancellationToken = default)
+            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()
                 .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                 .AddProject("RegexGeneratorTest", "RegexGeneratorTest.dll", "C#")
-                .WithMetadataReferences(s_refs)
+                .WithMetadataReferences(additionalRefs is not null ? s_refs.Concat(additionalRefs) : s_refs)
                 .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithNullableContextOptions(NullableContextOptions.Enable))
                 .WithParseOptions(new CSharpParseOptions(langVersion))
@@ -513,10 +594,33 @@ namespace System.Text.RegularExpressions.Generator.Tests
             return generatorResults.Diagnostics.Concat(results.Diagnostics).Where(d => d.Severity != DiagnosticSeverity.Hidden).ToArray();
         }
 
+        private static byte[] CreateAssemblyImage(string source, string assemblyName)
+        {
+            CSharpCompilation compilation = CSharpCompilation.Create(
+                assemblyName,
+                new[] { CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview)) },
+                s_refs.ToArray(),
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            var ms = new MemoryStream();
+            if (compilation.Emit(ms).Success)
+            {
+               return ms.ToArray();
+            }
+
+            throw new InvalidOperationException();
+        }
+
         private static readonly MetadataReference[] s_refs = CreateReferences();
 
         private static MetadataReference[] CreateReferences()
         {
+            if (PlatformDetection.IsBrowser)
+            {
+                // These tests that use Roslyn don't work well on browser wasm today
+                return new MetadataReference[0];
+            }
+
             string corelibPath = typeof(object).Assembly.Location;
             return new[]
             {

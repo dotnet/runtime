@@ -106,7 +106,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
+                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             FALLTHROUGH;
 
@@ -121,7 +121,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             break;
 
-        case GT_LIST:
         case GT_ARGPLACE:
         case GT_NO_OP:
         case GT_START_NONGC:
@@ -265,10 +264,11 @@ int LinearScan::BuildNode(GenTree* tree)
                 // everything is made explicit by adding casts.
                 assert(tree->gtGetOp1()->TypeGet() == tree->gtGetOp2()->TypeGet());
             }
-
             FALLTHROUGH;
 
+        case GT_ADDEX:
         case GT_AND:
+        case GT_AND_NOT:
         case GT_OR:
         case GT_XOR:
         case GT_LSH:
@@ -277,6 +277,12 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_ROR:
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
+            BuildDef(tree);
+            break;
+
+        case GT_BFIZ:
+            assert(tree->gtGetOp1()->OperIs(GT_CAST));
+            srcCount = BuildOperandUses(tree->gtGetOp1()->gtGetOp1());
             BuildDef(tree);
             break;
 
@@ -308,6 +314,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_DIV:
         case GT_MULHI:
+        case GT_MUL_LONG:
         case GT_UDIV:
         {
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -484,7 +491,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
             dstCount = tree->AsPutArgSplit()->gtNumRegs;
             break;
-#endif // FEATURE _SPLIT_ARG
+#endif // FEATURE_ARG_SPLIT
 
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
@@ -618,8 +625,8 @@ int LinearScan::BuildNode(GenTree* tree)
             GenTreeBoundsChk* node = tree->AsBoundsChk();
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
-            srcCount = BuildOperandUses(node->gtIndex);
-            srcCount += BuildOperandUses(node->gtArrLen);
+            srcCount = BuildOperandUses(node->GetIndex());
+            srcCount += BuildOperandUses(node->GetArrayLength());
         }
         break;
 
@@ -682,7 +689,16 @@ int LinearScan::BuildNode(GenTree* tree)
             if (index != nullptr)
             {
                 srcCount++;
-                BuildUse(index);
+                if (index->OperIs(GT_BFIZ) && index->isContained())
+                {
+                    GenTreeCast* cast = index->gtGetOp1()->AsCast();
+                    assert(cast->isContained() && (cns == 0));
+                    BuildUse(cast->CastOp());
+                }
+                else
+                {
+                    BuildUse(index);
+                }
             }
             assert(dstCount == 1);
 
@@ -786,17 +802,14 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     // Only SIMDIntrinsicInit can be contained
     if (simdTree->isContained())
     {
-        assert(simdTree->gtSIMDIntrinsicID == SIMDIntrinsicInit);
+        assert(simdTree->GetSIMDIntrinsicId() == SIMDIntrinsicInit);
     }
     int dstCount = simdTree->IsValue() ? 1 : 0;
     assert(dstCount == 1);
 
     bool buildUses = true;
 
-    GenTree* op1 = simdTree->gtGetOp1();
-    GenTree* op2 = simdTree->gtGetOp2();
-
-    switch (simdTree->gtSIMDIntrinsicID)
+    switch (simdTree->GetSIMDIntrinsicId())
     {
         case SIMDIntrinsicInit:
         case SIMDIntrinsicCast:
@@ -804,8 +817,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicConvertToInt32:
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicWidenLo:
-        case SIMDIntrinsicWidenHi:
             // No special handling required.
             break;
 
@@ -816,40 +827,26 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // No special handling required.
             break;
 
-        case SIMDIntrinsicNarrow:
-        {
-            // Op1 will write to dst before Op2 is free
-            BuildUse(op1);
-            RefPosition* op2Use = BuildUse(op2);
-            setDelayFree(op2Use);
-            srcCount  = 2;
-            buildUses = false;
-            break;
-        }
-
         case SIMDIntrinsicInitN:
         {
             var_types baseType = simdTree->GetSimdBaseType();
             srcCount           = (short)(simdTree->GetSimdSize() / genTypeSize(baseType));
+            assert(simdTree->GetOperandCount() == static_cast<size_t>(srcCount));
             if (varTypeIsFloating(simdTree->GetSimdBaseType()))
             {
                 // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
                 buildInternalFloatRegisterDefForNode(simdTree);
             }
 
-            int initCount = 0;
-            for (GenTree* list = op1; list != nullptr; list = list->gtGetOp2())
+            for (GenTree* operand : simdTree->Operands())
             {
-                assert(list->OperGet() == GT_LIST);
-                GenTree* listItem = list->gtGetOp1();
-                assert(listItem->TypeGet() == baseType);
-                assert(!listItem->isContained());
-                BuildUse(listItem);
-                initCount++;
-            }
-            assert(initCount == srcCount);
-            buildUses = false;
+                assert(operand->TypeIs(baseType));
+                assert(!operand->isContained());
 
+                BuildUse(operand);
+            }
+
+            buildUses = false;
             break;
         }
 
@@ -863,7 +860,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicCopyToArrayX:
         case SIMDIntrinsicNone:
         case SIMDIntrinsicHWAccel:
-        case SIMDIntrinsicWiden:
         case SIMDIntrinsicInvalid:
             assert(!"These intrinsics should not be seen during register allocation");
             FALLTHROUGH;
@@ -874,12 +870,12 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     }
     if (buildUses)
     {
-        assert(!op1->OperIs(GT_LIST));
         assert(srcCount == 0);
-        srcCount = BuildOperandUses(op1);
-        if ((op2 != nullptr) && !op2->isContained())
+        srcCount = BuildOperandUses(simdTree->Op(1));
+
+        if ((simdTree->GetOperandCount() == 2) && !simdTree->Op(2)->isContained())
         {
-            srcCount += BuildOperandUses(op2);
+            srcCount += BuildOperandUses(simdTree->Op(2));
         }
     }
     assert(internalCount <= MaxInternalCount);
