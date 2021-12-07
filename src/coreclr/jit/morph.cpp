@@ -11453,6 +11453,37 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             {
                 return fgMorphTree(optimizedTree);
             }
+
+            // Pattern-matching optimization:
+            //    (a % c) ==/!= 0
+            // for power-of-2 constant `c`
+            // =>
+            //    a & (c - 1) ==/!= 0
+            // For integer `a`, even if negative.
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase)
+            {
+                assert(tree->OperIs(GT_EQ, GT_NE));
+                if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
+                {
+                    GenTree* op1op2 = op1->AsOp()->gtOp2;
+                    if (op1op2->IsCnsIntOrI())
+                    {
+                        const ssize_t modValue = op1op2->AsIntCon()->IconValue();
+                        if (isPow2(modValue))
+                        {
+                            JITDUMP("\nTransforming:\n");
+                            DISPTREE(tree);
+
+                            op1->SetOper(GT_AND);                                 // Change % => &
+                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                            fgUpdateConstTreeValueNumber(op1op2);
+
+                            JITDUMP("\ninto:\n");
+                            DISPTREE(tree);
+                        }
+                    }
+                }
+            }
         }
 
             FALLTHROUGH;
@@ -13360,30 +13391,6 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
     GenTree*             op1 = cmp->gtGetOp1();
     GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
-
-    // Pattern-matching optimization:
-    //    (a % c) ==/!= 0
-    // for power-of-2 constant `c`
-    // =>
-    //    a & (c - 1) ==/!= 0
-    // For integer `a`, even if negative.
-    if (opts.OptimizationEnabled())
-    {
-        if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
-        {
-            GenTree* op1op2 = op1->AsOp()->gtOp2;
-            if (op1op2->IsCnsIntOrI())
-            {
-                ssize_t modValue = op1op2->AsIntCon()->IconValue();
-                if (isPow2(modValue))
-                {
-                    op1->SetOper(GT_AND);                                 // Change % => &
-                    op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
-                    fgUpdateConstTreeValueNumber(op1op2);
-                }
-            }
-        }
-    }
 
     // Check for "(expr +/- icon1) ==/!= (non-zero-icon2)".
     if (op2->IsCnsIntOrI() && (op2->IconValue() != 0))
