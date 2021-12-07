@@ -1020,7 +1020,7 @@ namespace System.Xml.Xsl.Runtime
                     break;
 
                 default:
-                    Debug.Fail("Text cannot be output in the " + _xstate + " state.");
+                    Debug.Fail($"Text cannot be output in the {_xstate} state.");
                     break;
             }
 
@@ -1339,7 +1339,7 @@ namespace System.Xml.Xsl.Runtime
                 case XmlState.WithinPI: return XPathNodeType.ProcessingInstruction;
             }
 
-            Debug.Fail(xstate.ToString() + " is not a valid XmlState.");
+            Debug.Fail($"{xstate} is not a valid XmlState.");
             return XPathNodeType.Element;
         }
 
@@ -1428,7 +1428,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Rule #3: Otherwise, generate a new prefix of the form 'xp_??', where ?? is a stringized counter
-            genPrefix = "xp_" + (_prefixIndex++).ToString(CultureInfo.InvariantCulture);
+            genPrefix = string.Create(CultureInfo.InvariantCulture, $"xp_{_prefixIndex++}");
 
 
         ReturnPrefix:

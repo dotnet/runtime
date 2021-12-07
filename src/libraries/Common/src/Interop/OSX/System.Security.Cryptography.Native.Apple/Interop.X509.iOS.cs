@@ -33,8 +33,8 @@ internal static partial class Interop
                 out pPrivateKeyOut);
         }
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509ImportCertificate(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509ImportCertificate(
             ref byte pbKeyBlob,
             int cbKeyBlob,
             X509ContentType contentType,
@@ -42,8 +42,8 @@ internal static partial class Interop
             out SafeSecCertificateHandle pCertOut,
             out SafeSecIdentityHandle pPrivateKeyOut);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509ImportCollection(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509ImportCollection(
             ref byte pbKeyBlob,
             int cbKeyBlob,
             X509ContentType contentType,

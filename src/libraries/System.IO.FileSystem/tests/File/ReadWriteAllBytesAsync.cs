@@ -73,7 +73,7 @@ namespace System.IO.Tests
         [Fact]
         [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public Task ReadFileOver2GBAsync()
+        public async Task ReadFileOver2GBAsync()
         {
             string path = GetTestFilePath();
             using (FileStream fs = File.Create(path))
@@ -81,8 +81,23 @@ namespace System.IO.Tests
                 fs.SetLength(int.MaxValue + 1L);
             }
 
-            // File is too large for ReadAllBytes at once
-            return Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
+            // File is too large for ReadAllBytesAsync at once
+            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
+        }
+
+        [Fact]
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
+        public async Task ReadFileOverMaxArrayLengthAsync()
+        {
+            string path = GetTestFilePath();
+            using (FileStream fs = File.Create(path))
+            {
+                fs.SetLength(Array.MaxLength + 1L);
+            }
+
+            // File is too large for ReadAllBytesAsync at once
+            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
         }
 
         [Fact]

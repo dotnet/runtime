@@ -114,7 +114,7 @@ jobs:
       - script: |
           mkdir -p $(MergedMchFileLocation)
           mkdir -p $(SpmiLogsLocation)
-        displayName: Create directory for merged collection
+        displayName: Create directories
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: |
           mkdir $(MergedMchFileLocation)

@@ -198,7 +198,6 @@ FUNCTIONS
     bool isValueClass(CORINFO_CLASS_HANDLE cls)
     CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
     uint32_t getClassAttribs(CORINFO_CLASS_HANDLE cls)
-    bool isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
     CORINFO_MODULE_HANDLE getClassModule(CORINFO_CLASS_HANDLE cls)
     CORINFO_ASSEMBLY_HANDLE getModuleAssembly(CORINFO_MODULE_HANDLE mod)
     const char* getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)

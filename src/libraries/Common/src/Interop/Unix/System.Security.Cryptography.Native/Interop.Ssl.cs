@@ -18,11 +18,11 @@ internal static partial class Interop
         internal const int SSL_TLSEXT_ERR_ALERT_FATAL = 2;
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureLibSslInitialized")]
-        internal static extern void EnsureLibSslInitialized();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureLibSslInitialized")]
+        internal static partial void EnsureLibSslInitialized();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslV2_3Method")]
-        internal static extern IntPtr SslV2_3Method();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslV2_3Method")]
+        internal static partial IntPtr SslV2_3Method();
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCreate")]
         internal static partial SafeSslHandle SslCreate(SafeSslContextHandle ctx);
@@ -30,14 +30,14 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetError")]
         internal static partial SslErrorCode SslGetError(SafeSslHandle ssl, int ret);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetError")]
-        internal static extern SslErrorCode SslGetError(IntPtr ssl, int ret);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetError")]
+        internal static partial SslErrorCode SslGetError(IntPtr ssl, int ret);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetQuietShutdown")]
         internal static partial void SslSetQuietShutdown(SafeSslHandle ssl, int mode);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDestroy")]
-        internal static extern void SslDestroy(IntPtr ssl);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDestroy")]
+        internal static partial void SslDestroy(IntPtr ssl);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetConnectState")]
         internal static partial void SslSetConnectState(SafeSslHandle ssl);
@@ -85,8 +85,8 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsSslRenegotiatePending(SafeSslHandle ssl);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslShutdown")]
-        internal static extern int SslShutdown(IntPtr ssl);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslShutdown")]
+        internal static partial int SslShutdown(IntPtr ssl);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslShutdown")]
         internal static partial int SslShutdown(SafeSslHandle ssl);
@@ -134,20 +134,20 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOpenSslCipherSuiteName")]
         private static partial IntPtr GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
-        internal static extern unsafe bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
+        internal static unsafe partial bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
-        internal static extern void SslSetVerifyPeer(SafeSslHandle ssl);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
+        internal static partial void SslSetVerifyPeer(SafeSslHandle ssl);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
-        internal static extern IntPtr SslGetData(IntPtr ssl);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
+        internal static partial IntPtr SslGetData(IntPtr ssl);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
-        internal static extern int SslSetData(SafeSslHandle ssl, IntPtr data);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
+        internal static partial int SslSetData(SafeSslHandle ssl, IntPtr data);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
-        internal static extern int SslSetData(IntPtr ssl, IntPtr data);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
+        internal static partial int SslSetData(IntPtr ssl, IntPtr data);
 
         internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> protocols)
         {
@@ -190,8 +190,8 @@ internal static partial class Interop
             return ret;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
-        private static extern int Tls13SupportedImpl();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
+        private static partial int Tls13SupportedImpl();
         internal static readonly bool Tls13Supported = Tls13SupportedImpl() != 0;
 
         internal static SafeSharedX509NameStackHandle SslGetClientCAList(SafeSslHandle ssl)

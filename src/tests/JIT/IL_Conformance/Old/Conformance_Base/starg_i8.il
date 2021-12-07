@@ -63,4 +63,4 @@ FAIL:
 	ret
 }
 }
-.assembly starg_i8.exe{}
+.assembly starg_i8{}

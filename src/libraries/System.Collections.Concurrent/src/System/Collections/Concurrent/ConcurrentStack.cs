@@ -349,7 +349,6 @@ namespace System.Collections.Concurrent
             if (count == 0)
                 return;
 
-
             Node head, tail;
             head = tail = new Node(items[startIndex]);
             for (int i = startIndex + 1; i < startIndex + count; i++)
@@ -410,7 +409,7 @@ namespace System.Collections.Concurrent
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ConcurrentStack_PushPopRange_CountOutOfRange);
             }
             int length = items.Length;
-            if (startIndex >= length || startIndex < 0)
+            if (startIndex > length || startIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ConcurrentStack_PushPopRange_StartOutOfRange);
             }

@@ -29,6 +29,9 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
 
     // Base type should come from the this argument
     BaseTypeFromThisArg = 0x08,
+
+    // For SIMDVectorHandle, keep the base type from the result type
+    KeepBaseTypeFromRet = 0x10,
 };
 
 inline SimdAsHWIntrinsicFlag operator~(SimdAsHWIntrinsicFlag value)
@@ -132,6 +135,12 @@ struct SimdAsHWIntrinsicInfo
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
         return (flags & SimdAsHWIntrinsicFlag::BaseTypeFromThisArg) == SimdAsHWIntrinsicFlag::BaseTypeFromThisArg;
+    }
+
+    static bool KeepBaseTypeFromRet(NamedIntrinsic id)
+    {
+        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & SimdAsHWIntrinsicFlag::KeepBaseTypeFromRet) == SimdAsHWIntrinsicFlag::KeepBaseTypeFromRet;
     }
 };
 

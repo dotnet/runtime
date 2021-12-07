@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 /*BUG: Assert: Precondition failure: FAILED: !ContainsGenericVariables() (vm\method.cpp, Line: 1781)
 
 The bug related to populating MethodDesc slots in generic dictionaries at runtime.
@@ -86,6 +87,9 @@ The bug related to populating MethodDesc slots in generic dictionaries at runtim
 	}
     .method public hidebysig static int32  Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack  3
 

@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using System.Reflection;
 using Xunit;
 
-namespace System.Security.Cryptography.Encryption.Tests.Symmetric
+namespace System.Security.Cryptography.Tests.Symmetric
 {
     public static class TrivialTests
     {

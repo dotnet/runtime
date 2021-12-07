@@ -170,7 +170,7 @@ bool MakeAssemblyQualifiedName(                                  // true if ok, 
 
 static
 bool MakeAssemblyQualifiedName(                                        // true ok, false truncation
-                               __out_ecount (dwBuffer) WCHAR* pBuffer, // Buffer to recieve the results
+                               __out_ecount (dwBuffer) WCHAR* pBuffer, // Buffer to receive the results
                                int    dwBuffer,                        // Number of characters total in buffer
                                const WCHAR *szTypeName,                // Namespace for name.
                                int   dwTypeName,                       // Number of characters (not including null)

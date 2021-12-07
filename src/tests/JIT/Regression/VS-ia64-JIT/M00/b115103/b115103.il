@@ -8,8 +8,12 @@
   .ver 4:0:0:0
 }
 .assembly Test_b115103 {}
+.assembly extern xunit.core {}
 .class Test_b115103 {
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	8
 

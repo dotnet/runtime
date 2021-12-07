@@ -274,8 +274,9 @@ namespace {@namespace}
                         break;
                     case ClassType.TypeUnsupportedBySourceGen:
                         {
+                            Location location = typeGenerationSpec.Type.GetDiagnosticLocation() ?? typeGenerationSpec.AttributeLocation ?? _currentContext.Location;
                             _sourceGenerationContext.ReportDiagnostic(
-                                Diagnostic.Create(TypeNotSupported, Location.None, new string[] { typeGenerationSpec.TypeRef }));
+                                Diagnostic.Create(TypeNotSupported, location, new string[] { typeGenerationSpec.TypeRef }));
                             return;
                         }
                     default:
@@ -293,7 +294,8 @@ namespace {@namespace}
                 }
                 else
                 {
-                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, Location.None, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
+                    Location location = typeGenerationSpec.AttributeLocation ?? _currentContext.Location;
+                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, location, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
                 }
             }
 

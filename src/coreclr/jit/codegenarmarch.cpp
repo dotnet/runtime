@@ -213,6 +213,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_OR:
         case GT_XOR:
         case GT_AND:
+        case GT_AND_NOT:
             assert(varTypeIsIntegralOrI(treeNode));
 
             FALLTHROUGH;
@@ -300,6 +301,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
+        case GT_MADD:
+            genCodeForMadd(treeNode->AsOp());
+            break;
 
         case GT_INC_SATURATE:
             genCodeForIncSaturate(treeNode);
@@ -311,6 +315,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_SWAP:
             genCodeForSwap(treeNode->AsOp());
+            break;
+
+        case GT_ADDEX:
+            genCodeForAddEx(treeNode->AsOp());
+            break;
+
+        case GT_BFIZ:
+            genCodeForBfiz(treeNode->AsOp());
             break;
 #endif // TARGET_ARM64
 
@@ -382,7 +394,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // This is handled at the time we call genConsumeReg() on the GT_COPY
             break;
 
-        case GT_LIST:
         case GT_FIELD_LIST:
             // Should always be marked contained.
             assert(!"LIST, FIELD_LIST nodes should always be marked contained.");
@@ -542,7 +553,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         {
 #ifdef DEBUG
             char message[256];
-            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s",
+            _snprintf_s(message, ArrLen(message), _TRUNCATE, "NYI: Unimplemented node type %s",
                         GenTree::OpName(treeNode->OperGet()));
             NYIRAW(message);
 #else
@@ -705,7 +716,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         // Since it is a fast tail call, the existence of first incoming arg is guaranteed
         // because fast tail call requires that in-coming arg area of caller is >= out-going
         // arg area required for tail call.
-        LclVarDsc* varDsc = &(compiler->lvaTable[varNumOut]);
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNumOut);
         assert(varDsc != nullptr);
 #endif // FEATURE_FASTTAILCALL
     }
@@ -1240,10 +1251,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         {
             assert(varNode->isContained());
             srcVarNum = varNode->GetLclNum();
-            assert(srcVarNum < compiler->lvaCount);
 
             // handle promote situation
-            LclVarDsc* varDsc = compiler->lvaTable + srcVarNum;
+            LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
 
             // This struct also must live in the stack frame
             // And it can't live in a register (SIMD)
@@ -1614,8 +1624,9 @@ void CodeGen::genCodeForShift(GenTree* tree)
     genTreeOps  oper       = tree->OperGet();
     instruction ins        = genGetInsForOper(oper, targetType);
     emitAttr    size       = emitActualTypeSize(tree);
+    regNumber   dstReg     = tree->GetRegNum();
 
-    assert(tree->GetRegNum() != REG_NA);
+    assert(dstReg != REG_NA);
 
     genConsumeOperands(tree->AsOp());
 
@@ -1623,14 +1634,13 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTree* shiftBy = tree->gtGetOp2();
     if (!shiftBy->IsCnsIntOrI())
     {
-        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
+        GetEmitter()->emitIns_R_R_R(ins, size, dstReg, operand->GetRegNum(), shiftBy->GetRegNum());
     }
     else
     {
         unsigned immWidth   = emitter::getBitWidth(size); // For ARM64, immWidth will be set to 32 or 64
         unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
-
-        GetEmitter()->emitIns_R_R_I(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
+        GetEmitter()->emitIns_R_R_I(ins, size, dstReg, operand->GetRegNum(), shiftByImm);
     }
 
     genProduceReg(tree);
@@ -2455,16 +2465,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
-    // We need to propagate the IL offset information to the call instruction, so we can emit
+    DebugInfo di;
+    // We need to propagate the debug information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
     // We don't want tail call helper calls that were converted from normal calls to get a record,
     // so we skip this hash table lookup logic in that case.
-
-    IL_OFFSETX ilOffset = BAD_IL_OFFSET;
-
-    if (compiler->opts.compDbgInfo && compiler->genCallSite2ILOffsetMap != nullptr && !call->IsTailCall())
+    if (compiler->opts.compDbgInfo && compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
     {
-        (void)compiler->genCallSite2ILOffsetMap->Lookup(call, &ilOffset);
+        (void)compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
     }
 
     CORINFO_SIG_INFO* sigInfo = nullptr;
@@ -2504,7 +2512,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     nullptr, // addr
                     retSize
                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                    ilOffset,
+                    di,
                     target->GetRegNum(),
                     call->IsFastTailCall());
         // clang-format on
@@ -2544,7 +2552,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                         nullptr, // addr
                         retSize
                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        ilOffset,
+                        di,
                         targetAddrReg,
                         call->IsFastTailCall());
             // clang-format on
@@ -2592,7 +2600,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                             INDEBUG_LDISASM_COMMA(sigInfo)
                             NULL,
                             retSize,
-                            ilOffset,
+                            di,
                             tmpReg,
                             call->IsFastTailCall());
                 // clang-format on
@@ -2607,7 +2615,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                             addr,
                             retSize
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                            ilOffset,
+                            di,
                             REG_NA,
                             call->IsFastTailCall());
                 // clang-format on
@@ -2643,16 +2651,16 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     // But that would require us to deal with circularity while moving values around.  Spilling
     // to stack makes the implementation simple, which is not a bad trade off given Jmp calls
     // are not frequent.
-    for (varNum = 0; (varNum < compiler->info.compArgsCount); varNum++)
+    for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
 
         if (varDsc->lvPromoted)
         {
             noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
 
             unsigned fieldVarNum = varDsc->lvFieldLclStart;
-            varDsc               = compiler->lvaTable + fieldVarNum;
+            varDsc               = compiler->lvaGetDesc(fieldVarNum);
         }
         noway_assert(varDsc->lvIsParam);
 
@@ -2718,15 +2726,15 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     // Next move any un-enregistered register arguments back to their register.
     regMaskTP fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
     unsigned  firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
-    for (varNum = 0; (varNum < compiler->info.compArgsCount); varNum++)
+    for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
         if (varDsc->lvPromoted)
         {
             noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
 
             unsigned fieldVarNum = varDsc->lvFieldLclStart;
-            varDsc               = compiler->lvaTable + fieldVarNum;
+            varDsc               = compiler->lvaGetDesc(fieldVarNum);
         }
         noway_assert(varDsc->lvIsParam);
 
@@ -3248,9 +3256,9 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
     if (compiler->opts.IsReversePInvoke())
     {
         unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
-        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
-        LclVarDsc& reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
-        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.GetStackOffset());
+        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM);
+        const LclVarDsc* reversePInvokeFrameVar = compiler->lvaGetDesc(reversePInvokeFrameVarNumber);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar->GetStackOffset());
     }
 
     gcInfoEncoder->Build();

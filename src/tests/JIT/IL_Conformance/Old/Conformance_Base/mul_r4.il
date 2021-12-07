@@ -589,4 +589,4 @@ FAIL:
 	ret
 }
 }
-.assembly mul_r4.exe{}
+.assembly mul_r4{}

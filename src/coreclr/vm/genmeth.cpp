@@ -1418,9 +1418,6 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
     {
         // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
         // to break type recursion dead-locks
-
-        // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
-        GCX_COOP();
         CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
 
         for (unsigned int i = 0; i < numTyPars; i++)

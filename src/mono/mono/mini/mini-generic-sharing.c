@@ -3324,6 +3324,16 @@ mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_ty
 	return mono_generic_context_is_sharable_full (context, allow_type_vars, partial_sharing_supported ());
 }
 
+static gboolean
+is_primitive_inst (MonoGenericInst *inst)
+{
+	for (int i = 0; i < inst->type_argc; ++i) {
+		if (!MONO_TYPE_IS_PRIMITIVE (inst->type_argv [i]))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /*
  * mono_method_is_generic_impl:
  * @method: a method
@@ -3350,18 +3360,45 @@ mono_method_is_generic_impl (MonoMethod *method)
 static gboolean
 has_constraints (MonoGenericContainer *container)
 {
-	//int i;
+	int i;
 
-	return FALSE;
-	/*
 	g_assert (container->type_argc > 0);
 	g_assert (container->type_params);
 
 	for (i = 0; i < container->type_argc; ++i)
-		if (container->type_params [i].constraints)
+		if (container->type_params [i].info.constraints)
 			return TRUE;
 	return FALSE;
-	*/
+}
+
+/*
+ * Return whenever GPARAM can be instantiated with an enum.
+ */
+static gboolean
+gparam_can_be_enum (MonoGenericParam *gparam)
+{
+	if (!gparam->info.constraints)
+		return TRUE;
+	/*
+	 * If a constraint is an interface which is not implemented by Enum, then the gparam can't be
+	 * instantiated with an enum.
+	 */
+	for (int cindex = 0; gparam->info.constraints [cindex]; cindex ++) {
+		MonoClass *k = gparam->info.constraints [cindex];
+		if (MONO_CLASS_IS_INTERFACE_INTERNAL (k)) {
+			MonoClass **enum_ifaces = m_class_get_interfaces (mono_defaults.enum_class);
+			gboolean is_enum_iface = FALSE;
+			for (int i = 0; i < m_class_get_interface_count (mono_defaults.enum_class); i++) {
+				if (k == enum_ifaces [i]) {
+					is_enum_iface = TRUE;
+					break;
+				}
+			}
+			if (!is_enum_iface)
+				return FALSE;
+		}
+	}
+	return TRUE;
 }
 
 static gboolean
@@ -3488,21 +3525,39 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 
 		g_assert (inflated->declaring);
 
+#if FALSE
 		if (inflated->declaring->is_generic) {
-			if (has_constraints (mono_method_get_generic_container (inflated->declaring)))
-				return FALSE;
+			if (has_constraints (mono_method_get_generic_container (inflated->declaring))) {
+			}
 		}
+#endif
 	}
 
 	if (mono_class_is_ginst (method->klass)) {
-		if (!mono_generic_context_is_sharable_full (&mono_class_get_generic_class (method->klass)->context, allow_type_vars, allow_partial))
+		MonoGenericContext *ctx = &mono_class_get_generic_class (method->klass)->context;
+		if (!mono_generic_context_is_sharable_full (ctx, allow_type_vars, allow_partial))
 			return FALSE;
 
 		g_assert (mono_class_get_generic_class (method->klass)->container_class &&
 				mono_class_is_gtd (mono_class_get_generic_class (method->klass)->container_class));
 
-		if (has_constraints (mono_class_get_generic_container (mono_class_get_generic_class (method->klass)->container_class)))
-			return FALSE;
+		/*
+		 * If all the parameters are primitive types and constraints prevent
+		 * them from being instantiated with enums, then only the primitive
+		 * type instantiation is possible, thus sharing is not useful.
+		 * Happens with generic math interfaces.
+		 */
+		if ((!ctx->class_inst || is_primitive_inst (ctx->class_inst)) &&
+			(!ctx->method_inst || is_primitive_inst (ctx->method_inst))) {
+			MonoGenericContainer *container = mono_class_get_generic_container (mono_class_get_generic_class (method->klass)->container_class);
+			if (has_constraints (container)) {
+				g_assert (ctx->class_inst->type_argc == container->type_argc);
+				for (int i = 0; i < container->type_argc; ++i) {
+					if (!gparam_can_be_enum (&container->type_params [i]))
+						return FALSE;
+				}
+			}
+		}
 	}
 
 	if (mono_class_is_gtd (method->klass) && !allow_type_vars)

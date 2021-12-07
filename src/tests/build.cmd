@@ -53,7 +53,6 @@ set __SkipManaged=
 set __SkipTestWrappers=
 set __BuildTestWrappersOnly=
 set __SkipNative=
-set __DoCrossgen2=
 set __CompositeBuildMode=
 set __TestBuildMode=
 set __CreatePdb=
@@ -115,8 +114,8 @@ if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&se
 if /i "%1" == "-cmakeargs"            (set __CMakeArgs="%2=%3" %__CMakeArgs%&set "processedArgs=!processedArgs! %1 %2=%3"&shift&shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"              (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b1)
-if /i "%1" == "crossgen2"             (set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "crossgen2"             (set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pdb"                   (set __CreatePdb=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "perfmap"               (set __CreatePerfmap=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
@@ -147,8 +146,10 @@ set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
 set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
 
 if "%__RebuildTests%" == "1" (
-    echo Removing tests build dir^: !__TestBinDir!
+    echo Removing test build dir^: !__TestBinDir!
     rmdir /s /q !__TestBinDir!
+    echo Removing test intermediate dir^: !__TestIntermediatesDir!
+    rmdir /s /q !__TestIntermediatesDir!
 )
 
 REM We have different managed and native intermediate dirs because the managed bits will include

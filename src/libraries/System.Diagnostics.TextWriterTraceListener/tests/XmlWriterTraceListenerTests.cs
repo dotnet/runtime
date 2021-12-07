@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Diagnostics.TextWriterTraceListenerTests
 {
+    [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
     public class XmlWriterTraceListenerTests : FileCleanupTestBase
     {
         private readonly string _processName;

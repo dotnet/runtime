@@ -239,6 +239,8 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     yield return ("aaa(?i:match this)bbb", "aaaMaTcH ThIsbbb", RegexOptions.None, 0, 16, true, "aaaMaTcH ThIsbbb");
                 }
+                yield return ("(?i:a)b(?i:c)d", "aaaaAbCdddd", RegexOptions.None, 0, 11, true, "AbCd");
+                yield return ("(?i:[\u0000-\u1000])[Bb]", "aaaaAbCdddd", RegexOptions.None, 0, 11, true, "Ab");
 
                 // Turning off case insensitive option in mid-pattern : Actual - "aaa(?-i:match this)bbb", "i"
                 yield return ("aAa(?-i:match this)bbb", "AaAmatch thisBBb", RegexOptions.IgnoreCase, 0, 16, true, "AaAmatch thisBBb");
@@ -274,6 +276,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"\p{Ll}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b");
                 yield return (@"\p{Lt}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b");
                 yield return (@"\p{Lo}", "1bc", RegexOptions.IgnoreCase, 0, 3, false, string.Empty);
+                yield return (".[abc]", "xYZAbC", RegexOptions.IgnoreCase, 0, 6, true, "ZA");
+                yield return (".[abc]", "xYzXyZx", RegexOptions.IgnoreCase, 0, 6, false, "");
 
                 // "\D+"
                 yield return (@"\D+", "12321", RegexOptions.None, 0, 5, false, string.Empty);
@@ -360,7 +364,6 @@ namespace System.Text.RegularExpressions.Tests
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                 }
                 yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
-                yield return (@"a\w*a|def", "aaaaa", RegexOptions.None, 0, 5, true, "aaaaa");
 
                 // No Negation
                 yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -516,6 +519,8 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@".*\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1foo should 2FoO");
                     yield return (@".*\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1Foo should 2fOo");
                     yield return (@".*\dfoo", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 8, 4, true, "2FOO");
+                    yield return (@"[\w\s].*", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 30, true, "1fooThis2FOO should 1foo match");
+                    yield return (@"i.*", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 30, true, "is2FOO should 1foo match");
                 }
 
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/36149")]
@@ -536,6 +541,29 @@ namespace System.Text.RegularExpressions.Tests
                 //    yield return (@"^(?i:[\u24B6-\u24D0])$", ((char)('\u24D0' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "");
                 //    yield return (@"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString());
                 //}
+
+                // Long inputs
+                string longCharacterRange = string.Concat(Enumerable.Range(1, 0x2000).Select(c => (char)c));
+                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })
+                {
+                    yield return ("\u1000", longCharacterRange, options, 0, 0x2000, true, "\u1000");
+                    yield return ("[\u1000-\u1001]", longCharacterRange, options, 0, 0x2000, true, "\u1000");
+                    yield return ("[\u0FF0-\u0FFF][\u1000-\u1001]", longCharacterRange, options, 0, 0x2000, true, "\u0FFF\u1000");
+
+                    yield return ("\uA640", longCharacterRange, options, 0, 0x2000, false, "");
+                    yield return ("[\u3000-\u3001]", longCharacterRange, options, 0, 0x2000, false, "");
+                    yield return ("[\uA640-\uA641][\u3000-\u3010]", longCharacterRange, options, 0, 0x2000, false, "");
+
+                    if (!RegexHelpers.IsNonBacktracking(engine))
+                    {
+                        yield return ("\u1000", longCharacterRange, options | RegexOptions.RightToLeft, 0, 0x2000, true, "\u1000");
+                        yield return ("[\u1000-\u1001]", longCharacterRange, options | RegexOptions.RightToLeft, 0, 0x2000, true, "\u1001");
+                        yield return ("[\u1000][\u1001-\u1010]", longCharacterRange, options, 0, 0x2000, true, "\u1000\u1001");
+
+                        yield return ("\uA640", longCharacterRange, options | RegexOptions.RightToLeft, 0, 0x2000, false, "");
+                        yield return ("[\u3000-\u3001][\uA640-\uA641]", longCharacterRange, options | RegexOptions.RightToLeft, 0, 0x2000, false, "");
+                    }
+                }
 
                 foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline })
                 {
@@ -730,9 +758,7 @@ namespace System.Text.RegularExpressions.Tests
         // TODO: Figure out what to do with default timeouts for source generated regexes
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.None | RegexHelpers.RegexOptionDebug)]
         [InlineData(RegexOptions.Compiled)]
-        [InlineData(RegexOptions.Compiled | RegexHelpers.RegexOptionDebug)]
         public void Match_DefaultTimeout_Throws(RegexOptions options)
         {
             RemoteExecutor.Invoke(optionsString =>
@@ -766,9 +792,7 @@ namespace System.Text.RegularExpressions.Tests
         // TODO: Figure out what to do with default timeouts for source generated regexes
         [Theory]
         [InlineData(RegexOptions.None)]
-        [InlineData(RegexOptions.None | RegexHelpers.RegexOptionDebug)]
         [InlineData(RegexOptions.Compiled)]
-        [InlineData(RegexOptions.Compiled | RegexHelpers.RegexOptionDebug)]
         public void Match_CachedPattern_NewTimeoutApplies(RegexOptions options)
         {
             const string PatternLeadingToLotsOfBacktracking = @"^(\w+\s?)*$";
@@ -1283,13 +1307,11 @@ namespace System.Text.RegularExpressions.Tests
 
                 // Repeaters
                 Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{2147483647,}")).IsMatch("a"));
-                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in debug
-                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{51,}")).IsMatch("a"));
+                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50,}")).IsMatch("a"));
                 Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50_000,}")).IsMatch("a")); // cutoff for Boyer-Moore prefix in release
-                Assert.False((await RegexHelpers.GetRegexAsync(engine, @"a{50_001,}")).IsMatch("a"));
 
                 // Multis
-                foreach (int length in new[] { 50, 51, 50_000, 50_001, char.MaxValue + 1 }) // based on knowledge of cut-offs used in Boyer-Moore
+                foreach (int length in new[] { 50, 50_000, char.MaxValue + 1 })
                 {
                     // The large counters are too slow for counting a's in NonBacktracking engine
                     // They will incur a constant of size length because in .*a{k} after reading n a's the
@@ -1637,6 +1659,13 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "a[0-9]+?0", RegexOptions.None, "ababca123000xyz", new (int, int, string)[] { (5, 5, "a1230") } };
                 // Mixed lazy/eager loop
                 yield return new object[] { engine, "a[0-9]+?0|b[0-9]+0", RegexOptions.None, "ababca123000xyzababcb123000xyz", new (int, int, string)[] { (5, 5, "a1230"), (20, 7, "b123000") } };
+                // Loops around alternations
+                yield return new object[] { engine, "^(?:aaa|aa)*$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa)*?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){1,5}$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){1,5}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){4}$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^(?:aaa|aa){4}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
 
                 // Mostly empty matches using unusual regexes consisting mostly of anchors only
                 yield return new object[] { engine, "^", RegexOptions.None, "", new (int, int, string)[] { (0, 0, "") } };
@@ -1695,22 +1724,26 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        /// <summary>
-        /// Test that \w has the same meaning in backtracking as well as non-backtracking mode and compiled mode
-        /// </summary>
-        [Fact]
-        public async Task Match_Wordchar()
+        [Theory]
+        [InlineData(@"\w")]
+        [InlineData(@"\s")]
+        [InlineData(@"\d")]
+        public async Task StandardCharSets_SameMeaningAcrossAllEngines(string singleCharPattern)
         {
             var regexes = new List<Regex>();
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                regexes.Add(await RegexHelpers.GetRegexAsync(engine, @"\w"));
+                regexes.Add(await RegexHelpers.GetRegexAsync(engine, singleCharPattern));
             }
-            Assert.InRange(regexes.Count(), 1, int.MaxValue);
 
-            for (char c = '\0'; c < '\uFFFF'; c++)
+            if (regexes.Count < 2)
             {
-                string s = c.ToString();
+                return;
+            }
+
+            for (int c = '\0'; c <= '\uFFFF'; c++)
+            {
+                string s = ((char)c).ToString();
                 bool baseline = regexes[0].IsMatch(s);
                 for (int i = 1; i < regexes.Count; i++)
                 {
@@ -1825,6 +1858,34 @@ namespace System.Text.RegularExpressions.Tests
                                      Assert.False(m.Success);
                                  }
                              }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MatchWordsInAnchoredRegexes_TestData))]
+        public async Task MatchWordsInAnchoredRegexes(RegexEngine engine, RegexOptions options, string pattern, string input, (int, int)[] matches)
+        {
+            // The aim of these test is to test corner cases of matches involving anchors
+            // For NonBacktracking these tests are meant to
+            // cover most contexts in _nullabilityForContext in SymbolicRegexNode
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            MatchCollection ms = r.Matches(input);
+            Assert.Equal(matches.Length, ms.Count);
+            for (int i = 0; i < matches.Length; i++)
+            {
+                Assert.Equal(ms[i].Index, matches[i].Item1);
+                Assert.Equal(ms[i].Length, matches[i].Item2);
+            }
+        }
+
+        public static IEnumerable<object[]> MatchWordsInAnchoredRegexes_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, RegexOptions.None, @"\b\w{10,}\b", "this is a complicated word in a\nnontrivial sentence", new (int, int)[] { (10, 11), (32, 10) } };
+                yield return new object[] { engine, RegexOptions.Multiline, @"^\w{10,}\b", "this is a\ncomplicated word in a\nnontrivial sentence", new (int, int)[] { (10, 11), (32, 10) } };
+                yield return new object[] { engine, RegexOptions.None, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", "date 10/12/1966 and 10/12/66 are the same", new (int, int)[] { (5, 10), (20, 8) } };
+                yield return new object[] { engine, RegexOptions.Multiline, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}$", "date 10/12/1966\nand 10/12/66\nare the same", new (int, int)[] { (5, 10), (20, 8) } };
             }
         }
     }

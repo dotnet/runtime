@@ -472,7 +472,6 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_GETFIELDADDR,
 
-    CORINFO_HELP_GETSTATICFIELDADDR_CONTEXT,    // Helper for context-static fields
     CORINFO_HELP_GETSTATICFIELDADDR_TLS,        // Helper for PE TLS fields
 
     // There are a variety of specialized helpers for accessing static fields. The JIT should use
@@ -811,7 +810,7 @@ enum CorInfoFlag
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
     // CORINFO_FLG_UNUSED             = 0x04000000,
-    CORINFO_FLG_CONTAINS_STACK_PTR    = 0x08000000, // This class has a stack pointer inside it
+    CORINFO_FLG_BYREF_LIKE            = 0x08000000, // it is byref-like value type
     CORINFO_FLG_VARIANCE              = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
     CORINFO_FLG_BEFOREFIELDINIT       = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
     CORINFO_FLG_GENERIC_TYPE_VARIABLE = 0x40000000, // This is really a handle for a variable type
@@ -886,7 +885,6 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
     CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
     CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-    CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
     CORINFO_INTRINSIC_RTH_GetValueInternal,
     CORINFO_INTRINSIC_Object_GetType,
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
@@ -2301,14 +2299,6 @@ public:
     virtual uint32_t getClassAttribs (
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
-
-    // Returns "TRUE" iff "cls" is a struct type such that return buffers used for returning a value
-    // of this type must be stack-allocated.  This will generally be true only if the struct
-    // contains GC pointers, and does not exceed some size limit.  Maintaining this as an invariant allows
-    // an optimization: the JIT may assume that return buffer pointers for return types for which this predicate
-    // returns TRUE are always stack allocated, and thus, that stores to the GC-pointer fields of such return
-    // buffers do not require GC write barriers.
-    virtual bool isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls) = 0;
 
     virtual CORINFO_MODULE_HANDLE getClassModule (
             CORINFO_CLASS_HANDLE    cls

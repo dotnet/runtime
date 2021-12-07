@@ -32,7 +32,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 template <typename T, int size>
-unsigned ArrLen(T (&)[size])
+inline constexpr unsigned ArrLen(T (&)[size])
 {
     return size;
 }
