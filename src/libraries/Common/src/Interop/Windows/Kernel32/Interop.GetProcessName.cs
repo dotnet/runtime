@@ -23,7 +23,10 @@ internal static partial class Interop
         {
             using (SafeProcessHandle h = Interop.Kernel32.OpenProcess(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false, (int)processId))
             {
-                Span<char> buffer = stackalloc char[MAX_PROCESSNAME_LENGTH + 1];
+                if (h.IsInvalid)
+                {
+                    return null;
+                }
                 uint length = (uint)buffer.Length;
 
                 bool queried = QueryFullProcessImageName(

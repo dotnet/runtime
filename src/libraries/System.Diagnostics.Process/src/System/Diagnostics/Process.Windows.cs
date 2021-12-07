@@ -893,10 +893,9 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveNonExitedId);
-
                 if (_processName == null)
                 {
+                    EnsureState(State.HaveNonExitedId);
                     // If we already have the name via a populated ProcessInfo
                     // then use that one.
                     if (_processInfo?.ProcessName != null)
@@ -905,11 +904,7 @@ namespace System.Diagnostics
                     }
                     else
                     {
-
-                        // If we don't have a populated ProcessInfo, then create and
-                        // cache the process name.
-                        EnsureState(State.HaveId);
-
+                        // If we don't have a populated ProcessInfo, then get and cache the process name.
                         _processName = ProcessManager.GetProcessName(_processId, _machineName);
 
                         if (_processName == null)
