@@ -187,7 +187,9 @@ namespace System.IO
             }
             int pos = _pos;
             if ((uint)pos >= (uint)s.Length)
+            {
                 return null;
+            }
 
             ReadOnlySpan<char> remaining = s.AsSpan(pos);
             int foundLineLength = remaining.IndexOfAny('\r', '\n');
