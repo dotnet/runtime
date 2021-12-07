@@ -1,0 +1,17 @@
+<Project>
+<!-- Build infrastructure support to enable running merged test runner assemblies like regular tests on mobile platforms. -->
+  <PropertyGroup>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <RuntimeIdentifier>$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
+    <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <Target Name="_AddRuntimeLibsToPublishAssets" BeforeTargets="PrepareForPublish" DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild;ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup>
+      <RuntimePackAsset Include="@(RuntimeFiles);@(LibrariesRuntimeFiles)" AssetType="runtime" />
+    </ItemGroup>
+  </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(TargetsMobile)' == 'true'" />
+</Project>

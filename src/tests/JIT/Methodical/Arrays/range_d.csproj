@@ -3,6 +3,6 @@
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="range/*.ilproj" />
+    <ProjectReference Include="range/_il_dbg*.ilproj" />
   </ItemGroup>
 </Project>

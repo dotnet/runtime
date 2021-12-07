@@ -197,7 +197,18 @@
 
       <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
       <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
+      <!-- Don't include the new merged wrappers in the legacy builds -->
       <ReducedLegacyPayloadFilesFinal Remove="@(_MergedWrapperRunScript)" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true' or '$(TargetsBrowser)' == 'true'">
+      <!-- When targeting mobile or browser runs, we publish self-contained builds and build mobile/wasm apps, so we want to exclude these files from the legacy payloads as well -->
+      <PublishedMergedPayloadsToExclude>@(_MergedWrapperRunScript->'%(RootDir)%(Directory)publish/*')</PublishedMergedPayloadsToExclude>
+      <PublishedMergedPayloadsToExclude>$(PublishedMergedPayloadsToExclude);@(_MergedWrapperRunScript->'%(RootDir)%(Directory)AppBundle/**')</PublishedMergedPayloadsToExclude>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ReducedLegacyPayloadFilesFinal Remove="$(PublishedMergedPayloadsToExclude)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedLegacyPayloadFilesFinal)" DestinationFiles="@(ReducedLegacyPayloadFilesFinal->'$(LegacyPayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
@@ -271,7 +282,8 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="PrepareMergedTestPayloadDirectory"
+  <Target Name="PrepareMergedTestPayloadDirectoryForDesktopTestRun"
+      Condition="'$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'"
       Outputs="%(_MergedWrapperRunScript.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers">
     <PropertyGroup>
@@ -300,6 +312,14 @@
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="$(_MergedWrapperRunScriptRelative)" />
   </Target>
 
+  <Target Name="PrepareMergedTestPayloadDirectoryForMobileOrBrowserTestRun"
+      Condition="'$(TargetsMobile)' == 'true' or '$(TargetsBrowser)' == 'true'"
+      DependsOnTargets="DiscoverMergedTestWrappers">
+
+  </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectory" DependsOnTargets="DiscoverMergedTestWrappers;PrepareMergedTestPayloadDirectoryForDesktopTestRun;PrepareMergedTestPayloadDirectoryForMobileOrBrowserTestRun" />
+
   <PropertyGroup>
     <IsRunningOnMobileTargets>false</IsRunningOnMobileTargets>
     <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
@@ -317,7 +337,7 @@
     <ZipDirectory SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))" DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
   </Target>
 
-  <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedPayloadDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
+  <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
       <MergedPayloads Update="@(MergedPayloads)">

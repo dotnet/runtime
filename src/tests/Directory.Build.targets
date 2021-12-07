@@ -440,6 +440,9 @@
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
+  <Import Project="$(RepoRoot)/src/tests/Common/mergedrunnermobile.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(TargetsMobile)' == 'true'" />
+
+  <Target Name="GetBinPlaceTargetFramework" />
 
   <Import Project="$(RepoRoot)src\coreclr\clr.featuredefines.props" />
 
