@@ -28,7 +28,6 @@ namespace System.ComponentModel.Design
         [RegexGenerator(@"\(\&.\)")]
         private static partial Regex GetParameterReplacementRegex();
 
-
         /// <summary>
         /// Gets or sets the description of the menu item for the verb.
         /// </summary>
