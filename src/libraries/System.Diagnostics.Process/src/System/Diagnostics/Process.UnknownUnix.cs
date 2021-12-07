@@ -82,9 +82,14 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException();
         }
 
-        /// <devdoc>
-        ///    <para>Gets the friendly name of the process.</para>
-        /// </devdoc>
-        public string ProcessName => throw new PlatformNotSupportedException();
+        /// <summary>Gets the friendly name of the process.</summary>
+        public string ProcessName
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return _processInfo!.ProcessName;
+            }
+        }
     }
 }
