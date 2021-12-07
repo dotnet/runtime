@@ -251,7 +251,7 @@ class TestProjectStore
 
     public void DumpFolderStatistics(TextWriter writer)
     {
-        for (int level = 1; level <= 2; level++)
+        for (int level = 1; level <= 3; level++)
         {
             string title = string.Format("COUNT |  PRI0  |  PRI1  |  FACT  | ILPROJ | TO FIX | PARTITIONING: {0}", level);
             writer.WriteLine(title);
