@@ -3258,7 +3258,24 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 }
 
 /*++
-TODO: andrewau, comments
+Function:
+InterlockedAdd
+
+The InterlockedAdd function adds the value of the specified variable 
+with another specified value. The function prevents more than one thread 
+from using the same variable simultaneously.
+
+Parameters
+
+lpAddend
+[in/out] Pointer to the variable to add.
+
+lpAddend
+[in] The value to add.
+
+Return Values
+
+The return value is the resulting added value.
 --*/
 EXTERN_C
 PALIMPORT

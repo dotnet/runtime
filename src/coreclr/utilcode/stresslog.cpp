@@ -166,7 +166,7 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
         // append the string representation of the PID
         DWORD pid = GetCurrentProcessId();
         WCHAR pidStr[20];
-        _itow_s(pid, pidStr, 20, 10);
+        _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
         wcscat_s(fileName, MAX_PATH, pidStr);
 
         // append the rest of the filename
@@ -930,9 +930,7 @@ void* StressLog::AllocMemoryMapped(size_t n)
     {
         StressLogHeader* hdr = theLog.stressLogHeader;
         assert(hdr != nullptr);
-
         uint8_t* newMemValue = (uint8_t*)InterlockedAdd64((LONG64*)&hdr->memoryCur, n);
-
         if (newMemValue < hdr->memoryLimit)
         {
             return newMemValue - n;

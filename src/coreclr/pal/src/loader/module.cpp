@@ -57,6 +57,8 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include <gnu/lib-names.h>
 #endif
 
+#include <algorithm>
+
 using namespace CorUnix;
 
 // In safemath.h, Template SafeInt uses macro _ASSERTE, which need to use variable
@@ -915,22 +917,30 @@ PAL_GetSymbolModuleBase(PVOID symbol)
     return retval;
 }
 
-#define max(a, b) ((a > b) ? a : b)
+struct CopyModuleDataParam
+{
+    uint8_t* destination_buffer_start;
+    uint8_t* destination_buffer_end;
+    uint8_t* module_base;
+    int result;
+};
 
-#define HANDLE_IMAGE_RANGE                                                        \
-    uint8_t* source_end = source_start + size;                                    \
-    if (destination_buffer_start != NULL)                                         \
-    {                                                                             \
-        size_t offset = source_start - module_base;                               \
-        uint8_t* destination_start = (uint8_t*)destination_buffer_start + offset; \
-        uint8_t* destination_end   = destination_start + size;                    \
-        _ASSERTE(destination_end <= destination_buffer_end);                      \
-        if (destination_end <= destination_buffer_end)                            \
-        {                                                                         \
-            memcpy(destination_start, source_start, size);                        \
-        }                                                                         \
-    }                                                                             \
-    result = max(result, (source_end - module_base));
+void handle_image_range(uint8_t* source_start, size_t size, struct CopyModuleDataParam* param) 
+{
+    uint8_t* source_end = source_start + size;
+    if (param->destination_buffer_start != NULL)
+    {
+        size_t offset = source_start - param->module_base;
+        uint8_t* destination_start = ((uint8_t*)(param->destination_buffer_start)) + offset;
+        uint8_t* destination_end   = destination_start + size;
+        _ASSERTE(destination_end <= param->destination_buffer_end);
+        if (destination_end <= param->destination_buffer_end)
+        {
+            memcpy(destination_start, source_start, size);
+        }
+    }
+    param->result = std::max(param->result, (int)(source_end - param->module_base));
+}
 
 #ifdef __APPLE__
 PALIMPORT
@@ -938,12 +948,12 @@ int
 PALAPI
 PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd)
 {
-    uint8_t* module_base = (uint8_t*)moduleBase;
-    uint8_t* destination_buffer_start = (uint8_t*)destinationBufferStart;
-    uint8_t* destination_buffer_end = (uint8_t*)destinationBufferEnd;
-    uint32_t i, count = _dyld_image_count();
-    int result = 0;
-    for (i = 0; i < count; i++)
+    CopyModuleDataParam param;
+    param.module_base = (uint8_t*)moduleBase;
+    param.destination_buffer_start = (uint8_t*)destinationBufferStart;
+    param.destination_buffer_end = (uint8_t*)destinationBufferEnd;
+    uint32_t count = _dyld_image_count();
+    for (uint32_t i = 0; i < count; i++)
     {
         const struct mach_header * header = _dyld_get_image_header(i);
         if (PAL_GetSymbolModuleBase((void*)header) == moduleBase)
@@ -963,49 +973,36 @@ PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destina
                     struct segment_command * seg = (struct segment_command *) cmd;
                     size_t size = seg->vmsize;
                     uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
-                    HANDLE_IMAGE_RANGE
+                    handle_image_range(source_start, size, &param);
                 }
                 else if (cmd -> cmd == LC_SEGMENT_64)
                 {
                     struct segment_command_64 * seg = (struct segment_command_64 * ) cmd;
                     size_t size = seg->vmsize;
                     uint8_t* source_start = (uint8_t*)(seg->vmaddr + slide);
-                    HANDLE_IMAGE_RANGE
+                    handle_image_range(source_start, size, &param);
                 }
                 cmd = (struct load_command*)((uint8_t*)cmd + cmd->cmdsize);
             }
         }
     }
-    return result;
+    return param.result;
 }
 #else
-struct CopyModuleDataParam
-{
-    uint8_t* destination_buffer_start;
-    uint8_t* destination_buffer_end;
-    uint8_t* module_base;
-    int result;
-};
-
 static int CopyModuleDataCallback(struct dl_phdr_info *info, size_t size, void *data)
 {
     CopyModuleDataParam* param = (CopyModuleDataParam*)data;
-    uint8_t* module_base = param->module_base;
-    uint8_t* destination_buffer_start = param->destination_buffer_start;
-    uint8_t* destination_buffer_end = param->destination_buffer_end;
     if (info->dlpi_addr == (size_t)param->module_base)
     {
-        int result = param->result;
         for (int j = 0; j < info->dlpi_phnum; j++)
         {
             if (info->dlpi_phdr[j].p_type == PT_LOAD)
             {
                 Elf32_Word size = info->dlpi_phdr[j].p_memsz;
                 uint8_t* source_start = (uint8_t*)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr);
-                HANDLE_IMAGE_RANGE
+                handle_image_range(source_start, size, param);
             }
         }
-        param->result = result;
         return 1;
     }
     return 0;
@@ -1024,9 +1021,7 @@ PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destina
     dl_iterate_phdr(CopyModuleDataCallback, &param);
     return param.result;
 }
-
 #endif
-#undef HANDLE_IMAGE_RANGE
 
 /*++
     PAL_GetLoadLibraryError

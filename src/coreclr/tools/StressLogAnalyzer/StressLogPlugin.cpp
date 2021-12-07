@@ -509,7 +509,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
             }
         }
         break;
-    }    
+    }
     return fLevelFilter || s_interestingStringFilter[isd];
 }
 

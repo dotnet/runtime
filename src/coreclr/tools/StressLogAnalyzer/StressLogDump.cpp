@@ -95,8 +95,7 @@ const char *getFacilityName(DWORD_PTR lf)
         #include "../../../inc/loglf.h"
         { LF_ALWAYS, "LF_ALWAYS" }
     };
-    const int buff_length = 1024;
-    static char buff[buff_length] = "`";
+    static char buff[1024] = "`";
     if ( lf == LF_ALL )
     {
         return "`ALL`";
@@ -146,7 +145,6 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     void** argsPtr = args;
     const SIZE_T capacity_buff = 2048;
     LPWSTR buff = (LPWSTR)alloca(capacity_buff * sizeof(WCHAR));
-    const int format_length = 256;
     static char formatCopy[256];
 
     int iArgCount = 0;
@@ -180,7 +178,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                     c = *ptr;
                     *ptr = 0;       // Terminate the string temporarily
                     fprintf(file, format, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]); 
-                    *ptr = c;       // Put it back  
+                    *ptr = c;       // Put it back
 
                         // move the argument pointers past the part the was printed
                     format = ptr + 1;
@@ -207,8 +205,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                     DacpMethodDescData MethodDescData;
                                     MethodDescData.Request(g_sos,(CLRDATA_ADDRESS)arg);
 
-                                    const int name_buffer_length = 1024;
-                                    static WCHAR wszNameBuffer[name_buffer_length]; // should be large enough
+                                    static WCHAR wszNameBuffer[1024]; // should be large enough
                                     if (g_sos->GetMethodDescName(arg, 1024, wszNameBuffer, NULL) != S_OK)
                                     {
                                         wcscpy_s(wszNameBuffer, ARRAY_SIZE(wszNameBuffer), W("UNKNOWN METHODDESC"));
@@ -348,9 +345,6 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     ULONG64 g_hThisInst;
     BOOL    bDoGcHist = (fileName == NULL);
     FILE*   file = NULL;
-    const int format_length = 257;
-    char format[format_length];
-    format[format_length - 1] = format[0] = 0;
 
     // Fetch the circular buffer bookkeeping data
     StressLog inProcLog;
@@ -494,7 +488,9 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
         fprintf(file, "\nTHREAD  TIMESTAMP     FACILITY                              MESSAGE\n");
         fprintf(file, "  ID  (sec from start)\n");
         fprintf(file, "--------------------------------------------------------------------------------------\n");
-    }    
+    }
+    char format[257];
+    format[256] = format[0] = 0;
     void** args;
     unsigned msgCtr;
     msgCtr = 0;
