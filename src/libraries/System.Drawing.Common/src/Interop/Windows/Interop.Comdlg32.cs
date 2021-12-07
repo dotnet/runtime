@@ -8,11 +8,14 @@ internal static partial class Interop
 {
     internal static partial class Comdlg32
     {
-        [DllImport(Libraries.Comdlg32, SetLastError = true, CharSet = CharSet.Auto)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
+        [DllImport(Libraries.Comdlg32, CharSet = CharSet.Auto, SetLastError = true)]
         internal static extern bool PrintDlg([In, Out] PRINTDLG lppd);
 
-        [DllImport(Libraries.Comdlg32, SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport(Libraries.Comdlg32, CharSet = CharSet.Auto, SetLastError = true)]
         internal static extern bool PrintDlg([In, Out] PRINTDLGX86 lppd);
+#pragma warning restore DLLIMPORTGENANALYZER015
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         internal sealed class PRINTDLG
