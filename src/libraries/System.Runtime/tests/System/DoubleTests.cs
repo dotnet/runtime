@@ -15,12 +15,6 @@ namespace System.Tests
     {
         // NOTE: Consider duplicating any tests added here in SingleTests.cs
 
-        [Fact]
-        public static void Test()
-        {
-            Assert.Equal(double.MinValue, double.Parse(double.MinValue.ToString()));
-        }
-
         [Theory]
         [InlineData("a")]
         [InlineData(234.0f)]
@@ -251,7 +245,7 @@ namespace System.Tests
             Assert.Equal(-1.0 / 0.0, double.NegativeInfinity);
             Assert.Equal(0xFFF00000_00000000u, BitConverter.DoubleToUInt64Bits(double.NegativeInfinity));
         }
-                
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
