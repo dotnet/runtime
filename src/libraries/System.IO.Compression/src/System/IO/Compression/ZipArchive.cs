@@ -380,7 +380,6 @@ namespace System.IO.Compression
                 // So, we artificially disallow non-UTF8 Unicode encodings for now to make sure we are not creating a compat burden
                 // for something other tools do not support. If we realise in future that "something else" should include non-UTF8
                 // Unicode encodings, we can remove this restriction.
-                // This bit is used to determine the encoding of both the file name and the archive comment.
 
                 if (value != null &&
                         (value.Equals(Encoding.BigEndianUnicode)
