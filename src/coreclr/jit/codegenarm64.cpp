@@ -9495,4 +9495,50 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
     genProduceReg(tree);
 }
 
+//------------------------------------------------------------------------
+// genCodeForAddEx: Generates the code sequence for a GenTree node that
+// represents an addition with sign or zero extended
+//
+// Arguments:
+//    tree - the add with extend node.
+//
+void CodeGen::genCodeForAddEx(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_ADDEX) && !(tree->gtFlags & GTF_SET_FLAGS));
+    genConsumeOperands(tree);
+
+    GenTree* op;
+    GenTree* containedOp;
+    if (tree->gtGetOp1()->isContained())
+    {
+        containedOp = tree->gtGetOp1();
+        op          = tree->gtGetOp2();
+    }
+    else
+    {
+        containedOp = tree->gtGetOp2();
+        op          = tree->gtGetOp1();
+    }
+    assert(containedOp->isContained() && !op->isContained());
+
+    regNumber dstReg = tree->GetRegNum();
+    regNumber op1Reg = op->GetRegNum();
+    regNumber op2Reg = containedOp->gtGetOp1()->GetRegNum();
+
+    if (containedOp->OperIs(GT_CAST))
+    {
+        GenTreeCast* cast = containedOp->AsCast();
+        assert(varTypeIsLong(cast->CastToType()));
+        insOpts opts = cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
+        GetEmitter()->emitIns_R_R_R(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, opts);
+    }
+    else
+    {
+        assert(containedOp->OperIs(GT_LSH));
+        ssize_t cns = containedOp->gtGetOp2()->AsIntCon()->IconValue();
+        GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(tree), dstReg, op1Reg, op2Reg, cns, INS_OPTS_LSL);
+    }
+    genProduceReg(tree);
+}
+
 #endif // TARGET_ARM64

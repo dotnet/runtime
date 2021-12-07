@@ -317,16 +317,16 @@ namespace System
             public Version VersionId { get; set; }
         }
 
-        private static class libc
+        private static partial class libc
         {
-            [DllImport("libc", SetLastError = true)]
-            public static extern unsafe uint geteuid();
+            [GeneratedDllImport("libc", SetLastError = true)]
+            public static unsafe partial uint geteuid();
 
-            [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-            public static extern IntPtr gnu_get_libc_release();
+            [GeneratedDllImport("libc")]
+            public static partial IntPtr gnu_get_libc_release();
 
-            [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-            public static extern IntPtr gnu_get_libc_version();
+            [GeneratedDllImport("libc")]
+            public static partial IntPtr gnu_get_libc_version();
         }
     }
 }
