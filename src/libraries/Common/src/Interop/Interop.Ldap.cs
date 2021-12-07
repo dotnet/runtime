@@ -120,7 +120,7 @@ namespace System.DirectoryServices.Protocols
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class berval
+    internal sealed class @berval
     {
         public int bv_len;
         public IntPtr bv_val = IntPtr.Zero;

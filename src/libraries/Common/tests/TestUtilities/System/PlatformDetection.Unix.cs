@@ -317,7 +317,7 @@ namespace System
             public Version VersionId { get; set; }
         }
 
-        private static partial class libc
+        private static partial class @libc
         {
             [GeneratedDllImport("libc", SetLastError = true)]
             public static unsafe partial uint geteuid();

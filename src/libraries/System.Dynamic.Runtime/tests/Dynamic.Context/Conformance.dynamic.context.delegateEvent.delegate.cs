@@ -130,7 +130,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
         }
 
-        public class start
+        public class @start
         {
             private static int s_retval = (int)((1 + 0x0D) * 0x0D) / 2;
             // field
@@ -364,7 +364,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
         }
 
-        public class start
+        public class @start
         {
             // field
             private static ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib02.dlgatedeclarelib02.DynNamespace01.DynClass.D001[] s_d001 = new ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlgate.dlgatedeclarelib02.dlgatedeclarelib02.DynNamespace01.DynClass.D001[3];
@@ -582,7 +582,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
         }
 
-        public struct start
+        public struct @start
         {
             // field
             private static DynClassDrived.InternalDel s_interDel;
@@ -807,7 +807,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
         }
 
-        public struct start
+        public struct @start
         {
             // field
             public static void DynamicCSharpRunTest()
@@ -960,7 +960,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
         }
 
-        public class start
+        public class @start
         {
 
             public static void DynamicCSharpRunTest()
@@ -1040,7 +1040,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
         }
 
-        public class start
+        public class @start
         {
             [Fact]
             public static void DynamicCSharpRunTest()
@@ -1115,7 +1115,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.dlgateEvent.dlg
             }
         }
 
-        public struct start
+        public struct @start
         {
             public static void DynamicCSharpRunTest()
             {

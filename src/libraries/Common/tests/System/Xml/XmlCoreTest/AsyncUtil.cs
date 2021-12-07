@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace XmlCoreTest.Common
 {
-    public class aaaa { };
+    public class @aaaa { };
 
     public class AsyncUtil
     {

@@ -41,7 +41,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
     }
 
     [Flags]
-    public enum jittraceoptions
+    public enum @jittraceoptions
     {
         none = 0,
         sorted = 1,

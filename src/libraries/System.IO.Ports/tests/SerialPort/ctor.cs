@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
-    public class ctor : PortsTest
+    public class @ctor : PortsTest
     {
         [Fact]
         public void Verify()

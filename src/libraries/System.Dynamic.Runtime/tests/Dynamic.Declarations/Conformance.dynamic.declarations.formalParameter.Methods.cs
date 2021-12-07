@@ -1130,7 +1130,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
             }
         }
 
-        public class MyClass2<U, dynamic> : I1, I3<U> where U : class
+        public class MyClass2<U, @dynamic> : I1, I3<U> where U : class
         {
         }
 

@@ -251,7 +251,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
     //<Expects Status=success></Expects>
     // <Code>
 
-    public class temp
+    public class @temp
     {
     }
 
@@ -399,7 +399,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
     // <Code>
     //<Expects Status=warning>\(26,18\).*CS1981</Expects>
 
-    public class temp
+    public class @temp
     {
         public dynamic MyTest()
         {

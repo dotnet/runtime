@@ -716,14 +716,14 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.freach.freac
     //<Expects Status=success></Expects>
     // <Code>
 
-    public enum color
+    public enum @color
     {
         Red,
         Blue,
         Green
     }
 
-    public enum cars
+    public enum @cars
     {
         Toyota,
         Lexus,

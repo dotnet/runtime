@@ -16,7 +16,7 @@ using System.Xml.Xsl.Qil;
 namespace System.Xml.Xsl.Xslt
 {
     using ContextInfo = XsltInput.ContextInfo;
-    using f = AstFactory;
+    using @f = AstFactory;
     using TypeFactory = XmlQueryTypeFactory;
     using QName = XsltInput.DelayedQName;
     using XsltAttribute = XsltInput.XsltAttribute;

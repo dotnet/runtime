@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace System.Net.Sockets
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct hostent
+    internal struct @hostent
     {
         public IntPtr h_name;
         public IntPtr h_aliases;

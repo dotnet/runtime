@@ -3708,7 +3708,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    public class test
+    public class @test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -3760,7 +3760,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    public class test
+    public class @test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -3812,7 +3812,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    public class test
+    public class @test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -3864,7 +3864,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    public class test
+    public class @test
     {
         [Fact]
         public static void DynamicCSharpRunTest()

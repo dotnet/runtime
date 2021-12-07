@@ -19,7 +19,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondo
     {
     }
 
-    public interface imeta<out T>
+    public interface @imeta<out T>
     {
         int foo(IAction<T> a);
     }

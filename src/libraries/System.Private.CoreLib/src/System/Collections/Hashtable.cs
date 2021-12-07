@@ -123,7 +123,7 @@ namespace System.Collections
 
         // The hash table data.
         // This cannot be serialized
-        private struct bucket
+        private struct @bucket
         {
             public object? key;
             public object? val;

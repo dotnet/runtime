@@ -925,7 +925,7 @@ namespace SerializationTestTypes
     }
 
     [DataContract]
-    public class list
+    public class @list
     {
         [DataMember]
         public int value;
