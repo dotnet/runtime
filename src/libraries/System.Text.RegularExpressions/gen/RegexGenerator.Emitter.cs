@@ -2139,12 +2139,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 TransferSliceStaticPosToPos();
                 writer.WriteLine($"{endingPos} = pos;");
-
-                if (node.M > 0)
-                {
-                    writer.WriteLine($"{startingPos} += {node.M};");
-                }
-
+                EmitAdd(writer, startingPos, node.M);
                 writer.WriteLine($"goto {endLoop};");
                 writer.WriteLine();
 
