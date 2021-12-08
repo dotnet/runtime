@@ -3525,7 +3525,7 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 
 		g_assert (inflated->declaring);
 
-#if FALSE
+#if 0
 		if (inflated->declaring->is_generic) {
 			if (has_constraints (mono_method_get_generic_container (inflated->declaring))) {
 			}
