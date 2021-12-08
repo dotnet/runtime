@@ -74,7 +74,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[]);
 int main(int argc, char *argv[])
 {
 #ifdef HOST_UNIX
-    int exitCode = PAL_InitializeDLL();
+    int exitCode = PAL_Initialize(argc, argv);
     if (exitCode != 0)
     {
         fprintf(stderr, "PAL initialization FAILED %d\n", exitCode);
