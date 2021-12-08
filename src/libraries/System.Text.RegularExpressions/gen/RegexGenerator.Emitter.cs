@@ -1124,15 +1124,16 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     writer.WriteLine("// Get the captured text.  If it doesn't match at the current position, the backreference doesn't match.");
 
-                    string matchLength = ReserveName("backreference_matchLength");
-                    writer.WriteLine($"int {matchLength} = base.MatchLength({capnum});");
+                    additionalDeclarations.Add("int matchLength = 0;");
+                    writer.WriteLine($"matchLength = base.MatchLength({capnum});");
 
                     if (!IsCaseInsensitive(node))
                     {
+
                         // If we're case-sensitive, we can simply validate that the remaining length of the slice is sufficient
                         // to possibly match, and then do a SequenceEqual against the matched text.
-                        writer.WriteLine($"if ({sliceSpan}.Length < {matchLength} || ");
-                        using (EmitBlock(writer, $"    !global::System.MemoryExtensions.SequenceEqual(inputSpan.Slice(base.MatchIndex({capnum}), {matchLength}), {sliceSpan}.Slice(0, {matchLength})))"))
+                        writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
+                        using (EmitBlock(writer, $"    !global::System.MemoryExtensions.SequenceEqual(inputSpan.Slice(base.MatchIndex({capnum}), matchLength), {sliceSpan}.Slice(0, matchLength)))"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
@@ -1140,18 +1141,17 @@ namespace System.Text.RegularExpressions.Generator
                     else
                     {
                         // For case-insensitive, we have to walk each character individually.
-                        string matchIndex = ReserveName("backreference_matchIndex");
-                        string i = ReserveName("backreference_iteration");
-
-                        using (EmitBlock(writer, $"if ({sliceSpan}.Length < {matchLength})"))
+                        using (EmitBlock(writer, $"if ({sliceSpan}.Length < matchLength)"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
                         writer.WriteLine();
-                        writer.WriteLine($"int {matchIndex} = base.MatchIndex({capnum});");
-                        using (EmitBlock(writer, $"for (int {i} = 0; {i} < {matchLength}; {i}++)"))
+
+                        additionalDeclarations.Add("int matchIndex = 0;");
+                        writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
+                        using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
                         {
-                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"inputSpan[{matchIndex} + {i}]")} != {ToLower(hasTextInfo, options, $"{sliceSpan}[{i}]")})"))
+                            using (EmitBlock(writer, $"if ({ToLower(hasTextInfo, options, $"inputSpan[matchIndex + i]")} != {ToLower(hasTextInfo, options, $"{sliceSpan}[i]")})"))
                             {
                                 writer.WriteLine($"goto {doneLabel};");
                             }
@@ -1159,7 +1159,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.WriteLine();
 
-                    writer.WriteLine($"pos += {matchLength};");
+                    writer.WriteLine($"pos += matchLength;");
                     SliceInputSpan(writer);
                 }
             }
@@ -2568,8 +2568,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     string repeaterSpan = "repeaterSlice"; // As this repeater doesn't wrap arbitrary node emits, this shouldn't conflict with anything
                     writer.WriteLine($"global::System.ReadOnlySpan<char> {repeaterSpan} = {sliceSpan}.Slice({sliceStaticPos}, {iterations});");
-                    string i = ReserveName("charrepeater_iteration");
-                    using (EmitBlock(writer, $"for (int {i} = 0; {i} < {repeaterSpan}.Length; {i}++)"))
+                    using (EmitBlock(writer, $"for (int i = 0; i < {repeaterSpan}.Length; i++)"))
                     {
                         EmitTimeoutCheck(writer, hasTimeout);
 
@@ -2577,7 +2576,7 @@ namespace System.Text.RegularExpressions.Generator
                         int tmpSliceStaticPos = sliceStaticPos;
                         sliceSpan = repeaterSpan;
                         sliceStaticPos = 0;
-                        EmitSingleChar(node, emitLengthCheck: false, offset: i);
+                        EmitSingleChar(node, emitLengthCheck: false, offset: "i");
                         sliceSpan = tmpTextSpanLocal;
                         sliceStaticPos = tmpSliceStaticPos;
                     }
