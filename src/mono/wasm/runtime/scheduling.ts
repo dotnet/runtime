@@ -51,15 +51,14 @@ export function schedule_background_exec(): void {
     globalThis.setTimeout(pump_message, 0);
 }
 
-let lastSchedule: any = undefined;
+let lastScheduledTimeoutId: any = undefined;
 export function mono_set_timeout(timeout: number, id: number): void {
-    // console.log("mono_set_timeout" + timeout);
-    function mono_wasm_set_timeout_exec_() {
+    function mono_wasm_set_timeout_exec() {
         cwraps.mono_set_timeout_exec(id);
     }
-    if (lastSchedule) {
-        clearTimeout(lastSchedule);
-        lastSchedule = undefined;
+    if (lastScheduledTimeoutId) {
+        clearTimeout(lastScheduledTimeoutId);
+        lastScheduledTimeoutId = undefined;
     }
-    lastSchedule = globalThis.setTimeout(mono_wasm_set_timeout_exec_, timeout);
+    lastScheduledTimeoutId = globalThis.setTimeout(mono_wasm_set_timeout_exec, timeout);
 }
