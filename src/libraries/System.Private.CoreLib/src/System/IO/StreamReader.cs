@@ -867,16 +867,18 @@ namespace System.IO
 
         private Task<string?> ReadLineAsyncInternal()
         {
-            async Task<string?> ReadInternalFast()
+            return _charPos == _charLen
+                ? NoDataInTheBuffer()
+                : ConsumeBufferedData();
+
+            async Task<string?> NoDataInTheBuffer()
             {
                 if (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) == 0)
                     return null;
 
-                return await ReadInternalLoop().ConfigureAwait(false);
+                return await ConsumeBufferedData().ConfigureAwait(false);
             }
-
-
-            async Task<string?> ReadInternalLoop()
+            async Task<string?> ConsumeBufferedData()
             {
                 StringBuilder? sb = null;
                 do
@@ -930,8 +932,6 @@ namespace System.IO
 
                 return sb.ToString();
             }
-
-            return _charPos == _charLen ? ReadInternalFast() : ReadInternalLoop();
         }
 
         public override Task<string> ReadToEndAsync()
