@@ -562,7 +562,7 @@ namespace System.IO.Compression
 
                 _expectedNumberOfEntries = eocd.NumberOfEntriesInTheCentralDirectory;
 
-                _archiveComment = ZipHelper.GetEncodedTruncatedBytes(eocd.ArchiveComment, EntryNameAndCommentEncoding ?? Encoding.UTF8, ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength);
+                _archiveComment = eocd.ArchiveComment;
 
                 TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
 

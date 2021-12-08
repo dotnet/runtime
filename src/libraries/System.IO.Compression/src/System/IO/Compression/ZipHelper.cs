@@ -195,13 +195,6 @@ namespace System.IO.Compression
             }
         }
 
-        // internal static string GetTruncatedComment(string? comment, Encoding? archiveEncoding, int maxValue)
-        // {
-        //     byte[] bytes = GetEncodedTruncatedBytesFromString(comment ?? string.Empty, archiveEncoding, maxValue, out bool isUTF8);
-        //     Encoding encoding = archiveEncoding ?? (isUTF8 ? Encoding.UTF8 : Encoding.ASCII);
-        //     return encoding.GetString(bytes);
-        // }
-
         // Converts the specified string into bytes using the optional specified encoding.
         // If the encoding null, then the encoding is calculated from the string itself.
         // If maxBytes is greater than zero, the returned string will be truncated to a total

@@ -79,11 +79,11 @@ namespace System.IO.Compression
             // the cd should have this as null if we aren't in Update mode
             _cdUnknownExtraFields = cd.ExtraFields;
 
-            _fileComment = ZipHelper.GetEncodedTruncatedBytes(cd.FileComment, _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8, ushort.MaxValue);
+            _fileComment = cd.FileComment;
 
             _compressionLevel = null;
 
-            _hasUnicodeEntryNameOrComment = IsGeneralPurposeUnicodeFlagSet();
+            _hasUnicodeEntryNameOrComment = (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) != 0;
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -424,11 +424,11 @@ namespace System.IO.Compression
             Debug.Assert(bytes != null);
 
             Encoding encoding;
-            // If the bit flag is not set, it either means we are adding a new entry, or
+            // If the general purpose bit flag is not set, it either means we are adding a new entry, or
             // this is an existing entry with ASCII comment and fullname.
             // If the user chose a default encoding in the ZipArchive.ctor, then we use it, otherwise
             // we default to UTF8.
-            if (!IsGeneralPurposeUnicodeFlagSet())
+            if (!_hasUnicodeEntryNameOrComment)
             {
                 encoding = _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8;
             }
@@ -1096,8 +1096,6 @@ namespace System.IO.Compression
                 throw new InvalidOperationException(SR.DeletedEntry);
             _archive.ThrowIfDisposed();
         }
-
-        private bool IsGeneralPurposeUnicodeFlagSet() => (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) != 0;
 
         /// <summary>
         /// Gets the file name of the path based on Windows path separator characters
