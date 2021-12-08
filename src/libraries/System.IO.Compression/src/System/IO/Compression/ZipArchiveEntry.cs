@@ -73,8 +73,6 @@ namespace System.IO.Compression
             _everOpenedForWrite = false;
             _outstandingWriteStream = null;
 
-            FullName = DecodeBytesToString(cd.Filename);
-
             _lhUnknownExtraFields = null;
             // the cd should have this as null if we aren't in Update mode
             _cdUnknownExtraFields = cd.ExtraFields;
@@ -84,6 +82,10 @@ namespace System.IO.Compression
             _compressionLevel = null;
 
             _hasUnicodeEntryNameOrComment = (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) != 0;
+
+            _storedEntryNameBytes = cd.Filename;
+            _storedEntryName = (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_storedEntryNameBytes);
+            DetectEntryNameVersion();
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -222,8 +224,7 @@ namespace System.IO.Compression
                 _hasUnicodeEntryNameOrComment |= hasUnicodeEntryName;
                 _storedEntryName = value;
 
-                if (ParseFileName(value, _versionMadeByPlatform) == "")
-                    VersionToExtractAtLeast(ZipVersionNeededValues.ExplicitDirectory);
+                DetectEntryNameVersion();
             }
         }
 
@@ -418,30 +419,6 @@ namespace System.IO.Compression
             }
         }
 
-        // Converts the specified bytes into a string of the proper encoding for this ZipArchiveEntry.
-        private string DecodeBytesToString(byte[] bytes)
-        {
-            Debug.Assert(bytes != null);
-
-            Encoding encoding;
-            // If the general purpose bit flag is not set, it either means we are adding a new entry, or
-            // this is an existing entry with ASCII comment and fullname.
-            // If the user chose a default encoding in the ZipArchive.ctor, then we use it, otherwise
-            // we default to UTF8.
-            if (!_hasUnicodeEntryNameOrComment)
-            {
-                encoding = _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8;
-            }
-            // If bit flag is set, it either means we opened an existing archive entry with the unicode flag set, or
-            // we had already set the flag for this entry in a previous comment or fullname change.
-            else
-            {
-                encoding = Encoding.UTF8;
-            }
-
-            return encoding.GetString(bytes);
-        }
-
         // does almost everything you need to do to forget about this entry
         // writes the local header/data, gets rid of all the data,
         // closes all of the streams except for the very outermost one that
@@ -611,6 +588,14 @@ namespace System.IO.Compression
         {
             if (!IsOpenable(needToUncompress, needToLoadIntoMemory, out string? message))
                 throw new InvalidDataException(message);
+        }
+
+        private void DetectEntryNameVersion()
+        {
+            if (ParseFileName(_storedEntryName, _versionMadeByPlatform) == "")
+            {
+                VersionToExtractAtLeast(ZipVersionNeededValues.ExplicitDirectory);
+            }
         }
 
         private CheckSumAndSizeWriteStream GetDataCompressor(Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose)
