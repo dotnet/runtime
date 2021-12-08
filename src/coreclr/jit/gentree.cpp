@@ -1671,6 +1671,8 @@ AGAIN:
 
     if (tree->OperIsUnary())
     {
+        // Code in importation (see CEE_STFLD in impImportBlockCode), when
+        // spilling, can pass us "lclNum" that is actually a field handle...
         if (tree->OperIs(GT_FIELD) && (lclNum == (ssize_t)tree->AsField()->gtFldHnd))
         {
             return true;
