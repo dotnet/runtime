@@ -78,7 +78,7 @@ namespace System.Threading
                 int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
                 // this would cancel the previous schedule and create shorter one
                 // it is expensive call
-                SetTimeout(shortestWait, (int)shortestDueTimeMs);
+                SetTimeout(shortestWait, 0);
             }
         }
 
