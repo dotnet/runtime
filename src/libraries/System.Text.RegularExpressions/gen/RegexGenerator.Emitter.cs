@@ -1792,7 +1792,7 @@ namespace System.Text.RegularExpressions.Generator
                                 {
                                     if (wroteClauses)
                                     {
-                                        writer.WriteLine(prevDescription is not null ? $" || // {prevDescription}" : "");
+                                        writer.WriteLine(prevDescription is not null ? $" || // {prevDescription}" : " ||");
                                         writer.Write("    ");
                                     }
                                     else
