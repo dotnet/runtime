@@ -14,7 +14,7 @@
 #ifndef __MONO_EE_H__
 #define __MONO_EE_H__
 
-#define MONO_EE_API_VERSION 0x13
+#define MONO_EE_API_VERSION 0x14
 
 typedef struct _MonoInterpStackIter MonoInterpStackIter;
 
@@ -61,6 +61,8 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, mark_stack, (gpointer thread_info, GcScanFunc func, gpointer gc_data, gboolean precise)) \
 	MONO_EE_CALLBACK (void, jit_info_foreach, (InterpJitInfoFunc func, gpointer user_data)) \
 	MONO_EE_CALLBACK (gboolean, sufficient_stack, (gsize size)) \
+	MONO_EE_CALLBACK (void, entry_llvmonly, (gpointer res, gpointer *args, gpointer imethod)) \
+	MONO_EE_CALLBACK (gpointer, get_interp_method, (MonoMethod *method, MonoError *error)) \
 
 typedef struct _MonoEECallbacks {
 

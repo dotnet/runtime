@@ -3013,6 +3013,11 @@ def setup_args(args):
                             "Unable to set jitoption")
 
         coreclr_args.verify(args,
+                            "compile",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Method context not valid")
+
+        coreclr_args.verify(args,
                             "collection_command",
                             lambda unused: True,
                             "Unable to set collection_command.")

@@ -2924,6 +2924,7 @@ public:
     // guaranteed to be multi callable entrypoint.
     virtual void getFunctionFixedEntryPoint(
                               CORINFO_METHOD_HANDLE   ftn,
+                              bool                    isUnsafeFunctionPointer,
                               CORINFO_CONST_LOOKUP *  pResult) = 0;
 
     // get the synchronization handle that is passed to monXstatic function

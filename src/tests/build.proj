@@ -336,6 +336,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
         Assemblies="@(BundleAssemblies)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        EnableAppSandbox="$(EnableAppSandbox)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
@@ -433,18 +434,22 @@
     <!-- See https://github.com/Microsoft/msbuild/issues/2993 -->
 
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup;CopyNativeTestBinaries" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" />
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup;CopyNativeTestBinaries" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" />
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" />
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" />
   </Target>
 
   <Target Name="BuildManagedTestGroup"
       DependsOnTargets="ResolveDisabledProjects"
-      Condition="'$(__SkipManaged)' != '1' and '$(__CopyNativeTestBinaries)' != '1'" >
+      Condition="'$(__SkipManaged)' != '1'" >
 
     <PropertyGroup>
+      <TargetToBuild>Build</TargetToBuild>
+      <!-- In split pipeline mode (in the lab) we're using the native component copying step to generate the test execution scripts -->
+      <TargetToBuild Condition="'$(__CopyNativeTestBinaries)' == '1'">CopyAllNativeTestProjectBinaries</TargetToBuild>
+
       <GroupBuildCmd>$(DotNetCli) msbuild</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) $(MSBuildThisFileFullPath)</GroupBuildCmd>
-      <GroupBuildCmd>$(GroupBuildCmd) /t:Build</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) /t:$(TargetToBuild)</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetArchitecture=$(TargetArchitecture)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>
@@ -463,15 +468,6 @@
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
 
     <Exec Command="$(GroupBuildCmd)" />
-  </Target>
-
-  <!-- In split pipeline mode (in the lab) we're using the native component copying step to generate the test execution scripts -->
-  <Target Name="CopyNativeTestBinaries"
-      DependsOnTargets="CopyAllNativeTestProjectBinaries"
-      AfterTargets="ResolveDisabledProjects"
-      Condition="'$(__CopyNativeTestBinaries)' == '1'">
-
-    <Message Importance="High" Text="$(MsgPrefix)Copied native binaries for test group $(__TestGroupToBuild)" />
   </Target>
 
   <Target Name="CheckTestBuildStep"

@@ -577,15 +577,6 @@
 /* Define to 1 if you have the `pthread_attr_setstacksize' function. */
 #cmakedefine HAVE_PTHREAD_ATTR_SETSTACKSIZE 1
 
-/* Define to 1 if you have the `pthread_attr_getstack' function. */
-#cmakedefine HAVE_PTHREAD_ATTR_GETSTACK 1
-
-/* Define to 1 if you have the `pthread_attr_getstacksize' function. */
-#cmakedefine HAVE_PTHREAD_ATTR_GETSTACKSIZE 1
-
-/* Define to 1 if you have the `pthread_get_stacksize_np' function. */
-#cmakedefine HAVE_PTHREAD_GET_STACKSIZE_NP 1
-
 /* Define to 1 if you have the `pthread_get_stackaddr_np' function. */
 #cmakedefine HAVE_PTHREAD_GET_STACKADDR_NP 1
 
