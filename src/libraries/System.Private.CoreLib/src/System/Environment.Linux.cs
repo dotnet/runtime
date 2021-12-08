@@ -7,6 +7,6 @@ namespace System
 {
     public static partial class Environment
     {
-        public static long WorkingSet => (long)(Interop.ProcFs.TryReadStatusFile(ProcessId, out Interop.ProcFs.ParsedStatus status) ? status.VmRSS : 0);
+        public static long WorkingSet => (long)(Interop.procfs.TryReadStatusFile(ProcessId, out Interop.procfs.ParsedStatus status) ? status.VmRSS : 0);
     }
 }

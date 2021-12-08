@@ -38,7 +38,7 @@ namespace System.Diagnostics
         /// <returns>The array of modules.</returns>
         internal static ProcessModuleCollection GetModules(int processId)
         {
-            ProcessModuleCollection modules = Interop.ProcFs.ParseMapsModules(processId) ?? new(capacity: 0);
+            ProcessModuleCollection modules = Interop.procfs.ParseMapsModules(processId) ?? new(capacity: 0);
 
             // Move the main executable module to be the first in the list if it's not already
             string? exePath = Process.GetExePath(processId);
@@ -65,9 +65,9 @@ namespace System.Diagnostics
         /// </summary>
         internal static ProcessInfo? CreateProcessInfo(int pid)
         {
-            if (Interop.ProcFs.TryReadStatFile(pid, out Interop.ProcFs.ParsedStat stat))
+            if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat stat))
             {
-                Interop.ProcFs.TryReadStatusFile(pid, out Interop.ProcFs.ParsedStatus status);
+                Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus status);
                 return CreateProcessInfo(ref stat, ref status);
             }
             return null;
@@ -76,7 +76,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(ref Interop.ProcFs.ParsedStat procFsStat, ref Interop.ProcFs.ParsedStatus procFsStatus, string? processName = null)
+        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ref Interop.procfs.ParsedStatus procFsStatus, string? processName = null)
         {
             int pid = procFsStat.pid;
 
@@ -100,7 +100,7 @@ namespace System.Diagnostics
             };
 
             // Then read through /proc/pid/task/ to find each thread in the process...
-            string tasksDir = Interop.ProcFs.GetTaskDirectoryPathForProcess(pid);
+            string tasksDir = Interop.procfs.GetTaskDirectoryPathForProcess(pid);
             try
             {
                 foreach (string taskDir in Directory.EnumerateDirectories(tasksDir))
@@ -108,9 +108,9 @@ namespace System.Diagnostics
                     // ...and read its associated /proc/pid/task/tid/stat file to create a ThreadInfo
                     string dirName = Path.GetFileName(taskDir);
                     int tid;
-                    Interop.ProcFs.ParsedStat stat;
+                    Interop.procfs.ParsedStat stat;
                     if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid) &&
-                        Interop.ProcFs.TryReadStatFile(pid, tid, out stat))
+                        Interop.procfs.TryReadStatFile(pid, tid, out stat))
                     {
                         pi._threadInfoList.Add(new ThreadInfo()
                         {
@@ -144,7 +144,7 @@ namespace System.Diagnostics
         {
             // Parse /proc for any directory that's named with a number.  Each such
             // directory represents a process.
-            foreach (string procDir in Directory.EnumerateDirectories(Interop.ProcFs.RootPath))
+            foreach (string procDir in Directory.EnumerateDirectories(Interop.procfs.RootPath))
             {
                 string dirName = Path.GetFileName(procDir);
                 int pid;

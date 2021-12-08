@@ -19,7 +19,7 @@ namespace System.Diagnostics
             // and the other values above and below are simply distributed evenly.
             get
             {
-                Interop.ProcFs.ParsedStat stat = GetStat();
+                Interop.procfs.ParsedStat stat = GetStat();
                 return Interop.Sys.GetThreadPriorityFromNiceValue((int)stat.nice);
             }
             set
@@ -36,7 +36,7 @@ namespace System.Diagnostics
         {
             get
             {
-                Interop.ProcFs.ParsedStat stat = GetStat();
+                Interop.procfs.ParsedStat stat = GetStat();
                 return Process.TicksToTimeSpan(stat.stime);
             }
         }
@@ -52,7 +52,7 @@ namespace System.Diagnostics
         {
             get
             {
-                Interop.ProcFs.ParsedStat stat = GetStat();
+                Interop.procfs.ParsedStat stat = GetStat();
                 return Process.TicksToTimeSpan(stat.utime + stat.stime);
             }
         }
@@ -65,15 +65,15 @@ namespace System.Diagnostics
         {
             get
             {
-                Interop.ProcFs.ParsedStat stat = GetStat();
+                Interop.procfs.ParsedStat stat = GetStat();
                 return Process.TicksToTimeSpan(stat.utime);
             }
         }
 
-        private Interop.ProcFs.ParsedStat GetStat()
+        private Interop.procfs.ParsedStat GetStat()
         {
-            Interop.ProcFs.ParsedStat stat;
-            if (!Interop.ProcFs.TryReadStatFile(pid: _processId, tid: Id, result: out stat))
+            Interop.procfs.ParsedStat stat;
+            if (!Interop.procfs.TryReadStatFile(pid: _processId, tid: Id, result: out stat))
             {
                 throw new InvalidOperationException(SR.Format(SR.ThreadExited, Id));
             }

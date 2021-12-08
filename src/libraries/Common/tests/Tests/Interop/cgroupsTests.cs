@@ -6,12 +6,12 @@ using Xunit;
 
 namespace Common.Tests
 {
-    public class CGroupsTests : FileCleanupTestBase
+    public class cgroupsTests : FileCleanupTestBase
     {
         [Fact]
         public void ValidateFindCGroupVersion()
         {
-            Assert.InRange((int)Interop.CGroups.s_cgroupVersion, 0, 2);
+            Assert.InRange((int)Interop.cgroups.s_cgroupVersion, 0, 2);
         }
 
         [Theory]
@@ -24,7 +24,7 @@ namespace Common.Tests
             string path = GetTestFilePath();
             File.WriteAllText(path, valueText);
 
-            Assert.Equal(expectedResult, Interop.CGroups.TryReadMemoryValueFromFile(path, out ulong val));
+            Assert.Equal(expectedResult, Interop.cgroups.TryReadMemoryValueFromFile(path, out ulong val));
             if (expectedResult)
             {
                 Assert.Equal(expectedValue, val);
@@ -36,7 +36,7 @@ namespace Common.Tests
         [InlineData("/sys/fs/cgroup/cpu/my_cgroup", "/", "/sys/fs/cgroup/cpu", "/my_cgroup")]
         public void ValidateFindCGroupPath(string expectedResult, string hierarchyRoot, string hierarchyMount, string cgroupPathRelativeToMount)
         {
-            Assert.Equal(expectedResult, Interop.CGroups.FindCGroupPath(hierarchyRoot, hierarchyMount, cgroupPathRelativeToMount));
+            Assert.Equal(expectedResult, Interop.cgroups.FindCGroupPath(hierarchyRoot, hierarchyMount, cgroupPathRelativeToMount));
         }
 
         [Theory]
@@ -55,7 +55,7 @@ namespace Common.Tests
             string path = GetTestFilePath();
             File.WriteAllText(path, procSelfMountInfoText);
 
-            Assert.Equal(expectedFound, Interop.CGroups.TryFindHierarchyMount((Interop.CGroups.CGroupVersion) cgroupVersion,
+            Assert.Equal(expectedFound, Interop.cgroups.TryFindHierarchyMount((Interop.cgroups.CGroupVersion) cgroupVersion,
                                                                               path, subsystem, out string root, out string mount));
             if (expectedFound)
             {
@@ -81,7 +81,7 @@ namespace Common.Tests
             string path = GetTestFilePath();
             File.WriteAllText(path, procSelfCgroupText);
 
-            Assert.Equal(expectedFound, Interop.CGroups.TryFindCGroupPathForSubsystem((Interop.CGroups.CGroupVersion) cgroupVersion,
+            Assert.Equal(expectedFound, Interop.cgroups.TryFindCGroupPathForSubsystem((Interop.cgroups.CGroupVersion) cgroupVersion,
                                                                                       path, subsystem, out string mountPath));
             if (expectedFound)
             {
