@@ -8169,35 +8169,58 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         else
             dwNumGCPointerSeries = bmtParent->NumParentPointerSeries;
 
+        bool containsGCPointers = bmtFP->NumInstanceGCPointerFields > 0;
         // Place by value class fields last
         // Update the number of GC pointer series
+        // Calculate largest alignment requirement
+        int largestAlignmentRequirement = 1;
         for (i = 0; i < bmtEnumFields->dwNumInstanceFields; i++)
         {
             if (pFieldDescList[i].IsByValue())
             {
                 MethodTable * pByValueMT = pByValueClassCache[i];
 
-                    // value classes could have GC pointers in them, which need to be pointer-size aligned
-                    // so do this if it has not been done already
-
 #if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
-                dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos,
-                    (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT) ? DATA_ALIGNMENT : TARGET_POINTER_SIZE);
-#else // !(!defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4))
-#ifdef FEATURE_64BIT_ALIGNMENT
+                if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
+                {
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, DATA_ALIGNMENT);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, DATA_ALIGNMENT);
+                }
+                else
+#elif defined(FEATURE_64BIT_ALIGNMENT)
                 if (pByValueMT->RequiresAlign8())
+                {
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8);
+                }
                 else
 #endif // FEATURE_64BIT_ALIGNMENT
+                if (pByValueMT->ContainsPointers())
+                {
+                    // this field type has GC pointers in it, which need to be pointer-size aligned
+                    // so do this if it has not been done already
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-#endif // !(!defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4))
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+                    containsGCPointers = true;
+                }
+                else if (pByValueMT->HasLayout())
+                {
+                    int fieldAlignmentRequirement = pByValueMT->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
+                }
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
-                dwCumulativeInstanceFieldPos += pByValueMT->GetAlignedNumInstanceFieldBytes();
+                dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
 
                 // Add pointer series for by-value classes
                 dwNumGCPointerSeries += pByValueMT->ContainsPointers() ?
                     (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries() : 0;
+            }
+            else
+            {
+                // non-value-type fields always require pointer alignment
+                largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
             }
         }
 
@@ -8223,7 +8246,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             if (dwNumInstanceFieldBytes > TARGET_POINTER_SIZE) {
-                minAlign = TARGET_POINTER_SIZE;
+                minAlign = containsGCPointers ? TARGET_POINTER_SIZE : (unsigned)largestAlignmentRequirement;
             }
             else {
                 minAlign = 1;

@@ -645,29 +645,14 @@ namespace Internal.TypeSystem
             // Place value class fields last
             for (int i = 0; i < instanceValueClassFieldsArr.Length; i++)
             {
-                // If the field has an indeterminate alignment, align the cumulative field offset to the indeterminate value
-                // Otherwise, align the cumulative field offset to the PointerSize
-                // This avoids issues with Universal Generic Field layouts whose fields may have Indeterminate sizes or alignments
+                // Align the cumulative field offset to the indeterminate value
                 var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(instanceValueClassFieldsArr[i].FieldType, hasLayout, packingSize, out bool fieldLayoutAbiStable);
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
 
-                if (fieldSizeAndAlignment.Alignment.IsIndeterminate)
-                {
-                    cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, context.Target);
-                }
-                else
-                {
-                    LayoutInt AlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, context.Target.LayoutPointerSize);
-                    cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, AlignmentRequired, context.Target);
-                }
+                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(type, cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, context.Target);
                 offsets[fieldOrdinal] = new FieldAndOffset(instanceValueClassFieldsArr[i], cumulativeInstanceFieldPos + offsetBias);
-
-                // If the field has an indeterminate size, align the cumulative field offset to the indeterminate value
-                // Otherwise, align the cumulative field offset to the aligned-instance field size
-                // This avoids issues with Universal Generic Field layouts whose fields may have Indeterminate sizes or alignments
-                LayoutInt alignedInstanceFieldBytes = fieldSizeAndAlignment.Size.IsIndeterminate ? fieldSizeAndAlignment.Size : GetAlignedNumInstanceFieldBytes(fieldSizeAndAlignment.Size);
-                cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + alignedInstanceFieldBytes);
+                cumulativeInstanceFieldPos = checked(cumulativeInstanceFieldPos + fieldSizeAndAlignment.Size);
 
                 fieldOrdinal++;
             }
@@ -682,10 +667,17 @@ namespace Internal.TypeSystem
             }
             else if (cumulativeInstanceFieldPos.AsInt > context.Target.PointerSize)
             {
-                minAlign = context.Target.LayoutPointerSize;
-                if (requiresAlign8 && minAlign.AsInt == 4)
+                if (requiresAlign8)
                 {
                     minAlign = new LayoutInt(8);
+                }
+                else if (type.ContainsGCPointers)
+                {
+                    minAlign = context.Target.LayoutPointerSize;
+                }
+                else
+                {
+                    minAlign = largestAlignmentRequired;
                 }
             }
             else

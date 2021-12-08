@@ -1603,10 +1603,6 @@ public:
 
     inline WORD GetNumIntroducedInstanceFields();
 
-    // <TODO> Does this always return the same (or related) size as GetBaseSize()? </TODO>
-    inline DWORD GetAlignedNumInstanceFieldBytes();
-
-
     // Note: This flag MUST be available even from an unrestored MethodTable - see GcScanRoots in siginfo.cpp.
     DWORD           ContainsPointers()
     {
