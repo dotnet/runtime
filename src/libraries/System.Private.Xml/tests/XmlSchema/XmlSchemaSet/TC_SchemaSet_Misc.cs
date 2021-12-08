@@ -1290,6 +1290,6 @@ namespace System.Xml.Tests
             CError.Compare(warningCount, 0, "Warning Count mismatch!");
             CError.Compare(errorCount, 1, "Error Count mismatch!");
             return;
-        }        
+        }
     }
 }
