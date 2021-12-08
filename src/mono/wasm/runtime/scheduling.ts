@@ -48,7 +48,7 @@ export function prevent_timer_throttling(): void {
 
 export function schedule_background_exec(): void {
     ++pump_count;
-    globalThis.setTimeout(pump_message, 0);
+    setTimeout(pump_message, 0);
 }
 
 let lastScheduledTimeoutId: any = undefined;
@@ -60,5 +60,5 @@ export function mono_set_timeout(timeout: number, id: number): void {
         clearTimeout(lastScheduledTimeoutId);
         lastScheduledTimeoutId = undefined;
     }
-    lastScheduledTimeoutId = globalThis.setTimeout(mono_wasm_set_timeout_exec, timeout);
+    lastScheduledTimeoutId = setTimeout(mono_wasm_set_timeout_exec, timeout);
 }
