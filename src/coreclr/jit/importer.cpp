@@ -3919,15 +3919,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         // must be done regardless of DbgCode and MinOpts
         return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
     }
-#ifdef TARGET_64BIT
-    if (ni == NI_System_StubHelpers_GetStubContextAddr)
-    {
-        // must be done regardless of DbgCode and MinOpts
-        return gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL));
-    }
-#else
-    assert(ni != NI_System_StubHelpers_GetStubContextAddr);
-#endif
 
     if (ni == NI_System_StubHelpers_NextCallReturnAddress)
     {
@@ -5435,12 +5426,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_StubHelpers_GetStubContext;
             }
-#ifdef TARGET_64BIT
-            else if (strcmp(methodName, "GetStubContextAddr") == 0)
-            {
-                result = NI_System_StubHelpers_GetStubContextAddr;
-            }
-#endif
             else if (strcmp(methodName, "NextCallReturnAddress") == 0)
             {
                 result = NI_System_StubHelpers_NextCallReturnAddress;
