@@ -2,7 +2,6 @@
 <!-- Build infrastructure support to enable running merged test runner assemblies like regular tests on mobile platforms. -->
   <PropertyGroup>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <RuntimeIdentifier>$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <TestFramework>GeneratedRunner</TestFramework>
   </PropertyGroup>
