@@ -645,14 +645,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id { get; }
         public string Name { get; }
         public int TypeId { get; }
-        public bool IsPublic { get; }
-        public MethodAttributes ProtectionLevel { get; }
-        public FieldTypeClass(int id, string name, int typeId, bool isPublic, MethodAttributes protectionLevel)
+        public bool IsNotPrivate { get; }
+        public FieldAttributes ProtectionLevel { get; }
+        public FieldTypeClass(int id, string name, int typeId, bool isNotPrivate, FieldAttributes protectionLevel)
         {
             Id = id;
             Name = name;
             TypeId = typeId;
-            IsPublic = isPublic;
+            IsNotPrivate = isNotPrivate;
             ProtectionLevel = protectionLevel;
         }
     }
@@ -1236,14 +1236,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             for (int i = 0 ; i < nFields; i++)
             {
-                bool isPublic = false;
+                bool isNotPrivate = false;
                 int fieldId = retDebuggerCmdReader.ReadInt32(); //fieldId
                 string fieldNameStr = retDebuggerCmdReader.ReadString();
                 int fieldTypeId = retDebuggerCmdReader.ReadInt32(); //typeId
                 int attrs = retDebuggerCmdReader.ReadInt32(); //attrs
                 int isSpecialStatic = retDebuggerCmdReader.ReadInt32(); //is_special_static
                 if (((attrs & (int)MethodAttributes.Public) != 0))
-                    isPublic = true;
+                    isNotPrivate = true;
                 if (isSpecialStatic == 1)
                     continue;
                 if (fieldNameStr.Contains("k__BackingField"))
@@ -1252,7 +1252,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     fieldNameStr = fieldNameStr.Replace("<", "");
                     fieldNameStr = fieldNameStr.Replace(">", "");
                 }
-                ret.Add(new FieldTypeClass(fieldId, fieldNameStr, fieldTypeId, isPublic, (MethodAttributes)((attrs) & (int)MethodAttributes.MemberAccessMask)));
+                ret.Add(new FieldTypeClass(fieldId, fieldNameStr, fieldTypeId, isNotPrivate, (FieldAttributes)((attrs) & (int)FieldAttributes.FieldAccessMask)));
             }
             typeInfo.FieldsList = ret;
             return ret;
@@ -2316,7 +2316,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var debuggerProxy = await GetValuesFromDebuggerProxyAttribute(objectId, typeId[0], token);
                 if (debuggerProxy != null)
                     return sortByAccessLevel ?
-                        new JArray(JObject.FromObject(new { result = debuggerProxy, internalProperties = new JArray(), privateProperties = new JArray() })) :
+                        new JArray(JObject.FromObject( new { result = debuggerProxy, internalProperties = new JArray(), privateProperties = new JArray() } )) :
                         debuggerProxy;
             }
             var className = await GetTypeName(typeId[0], token);
@@ -2348,10 +2348,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     className = await GetTypeName(typeId[i], token);
                     var fields = await GetTypeFields(typeId[i], token);
-                    var pubFields = fields.Where(field => field.ProtectionLevel == MethodAttributes.Public).ToList();
-                    var privFields = fields.Where(field => field.ProtectionLevel == MethodAttributes.Private).ToList();
+                    var pubFields = fields.Where(field => field.ProtectionLevel == FieldAttributes.Public).ToList();
+                    var privFields = fields.Where(field =>
+                        field.ProtectionLevel == FieldAttributes.Private ||
+                        field.ProtectionLevel == FieldAttributes.FamANDAssem
+                        ).ToList();
                     //protected == family, internal == assembly
-                    var protectedAndInternalFields = fields.Where(field => field.ProtectionLevel == MethodAttributes.Family || field.ProtectionLevel == MethodAttributes.Assembly).ToList();
+                    var protectedAndInternalFields = fields.Where(field =>
+                        field.ProtectionLevel == FieldAttributes.Family ||
+                        field.ProtectionLevel == FieldAttributes.Assembly ||
+                        field.ProtectionLevel == FieldAttributes.FamORAssem
+                        ).ToList();
                     publicProperties = await GetNotOnlyAccessorProperties(pubFields, publicProperties, typeId[i], i == 0, token);
                     privateProperties = await GetNotOnlyAccessorProperties(privFields, privateProperties, typeId[i], i == 0, token);
                     protectedAndInternalProperties = await GetNotOnlyAccessorProperties(protectedAndInternalFields, protectedAndInternalProperties, typeId[i], i == 0, token);
@@ -2395,7 +2402,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             async Task<JArray> GetNotOnlyAccessorProperties(List<FieldTypeClass> fields, JArray properties, int typeId, bool isParent, CancellationToken token)
             {
                 if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
-                    fields = fields.Where(field => field.IsPublic).ToList();
+                    fields = fields.Where(field => field.IsNotPrivate).ToList();
                 JArray objectFields = new JArray();
 
                 using var commandParamsWriter = new MonoBinaryWriter();
