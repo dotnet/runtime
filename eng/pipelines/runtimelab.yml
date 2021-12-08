@@ -190,7 +190,7 @@ stages:
         - Linux_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
-          isFullMatrix: false
+          isRollingBuild: false
           isOfficialBuild: false
           testScope: innerloop
           liveRuntimeBuildConfig: Release
@@ -207,7 +207,7 @@ stages:
         - windows_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
-          isFullMatrix: false
+          isRollingBuild: false
           isOfficialBuild: false
           testScope: innerloop
           liveRuntimeBuildConfig: Release
