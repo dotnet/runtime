@@ -230,7 +230,7 @@
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/XmlFormatWriterGeneratorAOT/iOS.Simulator.XmlFormatWriterGeneratorAot.Test.csproj" />
   </ItemGroup>
 
-  <!-- Run only explicilty selected tests for Mac Catalyst in App Sandbox -->
+  <!-- Run only explicitly selected tests for Mac Catalyst in App Sandbox -->
   <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(EnableAppSandbox)' == 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/tests/**/*.Tests.csproj" />
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/**/*.Test.csproj" />
