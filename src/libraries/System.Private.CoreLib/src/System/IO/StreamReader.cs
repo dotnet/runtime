@@ -819,10 +819,9 @@ namespace System.IO
                     if (ch == '\r' || ch == '\n')
                     {
                         string s;
-                        if (_sb != null)
+                        if (_sb is { Length: > 0 })
                         {
-                            _sb.Append(_charBuffer, _charPos, i - _charPos);
-                            s = _sb.ToString();
+                            s = _sb!.Append(_charBuffer, _charPos, i - _charPos).ToString();
                         }
                         else
                         {
@@ -878,51 +877,39 @@ namespace System.IO
             _sb?.Clear();
             do
             {
-                char[] tmpCharBuffer = _charBuffer;
-                int tmpCharLen = _charLen;
-                int tmpCharPos = _charPos;
-                int i = tmpCharPos;
-
-                do
+                // Note the following common line feed chars:
+                // \n - UNIX   \r\n - DOS   \r - Mac
+                int i = _charBuffer.AsSpan(_charPos).IndexOfAny('\r', '\n');
+                if (i >= 0)
                 {
-                    char ch = tmpCharBuffer[i];
+                    char ch = _charBuffer[_charPos + i];
+                    string s;
 
-                    // Note the following common line feed chars:
-                    // \n - UNIX   \r\n - DOS   \r - Mac
-                    if (ch == '\r' || ch == '\n')
+                    if (_sb is { Length: > 0 })
                     {
-                        string s;
-
-                        if (_sb != null)
-                        {
-                            _sb.Append(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
-                            s = _sb.ToString();
-                        }
-                        else
-                        {
-                            s = new string(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
-                        }
-
-                        _charPos = tmpCharPos = i + 1;
-
-                        if (ch == '\r' && (tmpCharPos < tmpCharLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
-                        {
-                            tmpCharPos = _charPos;
-                            if (_charBuffer[tmpCharPos] == '\n')
-                            {
-                                _charPos = ++tmpCharPos;
-                            }
-                        }
-
-                        return s;
+                        s = _sb!.Append(_charBuffer, _charPos, i - _charPos).ToString();
+                    }
+                    else
+                    {
+                        s = new string(_charBuffer, _charPos, i);
                     }
 
-                    i++;
-                } while (i < tmpCharLen);
+                    _charPos += i + 1;
 
-                i = tmpCharLen - tmpCharPos;
+                    if (ch == '\r' && (_charPos < _charLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
+                    {
+                        if (_charBuffer[_charPos] == '\n')
+                        {
+                            _charPos++;
+                        }
+                    }
+
+                    return s;
+                }
+
+                i = _charLen - _charPos;
                 _sb ??= new StringBuilder(i + 80);
-                _sb.Append(tmpCharBuffer, tmpCharPos, i);
+                _sb.Append(_charBuffer, _charPos, i);
             } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
 
             return _sb.ToString();
