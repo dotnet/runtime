@@ -1,5 +1,5 @@
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
-add_executable(StressLogAnalyzer StressLogAnalyzer.cpp StressLogDump.cpp StressLogPlugin.cpp)
+add_executable_clr(StressLogAnalyzer StressLogAnalyzer.cpp StressLogDump.cpp StressLogPlugin.cpp)
 
 if(CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(StressLogAnalyzer
