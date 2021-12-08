@@ -1080,7 +1080,6 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 writer.WriteLine($"case {i}: goto {labelMap[i]};");
                             }
-                            writer.WriteLine("default: global::System.Diagnostics.Debug.Fail(\"Unknown backtracking location\"); break;");
                         }
                         writer.WriteLine();
                     }
