@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { new[] { 10 }, 1 , null, null };
             yield return new object[] { new[] { 10, 5 }, 2 , null, null };
             yield return new object[] { new[] { 10, 20 }, 1 , null, null };
-            yield return new object[] { new[] { 800, 600, 400, 200, 000 }, 5, 13, 8 };
+            yield return new object[] { new[] { 800, 600, 400, 200, 050 }, 5, 13, 9 };
         }
 
         [Theory]
