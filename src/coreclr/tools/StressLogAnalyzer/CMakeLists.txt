@@ -12,3 +12,4 @@ else()
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
+install_clr(TARGETS StressLogAnalyzer DESTINATIONS . COMPONENT runtime)
