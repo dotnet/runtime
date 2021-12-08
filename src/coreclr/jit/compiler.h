@@ -10042,8 +10042,6 @@ public:
                             // and the VM expects that, or the JIT is a "self-host" compiler
                             // (e.g., x86 hosted targeting x86) and the VM expects that.
 
-        int compFrameType; // frame type used for prolog/epilog.
-
         /*  The following holds IL scope information about local variables.
          */
 
@@ -10329,6 +10327,24 @@ public:
     unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args
     unsigned compMapILvarNum(unsigned ILvarNum);      // map accounting for hidden args
     unsigned compMap2ILvarNum(unsigned varNum) const; // map accounting for hidden args
+
+#if defined(TARGET_ARM64)
+    struct FrameInfo
+    {
+        // Frame type (1-5)
+        int frameType;
+
+        // Distance from established (method body) SP to base of callee save area
+        int calleeSaveSpOffset;
+
+        // Amount to subtract from SP before saving (prolog) OR
+        // to add to SP after restoring (epilog) callee saves
+        int calleeSaveSpDelta;
+
+        // Distance from established SP to where caller's FP was saved
+        int offsetSpToSavedFp;
+    } compFrameInfo;
+#endif
 
     //-------------------------------------------------------------------------
 

@@ -5196,13 +5196,12 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     const int totalFrameSize = genTotalFrameSize();
 
-    int calleeSaveSPOffset = 0; // This will be the starting place for restoring the callee-saved registers, in
-                                // decreasing order.
-    int calleeSaveSPDelta = 0;  // Amount to add to SP after callee-saved registers have been restored.
-
-    // Use the same frame type as in the prolog.
+    // Fetch info about the frame we saved when creating the prolog.
     //
-    const int frameType = compiler->info.compFrameType;
+    const int frameType          = compiler->compFrameInfo.frameType;
+    const int calleeSaveSpOffset = compiler->compFrameInfo.calleeSaveSpOffset;
+    const int calleeSaveSpDelta  = compiler->compFrameInfo.calleeSaveSpDelta;
+    const int offsetSpToSavedFp  = compiler->compFrameInfo.offsetSpToSavedFp;
 
     switch (frameType)
     {
@@ -5220,10 +5219,6 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             }
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
-
-            // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the
-            // bottom of stack.
-            calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
             break;
         }
 
@@ -5244,10 +5239,6 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             }
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
-
-            // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the
-            // bottom of stack.
-            calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
             break;
         }
 
@@ -5258,17 +5249,11 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
             assert(!genSaveFpLrWithAllCalleeSavedRegisters);
 
-            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize -
-                                             2 * REGSIZE_BYTES; // 2 for FP, LR which we'll restore later.
-            assert(calleeSaveSPDeltaUnaligned >= 0);
-            assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
-            calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
-
-            JITDUMP("    calleeSaveSPDelta=%d\n", calleeSaveSPDelta);
+            JITDUMP("    calleeSaveSpDelta=%d\n", calleeSaveSpDelta);
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and (hopefully) post-index SP.
 
-            int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
+            int remainingFrameSz = totalFrameSize - calleeSaveSpDelta;
             assert(remainingFrameSz > 0);
 
             if (compiler->lvaOutgoingArgSpaceSize > 504)
@@ -5320,8 +5305,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             // Unlike frameType=1 or frameType=2 that restore SP at the end,
             // frameType=3 already adjusted SP above to delete local frame.
             // There is at most one alignment slot between SP and where we store the callee-saved registers.
-            calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
-            assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
+            assert((calleeSaveSpOffset == 0) || (calleeSaveSpOffset == REGSIZE_BYTES));
 
             break;
         }
@@ -5341,11 +5325,6 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, SPtoFPdelta);
                 compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
             }
-
-            calleeSaveSPOffset = compiler->compLclFrameSize;
-
-            // Remove the frame after we're done restoring the callee-saved registers.
-            calleeSaveSPDelta = totalFrameSize;
             break;
         }
 
@@ -5354,22 +5333,12 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
                     unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
 
-            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize;
-            assert(calleeSaveSPDeltaUnaligned >= 0);
-            assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
-            calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
-
-            calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
-            assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
+            assert((calleeSaveSpOffset == 0) || (calleeSaveSpOffset == REGSIZE_BYTES));
 
             // Restore sp from fp:
             //      sub sp, fp, #sp-to-fp-delta
             // This is the same whether there is localloc or not. Note that we don't need to do anything to remove the
             // "remainingFrameSz" to reverse the SUB of that amount in the prolog.
-
-            int offsetSpToSavedFp = calleeSaveSPDelta -
-                                    (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
-                                    2 * REGSIZE_BYTES; // -2 for FP, LR
             GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, offsetSpToSavedFp);
             compiler->unwindSetFrameReg(REG_FPBASE, offsetSpToSavedFp);
             break;
@@ -5379,8 +5348,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             unreached();
     }
 
-    JITDUMP("    calleeSaveSPOffset=%d, calleeSaveSPDelta=%d\n", calleeSaveSPOffset, calleeSaveSPDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSPOffset, calleeSaveSPDelta);
+    JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset, calleeSaveSpDelta);
 
     switch (frameType)
     {

@@ -5567,7 +5567,9 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         assert(info.compPatchpointInfo != nullptr);
     }
 
-    info.compFrameType = -1;
+#if defined(TARGET_ARM64)
+    compFrameInfo = {0};
+#endif
 
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
