@@ -2,14 +2,6 @@ project(mini)
 
 include(FindPython3)
 
-function(addprefix var prefix list)
-  set(f)
-  foreach(i ${list})
-    set(f ${f} ${prefix}/${i})
-  endforeach()
-  set(${var} ${f} PARENT_SCOPE)
-endfunction()
-
 include_directories(
   ${PROJECT_BINARY_DIR}/
   ${PROJECT_BINARY_DIR}/../..
