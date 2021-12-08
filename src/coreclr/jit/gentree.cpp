@@ -4870,7 +4870,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
-        {
             level  = gtSetEvalOrder(tree->AsDynBlk()->Addr());
             costEx = tree->AsDynBlk()->Addr()->GetCostEx();
             costSz = tree->AsDynBlk()->Addr()->GetCostSz();
@@ -4883,45 +4882,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz += tree->AsDynBlk()->Data()->GetCostSz();
             }
 
-            unsigned sizeLevel = gtSetEvalOrder(tree->AsDynBlk()->gtDynamicSize);
-
-            // Determine whether the size node should be evaluated first.
-            // We would like to do this if the sizeLevel is larger than the current level,
-            // but we have to ensure that we obey ordering constraints.
-            if (tree->AsDynBlk()->gtEvalSizeFirst != (level < sizeLevel))
-            {
-                bool canChange = true;
-
-                GenTree* sizeNode = tree->AsDynBlk()->gtDynamicSize;
-                GenTree* dst      = tree->AsDynBlk()->Addr();
-                GenTree* src      = tree->AsDynBlk()->Data();
-
-                if (tree->AsDynBlk()->gtEvalSizeFirst)
-                {
-                    canChange = gtCanSwapOrder(sizeNode, dst);
-                    if (canChange && (src != nullptr))
-                    {
-                        canChange = gtCanSwapOrder(sizeNode, src);
-                    }
-                }
-                else
-                {
-                    canChange = gtCanSwapOrder(dst, sizeNode);
-                    if (canChange && (src != nullptr))
-                    {
-                        gtCanSwapOrder(src, sizeNode);
-                    }
-                }
-                if (canChange)
-                {
-                    tree->AsDynBlk()->gtEvalSizeFirst = (level < sizeLevel);
-                }
-            }
-            level = max(level, sizeLevel);
+            lvl2  = gtSetEvalOrder(tree->AsDynBlk()->gtDynamicSize);
+            level = max(level, lvl2);
             costEx += tree->AsDynBlk()->gtDynamicSize->GetCostEx();
             costSz += tree->AsDynBlk()->gtDynamicSize->GetCostSz();
-        }
-        break;
+            break;
 
         default:
             JITDUMP("unexpected operator in this tree:\n");
@@ -8634,25 +8599,15 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         case GT_DYN_BLK:
-        {
-            GenTreeDynBlk* const dynBlock = m_node->AsDynBlk();
-            m_edge                        = dynBlock->gtEvalSizeFirst ? &dynBlock->gtDynamicSize : &dynBlock->gtOp1;
+            m_edge = &m_node->AsDynBlk()->Addr();
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceDynBlk;
-        }
             return;
 
         case GT_STORE_DYN_BLK:
         {
             GenTreeDynBlk* const dynBlock = m_node->AsDynBlk();
-            if (dynBlock->gtEvalSizeFirst)
-            {
-                m_edge = &dynBlock->gtDynamicSize;
-            }
-            else
-            {
-                m_edge = dynBlock->IsReverseOp() ? &dynBlock->gtOp2 : &dynBlock->gtOp1;
-            }
+            m_edge                        = dynBlock->IsReverseOp() ? &dynBlock->gtOp2 : &dynBlock->gtOp1;
             assert(*m_edge != nullptr);
 
             m_advance = &GenTreeUseEdgeIterator::AdvanceStoreDynBlk;
@@ -8741,7 +8696,7 @@ void GenTreeUseEdgeIterator::AdvanceDynBlk()
 {
     GenTreeDynBlk* const dynBlock = m_node->AsDynBlk();
 
-    m_edge = dynBlock->gtEvalSizeFirst ? &dynBlock->gtOp1 : &dynBlock->gtDynamicSize;
+    m_edge = &dynBlock->gtDynamicSize;
     assert(*m_edge != nullptr);
     m_advance = &GenTreeUseEdgeIterator::Terminate;
 }
@@ -8749,43 +8704,21 @@ void GenTreeUseEdgeIterator::AdvanceDynBlk()
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceStoreDynBlk: produces the next operand of a StoreDynBlk node and advances the state.
 //
-// These nodes are moderately complicated but rare enough that templating this function is probably not
-// worth the extra complexity.
-//
 void GenTreeUseEdgeIterator::AdvanceStoreDynBlk()
 {
     GenTreeDynBlk* const dynBlock = m_node->AsDynBlk();
-    if (dynBlock->gtEvalSizeFirst)
+    switch (m_state)
     {
-        switch (m_state)
-        {
-            case 0:
-                m_edge  = dynBlock->IsReverseOp() ? &dynBlock->gtOp2 : &dynBlock->gtOp1;
-                m_state = 1;
-                break;
-            case 1:
-                m_edge    = dynBlock->IsReverseOp() ? &dynBlock->gtOp1 : &dynBlock->gtOp2;
-                m_advance = &GenTreeUseEdgeIterator::Terminate;
-                break;
-            default:
-                unreached();
-        }
-    }
-    else
-    {
-        switch (m_state)
-        {
-            case 0:
-                m_edge  = dynBlock->IsReverseOp() ? &dynBlock->gtOp1 : &dynBlock->gtOp2;
-                m_state = 1;
-                break;
-            case 1:
-                m_edge    = &dynBlock->gtDynamicSize;
-                m_advance = &GenTreeUseEdgeIterator::Terminate;
-                break;
-            default:
-                unreached();
-        }
+        case 0:
+            m_edge  = dynBlock->IsReverseOp() ? &dynBlock->gtOp1 : &dynBlock->gtOp2;
+            m_state = 1;
+            break;
+        case 1:
+            m_edge    = &dynBlock->gtDynamicSize;
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            break;
+        default:
+            unreached();
     }
 
     assert(*m_edge != nullptr);
