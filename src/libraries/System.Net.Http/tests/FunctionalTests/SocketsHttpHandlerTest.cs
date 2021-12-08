@@ -3366,6 +3366,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class SocketsHttpHandler_RequestContentLengthMismatchTest : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_RequestContentLengthMismatchTest(ITestOutputHelper output) : base(output) { }
