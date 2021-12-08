@@ -384,6 +384,14 @@ namespace System.Net.Http
                 await content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
             }
 
+            if (_requestContentLengthRemaining > 0)
+            {
+                // The number of bytes we actually sent doesn't match the advertised Content-Length
+                long contentLength = content.Headers.ContentLength.GetValueOrDefault();
+                long sent = contentLength - _requestContentLengthRemaining;
+                throw new HttpRequestException(SR.Format(SR.net_http_request_content_length_mismatch, sent, contentLength));
+            }
+
             // Set to 0 to recognize that the whole request body has been sent and therefore there's no need to abort write side in case of a premature disposal.
             _requestContentLengthRemaining = 0;
 
