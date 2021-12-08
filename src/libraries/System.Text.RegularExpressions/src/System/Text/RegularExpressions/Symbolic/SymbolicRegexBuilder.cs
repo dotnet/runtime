@@ -297,7 +297,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <returns></returns>
         internal SymbolicRegexNode<TElement> MkNot(SymbolicRegexNode<TElement> node) => SymbolicRegexNode<TElement>.MkNot(this, node);
 
-        internal SymbolicRegexNode<TElement> MkCapture(SymbolicRegexNode<TElement> child, int captureNum) => MkConcat(SymbolicRegexNode<TElement>.MkCaptureStart(this, captureNum), MkConcat(child, SymbolicRegexNode<TElement>.MkCaptureEnd(this, captureNum)));
+        internal SymbolicRegexNode<TElement> MkCapture(SymbolicRegexNode<TElement> child, int captureNum) => MkConcat(MkCaptureStart(captureNum), MkConcat(child, MkCaptureEnd(captureNum)));
+
+        internal SymbolicRegexNode<TElement> MkCaptureStart(int captureNum) => SymbolicRegexNode<TElement>.MkCaptureStart(this, captureNum);
+
+        internal SymbolicRegexNode<TElement> MkCaptureEnd(int captureNum) => SymbolicRegexNode<TElement>.MkCaptureEnd(this, captureNum);
 
         internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builderT, Func<TElement, T> predicateTransformer) where T : notnull
         {
@@ -353,6 +357,12 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.And:
                     Debug.Assert(sr._alts is not null);
                     return builderT.MkAnd(sr._alts.Transform(builderT, predicateTransformer));
+
+                case SymbolicRegexKind.CaptureStart:
+                    return builderT.MkCaptureStart(sr._lower);
+
+                case SymbolicRegexKind.CaptureEnd:
+                    return builderT.MkCaptureEnd(sr._lower);
 
                 case SymbolicRegexKind.Concat:
                     {

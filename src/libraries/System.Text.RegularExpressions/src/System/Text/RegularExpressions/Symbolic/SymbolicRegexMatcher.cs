@@ -277,15 +277,20 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 foreach (DerivativeEffect effect in effects)
                 {
-                    switch (effect.Kind)
-                    {
-                        case DerivativeEffect.EffectKind.CaptureStart:
-                            captureStarts[effect.IntArg0] = i;
-                            break;
-                        case DerivativeEffect.EffectKind.CaptureEnd:
-                            captureEnds[effect.IntArg0] = i;
-                            break;
-                    }
+                    ApplyEffect(effect, i);
+                }
+            }
+
+            public void ApplyEffect(DerivativeEffect effect, int i)
+            {
+                switch (effect.Kind)
+                {
+                    case DerivativeEffect.EffectKind.CaptureStart:
+                        captureStarts[effect.IntArg0] = i;
+                        break;
+                    case DerivativeEffect.EffectKind.CaptureEnd:
+                        captureEnds[effect.IntArg0] = i;
+                        break;
                 }
             }
 
@@ -321,7 +326,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 var transitions = Volatile.Read(ref _builder._capturingDelta[offset]) ?? CreateNewCapturingTransitions(sourceState, minterm, offset);
 
                 foreach (var (targetState, effects) in transitions) {
-                    if (!targetStates.TryGetValue(targetState, out Registers existingRegisters))
+                    if (targetStates.TryGetValue(targetState, out Registers existingRegisters))
                     {
                         // TODO: choose intelligently between registers
                     }
@@ -591,9 +596,10 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
         }
 
-        private int FindEndPositionCapturing(string input, int exclusiveEnd, int i, out Registers endRegisters)
+        private int FindEndPositionCapturing(string input, int exclusiveEnd, int i, out Registers resultRegisters)
         {
             int i_end = exclusiveEnd;
+            Registers endRegisters = default(Registers);
 
             // Pick the correct start state based on previous character kind.
             uint prevCharKind = GetCharKind(input, i - 1);
@@ -610,11 +616,13 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 // Empty match exists because the initial state is accepting.
                 i_end = i - 1;
+                endRegisters = initialRegisters.Clone();
+                state.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i + 1));
 
                 // Stop here if q is lazy.
                 if (state.IsLazy)
                 {
-                    endRegisters = initialRegisters;
+                    resultRegisters = endRegisters;
                     return i_end;
                 }
             }
@@ -636,12 +644,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Accepting state has been reached. Record the position.
                         i_end = i;
+                        endRegisters = registers.Clone();
+                        q.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i + 1));
 
                         // Stop here if q is lazy.
                         if (q.IsLazy)
                         {
-                            endRegisters = registers;
                             Debug.Assert(i_end != exclusiveEnd);
+                            resultRegisters = endRegisters;
                             return i_end;
                         }
                     }
@@ -649,8 +659,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Non-accepting sink state (deadend) has been reached in the original pattern.
                         // So the match ended when the last i_end was updated.
-                        endRegisters = registers;
                         Debug.Assert(i_end != exclusiveEnd);
+                        resultRegisters = endRegisters;
                         return i_end;
                     }
                 }
@@ -660,7 +670,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // This should never happen, as a final state is already known to exist.
             Debug.Assert(false);
-            endRegisters = default(Registers);
+            resultRegisters = endRegisters;
             return i_end;
         }
 

@@ -102,8 +102,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     // If we successfully matched, capture the match, and then jump the current position to the end of the match.
                     int start = pos.Index + beginning;
                     int end = start + pos.Length;
-                    Capture(0, start, end);
-                    runtextpos = end;
                     if (pos.CaptureStarts != null)
                     {
                         Debug.Assert(pos.CaptureEnds != null);
@@ -113,10 +111,15 @@ namespace System.Text.RegularExpressions.Symbolic
                             if (pos.CaptureStarts[cap] >= 0)
                             {
                                 Debug.Assert(pos.CaptureEnds[cap] >= 0);
-                                runmatch!.AddMatch(cap, pos.CaptureStarts[cap], pos.CaptureEnds[cap]);
+                                Capture(cap, pos.CaptureStarts[cap], pos.CaptureEnds[cap]);
                             }
                         }
                     }
+                    else
+                    {
+                        Capture(0, start, end);
+                    }
+                    runtextpos = end;
                 }
                 else
                 {

@@ -261,6 +261,11 @@ namespace System.Text.RegularExpressions.Symbolic
                         is_nullable = (CharKind.Next(context) & CharKind.StartStop) != 0;
                         break;
 
+                    case SymbolicRegexKind.CaptureStart:
+                    case SymbolicRegexKind.CaptureEnd:
+                        is_nullable = true;
+                        break;
+
                     default: // SymbolicRegexKind.EndAnchorZRev:
                              // EndAnchorZRev (rev(\Z)) anchor is nullable when the prev character is either the first Newline or Start
                              // note: CharKind.NewLineS == CharKind.Newline|CharKind.StartStop
@@ -437,10 +442,10 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         internal static SymbolicRegexNode<S> MkCaptureStart(SymbolicRegexBuilder<S> builder, int captureNum) =>
-            Create(builder, SymbolicRegexKind.CaptureStart, null, null, captureNum, -1, default, null, SymbolicRegexInfo.Mk());
+            Create(builder, SymbolicRegexKind.CaptureStart, null, null, captureNum, -1, default, null, SymbolicRegexInfo.Mk(isAlwaysNullable: true));
 
         internal static SymbolicRegexNode<S> MkCaptureEnd(SymbolicRegexBuilder<S> builder, int captureNum) =>
-            Create(builder, SymbolicRegexKind.CaptureEnd, null, null, captureNum, -1, default, null, SymbolicRegexInfo.Mk());
+            Create(builder, SymbolicRegexKind.CaptureEnd, null, null, captureNum, -1, default, null, SymbolicRegexInfo.Mk(isAlwaysNullable: true));
 
         private static SymbolicRegexNode<S> MkCollection(SymbolicRegexBuilder<S> builder, SymbolicRegexKind kind, SymbolicRegexSet<S> alts, SymbolicRegexInfo info) =>
             alts.IsNothing ? builder._nothing :
@@ -613,6 +618,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.EndAnchorZRev:
                 case SymbolicRegexKind.WBAnchor:
                 case SymbolicRegexKind.NWBAnchor:
+                case SymbolicRegexKind.CaptureStart:
+                case SymbolicRegexKind.CaptureEnd:
                     return 0;
 
                 case SymbolicRegexKind.Singleton:
@@ -805,14 +812,6 @@ namespace System.Text.RegularExpressions.Symbolic
                         #endregion
                     }
 
-                case SymbolicRegexKind.CaptureStart:
-                case SymbolicRegexKind.CaptureEnd:
-                    {
-                        // Capture nodes are no-ops here since there's nothing to record their effect into
-                        deriv = _builder._epsilon;
-                        break;
-                    }
-
                 default:
                     deriv = _builder._nothing;
                     break;
@@ -867,12 +866,17 @@ namespace System.Text.RegularExpressions.Symbolic
                     else if (_left.IsNullable)
                     {
                         // If _left is unconditionally nullable
-                        _transitionRegex = mainTransition | _right.MkDerivative();
+                        TransitionRegex<S> rightTransition = _right.MkDerivative();
+                        _left.ApplyEffects(effect => {
+                            rightTransition = TransitionRegex<S>.Effect(rightTransition, effect);
+                        });
+                        _transitionRegex = mainTransition | rightTransition;
                     }
                     else
                     {
                         // The left side contains anchors and can be nullable in some context
                         // Extract the nullability as the lookaround condition
+                        // TODO: effects?
                         SymbolicRegexNode<S> leftNullabilityTest = _left.ExtractNullabilityTest();
                         _transitionRegex = TransitionRegex<S>.Lookaround(leftNullabilityTest, mainTransition | _right.MkDerivative(), mainTransition);
                     }
@@ -920,21 +924,63 @@ namespace System.Text.RegularExpressions.Symbolic
                     _transitionRegex = ~_left.MkDerivative();
                     break;
 
-                case SymbolicRegexKind.CaptureStart:
-                    _transitionRegex = TransitionRegex<S>.Effect(TransitionRegex<S>.Leaf(_builder._epsilon),
-                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lower));
-                    break;
-
-                case SymbolicRegexKind.CaptureEnd:
-                    _transitionRegex = TransitionRegex<S>.Effect(TransitionRegex<S>.Leaf(_builder._epsilon),
-                        new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lower));
-                    break;
-
                 default:
                     _transitionRegex = TransitionRegex<S>.Leaf(_builder._nothing);
                     break;
             }
             return _transitionRegex;
+        }
+
+        internal void ApplyEffects(Action<DerivativeEffect> apply)
+        {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                StackHelper.CallOnEmptyStack(ApplyEffects, apply);
+            }
+
+            switch (_kind)
+            {
+                case SymbolicRegexKind.Concat:
+                    Debug.Assert(_left is not null && _right is not null);
+                    Debug.Assert(_left.IsNullable && _right.IsNullable);
+                    _left.ApplyEffects(apply);
+                    _right.ApplyEffects(apply);
+                    break;
+
+                case SymbolicRegexKind.Loop:
+                    Debug.Assert(_left is not null);
+                    if (_lower != 0)
+                    {
+                        Debug.Assert(_left.IsNullable);
+                        _left.ApplyEffects(apply);
+                    }
+                    break;
+
+                case SymbolicRegexKind.Or:
+                case SymbolicRegexKind.And:
+                    Debug.Assert(_alts is not null);
+                    foreach (SymbolicRegexNode<S> elem in _alts)
+                    {
+                        if (elem.IsNullable)
+                        {
+                            elem.ApplyEffects(apply);
+                        }
+                    }
+                    break;
+
+                case SymbolicRegexKind.Not:
+                    Debug.Assert(_left is not null);
+                    _left.ApplyEffects(apply);
+                    break;
+
+                case SymbolicRegexKind.CaptureStart:
+                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureStart, _lower));
+                    break;
+
+                case SymbolicRegexKind.CaptureEnd:
+                    apply(new DerivativeEffect(DerivativeEffect.EffectKind.CaptureEnd, _lower));
+                    break;
+            }
         }
 
         /// <summary>
@@ -1026,6 +1072,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     return HashCode.Combine(_kind, _info);
 
                 case SymbolicRegexKind.WatchDog:
+                case SymbolicRegexKind.CaptureStart:
+                case SymbolicRegexKind.CaptureEnd:
                     return HashCode.Combine(_kind, _lower);
 
                 case SymbolicRegexKind.Loop:
@@ -1232,6 +1280,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
                     return;
 
+                case SymbolicRegexKind.CaptureStart:
+                    sb.Append('('); // The group number may be wrong
+                    return;
+
+                case SymbolicRegexKind.CaptureEnd:
+                    sb.Append(')');
+                    return;
+
                 default:
                     // Using the operator ~ for complement
                     Debug.Assert(_kind == SymbolicRegexKind.Not);
@@ -1278,6 +1334,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.EndAnchor:
                 case SymbolicRegexKind.Epsilon:
                 case SymbolicRegexKind.WatchDog:
+                case SymbolicRegexKind.CaptureStart:
+                case SymbolicRegexKind.CaptureEnd:
                     return;
 
                 case SymbolicRegexKind.Singleton:
@@ -1413,6 +1471,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Thus, this case is unreachable here, but included for completeness.
                     return _builder._endAnchorZ;
 
+                case SymbolicRegexKind.CaptureStart:
+                    return MkCaptureEnd(_builder, _lower);
+
+                case SymbolicRegexKind.CaptureEnd:
+                    return MkCaptureStart(_builder, _lower);
+
                 default:
                     // Remaining cases map to themselves:
                     // SymbolicRegexKind.Epsilon
@@ -1468,6 +1532,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.EndAnchorZ:
                 case SymbolicRegexKind.EndAnchorZRev:
                 case SymbolicRegexKind.BOLAnchor:
+                case SymbolicRegexKind.CaptureStart:
+                case SymbolicRegexKind.CaptureEnd:
                     return _builder._solver.False;
 
                 case SymbolicRegexKind.Singleton:

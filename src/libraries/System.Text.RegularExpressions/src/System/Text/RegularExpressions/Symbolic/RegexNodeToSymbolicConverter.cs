@@ -235,11 +235,10 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case RegexNodeKind.Concatenate:
                     {
-                        List<RegexNode> nested = FlattenNestedConcatenations(node);
-                        var converted = new SymbolicRegexNode<BDD>[nested.Count];
-                        for (int i = 0; i < converted.Length; i++)
+                        var converted = new SymbolicRegexNode<BDD>[node.ChildCount()];
+                        for (int i = 0; i < node.ChildCount(); ++i)
                         {
-                            converted[i] = Convert(nested[i], topLevel: false);
+                            converted[i] = Convert(node.Child(i), topLevel: false);
                         }
                         return _builder.MkConcat(converted, topLevel);
                     }
@@ -369,45 +368,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Use the predicate including joiner and non joiner
                     _builder._wordLetterPredicateForAnchors = _categorizer.WordLetterConditionForAnchors;
                 }
-            }
-
-            List<RegexNode> FlattenNestedConcatenations(RegexNode concat)
-            {
-                var results = new List<RegexNode>();
-
-                var todo = new Stack<RegexNode>();
-                todo.Push(concat);
-
-                while (todo.TryPop(out RegexNode? node))
-                {
-                    if (node.Kind == RegexNodeKind.Concatenate)
-                    {
-                        // Flatten nested concatenations
-                        for (int i = node.ChildCount() - 1; i >= 0; i--)
-                        {
-                            todo.Push(node.Child(i));
-                        }
-                    }
-                    else if (node.Kind == RegexNodeKind.Capture)
-                    {
-                        if (node.N == -1)
-                        {
-                            // Unwrap nonbalancing capture groups
-                            todo.Push(node.Child(0));
-                        }
-                        else
-                        {
-                            // Balancing groups are not supported
-                            throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingConflictingExpression, SR.ExpressionDescription_BalancingGroup));
-                        }
-                    }
-                    else
-                    {
-                        results.Add(node);
-                    }
-                }
-
-                return results;
             }
 
             SymbolicRegexNode<BDD> ConvertMulti(RegexNode node, bool topLevel)

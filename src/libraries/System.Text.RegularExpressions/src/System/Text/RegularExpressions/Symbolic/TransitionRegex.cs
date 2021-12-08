@@ -120,6 +120,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 case TransitionRegexKind.Leaf:
                     Debug.Assert(_node is not null);
                     return Create(_builder, _kind, default(S), null, null, _node._builder.MkConcat(_node, node));
+                case TransitionRegexKind.Effect:
+                    Debug.Assert(_first is not null);
+                    return Create(_builder, _kind, default(S), _first.Concat(node), null, null, _effect);
                 default:
                     // All other three cases are disjunctive and obey the same laws of propagation of complement
                     Debug.Assert(_first is not null && _second is not null);
@@ -298,6 +301,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     return $"{_first}|{_second}";
                 case TransitionRegexKind.Conditional:
                     return $"if({_test},{_first},{_second})";
+                case TransitionRegexKind.Effect:
+                    switch (_effect?.Kind)
+                    {
+                        case DerivativeEffect.EffectKind.CaptureStart:
+                            return $"captureStart({_effect?.IntArg0},{_first})";
+                        default:
+                            return $"captureEnd({_effect?.IntArg0},{_first})";
+                    }
                 default:
                     return $"if(IsNull({_node}),{_first},{_second})";
             }
