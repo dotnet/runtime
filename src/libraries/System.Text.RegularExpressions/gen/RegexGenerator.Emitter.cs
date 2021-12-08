@@ -1128,7 +1128,6 @@ namespace System.Text.RegularExpressions.Generator
 
                     if (!IsCaseInsensitive(node))
                     {
-
                         // If we're case-sensitive, we can simply validate that the remaining length of the slice is sufficient
                         // to possibly match, and then do a SequenceEqual against the matched text.
                         writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
