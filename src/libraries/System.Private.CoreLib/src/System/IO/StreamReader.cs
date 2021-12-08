@@ -428,8 +428,14 @@ namespace System.IO
             CheckAsyncTaskInProgress();
 
             // Call ReadBuffer, then pull data out of charBuffer.
-            _sb?.Clear();
-            _sb ??= new StringBuilder(_charLen - _charPos);
+            if (_sb == null)
+            {
+                _sb = new StringBuilder(_charLen - _charPos);
+            }
+            else
+            {
+                _sb.Clear();
+            }
             do
             {
                 _sb.Append(_charBuffer, _charPos, _charLen - _charPos);
@@ -883,16 +889,10 @@ namespace System.IO
                 if (i >= 0)
                 {
                     char ch = _charBuffer[_charPos + i];
-                    string s;
 
-                    if (_sb is { Length: > 0 })
-                    {
-                        s = _sb!.Append(_charBuffer, _charPos, i - _charPos).ToString();
-                    }
-                    else
-                    {
-                        s = new string(_charBuffer, _charPos, i);
-                    }
+                    string s = _sb is { Length: > 0 }
+                        ? _sb!.Append(_charBuffer, _charPos, i - _charPos).ToString()
+                        : new string(_charBuffer, _charPos, i);
 
                     _charPos += i + 1;
 
@@ -938,8 +938,14 @@ namespace System.IO
         private async Task<string> ReadToEndAsyncInternal()
         {
             // Call ReadBuffer, then pull data out of charBuffer.
-            _sb?.Clear();
-            _sb ??= new StringBuilder(_charLen - _charPos);
+            if (_sb == null)
+            {
+                _sb = new StringBuilder(_charLen - _charPos);
+            }
+            else
+            {
+                _sb.Clear();
+            }
             do
             {
                 int tmpCharPos = _charPos;
