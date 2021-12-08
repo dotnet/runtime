@@ -3338,20 +3338,20 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.End => "Match if at the end of the string.",
                 RegexNode.EndZ => "Match if at the end of the string or if before an ending newline.",
                 RegexNode.Eol => "Match if at the end of a line.",
-                RegexNode.Loop or RegexNode.Lazyloop => $"Loop {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
+                RegexNode.Loop or RegexNode.Lazyloop => $"Loop {DescribeLoop(node)}.",
                 RegexNode.Multi => $"Match the string {Literal(node.Str!)}.",
                 RegexNode.NonBoundary => $"Match if at anything other than a word boundary.",
                 RegexNode.NonECMABoundary => $"Match if at anything other than a word boundary (according to ECMAScript rules).",
                 RegexNode.Nothing => $"Fail to match.",
                 RegexNode.Notone => $"Match any character other than {Literal(node.Ch)}.",
-                RegexNode.Notoneloop or RegexNode.Notoneloopatomic or RegexNode.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
+                RegexNode.Notoneloop or RegexNode.Notoneloopatomic or RegexNode.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoop(node)}.",
                 RegexNode.One => $"Match {Literal(node.Ch)}.",
-                RegexNode.Oneloop or RegexNode.Oneloopatomic or RegexNode.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
+                RegexNode.Oneloop or RegexNode.Oneloopatomic or RegexNode.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoop(node)}.",
                 RegexNode.Prevent => $"Zero-width negative lookahead assertion.",
                 RegexNode.Ref => $"Match the same text as matched by the {DescribeNonNegative(node.M)} capture group.",
                 RegexNode.Require => $"Zero-width positive lookahead assertion.",
                 RegexNode.Set => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)}.",
-                RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)} {DescribeLoopConsumption(node)} {DescribeLoopBounds(node)}.",
+                RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)} {DescribeLoop(node)}.",
                 RegexNode.Start => "Match if at the start position.",
                 RegexNode.Testgroup => $"Conditionally match {(node.ChildCount() == 2 ? "an expression" : "one of two expressions")} depending on whether an initial expression matches.",
                 RegexNode.Testref => $"Conditionally match {(node.ChildCount() == 1 ? "an expression" : "one of two expressions")} depending on whether the {DescribeNonNegative(node.M)} capture group matched.",
@@ -3410,10 +3410,12 @@ namespace System.Text.RegularExpressions.Generator
                 $"{n}th";
         }
 
-        /// <summary>Gets a textual description of loop node's consumption, e.g. "greedily".</summary>
-        private static string DescribeLoopConsumption(RegexNode node) =>
-            node.Type switch
+        /// <summary>Gets a textual description of a loop's style and bounds.</summary>
+        private static string DescribeLoop(RegexNode node)
+        {
+            string style = node.Type switch
             {
+                _ when node.M == node.N => "exactly",
                 RegexNode.Oneloopatomic or RegexNode.Notoneloopatomic or RegexNode.Setloopatomic => "atomically",
                 RegexNode.Oneloop or RegexNode.Notoneloop or RegexNode.Setloop => "greedily",
                 RegexNode.Onelazy or RegexNode.Notonelazy or RegexNode.Setlazy => "lazily",
@@ -3421,17 +3423,20 @@ namespace System.Text.RegularExpressions.Generator
                 _ /* RegexNode.Lazy */ => node.IsAtomicByParent() ? "lazily and atomically" : "lazily",
             };
 
-        /// <summary>Gets a textual description of a loop node's bounds, e.g. "at least once".</summary>
-        private static string DescribeLoopBounds(RegexNode node) =>
-            node.M == node.N ? $"{node.M} times" :
-            (node.M, node.N) switch
-            {
-                (0, int.MaxValue) => "any number of times",
-                (1, int.MaxValue) => "at least once",
-                (0, 1) => "optionally",
-                (_, int.MaxValue) => $"at least {node.M} times",
-                _ => $"at least {node.M} and at most {node.N} times"
-            };
+            string bounds =
+                node.M == node.N ? $" {node.M} times" :
+                (node.M, node.N) switch
+                {
+                    (0, int.MaxValue) => " any number of times",
+                    (1, int.MaxValue) => " at least once",
+                    (2, int.MaxValue) => " at least twice",
+                    (_, int.MaxValue) => $" at least {node.M} times",
+                    (0, 1) => ", optionally",
+                    _ => $" at least {node.M} and at most {node.N} times"
+                };
+
+            return style + bounds;
+        }
 
         private static FinishEmitScope EmitScope(IndentedTextWriter writer, string title, bool faux = false) => EmitBlock(writer, $"// {title}", faux: faux);
 
