@@ -188,7 +188,7 @@ function _generate_args_marshaler (typePtr: MonoType, method: MonoMethod, args_m
         setU32(buffer + 8, argsRoot.value);
 
         // Invoke the managed method
-        resultRoot.value = cwraps.mono_wasm_invoke_method(generatorMethod, MonoObjectNull, <VoidPtr><any>buffer, exceptionRoot.get_address());
+        resultRoot.value = cwraps.mono_wasm_invoke_method(generatorMethod, MonoObjectNull, <VoidPtr><any>buffer, <VoidPtr><any>exceptionRoot.get_address());
         // If it threw an exception, this will yield us a JS Error instance to throw
         const exc = _convert_exception_for_method_call(<MonoString>resultRoot.value, exceptionRoot.value);
         if (exc)
@@ -225,7 +225,7 @@ function _generate_bound_method (typePtr: MonoType, method: MonoMethod, args_mar
         setU32(buffer + 12, nameRoot.value);
 
         // Invoke the managed method
-        resultRoot.value = cwraps.mono_wasm_invoke_method(generatorMethod, MonoObjectNull, <VoidPtr><any>buffer, exceptionRoot.get_address());
+        resultRoot.value = cwraps.mono_wasm_invoke_method(generatorMethod, MonoObjectNull, <VoidPtr><any>buffer, <VoidPtr><any>exceptionRoot.get_address());
         // If it threw an exception, this will yield us a JS Error instance to throw
         const exc = _convert_exception_for_method_call(<MonoString>resultRoot.value, exceptionRoot.value);
         if (exc)

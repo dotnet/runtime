@@ -119,9 +119,12 @@ declare const enum ArgsMarshal {
     Float32 = "f",
     Float64 = "d",
     String = "s",
-    Char = "s",
+    InternedString = "S",
+    Uri = "u",
     JSObj = "o",
-    MONOObj = "m"
+    MONOObj = "m",
+    Auto = "a",
+    ByteSpan = "b"
 }
 declare type _ExtraArgsMarshalOperators = "!" | "";
 declare type ArgsMarshalString = "" | `${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
@@ -151,6 +154,9 @@ declare type MonoConfig = {
     aot_profiler_options?: AOTProfilerOptions;
     coverage_profiler_options?: CoverageProfilerOptions;
     ignore_pdb_load_errors?: boolean;
+    custom_marshalers?: {
+        [key: string]: string | undefined;
+    };
 };
 declare type MonoConfigError = {
     isError: true;
@@ -235,6 +241,7 @@ declare type DotnetModuleConfigImports = {
 declare function mono_wasm_runtime_ready(): void;
 
 declare function mono_wasm_setenv(name: string, value: string): void;
+declare function mono_wasm_register_custom_marshaler(aqn: string, marshalerAQN: string): void;
 declare function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoConfigError | undefined): Promise<void>;
 declare function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean;
 /**
@@ -249,7 +256,7 @@ declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
 declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
 
 declare function conv_string(mono_obj: MonoString): string | null;
-declare function js_string_to_mono_string(string: string): MonoString | null;
+declare function js_string_to_mono_string(string: string): MonoString;
 
 declare function js_to_mono_obj(js_obj: any): MonoObject;
 declare function js_typed_array_to_array(js_obj: any): MonoArray;
@@ -265,7 +272,7 @@ declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 declare type _MemOffset = number | VoidPtr | NativePointer;
 declare function setU8(offset: _MemOffset, value: number): void;
 declare function setU16(offset: _MemOffset, value: number): void;
-declare function setU32(offset: _MemOffset, value: number): void;
+declare function setU32(offset: _MemOffset, value: number | VoidPtr | NativePointer | ManagedPointer): void;
 declare function setI8(offset: _MemOffset, value: number): void;
 declare function setI16(offset: _MemOffset, value: number): void;
 declare function setI32(offset: _MemOffset, value: number): void;
@@ -293,6 +300,7 @@ declare const MONO: {
     mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
     mono_wasm_new_root: typeof mono_wasm_new_root;
     mono_wasm_release_roots: typeof mono_wasm_release_roots;
+    mono_wasm_register_custom_marshaler: typeof mono_wasm_register_custom_marshaler;
     mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
     mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
     config: MonoConfig | MonoConfigError;

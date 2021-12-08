@@ -1,4 +1,4 @@
-import { Module, MONO, BINDING, runtimeHelpers } from "./modules";
+import { Module, MONO, BINDING, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { WasmRoot } from "./roots";
 import {
@@ -24,6 +24,7 @@ import {
 import { _unbox_ref_type_root_as_js_object } from "./cs-to-js";
 import { js_to_mono_obj } from "./js-to-cs";
 import cswraps from "./corebindings";
+import { VoidPtr, Int32Ptr, EmscriptenModule } from "./types/emscripten";
 
 const _custom_marshaler_info_cache = new Map<MonoType, CustomMarshalerInfo | null>();
 const _struct_unboxer_cache = new Map<MonoType, Function | null>();

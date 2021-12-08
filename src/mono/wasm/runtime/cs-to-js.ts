@@ -17,6 +17,7 @@ import { _js_to_mono_obj } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
 import { getU32, getI32, getF32, getF64 } from "./memory";
 import { extract_js_obj_root_with_converter, extract_js_obj_root_with_possible_converter } from "./custom-marshaler";
+import { VoidPtr, Int32Ptr } from "./types/emscripten";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
