@@ -1,12 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pch.h"
-
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <math.h>
+
+#ifndef INFINITY
+#define INFINITY 1e300 // Practically good enough - not sure why we miss this in our Linux build.
+#endif
+
+#ifndef DLLEXPORT
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__ ((visibility ("default")))
+#endif // _MSC_VER
+#endif // DLLEXPORT
 
 #include "strike.h"
 #include "util.h"
@@ -24,7 +34,9 @@ class MapViewHolder
 
 typedef unsigned char uint8_t;
 typedef unsigned int uint32_t;
+#ifdef HOST_WINDOWS
 typedef long long int64_t;
+#endif
 typedef size_t uint64_t;
 
 bool IsInCantAllocStressLogRegion()
@@ -32,7 +44,11 @@ bool IsInCantAllocStressLogRegion()
     return true;
 }
 
+#include <stddef.h>
 #include "../../../inc/stresslog.h"
+
+size_t StressLog::writing_base_address;
+size_t StressLog::reading_base_address;
 
 BOOL g_bDacBroken;
 WCHAR g_mdName[1];
@@ -68,7 +84,7 @@ struct CorClrData : IDebugDataSpaces
     virtual HRESULT ReadVirtual(void* src, void* dest, size_t size, int)
     {
         size_t cumSize = 0;
-        for (int moduleIndex = 0; moduleIndex < StressLog::MAX_MODULES; moduleIndex++)
+        for (size_t moduleIndex = 0; moduleIndex < StressLog::MAX_MODULES; moduleIndex++)
         {
             ptrdiff_t offs = (uint8_t*)src - hdr->modules[moduleIndex].baseAddress;
             if ((size_t)offs < hdr->modules[moduleIndex].size && (size_t)offs + size < hdr->modules[moduleIndex].size)
@@ -355,6 +371,9 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     InterestingStringId isd = FindStringId(hdr, format);
     switch (isd)
     {
+    case    IS_UNINTERESTING:
+    case    IS_UNKNOWN:
+        break;    
     case    IS_THREAD_WAIT:
     case    IS_THREAD_WAIT_DONE:
         RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_FG);
@@ -527,8 +546,8 @@ int CmpMsg(const void* p1, const void* p2)
 
 struct ThreadStressLogDesc
 {
-    volatile unsigned workStarted;
-    volatile unsigned workFinished;
+    volatile LONG workStarted;
+    volatile LONG workFinished;
     ThreadStressLog* tsl;
     StressMsg* earliestMessage;
 
@@ -540,15 +559,15 @@ struct ThreadStressLogDesc
 static const int MAX_THREADSTRESSLOGS = 64 * 1024;
 static ThreadStressLogDesc s_threadStressLogDesc[MAX_THREADSTRESSLOGS];
 static int s_threadStressLogCount;
-static LONG s_wrappedWriteThreadCount;
+static LONG64 s_wrappedWriteThreadCount;
 
 static const LONG MAX_MESSAGE_COUNT = 64 * 1024 * 1024;
 static StressThreadAndMsg* s_threadMsgBuf;
-static volatile LONGLONG s_msgCount = 0;
-static volatile LONGLONG s_totalMsgCount = 0;
+static volatile LONG64 s_msgCount = 0;
+static volatile LONG64 s_totalMsgCount = 0;
 static double s_timeFilterStart = 0;
 static double s_timeFilterEnd = 0;
-static wchar_t* s_outputFileName = nullptr;
+static WCHAR* s_outputFileName = nullptr;
 
 static StressLog::StressLogHeader* s_hdr;
 
@@ -625,12 +644,12 @@ static void InterpretEscapeSequences(char* s)
     *d = '\0';
 }
 
-bool ParseOptions(int argc, wchar_t* argv[])
+bool ParseOptions(int argc, char* argv[])
 {
     int i = 0;
     while (i < argc)
     {
-        wchar_t* arg = argv[i];
+        char* arg = argv[i];
         if (arg[0] == '-')
         {
             switch (arg[1])
@@ -645,15 +664,15 @@ bool ParseOptions(int argc, wchar_t* argv[])
                 if (arg[2] == ':')
                 {
                     int i = s_valueFilterCount++;
-                    wchar_t* end = nullptr;
-                    s_valueFilter[i].start = _wcstoui64(&arg[3], &end, 16);
+                    char* end = nullptr;
+                    s_valueFilter[i].start = strtoul(&arg[3], &end, 16);
                     if (*end == '-')
                     {
-                        s_valueFilter[i].end = _wcstoui64(end + 1, &end, 16);
+                        s_valueFilter[i].end = strtoul(end + 1, &end, 16);
                     }
                     else if (*end == '+')
                     {
-                        s_valueFilter[i].end = s_valueFilter[i].start + _wcstoui64(end + 1, &end, 16);
+                        s_valueFilter[i].end = s_valueFilter[i].start + strtoul(end + 1, &end, 16);
                     }
                     else if (*end != '\0')
                     {
@@ -666,7 +685,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                     }
                     if (*end != '\0')
                     {
-                        printf("could not parse option %S\n", arg);
+                        printf("could not parse option %s\n", arg);
                         return false;
                     }
                 }
@@ -681,15 +700,15 @@ bool ParseOptions(int argc, wchar_t* argv[])
             case 'T':
                 if (arg[2] == ':')
                 {
-                    wchar_t* end = nullptr;
-                    s_timeFilterStart = wcstod(&arg[3], &end);
+                    char* end = nullptr;
+                    s_timeFilterStart = strtod(&arg[3], &end);
                     if (*end == '-')
                     {
-                        s_timeFilterEnd = wcstod(end + 1, &end);
+                        s_timeFilterEnd = strtod(end + 1, &end);
                     }
                     else if (*end == '+')
                     {
-                        s_timeFilterEnd = s_timeFilterStart + wcstod(end + 1, &end);
+                        s_timeFilterEnd = s_timeFilterStart + strtod(end + 1, &end);
                     }
                     else
                     {
@@ -697,11 +716,11 @@ bool ParseOptions(int argc, wchar_t* argv[])
                     }
                     if (*end != '\0')
                     {
-                        printf("could not parse option %S\n", arg);
+                        printf("could not parse option %s\n", arg);
                         return false;
                     }
                 }
-                else if (_wcsnicmp(arg, L"-tid:", 5) == 0)
+                else if (_strnicmp(arg, "-tid:", 5) == 0)
                 {
                     arg = arg + 5;
                     while (true)
@@ -711,11 +730,11 @@ bool ParseOptions(int argc, wchar_t* argv[])
                             printf("too many thread filters - max is %d\n", MAX_THREAD_FILTERS);
                             return false;
                         }
-                        wchar_t* end = nullptr;
-                        if (_wcsnicmp(arg, L"gc", 2) == 0 || _wcsnicmp(arg, L"bg", 2) == 0)
+                        char* end = nullptr;
+                        if (_strnicmp(arg, "gc", 2) == 0 || _strnicmp(arg, "bg", 2) == 0)
                         {
-                            int gcHeapNumber = wcstol(arg+2, &end, 10);
-                            GcThreadKind kind = _wcsnicmp(arg, L"gc", 2) == 0 ? GC_THREAD_FG : GC_THREAD_BG;
+                            int gcHeapNumber = strtoul(arg+2, &end, 10);
+                            GcThreadKind kind = _strnicmp(arg, "gc", 2) == 0 ? GC_THREAD_FG : GC_THREAD_BG;
                             if (gcHeapNumber < MAX_NUMBER_OF_HEAPS)
                             {
                                 s_gcThreadFilter[gcHeapNumber][kind] = true;
@@ -730,7 +749,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                         else
                         {
                             int i = s_threadFilterCount++;
-                            s_threadFilter[i] = _wcstoui64(arg, &end, 16);
+                            s_threadFilter[i] = strtoul(arg, &end, 16);
                         }
                         if (*end == ',')
                         {
@@ -738,7 +757,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                         }
                         else if (*end != '\0')
                         {
-                            printf("could not parse %S\n", arg);
+                            printf("could not parse %s\n", arg);
                             return false;
                         }
                         else
@@ -747,7 +766,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                         }
                     }
                 }
-                else if (_wcsicmp(arg, L"-tid") == 0)
+                else if (_stricmp(arg, "-tid") == 0)
                 {
                     s_printHexTidForGcThreads = true;
                 }
@@ -763,7 +782,10 @@ bool ParseOptions(int argc, wchar_t* argv[])
             case 'O':
                 if (arg[2] == ':')
                 {
-                    s_outputFileName = &arg[3];
+                    WCHAR* buffer = new WCHAR[1000];
+                    if (MultiByteToWideChar(CP_ACP, 0, &arg[3], -1, buffer, 1000) == 0)
+                        return false;
+                    s_outputFileName = buffer;
                 }
                 else
                 {
@@ -785,7 +807,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                             return false;
                         }
                         int i = s_levelFilterCount++;
-                        wchar_t* end = nullptr;
+                        char* end = nullptr;
                         if (*arg == '*')
                         {
                             s_levelFilter[i].minLevel = 0;
@@ -794,10 +816,10 @@ bool ParseOptions(int argc, wchar_t* argv[])
                         }
                         else
                         {
-                            s_levelFilter[i].minLevel = wcstol(arg, &end, 10);
+                            s_levelFilter[i].minLevel = strtoul(arg, &end, 10);
                             if (*end == '-')
                             {
-                                s_levelFilter[i].maxLevel = wcstol(end + 1, &end, 10);
+                                s_levelFilter[i].maxLevel = strtoul(end + 1, &end, 10);
                             }
                             else
                             {
@@ -810,7 +832,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                         }
                         else if (*end != '\0')
                         {
-                            printf("could not parse option %S\n", arg);
+                            printf("could not parse option %s\n", arg);
                             return false;
                         }
                         else
@@ -840,23 +862,18 @@ bool ParseOptions(int argc, wchar_t* argv[])
                         return false;
                     }
                     arg = &arg[3];
-                    size_t requiredSize = 0;
-                    if (wcstombs_s(&requiredSize, nullptr, 0, arg, 0) != 0)
-                        return false;
-                    char* buf = new char[requiredSize];
-                    size_t actualSize = 0;
-                    if (wcstombs_s(&actualSize, buf, requiredSize, arg, requiredSize) != 0)
-                        return false;
+                    char* buf = arg;
+                    size_t actualSize = strlen(buf);
                     if (actualSize <= 1)
                     {
                         printf("-f:<format string> expected\n");
                         return false;
                     }
-                    assert(actualSize == requiredSize);
+                    
                     // remove double quotes around the string, if given
-                    if (actualSize >= 2 && buf[0] == '"' && buf[actualSize - 2] == '"')
+                    if (actualSize >= 2 && buf[0] == '"' && buf[actualSize - 1] == '"')
                     {
-                        buf[actualSize - 2] = '\0';
+                        buf[actualSize - 1] = '\0';
                         buf++;
                     }
                     InterpretEscapeSequences(buf);
@@ -868,11 +885,11 @@ bool ParseOptions(int argc, wchar_t* argv[])
             case 'G':
                 if (arg[2] == ':')
                 {
-                    wchar_t* end = nullptr;
-                    s_gcFilterStart = wcstol(arg+3, &end, 10);
+                    char* end = nullptr;
+                    s_gcFilterStart = strtoul(arg+3, &end, 10);
                     if (*end == '-')
                     {
-                        s_gcFilterEnd = wcstol(end+1, &end, 10);
+                        s_gcFilterEnd = strtoul(end+1, &end, 10);
                     }
                     else
                     {
@@ -880,7 +897,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                     }
                     if (*end != '\0')
                     {
-                        printf("could not parse option %S\n", arg);
+                        printf("could not parse option %s\n", arg);
                         return false;
                     }
                 }
@@ -895,11 +912,11 @@ bool ParseOptions(int argc, wchar_t* argv[])
             case 'I':
                 if (arg[2] == ':')
                 {
-                    wchar_t* end = nullptr;
-                    s_facilityIgnore = wcstoul(arg + 3, &end, 16);
+                    char* end = nullptr;
+                    s_facilityIgnore = strtoul(arg + 3, &end, 16);
                     if (*end != '\0')
                     {
-                        printf("could not parse option %S\n", arg);
+                        printf("could not parse option %s\n", arg);
                         return false;
                     }
                 }
@@ -926,11 +943,11 @@ bool ParseOptions(int argc, wchar_t* argv[])
                             printf("too many threads - max is %d\n", MAX_THREAD_FILTERS);
                             return false;
                         }
-                        wchar_t* end = nullptr;
-                        if (_wcsnicmp(arg, L"gc", 2) == 0 || _wcsnicmp(arg, L"bg", 2) == 0)
+                        char* end = nullptr;
+                        if (_strnicmp(arg, "gc", 2) == 0 || _strnicmp(arg, "bg", 2) == 0)
                         {
-                            int gcHeapNumber = wcstol(arg + 2, &end, 10);
-                            GcThreadKind kind = _wcsnicmp(arg, L"gc", 2) == 0 ? GC_THREAD_FG : GC_THREAD_BG;
+                            int gcHeapNumber = strtoul(arg + 2, &end, 10);
+                            GcThreadKind kind = _strnicmp(arg, "gc", 2) == 0 ? GC_THREAD_FG : GC_THREAD_BG;
                             if (gcHeapNumber < MAX_NUMBER_OF_HEAPS)
                             {
                                 s_printEarliestMessageFromGcThread[gcHeapNumber][kind] = true;
@@ -944,7 +961,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                         else
                         {
                             int i = s_printEarliestMessageFromThreadCount++;
-                            s_printEarliestMessageFromThread[i] = _wcstoui64(arg, &end, 16);
+                            s_printEarliestMessageFromThread[i] = strtoul(arg, &end, 16);
                         }
                         if (*end == ',')
                         {
@@ -952,7 +969,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                         }
                         else if (*end != '\0')
                         {
-                            printf("could not parse %S\n", arg);
+                            printf("could not parse %s\n", arg);
                             return false;
                         }
                         else
@@ -963,7 +980,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                 }
                 else
                 {
-                    printf("could not parse option %S\n", arg);
+                    printf("could not parse option %s\n", arg);
                     return false;
                 }
                 break;
@@ -973,7 +990,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
                 return false;
 
             default:
-                printf("unrecognized option %S\n", arg);
+                printf("unrecognized option %s\n", arg);
                 return false;
             }
         }
@@ -988,7 +1005,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
 
 static void IncludeMessage(uint64_t threadId, StressMsg* msg)
 {
-    LONGLONG msgCount = _InterlockedIncrement64(&s_msgCount) - 1;
+    LONGLONG msgCount = InterlockedIncrement64(&s_msgCount) - 1;
     if (msgCount < MAX_MESSAGE_COUNT)
     {
         s_threadMsgBuf[msgCount].threadId = threadId;
@@ -1018,14 +1035,14 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
         {
             wrappedWriteThreadCount++;
         }
-        //        printf("thread: %Ix\n", tsl->threadId);
-        StressMsg* msg = tsl->curPtr;
-        StressLogChunk* slc = tsl->curWriteChunk;
+        // printf("thread: %Ix\n", tsl->threadId);
+        StressMsg* msg = StressLog::TranslateMemoryMappedPointer(tsl->curPtr);
+        StressLogChunk* slc = StressLog::TranslateMemoryMappedPointer(tsl->curWriteChunk);
         int chunkCount = 0;
         StressMsg* prevMsg = nullptr;
         while (true)
         {
-            //            printf("stress log chunk %Ix\n", (size_t)slc);
+            // printf("stress log chunk %Ix\n", (size_t)slc);
             if (!slc->IsValid())
             {
                 printf("oops, invalid stress log chunk\n");
@@ -1040,11 +1057,11 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                 }
                 msg = nullptr;
             }
-            assert(slc->next->prev == slc);
-            assert(slc->prev->next == slc);
+            assert(StressLog::TranslateMemoryMappedPointer(StressLog::TranslateMemoryMappedPointer(slc->next)->prev) == slc);
+            assert(StressLog::TranslateMemoryMappedPointer(StressLog::TranslateMemoryMappedPointer(slc->prev)->next) == slc);
 #ifdef _DEBUG
             int chunkCount1 = 0;
-            for (StressLogChunk* slc1 = tsl->curWriteChunk; slc1 != slc; slc1 = slc1->next)
+            for (StressLogChunk* slc1 = StressLog::TranslateMemoryMappedPointer(tsl->curWriteChunk); slc1 != slc; slc1 = StressLog::TranslateMemoryMappedPointer(slc1->next))
             {
                 chunkCount1++;
             }
@@ -1114,10 +1131,10 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                 prevMsg = msg;
                 msg = (StressMsg*)&msg->args[numberOfArgs];
             }
-            if (slc == tsl->chunkListTail && !tsl->writeHasWrapped)
+            if (slc == StressLog::TranslateMemoryMappedPointer(tsl->chunkListTail) && !tsl->writeHasWrapped)
                 break;
-            slc = slc->next;
-            if (slc == tsl->curWriteChunk)
+            slc = StressLog::TranslateMemoryMappedPointer(slc->next);
+            if (slc == StressLog::TranslateMemoryMappedPointer(tsl->curWriteChunk))
                 break;
             if (s_hadGcThreadFilters && !FilterThread(tsl))
                 break;
@@ -1134,7 +1151,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
     }
 
     InterlockedAdd64(&s_totalMsgCount, totalMsgCount);
-    InterlockedAdd(&s_wrappedWriteThreadCount, wrappedWriteThreadCount);
+    InterlockedAdd64(&s_wrappedWriteThreadCount, wrappedWriteThreadCount);
 
     return 0;
 }
@@ -1142,9 +1159,9 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
 static double FindLatestTime(StressLog::StressLogHeader* hdr)
 {
     double latestTime = 0.0;
-    for (ThreadStressLog* tsl = hdr->logs.t; tsl != nullptr; tsl = tsl->next)
+    for (ThreadStressLog* tsl = StressLog::TranslateMemoryMappedPointer(hdr->logs.t); tsl != nullptr; tsl = StressLog::TranslateMemoryMappedPointer(tsl->next))
     {
-        StressMsg* msg = tsl->curPtr;
+        StressMsg* msg = StressLog::TranslateMemoryMappedPointer(tsl->curPtr);
         double deltaTime = ((double)(msg->timeStamp - hdr->startTimeStamp)) / hdr->tickFrequency;
         latestTime = max(latestTime, deltaTime);
     }
@@ -1154,7 +1171,7 @@ static double FindLatestTime(StressLog::StressLogHeader* hdr)
 static void PrintFriendlyNumber(LONGLONG n)
 {
     if (n < 1000)
-        printf("%d", n);
+        printf("%lld", n);
     else if (n < 1000 * 1000)
         printf("%5.3f thousand", n / 1000.0);
     else if (n < 1000 * 1000 * 1000)
@@ -1188,19 +1205,34 @@ static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t thre
     formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg->facility, argBuffer, s_fPrintFormatStrings);
 }
 
-extern "C" int __declspec(dllexport) ProcessStresslog(void* baseAddress, int argc, wchar_t* argv[])
+int ProcessStressLog(void* baseAddress, int argc, char* argv[])
 {
+    for (int threadStressLogIndex = 0; threadStressLogIndex < s_threadStressLogCount; threadStressLogIndex++)
+    {
+        s_threadStressLogDesc[threadStressLogIndex].workStarted = 0;
+        s_threadStressLogDesc[threadStressLogIndex].workFinished = 0;
+    }
+    s_msgCount = 0;
+    s_totalMsgCount = 0;
+    s_timeFilterStart = 0;
+    s_timeFilterEnd = 0;
+    s_outputFileName = nullptr;
+    s_fPrintFormatStrings = false;
+    memset(&mapImageToStringId, 0, sizeof(mapImageToStringId));
+
     if (!ParseOptions(argc, argv))
         return 1;
 
     StressLog::StressLogHeader* hdr = (StressLog::StressLogHeader*)baseAddress;
     if (hdr->headerSize != sizeof(*hdr) ||
-        hdr->magic != 'STRL' ||
+        hdr->magic != *(uint32_t*)"LRTS" ||
         hdr->version != 0x00010001)
     {
         printf("Unrecognized file format\n");
         return 1;
     }
+    StressLog::writing_base_address = (size_t)hdr->memoryBase;
+    StressLog::reading_base_address = (size_t)baseAddress;
     s_hdr = hdr;
     s_threadMsgBuf = new StressThreadAndMsg[MAX_MESSAGE_COUNT];
     int threadStressLogIndex = 0;
@@ -1210,7 +1242,7 @@ extern "C" int __declspec(dllexport) ProcessStresslog(void* baseAddress, int arg
         s_timeFilterStart = max(latestTime + s_timeFilterStart, 0);
         s_timeFilterEnd = latestTime;
     }
-    for (ThreadStressLog* tsl = hdr->logs.t; tsl != nullptr; tsl = tsl->next)
+    for (ThreadStressLog* tsl = StressLog::TranslateMemoryMappedPointer(hdr->logs.t); tsl != nullptr; tsl = StressLog::TranslateMemoryMappedPointer(tsl->next))
     {
         if (!tsl->IsValid())
             continue;
@@ -1340,14 +1372,14 @@ extern "C" int __declspec(dllexport) ProcessStresslog(void* baseAddress, int arg
     FILE* outputFile = stdout;
     if (s_outputFileName != nullptr)
     {
-        if (_wfopen_s(&outputFile, s_outputFileName, L"w") != 0)
+        if (_wfopen_s(&outputFile, s_outputFileName, W("w")) != 0)
         {
             printf("could not create output file %S\n", s_outputFileName);
             outputFile = stdout;
         }
     }
 
-    for (size_t i = 0; i < s_msgCount; i++)
+    for (LONGLONG i = 0; i < s_msgCount; i++)
     {
         uint64_t threadId = (unsigned)s_threadMsgBuf[i].threadId;
         StressMsg* msg = s_threadMsgBuf[i].msg;
@@ -1384,7 +1416,7 @@ extern "C" int __declspec(dllexport) ProcessStresslog(void* baseAddress, int arg
     if (s_printEarliestMessages || s_printEarliestMessageFromThreadCount > 0)
     {
         fprintf(outputFile, "\nEarliestMessages:\n");
-        LONG earliestStartCount = s_msgCount;
+        LONGLONG earliestStartCount = s_msgCount;
         for (int threadStressLogIndex = 0; threadStressLogIndex < s_threadStressLogCount; threadStressLogIndex++)
         {
             StressMsg* msg = s_threadStressLogDesc[threadStressLogIndex].earliestMessage;
@@ -1409,7 +1441,7 @@ extern "C" int __declspec(dllexport) ProcessStresslog(void* baseAddress, int arg
             }
         }
         qsort(&s_threadMsgBuf[earliestStartCount], s_msgCount - earliestStartCount, sizeof(s_threadMsgBuf[0]), CmpMsg);
-        for (size_t i = earliestStartCount; i < s_msgCount; i++)
+        for (LONGLONG i = earliestStartCount; i < s_msgCount; i++)
         {
             uint64_t threadId = (unsigned)s_threadMsgBuf[i].threadId;
             StressMsg* msg = s_threadMsgBuf[i].msg;
@@ -1424,7 +1456,7 @@ extern "C" int __declspec(dllexport) ProcessStresslog(void* baseAddress, int arg
     ptrdiff_t availSize = hdr->memoryLimit - hdr->memoryCur;
     printf("Used file size: %6.3f GB, still available: %6.3f GB, %d threads total, %d overwrote earlier messages\n", 
         (double)usedSize / (1024 * 1024 * 1024), (double)availSize/ (1024 * 1024 * 1024),
-        s_threadStressLogCount, s_wrappedWriteThreadCount);
+        s_threadStressLogCount, (int)s_wrappedWriteThreadCount);
     if (hdr->threadsWithNoLog != 0)
         printf("%Id threads did not get a log!\n", hdr->threadsWithNoLog);
     printf("Number of messages examined: "); PrintFriendlyNumber(s_totalMsgCount); printf(", printed: "); PrintFriendlyNumber(s_msgCount); printf("\n");
@@ -1433,20 +1465,3 @@ extern "C" int __declspec(dllexport) ProcessStresslog(void* baseAddress, int arg
 
     return 0;
 }
-
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-                     )
-{
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_ATTACH:
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-    return TRUE;
-}
-

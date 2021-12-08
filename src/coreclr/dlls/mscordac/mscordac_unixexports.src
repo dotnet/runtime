@@ -23,6 +23,7 @@ nativeStringResourceTable_mscorrc
 #PAL_CatchHardwareExceptionHolderEnter
 #PAL_CatchHardwareExceptionHolderExit
 #PAL_bsearch
+#PAL_CopyModuleData
 #PAL_errno
 #PAL_fflush
 #PAL__flushall
@@ -142,6 +143,7 @@ nativeStringResourceTable_mscorrc
 #LocalAlloc
 #LocalFree
 #MapViewOfFile
+#MapViewOfFileEx
 #MoveFileExW
 #MultiByteToWideChar
 #OpenProcess
