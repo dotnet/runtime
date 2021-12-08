@@ -3333,7 +3333,7 @@ namespace System.Text.RegularExpressions.Generator
         private static string DescribeNode(RegexNode node) =>
             node.Type switch
             {
-                RegexNode.Alternate => $"Match with {node.ChildCount()} alternative expressions.",
+                RegexNode.Alternate => $"Match with {node.ChildCount()} alternative expressions{(node.IsAtomicByParent() ? ", atomically" : "")}.",
                 RegexNode.Atomic => $"Atomic group.",
                 RegexNode.Beginning => "Match if at the beginning of the string.",
                 RegexNode.Bol => "Match if at the beginning of a line.",
@@ -3375,7 +3375,11 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="depth">The depth of the current node.</param>
         private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, int depth = 0)
         {
-            if (node.Type != RegexNode.Concatenate)
+            bool skip =
+                node.Type is RegexNode.Concatenate ||
+                (node.Type == RegexNode.Atomic && node.Child(0).Type is RegexNode.Loop or RegexNode.Lazyloop or RegexNode.Alternate);
+
+            if (!skip)
             {
                 // Write out the line for the node.
                 const char BulletPoint = '\u25CB';
@@ -3388,7 +3392,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 for (int i = 0; i < childCount; i++)
                 {
-                    int childDepth = node.Type == RegexNode.Concatenate ? depth : depth + 1;
+                    int childDepth = skip ? depth : depth + 1;
                     DescribeExpression(writer, node.Child(i), prefix, childDepth);
                 }
             }
