@@ -77,6 +77,10 @@ namespace System
                         throw new Win32Exception((int)result);
                     }
                 }
+                else if (result != 0)
+                {
+                    throw new Win32Exception((int)result);
+                }
 
                 const int LOGON32_PROVIDER_DEFAULT = 0;
                 const int LOGON32_LOGON_INTERACTIVE = 2;
