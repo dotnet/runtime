@@ -172,7 +172,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var setCounter = (int)_getRegisterCount.Call();
                 Assert.True(5 == wasCalled, $"wasCalled: {wasCalled}");
                 Assert.True(8 == hitCounter, $"hitCounter: {hitCounter}");
-                Assert.True(12 == setCounter, $"hitCounter: {hitCounter}");
+                Assert.True(12 == setCounter, $"setCounter: {setCounter}");
                 timer1?.Dispose();
                 timer2?.Dispose();
                 timer3?.Dispose();
