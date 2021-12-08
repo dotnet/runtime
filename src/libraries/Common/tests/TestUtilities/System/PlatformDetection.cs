@@ -418,7 +418,6 @@ namespace System
         {
             if (IsWindows)
             {
-                Console.WriteLine($"IsWindows10Version2004OrGreater {IsWindows10Version2004OrGreater}");
                 if (!IsWindows10Version2004OrGreater)
                 {
                     return false;
@@ -432,8 +431,6 @@ namespace System
                 {
                     client = Registry.GetValue(clientKey, "Enabled", null);
                     server = Registry.GetValue(serverKey, "Enabled", null);
-                    Console.WriteLine($"client {client}");
-                    Console.WriteLine($"client {client}");
                     if (client is int c && server is int s)
                     {
                         return c == 1 && s == 1;
