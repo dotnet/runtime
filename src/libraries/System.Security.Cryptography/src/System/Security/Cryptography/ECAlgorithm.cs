@@ -862,5 +862,87 @@ namespace System.Security.Cryptography
             // override remains for compatibility.
             base.ImportFromEncryptedPem(input, passwordBytes);
         }
+
+        /// <summary>
+        /// Exports the current key in the ECPrivateKey format, PEM encoded.
+        /// </summary>
+        /// <returns>A string containing the PEM-encoded ECPrivateKey.</returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded ECPrivateKey will begin with <c>-----BEGIN EC PRIVATE KEY-----</c>
+        ///   and end with <c>-----END EC PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public unsafe string ExportECPrivateKeyPem()
+        {
+            byte[] exported = ExportECPrivateKey();
+
+            // Fixed to prevent GC moves.
+            fixed (byte* pExported = exported)
+            {
+                try
+                {
+                    return PemKeyHelpers.CreatePemFromData(PemLabels.EcPrivateKey, exported);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(exported);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to export the current key in the PEM-encoded
+        /// ECPrivateKey format into a provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        /// The character span to receive the PEM-encoded ECPrivateKey data.
+        /// </param>
+        /// <param name="charsWritten">
+        /// When this method returns, contains a value that indicates the number
+        /// of characters written to <paramref name="destination" />. This
+        /// parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true" /> if <paramref name="destination" /> is big enough
+        /// to receive the output; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// The key could not be exported.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded ECPrivateKey will begin with
+        ///   <c>-----BEGIN EC PRIVATE KEY-----</c> and end with
+        ///   <c>-----END EC PRIVATE KEY-----</c>, with the base64 encoded DER
+        ///   contents of the key between the PEM boundaries.
+        /// </p>
+        /// <p>
+        ///   The PEM is encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportECPrivateKeyPem(Span<char> destination, out int charsWritten)
+        {
+            static bool Export(ECAlgorithm alg, Span<byte> destination, out int bytesWritten)
+            {
+                return alg.TryExportECPrivateKey(destination, out bytesWritten);
+            }
+
+            return PemKeyHelpers.TryExportToPem(
+                this,
+                PemLabels.EcPrivateKey,
+                Export,
+                destination,
+                out charsWritten);
+        }
     }
 }

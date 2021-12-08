@@ -1813,29 +1813,6 @@ bool MethodContext::repIsValueClass(CORINFO_CLASS_HANDLE cls)
     return value != 0;
 }
 
-void MethodContext::recIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls, bool result)
-{
-    if (IsStructRequiringStackAllocRetBuf == nullptr)
-        IsStructRequiringStackAllocRetBuf = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORDLONG key = CastHandle(cls);
-    DWORD value = result ? 1 : 0;
-    IsStructRequiringStackAllocRetBuf->Add(key, value);
-    DEBUG_REC(dmpIsStructRequiringStackAllocRetBuf(key, value));
-}
-void MethodContext::dmpIsStructRequiringStackAllocRetBuf(DWORDLONG key, DWORD value)
-{
-    printf("IsStructRequiringStackAllocRetBuf key cls-%016llX, value res-%u", key, value);
-}
-bool MethodContext::repIsStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
-{
-    DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(IsStructRequiringStackAllocRetBuf, key, ": key %016llX", key);
-    DWORD value = IsStructRequiringStackAllocRetBuf->Get(key);
-    DEBUG_REP(dmpIsStructRequiringStackAllocRetBuf(key, value));
-    return value != 0;
-}
-
 void MethodContext::recGetClassSize(CORINFO_CLASS_HANDLE cls, unsigned result)
 {
     if (GetClassSize == nullptr)
@@ -4574,8 +4551,10 @@ void MethodContext::dmpGetFunctionFixedEntryPoint(DWORDLONG key, const Agnostic_
     printf("GetFunctionFixedEntryPoint key ftn-%016llX, value %s", key,
            SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value).c_str());
 }
-void MethodContext::repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult)
+void MethodContext::repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult)
 {
+    // The isUnsafeFunctionPointer has no impact on the resulting value.
+    // It helps produce side-effects in the runtime only.
     DWORDLONG key = CastHandle(ftn);
     AssertMapAndKeyExist(GetFunctionFixedEntryPoint, key, ": key %016llX", key);
     Agnostic_CORINFO_CONST_LOOKUP value = GetFunctionFixedEntryPoint->Get(key);

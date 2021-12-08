@@ -3,11 +3,12 @@
 
 "use strict";
 
-var Module = {
+createDotnetRuntime(({ MONO, BINDING, Module }) => ({
+    disableDotnet6Compatibility: true,
     configSrc: "./mono-config.json",
-    onDotNetReady: () => {
+    onDotnetReady: () => {
         try {
-            App.init();
+            App.init({ MONO, BINDING, Module });
         } catch (error) {
             set_exit_code(1, error);
             throw (error);
@@ -16,4 +17,4 @@ var Module = {
     onAbort: (error) => {
         set_exit_code(1, error);
     },
-};
+}));

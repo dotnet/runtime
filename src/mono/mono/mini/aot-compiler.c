@@ -4291,6 +4291,14 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 {
 	ERROR_DECL (error);
 
+	if (method->is_generic && acfg->aot_opts.profile_only) {
+		// Add the fully shared version to its home image
+		// This has already been added just need to add it to profile_methods so its not skipped
+		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+		g_hash_table_insert (acfg->profile_methods, method, method);
+		return;
+	}
+
 	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
 		MonoMethod *orig = method;
 
@@ -6697,11 +6705,13 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		 * - it allows the setting of breakpoints of aot-ed methods.
 		 */
 
-		// Comment out to force dedup to link these symbols and forbid compiling
+		// Enable to force dedup to link these symbols and forbid compiling
 		// in duplicated code. This is an "assert when linking if broken" trick.
-		/*if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))*/
-			/*debug_sym = mono_aot_get_mangled_method_name (method);*/
-		/*else*/
+#if 0
+		if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))
+			debug_sym = mono_aot_get_mangled_method_name (method);
+		else
+#endif
 			debug_sym = get_debug_sym (method, "", acfg->method_label_hash);
 
 		cfg->asm_debug_symbol = g_strdup (debug_sym);
@@ -6709,11 +6719,13 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		if (acfg->need_no_dead_strip)
 			fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
 
-		// Comment out to force dedup to link these symbols and forbid compiling
+		// Enable to force dedup to link these symbols and forbid compiling
 		// in duplicated code. This is an "assert when linking if broken" trick.
-		/*if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))*/
-			/*emit_global_inner (acfg, debug_sym, TRUE);*/
-		/*else*/
+#if 0
+		if (mono_aot_can_dedup (method) && (acfg->aot_opts.dedup || acfg->aot_opts.dedup_include))
+			emit_global_inner (acfg, debug_sym, TRUE);
+		else
+#endif
 			emit_local_symbol (acfg, debug_sym, symbol, TRUE);
 
 		emit_label (acfg, debug_sym);
@@ -6788,6 +6800,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
 	case MONO_PATCH_INFO_METHOD_FTNDESC:
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
 	case MONO_PATCH_INFO_METHOD_RGCTX:
@@ -8675,7 +8688,8 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_METHOD_FTNDESC:
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
-	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
 		MonoMethod *method = patch_info->data.method;
 
 		return can_encode_method (acfg, method);
@@ -13011,20 +13025,24 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 				continue;
 			if (mdata->inst) {
 				resolve_ginst (mdata->inst);
-				if (!mdata->inst->inst)
-					continue;
-				MonoGenericContext ctx;
+				if (mdata->inst->inst) {
+					MonoGenericContext ctx;
 
-				memset (&ctx, 0, sizeof (ctx));
-				ctx.method_inst = mdata->inst->inst;
+					memset (&ctx, 0, sizeof (ctx));
+					ctx.method_inst = mdata->inst->inst;
 
-				m = mono_class_inflate_generic_method_checked (m, &ctx, error);
-				if (!m)
-					continue;
-				sig = mono_method_signature_checked (m, error);
-				if (!is_ok (error)) {
-					mono_error_cleanup (error);
-					continue;
+					m = mono_class_inflate_generic_method_checked (m, &ctx, error);
+					if (!m)
+						continue;
+					sig = mono_method_signature_checked (m, error);
+					if (!is_ok (error)) {
+						mono_error_cleanup (error);
+						continue;
+					}
+				} else {
+					/* Use the generic definition */
+					mdata->method = m;
+					break;
 				}
 			}
 			char *sig_str = mono_signature_full_name (sig);

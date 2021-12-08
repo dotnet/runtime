@@ -31,8 +31,7 @@ namespace Internal.Cryptography.Pal
             {
                 return DecodeECPublicKey(
                     pal,
-                    factory: cngKey => new ECDsaCng(cngKey),
-                    import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams));
+                    factory: cngKey => new ECDsaCng(cngKey));
             }
 
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
@@ -45,7 +44,6 @@ namespace Internal.Cryptography.Pal
                 return DecodeECPublicKey(
                     pal,
                     factory: cngKey => new ECDiffieHellmanCng(cngKey),
-                    import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams),
                     importFlags: CryptImportPublicKeyInfoFlags.CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG);
             }
 
@@ -79,9 +77,8 @@ namespace Internal.Cryptography.Pal
         private static TAlgorithm DecodeECPublicKey<TAlgorithm>(
             CertificatePal certificatePal,
             Func<CngKey, TAlgorithm> factory,
-            Action<TAlgorithm, ECParameters> import,
             CryptImportPublicKeyInfoFlags importFlags = CryptImportPublicKeyInfoFlags.NONE)
-                where TAlgorithm : AsymmetricAlgorithm, new()
+                where TAlgorithm : ECAlgorithm, new()
         {
             TAlgorithm key;
 
@@ -116,7 +113,7 @@ namespace Internal.Cryptography.Pal
                     ExportNamedCurveParameters(ref ecparams, keyBlob, false);
                     ecparams.Curve = ECCurve.CreateFromFriendlyName(curveName);
                     key = new TAlgorithm();
-                    import(key, ecparams);
+                    key.ImportParameters(ecparams);
                 }
             }
 

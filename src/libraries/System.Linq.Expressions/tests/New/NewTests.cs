@@ -555,8 +555,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void GlobalMethodInMembers()
         {
             ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
@@ -570,7 +569,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void GlobalFieldInMembers()
         {
             ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
@@ -582,7 +581,6 @@ namespace System.Linq.Expressions.Tests
             MemberInfo[] members = { globalField };
             AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
         }
-#endif
 
         static class StaticCtor
         {

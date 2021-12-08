@@ -3,11 +3,11 @@ import typescript from "@rollup/plugin-typescript";
 import { terser } from "rollup-plugin-terser";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import * as fs from "fs";
+import * as path from "path";
 import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
 import consts from "rollup-plugin-consts";
 
-const outputFileName = "runtime.iffe.js";
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
 const productVersion = process.env.ProductVersion || "7.0.0-dev";
@@ -40,34 +40,66 @@ const terserConfig = {
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
+const banner_generated = banner + "//! \n//! This is generated file, see src/mono/wasm/runtime/rollup.config.js \n";
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
 const format = "iife";
 const name = "__dotnet_runtime";
 
-export default defineConfig([
-    {
-        treeshake: !isDebug,
-        input: "exports.ts",
-        output: [{
-            file: nativeBinDir + "/src/" + outputFileName,
+const iffeConfig = {
+    treeshake: !isDebug,
+    input: "exports.ts",
+    output: [
+        {
+            file: nativeBinDir + "/src/cjs/runtime.cjs.iffe.js",
             name,
             banner,
             format,
             plugins,
-        }],
-        plugins: [consts({ productVersion, configuration }), typescript()]
+        },
+        {
+            file: nativeBinDir + "/src/es6/runtime.es6.iffe.js",
+            name,
+            banner,
+            format,
+            plugins,
+        }
+    ],
+    onwarn: (warning, handler) => {
+        if (warning.code === "EVAL" && warning.loc.file.indexOf("method-calls.ts") != -1) {
+            return;
+        }
+
+        handler(warning);
     },
-    {
-        input: "./export-types.ts",
-        output: [
-            // dotnet.d.ts
-            {
-                format: "es",
-                file: nativeBinDir + "/src/" + "dotnet.d.ts",
-            }
-        ],
-        plugins: [dts()],
-    }
+    plugins: [consts({ productVersion, configuration }), typescript()]
+};
+const typesConfig = {
+    input: "./export-types.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.d.ts",
+            banner: banner_generated,
+            plugins: [writeOnChangePlugin()],
+        }
+    ],
+    plugins: [dts()],
+};
+
+if (isDebug) {
+    // export types also into the source code and commit to git
+    // so that we could notice that the API changed and review it
+    typesConfig.output.push({
+        format: "es",
+        file: "./dotnet.d.ts",
+        banner: banner_generated,
+        plugins: [alwaysLF(), writeOnChangePlugin()],
+    });
+}
+
+export default defineConfig([
+    iffeConfig,
+    typesConfig
 ]);
 
 // this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
@@ -78,9 +110,23 @@ function writeOnChangePlugin() {
     };
 }
 
+// force always unix line ending
+function alwaysLF() {
+    return {
+        name: "writeOnChange",
+        generateBundle: (options, bundle) => {
+            const name = Object.keys(bundle)[0];
+            const asset = bundle[name];
+            const code = asset.code;
+            asset.code = code.replace(/\r/g, "");
+        }
+    };
+}
+
 async function writeWhenChanged(options, bundle) {
     try {
-        const asset = bundle[outputFileName];
+        const name = Object.keys(bundle)[0];
+        const asset = bundle[name];
         const code = asset.code;
         const hashFileName = options.file + ".sha256";
         const oldHashExists = await checkFileExists(hashFileName);
@@ -94,13 +140,14 @@ async function writeWhenChanged(options, bundle) {
             isOutputChanged = oldHash !== newHash;
         }
         if (isOutputChanged) {
-            if (!await checkFileExists(hashFileName)) {
-                await mkdir(nativeBinDir + "/src", { recursive: true });
+            const dir = path.dirname(options.file);
+            if (!await checkFileExists(dir)) {
+                await mkdir(dir, { recursive: true });
             }
             await writeFile(hashFileName, newHash);
         } else {
             // this.warn('No change in ' + options.file)
-            delete bundle[outputFileName];
+            delete bundle[name];
         }
     } catch (ex) {
         this.warn(ex.toString());

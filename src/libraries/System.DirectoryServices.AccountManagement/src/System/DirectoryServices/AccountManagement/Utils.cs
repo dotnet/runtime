@@ -115,8 +115,6 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static string ConvertSidToSDDL(byte[] sid)
         {
-            string sddlSid = null;
-
             // To put the byte[] SID into SDDL, we use ConvertSidToStringSid.
             // Calling that requires we first copy the SID into native memory.
             IntPtr pSid = IntPtr.Zero;
@@ -125,7 +123,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 pSid = ConvertByteArrayToIntPtr(sid);
 
-                if (Interop.Advapi32.ConvertSidToStringSid(pSid, ref sddlSid) != Interop.BOOL.FALSE)
+                if (Interop.Advapi32.ConvertSidToStringSid(pSid, out string sddlSid) != Interop.BOOL.FALSE)
                 {
                     return sddlSid;
                 }
@@ -502,12 +500,12 @@ namespace System.DirectoryServices.AccountManagement
                 UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO info = (UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO)
                                     Marshal.PtrToStructure(pBuffer, typeof(UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO));
 
-                Debug.Assert(Interop.Advapi32.IsValidSid(info.domainSid));
+                Debug.Assert(Interop.Advapi32.IsValidSid(info.DomainSid));
 
                 // Now we make a copy of the SID to return
-                int sidLength = Interop.Advapi32.GetLengthSid(info.domainSid);
+                int sidLength = Interop.Advapi32.GetLengthSid(info.DomainSid);
                 IntPtr pCopyOfSid = Marshal.AllocHGlobal(sidLength);
-                bool success = Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.domainSid);
+                bool success = Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.DomainSid);
                 if (!success)
                 {
                     int lastError = Marshal.GetLastWin32Error();

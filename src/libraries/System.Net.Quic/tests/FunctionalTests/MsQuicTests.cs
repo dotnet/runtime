@@ -20,7 +20,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(IsSupported))]
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public class MsQuicTests : QuicTestBase<MsQuicProviderFactory>
     {
         private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");

@@ -41,6 +41,8 @@ namespace System
         public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
         public static bool IsMacOsAppleSilicon => IsOSX && IsArm64Process;
         public static bool IsNotMacOsAppleSilicon => !IsMacOsAppleSilicon;
+        public static bool IsAppSandbox => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID") != null;
+        public static bool IsNotAppSandbox => !IsAppSandbox;
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
@@ -317,16 +319,16 @@ namespace System
             public Version VersionId { get; set; }
         }
 
-        private static class libc
+        private static partial class libc
         {
-            [DllImport("libc", SetLastError = true)]
-            public static extern unsafe uint geteuid();
+            [GeneratedDllImport("libc", SetLastError = true)]
+            public static unsafe partial uint geteuid();
 
-            [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-            public static extern IntPtr gnu_get_libc_release();
+            [GeneratedDllImport("libc")]
+            public static partial IntPtr gnu_get_libc_release();
 
-            [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-            public static extern IntPtr gnu_get_libc_version();
+            [GeneratedDllImport("libc")]
+            public static partial IntPtr gnu_get_libc_version();
         }
     }
 }

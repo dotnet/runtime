@@ -4,7 +4,7 @@
 import { INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
-import { VoidPtr } from "./types";
+import { VoidPtr, CharPtr } from "./types/emscripten";
 
 let commands_received: CommandResponse;
 let _call_function_res_cache: any = {};
