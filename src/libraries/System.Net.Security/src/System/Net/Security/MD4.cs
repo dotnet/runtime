@@ -8,8 +8,6 @@ namespace System.Net.Security
 {
     internal sealed class MD4
     {
-        private const int HashSizeBits = 128;
-        private const int HashSizeBytes = HashSizeBits / 8;
         private byte[]? HashValue;
         private uint[] state;
         private byte[] buffer;
@@ -30,6 +28,8 @@ namespace System.Net.Security
         private const int S34 = 15;
 
         private byte[] digest;
+        public int HashSize => 128;
+        public int HashSizeBytes => HashSize / 8;
 
         public MD4()
         {
@@ -51,7 +51,7 @@ namespace System.Net.Security
                 throw new ArgumentException("Destination is too short.", nameof(destination));
             }
 
-            destination = ComputeHash(source.ToArray(), 0, source.Length);
+            ComputeHash(source.ToArray(), 0, source.Length).CopyTo(destination);
             return destination.Length;
         }
 
@@ -68,9 +68,9 @@ namespace System.Net.Security
             Array.Clear(x, 0, 16);
         }
 
-        private byte[] ComputeHash(byte[] buffer, int offset, int count)
+        private byte[] ComputeHash(byte[] array, int offset, int count)
         {
-            HashCore(buffer, offset, count);
+            HashCore(array, offset, count);
             HashValue = HashFinal();
             byte[] result = (byte[]) HashValue.Clone();
             Initialize();

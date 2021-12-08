@@ -12,6 +12,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
     <Compile Include="DummyTcpServer.cs" />
+    <Compile Include="MD4Tests.cs" />
+    <Compile Include="..\..\src\System\Net\Security\MD4.cs" />
     <Compile Include="SslStreamExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="TestHelper.cs" />
