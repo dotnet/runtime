@@ -31,9 +31,9 @@ namespace System.Diagnostics
             var processes = new List<Process>();
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
-                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat) &&
+                if (Interop.ProcFs.TryReadStatFile(pid, out Interop.ProcFs.ParsedStat parsedStat) &&
                     string.Equals(processName, Process.GetUntruncatedProcessName(ref parsedStat), StringComparison.OrdinalIgnoreCase) &&
-                    Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                    Interop.ProcFs.TryReadStatusFile(pid, out Interop.ProcFs.ParsedStatus parsedStatus))
                 {
                     ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, processName);
                     processes.Add(new Process(machineName, false, processInfo.ProcessId, processInfo));
@@ -82,7 +82,7 @@ namespace System.Diagnostics
                 // '/proc/stat -> btime' gets the boot time.
                 // btime is the time of system boot in seconds since the Unix epoch.
                 // It includes suspended time and is updated based on the system time (settimeofday).
-                const string StatFile = Interop.procfs.ProcStatFilePath;
+                const string StatFile = Interop.ProcFs.ProcStatFilePath;
                 string text = File.ReadAllText(StatFile);
                 int btimeLineStart = text.IndexOf("\nbtime ", StringComparison.Ordinal);
                 if (btimeLineStart >= 0)
@@ -130,7 +130,7 @@ namespace System.Diagnostics
         {
             get
             {
-                Interop.procfs.ParsedStat stat = GetStat();
+                Interop.ProcFs.ParsedStat stat = GetStat();
                 return TicksToTimeSpan(stat.utime + stat.stime);
             }
         }
@@ -156,7 +156,7 @@ namespace System.Diagnostics
                 {
                     return;
                 }
-                string path = Interop.procfs.GetFileDescriptorDirectoryPathForProcess(_processId);
+                string path = Interop.ProcFs.GetFileDescriptorDirectoryPathForProcess(_processId);
                 if (Directory.Exists(path))
                 {
                     try
@@ -208,7 +208,7 @@ namespace System.Diagnostics
             // For max working set, try to respect container limits by reading
             // from cgroup, but if it's unavailable, fall back to reading from procfs.
             EnsureState(State.HaveNonExitedId);
-            if (!Interop.cgroups.TryGetMemoryLimit(out ulong rsslim))
+            if (!Interop.CGroups.TryGetMemoryLimit(out ulong rsslim))
             {
                 rsslim = GetStat().rsslim;
             }
@@ -248,17 +248,17 @@ namespace System.Diagnostics
         internal static string? GetExePath(int processId = -1)
         {
             string exeFilePath = processId == -1 ?
-                Interop.procfs.SelfExeFilePath :
-                Interop.procfs.GetExeFilePathForProcess(processId);
+                Interop.ProcFs.SelfExeFilePath :
+                Interop.ProcFs.GetExeFilePathForProcess(processId);
 
             return Interop.Sys.ReadLink(exeFilePath);
         }
 
         /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>
         /// <param name="stat">The stat for the target process.</param>
-        internal static string GetUntruncatedProcessName(ref Interop.procfs.ParsedStat stat)
+        internal static string GetUntruncatedProcessName(ref Interop.ProcFs.ParsedStat stat)
         {
-            string cmdLineFilePath = Interop.procfs.GetCmdLinePathForProcess(stat.pid);
+            string cmdLineFilePath = Interop.ProcFs.GetCmdLinePathForProcess(stat.pid);
 
             byte[]? rentedArray = null;
             try
@@ -354,12 +354,12 @@ namespace System.Diagnostics
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
 
-        /// <summary>Reads the stats information for this process from the procfs file system.</summary>
-        private Interop.procfs.ParsedStat GetStat()
+        /// <summary>Reads the stats information for this process from the ProcFs file system.</summary>
+        private Interop.ProcFs.ParsedStat GetStat()
         {
             EnsureState(State.HaveNonExitedId);
-            Interop.procfs.ParsedStat stat;
-            if (!Interop.procfs.TryReadStatFile(_processId, out stat))
+            Interop.ProcFs.ParsedStat stat;
+            if (!Interop.ProcFs.TryReadStatFile(_processId, out stat))
             {
                 throw new Win32Exception(SR.ProcessInformationUnavailable);
             }

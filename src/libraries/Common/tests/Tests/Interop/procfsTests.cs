@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Common.Tests
 {
-    public class procfsTests
+    public class ProcFsTests
     {
         [Theory]
         [InlineData("1 (systemd) S 0 1 1 0 -1 4194560 11536 2160404 55 593 70 169 4213 1622 20 0 1 0 4 189767680 1491 18446744073709551615 1 1 0 0 0 0 671173123 4096 1260 0 0 0 17 4 0 0 25 0 0 0 0 0 0 0 0 0 0", 1, "systemd", 'S', 1, 70, 169, 0, 4, 189767680, 1491, 18446744073709551615)]
@@ -44,8 +44,8 @@ namespace Common.Tests
             {
                 File.WriteAllText(path, statFileText);
 
-                Interop.procfs.ParsedStat result;
-                Assert.True(Interop.procfs.TryParseStatFile(path, out result));
+                Interop.ProcFs.ParsedStat result;
+                Assert.True(Interop.ProcFs.TryParseStatFile(path, out result));
 
                 Assert.Equal(expectedPid, result.pid);
                 Assert.Equal(expectedComm, result.comm);
