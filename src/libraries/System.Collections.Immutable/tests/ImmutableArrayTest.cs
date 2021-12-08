@@ -1259,7 +1259,7 @@ namespace System.Collections.Immutable.Tests
                     expected = source.Concat(items);
                     
                     Assert.Equal(expected, immutableArray.InsertRange(index, it)); // Enumerable overload
-                    Assert.Equal(expected, immutableArray.InsertRange(index, it.ToImmutableArray())); // Struct overload
+                    Assert.Equal(expected, immutableArray.InsertRange(index, it.ToImmutableArray())); // ImmutableArray overload
                     Assert.Equal(expected, immutableArray.InsertRange(index, array)); // Array overload
                     Assert.Equal(expected, immutableArray.InsertRange(index, new ReadOnlySpan<int>(array))); // Span overload
                 }
@@ -1449,20 +1449,28 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(RemoveRangeEnumerableData))]
         public void RemoveRangeEnumerable(IEnumerable<int> source, IEnumerable<int> items, IEqualityComparer<int> comparer)
         {
-            var array = source.ToImmutableArray();
+            ImmutableArray<int> immutableArray = source.ToImmutableArray();
             IEnumerable<int> expected = items.Aggregate(
                 seed: source.ToImmutableArray(),
                 func: (a, i) => a.Remove(i, comparer));
 
-            Assert.Equal(expected, array.RemoveRange(items, comparer)); // Enumerable overload
-            Assert.Equal(expected, array.RemoveRange(items.ToImmutableArray(), comparer)); // Struct overload
-            Assert.Equal(expected, ((IImmutableList<int>)array).RemoveRange(items, comparer));
+            Assert.Equal(expected, immutableArray.RemoveRange(items, comparer)); // Enumerable overload
+            Assert.Equal(expected, immutableArray.RemoveRange(items.ToImmutableArray(), comparer)); // ImmutableArray overload
+
+            int[] array = items.ToArray();
+            Assert.Equal(expected, immutableArray.RemoveRange(array, comparer)); // Array overload
+            ReadOnlySpan<int> span = new ReadOnlySpan<int>(array);
+            Assert.Equal(expected, immutableArray.RemoveRange(span, comparer)); // Span overload
+
+            Assert.Equal(expected, ((IImmutableList<int>)immutableArray).RemoveRange(items, comparer));
 
             if (comparer == null || comparer == EqualityComparer<int>.Default)
             {
-                Assert.Equal(expected, array.RemoveRange(items)); // Enumerable overload
-                Assert.Equal(expected, array.RemoveRange(items.ToImmutableArray())); // Struct overload
-                Assert.Equal(expected, ((IImmutableList<int>)array).RemoveRange(items));
+                Assert.Equal(expected, immutableArray.RemoveRange(items)); // Enumerable overload
+                Assert.Equal(expected, immutableArray.RemoveRange(items.ToImmutableArray())); // ImmutableArray overload
+                Assert.Equal(expected, immutableArray.RemoveRange(array)); // Array overload
+                Assert.Equal(expected, immutableArray.RemoveRange(span)); // Span overload
+                Assert.Equal(expected, ((IImmutableList<int>)immutableArray).RemoveRange(items));
             }
         }
 
@@ -1496,7 +1504,7 @@ namespace System.Collections.Immutable.Tests
         [MemberData(nameof(Int32EnumerableData))]
         public void RemoveRangeEnumerableInvalid(IEnumerable<int> source)
         {
-            var array = source.ToImmutableArray();
+            var immutableArray = source.ToImmutableArray();
 
             Assert.All(SharedEqualityComparers<int>(), comparer =>
             {
@@ -1507,18 +1515,18 @@ namespace System.Collections.Immutable.Tests
                 Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(source, comparer));
 
                 // Struct overloads, lhs is default
-                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(array));
-                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(array, comparer));
+                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(immutableArray));
+                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(immutableArray, comparer));
 
                 // Struct overloads, rhs is default
-                AssertExtensions.Throws<ArgumentNullException>("items", () => array.RemoveRange(s_emptyDefault));
-                AssertExtensions.Throws<ArgumentNullException>("items", () => array.RemoveRange(s_emptyDefault, comparer));
+                AssertExtensions.Throws<ArgumentNullException>("items", () => immutableArray.RemoveRange(s_emptyDefault));
+                AssertExtensions.Throws<ArgumentNullException>("items", () => immutableArray.RemoveRange(s_emptyDefault, comparer));
 
                 // Enumerable overloads, rhs is default
-                Assert.Throws<InvalidOperationException>(() => array.RemoveRange((IEnumerable<int>)s_emptyDefault));
-                Assert.Throws<InvalidOperationException>(() => array.RemoveRange((IEnumerable<int>)s_emptyDefault, comparer));
-                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)array).RemoveRange(s_emptyDefault));
-                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)array).RemoveRange(s_emptyDefault, comparer));
+                Assert.Throws<InvalidOperationException>(() => immutableArray.RemoveRange((IEnumerable<int>)s_emptyDefault));
+                Assert.Throws<InvalidOperationException>(() => immutableArray.RemoveRange((IEnumerable<int>)s_emptyDefault, comparer));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)immutableArray).RemoveRange(s_emptyDefault));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)immutableArray).RemoveRange(s_emptyDefault, comparer));
 
                 // Struct overloads, both sides are default
                 AssertExtensions.Throws<ArgumentNullException>("items", () => s_emptyDefault.RemoveRange(s_emptyDefault));
@@ -1531,16 +1539,30 @@ namespace System.Collections.Immutable.Tests
                 Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(s_emptyDefault, comparer));
 
                 // Enumerable overloads, rhs is null
-                AssertExtensions.Throws<ArgumentNullException>("items", () => array.RemoveRange(items: null));
-                AssertExtensions.Throws<ArgumentNullException>("items", () => array.RemoveRange(items: null, equalityComparer: comparer));
-                AssertExtensions.Throws<ArgumentNullException>("items", () => ((IImmutableList<int>)array).RemoveRange(items: null));
-                AssertExtensions.Throws<ArgumentNullException>("items", () => ((IImmutableList<int>)array).RemoveRange(items: null, equalityComparer: comparer));
+                AssertExtensions.Throws<ArgumentNullException>("items", () => immutableArray.RemoveRange(items: null as IEnumerable<int>));
+                AssertExtensions.Throws<ArgumentNullException>("items", () => immutableArray.RemoveRange(items: null as IEnumerable<int>, equalityComparer: comparer));
+                AssertExtensions.Throws<ArgumentNullException>("items", () => ((IImmutableList<int>)immutableArray).RemoveRange(items: null));
+                AssertExtensions.Throws<ArgumentNullException>("items", () => ((IImmutableList<int>)immutableArray).RemoveRange(items: null, equalityComparer: comparer));
 
                 // Enumerable overloads, lhs is default and rhs is null
-                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(items: null));
-                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(items: null, equalityComparer: comparer));
-                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(items: null));
-                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(items: null, equalityComparer: comparer));
+                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(items: null as IEnumerable<int>));
+                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(items: null as IEnumerable<int>, equalityComparer: comparer));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(items: null as IEnumerable<int>));
+                Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).RemoveRange(items: null as IEnumerable<int>, equalityComparer: comparer));
+
+                // Array overloads, lhs is default and rhs is null
+                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(items: null as int[], comparer));
+
+                // Array overloads, rhs is null
+                AssertExtensions.Throws<ArgumentNullException>("items", () => immutableArray.RemoveRange(items: null as int[], equalityComparer: comparer));
+
+                // Array overloads, lhs is default
+                int[] array = source.ToArray();
+                TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.RemoveRange(items: array, comparer));
+
+                // Span overloads, lhs is default
+                var span = new ReadOnlySpan<int>(array);
+                TestExtensionsMethods.ValidateDefaultThisBehavior(span, s => s_emptyDefault.RemoveRange(items: s, comparer));
             });
         }
 
