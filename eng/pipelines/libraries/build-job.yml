@@ -158,11 +158,13 @@ jobs:
         - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
             displayName: Install Build Dependencies
+            condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h
             displayName: Disk Usage before Build
+            condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
         - script: $(_buildScript)
                 -subset $(_subset)
