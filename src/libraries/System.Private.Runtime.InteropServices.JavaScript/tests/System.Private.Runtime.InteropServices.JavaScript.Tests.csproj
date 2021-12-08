@@ -4,8 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
-    <_TestAssembly>System.Private.Runtime.InteropServices.JavaScript.Tests.dll</_TestAssembly>
-    <OutputType>Exe</OutputType>
+    <Scenario>WasmTestOnBrowser</Scenario>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
@@ -19,21 +18,14 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\HelperMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Http\HttpRequestMessageTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ParallelTests.cs" />
-
-    <!-- tests which are not working well in XHarness + XUnit -->
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Simple\TimerTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Simple\SimpleMain.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="simple.js" />
+    <WasmExtraFilesToDeploy Include="timers.js" />
   </ItemGroup>
   <ItemGroup>
     <!-- Part of the shared framework but not exposed. -->
     <ProjectReference Include="..\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
-
-  <Target Name="SimpleTest" DependsOnTargets="Build">
-    <Exec WorkingDirectory="$(BaseOutputPath)\$(NetCoreAppCurrent)-Browser-$(Configuration)\browser-wasm\AppBundle" Command="node simple.js" />
-  </Target>
-
 </Project>
