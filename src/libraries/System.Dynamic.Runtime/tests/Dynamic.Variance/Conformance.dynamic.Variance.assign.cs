@@ -476,8 +476,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.assign.assignm
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.assign.assignment07.assignment07
 {
-    using System;
-    
     // <Area>variance</Area>
     // <Title> assignment Contravariant delegates</Title>
     // <Description> contravariance on delegates assigned to arrays</Description>

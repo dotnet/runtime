@@ -501,8 +501,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam004.onedynamicparam004
 {
-    using System;
-    
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>

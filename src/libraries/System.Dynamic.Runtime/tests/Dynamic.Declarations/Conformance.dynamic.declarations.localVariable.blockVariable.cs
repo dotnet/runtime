@@ -1189,8 +1189,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.localVaria
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.localVariable.blockVariable.trycatch002.trycatch002
 {
-    using System;
-    
     public class Test
     {
         [Fact]

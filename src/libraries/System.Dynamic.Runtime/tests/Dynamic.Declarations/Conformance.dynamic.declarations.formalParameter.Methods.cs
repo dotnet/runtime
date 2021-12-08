@@ -98,8 +98,6 @@ public class MyClass
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.extensionmethod006.extensionmethod006
 {
-    using System;
-
     static // <Title>Extension method that extends dynamic</Title>
            // <Description>
            // </Description>
@@ -192,8 +190,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method001.method001
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -266,8 +262,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method003.method003
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -303,8 +297,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method004.method004
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -342,8 +334,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method005.method005
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -382,8 +372,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method007.method007
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -421,8 +409,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method008.method008
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -459,8 +445,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method009.method009
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -497,8 +481,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method010.method010
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -536,8 +518,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method011.method011
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -573,8 +553,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method012.method012
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;
@@ -612,8 +590,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Methods.method013.method013
 {
-    using System;
-
     public class Test
     {
         private static bool s_ok = false;

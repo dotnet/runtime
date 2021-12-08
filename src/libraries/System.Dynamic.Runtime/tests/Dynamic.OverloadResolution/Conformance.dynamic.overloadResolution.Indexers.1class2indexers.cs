@@ -665,8 +665,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Oneclass2indexers.onedynamicparam004.onedynamicparam004
 {
-    using System;
-    
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
