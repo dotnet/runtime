@@ -161,7 +161,7 @@ namespace System
                 Version newObject = new Version(checked((int)osvi.dwMajorVersion), checked((int)osvi.dwMinorVersion), checked((int)osvi.dwBuildNumber));
                 s_windowsVersionObject = newObject;
             }
-            
+
             return s_windowsVersionObject;
         }
 
