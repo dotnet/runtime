@@ -290,6 +290,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Windows_x64
+    - Linux_armv6
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
