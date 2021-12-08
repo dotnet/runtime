@@ -129,13 +129,18 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
         // First, search just the "external" export symbols 
         if (TryLookupSymbol(m_dysymtabCommand->iextdefsym, m_dysymtabCommand->nextdefsym, symbolName, symbolValue))
         {
+            m_reader.Trace("SYM: Found '%s' in external symbols\n", symbolName);
             return true;
         }
+        m_reader.Trace("SYM: Missed '%s' in external symbols\n", symbolName);
+
         // If not found in external symbols, search all of them
         if (TryLookupSymbol(0, m_symtabCommand->nsyms, symbolName, symbolValue))
         {
+            m_reader.Trace("SYM: Found '%s' in all symbols\n", symbolName);
             return true;
         }
+        m_reader.Trace("SYM: Missed '%s' in all symbols\n", symbolName);
     }
     *symbolValue = 0;
     return false;
@@ -147,12 +152,12 @@ MachOModule::TryLookupSymbol(int start, int nsyms, const char* symbolName, uint6
     for (int i = 0; i < nsyms; i++)
     {
         std::string name = GetSymbolName(start + i);
+
         // Skip the leading underscores to match Linux externs
-        if (name[0] == '_')
-        {
-            name.erase(0, 1);
-        }
-        if (strcmp(name.c_str(), symbolName) == 0)
+        const char* currentName = name.length() > 0 && name[0] == '_' ? name.c_str() + 1 : name.c_str();
+
+        // Does this symbol match?
+        if (strcmp(currentName, symbolName) == 0)
         {
             *symbolValue = m_loadBias + m_nlists[start + i].n_value;
             return true;
@@ -293,17 +298,17 @@ MachOModule::ReadSymbolTable()
             m_dysymtabCommand->nextrefsyms);
 
         // Read the entire symbol part of symbol table. An array of "nlist" structs.
-        void* extSymbolTableAddress = (void*)GetAddressFromFileOffset(m_symtabCommand->symoff);
+        void* symbolTableAddress = (void*)GetAddressFromFileOffset(m_symtabCommand->symoff);
         size_t symtabSize = sizeof(nlist_64) * m_symtabCommand->nsyms;
         m_nlists = (nlist_64*)malloc(symtabSize);
         if (m_nlists == nullptr)
         {
-            m_reader.Trace("ERROR: Failed to allocate %zu byte external symbol table\n", symtabSize);
+            m_reader.Trace("ERROR: Failed to allocate %zu byte symtab\n", symtabSize);
             return false;
         }
-        if (!m_reader.ReadMemory(extSymbolTableAddress, m_nlists, symtabSize))
+        if (!m_reader.ReadMemory(symbolTableAddress, m_nlists, symtabSize))
         {
-            m_reader.Trace("ERROR: Failed to read external symtab at %p of %zu\n", extSymbolTableAddress, symtabSize);
+            m_reader.Trace("ERROR: Failed to read symtab at %p of %zu\n", symbolTableAddress, symtabSize);
             return false;
         }
 
