@@ -61,7 +61,9 @@ int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
  4 - WASM */
 int32_t SystemNative_GetOSArchitecture()
 {
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARMV6)
+    return ARCH_ARMV6;
+#elif defined(TARGET_ARM)
     return ARCH_ARM;
 #elif defined(TARGET_ARM64)
     return ARCH_ARM64;
@@ -86,7 +88,9 @@ int32_t SystemNative_GetOSArchitecture()
 4 - WASM */
 int32_t SystemNative_GetProcessArchitecture()
 {
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARMV6)
+    return ARCH_ARMV6;
+#elif defined(TARGET_ARM)
     return ARCH_ARM;
 #elif defined(TARGET_ARM64)
     return ARCH_ARM64;
