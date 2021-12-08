@@ -16,7 +16,8 @@
     <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">true</GCStressDependsOnCoreDisTools>
     <CopyCoreDisToolsToCoreRoot>false</CopyCoreDisToolsToCoreRoot>
     <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildFromSource)' != 'true'">true</CopyCoreDisToolsToCoreRoot>
-    <IsDesktopArchitecture Condition="'$(TargetArchitecture)' != 'wasm' and '$(TargetArchitecture)' != 'android' and '$(TargetArchitecture)' != 'iOS' ">true</IsDesktopArchitecture>
+    <!-- Non-desktop OS's use a custom dotnet host, instead of corerun -->
+    <IsDesktopOS Condition="'$(TargetOS)' != 'browser' and '$(TargetOS)' != 'android' and '$(TargetsiOS)' != true and '$(TargetsMacCatalyst)' != true">true</IsDesktopOS>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="$(CopyCoreDisToolsToCoreRoot)" />
@@ -170,7 +171,7 @@
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopArchitecture)'" >
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopOS)'" >
       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libcoreclr$(LibSuffix)" TargetDir=""  />
        <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="/"  />
     </ItemGroup>
