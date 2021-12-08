@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -57,7 +58,7 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ManagedPointerTypeArgs))]
         public void CantBeFunc(Type[] typeArgs)
         {
-            if (PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly)
+            if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(typeArgs));
             }
@@ -83,7 +84,7 @@ namespace System.Linq.Expressions.Tests
         public void CantBeAction(Type[] typeArgs)
         {
             Type[] delegateArgs = typeArgs.Append(typeof(void)).ToArray();
-            if (PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly)
+            if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(delegateArgs));
             }

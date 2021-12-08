@@ -54,9 +54,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>59775387deb609d7c62f9e713d133c34ba28ffcd</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="7.0.0-beta.21602.3">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="7.0.0-beta.21606.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>59775387deb609d7c62f9e713d133c34ba28ffcd</Sha>
+      <Sha>d312d907be65bc3cc8dedac12e01b27e4384d0e2</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="7.0.0-beta.21602.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -123,6 +123,10 @@
       <Sha>6003aa6296ad2bebdf8147de94afbea9b5f16264</Sha>
     </Dependency>
     <Dependency Name="System.Security.Cryptography.X509Certificates.TestData" Version="7.0.0-beta.21602.1">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>6003aa6296ad2bebdf8147de94afbea9b5f16264</Sha>
+    </Dependency>
+    <Dependency Name="System.Text.RegularExpressions.TestData" Version="7.0.0-beta.21602.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>6003aa6296ad2bebdf8147de94afbea9b5f16264</Sha>
     </Dependency>

@@ -1568,6 +1568,10 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		vretaddr = TRUE;
 		ret_type = LLVMVoidType ();
 		break;
+	case LLVMArgWasmVtypeAsScalar:
+		g_assert (cinfo->ret.esize);
+		ret_type = LLVMIntType (cinfo->ret.esize * 8);
+		break;
 	default:
 		break;
 	}
@@ -1684,6 +1688,10 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		}
 		case LLVMArgVtypeAsScalar:
 			g_assert_not_reached ();
+			break;
+		case LLVMArgWasmVtypeAsScalar:
+			g_assert (ainfo->esize);
+			param_types [pindex ++] = LLVMIntType (ainfo->esize * 8);
 			break;
 		case LLVMArgGsharedvtFixed:
 		case LLVMArgGsharedvtFixedVtype:
@@ -3825,6 +3833,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		char *name;
 
 		pindex = ainfo->pindex;
+		LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
 
 		switch (ainfo->storage) {
 		case LLVMArgVtypeInReg:
@@ -3883,6 +3892,16 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeAsScalar:
 			g_assert_not_reached ();
 			break;
+		case LLVMArgWasmVtypeAsScalar: {
+			MonoType *t = mini_get_underlying_type (ainfo->type);
+
+			/* The argument is received as a scalar */
+			ctx->addresses [reg] = build_alloca (ctx, t);
+
+			LLVMValueRef dest = convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMIntType (ainfo->esize * 8), 0));
+			LLVMBuildStore (ctx->builder, arg, dest);
+			break;
+		}
 		case LLVMArgGsharedvtFixed: {
 			/* These are non-gsharedvt arguments passed by ref, the rest of the IR treats them as scalars */
 			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
@@ -4416,6 +4435,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		case LLVMArgVtypeAsScalar:
 			g_assert_not_reached ();
 			break;
+		case LLVMArgWasmVtypeAsScalar:
+			g_assert (addresses [reg]);
+			args [pindex] = LLVMBuildLoad (ctx->builder, convert (ctx, addresses [reg], LLVMPointerType (LLVMIntType (ainfo->esize * 8), 0)), "");
+			break;
 		case LLVMArgGsharedvtFixed:
 		case LLVMArgGsharedvtFixedVtype:
 			g_assert (addresses [reg]);
@@ -4564,6 +4587,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	case LLVMArgGsharedvtFixed:
 	case LLVMArgGsharedvtFixedVtype:
 		values [ins->dreg] = LLVMBuildLoad (builder, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0), FALSE), "");
+		break;
+	case LLVMArgWasmVtypeAsScalar:
+		if (!addresses [call->inst.dreg])
+			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
+		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
 		break;
 	default:
 		if (sig->ret->type != MONO_TYPE_VOID)
@@ -5691,7 +5719,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			switch (linfo->ret.storage) {
 			case LLVMArgNormal:
 			case LLVMArgVtypeInReg:
-			case LLVMArgVtypeAsScalar: {
+			case LLVMArgVtypeAsScalar:
+			case LLVMArgWasmVtypeAsScalar: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
 				LLVMValueRef retval = LLVMGetUndef (ret_type);
 				gboolean src_in_reg = FALSE;
@@ -5747,6 +5776,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 						g_assert (addresses [ins->sreg1]);
 						retval = LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), ""), "");
 					}
+					break;
+				case LLVMArgWasmVtypeAsScalar:
+					g_assert (addresses [ins->sreg1]);
+					retval = LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), ""), "");
 					break;
 				}
 				LLVMBuildRet (builder, retval);
@@ -12163,6 +12196,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case LLVMArgGsharedvtVariable:
 		case LLVMArgGsharedvtFixed:
 		case LLVMArgGsharedvtFixedVtype:
+		case LLVMArgWasmVtypeAsScalar:
 			MONO_INST_NEW (cfg, ins, OP_LLVM_OUTARG_VT);
 			ins->dreg = mono_alloc_ireg (cfg);
 			ins->sreg1 = in->dreg;

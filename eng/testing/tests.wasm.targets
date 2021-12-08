@@ -13,6 +13,7 @@
     <!-- Run only if previous command succeeded -->
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
+    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 
   <PropertyGroup>

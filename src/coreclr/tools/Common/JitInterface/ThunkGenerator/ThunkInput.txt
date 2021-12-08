@@ -276,7 +276,7 @@ FUNCTIONS
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
     void* getHelperFtn (CorInfoHelpFunc         ftnNum, void                  **ppIndirection);
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn, CORINFO_CONST_LOOKUP *  pResult, CORINFO_ACCESS_FLAGS accessFlags);
-    void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn, CORINFO_CONST_LOOKUP *  pResult);
+    void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP *  pResult);
     void* getMethodSync(CORINFO_METHOD_HANDLE               ftn, void                  **ppIndirection);
     CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE   handle);
     CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE   handle, void                  **ppIndirection);
