@@ -7071,17 +7071,14 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 
             if (tree->gtOper == GT_FIELD)
             {
-                GenTree* objp;
+                GenTree* objp = nullptr;
 
-                // copied from line 9850
-
-                objp = nullptr;
                 if (tree->AsField()->GetFldObj() != nullptr)
                 {
                     objp = gtClone(tree->AsField()->GetFldObj(), false);
-                    if (!objp)
+                    if (objp == nullptr)
                     {
-                        return objp;
+                        return nullptr;
                     }
                 }
 
@@ -15923,183 +15920,105 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 }
 #endif // TARGET_X86
 
+//------------------------------------------------------------------------
+// IsFieldAddr: Is "this" a field address?
+//
+// Recognizes the following three patterns:
+//    this: [Zero FldSeq]
+//    this: ADD(baseAddr, CONST FldSeq)
+//    this: ADD(CONST FldSeq, baseAddr)
+//
+// Arguments:
+//    comp    - the Compiler object
+//    pObj    - [out] parameter for instance fields, the object reference
+//    pStatic - [out] parameter for static fields, the base address
+//    pFldSeq - [out] parameter for the field sequence
+//
+// Return Value:
+//    If "this" matches patterns denoted above, and the FldSeq found is "full",
+//    i. e. starts with a class field or a static field, and includes all the
+//    struct fields that this tree represents the address of, this method will
+//    return "true" and set either "pObj" or "pStatic" to some value, which must
+//    be used by the caller as the key into the "first field map" to obtain the
+//    actual value for the field.
+//
 bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq)
 {
-    FieldSeqNode* newFldSeq    = nullptr;
-    GenTree*      baseAddr     = nullptr;
-    bool          mustBeStatic = false;
+    // TODO-VNTypes: validate how things work with "System.Object" in NativeAOT's CoreLib that has
+    // a field with zero offset (the method table pointer). For now, tentatively allow TYP_REF here
+    // because of this case.
+    assert(TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
 
-    FieldSeqNode* statStructFldSeq = nullptr;
-    if (TypeGet() == TYP_REF)
+    *pObj    = nullptr;
+    *pStatic = nullptr;
+    *pFldSeq = FieldSeqStore::NotAField();
+
+    GenTree*      baseAddr = nullptr;
+    FieldSeqNode* fldSeq   = nullptr;
+
+    if (OperIs(GT_ADD))
     {
-        // Recognize struct static field patterns...
-        if (OperGet() == GT_IND)
+        // If one operand has a field sequence, the other operand must not have one
+        // as the order of fields in that case would not be well-defined.
+        if (AsOp()->gtOp1->IsCnsIntOrI() && AsOp()->gtOp1->IsIconHandle())
         {
-            GenTree*       addr = AsOp()->gtOp1;
-            GenTreeIntCon* icon = nullptr;
-            if (addr->OperGet() == GT_CNS_INT)
-            {
-                icon = addr->AsIntCon();
-            }
-            else if (addr->OperGet() == GT_ADD)
-            {
-                // op1 should never be a field sequence (or any other kind of handle)
-                assert((addr->AsOp()->gtOp1->gtOper != GT_CNS_INT) || !addr->AsOp()->gtOp1->IsIconHandle());
-                if (addr->AsOp()->gtOp2->OperGet() == GT_CNS_INT)
-                {
-                    icon = addr->AsOp()->gtOp2->AsIntCon();
-                }
-            }
-            if (icon != nullptr && !icon->IsIconHandle(GTF_ICON_STR_HDL) // String handles are a source of TYP_REFs.
-                && icon->gtFieldSeq != nullptr &&
-                icon->gtFieldSeq->m_next == nullptr // A static field should be a singleton
-                // TODO-Review: A pseudoField here indicates an issue - this requires investigation
-                // See test case src\ddsuites\src\clr\x86\CoreMangLib\Dev\Globalization\CalendarRegressions.exe
-                && !(FieldSeqStore::IsPseudoField(icon->gtFieldSeq->m_fieldHnd)) &&
-                icon->gtFieldSeq != FieldSeqStore::NotAField()) // Ignore non-fields.
-            {
-                statStructFldSeq = icon->gtFieldSeq;
-            }
-            else
-            {
-                addr = addr->gtEffectiveVal();
-
-                // Perhaps it's a direct indirection of a helper call or a cse with a zero offset annotation.
-                if ((addr->OperGet() == GT_CALL) || (addr->OperGet() == GT_LCL_VAR))
-                {
-                    FieldSeqNode* zeroFieldSeq = nullptr;
-                    if (comp->GetZeroOffsetFieldMap()->Lookup(addr, &zeroFieldSeq))
-                    {
-                        if (zeroFieldSeq->m_next == nullptr)
-                        {
-                            statStructFldSeq = zeroFieldSeq;
-                        }
-                    }
-                }
-            }
+            assert(!AsOp()->gtOp2->IsCnsIntOrI() || !AsOp()->gtOp2->IsIconHandle());
+            fldSeq   = AsOp()->gtOp1->AsIntCon()->gtFieldSeq;
+            baseAddr = AsOp()->gtOp2;
         }
-        else if (OperGet() == GT_CLS_VAR)
+        else if (AsOp()->gtOp2->IsCnsIntOrI())
         {
-            GenTreeClsVar* clsVar = AsClsVar();
-            if (clsVar->gtFieldSeq != nullptr && clsVar->gtFieldSeq->m_next == nullptr)
-            {
-                statStructFldSeq = clsVar->gtFieldSeq;
-            }
+            assert(!AsOp()->gtOp1->IsCnsIntOrI() || !AsOp()->gtOp1->IsIconHandle());
+            fldSeq   = AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
+            baseAddr = AsOp()->gtOp1;
         }
-        else if (OperIsLocal())
-        {
-            // If we have a GT_LCL_VAR, it can be result of a CSE substitution
-            // If it is then the CSE assignment will have a ValueNum that
-            // describes the RHS of the CSE assignment.
-            //
-            // The CSE could be a pointer to a boxed struct
-            //
-            ValueNum vn = gtVNPair.GetLiberal();
-            if (vn != ValueNumStore::NoVN)
-            {
-                // Is the ValueNum a MapSelect involving a SharedStatic helper?
-                VNFuncApp funcApp1;
-                if (comp->vnStore->GetVNFunc(vn, &funcApp1) && (funcApp1.m_func == VNF_MapSelect) &&
-                    (comp->vnStore->IsSharedStatic(funcApp1.m_args[1])))
-                {
-                    ValueNum mapVN = funcApp1.m_args[0];
-                    // Is this new 'mapVN' ValueNum, a MapSelect involving a handle?
-                    VNFuncApp funcApp2;
-                    if (comp->vnStore->GetVNFunc(mapVN, &funcApp2) && (funcApp2.m_func == VNF_MapSelect) &&
-                        (comp->vnStore->IsVNHandle(funcApp2.m_args[1])))
-                    {
-                        ValueNum fldHndVN = funcApp2.m_args[1];
-                        // Is this new 'fldHndVN' VNhandle a FieldHandle?
-                        unsigned flags = comp->vnStore->GetHandleFlags(fldHndVN);
-                        if (flags == GTF_ICON_FIELD_HDL)
-                        {
-                            CORINFO_FIELD_HANDLE fieldHnd =
-                                CORINFO_FIELD_HANDLE(comp->vnStore->ConstantValue<ssize_t>(fldHndVN));
-
-                            // Record this field sequence in 'statStructFldSeq' as it is likely to be a Boxed Struct
-                            // field access.
-                            statStructFldSeq = comp->GetFieldSeqStore()->CreateSingleton(fieldHnd);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (statStructFldSeq != nullptr)
-        {
-            assert(statStructFldSeq->m_next == nullptr);
-            // Is this a pointer to a boxed struct?
-            if (comp->gtIsStaticFieldPtrToBoxedStruct(TYP_REF, statStructFldSeq->m_fieldHnd))
-            {
-                *pFldSeq = comp->GetFieldSeqStore()->Append(statStructFldSeq, *pFldSeq);
-                *pObj    = nullptr;
-                *pStatic = this;
-                return true;
-            }
-        }
-
-        // Otherwise...
-        *pObj    = this;
-        *pStatic = nullptr;
-        return true;
     }
-    else if (OperGet() == GT_ADD)
+    else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
     {
-        // If one operator is a field sequence/handle, the other operator must not also be a field sequence/handle.
-        if ((AsOp()->gtOp1->OperGet() == GT_CNS_INT) && AsOp()->gtOp1->IsIconHandle())
-        {
-            assert((AsOp()->gtOp2->gtOper != GT_CNS_INT) || !AsOp()->gtOp2->IsIconHandle());
-            newFldSeq = AsOp()->gtOp1->AsIntCon()->gtFieldSeq;
-            baseAddr  = AsOp()->gtOp2;
-        }
-        else if (AsOp()->gtOp2->OperGet() == GT_CNS_INT)
-        {
-            assert((AsOp()->gtOp1->gtOper != GT_CNS_INT) || !AsOp()->gtOp1->IsIconHandle());
-            newFldSeq = AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
-            baseAddr  = AsOp()->gtOp1;
-        }
+        baseAddr = this;
     }
     else
     {
-        // Check if "this" has a zero-offset annotation.
-        if (!comp->GetZeroOffsetFieldMap()->Lookup(this, &newFldSeq))
-        {
-            // If not, this is not a field address.
-            return false;
-        }
-        else
-        {
-            baseAddr     = this;
-            mustBeStatic = true;
-        }
+        // TODO-VNTypes-CQ: recognize the simple GTF_ICON_STATIC_HDL case here. It
+        // is not recognized right now to preserve previous behavior of this method.
+        return false;
     }
 
-    // If not we don't have a field seq, it's not a field address.
-    if (newFldSeq == nullptr || newFldSeq == FieldSeqStore::NotAField())
+    // If we don't have a valid sequence, bail. Note that above we have overloaded an empty
+    // ("nullptr") sequence as "NotAField", as that's the way it is treated on tree nodes.
+    if ((fldSeq == nullptr) || (fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
     {
         return false;
     }
 
-    // Prepend this field to whatever we've already accumulated (outside-in).
-    *pFldSeq = comp->GetFieldSeqStore()->Append(newFldSeq, *pFldSeq);
+    assert(baseAddr != nullptr);
 
-    // Is it a static or instance field?
-    if (!FieldSeqStore::IsPseudoField(newFldSeq->m_fieldHnd) &&
-        comp->info.compCompHnd->isFieldStatic(newFldSeq->m_fieldHnd))
+    // The above screens out obviously invalid cases, but we have more checks to perform. The
+    // sequence returned from this method *must* start with either a class (NOT struct) field
+    // or a static field. To avoid the expense of calling "getFieldClass" here, we will instead
+    // rely on the invariant that TYP_REF base addresses can never appear for struct fields - we
+    // will effectively treat such cases ("possible" in unsafe code) as undefined behavior.
+    if (comp->eeIsFieldStatic(fldSeq->GetFieldHandle()))
     {
-        // It is a static field.  We're done.
-        *pObj    = nullptr;
+        // TODO-VNTypes: we will always return the "baseAddr" here for now, but strictly speaking,
+        // we only need to do that if we have a shared field, to encode the logical "instantiation"
+        // argument. In all other cases, this serves no purpose and just leads to redundant maps.
         *pStatic = baseAddr;
+        *pFldSeq = fldSeq;
         return true;
     }
-    else if ((baseAddr != nullptr) && !mustBeStatic)
+
+    if (baseAddr->TypeIs(TYP_REF))
     {
-        // It's an instance field...but it must be for a struct field, since we've not yet encountered
-        // a "TYP_REF" address.  Analyze the reset of the address.
-        return baseAddr->gtEffectiveVal()->IsFieldAddr(comp, pObj, pStatic, pFldSeq);
+        // TODO-VNTypes: assert that the first field belongs to a class here.
+        *pObj    = baseAddr;
+        *pFldSeq = fldSeq;
+        return true;
     }
 
-    // Otherwise...
+    // This case is reached, for example, if we have a chain of struct fields that are based on
+    // some pointer. We do not model such cases because we do not model maps for ByrefExposed
+    // memory, as it does not have the non-aliasing property of GcHeap and reference types.
     return false;
 }
 
