@@ -208,7 +208,6 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine(" };");
             }
             writer.WriteLine($"        base.capsize = {rm.Code.CapSize};");
-            writer.WriteLine($"        base.InitializeReferences();");
             writer.WriteLine($"    }}");
             writer.WriteLine("    ");
             writer.WriteLine($"    private sealed class RunnerFactory : global::System.Text.RegularExpressions.RegexRunnerFactory");
