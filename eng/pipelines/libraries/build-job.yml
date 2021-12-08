@@ -122,7 +122,7 @@ jobs:
 
         # Get the commit hashes of interesting folder for caching
         - script: |
-            $(PythonScript) $(GetCommitScript) -configuration $(ConfigurationName) -run_type libraries -output $(CommitsOutputFile)
+            $(PythonScript) $(GetCommitScript) -configuration "$(ConfigurationName)" -run_type libraries -output $(CommitsOutputFile)
           displayName: Record commit hashes of libraries
           env:
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)

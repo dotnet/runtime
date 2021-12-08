@@ -195,7 +195,7 @@ jobs:
 
     # Get the commit hashes of interesting folder for caching
     - script: |
-        $(PythonScript) $(GetCommitScript) -configuration $(ConfigurationName) -run_type coreclr -output $(CommitsOutputFile)
+        $(PythonScript) $(GetCommitScript) -configuration "$(ConfigurationName)" -run_type coreclr -output $(CommitsOutputFile)
       displayName: Record commit hashes of coreclr
       env:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
