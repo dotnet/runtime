@@ -7,11 +7,12 @@ using Xunit;
 
 namespace System.IO.FileSystem.Tests
 {
+    [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
+    [Collection(nameof(DisableParallelization))] // don't create multiple large files at the same time
     public class LargeFileTests : FileSystemTest
     {
         [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public void ReadFileOver2GB()
         {
             string path = GetTestFilePath();
@@ -25,8 +26,6 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public void ReadFileOverMaxArrayLength()
         {
             string path = GetTestFilePath();
@@ -40,8 +39,6 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public async Task ReadFileOver2GBAsync()
         {
             string path = GetTestFilePath();
@@ -55,8 +52,6 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public async Task ReadFileOverMaxArrayLengthAsync()
         {
             string path = GetTestFilePath();
@@ -70,8 +65,6 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public void NoInt32OverflowInTheBufferingLogic()
         {
             const long position1 = 10;
