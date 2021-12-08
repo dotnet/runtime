@@ -3387,6 +3387,11 @@ namespace System.Net.Http.Functional.Tests
 
                 Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.PostAsync(uri, content));
                 Assert.Contains("Content-Length", ex.Message);
+
+                if (UseVersion.Major == 1)
+                {
+                    await client.GetStringAsync(uri).WaitAsync(TestHelper.PassingTestTimeout);
+                }
             },
             async server =>
             {
@@ -3395,6 +3400,13 @@ namespace System.Net.Http.Functional.Tests
                     await server.HandleRequestAsync();
                 }
                 catch { }
+
+                // On HTTP/1.x, an exception being thrown while sending the request content will result in the connection being closed.
+                // This test is ensuring that a subsequent request can succeed on a new connection.
+                if (UseVersion.Major == 1)
+                {
+                    await server.HandleRequestAsync().WaitAsync(TestHelper.PassingTestTimeout);
+                }
             });
         }
     }
