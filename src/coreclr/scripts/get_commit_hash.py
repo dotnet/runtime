@@ -9,6 +9,7 @@
 # Notes:
 #
 # Script to store git commit hash of certain paths and store them in a file.
+# Used by CacheTask@2 task of yml pipeline.
 #
 ################################################################################
 ################################################################################
@@ -20,9 +21,23 @@ from jitutil import run_command
 
 parser = argparse.ArgumentParser(description="description")
 
+parser.add_argument("-configuration", help="Configuration text to identify the type of build. Might be OS/Arch, etc.")
 parser.add_argument("-run_type", help="Type of run. Options: 'coreclr', 'libraries'")
 parser.add_argument("-output", help="Path to output file")
 
+# Dictionary that maps the type of build to the file paths that build is affected by.
+# Commit hashes of all the paths for a specific builds are fetched and stored in an
+# output file. The output file is helpful in determining if there were any changes in
+# the paths and if a build is needed or not. If there were no changes, the cached build
+# (if available) will be used instead of doing a build.
+
+# 'common' is a special category. If anything is modified in one of those paths, we will
+# always run all the builds. So, in future, for diagnostic purpose, if the cache is hit in
+# scenarios where it was not supposed to hit, touching one of the paths listed under 'common'
+# will guarantee that nothing is restored from cache. This happens because when we fetch the
+# latest commit hash for those paths, it will always be a merge commit which will be different
+# than the previous recorded commits and hence will create a unique cache key which will not
+# be present in CacheTask.
 paths = {
     'common': [
         'global.json',
@@ -56,6 +71,11 @@ def setup_args(args):
                                     require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
+                        "configuration",
+                        lambda unused: True,
+                        "Unable to set configuration")
+
+    coreclr_args.verify(args,
                         "run_type",
                         lambda unused: True,
                         "Unable to set run_type")
@@ -68,17 +88,19 @@ def setup_args(args):
     return coreclr_args
 
 
-def create_commits_file(run_types, source_directory, output_file):
+def create_commits_file(configuration, run_types, source_directory, output_file):
     """Creates a commit file containing hashes for all the paths specific
     to the run_types specified
 
     Args:
+        configuration (string): Configuration text.
         run_types ([string]): Array of run_types.
-        run_types (string): Name of source directory.
-        run_types (string): Name of output file.
+        source_directory (string): Name of the source directory.
+        output_file (string): Name of the output file.
     """
 
     with open(output_file, 'w') as of:
+        of.write("'Configuration': {}".format(configuration))
         for run_type in run_types:
             for git_path in paths[run_type]:
                 file_path = os.path.join(source_directory, git_path)
@@ -106,6 +128,7 @@ def main(main_args):
     """
 
     coreclr_args = setup_args(main_args)
+    configuration = coreclr_args.configuration
     run_type = coreclr_args.run_type
     output_file = coreclr_args.output
     current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -139,7 +162,7 @@ def main(main_args):
                                    _exit_on_fail=True)
 
     print(" -- Creating commits file")
-    create_commits_file(['common', run_type], source_directory, output_file)
+    create_commits_file(configuration, ['common', run_type], source_directory, output_file)
 
 
 if __name__ == "__main__":

@@ -152,6 +152,9 @@ jobs:
       - name: clrRuntimePortableBuildArg
         value: '-portablebuild=false'
 
+    - name: ConfigurationName
+      value: ${{ format('CoreCLR {0} {1}{2} {3} {4} {5} {6}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.pgoType, parameters.compilerName) }}
+
     - name: CommitsOutputFile
       value: '$(Build.SourcesDirectory)/coreclr.commit_hash'
 
@@ -192,7 +195,7 @@ jobs:
 
     # Get the commit hashes of interesting folder for caching
     - script: |
-        $(PythonScript) $(GetCommitScript) -run_type coreclr -output $(CommitsOutputFile)
+        $(PythonScript) $(GetCommitScript) -configuration $(ConfigurationName) -run_type coreclr -output $(CommitsOutputFile)
       displayName: Record commit hashes of coreclr
       env:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
@@ -201,38 +204,38 @@ jobs:
 
     # Cache tasks
     - task: Cache@2
-      displayName: Cache coreclr build
+      displayName: Cache Build $(ConfigurationName)
       inputs:
-        key: '" coreclr-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | "${{ parameters.pgoType }}" | $(CommitsOutputFile)'
+        key: '"Build" | $(CommitsOutputFile)'
         path: $(Build.StagingDirectory)
         cacheHitVar: BUILD_CACHE_RESTORED
       condition: eq(variables.UsePipelineCache, 'true')
 
     - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
       - task: Cache@2
-        displayName: Cache cross DAC build
+        displayName: Cache Cross DAC Build $(ConfigurationName)
         inputs:
-          key: '" crossDAC-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | "${{ parameters.pgoType }}" | $(CommitsOutputFile)'
+          key: '"CrossDAC-Build" | $(CommitsOutputFile)'
           path: $(crossDacArtifactPath)
           cacheHitVar: DAC_BUILD_CACHE_RESTORED
         condition: eq(variables.UsePipelineCache, 'true')
 
     - task: Cache@2
-      displayName: Cache coreclr build logs
+      displayName: Cache BuildLogs $(ConfigurationName)
       inputs:
-        key: '"coreclr-logs" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | "${{ parameters.pgoType }}" | $(CommitsOutputFile)'
+        key: '"Logs" | $(CommitsOutputFile)'
         path: $(Build.SourcesDirectory)/artifacts/log/
         cacheHitVar: BUILD_LOGS_RESTORED
         condition: eq(variables.UsePipelineCache, 'true')
 
     - script: |
-        echo Cache restored
-      displayName: Cache Hit
+        echo Cache restored for $(ConfigurationName)
+      displayName: Cache Hit - $(ConfigurationName)
       condition: eq(variables.BUILD_CACHE_RESTORED, 'true')
 
     - script: |
-        echo Cache not restored
-      displayName: Cache miss
+        echo Cache not restored for $(ConfigurationName)
+      displayName: Cache Miss - $(ConfigurationName)
       condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
     # Install native dependencies
