@@ -73,6 +73,10 @@ namespace System.IO.Compression
             _everOpenedForWrite = false;
             _outstandingWriteStream = null;
 
+            _storedEntryNameBytes = cd.Filename;
+            _storedEntryName = (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_storedEntryNameBytes);
+            DetectEntryNameVersion();
+
             _lhUnknownExtraFields = null;
             // the cd should have this as null if we aren't in Update mode
             _cdUnknownExtraFields = cd.ExtraFields;
@@ -82,10 +86,6 @@ namespace System.IO.Compression
             _compressionLevel = null;
 
             _hasUnicodeEntryNameOrComment = (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) != 0;
-
-            _storedEntryNameBytes = cd.Filename;
-            _storedEntryName = (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_storedEntryNameBytes);
-            DetectEntryNameVersion();
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
