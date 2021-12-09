@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.Field (null, typeof (Derived), "_protectedFieldOnBase");
 			Expression.Field (null, typeof (Derived), "_publicFieldOnBase");
 			UnknownType.Test ();
+			UnknownTypeNoAnnotation.Test ();
 			UnknownString.Test ();
 			Expression.Field (null, GetType (), "This string will not be reached"); // UnrecognizedReflectionAccessPattern
 		}
@@ -54,6 +55,26 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+			static Type GetType ()
+			{
+				return typeof (UnknownType);
+			}
+		}
+
+		[Kept]
+		class UnknownTypeNoAnnotation
+		{
+			public static int Field1;
+			private int Field2;
+
+			[ExpectedWarning ("IL2072", "'type'")]
+			[Kept]
+			public static void Test ()
+			{
+				Expression.Field (null, GetType (), "This string will not be reached");
+			}
+
+			[Kept]
 			static Type GetType ()
 			{
 				return typeof (UnknownType);
