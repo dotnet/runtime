@@ -594,7 +594,8 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     {
         // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
         // about the BlockSet epoch.
-        unsigned bbNumMax = compiler->compIsForInlining() ? compiler->impInlineInfo->InlinerCompiler->fgBBNumMax : compiler->fgBBNumMax;
+        unsigned bbNumMax =
+            compiler->compIsForInlining() ? compiler->impInlineInfo->InlinerCompiler->fgBBNumMax : compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
         for (BasicBlock* const bTarget : SwitchTargets())
@@ -602,7 +603,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
             BitVecOps::AddElemD(&bitVecTraits, uniqueSuccBlocks, bTarget->bbNum);
         }
         BitVecOps::Iter iter(&bitVecTraits, uniqueSuccBlocks);
-        unsigned          bbNum = 0;
+        unsigned        bbNum = 0;
         while (iter.NextElem(&bbNum))
         {
             // Note that we will output switch successors in increasing numerical bbNum order, which is
