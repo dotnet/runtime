@@ -160,6 +160,10 @@ function initializeImportsAndExports(
             Configuration
         }
     };
+    if (exports.module.__undefinedConfig) {
+        module.disableDotnet6Compatibility = true;
+        module.configSrc = "./mono-config.json";
+    }
 
     // these could be overriden on DotnetModuleConfig
     if (!module.preInit) {

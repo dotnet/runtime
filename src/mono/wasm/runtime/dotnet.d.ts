@@ -350,7 +350,7 @@ interface DotnetPublicAPI {
     };
 }
 
-declare function createDotnetRuntime(moduleFactory: (api: DotnetPublicAPI) => DotnetModuleConfig): Promise<DotnetPublicAPI>;
+declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: DotnetPublicAPI) => DotnetModuleConfig)): Promise<DotnetPublicAPI>;
 declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 declare global {
     function getDotnetRuntime(runtimeId: number): DotnetPublicAPI | undefined;

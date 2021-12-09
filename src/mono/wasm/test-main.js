@@ -339,13 +339,10 @@ try {
         }
         processedArguments = processArguments(urlArguments);
     } else if (typeof arguments !== "undefined") {
-        console.log('!!!!!!!!!!!!!!!!1')
         processedArguments = processArguments(Array.from(arguments));
     } else if (typeof scriptArgs !== "undefined") {
-        console.log('!!!!!!!!!!!!!!!!2')
         processedArguments = processArguments(Array.from(scriptArgs));
     } else if (typeof WScript !== "undefined" && WScript.Arguments) {
-        console.log('!!!!!!!!!!!!!!!!3')
         processedArguments = processArguments(Array.from(WScript.Arguments));
     }
 } catch (e) {
