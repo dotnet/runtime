@@ -13,55 +13,17 @@ namespace System.IO.FileSystem.Tests
     public class LargeFileTests : FileSystemTest
     {
         [Fact]
-        public void ReadFileOver2GB()
+        public async Task ReadAllBytesOverLimit()
         {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
+            using FileStream fs = new (GetTestFilePath(), FileMode.Create, FileAccess.Write, FileShare.Read, 4096, FileOptions.DeleteOnClose);
+
+            foreach (long lengthOverLimit in new long[] { Array.MaxLength + 1L, int.MaxValue + 1L })
             {
-                fs.SetLength(int.MaxValue + 1L);
+                fs.SetLength(lengthOverLimit);
+
+                Assert.Throws<IOException>(() => File.ReadAllBytes(fs.Name));
+                await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(fs.Name));
             }
-
-            // File is too large for ReadAllBytes at once
-            Assert.Throws<IOException>(() => File.ReadAllBytes(path));
-        }
-
-        [Fact]
-        public void ReadFileOverMaxArrayLength()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(Array.MaxLength + 1L);
-            }
-
-            // File is too large for ReadAllBytes at once
-            Assert.Throws<IOException>(() => File.ReadAllBytes(path));
-        }
-
-        [Fact]
-        public async Task ReadFileOver2GBAsync()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(int.MaxValue + 1L);
-            }
-
-            // File is too large for ReadAllBytesAsync at once
-            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
-        }
-
-        [Fact]
-        public async Task ReadFileOverMaxArrayLengthAsync()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(Array.MaxLength + 1L);
-            }
-
-            // File is too large for ReadAllBytesAsync at once
-            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
         }
 
         [Fact]
@@ -75,7 +37,7 @@ namespace System.IO.FileSystem.Tests
             byte[] data2 = new byte[] { 6, 7, 8, 9, 10 };
             byte[] buffer = new byte[5];
 
-            using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            using (FileStream stream = File.Create(filePath))
             {
                 stream.Seek(position1, SeekOrigin.Begin);
                 stream.Write(data1);
@@ -84,7 +46,7 @@ namespace System.IO.FileSystem.Tests
                 stream.Write(data2);
             }
 
-            using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            using (FileStream stream = new (filePath, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.DeleteOnClose))
             {
                 stream.Seek(position1, SeekOrigin.Begin);
                 Assert.Equal(buffer.Length, stream.Read(buffer));
