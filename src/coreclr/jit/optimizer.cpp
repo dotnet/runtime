@@ -7220,12 +7220,10 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     {
         // The loop entry must have a single non-loop predecessor, which is the pre-header.
         bool loopHasProperEntryBlockPreds = true;
-        INDEBUG(bool loopEntryHasHeadPred = false);
         for (BasicBlock* const predBlock : entry->PredBlocks())
         {
             if (head == predBlock)
             {
-                INDEBUG(loopEntryHasHeadPred = true);
                 continue;
             }
             const bool intraLoopPred = optLoopContains(lnum, predBlock->bbNatLoopNum);
@@ -7235,7 +7233,6 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 break;
             }
         }
-        assert(loopEntryHasHeadPred);
         if (loopHasProperEntryBlockPreds)
         {
             JITDUMP("   converting existing header " FMT_BB " into pre-header\n", loop.lpHead->bbNum);
