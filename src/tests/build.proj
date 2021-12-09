@@ -123,7 +123,6 @@
     </RemoveDuplicates>
     <ItemGroup>
       <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" />
-      <!-- https://github.com/dotnet/runtime/issues/62372 -->
       <CoreRootDlls Include="$(CORE_ROOT)/*.dll"
         Exclude="$(CORE_ROOT)/xunit.performance.api.dll;
                  $(CORE_ROOT)/Microsoft.Interop.DllImportGenerator.dll;
