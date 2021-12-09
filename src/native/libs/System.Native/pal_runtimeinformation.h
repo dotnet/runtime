@@ -24,5 +24,5 @@ enum
     ARCH_ARM64,
     ARCH_WASM,
     ARCH_S390X,
-    ARCH_ARMV6
+    ARCH_ARMV6,
 };
