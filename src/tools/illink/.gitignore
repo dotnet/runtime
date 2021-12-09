@@ -10,6 +10,7 @@
 *.user
 *.userprefs
 .vs/
+.vscode/
 .idea/
 
 packages/
@@ -35,5 +36,7 @@ bin/
 .packages
 artifacts
 *.binlog
+# Emacs / vim backup files
+*~
 
 test/Mono.Linker.Tests/TestResults.xml
