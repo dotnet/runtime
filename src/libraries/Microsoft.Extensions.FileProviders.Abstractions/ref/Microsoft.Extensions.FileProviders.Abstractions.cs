@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.FileProviders
     }
     public partial class NotFoundFileInfo : Microsoft.Extensions.FileProviders.IFileInfo
     {
-        public NotFoundFileInfo(string name) { }
+        public NotFoundFileInfo(string? name) { }
         public bool Exists { get { throw null; } }
         public bool IsDirectory { get { throw null; } }
         public System.DateTimeOffset LastModified { get { throw null; } }

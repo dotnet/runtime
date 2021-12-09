@@ -16,9 +16,9 @@ namespace Microsoft.Extensions.FileProviders
         /// Initializes an instance of <see cref="NotFoundFileInfo"/>.
         /// </summary>
         /// <param name="name">The name of the file that could not be found</param>
-        public NotFoundFileInfo(string name)
+        public NotFoundFileInfo(string? name)
         {
-            Name = name;
+            Name = name ?? string.Empty;
         }
 
         /// <summary>
