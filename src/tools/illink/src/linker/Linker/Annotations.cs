@@ -618,7 +618,7 @@ namespace Mono.Linker
 		internal bool IsMethodInRequiresUnreferencedCodeScope (MethodDefinition method)
 		{
 			if (HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method) ||
-				method.DeclaringType is not null && HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method.DeclaringType))
+				(method.DeclaringType is not null && HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method.DeclaringType)))
 				return true;
 
 			return false;

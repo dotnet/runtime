@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -35,7 +35,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
 		public static async Task VerifyAnalyzerAsync (string src, (string, string)[]? analyzerOptions = null, IEnumerable<MetadataReference>? additionalReferences = null, params DiagnosticResult[] expected)
 		{
-			var diags = await (await TestCaseCompilation.CreateCompilation (src, analyzerOptions, additionalReferences)).Compilation.GetAllDiagnosticsAsync ();
+			var (comp, _, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (src, analyzerOptions, additionalReferences);
+			var diags = (await comp.GetAllDiagnosticsAsync ()).AddRange (exceptionDiagnostics);
 			var analyzers = ImmutableArray.Create<DiagnosticAnalyzer> (new TAnalyzer ());
 			VerifyDiagnosticResults (diags, analyzers, expected, DefaultVerifier);
 		}
