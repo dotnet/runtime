@@ -112,6 +112,8 @@ namespace System.Reflection
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Used to find matching method overloads. Only used for assignability checks.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+            Justification = "Used to find matching method overloads. Only used for assignability checks.")]
         private static Type? TryResolve(this SignatureType signatureType, Type[] genericMethodParameters)
         {
             if (signatureType.IsSZArray)
@@ -164,6 +166,8 @@ namespace System.Reflection
             }
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+            Justification = "Used to find matching method overloads. Only used for assignability checks.")]
         private static Type? TryMakeArrayType(this Type type)
         {
             try
@@ -176,6 +180,8 @@ namespace System.Reflection
             }
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+            Justification = "Used to find matching method overloads. Only used for assignability checks.")]
         private static Type? TryMakeArrayType(this Type type, int rank)
         {
             try
@@ -213,6 +219,7 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Wrapper around MakeGenericType which itself has RequiresUnreferencedCode")]
+        [RequiresDynamicCode("Wrapper around MakeGenericType which itself has RequiresDynamicCode")]
         private static Type? TryMakeGenericType(this Type type, Type[] instantiation)
         {
             try
