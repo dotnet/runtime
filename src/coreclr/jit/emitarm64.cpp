@@ -12063,7 +12063,7 @@ void emitter::emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm)
     assert(insOptsNone(opt) || insOptsAnyExtend(opt) || (opt == INS_OPTS_LSL));
 
     // size is based on the extend option, not the instr size.
-    emitAttr size = insOpts32BitExtend(opt) ? EA_4BYTE : EA_8BYTE;
+    emitAttr size = insOpts64BitExtend(opt) ? EA_8BYTE : EA_4BYTE;
 
     if (strictArmAsm)
     {
