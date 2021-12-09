@@ -98,10 +98,6 @@ void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
 
-CorInfoIntrinsics getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand) override;
-
 bool isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd) override;
 

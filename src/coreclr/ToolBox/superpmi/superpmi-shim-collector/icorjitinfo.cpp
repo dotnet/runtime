@@ -19,7 +19,7 @@
 /**********************************************************************************/
 
 // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
-// CORINFO_FLG_JIT_INTRINSIC, except faster.
+// CORINFO_FLG_INTRINSIC, except faster.
 bool interceptor_ICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
     mc->cr->AddCall("isJitIntrinsic");
@@ -249,17 +249,6 @@ void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pR
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
-}
-
-// If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
-// getIntrinsicID() returns the intrinsic ID.
-CorInfoIntrinsics interceptor_ICJI::getIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand /* OUT */
-                                                   )
-{
-    mc->cr->AddCall("getIntrinsicID");
-    CorInfoIntrinsics temp = original_ICorJitInfo->getIntrinsicID(method, pMustExpand);
-    mc->recGetIntrinsicID(method, pMustExpand, temp);
-    return temp;
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?

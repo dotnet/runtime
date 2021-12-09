@@ -5007,7 +5007,6 @@ struct GenTreeQmark : public GenTreeOp
 
 struct GenTreeIntrinsic : public GenTreeOp
 {
-    CorInfoIntrinsics     gtIntrinsicId;
     NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
@@ -5018,29 +5017,25 @@ struct GenTreeIntrinsic : public GenTreeOp
 
     GenTreeIntrinsic(var_types             type,
                      GenTree*              op1,
-                     CorInfoIntrinsics     intrinsicId,
                      NamedIntrinsic        intrinsicName,
                      CORINFO_METHOD_HANDLE methodHandle)
         : GenTreeOp(GT_INTRINSIC, type, op1, nullptr)
-        , gtIntrinsicId(intrinsicId)
         , gtIntrinsicName(intrinsicName)
         , gtMethodHandle(methodHandle)
     {
-        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
+        assert(intrinsicName != NI_Illegal);
     }
 
     GenTreeIntrinsic(var_types             type,
                      GenTree*              op1,
                      GenTree*              op2,
-                     CorInfoIntrinsics     intrinsicId,
                      NamedIntrinsic        intrinsicName,
                      CORINFO_METHOD_HANDLE methodHandle)
         : GenTreeOp(GT_INTRINSIC, type, op1, op2)
-        , gtIntrinsicId(intrinsicId)
         , gtIntrinsicName(intrinsicName)
         , gtMethodHandle(methodHandle)
     {
-        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
+        assert(intrinsicName != NI_Illegal);
     }
 
 #if DEBUGGABLE_GENTREE

@@ -225,10 +225,6 @@ public:
                         DWORD*                  exceptionCode);
     void repGetCallInfoFromMethodHandle(CORINFO_METHOD_HANDLE methodHandle, CORINFO_CALL_INFO* pResult);
 
-    void recGetIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand, CorInfoIntrinsics result);
-    void dmpGetIntrinsicID(DWORDLONG key, DD value);
-    CorInfoIntrinsics repGetIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand);
-
     void recAsCorInfoType(CORINFO_CLASS_HANDLE cls, CorInfoType result);
     void dmpAsCorInfoType(DWORDLONG key, DWORD value);
     CorInfoType repAsCorInfoType(CORINFO_CLASS_HANDLE cls);
@@ -970,7 +966,7 @@ enum mcPackets
     Packet_GetHelperFtn = 63,
     Packet_GetHelperName = 64,
     Packet_GetInlinedCallFrameVptr = 65,
-    Packet_GetIntrinsicID = 66,
+    //Packet_GetIntrinsicID = 66,
     Packet_GetJitTimeLogFilename = 67,
     Packet_GetJustMyCodeHandle = 68,
     Packet_GetLocationOfThisType = 69,

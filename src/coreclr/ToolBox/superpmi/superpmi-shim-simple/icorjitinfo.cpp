@@ -143,13 +143,6 @@ void interceptor_ICJI::expandRawHandleIntrinsic(
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
-CorInfoIntrinsics interceptor_ICJI::getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand)
-{
-    return original_ICorJitInfo->getIntrinsicID(method, pMustExpand);
-}
-
 bool interceptor_ICJI::isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd)
 {

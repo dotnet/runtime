@@ -190,16 +190,6 @@ void WrapICorJitInfo::expandRawHandleIntrinsic(
     API_LEAVE(expandRawHandleIntrinsic);
 }
 
-CorInfoIntrinsics WrapICorJitInfo::getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand)
-{
-    API_ENTER(getIntrinsicID);
-    CorInfoIntrinsics temp = wrapHnd->getIntrinsicID(method, pMustExpand);
-    API_LEAVE(getIntrinsicID);
-    return temp;
-}
-
 bool WrapICorJitInfo::isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd)
 {

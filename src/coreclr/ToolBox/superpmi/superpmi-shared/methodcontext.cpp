@@ -1710,39 +1710,6 @@ void MethodContext::repGetCallInfoFromMethodHandle(CORINFO_METHOD_HANDLE methodH
     LogException(EXCEPTIONCODE_MC, "Didn't find key %016llX.", methodHandle);
 }
 
-void MethodContext::recGetIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand, CorInfoIntrinsics result)
-{
-    if (GetIntrinsicID == nullptr)
-        GetIntrinsicID = new LightWeightMap<DWORDLONG, DD>();
-
-    DD value;
-    value.A = (pMustExpand != nullptr) ? (DWORD)(*pMustExpand ? 1 : 0) : (DWORD)0;
-    value.B = (DWORD)result;
-
-    DWORDLONG key = CastHandle(method);
-    GetIntrinsicID->Add(key, value);
-    DEBUG_REC(dmpGetIntrinsicID(key, value));
-}
-void MethodContext::dmpGetIntrinsicID(DWORDLONG key, DD value)
-{
-    printf("GetIntrinsicID key mth-%016llX, mustExpand-%u, value intr-%u", key, value.A, value.B);
-}
-CorInfoIntrinsics MethodContext::repGetIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand)
-{
-    DWORDLONG key = CastHandle(method);
-    AssertMapAndKeyExist(GetIntrinsicID, key, ": key %016llX", key);
-
-    DD value = GetIntrinsicID->Get(key);
-    DEBUG_REP(dmpGetIntrinsicID(key, value));
-
-    if (pMustExpand != nullptr)
-    {
-        *pMustExpand = (value.A == 0) ? false : true;
-    }
-    CorInfoIntrinsics result = (CorInfoIntrinsics)value.B;
-    return result;
-}
-
 void MethodContext::recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, bool result)
 {
     if (IsIntrinsicType == nullptr)
