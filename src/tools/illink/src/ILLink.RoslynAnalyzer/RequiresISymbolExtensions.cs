@@ -1,14 +1,18 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer
 {
-	static class RoslynDiagnosticAnalyzerExtenstions 
+	public static class RequiresISymbolExtensions
 	{
-		public static bool IsMemberInRequiresScope(this DiagnosticAnalyzer _, ISymbol member, string requiresAttribute)
+		// TODO: Consider sharing with linker IsMethodInRequiresUnreferencedCodeScope method
+		public static bool IsInRequiresScope (this ISymbol member, string requiresAttribute)
 		{
 			if (member is ISymbol containingSymbol) {
 				if (containingSymbol.HasAttribute (requiresAttribute)
@@ -23,5 +27,4 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 	}
-	
 }
