@@ -1181,7 +1181,7 @@ namespace System.StubHelpers
         internal static extern IntPtr GetNDirectTarget(IntPtr pMD);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetDelegateTarget(Delegate pThis, ref IntPtr pStubArg);
+        internal static extern IntPtr GetDelegateTarget(Delegate pThis);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ClearLastError();
