@@ -15,8 +15,7 @@ import {
     ArgsMarshalString, mono_bind_method,
     SignatureConverter,
     _compile_converter_for_marshal_string,
-    _decide_if_result_is_marshaled, find_method,
-    BoundMethodToken
+    find_method, BoundMethodToken
 } from "./method-binding";
 import { conv_string, js_string_to_mono_string } from "./strings";
 import cwraps from "./cwraps";
@@ -168,7 +167,7 @@ export function call_method(method: MonoMethod, this_arg: MonoObject | undefined
         const typePtr = cwraps.mono_wasm_class_get_type(classPtr);
         converter = _compile_converter_for_marshal_string(typePtr, method, args_marshal);
 
-        is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);
+        is_result_marshaled = !converter.is_result_definitely_unmarshaled;
 
         argsRootBuffer = _get_args_root_buffer_for_method_call(converter, null);
 

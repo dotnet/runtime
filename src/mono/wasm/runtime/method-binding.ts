@@ -302,24 +302,6 @@ export function _compile_converter_for_marshal_string(typePtr: MonoType, method:
     return csFuncResult;
 }
 
-function _maybe_produce_signature_warning(converter: SignatureConverter) {
-    if (converter.has_warned_about_signature)
-        return;
-
-    console.warn("MONO_WASM: Deprecated raw return value signature: '" + converter.args_marshal + "'. End the signature with '!' instead of 'm'.");
-    converter.has_warned_about_signature = true;
-}
-
-export function _decide_if_result_is_marshaled(converter: SignatureConverter, argc: number): boolean {
-    if (!converter)
-        return true;
-
-    if (argc !== converter.arg_count)
-        throw new Error(`Expected ${converter.arg_count} argument(s) but got ${argc} for signature '${converter.args_marshal}'`);
-
-    return !converter.is_result_definitely_unmarshaled;
-}
-
 export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: ArgsMarshalString, friendly_name: string): Function {
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
