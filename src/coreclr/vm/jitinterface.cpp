@@ -4987,7 +4987,6 @@ void CEEInfo::getCallInfo(
 
     bool directCall = false;
     bool resolvedCallVirt = false;
-    bool callVirtCrossingVersionBubble = false;
 
     if (flags & CORINFO_CALLINFO_LDFTN)
     {
@@ -8364,11 +8363,6 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
     {
         ArrayMethodDesc * arrMethod = (ArrayMethodDesc *)method;
         result = arrMethod->GetIntrinsicID();
-    }
-    else
-    if (method->IsFCall())
-    {
-        result = ECall::GetIntrinsicID(method);
     }
     else
     {

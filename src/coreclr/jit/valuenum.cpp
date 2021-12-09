@@ -9444,7 +9444,7 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
     }
     else
     {
-        assert(intrinsic->gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType);
+        assert(intrinsic->gtIntrinsicName == NI_System_Object_GetType);
         intrinsic->gtVNPair =
             vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), VNF_ObjGetType, arg0VNP), arg0VNPx);
     }
