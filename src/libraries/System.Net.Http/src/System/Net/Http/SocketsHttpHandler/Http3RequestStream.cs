@@ -422,8 +422,7 @@ namespace System.Net.Http
 
                 if (buffer.Length > _requestContentLengthRemaining)
                 {
-                    string msg = SR.net_http_content_write_larger_than_content_length;
-                    throw new IOException(msg, new HttpRequestException(msg));
+                    throw new HttpRequestException(SR.net_http_content_write_larger_than_content_length);
                 }
                 _requestContentLengthRemaining -= buffer.Length;
 
