@@ -226,6 +226,19 @@ stub_sufficient_stack (gsize size)
 	g_assert_not_reached ();
 }
 
+static void
+stub_entry_llvmonly (gpointer res, gpointer *args, gpointer imethod)
+{
+	g_assert_not_reached ();
+}
+
+static gpointer
+stub_get_interp_method (MonoMethod *method, MonoError *error)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 #undef MONO_EE_CALLBACK
 #define MONO_EE_CALLBACK(ret, name, sig) stub_ ## name,
 

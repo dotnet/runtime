@@ -8827,6 +8827,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             vnStore->VNPUnpackExc(addr->gtVNPair, &addrNvnp, &addrXvnp);
 
             // Is the dereference immutable?  If so, model it as referencing the read-only heap.
+            // TODO-VNTypes: this code needs to encode the types of the indirections.
             if (tree->gtFlags & GTF_IND_INVARIANT)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
@@ -8849,22 +8850,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!wasNewobj)
                 {
-
                     // Is this invariant indirect expected to always return a non-null value?
+                    // TODO-VNTypes: non-null indirects should only be used for TYP_REFs.
                     if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
                     {
                         assert(tree->gtFlags & GTF_IND_NONFAULTING);
                         tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
-                        if (addr->IsCnsIntOrI())
-                        {
-                            assert(addrXvnp.BothEqual() &&
-                                   (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
-                        }
-                        else
-                        {
-                            assert(false && "it's not expected to be hit at the moment, but can be allowed.");
-                            // tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
-                        }
+                        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
                     else
                     {

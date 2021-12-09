@@ -1076,7 +1076,8 @@ mono_print_ji (const MonoJumpInfo *ji)
 	}
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_METHOD_FTNDESC: {
+	case MONO_PATCH_INFO_METHOD_FTNDESC:
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
 		char *s = mono_method_get_full_name (ji->data.method);
 		printf ("[%s %s]", type, s);
 		g_free (s);
@@ -1216,6 +1217,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
 	case MONO_PATCH_INFO_METHOD_FTNDESC:
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY:
 	case MONO_PATCH_INFO_IMAGE:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
@@ -1415,6 +1417,11 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		 */
 		target = mini_llvmonly_load_method_ftndesc (patch_info->data.method, FALSE, FALSE, error);
 		return_val_if_nok (error, NULL);
+		break;
+	}
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
+		target = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (patch_info->data.method, FALSE, error);
+		mono_error_assert_ok (error);
 		break;
 	}
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
@@ -4892,6 +4899,7 @@ register_icalls (void)
 	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_ptr_ptr, TRUE);
 	register_icall_no_wrapper (mini_llvmonly_resolve_iface_call_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
+	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt_fast, mono_icall_sig_ptr_object_int);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_call, mono_icall_sig_ptr_ptr_int_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_iface_call, mono_icall_sig_ptr_ptr_int_ptr);
 	/* This needs a wrapper so it can have a preserveall cconv */
@@ -4901,7 +4909,7 @@ register_icalls (void)
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mini_llvmonly_pop_lmf, mono_icall_sig_void_ptr, TRUE);
-	register_icall (mini_llvmonly_get_interp_entry, mono_icall_sig_ptr_ptr, TRUE);
+	register_icall (mini_llvmonly_interp_entry_gsharedvt, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);

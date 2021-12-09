@@ -167,7 +167,7 @@ namespace System.ComponentModel.Tests
             public bool DesignMode { get; set; }
 
             public IComponent Component => throw new NotImplementedException();
-            public IContainer Container => throw new NotImplementedException();
+            public IContainer Container => null;
             public string Name { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
             public object GetService(Type serviceType) => null;
         }

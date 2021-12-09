@@ -593,6 +593,9 @@ namespace System.Text.RegularExpressions
                 case Setlazy:
                     return ReduceSet();
 
+                case Prevent:
+                    return ReducePrevent();
+
                 default:
                     return this;
             }
@@ -1817,6 +1820,24 @@ namespace System.Text.RegularExpressions
             return null;
         }
 
+        /// <summary>Optimizations for negative lookaheads/behinds.</summary>
+        private RegexNode ReducePrevent()
+        {
+            Debug.Assert(Type == Prevent);
+            Debug.Assert(ChildCount() == 1);
+
+            // A negative lookahead/lookbehind wrapped around an empty child, i.e. (?!), is
+            // sometimes used as a way to insert a guaranteed no-match into the expression.
+            // We can reduce it to simply Nothing.
+            if (Child(0).Type == Empty)
+            {
+                Type = Nothing;
+                Children = null;
+            }
+
+            return this;
+        }
+
         /// <summary>
         /// Determines whether node can be switched to an atomic loop.  Subsequent is the node
         /// immediately after 'node'.
@@ -2273,6 +2294,7 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
+#if DEBUG
         private string TypeName =>
             Type switch
             {
@@ -2390,7 +2412,6 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-#if DEBUG
         [ExcludeFromCodeCoverage]
         public void Dump() => Debug.WriteLine(ToString());
 

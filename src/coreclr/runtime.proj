@@ -41,6 +41,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">
+      <_CoreClrBuildArg Condition="'$(ClrHostsSubset)' == 'true'" Include="-component hosts" />
       <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' == 'true'" Include="-component runtime" />
       <_CoreClrBuildArg Condition="'$(ClrJitSubset)' == 'true'" Include="-component jit" />
       <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-component paltests" />

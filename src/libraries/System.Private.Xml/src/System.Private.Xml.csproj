@@ -140,7 +140,6 @@
     <Compile Include="System\Xml\Core\ConformanceLevel.cs" />
     <Compile Include="System\Xml\Core\DtdProcessing.cs" />
     <Compile Include="System\Xml\Core\EntityHandling.cs" />
-    <Compile Include="System\Xml\Core\HtmlTernaryTree.cs" />
     <Compile Include="System\Xml\Core\IDtdInfo.cs" />
     <Compile Include="System\Xml\Core\IDtdParser.cs" />
     <Compile Include="System\Xml\Core\IDtdParserAsync.cs" />
