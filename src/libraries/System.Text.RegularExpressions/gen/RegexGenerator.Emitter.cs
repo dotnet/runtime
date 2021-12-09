@@ -417,7 +417,7 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
 
-            // Emits a case-sensitive left-to-right prefix search for a string at the beginning of the pattern.
+            // Emits a case-sensitive prefix search for a string at the beginning of the pattern.
             void EmitIndexOf(string prefix)
             {
                 writer.WriteLine($"int i = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos, end - pos), {Literal(prefix)});");
@@ -428,7 +428,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine("}");
             }
 
-            // Emits a left-to-right search for a set at a fixed position from the start of the pattern,
+            // Emits a search for a set at a fixed position from the start of the pattern,
             // and potentially other sets at other fixed positions in the pattern.
             void EmitFixedSet()
             {
