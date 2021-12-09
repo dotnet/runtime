@@ -14,6 +14,8 @@
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
 
+    <WindowsShell Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">true</WindowsShell>
+
     <!--<GeneratePreExecutionTestScript Condition="'$(Scenario)' != 'BuildWasmApps'">true</GeneratePreExecutionTestScript>-->
     <!--<InstallDevCerts Condition="'$(InstallDevCerts)' == '''$(Scenario)' != 'BuildWasmApps'">true</InstallDevCerts>-->
     <InstallDevCerts>true</InstallDevCerts>
@@ -63,6 +65,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PreExecutionTestCommand Condition="'$(WindowsShell)' != 'true' and '$(Scenario)' != 'BuildWasmApps'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+    <PreExecutionTestCommand Condition="'$(WindowsShell)' == 'true' and '$(Scenario)' != 'BuildWasmApps'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+
     <!--
       We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
       We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.

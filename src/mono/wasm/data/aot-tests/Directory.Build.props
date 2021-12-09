@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">$(TEST_USING_WORKLOADS)</TestUsingWorkloads>
+  </PropertyGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)Workload.Directory.Build.props" Condition="$(TestUsingWorkloads) == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)Local.Directory.Build.props"    Condition="$(TestUsingWorkloads) != 'true'" />
 </Project>
