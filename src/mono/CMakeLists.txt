@@ -411,8 +411,12 @@ elseif(TARGET_ARCH STREQUAL "arm64")
 elseif(TARGET_ARCH MATCHES "arm")
   set(TARGET_ARM 1)
   set(MONO_ARCHITECTURE "\"arm\"")
-  # FIXME:
-  add_definitions("-DARM_FPU_VFP=1")
+  if(TARGET_ARCH MATCHES "armv6")
+    add_definitions("-DARM_FPU_VFP_HARD=1")
+  else()
+    # FIXME:
+    add_definitions("-DARM_FPU_VFP=1")
+  endif()
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
   # fixme: use separate defines for host/target
