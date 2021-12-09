@@ -3790,9 +3790,29 @@ void Compiler::fgDebugCheckLoopTable()
         assert(optLoopTable != nullptr);
     }
 
-    // Construct a map of increasing block numbers to allow for block number comparisons when block numbers are not
-    // guaranteed to be in increasing order.
-    unsigned* blockNumMap = fgBuildBlockNumMap();
+    // Build a mapping from existing block list number (bbNum) to the block number it would be after the
+    // blocks are renumbered. This allows making asserts about the relative ordering of blocks using block number
+    // without actually renumbering the blocks, which would affect non-DEBUG code paths. Note that there may be
+    // `blockNumMap[bbNum] == 0` if the `bbNum` block was deleted and blocks haven't been renumbered since
+    // the deletion.
+
+    unsigned bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+
+    // blockNumMap[old block number] => new block number
+    size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);
+    unsigned* blockNumMap   = (unsigned*)_alloca(blockNumBytes);
+    memset(blockNumMap, 0, blockNumBytes);
+
+    unsigned newBBnum = 1;
+    for (BasicBlock* const block : Blocks())
+    {
+        if ((block->bbFlags & BBF_REMOVED) == 0)
+        {
+            assert(1 <= block->bbNum && block->bbNum <= bbNumMax);
+            assert(blockNumMap[block->bbNum] == 0); // If this fails, we have two blocks with the same block number.
+            blockNumMap[block->bbNum] = newBBnum++;
+        }
+    }
 
     struct MappedChecks
     {
@@ -4020,56 +4040,6 @@ void Compiler::fgDebugCheckLoopTable()
     // Verify that the number of loops marked as having pre-headers is the same as the number of blocks
     // with the pre-header flag set.
     assert(preHeaderCount == 0);
-}
-
-//------------------------------------------------------------------------
-// fgBuildBlockNumMap: Build a mapping from existing block list numbers (bbNum)
-// to a set of block numbers that would exist after the blocks are renumbered.
-// This allows making asserts about the relative ordering of blocks using block
-// number without actually renumbering the blocks, which would affect non-DEBUG
-// code paths.
-//
-// Arguments:
-//   jumpTarget -- [in] bit vector of jump targets found by fgFindJumpTargets
-//
-// Returns:
-//   A block number map array `blockNumMap` such that `blockNumMap[bbNum]` for a block is the number the block
-//   would have if the block list were renumbered. Note that there may be some blockNumMap[x] == 0, for a
-//   block number 'x' that has been deleted, if the blocks haven't been renumbered since the deletion.
-//
-unsigned* Compiler::fgBuildBlockNumMap()
-{
-    unsigned bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
-
-    // blockNumMap[old block number] => new block number
-    size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);
-    unsigned* blockNumMap   = (unsigned*)_alloca(blockNumBytes);
-    memset(blockNumMap, 0, blockNumBytes);
-
-    unsigned newBBnum = 1;
-    for (BasicBlock* const block : Blocks())
-    {
-        assert((block->bbFlags & BBF_REMOVED) == 0);
-        assert(1 <= block->bbNum && block->bbNum <= bbNumMax);
-        assert(blockNumMap[block->bbNum] == 0); // If this fails, we have two blocks with the same block number.
-        blockNumMap[block->bbNum] = newBBnum++;
-    }
-
-#if 0 // Useful for debugging, but don't want to put this in the dump all the time
-    if (verbose)
-    {
-        printf("fgVerifyHandlerTab block number map: BB current => BB new\n");
-        for (unsigned i = 0; i <= bbNumMax; i++)
-        {
-            if (blockNumMap[i] != 0)
-            {
-                printf(FMT_BB " => " FMT_BB "\n", i, blockNumMap[i]);
-            }
-        }
-    }
-#endif
-
-    return blockNumMap;
 }
 
 /*****************************************************************************/

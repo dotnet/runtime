@@ -5997,6 +5997,7 @@ public:
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
+
     void fgDispDoms();
     void fgDispReach();
     void fgDispBBLiveness(BasicBlock* block);
@@ -6029,8 +6030,7 @@ public:
     bool fgDebugCheckIncomingProfileData(BasicBlock* block);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block);
 
-    unsigned* fgBuildBlockNumMap();
-#endif
+#endif // DEBUG
 
     static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2);
     static bool fgProfileWeightsConsistent(weight_t weight1, weight_t weight2);
