@@ -4,6 +4,9 @@ parameters:
   isOfficialBuild: ''
 
 steps:
+
+
+
   - ${{ if ne(parameters.isOfficialBuild, true) }}:
     - task: CopyFiles@2
       displayName: Prepare bin folders to publish (unofficial build)
@@ -14,6 +17,7 @@ steps:
           ref/**
           runtime/**
           testhost/**
+      condition: ne(variables.BUILD_CACHE_RESTORED, 'true')
 
   - task: CopyFiles@2
     displayName: Prepare bin folders to publish
@@ -24,10 +28,11 @@ steps:
         docs/**
         microsoft.netcore.app.*/**
         native/**
+    condition: ne(variables.BUILD_CACHE_RESTORED, 'true')
   
   - task: CopyFiles@2
     displayName: Prepare artifacts packages folder to publish
     inputs:
       sourceFolder: $(Build.SourcesDirectory)/artifacts/packages
       targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
-    condition: and(succeeded(), eq(variables['_librariesBuildProducedPackages'], true))
+    condition: and(and(succeeded(), eq(variables['_librariesBuildProducedPackages'], true)), ne(variables.BUILD_CACHE_RESTORED, 'true'))
