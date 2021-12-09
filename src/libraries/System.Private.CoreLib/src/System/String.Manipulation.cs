@@ -1852,42 +1852,58 @@ namespace System
             {
                 return this;
             }
+
             int length = Length;
+            // Copy Span.Slice checks for perf
             if ((uint)startIndex > (uint)length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
             return InternalSubString(startIndex, length - startIndex);
         }
 
         public string Substring(int startIndex, int length)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
+            // Copy Span.Slice checks for perf
+            int _length = Length;
+#if TARGET_64BIT
+            // Since start and length are both 32-bit, their sum can be computed across a 64-bit domain
+            // without loss of fidelity. The cast to uint before the cast to ulong ensures that the
+            // extension from 32- to 64-bit is zero-extending rather than sign-extending. The end result
+            // of this is that if either input is negative or if the input sum overflows past Int32.MaxValue,
+            // that information is captured correctly in the comparison against the backing _length field.
+            // We don't use this same mechanism in a 32-bit process due to the overhead of 64-bit arithmetic.
+            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)_length)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+#else
+            if ((uint)startIndex > (uint)_length || (uint)length > (uint)(_length - startIndex))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+#endif
+            //if (startIndex < 0)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            //}
 
-            if (startIndex > Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
-            }
+            //if (startIndex > Length)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
+            //}
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
+            //if (length < 0)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
+            //}
 
-            if (startIndex > Length - length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
-            }
+            //if (startIndex > Length - length)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
+            //}
 
             if (length == 0)
             {
                 return string.Empty;
             }
 
-            if (startIndex == 0 && length == this.Length)
+            if (startIndex == 0 && length == _length)
             {
                 return this;
             }
