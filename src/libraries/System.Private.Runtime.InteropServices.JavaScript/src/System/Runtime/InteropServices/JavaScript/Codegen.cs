@@ -199,11 +199,9 @@ namespace System.Runtime.InteropServices.JavaScript
             output.AppendLine($"  compiled_variadic_function: {variadicName}, ");
             output.AppendLine($"  contains_auto: {ToJsBool(state.MarshalString.ContainsAuto)}, ");
             output.AppendLine($"  is_result_definitely_unmarshaled: {ToJsBool(state.MarshalString.RawReturnValue)}, ");
-            output.AppendLine($"  is_result_possibly_unmarshaled: false, ");
             output.AppendLine($"  method: {method}, ");
             output.AppendLine($"  name: '{state.MarshalString.Key}', ");
             output.AppendLine($"  needs_root_buffer: {ToJsBool(state.RootIndex > 0)}, ");
-            output.AppendLine($"  result_unmarshaled_if_argc: -1, ");
             output.AppendLine($"  root_buffer_size: {state.RootIndex}, ");
             output.AppendLine($"  scratchBuffer: 0, ");
             output.AppendLine($"  scratchRootBuffer: null, ");
@@ -393,6 +391,37 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        private static readonly Dictionary<MarshalType, string> FastUnboxHandlers = new Dictionary<MarshalType, string> {
+            { MarshalType.INT, "getI32(unboxBuffer)" },
+            { MarshalType.POINTER, "getU32(unboxBuffer)" }, // FIXME: Is this right?
+            { MarshalType.UINT32, "getU32(unboxBuffer)" },
+            { MarshalType.FP32, "getF32(unboxBuffer)" },
+            { MarshalType.FP64, "getF64(unboxBuffer)" },
+            { MarshalType.BOOL, "getI32(unboxBuffer) !== 0" },
+            { MarshalType.CHAR, "String.fromCharCode(getI32(unboxBuffer))" },
+        };
+
+        private static void GenerateFastUnboxCase (BoundMethodBuilderState state, MarshalType type, string expression) {
+            var output = state.Output;
+            output.AppendLine($"    case {(int)type}:");
+            output.AppendLine($"        result = {expression}; break;");
+        }
+
+        private static void GenerateFastUnboxBlock (BoundMethodBuilderState state) {
+            var output = state.Output;
+            // For the common scenario where the return type is a primitive, we want to try and unbox it directly
+            //  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
+            //  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
+            //  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
+            output.AppendLine( "    let resultType = mono_wasm_try_unbox_primitive_and_get_type(resultPtr, unboxBuffer, unboxBufferSize);");
+            output.AppendLine( "    switch (resultType) {");
+            foreach (var kvp in FastUnboxHandlers)
+                GenerateFastUnboxCase(state, kvp.Key, kvp.Value);
+            output.AppendLine( "    default:");
+            output.AppendLine( "        result = _unbox_mono_obj_root_with_known_nonprimitive_type(resultRoot, resultType, unboxBuffer); break;");
+            output.AppendLine( "    }");
+        }
+
         public static void GenerateBoundMethod (BoundMethodBuilderState state) {
             // input arguments:
             // get_api, token
@@ -453,8 +482,7 @@ namespace System.Runtime.InteropServices.JavaScript
             output.AppendLine("  );");
             output.AppendLine();
 
-            output.AppendLine("  let is_result_unmarshaled = converter.is_result_definitely_unmarshaled;");
-            output.AppendLine("  is_result_unmarshaled = is_result_unmarshaled || (arguments.length === converter.result_unmarshaled_if_argc);");
+            output.AppendLine("  const is_result_unmarshaled = converter.is_result_definitely_unmarshaled;");
             output.AppendLine("  resultRoot.value = invoke_method(method, thisRoot ? thisRoot.value : 0, buffer, exceptionRoot.get_address());");
             output.AppendLine("  _handle_exception_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);");
             output.AppendLine();
@@ -465,33 +493,12 @@ namespace System.Runtime.InteropServices.JavaScript
             output.AppendLine("  } else if (resultPtr === 0) {");
             output.AppendLine("    result = undefined;");
             output.AppendLine("  } else {");
-            // For the common scenario where the return type is a primitive, we want to try and unbox it directly
-            //  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
-            //  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
-            //  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-            output.AppendLine( "    let resultType = mono_wasm_try_unbox_primitive_and_get_type(resultPtr, unboxBuffer, unboxBufferSize);");
-            output.AppendLine( "    switch (resultType) {");
-            output.AppendLine($"    case {(int)MarshalType.INT}:");
-            output.AppendLine( "        result = getI32(unboxBuffer); break;");
-            output.AppendLine($"    case {(int)MarshalType.POINTER}:"); // FIXME: Is this right?
-            output.AppendLine($"    case {(int)MarshalType.UINT32}:");
-            output.AppendLine( "        result = getU32(unboxBuffer); break;");
-            output.AppendLine($"    case {(int)MarshalType.FP32}:");
-            output.AppendLine( "        result = getF32(unboxBuffer); break;");
-            output.AppendLine($"    case {(int)MarshalType.FP64}:");
-            output.AppendLine( "        result = getF64(unboxBuffer); break;");
-            output.AppendLine($"    case {(int)MarshalType.BOOL}:");
-            output.AppendLine( "        result = getI32(unboxBuffer) !== 0; break;");
-            output.AppendLine($"    case {(int)MarshalType.CHAR}:");
-            output.AppendLine( "        result = String.fromCharCode(getI32(unboxBuffer)); break;");
-            output.AppendLine( "    default:");
-            output.AppendLine( "        result = _unbox_mono_obj_root_with_known_nonprimitive_type(resultRoot, resultType, unboxBuffer); break;");
-            output.AppendLine( "    }");
-            output.AppendLine( "  }");
+            GenerateFastUnboxBlock(state);
+            output.AppendLine("  }");
             output.AppendLine();
-            output.AppendLine( "  _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);");
-            output.AppendLine( "  return result;");
-            output.AppendLine( "};");
+            output.AppendLine("  _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);");
+            output.AppendLine("  return result;");
+            output.AppendLine("};");
             output.AppendLine();
             output.AppendLine($"return {name};");
         }

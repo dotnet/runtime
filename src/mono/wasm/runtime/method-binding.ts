@@ -314,21 +314,10 @@ export function _decide_if_result_is_marshaled(converter: SignatureConverter, ar
     if (!converter)
         return true;
 
-    if (
-        converter.is_result_possibly_unmarshaled &&
-        (argc === converter.result_unmarshaled_if_argc)
-    ) {
-        if (argc < converter.result_unmarshaled_if_argc)
-            throw new Error(`Expected >= ${converter.result_unmarshaled_if_argc} argument(s) but got ${argc} for signature '${converter.args_marshal}'`);
+    if (argc !== converter.arg_count)
+        throw new Error(`Expected ${converter.arg_count} argument(s) but got ${argc} for signature '${converter.args_marshal}'`);
 
-        _maybe_produce_signature_warning(converter);
-        return false;
-    } else {
-        if (argc < converter.arg_count)
-            throw new Error(`Expected ${converter.arg_count} argument(s) but got ${argc} for signature '${converter.args_marshal}'`);
-
-        return !converter.is_result_definitely_unmarshaled;
-    }
+    return !converter.is_result_definitely_unmarshaled;
 }
 
 export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: ArgsMarshalString, friendly_name: string): Function {
@@ -432,8 +421,6 @@ export type SignatureConverter = {
     size: number;
     args_marshal?: ArgsMarshalString;
     is_result_definitely_unmarshaled?: boolean;
-    is_result_possibly_unmarshaled?: boolean;
-    result_unmarshaled_if_argc?: number;
     needs_root_buffer?: boolean;
     key?: string;
     name?: string;
