@@ -756,6 +756,13 @@ mono_llvm_get_prim_size_bits (LLVMTypeRef type) {
 	return unwrap (type)->getPrimitiveSizeInBits ();
 }
 
+/*
+ * Inserts a call to a fragment of inline assembly.
+ *
+ * Return values correspond to output constraints. Parameter values correspond
+ * to input constraints. Example of use:
+ * mono_llvm_inline_asm (builder, void_func_t, "int $$0x3", "", LLVM_ASM_SIDE_EFFECT, NULL, 0, "");
+ */
 LLVMValueRef
 mono_llvm_inline_asm (LLVMBuilderRef builder, LLVMTypeRef type,
 	const char *asmstr, const char *constraints,
