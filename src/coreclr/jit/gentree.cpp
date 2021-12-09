@@ -1642,11 +1642,11 @@ AGAIN:
 //    lclNum  - the local's number, *or* the handle for the field
 //
 // Return Value:
-//    Whether "tree" has any LCL_VAR nodes that refer to the local,
-//    LHS or RHS, or FIELD nodes with the specified handle.
+//    Whether "tree" has any LCL_VAR/LCL_FLD nodes that refer to the
+//    local, LHS or RHS, or FIELD nodes with the specified handle.
 //
 // Notes:
-//    Does not pay attention to local address nodes or LCL_FLD nodes.
+//    Does not pay attention to local address nodes.
 //
 /* static */ bool Compiler::gtHasRef(GenTree* tree, ssize_t lclNum)
 {
@@ -1657,7 +1657,7 @@ AGAIN:
 
     if (tree->OperIsLeaf())
     {
-        if (tree->OperIs(GT_LCL_VAR) && (tree->AsLclVarCommon()->GetLclNum() == (unsigned)lclNum))
+        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && (tree->AsLclVarCommon()->GetLclNum() == (unsigned)lclNum))
         {
             return true;
         }
