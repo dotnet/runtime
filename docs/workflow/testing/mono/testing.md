@@ -7,10 +7,10 @@ Before running tests, [build Mono](../../building/mono/README.md) using the desi
 
 To build the runtime tests for Mono JIT or interpreter:
 
-1. Build CoreCLR - the `clr.native` subset is enough but you can build the whole thing, optionally.  From the `$(REPO_ROOT)`:
+1. Build test host (corerun) - From the `$(REPO_ROOT)`:
 
 ```
-./build.sh clr.native -c <release|debug>
+./build.sh clr.hosts -c <release|debug>
 ```
 
 2. Build the tests (in `$(REPO_ROOT)/src/tests`)
@@ -26,25 +26,23 @@ For example: `./build.sh excludemonofailures release -test:JIT/opt/InstructionCo
 
 Run individual test:
 ```
-cd src/mono
-make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
+bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root 
 ```
 
-Run all tests:
+Run all built tests:
 ```
-cd src/mono
-make run-tests-coreclr-all
+./run.sh <Debug|Release>
 ```
 
 To debug a single test with `lldb`:
 
-1. Run the test at least once normally (or manually run the `mono.proj` `PatchCoreClrCoreRoot` target)
-2. Run the shell script for the test case manually:
+1. Run the shell script for the test case manually with the `-debug` option:
 ```
 bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root -debug=/usr/bin/lldb
 ```
-3. In LLDB add the debug symbols for mono: `add-dsym <CORE_ROOT>/libcoreclr.dylib.dwarf`
-4. Run/debug the test
+2. In LLDB add the debug symbols for mono: `add-dsym <CORE_ROOT>/libcoreclr.dylib.dwarf`
+3. Run/debug the test
+
 
 ### WebAssembly:
 Build the runtime tests for WebAssembly
