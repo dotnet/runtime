@@ -985,10 +985,11 @@ void interceptor_ICJI::getFunctionEntryPoint(
 
 void interceptor_ICJI::getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult)
 {
     mcs->AddCall("getFunctionFixedEntryPoint");
-    original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, pResult);
+    original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
 void* interceptor_ICJI::getMethodSync(

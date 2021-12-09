@@ -134,7 +134,7 @@ struct JitInterfaceCallbacks
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     void* (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, void** ppIndirection);
     void (* getFunctionEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags);
-    void (* getFunctionFixedEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult);
+    void (* getFunctionFixedEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
     void* (* getMethodSync)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, void** ppIndirection);
     CorInfoHelpFunc (* getLazyStringLiteralHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle);
     CORINFO_MODULE_HANDLE (* embedModuleHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle, void** ppIndirection);
@@ -1374,10 +1374,11 @@ public:
 
     virtual void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getFunctionFixedEntryPoint(_thisHandle, &pException, ftn, pResult);
+    _callbacks->getFunctionFixedEntryPoint(_thisHandle, &pException, ftn, isUnsafeFunctionPointer, pResult);
     if (pException != nullptr) throw pException;
 }
 

@@ -10,16 +10,16 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNodeName", SetLastError = true)]
-        private static extern unsafe int GetNodeName(char* name, out int len);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNodeName", SetLastError = true)]
+        private static unsafe partial int GetNodeName(byte* name, ref int len);
 
         internal static unsafe string GetNodeName()
         {
             // max value of _UTSNAME_LENGTH on known Unix platforms is 1024.
             const int _UTSNAME_LENGTH = 1024;
             int len = _UTSNAME_LENGTH;
-            char* name = stackalloc char[_UTSNAME_LENGTH];
-            int err = GetNodeName(name, out len);
+            byte* name = stackalloc byte[_UTSNAME_LENGTH];
+            int err = GetNodeName(name, ref len);
             if (err != 0)
             {
                 // max domain name can be 255 chars.

@@ -1084,7 +1084,9 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     GenTree*              qmarkNode       = nullptr;
     if (oper == GT_FTN_ADDR)
     {
-        targetMethodHnd = targetMethod->AsFptrVal()->gtFptrMethod;
+        GenTreeFptrVal* fptrValTree       = targetMethod->AsFptrVal();
+        fptrValTree->gtFptrDelegateTarget = true;
+        targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
     else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
@@ -3933,11 +3935,7 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         GenTree*       sizeNode  = dynBlk->gtDynamicSize;
         GenTree*       dstAddr   = dynBlk->Addr();
         GenTree*       src       = dynBlk->Data();
-        bool           isReverse = ((dynBlk->gtFlags & GTF_REVERSE_OPS) != 0);
-        if (dynBlk->gtEvalSizeFirst)
-        {
-            fgSetTreeSeqHelper(sizeNode, isLIR);
-        }
+        bool           isReverse = dynBlk->IsReverseOp();
 
         // We either have a DYN_BLK or a STORE_DYN_BLK. If the latter, we have a
         // src (the Data to be stored), and isReverse tells us whether to evaluate
@@ -3951,10 +3949,8 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         {
             fgSetTreeSeqHelper(src, isLIR);
         }
-        if (!dynBlk->gtEvalSizeFirst)
-        {
-            fgSetTreeSeqHelper(sizeNode, isLIR);
-        }
+        fgSetTreeSeqHelper(sizeNode, isLIR);
+
         fgSetTreeSeqFinish(dynBlk, isLIR);
         return;
     }
