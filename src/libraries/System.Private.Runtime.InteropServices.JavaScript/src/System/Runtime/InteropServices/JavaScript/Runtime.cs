@@ -366,9 +366,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         throw new WasmInteropException($"Unsupported array element type {elementType}");
                 }
             } else if (type == typeof(IntPtr))
-                return MarshalType.INT;
+                return MarshalType.POINTER;
             else if (type == typeof(UIntPtr))
-                return MarshalType.UINT32;
+                return MarshalType.POINTER;
             else if (type == typeof(SafeHandle))
                 return MarshalType.SAFEHANDLE;
             else if (typeof(Delegate).IsAssignableFrom(type))
@@ -395,6 +395,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 case MarshalType.BOOL:
                 case MarshalType.INT:
                 case MarshalType.UINT32:
+                case MarshalType.POINTER:
                     return 'i';
                 case MarshalType.UINT64:
                 case MarshalType.INT64:
@@ -419,8 +420,6 @@ namespace System.Runtime.InteropServices.JavaScript
                     return 'o';
                 case MarshalType.VT:
                     return 'a';
-                case MarshalType.POINTER:
-                    return 'm';
                 case MarshalType.SPAN_BYTE:
                     return 'b';
                 default:
@@ -576,7 +575,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (method == null)
                 throw new Exception("Failed to resolve method");
 
-            var state = new Codegen.BoundMethodBuilderState(method) {
+            var state = new Codegen.BoundMethodBuilderState((MethodInfo)method) {
                 MarshalString = new Codegen.MarshalString(signature, method),
                 FriendlyName = friendlyName,
             };
