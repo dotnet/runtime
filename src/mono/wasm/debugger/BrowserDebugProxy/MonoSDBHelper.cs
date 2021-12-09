@@ -2380,7 +2380,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             JArray SegregatePropertiesByAccessLevel(List<FieldTypeClass> fields, JArray allProperties, CancellationToken token)
             {
                 if (fields.Count == 0)
-                    return allProperties;
+                    return new JArray(JObject.FromObject(new { result = allProperties }));
 
                 var pubNames = fields.Where(field => field.ProtectionLevel == FieldAttributes.Public).Select(field => field.Name).ToList();
                 var privNames = fields.Where(field =>
