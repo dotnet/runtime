@@ -341,15 +341,16 @@ namespace ILLink.RoslynAnalyzer
 		/// <summary>
 		/// True if the source of a call is considered to be annotated with the Requires... attribute
 		/// </summary>
-		protected bool IsMemberInRequiresScope (ISymbol containingSymbol)
+		protected bool IsMemberInRequiresScope (ISymbol member)
 		{
-			if (containingSymbol.HasAttribute (RequiresAttributeName) || (containingSymbol.ContainingType is not null &&
-				containingSymbol.ContainingType.HasAttribute (RequiresAttributeName))) {
+			if (member.HasAttribute (RequiresAttributeName) ||
+				(member is not ITypeSymbol &&
+				member.ContainingType.HasAttribute (RequiresAttributeName))) {
 				return true;
 			}
 
 			// Check also for RequiresAttribute in the associated symbol
-			if (containingSymbol is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (RequiresAttributeName))
+			if (member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (RequiresAttributeName))
 				return true;
 
 			return false;
@@ -371,7 +372,7 @@ namespace ILLink.RoslynAnalyzer
 			}
 
 			// Also check the containing type
-			if (member.IsStatic || member.IsConstructor ()) {
+			if ((member.IsStatic || member.IsConstructor ()) && member is not ITypeSymbol) {
 				return TryGetRequiresAttribute (member.ContainingType, out requiresAttribute);
 			}
 			return false;

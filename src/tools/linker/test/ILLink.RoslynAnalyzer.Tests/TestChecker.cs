@@ -32,8 +32,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 			_tree = tree;
 			_semanticModel = semanticModel;
 			_diagnostics = diagnostics
-				// Filter down to diagnostics which originate from this tree
-				.Where (d => d.Location.SourceTree == tree).ToList ();
+				// Filter down to diagnostics which originate from this tree or have no location
+				.Where (d => d.Location.SourceTree == tree || d.Location.SourceTree == null).ToList ();
 
 			// Filled in later
 			_unmatched = new List<Diagnostic> ();

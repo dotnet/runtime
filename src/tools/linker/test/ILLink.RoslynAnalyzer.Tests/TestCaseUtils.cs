@@ -51,12 +51,16 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			var testDependenciesSource = GetTestDependencies (rootSourceDir, tree)
 				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
-			var (comp, model) = await TestCaseCompilation.CreateCompilation (
+
+			var (comp, model, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (
 					tree,
 					msbuildProperties,
 					additionalSources: testDependenciesSource);
 
-			var diags = await comp.GetAnalyzerDiagnosticsAsync ();
+			// Note that the exception diagnostics will be empty until the analyzer has run,
+			// so be sure to get them after awaiting GetAnalyzerDiagnosticsAsync().
+			var diags = (await comp.GetAnalyzerDiagnosticsAsync ()).AddRange (exceptionDiagnostics);
+
 			var testChecker = new TestChecker ((CSharpSyntaxTree) tree, model, diags);
 			testChecker.Check ();
 		}
