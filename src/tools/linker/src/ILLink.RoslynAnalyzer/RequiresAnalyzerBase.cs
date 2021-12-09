@@ -220,7 +220,7 @@ namespace ILLink.RoslynAnalyzer
 					ISymbol containingSymbol = FindContainingSymbol (operationContext, AnalyzerDiagnosticTargets);
 
 					// Do not emit any diagnostic if caller is annotated with the attribute too.
-					if (IsMemberInRequiresScope (containingSymbol))
+					if (containingSymbol.IsInRequiresScope(RequiresAttributeName))
 						return;
 
 					if (ReportSpecialIncompatibleMembersDiagnostic (operationContext, incompatibleMembers, member))
@@ -340,36 +340,6 @@ namespace ILLink.RoslynAnalyzer
 			bool member1HasAttribute = IsOverrideMemberInRequiresScope (member1);
 			bool member2HasAttribute = IsOverrideMemberInRequiresScope (member2);
 			return member1HasAttribute ^ member2HasAttribute;
-		}
-
-		// TODO: Consider sharing with linker IsMethodInRequiresUnreferencedCodeScope method
-		/// <summary>
-		/// True if the source of a call is considered to be annotated with the Requires... attribute
-		/// </summary>
-		protected bool IsMemberInRequiresScope (ISymbol member)
-		{
-				containingSymbol.ContainingType.HasAttribute (RequiresAttributeName)) {
-				return true;
-			}
-
-			// Check also for RequiresAttribute in the associated symbol
-			if (containingSymbol is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (RequiresAttributeName))
-				return true;
-
-			return false;
-		}
-
-		/// <summary>
-		/// True if member of a call is considered to be annotated with the Requires... attribute. Primarily for property accessor declarations.
-		/// </summary>
-		/// <param name="containingSymbol">
-		///	Symbol that is either an overriding member or an overriden/virtual member
-		/// </param>
-		protected bool IsOverrideMemberInRequiresScope (ISymbol member)
-		{
-			return member.HasAttribute (RequiresAttributeName)
-					|| (member is not ITypeSymbol 
-						&& member.ContainingType.HasAttribute (RequiresAttributeName));
 		}
 
 		// TODO: Consider sharing with linker DoesMethodRequireUnreferencedCode method

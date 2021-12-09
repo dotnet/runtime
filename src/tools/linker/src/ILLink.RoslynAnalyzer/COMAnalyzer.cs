@@ -40,7 +40,7 @@ namespace ILLink.RoslynAnalyzer
 					if (!targetMethod.HasAttribute (DllImportAttribute))
 						return;
 
-					if (this.IsMemberInRequiresScope (operationContext.ContainingSymbol, RequiresUnreferencedCodeAttribute))
+					if (operationContext.ContainingSymbol.IsInRequiresScope (RequiresUnreferencedCodeAttribute))
 						return;
 
 					bool comDangerousMethod = IsComInterop (targetMethod.ReturnType);
