@@ -4433,8 +4433,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             bPrev->bbRefs++;
 
             // If this is a handler for a filter, the last block of the filter will end with
-            // a BBJ_EJFILTERRET block that has a bbJumpDest that jumps to the first block of
-            // it's handler.  So we need to update it to keep things in sync.
+            // a BBJ_EHFILTERRET block that has a bbJumpDest that jumps to the first block of
+            // its handler. So we need to update it to keep things in sync.
             //
             if (HBtab->HasFilter())
             {

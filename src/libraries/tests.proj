@@ -230,6 +230,15 @@
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/XmlFormatWriterGeneratorAOT/iOS.Simulator.XmlFormatWriterGeneratorAot.Test.csproj" />
   </ItemGroup>
 
+  <!-- Run only explicitly selected tests for Mac Catalyst in App Sandbox -->
+  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(EnableAppSandbox)' == 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/tests/**/*.Tests.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/**/*.Test.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/pull/61507 -->
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst') and '$(RunDisablediOSTests)' != 'true'">
     <!-- PNSE -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" />

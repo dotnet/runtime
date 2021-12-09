@@ -1,5 +1,4 @@
 const MONO = {}, BINDING = {}, INTERNAL = {};
-let ENVIRONMENT_IS_GLOBAL = typeof globalThis.Module === "object";
 if (ENVIRONMENT_IS_GLOBAL) {
     if (globalThis.Module.ready) {
         throw new Error("MONO_WASM: Module.ready couldn't be redefined.")

@@ -5584,6 +5584,10 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         assert(info.compPatchpointInfo != nullptr);
     }
 
+#if defined(TARGET_ARM64)
+    compFrameInfo = {0};
+#endif
+
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
@@ -8845,29 +8849,32 @@ void cLiveness(Compiler* comp)
 void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== dCVarSet %u\n", sequenceNumber++);
+    printf("===================================================================== *CVarSet %u\n", sequenceNumber++);
     dumpConvertedVarSet(comp, vars);
     printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
 }
 
-void cLoop(Compiler* comp, Compiler::LoopDsc* loop)
+void cLoop(Compiler* comp, unsigned loopNum)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== Loop %u\n", sequenceNumber++);
-    printf("HEAD   " FMT_BB "\n", loop->lpHead->bbNum);
-    printf("TOP    " FMT_BB "\n", loop->lpTop->bbNum);
-    printf("ENTRY  " FMT_BB "\n", loop->lpEntry->bbNum);
-    if (loop->lpExitCnt == 1)
-    {
-        printf("EXIT   " FMT_BB "\n", loop->lpExit->bbNum);
-    }
-    else
-    {
-        printf("EXITS  %u\n", loop->lpExitCnt);
-    }
-    printf("BOTTOM " FMT_BB "\n", loop->lpBottom->bbNum);
+    printf("===================================================================== *Loop %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loopNum, /* verbose */ true);
+    printf("\n");
+}
 
-    comp->fgDispBasicBlocks(loop->lpHead, loop->lpBottom, true);
+void cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loop, /* verbose */ true);
+    printf("\n");
+}
+
+void cLoops(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Loops %u\n", sequenceNumber++);
+    comp->optPrintLoopTable();
 }
 
 void dBlock(BasicBlock* block)
@@ -8965,9 +8972,19 @@ void dCVarSet(VARSET_VALARG_TP vars)
     cCVarSet(JitTls::GetCompiler(), vars);
 }
 
-void dLoop(Compiler::LoopDsc* loop)
+void dLoop(unsigned loopNum)
 {
-    cLoop(JitTls::GetCompiler(), loop);
+    cLoop(JitTls::GetCompiler(), loopNum);
+}
+
+void dLoopPtr(const Compiler::LoopDsc* loop)
+{
+    cLoopPtr(JitTls::GetCompiler(), loop);
+}
+
+void dLoops()
+{
+    cLoops(JitTls::GetCompiler());
 }
 
 void dRegMask(regMaskTP mask)
@@ -9398,6 +9415,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_BBC_PTR:
 
                         chars += printf("[ICON_BBC_PTR]");
+                        break;
+
+                    case GTF_ICON_STATIC_BOX_PTR:
+
+                        chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
                         break;
 
                     case GTF_ICON_FIELD_OFF:
