@@ -1306,7 +1306,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 IntPtr info = (IntPtr)0;
                 // call DsReplicaSyncAllW
-                IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsListDomainsInSiteW");
+                IntPtr functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListDomainsInSiteW");
                 if (functionPtr == (IntPtr)0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
@@ -1348,7 +1348,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 finally
                 {
                     // call DsFreeNameResultW
-                    functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                    functionPtr = global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                     if (functionPtr == (IntPtr)0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());

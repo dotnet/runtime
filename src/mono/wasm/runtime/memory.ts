@@ -1,4 +1,5 @@
 import { Module } from "./imports";
+import { VoidPtr, NativePointer } from "./types/emscripten";
 
 const _temp_mallocs: Array<Array<VoidPtr> | null> = [];
 

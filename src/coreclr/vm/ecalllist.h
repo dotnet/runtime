@@ -625,7 +625,7 @@ FCFuncEnd()
 
 FCFuncStart(gRuntimeHelpers)
     FCFuncElement("GetObjectValue", ObjectNative::GetObjectValue)
-    FCIntrinsic("InitializeArray", ArrayNative::InitializeArray, CORINFO_INTRINSIC_InitializeArray)
+    FCFuncElement("InitializeArray", ArrayNative::InitializeArray)
     FCFuncElement("GetSpanDataFrom", ArrayNative::GetSpanDataFrom)
     FCFuncElement("PrepareDelegate", ReflectionInvocation::PrepareDelegate)
     FCFuncElement("GetHashCode", ObjectNative::GetHashCode)

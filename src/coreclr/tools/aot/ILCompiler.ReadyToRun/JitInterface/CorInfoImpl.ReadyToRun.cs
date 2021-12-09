@@ -1599,6 +1599,7 @@ namespace Internal.JitInterface
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
             {
+                PrepareForUseAsAFunctionPointer(targetMethod);
                 directCall = true;
             }
             else
@@ -1821,6 +1822,17 @@ namespace Internal.JitInterface
             MethodDesc method = HandleToObject(ftn);
             return getMethodAttribsInternal(method);
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
+        }
+
+        private void PrepareForUseAsAFunctionPointer(MethodDesc method)
+        {
+            foreach (TypeDesc type in method.Signature)
+            {
+                if (type.IsValueType)
+                {
+                    classMustBeLoadedBeforeCodeIsRun(type);
+                }
+            }
         }
 
         private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)

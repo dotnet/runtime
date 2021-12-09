@@ -508,7 +508,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
             unsigned lclNum = tree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
             for (unsigned level = 0; level < chkLevel; level++)
             {
-                assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum, false));
+                assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum));
                 assert(!lvaTable[lclNum].IsAddressExposed() ||
                        (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT) == 0);
             }
@@ -527,14 +527,22 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
 #endif
 }
 
-/*****************************************************************************
- *
- *  Append the given statement to the current block's tree list.
- *  [0..chkLevel) is the portion of the stack which we will check for
- *    interference with stmt and spill if needed.
- */
-
-inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
+//------------------------------------------------------------------------
+// impAppendStmt: Append the given statement to the current block's tree list.
+//
+//
+// Arguments:
+//    stmt                   - The statement to add.
+//    chkLevel               - [0..chkLevel) is the portion of the stack which we will check
+//                             for interference with stmt and spill if needed.
+//    checkConsumedDebugInfo - Whether to check for consumption of impCurStmtDI. impCurStmtDI
+//                             marks the debug info of the current boundary and is set when we
+//                             start importing IL at that boundary. If this parameter is true,
+//                             then the function checks if 'stmt' has been associated with the
+//                             current boundary, and if so, clears it so that we do not attach
+//                             it to more upcoming statements.
+//
+void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsumedDebugInfo)
 {
     if (chkLevel == (unsigned)CHECK_SPILL_ALL)
     {
@@ -620,7 +628,8 @@ inline void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel)
     // offsets here instead of debug info, since we do not set the "is call"
     // bit in impCurStmtDI.
 
-    if (impLastStmt->GetDebugInfo().GetLocation().GetOffset() == impCurStmtDI.GetLocation().GetOffset())
+    if (checkConsumedDebugInfo &&
+        (impLastStmt->GetDebugInfo().GetLocation().GetOffset() == impCurStmtDI.GetLocation().GetOffset()))
     {
         impCurStmtOffsSet(BAD_IL_OFFSET);
     }
@@ -709,13 +718,26 @@ inline void Compiler::impInsertStmtBefore(Statement* stmt, Statement* stmtBefore
     stmtBefore->SetPrevStmt(stmt);
 }
 
-/*****************************************************************************
- *
- *  Append the given expression tree to the current block's tree list.
- *  Return the newly created statement.
- */
-
-Statement* Compiler::impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di)
+//------------------------------------------------------------------------
+// impAppendTree: Append the given expression tree to the current block's tree list.
+//
+//
+// Arguments:
+//    tree                   - The tree that will be the root of the newly created statement.
+//    chkLevel               - [0..chkLevel) is the portion of the stack which we will check
+//                             for interference with stmt and spill if needed.
+//    di                     - Debug information to associate with the statement.
+//    checkConsumedDebugInfo - Whether to check for consumption of impCurStmtDI. impCurStmtDI
+//                             marks the debug info of the current boundary and is set when we
+//                             start importing IL at that boundary. If this parameter is true,
+//                             then the function checks if 'stmt' has been associated with the
+//                             current boundary, and if so, clears it so that we do not attach
+//                             it to more upcoming statements.
+//
+// Return value:
+//   The newly created statement.
+//
+Statement* Compiler::impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo)
 {
     assert(tree);
 
@@ -725,7 +747,7 @@ Statement* Compiler::impAppendTree(GenTree* tree, unsigned chkLevel, const Debug
 
     /* Append the statement to the current block's stmt list */
 
-    impAppendStmt(stmt, chkLevel);
+    impAppendStmt(stmt, chkLevel, checkConsumedDebugInfo);
 
     return stmt;
 }
@@ -2735,7 +2757,7 @@ void Compiler::impSpillLclRefs(ssize_t lclNum)
         /* Skip the tree if it doesn't have an affected reference,
            unless xcptnCaught */
 
-        if (xcptnCaught || gtHasRef(tree, lclNum, false))
+        if (xcptnCaught || gtHasRef(tree, lclNum))
         {
             impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impSpillLclRefs"));
         }
@@ -3629,7 +3651,6 @@ const char* Compiler::impGetIntrinsicName(CorInfoIntrinsics intrinsicID)
         "CORINFO_INTRINSIC_Array_Get",
         "CORINFO_INTRINSIC_Array_Address",
         "CORINFO_INTRINSIC_Array_Set",
-        "CORINFO_INTRINSIC_InitializeArray",
         "CORINFO_INTRINSIC_RTH_GetValueInternal",
         "CORINFO_INTRINSIC_Object_GetType",
         "CORINFO_INTRINSIC_StubHelpers_GetStubContext",
@@ -3925,7 +3946,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    if ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) && IsTargetAbi(CORINFO_CORERT_ABI))
+    if (((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) ||
+         (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray)) &&
+        IsTargetAbi(CORINFO_CORERT_ABI))
     {
         // CreateSpan must be expanded for NativeAOT
         mustExpand = true;
@@ -3952,10 +3975,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     switch (intrinsicID)
     {
         GenTree* op1;
-
-        case CORINFO_INTRINSIC_InitializeArray:
-            retNode = impInitializeArrayIntrinsic(sig);
-            break;
 
         case CORINFO_INTRINSIC_Array_Address:
         case CORINFO_INTRINSIC_Array_Get:
@@ -4202,6 +4221,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
             {
                 retNode = impCreateSpanIntrinsic(sig);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            {
+                retNode = impInitializeArrayIntrinsic(sig);
                 break;
             }
 
@@ -5327,6 +5352,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         if (strcmp(methodName, "CreateSpan") == 0)
         {
             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+        }
+        else if (strcmp(methodName, "InitializeArray") == 0)
+        {
+            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
         }
     }
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
@@ -8204,7 +8233,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             {
                 FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
                 op1              = gtNewOperNode(GT_ADD, op1->TypeGet(), op1,
-                                    new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, pFieldInfo->offset, fs));
+                                    new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
             }
             break;
         }
@@ -8250,15 +8279,23 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 void** pFldAddr = nullptr;
                 void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
 
-                // We should always be able to access this static's address directly
-                //
+                // We should always be able to access this static's address directly.
                 assert(pFldAddr == nullptr);
+
+                GenTreeFlags handleKind;
+                if ((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0)
+                {
+                    handleKind = GTF_ICON_STATIC_BOX_PTR;
+                }
+                else
+                {
+                    handleKind = GTF_ICON_STATIC_HDL;
+                }
 
                 FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
 
-                /* Create the data member node */
-                op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
-                                          fldSeq);
+                // Create the address node.
+                op1 = gtNewIconHandleNode((size_t)fldAddr, handleKind, fldSeq);
 #ifdef DEBUG
                 op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
 #endif
@@ -8309,6 +8346,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
     {
         op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
+        op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
 
         FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(FieldSeqStore::FirstElemPseudoField);
 
@@ -9768,34 +9806,49 @@ DONE:
     }
 
     // A tail recursive call is a potential loop from the current block to the start of the method.
-    if ((tailCallFlags != 0) && canTailCall && gtIsRecursiveCall(methHnd))
+    if ((tailCallFlags != 0) && canTailCall)
     {
-        assert(verCurrentState.esStackDepth == 0);
-        BasicBlock* loopHead = nullptr;
-        if (opts.IsOSR())
+        // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
+        // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
+        // instrumentation.
+        //
+        if (!compIsForInlining() && (compCurBB->bbJumpKind != BBJ_RETURN))
         {
-            // We might not have been planning on importing the method
-            // entry block, but now we must.
-
-            // We should have remembered the real method entry block.
-            assert(fgEntryBB != nullptr);
-
-            JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
-                    fgEntryBB->bbNum);
-            impImportBlockPending(fgEntryBB);
-            loopHead = fgEntryBB;
-        }
-        else
-        {
-            // For normal jitting we'll branch back to the firstBB; this
-            // should already be imported.
-            loopHead = fgFirstBB;
+            BasicBlock* const successor = compCurBB->GetUniqueSucc();
+            assert(successor->bbJumpKind == BBJ_RETURN);
+            successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
+            optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
         }
 
-        JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
-                " as having a backward branch.\n",
-                loopHead->bbNum, compCurBB->bbNum);
-        fgMarkBackwardJump(loopHead, compCurBB);
+        if (gtIsRecursiveCall(methHnd))
+        {
+            assert(verCurrentState.esStackDepth == 0);
+            BasicBlock* loopHead = nullptr;
+            if (opts.IsOSR())
+            {
+                // We might not have been planning on importing the method
+                // entry block, but now we must.
+
+                // We should have remembered the real method entry block.
+                assert(fgEntryBB != nullptr);
+
+                JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
+                        fgEntryBB->bbNum);
+                impImportBlockPending(fgEntryBB);
+                loopHead = fgEntryBB;
+            }
+            else
+            {
+                // For normal jitting we'll branch back to the firstBB; this
+                // should already be imported.
+                loopHead = fgFirstBB;
+            }
+
+            JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
+                    " as having a backward branch.\n",
+                    loopHead->bbNum, compCurBB->bbNum);
+            fgMarkBackwardJump(loopHead, compCurBB);
+        }
     }
 
     // Note: we assume that small return types are already normalized by the managed callee
@@ -9919,7 +9972,11 @@ DONE_CALL:
                 assert(!isFatPointerCandidate); // We should not try to inline calli.
 
                 // Make the call its own tree (spill the stack if needed).
-                impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
+                // Do not consume the debug info here. This is particularly
+                // important if we give up on the inline, in which case the
+                // call will typically end up in the statement that contains
+                // the GT_RET_EXPR that we leave on the stack.
+                impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtDI, false);
 
                 // TODO: Still using the widened type.
                 GenTree* retExpr = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
@@ -18499,7 +18556,7 @@ SPILLSTACK:
                are spilling to the temps already used by a previous block),
                we need to spill addStmt */
 
-            if (addStmt != nullptr && !newTemps && gtHasRef(addStmt->GetRootNode(), tempNum, false))
+            if (addStmt != nullptr && !newTemps && gtHasRef(addStmt->GetRootNode(), tempNum))
             {
                 GenTree* addTree = addStmt->GetRootNode();
 
@@ -18510,7 +18567,7 @@ SPILLSTACK:
 
                     var_types type = genActualType(relOp->AsOp()->gtOp1->TypeGet());
 
-                    if (gtHasRef(relOp->AsOp()->gtOp1, tempNum, false))
+                    if (gtHasRef(relOp->AsOp()->gtOp1, tempNum))
                     {
                         unsigned temp = lvaGrabTemp(true DEBUGARG("spill addStmt JTRUE ref Op1"));
                         impAssignTempGen(temp, relOp->AsOp()->gtOp1, level);
@@ -18518,7 +18575,7 @@ SPILLSTACK:
                         relOp->AsOp()->gtOp1 = gtNewLclvNode(temp, type);
                     }
 
-                    if (gtHasRef(relOp->AsOp()->gtOp2, tempNum, false))
+                    if (gtHasRef(relOp->AsOp()->gtOp2, tempNum))
                     {
                         unsigned temp = lvaGrabTemp(true DEBUGARG("spill addStmt JTRUE ref Op2"));
                         impAssignTempGen(temp, relOp->AsOp()->gtOp2, level);

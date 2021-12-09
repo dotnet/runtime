@@ -76,149 +76,167 @@ internal static partial class Interop
             ldap_get_option_int(IntPtr.Zero, LdapOption.LDAP_OPT_DEBUG_LEVEL, ref unused);
         }
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_initialize", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern int ldap_initialize(out IntPtr ld, string uri);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_initialize", CharSet = CharSet.Ansi, SetLastError = true)]
+        public static partial int ldap_initialize(out IntPtr ld, string uri);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_unbind_ext_s", CharSet = CharSet.Ansi)]
-        public static extern int ldap_unbind_ext_s(IntPtr ld, ref IntPtr serverctrls, ref IntPtr clientctrls);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_unbind_ext_s", CharSet = CharSet.Ansi)]
+        public static partial int ldap_unbind_ext_s(IntPtr ld, ref IntPtr serverctrls, ref IntPtr clientctrls);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_dn", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_get_dn([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_dn", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_get_dn(ConnectionHandle ldapHandle, IntPtr result);
 
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
+        public static partial int ldap_get_option_bool(ConnectionHandle ldapHandle, LdapOption option, ref bool outValue);
+
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] We need to manually convert SecurityPackageContextConnectionInformation to marshal differently as layout classes are not supported in generated interop.
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_bool([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref bool outValue);
+        public static extern int ldap_get_option_secInfo(ConnectionHandle ldapHandle, LdapOption option, [In, Out] SecurityPackageContextConnectionInformation outValue);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_secInfo([In] ConnectionHandle ldapHandle, [In] LdapOption option, [In, Out] SecurityPackageContextConnectionInformation outValue);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
+        public static partial int ldap_get_option_sechandle(ConnectionHandle ldapHandle, LdapOption option, ref SecurityHandle outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_sechandle([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref SecurityHandle outValue);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
+        private static partial int ldap_get_option_int(IntPtr ldapHandle, LdapOption option, ref int outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        private static extern int ldap_get_option_int([In] IntPtr ldapHandle, [In] LdapOption option, ref int outValue);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
+        public static partial int ldap_get_option_int(ConnectionHandle ldapHandle, LdapOption option, ref int outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_int([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref int outValue);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
+        public static partial int ldap_get_option_ptr(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_ptr([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref IntPtr outValue);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_values_len", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_get_values_len(ConnectionHandle ldapHandle, IntPtr result, string name);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_values_len", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_get_values_len([In] ConnectionHandle ldapHandle, [In] IntPtr result, string name);
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
+        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_result", CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern int ldap_result(ConnectionHandle ldapHandle, int messageId, int all, LDAP_TIMEVAL timeout, ref IntPtr Mesage);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_result", SetLastError = true, CharSet = CharSet.Ansi)]
-        public static extern int ldap_result([In] ConnectionHandle ldapHandle, int messageId, int all, LDAP_TIMEVAL timeout, ref IntPtr Mesage);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_result2error", CharSet = CharSet.Ansi)]
+        public static partial int ldap_result2error(ConnectionHandle ldapHandle, IntPtr result, int freeIt);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_result2error", CharSet = CharSet.Ansi)]
-        public static extern int ldap_result2error([In] ConnectionHandle ldapHandle, [In] IntPtr result, int freeIt);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_search_ext", CharSet = CharSet.Ansi)]
+        public static partial int ldap_search(ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_search_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_search([In] ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi, SetLastError = true)]
+        public static partial int ldap_set_option_bool(ConnectionHandle ld, LdapOption option, bool value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern int ldap_set_option_bool([In] ConnectionHandle ld, [In] LdapOption option, bool value);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
+        public static partial int ldap_set_option_clientcert(ConnectionHandle ldapHandle, LdapOption option, QUERYCLIENTCERT outValue);
 
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
+        public static partial int ldap_set_option_servercert(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue);
+
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi, SetLastError = true)]
+        public static partial int ldap_set_option_int(ConnectionHandle ld, LdapOption option, ref int inValue);
+
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
+        public static partial int ldap_set_option_ptr(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr inValue);
+
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
+        public static partial int ldap_set_option_string(ConnectionHandle ldapHandle, LdapOption option, string inValue);
+
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_clientcert([In] ConnectionHandle ldapHandle, [In] LdapOption option, QUERYCLIENTCERT outValue);
-
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_servercert([In] ConnectionHandle ldapHandle, [In] LdapOption option, VERIFYSERVERCERT outValue);
-
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern int ldap_set_option_int([In] ConnectionHandle ld, [In] LdapOption option, ref int inValue);
-
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_ptr([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref IntPtr inValue);
-
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_string([In] ConnectionHandle ldapHandle, [In] LdapOption option, string inValue);
-
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_referral([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref LdapReferralCallback outValue);
+        public static extern int ldap_set_option_referral(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
         // Note that ldap_start_tls_s has a different signature across Windows LDAP and OpenLDAP
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_start_tls_s", CharSet = CharSet.Ansi)]
-        public static extern int ldap_start_tls(ConnectionHandle ldapHandle, IntPtr serverControls, IntPtr clientControls);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_start_tls_s", CharSet = CharSet.Ansi)]
+        public static partial int ldap_start_tls(ConnectionHandle ldapHandle, IntPtr serverControls, IntPtr clientControls);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result", CharSet = CharSet.Ansi)]
-        public static extern int ldap_parse_result([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref int serverError, ref IntPtr dn, ref IntPtr message, ref IntPtr referral, ref IntPtr control, byte freeIt);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result", CharSet = CharSet.Ansi)]
+        public static partial int ldap_parse_result(ConnectionHandle ldapHandle, IntPtr result, ref int serverError, ref IntPtr dn, ref IntPtr message, ref IntPtr referral, ref IntPtr control, byte freeIt);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result", CharSet = CharSet.Ansi)]
-        public static extern int ldap_parse_result_referral([In] ConnectionHandle ldapHandle, [In] IntPtr result, IntPtr serverError, IntPtr dn, IntPtr message, ref IntPtr referral, IntPtr control, byte freeIt);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result", CharSet = CharSet.Ansi)]
+        public static partial int ldap_parse_result_referral(ConnectionHandle ldapHandle, IntPtr result, IntPtr serverError, IntPtr dn, IntPtr message, ref IntPtr referral, IntPtr control, byte freeIt);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_extended_result", CharSet = CharSet.Ansi)]
-        public static extern int ldap_parse_extended_result([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref IntPtr oid, ref IntPtr data, byte freeIt);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_extended_result", CharSet = CharSet.Ansi)]
+        public static partial int ldap_parse_extended_result(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr oid, ref IntPtr data, byte freeIt);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_reference", CharSet = CharSet.Ansi)]
-        public static extern int ldap_parse_reference([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref IntPtr referrals, IntPtr ServerControls, byte freeIt);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_reference", CharSet = CharSet.Ansi)]
+        public static partial int ldap_parse_reference(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr referrals, IntPtr ServerControls, byte freeIt);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_bind_s", CharSet = CharSet.Ansi)]
-        internal static extern int ldap_sasl_bind([In] ConnectionHandle ld, string dn, string mechanism, berval cred, IntPtr serverctrls, IntPtr clientctrls, IntPtr servercredp);
+        internal static extern int ldap_sasl_bind(ConnectionHandle ld, string dn, string mechanism, berval cred, IntPtr serverctrls, IntPtr clientctrls, IntPtr servercredp);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_interactive_bind_s", CharSet = CharSet.Ansi)]
-        internal static extern int ldap_sasl_interactive_bind([In] ConnectionHandle ld, string dn, string mechanism, IntPtr serverctrls, IntPtr clientctrls, uint flags, [MarshalAs(UnmanagedType.FunctionPtr)] LDAP_SASL_INTERACT_PROC proc, IntPtr defaults);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_interactive_bind_s", CharSet = CharSet.Ansi)]
+        internal static partial int ldap_sasl_interactive_bind(ConnectionHandle ld, string dn, string mechanism, IntPtr serverctrls, IntPtr clientctrls, uint flags, LDAP_SASL_INTERACT_PROC proc, IntPtr defaults);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_err2string", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_err2string(int err);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_err2string", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_err2string(int err);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_extended_operation", CharSet = CharSet.Ansi)]
-        public static extern int ldap_extended_operation([In] ConnectionHandle ldapHandle, string oid, berval data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        public static extern int ldap_extended_operation(ConnectionHandle ldapHandle, string oid, berval data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_attribute", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_first_attribute([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref IntPtr address);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_attribute", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_first_attribute(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr address);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_entry", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_first_entry([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_entry", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_first_entry(ConnectionHandle ldapHandle, IntPtr result);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_reference", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_first_reference([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_reference", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_first_reference(ConnectionHandle ldapHandle, IntPtr result);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_create_sort_control", CharSet = CharSet.Ansi)]
-        public static extern int ldap_create_sort_control(ConnectionHandle handle, IntPtr keys, byte critical, ref IntPtr control);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_create_sort_control", CharSet = CharSet.Ansi)]
+        public static partial int ldap_create_sort_control(ConnectionHandle handle, IntPtr keys, byte critical, ref IntPtr control);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_control_free", CharSet = CharSet.Ansi)]
-        public static extern int ldap_control_free(IntPtr control);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_control_free", CharSet = CharSet.Ansi)]
+        public static partial int ldap_control_free(IntPtr control);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_controls_free", CharSet = CharSet.Ansi)]
-        public static extern int ldap_controls_free([In] IntPtr value);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_controls_free", CharSet = CharSet.Ansi)]
+        public static partial int ldap_controls_free(IntPtr value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free", CharSet = CharSet.Ansi)]
-        public static extern int ldap_value_free([In] IntPtr value);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free", CharSet = CharSet.Ansi)]
+        public static partial int ldap_value_free(IntPtr value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free_len", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_value_free_len([In] IntPtr berelement);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free_len", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_value_free_len(IntPtr berelement);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_memfree", CharSet = CharSet.Ansi)]
-        public static extern void ldap_memfree([In] IntPtr value);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_memfree", CharSet = CharSet.Ansi)]
+        public static partial void ldap_memfree(IntPtr value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_msgfree", CharSet = CharSet.Ansi)]
-        public static extern void ldap_msgfree([In] IntPtr value);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_msgfree", CharSet = CharSet.Ansi)]
+        public static partial void ldap_msgfree(IntPtr value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_modify_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_modify([In] ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_modify_ext", CharSet = CharSet.Ansi)]
+        public static partial int ldap_modify(ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_next_attribute", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_next_attribute([In] ConnectionHandle ldapHandle, [In] IntPtr result, [In, Out] IntPtr address);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_next_attribute", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_next_attribute(ConnectionHandle ldapHandle, IntPtr result, IntPtr address);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_next_entry", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_next_entry([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_next_entry", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_next_entry(ConnectionHandle ldapHandle, IntPtr result);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_next_reference", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_next_reference([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_next_reference", CharSet = CharSet.Ansi)]
+        public static partial IntPtr ldap_next_reference(ConnectionHandle ldapHandle, IntPtr result);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_abandon", CharSet = CharSet.Ansi)]
-        public static extern int ldap_abandon([In] ConnectionHandle ldapHandle, [In] int messagId);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_abandon", CharSet = CharSet.Ansi)]
+        public static partial int ldap_abandon(ConnectionHandle ldapHandle, int messagId);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_add_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_add([In] ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_add_ext", CharSet = CharSet.Ansi)]
+        public static partial int ldap_add(ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_delete_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_delete_ext([In] ConnectionHandle ldapHandle, string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_delete_ext", CharSet = CharSet.Ansi)]
+        public static partial int ldap_delete_ext(ConnectionHandle ldapHandle, string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_rename", CharSet = CharSet.Ansi)]
-        public static extern int ldap_rename([In] ConnectionHandle ldapHandle, string dn, string newRdn, string newParentDn, int deleteOldRdn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [GeneratedDllImport(Libraries.OpenLdap, EntryPoint = "ldap_rename", CharSet = CharSet.Ansi)]
+        public static partial int ldap_rename(ConnectionHandle ldapHandle, string dn, string newRdn, string newParentDn, int deleteOldRdn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_compare_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_compare([In] ConnectionHandle ldapHandle, string dn, string attributeName, berval binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        public static extern int ldap_compare(ConnectionHandle ldapHandle, string dn, string attributeName, berval binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
     }
 }

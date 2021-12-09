@@ -5242,28 +5242,45 @@ void Compiler::placeLoopAlignInstructions()
     }
 
     int loopsToProcess = loopAlignCandidates;
+    JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
-    weight_t    minBlockSoFar = BB_MAX_WEIGHT;
-    BasicBlock* bbHavingAlign = nullptr;
+    weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
+    BasicBlock*            bbHavingAlign         = nullptr;
+    BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+
+    if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
+    {
+        // Adding align instruction in prolog is not supported
+        // hence just remove that loop from our list.
+        loopsToProcess--;
+    }
+
     for (BasicBlock* const block : Blocks())
     {
-        if ((block == fgFirstBB) && block->isLoopAlign())
+        if (currentAlignedLoopNum != BasicBlock::NOT_IN_LOOP)
         {
-            // Adding align instruction in prolog is not supported
-            // hence skip the align block if it is the first block.
-            loopsToProcess--;
-            continue;
+            // We've been processing blocks within an aligned loop. Are we out of that loop now?
+            if (currentAlignedLoopNum != block->bbNatLoopNum)
+            {
+                currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+            }
         }
 
-        // If there is a unconditional jump
-        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
+        // If there is a unconditional jump (which is not part of callf/always pair)
+        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
+            // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
             {
-                minBlockSoFar = block->bbWeight;
-                bbHavingAlign = block;
-                JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
+                if (currentAlignedLoopNum == BasicBlock::NOT_IN_LOOP)
+                {
+                    // Ok to insert align instruction in this block because it is not part of any aligned loop.
+                    minBlockSoFar = block->bbWeight;
+                    bbHavingAlign = block;
+                    JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum,
+                            block->bbWeight);
+                }
             }
         }
 
@@ -5284,8 +5301,9 @@ void Compiler::placeLoopAlignInstructions()
             }
 
             bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
-            minBlockSoFar = BB_MAX_WEIGHT;
-            bbHavingAlign = nullptr;
+            minBlockSoFar         = BB_MAX_WEIGHT;
+            bbHavingAlign         = nullptr;
+            currentAlignedLoopNum = block->bbNext->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {
@@ -5565,6 +5583,10 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         info.compPatchpointInfo = info.compCompHnd->getOSRInfo(&info.compILEntry);
         assert(info.compPatchpointInfo != nullptr);
     }
+
+#if defined(TARGET_ARM64)
+    compFrameInfo = {0};
+#endif
 
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
@@ -9380,6 +9402,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_BBC_PTR:
 
                         chars += printf("[ICON_BBC_PTR]");
+                        break;
+
+                    case GTF_ICON_STATIC_BOX_PTR:
+
+                        chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
                         break;
 
                     case GTF_ICON_FIELD_OFF:

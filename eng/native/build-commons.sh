@@ -454,7 +454,7 @@ if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
     # Darwin that doesn't use rootfs
-    if [[ ! -n "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
         export ROOTFS_DIR
     fi
