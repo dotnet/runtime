@@ -8,5 +8,6 @@ namespace ILLink.RoslynAnalyzer
 		public const string EnableSingleFileAnalyzer = nameof (EnableSingleFileAnalyzer);
 		public const string IncludeAllContentForSelfExtract = nameof (IncludeAllContentForSelfExtract);
 		public const string EnableTrimAnalyzer = nameof (EnableTrimAnalyzer);
+		public const string EnableAOTAnalyzer = nameof (EnableAOTAnalyzer);
 	}
 }

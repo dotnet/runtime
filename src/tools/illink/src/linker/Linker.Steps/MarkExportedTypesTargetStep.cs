@@ -13,10 +13,10 @@ namespace Mono.Linker.Steps
 				return;
 
 			foreach (var type in assembly.MainModule.ExportedTypes)
-				InitializeExportedType (type, context);
+				InitializeExportedType (type, context, assembly);
 		}
 
-		static void InitializeExportedType (ExportedType exportedType, LinkContext context)
+		static void InitializeExportedType (ExportedType exportedType, LinkContext context, AssemblyDefinition assembly)
 		{
 			if (!context.Annotations.IsMarked (exportedType))
 				return;
@@ -32,7 +32,7 @@ namespace Mono.Linker.Steps
 				return;
 			}
 
-			context.Annotations.Mark (type, new DependencyInfo (DependencyKind.ExportedType, exportedType));
+			context.Annotations.Mark (type, new DependencyInfo (DependencyKind.ExportedType, exportedType), new MessageOrigin (assembly));
 			context.Annotations.SetMembersPreserve (type, members);
 		}
 	}

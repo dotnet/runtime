@@ -135,6 +135,14 @@ dotnet_diagnostic.CA2201.severity = none
 # Analyzer crashes with https://github.com/dotnet/roslyn-analyzers/issues/5450
 dotnet_diagnostic.CA2252.severity = none
 
+[src/linker/ref/**/*.cs]
+
+# CA1822: Mark members as static
+dotnet_diagnostic.CA1822.severity = none
+
+# IDE0060: Remove unused parameter
+dotnet_diagnostic.IDE0060.severity = none
+
 [external**]
 dotnet_analyzer_diagnostic.severity = none
 generated_code = true

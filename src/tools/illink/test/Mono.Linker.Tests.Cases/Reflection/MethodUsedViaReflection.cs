@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetMethod_Name_Types.TestNameAndType ();
 			GetMethod_Name_BindingAttr.TestExplicitBindingFlags ();
 			GetMethod_Name_BindingAttr.TestUnknownBindingFlags (BindingFlags.Public);
+			GetMethod_Name_BindingAttr.TestUnknownBindingFlagsAndName (BindingFlags.Public, "DoesntMatter");
 			GetMethod_Name_BindingAttr.TestUnknownNullBindingFlags (BindingFlags.Public);
 			GetMethod_Name_BindingAttr_Binder_Types_Modifiers.TestNameBindingFlagsAndParameterModifier ();
 			GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers.TestNameBindingFlagsCallingConventionParameterModifier ();
@@ -37,6 +38,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			DerivedAndBase.TestMethodInBaseType ();
 			IgnoreCaseBindingFlags.TestIgnoreCaseBindingFlags ();
 			FailIgnoreCaseBindingFlags.TestFailIgnoreCaseBindingFlags ();
+			IgnorableBindingFlags.TestIgnorableBindingFlags ();
 			UnsupportedBindingFlags.TestUnsupportedBindingFlags ();
 		}
 
@@ -196,6 +198,25 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				// Since the binding flags are not known linker should mark all methods on the type
 				var method = typeof (UnknownBindingFlags).GetMethod ("OnlyCalledViaReflection", bindingFlags);
+				method.Invoke (null, new object[] { });
+			}
+
+			[Kept]
+			class UnknownBindingFlagsAndName
+			{
+				[Kept]
+				private static int OnlyCalledViaReflection ()
+				{
+					return 42;
+				}
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			public static void TestUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
+			{
+				// Since the binding flags and name are not known linker should mark all methods on the type
+				var method = typeof (UnknownBindingFlagsAndName).GetMethod (name, bindingFlags);
 				method.Invoke (null, new object[] { });
 			}
 
@@ -732,6 +753,28 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		class IgnorableBindingFlags
+		{
+			[Kept]
+			public int OnlyCalledViaReflection ()
+			{
+				return 54;
+			}
+
+			private bool Unmarked ()
+			{
+				return true;
+			}
+
+			[Kept]
+			public static void TestIgnorableBindingFlags ()
+			{
+				var method = typeof (IgnorableBindingFlags).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public | BindingFlags.InvokeMethod);
+				method.Invoke (null, new object[] { });
+			}
+		}
+
+		[Kept]
 		class UnsupportedBindingFlags
 		{
 			[Kept]
@@ -741,7 +784,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			private bool MarkedDueToInvokeMethod ()
+			private bool MarkedDueToChangeType ()
 			{
 				return true;
 			}
@@ -749,7 +792,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void TestUnsupportedBindingFlags ()
 			{
-				var method = typeof (UnsupportedBindingFlags).GetMethod ("OnlyCalledViaReflection", BindingFlags.InvokeMethod);
+				var method = typeof (UnsupportedBindingFlags).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public | BindingFlags.SuppressChangeType);
 				method.Invoke (null, new object[] { });
 			}
 		}
