@@ -447,7 +447,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             if ((peReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
             {
-                return TryLocateNativeReadyToRunHeader(peReader, out _);
+                return peReader.TryGetReadyToRunHeader(out _);
             }
             else
             {
@@ -565,16 +565,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             return customMethods;
         }
 
-        private static bool TryLocateNativeReadyToRunHeader(PEReader reader, out int readyToRunHeaderRVA)
-        {
-            PEExportTable exportTable = reader.GetExportTable();
-
-            return exportTable.TryGetValue("RTR_HEADER", out readyToRunHeaderRVA);
-        }
-
         private bool TryLocateNativeReadyToRunHeader()
         {
-            _composite = TryLocateNativeReadyToRunHeader(CompositeReader, out _readyToRunHeaderRVA);
+            _composite = CompositeReader.TryGetReadyToRunHeader(out _readyToRunHeaderRVA);
 
             return _composite;
         }

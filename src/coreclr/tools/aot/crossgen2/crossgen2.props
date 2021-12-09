@@ -31,6 +31,7 @@
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
     <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
+    <ProjectReference Include="..\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
   </ItemGroup>
 
   <ItemGroup>

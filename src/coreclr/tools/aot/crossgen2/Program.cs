@@ -16,6 +16,8 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILCompiler.Reflection.ReadyToRun;
+
 namespace ILCompiler
 {
     internal class Program
@@ -764,6 +766,11 @@ namespace ILCompiler
             foreach (string inputFilePath in inputPaths)
             {
                 EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFilePath);
+                if (module.PEReader.TryGetReadyToRunHeader(out int _))
+                {
+                    Console.WriteLine(SR.IgnoringCompositeImage, inputFilePath);
+                    continue;
+                }
                 if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0)
                 {
                     throw new CommandLineException(string.Format(SR.ManagedCppNotSupported, inputFilePath));
