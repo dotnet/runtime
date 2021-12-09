@@ -367,10 +367,11 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="containingSymbol">
 		///	Symbol that is either an overriding member or an overriden/virtual member
 		/// </param>
-		protected bool IsOverrideMemberInRequiresScope (ISymbol containingSymbol)
+		protected bool IsOverrideMemberInRequiresScope (ISymbol member)
 		{
-			return containingSymbol.HasAttribute (RequiresAttributeName)
-					|| containingSymbol.ContainingType.HasAttribute (RequiresAttributeName);
+			return member.HasAttribute (RequiresAttributeName)
+					|| (member is not ITypeSymbol 
+						&& member.ContainingType.HasAttribute (RequiresAttributeName));
 		}
 
 		// TODO: Consider sharing with linker DoesMethodRequireUnreferencedCode method
