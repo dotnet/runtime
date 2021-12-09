@@ -1846,7 +1846,19 @@ namespace System
 
         // Returns a substring of this string.
         //
-        public string Substring(int startIndex) => Substring(startIndex, Length - startIndex);
+        public string Substring(int startIndex)
+        {
+            if (startIndex == 0)
+            {
+                return this;
+            }
+            int length = Length;
+            if ((uint)startIndex > (uint)length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            }
+            return InternalSubString(startIndex, length - startIndex);
+        }
 
         public string Substring(int startIndex, int length)
         {
