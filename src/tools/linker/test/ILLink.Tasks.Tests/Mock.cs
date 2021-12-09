@@ -21,8 +21,8 @@ namespace ILLink.Tasks.Tests
 		public MockTask ()
 		{
 			// Ensure that [Required] members are non-null
-			AssemblyPaths = new ITaskItem[0];
-			RootAssemblyNames = new ITaskItem[0];
+			AssemblyPaths = Array.Empty<ITaskItem> ();
+			RootAssemblyNames = Array.Empty<ITaskItem> ();
 			ILLinkPath = Path.Combine (Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location), "illink.dll");
 		}
 
@@ -179,7 +179,7 @@ namespace ILLink.Tasks.Tests
 
 	public class MockXmlDependencyRecorder : IDependencyRecorder
 	{
-		public static MockXmlDependencyRecorder Singleton = new MockXmlDependencyRecorder ();
+		public static MockXmlDependencyRecorder Singleton { get; } = new MockXmlDependencyRecorder ();
 		public void RecordDependency (object source, object arget, bool marked) { }
 		public void RecordDependency (object target, in DependencyInfo reason, bool marked) { }
 	}

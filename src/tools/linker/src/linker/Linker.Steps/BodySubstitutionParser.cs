@@ -34,7 +34,7 @@ namespace Mono.Linker.Steps
 			ProcessResources (assembly, nav);
 		}
 
-		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly) => null;
+		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav) => null;
 
 		protected override bool ProcessTypePattern (string fullname, AssemblyDefinition assembly, XPathNavigator nav) => false;
 

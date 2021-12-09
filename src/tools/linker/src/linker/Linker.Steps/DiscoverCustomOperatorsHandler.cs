@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Mono.Cecil;
@@ -82,7 +81,7 @@ namespace Mono.Linker.Steps
 
 		void MarkOperator (MethodDefinition method)
 		{
-			Context.Annotations.Mark (method, new DependencyInfo (DependencyKind.PreservedOperator, method.DeclaringType));
+			Context.Annotations.Mark (method, new DependencyInfo (DependencyKind.PreservedOperator, method.DeclaringType), new MessageOrigin (method.DeclaringType));
 		}
 
 		bool ProcessCustomOperators (TypeDefinition type, bool mark)

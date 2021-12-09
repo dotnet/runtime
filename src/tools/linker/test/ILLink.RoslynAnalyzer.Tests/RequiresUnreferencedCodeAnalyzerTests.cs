@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ILLink.RoslynAnalyzer;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;

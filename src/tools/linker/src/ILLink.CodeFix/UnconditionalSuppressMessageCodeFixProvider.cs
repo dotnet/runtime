@@ -26,7 +26,8 @@ namespace ILLink.CodeFix
 				DiagnosticId.RequiresUnreferencedCode,
 				DiagnosticId.AvoidAssemblyLocationInSingleFile,
 				DiagnosticId.AvoidAssemblyGetFilesInSingleFile,
-				DiagnosticId.RequiresAssemblyFiles }).Select (d => d.AsString ()).ToImmutableArray ();
+				DiagnosticId.RequiresAssemblyFiles,
+				DiagnosticId.RequiresDynamicCode }).Select (d => d.AsString ()).ToImmutableArray ();
 
 		private protected override LocalizableString CodeFixTitle => new LocalizableResourceString (nameof (Resources.UconditionalSuppressMessageCodeFixTitle), Resources.ResourceManager, typeof (Resources));
 

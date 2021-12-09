@@ -16,18 +16,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 
 		[RequiresUnreferencedCode ("Message for --Method--")]
 		[RequiresAssemblyFiles ("Message for --Method--")]
+		[RequiresDynamicCode ("Message for --Method--")]
 		public void Method ()
 		{
 		}
 
 		[RequiresUnreferencedCode ("Message for --UncalledMethod--")]
 		[RequiresAssemblyFiles ("Message for --UncalledMethod--")]
+		[RequiresDynamicCode ("Message for --UncalledMethod--")]
 		public void UncalledMethod ()
 		{
 		}
 
 		[RequiresUnreferencedCode ("Message for --MethodCalledThroughReflection--")]
 		[RequiresAssemblyFiles ("Message for --MethodCalledThroughReflection--")]
+		[RequiresDynamicCode ("Message for --MethodCalledThroughReflection--")]
 		static void MethodCalledThroughReflection ()
 		{
 		}
@@ -35,10 +38,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 		public int UnusedProperty {
 			[RequiresUnreferencedCode ("Message for --getter UnusedProperty--")]
 			[RequiresAssemblyFiles ("Message for --getter UnusedProperty--")]
+			[RequiresDynamicCode ("Message for --getter UnusedProperty--")]
 			get { return 42; }
 
-			[RequiresAssemblyFiles ("Message for --setter UnusedProperty--")]
 			[RequiresUnreferencedCode ("Message for --setter UnusedProperty--")]
+			[RequiresAssemblyFiles ("Message for --setter UnusedProperty--")]
+			[RequiresDynamicCode ("Message for --setter UnusedProperty--")]
 			set { }
 		}
 
@@ -46,18 +51,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 		{
 			[RequiresUnreferencedCode ("Message for --UnusedBaseTypeCctor--")]
 			[RequiresAssemblyFiles ("Message for --UnusedBaseTypeCctor--")]
+			[RequiresDynamicCode ("Message for --UnusedBaseTypeCctor--")]
 			static UnusedBaseType ()
 			{
 			}
 
 			[RequiresUnreferencedCode ("Message for --UnusedVirtualMethod1--")]
 			[RequiresAssemblyFiles ("Message for --UnusedVirtualMethod1--")]
+			[RequiresDynamicCode ("Message for --UnusedVirtualMethod1--")]
 			public virtual void UnusedVirtualMethod1 ()
 			{
 			}
 
 			[RequiresUnreferencedCode ("Message for --UnusedVirtualMethod2--")]
 			[RequiresAssemblyFiles ("Message for --UnusedVirtualMethod2--")]
+			[RequiresDynamicCode ("Message for --UnusedVirtualMethod2--")]
 			public virtual void UnusedVirtualMethod2 ()
 			{
 			}
@@ -67,6 +75,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 		{
 			[RequiresUnreferencedCode ("Message for --UnusedVirtualMethod1--")]
 			[RequiresAssemblyFiles ("Message for --UnusedVirtualMethod1--")]
+			[RequiresDynamicCode ("Message for --UnusedVirtualMethod1--")]
 			public override void UnusedVirtualMethod1 ()
 			{
 			}
@@ -81,6 +90,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 		{
 			[RequiresUnreferencedCode ("Message for --IUnusedInterface.UnusedMethod--")]
 			[RequiresAssemblyFiles ("Message for --IUnusedInterface.UnusedMethod--")]
+			[RequiresDynamicCode ("Message for --IUnusedInterface.UnusedMethod--")]
 			public void UnusedMethod ();
 		}
 
@@ -88,6 +98,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 		{
 			[RequiresUnreferencedCode ("Message for --UnusedImplementationClass.UnusedMethod--")]
 			[RequiresAssemblyFiles ("Message for --UnusedImplementationClass.UnusedMethod--")]
+			[RequiresDynamicCode ("Message for --UnusedImplementationClass.UnusedMethod--")]
 			public void UnusedMethod ()
 			{
 			}
@@ -97,6 +108,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 		{
 			[RequiresUnreferencedCode ("Message for --IBaseInterface.MethodInBaseInterface--")]
 			[RequiresAssemblyFiles ("Message for --IBaseInterface.MethodInBaseInterface--")]
+			[RequiresDynamicCode ("Message for --IBaseInterface.MethodInBaseInterface--")]
 			void MethodInBaseInterface ();
 		}
 
@@ -104,6 +116,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 		{
 			[RequiresUnreferencedCode ("Message for --IDerivedInterface.MethodInDerivedInterface--")]
 			[RequiresAssemblyFiles ("Message for --IDerivedInterface.MethodInDerivedInterface--")]
+			[RequiresDynamicCode ("Message for --IDerivedInterface.MethodInDerivedInterface--")]
 			void MethodInDerivedInterface ();
 		}
 	}

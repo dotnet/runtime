@@ -24,11 +24,12 @@ namespace Mono.Linker.Steps
 				return;
 
 			var di = new DependencyInfo (DependencyKind.RootAssembly, assembly);
+			var origin = new MessageOrigin (assembly);
 
 			AssemblyAction action = Context.Annotations.GetAction (assembly);
 			switch (action) {
 			case AssemblyAction.Copy:
-				Annotations.Mark (assembly.MainModule, di);
+				Annotations.Mark (assembly.MainModule, di, origin);
 				// Mark Step will take care of marking whole assembly
 				return;
 			case AssemblyAction.CopyUsed:
@@ -52,7 +53,7 @@ namespace Mono.Linker.Steps
 					return;
 				}
 
-				Annotations.Mark (ep.DeclaringType, di);
+				Annotations.Mark (ep.DeclaringType, di, origin);
 				Annotations.AddPreservedMethod (ep.DeclaringType, ep);
 				break;
 			case AssemblyRootMode.VisibleMembers:
@@ -153,7 +154,7 @@ namespace Mono.Linker.Steps
 				Annotations.SetMembersPreserve (type, preserve);
 				break;
 			default:
-				Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly));
+				Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly), new MessageOrigin (type.Module.Assembly));
 				Annotations.SetMembersPreserve (type, preserve);
 				break;
 			}
@@ -168,8 +169,9 @@ namespace Mono.Linker.Steps
 		void MarkAndPreserve (AssemblyDefinition assembly, ExportedType type, TypePreserveMembers preserve)
 		{
 			var di = new DependencyInfo (DependencyKind.RootAssembly, assembly);
-			Context.Annotations.Mark (type, di);
-			Context.Annotations.Mark (assembly.MainModule, di);
+			var origin = new MessageOrigin (assembly);
+			Context.Annotations.Mark (type, di, origin);
+			Context.Annotations.Mark (assembly.MainModule, di, origin);
 			Annotations.SetMembersPreserve (type, preserve);
 		}
 

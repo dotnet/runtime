@@ -44,10 +44,10 @@ namespace Mono.Linker.Steps
 		{
 			if (GetTypePreserve (nav) == TypePreserve.All) {
 				foreach (var type in assembly.MainModule.Types)
-					MarkAndPreserveAll (type);
+					MarkAndPreserveAll (type, nav);
 
 				foreach (var exportedType in assembly.MainModule.ExportedTypes)
-					_context.MarkingHelpers.MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, assembly.MainModule));
+					_context.MarkingHelpers.MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, assembly.MainModule), GetMessageOriginForPosition (nav));
 			} else {
 				ProcessTypes (assembly, nav, warnOnUnresolvedTypes);
 				ProcessNamespaces (assembly, nav);
@@ -67,7 +67,7 @@ namespace Mono.Linker.Steps
 						continue;
 
 					foundMatch = true;
-					MarkAndPreserveAll (type);
+					MarkAndPreserveAll (type, nav);
 				}
 
 				if (!foundMatch) {
@@ -76,22 +76,22 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		void MarkAndPreserveAll (TypeDefinition type)
+		void MarkAndPreserveAll (TypeDefinition type, XPathNavigator nav)
 		{
-			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
+			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
 			_context.Annotations.SetPreserve (type, TypePreserve.All);
 
 			if (!type.HasNestedTypes)
 				return;
 
 			foreach (TypeDefinition nested in type.NestedTypes)
-				MarkAndPreserveAll (nested);
+				MarkAndPreserveAll (nested, nav);
 		}
 
-		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly)
+		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav)
 		{
-			_context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
-			return base.ProcessExportedType (exported, assembly);
+			_context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
+			return base.ProcessExportedType (exported, assembly, nav);
 		}
 
 		protected override void ProcessType (TypeDefinition type, XPathNavigator nav)
@@ -121,13 +121,13 @@ namespace Mono.Linker.Steps
 			if (!required)
 				return;
 
-			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
+			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
 
 			if (type.IsNested) {
 				var currentType = type;
 				while (currentType.IsNested) {
 					var parent = currentType.DeclaringType;
-					_context.Annotations.Mark (parent, new DependencyInfo (DependencyKind.DeclaringType, currentType));
+					_context.Annotations.Mark (parent, new DependencyInfo (DependencyKind.DeclaringType, currentType), GetMessageOriginForPosition (nav));
 					currentType = parent;
 				}
 			}
@@ -149,7 +149,7 @@ namespace Mono.Linker.Steps
 			if (_context.Annotations.IsMarked (field))
 				LogWarning ($"Duplicate preserve of '{field.FullName}'.", 2025, nav);
 
-			_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
+			_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
 		}
 
 		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
@@ -163,7 +163,7 @@ namespace Mono.Linker.Steps
 			if (customData is bool required && !required) {
 				_context.Annotations.AddPreservedMethod (type, method);
 			} else {
-				_context.Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
+				_context.Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
 			}
 		}
 
