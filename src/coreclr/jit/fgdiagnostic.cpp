@@ -585,7 +585,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         {
             wCharCount += wcslen(pathname) + 1;
         }
-        filename = (LPCWSTR)alloca(wCharCount * sizeof(WCHAR));
+        filename = (LPCWSTR)_alloca(wCharCount * sizeof(WCHAR));
 
         if (pathname != nullptr)
         {
@@ -651,7 +651,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         {
             wCharCount += wcslen(pathname) + 1;
         }
-        filename = (LPCWSTR)alloca(wCharCount * sizeof(WCHAR));
+        filename = (LPCWSTR)_alloca(wCharCount * sizeof(WCHAR));
         if (pathname != nullptr)
         {
             swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%s.%s"), pathname, origFilename, type);
