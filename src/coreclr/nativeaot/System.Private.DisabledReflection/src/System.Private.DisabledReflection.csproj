@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(AotCommonPath)\System\Collections\Concurrent\ConcurrentUnifierW.cs">
+      <Link>System\Collections\Concurrent\ConcurrentUnifierW.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Collections\HashHelpers.cs" >
+      <Link>System\Collections\HashHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\SR.cs" />
+    <Compile Include="Internal\Reflection\ReflectionCoreCallbacksImplementation.cs" />
+    <Compile Include="Internal\Reflection\ReflectionExecutionDomainCallbacksImplementation.cs" />
+    <Compile Include="Internal\Reflection\RuntimeAssemblyInfo.cs" />
+    <Compile Include="Internal\Reflection\RuntimeTypeInfo.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+  </ItemGroup>
+</Project>

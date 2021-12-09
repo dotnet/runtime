@@ -542,27 +542,28 @@ enum GenTreeFlags : unsigned int
 
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
-    GTF_ICON_HDL_MASK           = 0xF0000000, // Bits used by handle types below
-    GTF_ICON_SCOPE_HDL          = 0x10000000, // GT_CNS_INT -- constant is a scope handle
-    GTF_ICON_CLASS_HDL          = 0x20000000, // GT_CNS_INT -- constant is a class handle
-    GTF_ICON_METHOD_HDL         = 0x30000000, // GT_CNS_INT -- constant is a method handle
-    GTF_ICON_FIELD_HDL          = 0x40000000, // GT_CNS_INT -- constant is a field handle
-    GTF_ICON_STATIC_HDL         = 0x50000000, // GT_CNS_INT -- constant is a handle to static data
-    GTF_ICON_STR_HDL            = 0x60000000, // GT_CNS_INT -- constant is a string handle
-    GTF_ICON_CONST_PTR          = 0x70000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
-    GTF_ICON_GLOBAL_PTR         = 0x80000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
-    GTF_ICON_VARG_HDL           = 0x90000000, // GT_CNS_INT -- constant is a var arg cookie handle
-    GTF_ICON_PINVKI_HDL         = 0xA0000000, // GT_CNS_INT -- constant is a pinvoke calli handle
-    GTF_ICON_TOKEN_HDL          = 0xB0000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
-    GTF_ICON_TLS_HDL            = 0xC0000000, // GT_CNS_INT -- constant is a TLS ref with offset
-    GTF_ICON_FTN_ADDR           = 0xD0000000, // GT_CNS_INT -- constant is a function address
-    GTF_ICON_CIDMID_HDL         = 0xE0000000, // GT_CNS_INT -- constant is a class ID or a module ID
-    GTF_ICON_BBC_PTR            = 0xF0000000, // GT_CNS_INT -- constant is a basic block count pointer
+    GTF_ICON_HDL_MASK           = 0xFF000000, // Bits used by handle types below
+    GTF_ICON_SCOPE_HDL          = 0x01000000, // GT_CNS_INT -- constant is a scope handle
+    GTF_ICON_CLASS_HDL          = 0x02000000, // GT_CNS_INT -- constant is a class handle
+    GTF_ICON_METHOD_HDL         = 0x03000000, // GT_CNS_INT -- constant is a method handle
+    GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
+    GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
+    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a string handle
+    GTF_ICON_CONST_PTR          = 0x07000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
+    GTF_ICON_GLOBAL_PTR         = 0x08000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
+    GTF_ICON_VARG_HDL           = 0x09000000, // GT_CNS_INT -- constant is a var arg cookie handle
+    GTF_ICON_PINVKI_HDL         = 0x0A000000, // GT_CNS_INT -- constant is a pinvoke calli handle
+    GTF_ICON_TOKEN_HDL          = 0x0B000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
+    GTF_ICON_TLS_HDL            = 0x0C000000, // GT_CNS_INT -- constant is a TLS ref with offset
+    GTF_ICON_FTN_ADDR           = 0x0D000000, // GT_CNS_INT -- constant is a function address
+    GTF_ICON_CIDMID_HDL         = 0x0E000000, // GT_CNS_INT -- constant is a class ID or a module ID
+    GTF_ICON_BBC_PTR            = 0x0F000000, // GT_CNS_INT -- constant is a basic block count pointer
+    GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
 
-    GTF_ICON_FIELD_OFF          = 0x08000000, // GT_CNS_INT -- constant is a field offset
-    GTF_ICON_SIMD_COUNT         = 0x04000000, // GT_CNS_INT -- constant is Vector<T>.Count
-
-    GTF_ICON_INITCLASS          = 0x02000000, // GT_CNS_INT -- Constant is used to access a static that requires preceding
+ // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
+    GTF_ICON_FIELD_OFF          = 0x00400000, // GT_CNS_INT -- constant is a field offset
+    GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
+    GTF_ICON_INITCLASS          = 0x00100000, // GT_CNS_INT -- Constant is used to access a static that requires preceding
                                               //               class/static init helper.  In some cases, the constant is
                                               //               the address of the static field itself, and in other cases
                                               //               there's an extra layer of indirection and it is the address
@@ -2271,9 +2272,8 @@ public:
     // hot code, as it affords better opportunities for inlining and acheives shorter dynamic path lengths when
     // deciding how operands need to be accessed.
     //
-    // Note that this function does not respect `GTF_REVERSE_OPS` and `gtEvalSizeFirst`. This is always safe in LIR,
-    // but may be dangerous in HIR if for some reason you need to visit operands in the order in which they will
-    // execute.
+    // Note that this function does not respect `GTF_REVERSE_OPS`. This is always safe in LIR, but may be dangerous
+    // in HIR if for some reason you need to visit operands in the order in which they will execute.
     template <typename TVisitor>
     void VisitOperands(TVisitor visitor);
 
@@ -4965,11 +4965,14 @@ struct GenTreeFptrVal : public GenTree
 {
     CORINFO_METHOD_HANDLE gtFptrMethod;
 
+    bool gtFptrDelegateTarget;
+
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
-    GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth)
+    GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth)
+        : GenTree(GT_FTN_ADDR, type), gtFptrMethod(meth), gtFptrDelegateTarget(false)
     {
 #ifdef FEATURE_READYTORUN
         gtEntryPoint.addr       = nullptr;
@@ -6254,10 +6257,9 @@ struct GenTreeDynBlk : public GenTreeBlk
 {
 public:
     GenTree* gtDynamicSize;
-    bool     gtEvalSizeFirst;
 
     GenTreeDynBlk(GenTree* addr, GenTree* dynamicSize)
-        : GenTreeBlk(GT_DYN_BLK, TYP_STRUCT, addr, nullptr), gtDynamicSize(dynamicSize), gtEvalSizeFirst(false)
+        : GenTreeBlk(GT_DYN_BLK, TYP_STRUCT, addr, nullptr), gtDynamicSize(dynamicSize)
     {
         // Conservatively the 'addr' could be null or point into the global heap.
         gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
@@ -6624,7 +6626,7 @@ private:
 
     // The statement nodes are doubly-linked. The first statement node in a block points
     // to the last node in the block via its `m_prev` link. Note that the last statement node
-    // does not point to the first: it's `m_next == nullptr`; that is, the list is not fully circular.
+    // does not point to the first: it has `m_next == nullptr`; that is, the list is not fully circular.
     Statement* m_next;
     Statement* m_prev;
 

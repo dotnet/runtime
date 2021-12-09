@@ -2902,7 +2902,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    public class test
+    public class Test
     {
         [Fact]
         public static void DynamicCSharpRunTest()
@@ -2913,8 +2913,8 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
         public static int MainMethod()
         {
             int tests = 0, success = 0;
-            var s = new test();
-            dynamic d = new test();
+            var s = new Test();
+            dynamic d = new Test();
             //converting null to string
             tests++;
             if (s.Foo(x: 1, y: null) == 2)

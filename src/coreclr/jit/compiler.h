@@ -3466,7 +3466,7 @@ public:
 
     GenTree* gtReverseCond(GenTree* tree);
 
-    bool gtHasRef(GenTree* tree, ssize_t lclNum, bool defOnly);
+    static bool gtHasRef(GenTree* tree, ssize_t lclNum);
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
 
@@ -6645,7 +6645,7 @@ protected:
     };
 
     // Do hoisting for loop "lnum" (an index into the optLoopTable), and all loops nested within it.
-    // Tracks the expressions that have been hoisted by containing loops by temporary recording their
+    // Tracks the expressions that have been hoisted by containing loops by temporarily recording their
     // value numbers in "m_hoistedInParentLoops".  This set is not modified by the call.
     void optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
 
@@ -6655,7 +6655,7 @@ protected:
     //
     void optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt);
 
-    // Hoist all expressions in "blk" that are invariant in loop "lnum" (an index into the optLoopTable)
+    // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
     // outside of that loop.  Exempt expressions whose value number is in "m_hoistedInParentLoops"; add VN's of hoisted
     // expressions to "hoistInLoop".
     void optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext);
@@ -6678,6 +6678,13 @@ protected:
     // Records the set of "side effects" of all loops: fields (object instance and static)
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();
+
+#ifdef DEBUG
+    bool optAnyChildNotRemoved(unsigned loopNum);
+#endif // DEBUG
+
+    // Mark a loop as removed.
+    void optMarkLoopRemoved(unsigned loopNum);
 
 private:
     // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
@@ -6765,6 +6772,8 @@ public:
         VARSET_TP lpVarInOut;  // The set of variables that are IN or OUT during the execution of this loop
         VARSET_TP lpVarUseDef; // The set of variables that are USE or DEF during the execution of this loop
 
+        // The following counts are used for hoisting profitability checks.
+
         int lpHoistedExprCount; // The register count for the non-FP expressions from inside this loop that have been
                                 // hoisted
         int lpLoopVarCount;     // The register count for the non-FP LclVars that are read/written inside this loop
@@ -6811,7 +6820,7 @@ public:
                                 // : Valid if LPFLG_VAR_INIT
         };
 
-        // The following is for LPFLG_ITER loops only (i.e. the loop condition is "i RELOP const or var"
+        // The following is for LPFLG_ITER loops only (i.e. the loop condition is "i RELOP const or var")
 
         GenTree*   lpTestTree;         // pointer to the node containing the loop test
         genTreeOps lpTestOper() const; // the type of the comparison between the iterator and the limit (GT_LE, GT_GE,
@@ -6839,44 +6848,46 @@ public:
         {
             return lpTop->bbNum <= blk->bbNum && blk->bbNum <= lpBottom->bbNum;
         }
-        // Returns "true" iff "*this" (properly) contains the range [first, bottom] (allowing firsts
+
+        // Returns "true" iff "*this" (properly) contains the range [top, bottom] (allowing tops
         // to be equal, but requiring bottoms to be different.)
-        bool lpContains(BasicBlock* first, BasicBlock* bottom) const
+        bool lpContains(BasicBlock* top, BasicBlock* bottom) const
         {
-            return lpTop->bbNum <= first->bbNum && bottom->bbNum < lpBottom->bbNum;
+            return lpTop->bbNum <= top->bbNum && bottom->bbNum < lpBottom->bbNum;
         }
 
-        // Returns "true" iff "*this" (properly) contains "lp2" (allowing firsts to be equal, but requiring
+        // Returns "true" iff "*this" (properly) contains "lp2" (allowing tops to be equal, but requiring
         // bottoms to be different.)
         bool lpContains(const LoopDsc& lp2) const
         {
             return lpContains(lp2.lpTop, lp2.lpBottom);
         }
 
-        // Returns "true" iff "*this" is (properly) contained by the range [first, bottom]
-        // (allowing firsts to be equal, but requiring bottoms to be different.)
-        bool lpContainedBy(BasicBlock* first, BasicBlock* bottom) const
+        // Returns "true" iff "*this" is (properly) contained by the range [top, bottom]
+        // (allowing tops to be equal, but requiring bottoms to be different.)
+        bool lpContainedBy(BasicBlock* top, BasicBlock* bottom) const
         {
-            return first->bbNum <= lpTop->bbNum && lpBottom->bbNum < bottom->bbNum;
+            return top->bbNum <= lpTop->bbNum && lpBottom->bbNum < bottom->bbNum;
         }
 
         // Returns "true" iff "*this" is (properly) contained by "lp2"
-        // (allowing firsts to be equal, but requiring bottoms to be different.)
+        // (allowing tops to be equal, but requiring bottoms to be different.)
         bool lpContainedBy(const LoopDsc& lp2) const
         {
-            return lpContains(lp2.lpTop, lp2.lpBottom);
+            return lpContainedBy(lp2.lpTop, lp2.lpBottom);
         }
 
         // Returns "true" iff "*this" is disjoint from the range [top, bottom].
-        bool lpDisjoint(BasicBlock* first, BasicBlock* bottom) const
+        bool lpDisjoint(BasicBlock* top, BasicBlock* bottom) const
         {
-            return bottom->bbNum < lpTop->bbNum || lpBottom->bbNum < first->bbNum;
+            return bottom->bbNum < lpTop->bbNum || lpBottom->bbNum < top->bbNum;
         }
         // Returns "true" iff "*this" is disjoint from "lp2".
         bool lpDisjoint(const LoopDsc& lp2) const
         {
             return lpDisjoint(lp2.lpTop, lp2.lpBottom);
         }
+
         // Returns "true" iff the loop is well-formed (see code for defn).
         bool lpWellFormed() const
         {
@@ -6917,6 +6928,12 @@ public:
                        BasicBlock*   exit,
                        unsigned char exitCnt);
 
+#ifdef DEBUG
+    void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
+    void optPrintLoopInfo(const LoopDsc* loop, bool printVerbose = false);
+    void optPrintLoopTable();
+#endif
+
 protected:
     unsigned optCallCount;         // number of calls made in the method
     unsigned optIndirectCallCount; // number of virtual, interface and indirect calls made in the method
@@ -6924,17 +6941,6 @@ protected:
     unsigned optLoopsCloned;       // number of loops cloned in the current method.
 
 #ifdef DEBUG
-    void optPrintLoopInfo(unsigned      loopNum,
-                          BasicBlock*   lpHead,
-                          BasicBlock*   lpTop,
-                          BasicBlock*   lpEntry,
-                          BasicBlock*   lpBottom,
-                          unsigned char lpExitCnt,
-                          BasicBlock*   lpExit,
-                          unsigned      parentLoop = BasicBlock::NOT_IN_LOOP) const;
-    void optPrintLoopInfo(unsigned lnum) const;
-    void optPrintLoopRecording(unsigned lnum) const;
-
     void optCheckPreds();
 #endif
 
@@ -6969,10 +6975,11 @@ protected:
     // unshared with any other loop.  Returns "true" iff the flowgraph has been modified
     bool optCanonicalizeLoop(unsigned char loopInd);
 
-    // Requires "l1" to be a valid loop table index, and not "BasicBlock::NOT_IN_LOOP".  Requires "l2" to be
-    // a valid loop table index, or else "BasicBlock::NOT_IN_LOOP".  Returns true
-    // iff "l2" is not NOT_IN_LOOP, and "l1" contains "l2".
-    bool optLoopContains(unsigned l1, unsigned l2);
+    // Requires "l1" to be a valid loop table index, and not "BasicBlock::NOT_IN_LOOP".
+    // Requires "l2" to be a valid loop table index, or else "BasicBlock::NOT_IN_LOOP".
+    // Returns true iff "l2" is not NOT_IN_LOOP, and "l1" contains "l2".
+    // A loop contains itself.
+    bool optLoopContains(unsigned l1, unsigned l2) const;
 
     // Updates the loop table by changing loop "loopInd", whose head is required
     // to be "from", to be "to".  Also performs this transformation for any
@@ -10330,6 +10337,24 @@ public:
     unsigned compMapILvarNum(unsigned ILvarNum);      // map accounting for hidden args
     unsigned compMap2ILvarNum(unsigned varNum) const; // map accounting for hidden args
 
+#if defined(TARGET_ARM64)
+    struct FrameInfo
+    {
+        // Frame type (1-5)
+        int frameType;
+
+        // Distance from established (method body) SP to base of callee save area
+        int calleeSaveSpOffset;
+
+        // Amount to subtract from SP before saving (prolog) OR
+        // to add to SP after restoring (epilog) callee saves
+        int calleeSaveSpDelta;
+
+        // Distance from established SP to where caller's FP was saved
+        int offsetSpToSavedFp;
+    } compFrameInfo;
+#endif
+
     //-------------------------------------------------------------------------
 
     static void compStartup();  // One-time initialization
@@ -11426,11 +11451,6 @@ public:
                 GenTree** op1Use = &dynBlock->gtOp1;
                 GenTree** op2Use = &dynBlock->gtDynamicSize;
 
-                if (TVisitor::UseExecutionOrder && dynBlock->gtEvalSizeFirst)
-                {
-                    std::swap(op1Use, op2Use);
-                }
-
                 result = WalkTree(op1Use, dynBlock);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
@@ -11457,11 +11477,6 @@ public:
                     if (dynBlock->IsReverseOp())
                     {
                         std::swap(op1Use, op2Use);
-                    }
-                    if (dynBlock->gtEvalSizeFirst)
-                    {
-                        std::swap(op3Use, op2Use);
-                        std::swap(op2Use, op1Use);
                     }
                 }
 

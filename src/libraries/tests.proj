@@ -13,10 +13,17 @@
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
+  <!-- Wasm aot on !windows -->
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(BrowserHost)' != 'Windows'">
     <!-- Exceeds VM resources in CI on compilation: https://github.com/dotnet/runtime/issues/61339 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
 
+    <!-- https://github.com/dotnet/runtime/issues/61756 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Tests.csproj" />
+  </ItemGroup>
+
+  <!-- Wasm aot on windows -->
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(BrowserHost)' == 'Windows'">
     <!-- https://github.com/dotnet/runtime/issues/61756 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Tests.csproj" />
   </ItemGroup>
@@ -221,6 +228,15 @@
   
   <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/XmlFormatWriterGeneratorAOT/iOS.Simulator.XmlFormatWriterGeneratorAot.Test.csproj" />
+  </ItemGroup>
+
+  <!-- Run only explicitly selected tests for Mac Catalyst in App Sandbox -->
+  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(EnableAppSandbox)' == 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/tests/**/*.Tests.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/**/*.Test.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/pull/61507 -->
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst') and '$(RunDisablediOSTests)' != 'true'">

@@ -482,8 +482,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     storeOper = GT_STORE_OBJ;
                     break;
                 case GT_DYN_BLK:
-                    storeOper                             = GT_STORE_DYN_BLK;
-                    storeBlk->AsDynBlk()->gtEvalSizeFirst = false;
+                    storeOper = GT_STORE_DYN_BLK;
                     break;
                 default:
                     unreached();
