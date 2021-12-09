@@ -89,6 +89,7 @@ build_Tests()
     export __BinDir
     export __TestBinDir
     export __SkipManaged
+    export __SkipRestorePackages
     export __SkipGenerateLayout
     export __SkipTestWrappers
     export __BuildTestProject
