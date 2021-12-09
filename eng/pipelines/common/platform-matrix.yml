@@ -53,7 +53,7 @@ jobs:
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux armv6
-- ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'Linux_armv6'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
