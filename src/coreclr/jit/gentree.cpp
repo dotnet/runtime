@@ -16363,7 +16363,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                         FieldSeqNode* fieldSeq = nullptr;
                         if ((addr->OperGet() == GT_ADD) && addr->gtGetOp2()->OperIs(GT_CNS_INT))
                         {
-                            fieldSeq = addr->gtGetOp2()->AsIntCon()->gtFieldSeq;
+                            if ((addr->gtGetOp2()->gtFlags & GTF_ICON_QUIRK) == 0)
+                            {
+                                fieldSeq = addr->gtGetOp2()->AsIntCon()->gtFieldSeq;
+                            }
                         }
                         else
                         {

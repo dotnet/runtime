@@ -607,6 +607,7 @@ enum GenTreeFlags : unsigned int
                                               //               of the cell that the runtime will fill in with the address
                                               //               of the static field; in both of those cases, the constant
                                               //               is what gets flagged.
+    GTF_ICON_QUIRK              = 0x00080000, // GT_CNS_INT
 
     GTF_BLK_VOLATILE            = GTF_IND_VOLATILE,  // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is a volatile block operation
     GTF_BLK_UNALIGNED           = GTF_IND_UNALIGNED, // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is an unaligned block operation

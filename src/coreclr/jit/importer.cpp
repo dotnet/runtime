@@ -8291,6 +8291,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
                     op1->ChangeType(TYP_REF); // points at boxed object
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
+                    // TODO-VNTypes: this is a quirk added for zero diffs. Boxed statics used to not
+                    // be CSE-able as "gtGetStructHandleIfPresent" could not find the handle for them.
+                    op1->AsOp()->gtGetOp2()->gtFlags |= GTF_ICON_QUIRK;
 
                     if (varTypeIsStruct(lclTyp))
                     {
@@ -8319,6 +8322,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
 
         op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
+        // TODO-VNTypes: this is a quirk added for zero diffs. Boxed statics used to not
+        // be CSE-able as "gtGetStructHandleIfPresent" could not find the handle for them.
+        op1->AsOp()->gtGetOp2()->gtFlags |= GTF_ICON_QUIRK;
     }
 
     if (!(access & CORINFO_ACCESS_ADDRESS))
