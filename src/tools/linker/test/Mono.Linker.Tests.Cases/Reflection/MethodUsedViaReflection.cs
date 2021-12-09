@@ -19,6 +19,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetMethod_Name_BindingAttr.TestUnknownBindingFlags (BindingFlags.Public);
 			GetMethod_Name_BindingAttr.TestUnknownBindingFlagsAndName (BindingFlags.Public, "DoesntMatter");
 			GetMethod_Name_BindingAttr.TestUnknownNullBindingFlags (BindingFlags.Public);
+			GetMethod_Name_BindingAttr.TestWrongBindingFlags ();
+			GetMethod_Name_BindingAttr.TestNullName ();
+			GetMethod_Name_BindingAttr.TestUnknownName ("Unknown");
+			GetMethod_Name_BindingAttr.TestUnknownNameAndWrongBindingFlags ("Unknown");
 			GetMethod_Name_BindingAttr_Binder_Types_Modifiers.TestNameBindingFlagsAndParameterModifier ();
 			GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers.TestNameBindingFlagsCallingConventionParameterModifier ();
 #if NETCOREAPP
@@ -264,6 +268,74 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 				var method = typeof (NullBindingFlags).GetMethod ("OnlyCalledViaReflection", bf);
 				method.Invoke (null, new object[] { });
+			}
+
+			[Kept]
+			private class WrongBindingFlags
+			{
+				// Unnecessarily kept: https://github.com/dotnet/linker/issues/2432
+				[Kept]
+				private static void One () { }
+
+				// Unnecessarily kept: https://github.com/dotnet/linker/issues/2432
+				[Kept]
+				public static void Two () { }
+			}
+
+			[Kept]
+			public static void TestWrongBindingFlags ()
+			{
+				// Specifying just Static will never return anything (Public or NonPublic is required on top)
+				// So this doesn't need to mark anything.
+				typeof (WrongBindingFlags).GetMethod ("One", BindingFlags.Static);
+				typeof (WrongBindingFlags).GetMethod ("Two", BindingFlags.Static);
+			}
+
+			[Kept]
+			private class NullName
+			{
+				private static void Known () { }
+
+				[Kept] // Currently this is kept as we don't have a special case for null constant (not worth it)
+				public void AlsoKnown () { }
+			}
+
+			[Kept]
+			public static void TestNullName ()
+			{
+				// null will actually throw exception at runtime, so there's no need to mark anything
+				typeof (NullName).GetMethod (null, BindingFlags.Public);
+			}
+
+			[Kept]
+			private class UnknownName
+			{
+				private static void Known () { }
+
+				[Kept]
+				public void AlsoKnown () { }
+			}
+
+			[Kept]
+			public static void TestUnknownName (string name)
+			{
+				typeof (UnknownName).GetMethod (name, BindingFlags.Public);
+			}
+
+			[Kept]
+			private class UnknownNameAndWrongBindingFlags
+			{
+				private static void Known () { }
+
+				public void AlsoKnown () { }
+			}
+
+			[Kept]
+			public static void TestUnknownNameAndWrongBindingFlags (string name)
+			{
+				// The binding flags like this will not return any methods (it's a valid call, but never returns anything)
+				// So it's OK to not mark any method due to this.
+				typeof (UnknownNameAndWrongBindingFlags).GetMethod (name, BindingFlags.Static);
 			}
 		}
 
