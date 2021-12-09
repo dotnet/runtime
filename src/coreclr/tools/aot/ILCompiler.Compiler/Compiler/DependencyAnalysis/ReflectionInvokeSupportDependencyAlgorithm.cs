@@ -46,7 +46,9 @@ namespace ILCompiler.DependencyAnalysis
                     if (!reader.GetCustomAttributeHandle(param.GetCustomAttributes(), "System", "ParamArrayAttribute").IsNil)
                     {
                         dependencies ??= new DependencyList();
-                        dependencies.Add(factory.ConstructedTypeSymbol(sig[sig.Length - 1]), "Reflection invoke");
+                        dependencies.Add(
+                            factory.ConstructedTypeSymbol(sig[sig.Length - 1].NormalizeInstantiation()),
+                            "Reflection invoke");
                     }
 
                     break;
