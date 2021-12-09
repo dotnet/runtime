@@ -1346,7 +1346,7 @@ ClrDataFrame::ValueFromDebugInfo(MetaSig* sig,
     else
     {
         numLocs = NativeVarLocations(varInfo[i].loc, &m_context,
-                                     NumItems(locs), locs);
+                                     ARRAY_SIZE(locs), locs);
     }
 
     if (numLocs == 1 && !locs[0].contextReg)

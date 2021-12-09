@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace System.Diagnostics
@@ -44,6 +45,9 @@ namespace System.Diagnostics
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
         /// <param name="machineName">The machine to examine.</param>
         /// <returns>An array of process IDs from the specified machine.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static int[] GetProcessIds(string machineName)
         {
             ThrowIfRemoteMachine(machineName);

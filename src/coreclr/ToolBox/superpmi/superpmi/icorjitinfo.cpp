@@ -482,18 +482,6 @@ uint32_t MyICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repGetClassAttribs(cls);
 }
 
-// Returns "TRUE" iff "cls" is a struct type such that return buffers used for returning a value
-// of this type must be stack-allocated.  This will generally be true only if the struct
-// contains GC pointers, and does not exceed some size limit.  Maintaining this as an invariant allows
-// an optimization: the JIT may assume that return buffer pointers for return types for which this predicate
-// returns TRUE are always stack allocated, and thus, that stores to the GC-pointer fields of such return
-// buffers do not require GC write barriers.
-bool MyICJI::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("isStructRequiringStackAllocRetBuf");
-    return jitInstance->mc->repIsStructRequiringStackAllocRetBuf(cls);
-}
-
 CORINFO_MODULE_HANDLE MyICJI::getClassModule(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassModule");
@@ -1284,10 +1272,13 @@ void MyICJI::getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn,     /* IN  */
 // return a directly callable address. This can be used similarly to the
 // value returned by getFunctionEntryPoint() except that it is
 // guaranteed to be multi callable entrypoint.
-void MyICJI::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult)
+void MyICJI::getFunctionFixedEntryPoint(
+                    CORINFO_METHOD_HANDLE ftn,
+                    bool isUnsafeFunctionPointer,
+                    CORINFO_CONST_LOOKUP* pResult)
 {
     jitInstance->mc->cr->AddCall("getFunctionFixedEntryPoint");
-    jitInstance->mc->repGetFunctionFixedEntryPoint(ftn, pResult);
+    jitInstance->mc->repGetFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
 // get the synchronization handle that is passed to monXstatic function

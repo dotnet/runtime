@@ -1548,6 +1548,7 @@ protected:
     regPtrDsc* debugPrevRegPtrDsc;
     regMaskTP  debugPrevGCrefRegs;
     regMaskTP  debugPrevByrefRegs;
+    void       emitDispInsIndent();
     void emitDispGCDeltaTitle(const char* title);
     void emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
     void emitDispGCVarDelta();
@@ -1563,6 +1564,14 @@ protected:
     void emitDispInsAddr(BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
+    void emitDispIns(instrDesc* id,
+                     bool       isNew,
+                     bool       doffs,
+                     bool       asmfm,
+                     unsigned   offs  = 0,
+                     BYTE*      pCode = nullptr,
+                     size_t     sz    = 0,
+                     insGroup*  ig    = nullptr);
 
 #else // !DEBUG
 #define emitVarRefOffs 0

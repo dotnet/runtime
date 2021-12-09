@@ -7,16 +7,13 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.Interop
 {
-    internal static class SafeNativeMethods
+    internal static partial class SafeNativeMethods
     {
-        [DllImport(global::Interop.Libraries.OleAut32, PreserveSig = false)]
-        public static extern void VariantClear(IntPtr pObject);
+        [GeneratedDllImport(global::Interop.Libraries.OleAut32)]
+        public static partial void VariantInit(IntPtr pObject);
 
-        [DllImport(global::Interop.Libraries.OleAut32)]
-        public static extern void VariantInit(IntPtr pObject);
-
-        [DllImport(global::Interop.Libraries.Activeds)]
-        public static extern bool FreeADsMem(IntPtr pVoid);
+        [GeneratedDllImport(global::Interop.Libraries.Activeds)]
+        public static partial bool FreeADsMem(IntPtr pVoid);
 
         public const int
             FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
@@ -25,11 +22,11 @@ namespace System.DirectoryServices.Interop
             ERROR_MORE_DATA = 234,
             ERROR_SUCCESS = 0;
 
-        [DllImport(global::Interop.Libraries.Activeds, CharSet = CharSet.Unicode)]
-        public static extern unsafe int ADsGetLastError(out int error, char* errorBuffer, int errorBufferLength, char* nameBuffer, int nameBufferLength);
+        [GeneratedDllImport(global::Interop.Libraries.Activeds, CharSet = CharSet.Unicode)]
+        public static unsafe partial int ADsGetLastError(out int error, char* errorBuffer, int errorBufferLength, char* nameBuffer, int nameBufferLength);
 
-        [DllImport(global::Interop.Libraries.Activeds, CharSet = CharSet.Unicode)]
-        public static extern int ADsSetLastError(int error, string? errorString, string? provider);
+        [GeneratedDllImport(global::Interop.Libraries.Activeds, CharSet = CharSet.Unicode)]
+        public static partial int ADsSetLastError(int error, string? errorString, string? provider);
 
         public class EnumVariant
         {
@@ -99,7 +96,7 @@ namespace System.DirectoryServices.Interop
                     }
                     finally
                     {
-                        VariantClear(addr);
+                        global::Interop.OleAut32.VariantClear(addr);
                     }
                 }
                 finally

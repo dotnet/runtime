@@ -40,15 +40,15 @@ namespace Internal.Cryptography.Pal
                 using (SafeChainEngineHandle storeHandle = GetChainEngine(trustMode, customTrustStore, useMachineContext))
                 using (SafeCertStoreHandle extraStoreHandle = ConvertStoreToSafeHandle(extraStore))
                 {
-                    CERT_CHAIN_PARA chainPara = default;
-                    chainPara.cbSize = Marshal.SizeOf<CERT_CHAIN_PARA>();
+                    Interop.Crypt32.CERT_CHAIN_PARA chainPara = default;
+                    chainPara.cbSize = Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_PARA>();
 
                     int applicationPolicyCount;
                     using (SafeHandle applicationPolicyOids = applicationPolicy!.ToLpstrArray(out applicationPolicyCount))
                     {
                         if (!applicationPolicyOids.IsInvalid)
                         {
-                            chainPara.RequestedUsage.dwType = CertUsageMatchType.USAGE_MATCH_TYPE_AND;
+                            chainPara.RequestedUsage.dwType = Interop.Crypt32.CertUsageMatchType.USAGE_MATCH_TYPE_AND;
                             chainPara.RequestedUsage.Usage.cUsageIdentifier = applicationPolicyCount;
                             chainPara.RequestedUsage.Usage.rgpszUsageIdentifier = applicationPolicyOids.DangerousGetHandle();
                         }
@@ -58,7 +58,7 @@ namespace Internal.Cryptography.Pal
                         {
                             if (!certificatePolicyOids.IsInvalid)
                             {
-                                chainPara.RequestedIssuancePolicy.dwType = CertUsageMatchType.USAGE_MATCH_TYPE_AND;
+                                chainPara.RequestedIssuancePolicy.dwType = Interop.Crypt32.CertUsageMatchType.USAGE_MATCH_TYPE_AND;
                                 chainPara.RequestedIssuancePolicy.Usage.cUsageIdentifier = certificatePolicyCount;
                                 chainPara.RequestedIssuancePolicy.Usage.rgpszUsageIdentifier = certificatePolicyOids.DangerousGetHandle();
                             }
@@ -66,9 +66,9 @@ namespace Internal.Cryptography.Pal
                             chainPara.dwUrlRetrievalTimeout = (int)Math.Floor(timeout.TotalMilliseconds);
 
                             Interop.Crypt32.FILETIME ft = Interop.Crypt32.FILETIME.FromDateTime(verificationTime);
-                            CertChainFlags flags = MapRevocationFlags(revocationMode, revocationFlag, disableAia);
+                            Interop.Crypt32.CertChainFlags flags = MapRevocationFlags(revocationMode, revocationFlag, disableAia);
                             SafeX509ChainHandle chain;
-                            if (!Interop.crypt32.CertGetCertificateChain(storeHandle.DangerousGetHandle(), certificatePal.CertContext, &ft, extraStoreHandle, ref chainPara, flags, IntPtr.Zero, out chain))
+                            if (!Interop.Crypt32.CertGetCertificateChain(storeHandle.DangerousGetHandle(), certificatePal.CertContext, &ft, extraStoreHandle, ref chainPara, flags, IntPtr.Zero, out chain))
                             {
                                 return null;
                             }
@@ -91,8 +91,8 @@ namespace Internal.Cryptography.Pal
                 // Need to get a valid SafeCertStoreHandle otherwise the default stores will be trusted
                 using (SafeCertStoreHandle customTrustStoreHandle = ConvertStoreToSafeHandle(customTrustStore, true))
                 {
-                    CERT_CHAIN_ENGINE_CONFIG customChainEngine = default;
-                    customChainEngine.cbSize = Marshal.SizeOf<CERT_CHAIN_ENGINE_CONFIG>();
+                    Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG customChainEngine = default;
+                    customChainEngine.cbSize = Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_ENGINE_CONFIG>();
                     customChainEngine.hExclusiveRoot = customTrustStoreHandle.DangerousGetHandle();
                     chainEngineHandle = Interop.crypt32.CertCreateCertificateChainEngine(ref customChainEngine);
                 }
@@ -113,28 +113,28 @@ namespace Internal.Cryptography.Pal
             return ((StorePal)StorePal.LinkFromCertificateCollection(extraStore!)).SafeCertStoreHandle;
         }
 
-        private static CertChainFlags MapRevocationFlags(
+        private static Interop.Crypt32.CertChainFlags MapRevocationFlags(
             X509RevocationMode revocationMode,
             X509RevocationFlag revocationFlag,
             bool disableAia)
         {
-            const CertChainFlags AiaDisabledFlags =
-                CertChainFlags.CERT_CHAIN_DISABLE_AIA | CertChainFlags.CERT_CHAIN_DISABLE_AUTH_ROOT_AUTO_UPDATE;
+            const Interop.Crypt32.CertChainFlags AiaDisabledFlags =
+                Interop.Crypt32.CertChainFlags.CERT_CHAIN_DISABLE_AIA | Interop.Crypt32.CertChainFlags.CERT_CHAIN_DISABLE_AUTH_ROOT_AUTO_UPDATE;
 
-            CertChainFlags dwFlags = disableAia ? AiaDisabledFlags : CertChainFlags.None;
+            Interop.Crypt32.CertChainFlags dwFlags = disableAia ? AiaDisabledFlags : Interop.Crypt32.CertChainFlags.None;
 
             if (revocationMode == X509RevocationMode.NoCheck)
                 return dwFlags;
 
             if (revocationMode == X509RevocationMode.Offline)
-                dwFlags |= CertChainFlags.CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY;
+                dwFlags |= Interop.Crypt32.CertChainFlags.CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY;
 
             if (revocationFlag == X509RevocationFlag.EndCertificateOnly)
-                dwFlags |= CertChainFlags.CERT_CHAIN_REVOCATION_CHECK_END_CERT;
+                dwFlags |= Interop.Crypt32.CertChainFlags.CERT_CHAIN_REVOCATION_CHECK_END_CERT;
             else if (revocationFlag == X509RevocationFlag.EntireChain)
-                dwFlags |= CertChainFlags.CERT_CHAIN_REVOCATION_CHECK_CHAIN;
+                dwFlags |= Interop.Crypt32.CertChainFlags.CERT_CHAIN_REVOCATION_CHECK_CHAIN;
             else
-                dwFlags |= CertChainFlags.CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT;
+                dwFlags |= Interop.Crypt32.CertChainFlags.CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT;
 
             return dwFlags;
         }

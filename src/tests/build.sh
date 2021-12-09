@@ -5,11 +5,10 @@ build_Tests()
     echo "${__MsgPrefix}Building Tests..."
 
     __ProjectFilesDir="$__TestDir"
-    __TestBinDir="$__TestWorkingDir"
     __Exclude="$__RepoRootDir/src/tests/issues.targets"
 
-    if [[ -f  "${__TestWorkingDir}/build_info.json" ]]; then
-        rm  "${__TestWorkingDir}/build_info.json"
+    if [[ -f  "${__TestBinDir}/build_info.json" ]]; then
+        rm  "${__TestBinDir}/build_info.json"
     fi
 
     if [[ "$__RebuildTests" -ne 0 ]]; then
@@ -363,7 +362,7 @@ __OSPlatformConfig="$__TargetOS.$__BuildArch.$__BuildType"
 __BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"
-__TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
+__TestBinDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
@@ -382,10 +381,10 @@ if [[ -z "$HOME" ]]; then
 fi
 
 if [[ "$__RebuildTests" -ne 0 ]]; then
-    if [[ -d "${__TestWorkingDir}" ]]; then
-        echo "Removing tests build dir: ${__TestWorkingDir}"
-        rm -rf "${__TestWorkingDir}"
-    fi
+    echo "Removing test build dir: ${__TestBinDir}"
+    rm -rf "${__TestBinDir}"
+    echo "Removing test intermediate dir: ${__TestIntermediatesDir}"
+    rm -rf "${__TestIntermediatesDir}" 
 fi
 
 build_Tests
