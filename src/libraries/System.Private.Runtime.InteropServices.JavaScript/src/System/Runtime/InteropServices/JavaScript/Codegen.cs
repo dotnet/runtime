@@ -449,7 +449,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // This special comment assigns a URL to this generated function in browser debuggers
             output.AppendLine($"//# sourceURL=https://mono-wasm.invalid/bound_method/{handle.ToInt32()}");
             output.AppendLine("\"use strict\";");
-            output.AppendLine($"//{state.Method.DeclaringType.FullName}::{state.Method.Name}");
+            output.AppendLine($"//{state.Method?.DeclaringType?.FullName}::{state.Method?.Name}");
 
             // Unpack various closure values into locals in the outer function that returns the actual
             //  bound method, so that the property lookup doesn't have to occur on every call
@@ -506,7 +506,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             if (state.MarshalString.RawReturnValue)
                 output.AppendLine("    return resultRoot.value;");
-            else if ((state.Method.ReturnType ?? typeof(void)) == typeof(void))
+            else if ((state.Method?.ReturnType ?? typeof(void)) == typeof(void))
                 output.AppendLine("    return;");
             else
                 GenerateFastUnboxBlock(state);
