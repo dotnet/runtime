@@ -207,9 +207,6 @@ CorInfoInlineTypeCheck canInlineTypeCheck(
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
-bool isStructRequiringStackAllocRetBuf(
-          CORINFO_CLASS_HANDLE cls) override;
-
 CORINFO_MODULE_HANDLE getClassModule(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -505,6 +502,7 @@ void getFunctionEntryPoint(
 
 void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
 void* getMethodSync(

@@ -29,6 +29,7 @@ namespace Microsoft.Interop.Analyzers
             public const string StackallocConstructorMustHaveStackBufferSizeConstant = Prefix + "012";
             public const string RefValuePropertyUnsupported = Prefix + "014";
             public const string NativeGenericTypeMustBeClosedOrMatchArity = Prefix + "016";
+            public const string MarshallerGetPinnableReferenceRequiresValueProperty = Prefix + "018";
 
             // GeneratedDllImport
             public const string GeneratedDllImportMissingRequiredModifiers = Prefix + "013";

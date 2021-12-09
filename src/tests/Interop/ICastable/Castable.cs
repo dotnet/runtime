@@ -6,18 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-using Console = Internal.Console;
-
-namespace Xunit
-{
-    // Include an inline definition of the SkipOnMonoAttribute type as tests that reference CoreLib
-    // only reference CoreLib and don't reference any other assemblies.
-    public class SkipOnMonoAttribute : Attribute
-    {
-        public SkipOnMonoAttribute(string reason, int testPlatforms = ~0) { }
-    }
-}
-
 public interface IRetArg<T>
 {
     T ReturnArg(T t);

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
-
 namespace System.Diagnostics
 {
     public partial class Process : IDisposable
@@ -13,14 +11,13 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             throw new PlatformNotSupportedException();
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -37,8 +34,6 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public TimeSpan TotalProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -48,8 +43,6 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public TimeSpan UserProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -93,5 +86,15 @@ namespace System.Diagnostics
         }
 
         private int ParentProcessId => throw new PlatformNotSupportedException();
+
+        /// <summary>Gets the friendly name of the process.</summary>
+        public string ProcessName
+        {
+            get
+            {
+                EnsureState(State.HaveProcessInfo);
+                return _processInfo!.ProcessName;
+            }
+        }
     }
 }

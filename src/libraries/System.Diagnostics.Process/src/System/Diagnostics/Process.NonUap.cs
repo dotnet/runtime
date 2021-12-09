@@ -11,6 +11,7 @@ namespace System.Diagnostics
     {
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public void Kill(bool entireProcessTree)
         {
             if (!entireProcessTree)

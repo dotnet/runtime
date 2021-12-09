@@ -270,7 +270,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 #ifdef LOGGING
     // Ensure that if someone adds a value to CeeSectionRelocType in cor.h,
     // that they also add an entry to RelocName.
-    static_assert_no_msg(NumItems(RelocName) == srRelocSentinel);
+    static_assert_no_msg(ARRAY_SIZE(RelocName) == srRelocSentinel);
 #ifdef _DEBUG
     for (unsigned int i = 0; i < srRelocSentinel; i++)
     {
@@ -1517,7 +1517,7 @@ void PEWriter::setSectionIndex(IMAGE_SECTION_HEADER * h, unsigned sectionIndex) 
     //
 
     static const char * const SpecialNames[] = { ".text", ".cormeta", NULL };
-    enum { SPECIAL_NAMES_COUNT = NumItems(SpecialNames) };
+    enum { SPECIAL_NAMES_COUNT = ARRAY_SIZE(SpecialNames) };
 
     for (const char * const * s = SpecialNames; /**/; s++)
     {

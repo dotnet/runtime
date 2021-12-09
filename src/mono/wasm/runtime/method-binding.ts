@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
-import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, VoidPtr, MonoType } from "./types";
+import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, MonoType } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
@@ -17,6 +17,7 @@ import {
     _handle_exception_for_call, _teardown_after_call
 } from "./method-calls";
 import cwraps from "./cwraps";
+import { VoidPtr } from "./types/emscripten";
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();

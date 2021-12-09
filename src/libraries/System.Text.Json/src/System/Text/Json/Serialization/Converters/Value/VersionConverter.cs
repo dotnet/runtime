@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (reader.TokenType != JsonTokenType.String)
             {
-                throw ThrowHelper.GetInvalidOperationException_ExpectedString(reader.TokenType);
+                ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
             }
 
 #if BUILDING_INBOX_LIBRARY
@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!JsonHelpers.IsInRangeInclusive(reader.ValueSequence.Length, MinimumVersionLength, maxLength))
                 {
-                    throw ThrowHelper.GetFormatException(DataType.Version);
+                    ThrowHelper.ThrowFormatException(DataType.Version);
                 }
 
                 Span<byte> stackSpan = stackalloc byte[isEscaped ? MaximumEscapedVersionLength : MaximumVersionLength];
@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (!JsonHelpers.IsInRangeInclusive(source.Length, MinimumVersionLength, maxLength))
                 {
-                    throw ThrowHelper.GetFormatException(DataType.Version);
+                    ThrowHelper.ThrowFormatException(DataType.Version);
                 }
             }
 
@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Converters
                 // we need to make sure that our input doesn't have them,
                 // and if it has - we need to throw, to match behaviour of other converters
                 // since Version.TryParse allows them and silently parses input to Version
-                throw ThrowHelper.GetFormatException(DataType.Version);
+                ThrowHelper.ThrowFormatException(DataType.Version);
             }
 
             Span<char> charBuffer = stackalloc char[MaximumVersionLength];
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Converters
                 // we need to make sure that our input doesn't have them,
                 // and if it has - we need to throw, to match behaviour of other converters
                 // since Version.TryParse allows them and silently parses input to Version
-                throw ThrowHelper.GetFormatException(DataType.Version);
+                ThrowHelper.ThrowFormatException(DataType.Version);
             }
             if (Version.TryParse(versionString, out Version? result))
             {

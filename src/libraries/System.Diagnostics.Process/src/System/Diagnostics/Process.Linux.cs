@@ -20,6 +20,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             ProcessManager.ThrowIfRemoteMachine(machineName);

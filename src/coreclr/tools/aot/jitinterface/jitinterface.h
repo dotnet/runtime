@@ -56,7 +56,6 @@ struct JitInterfaceCallbacks
     bool (* isValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoInlineTypeCheck (* canInlineTypeCheck)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
     uint32_t (* getClassAttribs)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    bool (* isStructRequiringStackAllocRetBuf)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_MODULE_HANDLE (* getClassModule)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_ASSEMBLY_HANDLE (* getModuleAssembly)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE mod);
     const char* (* getAssemblyName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ASSEMBLY_HANDLE assem);
@@ -135,7 +134,7 @@ struct JitInterfaceCallbacks
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     void* (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, void** ppIndirection);
     void (* getFunctionEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags);
-    void (* getFunctionFixedEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult);
+    void (* getFunctionFixedEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
     void* (* getMethodSync)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, void** ppIndirection);
     CorInfoHelpFunc (* getLazyStringLiteralHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle);
     CORINFO_MODULE_HANDLE (* embedModuleHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle, void** ppIndirection);
@@ -639,15 +638,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     uint32_t temp = _callbacks->getClassAttribs(_thisHandle, &pException, cls);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual bool isStructRequiringStackAllocRetBuf(
-          CORINFO_CLASS_HANDLE cls)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->isStructRequiringStackAllocRetBuf(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1384,10 +1374,11 @@ public:
 
     virtual void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getFunctionFixedEntryPoint(_thisHandle, &pException, ftn, pResult);
+    _callbacks->getFunctionFixedEntryPoint(_thisHandle, &pException, ftn, isUnsafeFunctionPointer, pResult);
     if (pException != nullptr) throw pException;
 }
 

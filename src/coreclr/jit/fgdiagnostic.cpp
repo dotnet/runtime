@@ -734,12 +734,14 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     const bool includeLoops = (JitConfig.JitDumpFgLoops() != 0) && !compIsForInlining() && (phase < PHASE_RATIONALIZE);
     const bool constrained  = JitConfig.JitDumpFgConstrained() != 0;
     const bool useBlockId   = JitConfig.JitDumpFgBlockID() != 0;
+    const bool displayBlockFlags = JitConfig.JitDumpFgBlockFlags() != 0;
 #else  // !DEBUG
-    const bool createDotFile = true;
-    const bool includeEH     = false;
-    const bool includeLoops  = false;
-    const bool constrained   = true;
-    const bool useBlockId    = false;
+    const bool             createDotFile     = true;
+    const bool             includeEH         = false;
+    const bool             includeLoops      = false;
+    const bool             constrained       = true;
+    const bool             useBlockId        = false;
+    const bool             displayBlockFlags = false;
 #endif // !DEBUG
 
     FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, pos, createDotFile ? W("dot") : W("fgx"));
@@ -864,6 +866,43 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             else
             {
                 fprintf(fgxFile, FMT_BB, block->bbNum);
+            }
+
+            if (displayBlockFlags)
+            {
+                // Don't display the `[` `]` unless we're going to display something.
+                const BasicBlockFlags allDisplayedBlockFlags = BBF_TRY_BEG | BBF_FUNCLET_BEG | BBF_RUN_RARELY |
+                                                               BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
+                if (block->bbFlags & allDisplayedBlockFlags)
+                {
+                    // Display a very few, useful, block flags
+                    fprintf(fgxFile, " [");
+                    if (block->bbFlags & BBF_TRY_BEG)
+                    {
+                        fprintf(fgxFile, "T");
+                    }
+                    if (block->bbFlags & BBF_FUNCLET_BEG)
+                    {
+                        fprintf(fgxFile, "F");
+                    }
+                    if (block->bbFlags & BBF_RUN_RARELY)
+                    {
+                        fprintf(fgxFile, "R");
+                    }
+                    if (block->bbFlags & BBF_LOOP_HEAD)
+                    {
+                        fprintf(fgxFile, "L");
+                    }
+                    if (block->bbFlags & BBF_LOOP_PREHEADER)
+                    {
+                        fprintf(fgxFile, "P");
+                    }
+                    if (block->bbFlags & BBF_LOOP_ALIGN)
+                    {
+                        fprintf(fgxFile, "A");
+                    }
+                    fprintf(fgxFile, "]");
+                }
             }
 
             if (block->bbJumpKind == BBJ_COND)
@@ -1636,6 +1675,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 
             if (includeLoops)
             {
+#ifdef DEBUG
+                const bool displayLoopFlags = JitConfig.JitDumpFgLoopFlags() != 0;
+#else  // !DEBUG
+                const bool displayLoopFlags  = false;
+#endif // !DEBUG
+
                 char name[30];
                 for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
                 {
@@ -1644,7 +1689,24 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     {
                         continue;
                     }
+
                     sprintf_s(name, sizeof(name), FMT_LP, loopNum);
+
+                    if (displayLoopFlags)
+                    {
+                        // Display a very few, useful, loop flags
+                        strcat_s(name, sizeof(name), " [");
+                        if (loop.lpFlags & LoopFlags::LPFLG_ITER)
+                        {
+                            strcat_s(name, sizeof(name), "I");
+                        }
+                        if (loop.lpFlags & LoopFlags::LPFLG_HAS_PREHEAD)
+                        {
+                            strcat_s(name, sizeof(name), "P");
+                        }
+                        strcat_s(name, sizeof(name), "]");
+                    }
+
                     rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpTop, loop.lpBottom);
                 }
             }
@@ -2804,7 +2866,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #ifndef JIT32_GCENCODER
     copiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-    copiedForGenericsCtxt    = false;
+    copiedForGenericsCtxt                    = false;
 #endif // JIT32_GCENCODER
 
     // This if only in support of the noway_asserts it contains.
@@ -2849,6 +2911,11 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
     if (tree->OperMayThrow(this))
     {
         chkFlags |= GTF_EXCEPT;
+    }
+
+    if (tree->OperRequiresAsgFlag())
+    {
+        chkFlags |= GTF_ASG;
     }
 
     if (tree->OperRequiresCallFlag(this))
@@ -2931,31 +2998,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 }
                 break;
 
-            case GT_LIST:
-                if ((op2 != nullptr) && op2->OperIsAnyList())
-                {
-                    ArrayStack<GenTree*> stack(getAllocator(CMK_DebugOnly));
-                    while ((tree->gtGetOp2() != nullptr) && tree->gtGetOp2()->OperIsAnyList())
-                    {
-                        stack.Push(tree);
-                        tree = tree->gtGetOp2();
-                    }
-
-                    fgDebugCheckFlags(tree);
-
-                    while (!stack.Empty())
-                    {
-                        tree = stack.Pop();
-                        assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-                        fgDebugCheckFlags(tree->AsOp()->gtOp1);
-                        chkFlags |= (tree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
-                        chkFlags |= (tree->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
-                        fgDebugCheckFlagsHelper(tree, (tree->gtFlags & GTF_ALL_EFFECT), chkFlags);
-                    }
-
-                    return;
-                }
-                break;
             case GT_ADDR:
                 assert(!op1->CanCSE());
                 break;
@@ -3097,11 +3139,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             */
         }
 
-        if (tree->OperRequiresAsgFlag())
-        {
-            chkFlags |= GTF_ASG;
-        }
-
         if (oper == GT_ADDR && (op1->OperIsLocal() || op1->gtOper == GT_CLS_VAR ||
                                 (op1->gtOper == GT_IND && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
         {
@@ -3130,7 +3167,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0)
                     {
-                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation
                         // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
@@ -3144,7 +3181,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
                     {
-                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propogation
+                        // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation
                         // see https://github.com/dotnet/runtime/issues/13758
                         treeFlags |= GTF_ASG;
                     }
@@ -3194,6 +3231,23 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     }
                 }
                 break;
+
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
+            case GT_SIMD:
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
+            case GT_HWINTRINSIC:
+#endif
+                // TODO-List-Cleanup: consider using the general Operands() iterator
+                // here for the "special" nodes to reduce code duplication.
+                for (GenTree* operand : tree->AsMultiOp()->Operands())
+                {
+                    fgDebugCheckFlags(operand);
+                    chkFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
+                }
+                break;
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
             case GT_ARR_ELEM:
 

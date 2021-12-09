@@ -2686,7 +2686,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(_In_ MethodDesc* pMD)
         namedArgs[MDA_ThrowOnUnmappableChar].InitBoolField("ThrowOnUnmappableChar", (ULONG)GetThrowOnUnmappableChar());
         namedArgs[MDA_SetLastError].InitBoolField("SetLastError", 0);
 
-        IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
+        IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
 
         CorNativeLinkType nlt;
         IfFailGo(RemapLinkType((CorNativeLinkType)namedArgs[MDA_CharSet].val.u4, &nlt));

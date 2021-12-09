@@ -81,6 +81,7 @@ def copy_dasm_files(spmi_location, upload_directory, tag_name):
     if not os.path.isdir(upload_directory):
         os.makedirs(upload_directory)
 
+    dasm_file_present = False
     # Create temp directory to copy all issues to upload. We don't want to create a sub-folder
     # inside issues_directory because that will also get included twice.
     with TempDir() as prep_directory:
@@ -98,8 +99,17 @@ def copy_dasm_files(spmi_location, upload_directory, tag_name):
                     os.makedirs(dst_directory)
                 try:
                     shutil.copy2(dasm_src_file, dasm_dst_file)
+                    dasm_file_present = True
                 except PermissionError as pe_error:
                     print('Ignoring PermissionError: {0}'.format(pe_error))
+
+        # If there are no diffs, create an zip file with single file in it.
+        # Otherwise, Azdo considers it as failed job.
+        # See https://github.com/dotnet/arcade/issues/8200
+        if not dasm_file_present:
+            no_diff = os.path.join(prep_directory, "nodiff.txt")
+            with open(no_diff, "w") as no_diff_file:
+                no_diff_file.write("No diffs found!")
 
         # Zip compress the files we will upload
         zip_path = os.path.join(prep_directory, "Asmdiffs_" + tag_name)
@@ -218,8 +228,6 @@ def main(main_args):
             shutil.copy2(overall_md_summary_file, overall_md_summary_file_target)
         except PermissionError as pe_error:
             print('Ignoring PermissionError: {0}'.format(pe_error))
-
-        copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))
     else:
         # Write a basic summary file. Ideally, we should not generate a summary.md file. However, currently I'm seeing
         # errors where the Helix work item fails to upload this specified file if it doesn't exist. We should change the
@@ -228,6 +236,9 @@ def main(main_args):
             f.write("""\
 No diffs found
 """)
+
+    # Finally prepare files to upload from helix.
+    copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))
 
     if return_code != 0:
         print("Failure in {}".format(log_file))

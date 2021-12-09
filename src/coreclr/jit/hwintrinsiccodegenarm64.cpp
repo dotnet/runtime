@@ -51,7 +51,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
     }
     else
     {
-        const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrin->gtHWIntrinsicId);
+        const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrin->GetHWIntrinsicId());
 
         if (category == HW_Category_SIMDByIndexedElement)
         {
@@ -71,13 +71,13 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
             assert(varTypeIsSIMD(indexedElementOpType));
 
             const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
-            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, indexedElementSimdSize, intrin->GetSimdBaseType(),
-                                             &immLowerBound, &immUpperBound);
+            HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), indexedElementSimdSize,
+                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
         }
         else
         {
-            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, intrin->GetSimdSize(), intrin->GetSimdBaseType(),
-                                             &immLowerBound, &immUpperBound);
+            HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), intrin->GetSimdSize(),
+                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
         }
 
         nonConstImmReg = immOp->GetRegNum();
@@ -95,7 +95,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
             // these by
             // using the same approach as in hwintrinsicxarch.cpp - adding an additional indirection level in form of a
             // branch table.
-            assert(!HWIntrinsicInfo::GeneratesMultipleIns(intrin->gtHWIntrinsicId));
+            assert(!HWIntrinsicInfo::GeneratesMultipleIns(intrin->GetHWIntrinsicId()));
             branchTargetReg = intrin->GetSingleTempReg();
         }
 
@@ -271,7 +271,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     const bool isRMW               = node->isRMWHWIntrinsic(compiler);
     const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
-    genConsumeHWIntrinsicOperands(node);
+    genConsumeMultiOpOperands(node);
 
     if (intrin.IsTableDriven())
     {

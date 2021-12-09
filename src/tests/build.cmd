@@ -146,8 +146,10 @@ set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
 set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
 
 if "%__RebuildTests%" == "1" (
-    echo Removing tests build dir^: !__TestBinDir!
+    echo Removing test build dir^: !__TestBinDir!
     rmdir /s /q !__TestBinDir!
+    echo Removing test intermediate dir^: !__TestIntermediatesDir!
+    rmdir /s /q !__TestIntermediatesDir!
 )
 
 REM We have different managed and native intermediate dirs because the managed bits will include
@@ -255,21 +257,13 @@ if not exist "%__NativeTestIntermediatesDir%\CMakeCache.txt" (
 
 echo Environment setup
 
-set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
-set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
-set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
-set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
-
 set __CmakeBuildToolArgs=
 
 if %__Ninja% EQU 1 (
     set __CmakeBuildToolArgs=
 ) else (
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    set __CmakeBuildToolArgs=/nologo /m !__Logging!
+    set __CmakeBuildToolArgs=/nologo /m
 )
 
 "%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
@@ -287,11 +281,24 @@ REM === Restore packages, build managed tests, generate layout and test wrappers
 REM ===
 REM =========================================================================================
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
+set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
+set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
+set __BuildBinLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
+set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
+set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
+set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
+set __MsbuildBinLog=/bl:!__BuildBinLog!
+set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' '!__MsbuildBinLog!'
+
+set BuildCommand=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__RepoRootDir%\src\tests\build.proj -warnAsError:0 /t:TestBuild /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-  /p:UsePartialNGENOptimization=false /maxcpucount^
+  /p:UsePartialNGENOptimization=false /maxcpucount %__Logging%^
   %__msbuildArgs%
+
+echo %BuildCommand%
+%BuildCommand%
 
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Test build failed. Refer to the build log files for details:
