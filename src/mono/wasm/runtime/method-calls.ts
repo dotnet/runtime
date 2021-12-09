@@ -13,7 +13,7 @@ import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from "./js-to-cs";
 import {
     ArgsMarshalString, mono_bind_method,
-    SignatureConverter, TypeConverter,
+    SignatureConverter,
     _compile_converter_for_marshal_string,
     _decide_if_result_is_marshaled, find_method,
     BoundMethodToken
@@ -114,7 +114,7 @@ function _release_buffer_from_method_call(
         Module._free(buffer);
 }
 
-export function _convert_exception_for_method_call(result: MonoString, exception: MonoObject) {
+export function _convert_exception_for_method_call(result: MonoString, exception: MonoObject) : Error | null {
     if (exception === MonoObjectNull)
         return null;
 

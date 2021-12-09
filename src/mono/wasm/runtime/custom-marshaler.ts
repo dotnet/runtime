@@ -3,14 +3,14 @@ import cwraps from "./cwraps";
 import { WasmRoot } from "./roots";
 import {
     MonoMethod, MonoObject, MonoObjectNull,
-    MonoMethodNull, MonoType, MonoTypeNull,
+    MonoType, MonoTypeNull,
     MarshalType, MarshalTypeRecord, CustomMarshalerInfo
 } from "./types";
 import {
     ArgsMarshalString, mono_bind_method, _create_named_function,
     _get_type_aqn, _get_type_name,
     get_method_signature_info, bindings_named_closures,
-    TypeConverter, SignatureConverter
+    TypeConverter
 } from "./method-binding";
 import {
     temp_malloc, _create_temp_frame, _release_temp_frame,
@@ -24,7 +24,7 @@ import {
 import { _unbox_ref_type_root_as_js_object } from "./cs-to-js";
 import { js_to_mono_obj } from "./js-to-cs";
 import cswraps from "./corebindings";
-import { VoidPtr, Int32Ptr, EmscriptenModule } from "./types/emscripten";
+import { VoidPtr } from "./types/emscripten";
 
 const _custom_marshaler_info_cache = new Map<MonoType, CustomMarshalerInfo | null>();
 const _struct_unboxer_cache = new Map<MonoType, Function | null>();
@@ -77,14 +77,17 @@ function extract_js_obj_root_with_converter_impl (root : WasmRoot<MonoObject>, t
         throw new Error (`No CustomJavaScriptMarshaler found for type ${_get_type_name(typePtr)}`);
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function extract_js_obj_root_with_converter (root : WasmRoot<MonoObject>, typePtr : MonoType, unbox_buffer : VoidPtr) : any {
     return extract_js_obj_root_with_converter_impl(root, typePtr, unbox_buffer, false);
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function extract_js_obj_root_with_possible_converter (root : WasmRoot<MonoObject>, typePtr : MonoType, unbox_buffer : VoidPtr) : any {
     return extract_js_obj_root_with_converter_impl(root, typePtr, unbox_buffer, true);
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function box_js_obj_with_converter (js_obj : any, typePtr : MonoType) : MonoObject {
     if ((js_obj === null) || (js_obj === undefined))
         return MonoObjectNull;
@@ -104,6 +107,7 @@ export function box_js_obj_with_converter (js_obj : any, typePtr : MonoType) : M
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function _create_interchange_closure (typePtr : MonoType) : any {
     return {
         // Put binding/mono API namespaces in the closure so that interchange filters can use them

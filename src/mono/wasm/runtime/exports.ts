@@ -52,8 +52,6 @@ import {
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property,
-    _teardown_after_call, _get_args_root_buffer_for_method_call,
-    _get_buffer_for_method_call, _handle_exception_for_call
 } from "./method-calls";
 import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";

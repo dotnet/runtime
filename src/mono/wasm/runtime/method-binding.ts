@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
-import { BINDING, Module, runtimeHelpers } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
 import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
     MonoClass, MonoMethod, MonoObject, coerceNull, MonoString, MonoObjectNull,
-    VoidPtrNull, MonoType, MarshalSignatureInfo, MarshalType, MonoTypeNull
+    VoidPtrNull, MonoType, MarshalSignatureInfo, MonoTypeNull
 } from "./types";
 import { js_string_to_mono_string, js_string_to_mono_string_interned, conv_string } from "./strings";
 import {
@@ -15,7 +15,7 @@ import {
     getI32, getU32, getF32, getF64,
     setI32, setU32, setF32, setF64, setI64,
 } from "./memory";
-import { _pick_automatic_converter, _pick_automatic_converter_for_type } from "./custom-marshaler";
+import { _pick_automatic_converter_for_type } from "./custom-marshaler";
 import {
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call,
@@ -420,9 +420,6 @@ export type ArgsMarshalString = ""
     | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
-
-
-type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64" | "span-byte"
 
 export type TypeConverter = {
     needs_unbox: boolean;
