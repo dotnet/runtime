@@ -672,9 +672,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "object":
                         var resObj = (await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), objectValuesOpt, token, sortByAccessLevel));
                         return sortByAccessLevel ? resObj[0] : resObj;
-                    case "pointer": 
+                    case "pointer":
+                    {
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token) };
                         return sortByAccessLevel ? JObject.FromObject(new { result = resPointer }) : resPointer;
+                    }
                     case "cfo_res":
                     {
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, int.Parse(objectId.Value), args), token);
