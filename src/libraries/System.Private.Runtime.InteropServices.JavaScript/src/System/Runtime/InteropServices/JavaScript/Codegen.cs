@@ -401,7 +401,7 @@ namespace System.Runtime.InteropServices.JavaScript
             { MarshalType.CHAR, "String.fromCharCode(getI32(unboxBuffer))" },
         };
 
-        private static void GenerateFastUnboxCase (BoundMethodBuilderState state, MarshalType type, string expression) {
+        private static void GenerateFastUnboxCase (BoundMethodBuilderState state, MarshalType type, string? expression) {
             var output = state.Output;
             output.AppendLine($"    case {(int)type}:");
             output.AppendLine($"        return {expression};");
@@ -410,18 +410,23 @@ namespace System.Runtime.InteropServices.JavaScript
         private static void GenerateFastUnboxBlock (BoundMethodBuilderState state) {
             var output = state.Output;
             var methodReturnType = Runtime.GetMarshalTypeFromType(state.Method.ReturnType);
+            bool hasPrimitiveType = FastUnboxHandlers.TryGetValue(methodReturnType, out string? fastHandler);
             // For the common scenario where the return type is a primitive, we want to try and unbox it directly
             //  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
             //  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
             //  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
+            if (!hasPrimitiveType) {
+                output.AppendLine("    if (resultRoot.value === 0)");
+                output.AppendLine("      return undefined;");
+            }
             output.AppendLine( "    let resultType = mono_wasm_try_unbox_primitive_and_get_type(resultRoot.value, unboxBuffer, unboxBufferSize);");
             output.AppendLine( "    switch (resultType) {");
             // If we know the return type of this method and it's a primitive, we only need to generate the unbox handler for that type
-            if (FastUnboxHandlers.TryGetValue(methodReturnType, out string? fastHandler)) {
+            if (hasPrimitiveType) {
                 GenerateFastUnboxCase(state, methodReturnType, fastHandler);
                 // This default case should never be hit, but the runtime is returning a boxed object so it's possible if something horrible happens
                 output.AppendLine( "    default:");
-                output.AppendLine($"        return _error('expected method return value to be of type {methodReturnType} but it was ' + resultType);");
+                output.AppendLine($"        throw new Error('expected method return value to be of type {methodReturnType} but it was ' + resultType);");
             } else {
                 // The return type is something we can't fast-unbox or is unknown (i.e. object)
                 foreach (var kvp in FastUnboxHandlers)
@@ -444,13 +449,14 @@ namespace System.Runtime.InteropServices.JavaScript
             // This special comment assigns a URL to this generated function in browser debuggers
             output.AppendLine($"//# sourceURL=https://mono-wasm.invalid/bound_method/{handle.ToInt32()}");
             output.AppendLine("\"use strict\";");
+            output.AppendLine($"//{state.Method.DeclaringType.FullName}::{state.Method.Name}");
 
             // Unpack various closure values into locals in the outer function that returns the actual
             //  bound method, so that the property lookup doesn't have to occur on every call
             output.AppendLine("const method = token.method;");
             output.AppendLine("const converter = token.converter;");
             output.AppendLine("const thisRoot = token.thisArgRoot;");
-            output.AppendLine($"const {state.MarshalString.Key} = converter.compiled_function;");
+            output.AppendLine($"const converter_{state.MarshalString.Key} = converter.compiled_function;");
             output.AppendLine("const unboxBuffer = token.unboxBuffer;");
             output.AppendLine("const unboxBufferSize = token.unboxBufferSize;");
             // get_api here will also ensure that every function we reference is available and do
@@ -483,7 +489,7 @@ namespace System.Runtime.InteropServices.JavaScript
             output.AppendLine( "  let scratchBuffer = _get_buffer_for_method_call(converter, token);");
             output.AppendLine( "  let buffer = 0;");
             output.AppendLine( "  try {");
-            output.AppendLine($"    buffer = {state.MarshalString.Key}(");
+            output.AppendLine($"    buffer = converter_{state.MarshalString.Key}(");
             output.AppendLine( "      scratchBuffer, argsRootBuffer, method,");
             for (int i = 0; i < length; i++) {
                 if (i < (length - 1))
@@ -498,18 +504,13 @@ namespace System.Runtime.InteropServices.JavaScript
             output.AppendLine("    _handle_exception_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);");
             output.AppendLine();
 
-            if (state.MarshalString.RawReturnValue) {
+            if (state.MarshalString.RawReturnValue)
                 output.AppendLine("    return resultRoot.value;");
-            } else if ((state.Method.ReturnType ?? typeof(void)) == typeof(void)) {
+            else if ((state.Method.ReturnType ?? typeof(void)) == typeof(void))
                 output.AppendLine("    return;");
-            } else {
-                output.AppendLine("    let result;");
-                output.AppendLine("    if (resultRoot.value === 0) {");
-                output.AppendLine("      return undefined;");
-                output.AppendLine("    } else {");
+            else
                 GenerateFastUnboxBlock(state);
-                output.AppendLine("    }");
-            }
+
             output.AppendLine("  } finally {");
             output.AppendLine("    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);");
             output.AppendLine("  }");
