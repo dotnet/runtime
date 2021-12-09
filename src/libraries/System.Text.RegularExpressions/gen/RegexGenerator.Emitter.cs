@@ -279,7 +279,6 @@ namespace System.Text.RegularExpressions.Generator
             var additionalDeclarations = new HashSet<string>();
 
             // Emit locals initialization
-            writer.WriteLine("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
             writer.WriteLine("int pos = base.runtextpos, end = base.runtextend;");
             writer.Flush();
             int additionalDeclarationsPosition = ((StringWriter)writer.InnerWriter).GetStringBuilder().Length;
@@ -314,7 +313,8 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         case FindNextStartingPositionMode.LeadingPrefix_LeftToRight_CaseSensitive:
                             Debug.Assert(!string.IsNullOrEmpty(code.FindOptimizations.LeadingCaseSensitivePrefix));
-                            EmitIndexOf_LeftToRight(code.FindOptimizations.LeadingCaseSensitivePrefix);
+                            additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
+                            EmitIndexOf(code.FindOptimizations.LeadingCaseSensitivePrefix);
                             break;
 
                         case FindNextStartingPositionMode.FixedSets_LeftToRight_CaseSensitive:
@@ -322,7 +322,8 @@ namespace System.Text.RegularExpressions.Generator
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseSensitive:
                         case FindNextStartingPositionMode.LeadingSet_LeftToRight_CaseInsensitive:
                             Debug.Assert(code.FindOptimizations.FixedDistanceSets is { Count: > 0 });
-                            EmitFixedSet_LeftToRight();
+                            additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
+                            EmitFixedSet();
                             break;
 
                         default:
@@ -399,6 +400,7 @@ namespace System.Text.RegularExpressions.Generator
                             // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
                             // to boost our position to the next line, and then continue normally with any searches.
                             writer.WriteLine("// Beginning-of-line anchor");
+                            additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
                             additionalDeclarations.Add("int beginning = base.runtextbeg;");
                             using (EmitBlock(writer, "if (pos > beginning && inputSpan[pos - 1] != '\\n')"))
                             {
@@ -418,7 +420,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits a case-sensitive left-to-right prefix search for a string at the beginning of the pattern.
-            void EmitIndexOf_LeftToRight(string prefix)
+            void EmitIndexOf(string prefix)
             {
                 writer.WriteLine($"int i = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos, end - pos), {Literal(prefix)});");
                 writer.WriteLine("if (i >= 0)");
@@ -430,7 +432,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Emits a left-to-right search for a set at a fixed position from the start of the pattern,
             // and potentially other sets at other fixed positions in the pattern.
-            void EmitFixedSet_LeftToRight()
+            void EmitFixedSet()
             {
                 List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? sets = code.FindOptimizations.FixedDistanceSets;
                 (char[]? Chars, string Set, int Distance, bool CaseInsensitive) primarySet = sets![0];
