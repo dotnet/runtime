@@ -926,8 +926,8 @@ namespace System.IO
                         if (polledArray != null)
                         {
                             polledArray = Append(polledArray, lastI, _charBuffer, _charPos, i - _charPos);
-                            // lastI += i - _charPos;;
-                            s = new string(polledArray);
+                            lastI += i - _charPos;
+                            s = new string(polledArray, 0, lastI);
                         }
                         else
                         {
@@ -956,7 +956,7 @@ namespace System.IO
                     // _sb.Append(_charBuffer, _charPos, i);
                 } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
 
-                return new string(polledArray);
+                return new string(polledArray, 0, lastI);
             }
             finally
             {
