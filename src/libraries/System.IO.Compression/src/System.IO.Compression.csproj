@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)Interop\Interop.ZLib.cs" />
+    <Compile Include="$(CommonPath)Interop\Interop.zlib.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchive.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveEntry.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveMode.cs" />
