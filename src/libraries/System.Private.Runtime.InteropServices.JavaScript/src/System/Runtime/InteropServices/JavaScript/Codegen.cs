@@ -91,8 +91,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void GenerateSignatureConverter (MarshalBuilderState state) {
             int length = state.MarshalString.ArgumentCount;
-            var debugName = string.Concat("converter_", state.MarshalString.Signature.AsSpan(0, length));
-            var variadicName = string.Concat("varConverter_", state.MarshalString.Signature.AsSpan(0, length));
+            var debugName = string.Concat("converter_", state.MarshalString.Key);
+            var variadicName = string.Concat("varConverter_", state.MarshalString.Key);
 
             // First we generate the individual steps that pack each argument into the buffer and
             //  place pointers to each argument into the args list that is passed when invoking a method.
@@ -121,18 +121,20 @@ namespace System.Runtime.InteropServices.JavaScript
             output.AppendLine($"// '{state.MarshalString.Signature}' {length} argument(s)");
             output.AppendLine($"// direct buffer {state.DirectOffset} byte(s), indirect {state.IndirectOffset} byte(s)");
 
-            // Now we scan through all the closure references that were generated while emitting
-            //  the marshal steps, and pull them out of the closure table into local variables in
-            //  the scope of the outer function. This will make them visible to the two inner
-            //  inner functions we're generating (which are the actual signature converter + its
-            //  variadic wrapper), eliminating any need to do table lookups on every invocation.
-            // FIXME: It's possible to end up with a cyclic dependency between converters this way
+            if (length > 0) {
+                // Now we scan through all the closure references that were generated while emitting
+                //  the marshal steps, and pull them out of the closure table into local variables in
+                //  the scope of the outer function. This will make them visible to the two inner
+                //  inner functions we're generating (which are the actual signature converter + its
+                //  variadic wrapper), eliminating any need to do table lookups on every invocation.
+                // FIXME: It's possible to end up with a cyclic dependency between converters this way
 
-            // TODO: Sort this for consistent code
-            foreach (var key in state.ClosureReferences)
-                output.AppendLine($"const {key} = get_api('{key}');");
-            foreach (var tup in state.TypeReferences)
-                output.AppendLine($"const {tup.Item1} = get_type_converter({tup.Item2});");
+                // TODO: Sort this for consistent code
+                foreach (var key in state.ClosureReferences)
+                    output.AppendLine($"const {key} = get_api('{key}');");
+                foreach (var tup in state.TypeReferences)
+                    output.AppendLine($"const {tup.Item1} = get_type_converter({tup.Item2});");
+            }
 
             output.AppendLine("");
             output.Append($"function {debugName} (buffer, rootBuffer, methodPtr");
@@ -140,25 +142,29 @@ namespace System.Runtime.InteropServices.JavaScript
                 output.Append($", arg{i}");
             output.AppendLine(") {");
 
-            output.AppendLine("  if (!methodPtr) _error('no method provided');");
-            if (state.RootIndex > 0)
-                state.Output.AppendLine($"  if (!rootBuffer) _error('no root buffer provided');");
-            // When a signature converter is called it may be passed an existing buffer for reuse, but
-            //  if not it will allocate one on the fly. The caller is responsible for freeing it.
-            output.AppendLine($"  if (!buffer) buffer = _malloc({totalBufferSize});");
-            // FIXME: While we're aligning the size of the direct buffer, it's possible 'buffer' itself is not
-            //  properly aligned, which would mean indirectBuffer will also not be properly aligned.
-            // In my testing emscripten's malloc always produces aligned addresses, but we may want to
-            //  detect and handle this by shifting indirectBuffer forward to align it.
-            output.AppendLine($"  const directBuffer = buffer, indirectBuffer = directBuffer + {directSize};");
-            output.AppendLine(temp);
+            if (length > 0) {
+                output.AppendLine("  if (!methodPtr) _error('no method provided');");
+                if (state.RootIndex > 0)
+                    state.Output.AppendLine($"  if (!rootBuffer) _error('no root buffer provided');");
+                // When a signature converter is called it may be passed an existing buffer for reuse, but
+                //  if not it will allocate one on the fly. The caller is responsible for freeing it.
+                output.AppendLine($"  if (!buffer) buffer = _malloc({totalBufferSize});");
+                // FIXME: While we're aligning the size of the direct buffer, it's possible 'buffer' itself is not
+                //  properly aligned, which would mean indirectBuffer will also not be properly aligned.
+                // In my testing emscripten's malloc always produces aligned addresses, but we may want to
+                //  detect and handle this by shifting indirectBuffer forward to align it.
+                output.AppendLine($"  const directBuffer = buffer, indirectBuffer = directBuffer + {directSize};");
+                output.AppendLine(temp);
 
-            // Some marshaling operations need to occur in two phases, so we append the second phase
-            //  code right at the end before returning
-            if (state.Phase2.Length > 0)
-                output.AppendLine(state.Phase2.ToString());
+                // Some marshaling operations need to occur in two phases, so we append the second phase
+                //  code right at the end before returning
+                if (state.Phase2.Length > 0)
+                    output.AppendLine(state.Phase2.ToString());
 
-            output.AppendLine("  return buffer;");
+                output.AppendLine("  return buffer;");
+            } else {
+                output.AppendLine("  return 0;");
+            }
             output.AppendLine("};");
 
             // Generate a small dispatcher function that will unpack an arguments array to pass
@@ -167,10 +173,14 @@ namespace System.Runtime.InteropServices.JavaScript
             output.AppendLine("");
             output.AppendLine($"function {variadicName} (buffer, rootBuffer, methodPtr, args) {{");
             output.AppendLine($"  if (args.length !== {length}) _error('Expected {length} argument(s)');");
-            output.Append($"  return {debugName}(buffer, rootBuffer, methodPtr");
-            for (int i = 0; i < length; i++)
-                output.Append($", args[{i}]");
-            output.AppendLine(");");
+            if (length > 0) {
+                output.Append($"  return {debugName}(buffer, rootBuffer, methodPtr");
+                for (int i = 0; i < length; i++)
+                    output.Append($", args[{i}]");
+                output.AppendLine(");");
+            } else {
+                output.Append("  return 0;");
+            }
             output.AppendLine("};");
 
             var pMethod = state.MarshalString.Method?.MethodHandle.Value ?? IntPtr.Zero;
