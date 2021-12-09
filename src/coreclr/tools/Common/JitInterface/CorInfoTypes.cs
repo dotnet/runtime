@@ -442,11 +442,6 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
         CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
         CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-        CORINFO_INTRINSIC_RTH_GetValueInternal,
-        CORINFO_INTRINSIC_Object_GetType,
-        CORINFO_INTRINSIC_StubHelpers_GetStubContext,
-        CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
-        CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
         CORINFO_INTRINSIC_ByReference_Ctor,
         CORINFO_INTRINSIC_ByReference_Value,
         CORINFO_INTRINSIC_GetRawHandle,

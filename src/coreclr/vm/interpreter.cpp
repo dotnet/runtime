@@ -9155,16 +9155,14 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             didIntrinsic = true;
             break;
 #if INTERP_ILSTUBS
-        case CORINFO_INTRINSIC_StubHelpers_GetStubContext:
+        // TODO: enable when NamedIntrinsic is available to interpreter
+        /*
+        case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
             OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_NATIVEINT));
             m_curStackHt++; didIntrinsic = true;
             break;
-        case CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr:
-            OpStackSet<void*>(m_curStackHt, GetStubContextAddr());
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_NATIVEINT));
-            m_curStackHt++; didIntrinsic = true;
-            break;
+        */
 #endif // INTERP_ILSTUBS
         default:
 #if INTERP_TRACING
