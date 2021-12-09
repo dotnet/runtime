@@ -1738,7 +1738,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	static GHashTable *cache;
 	const char *name;
 	gboolean generic = FALSE;
+#ifndef DISABLE_JIT
 	gboolean return_native_struct;
+#endif
 
 	sig = mini_get_underlying_reg_signature (sig);
 
@@ -1762,7 +1764,10 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	 * stack, pass this address to the interp_entry and when we return it we use
 	 * CEE_MONO_LDNATIVEOBJ
 	 */
-	return_native_struct = sig->ret->type == MONO_TYPE_VALUETYPE && sig->pinvoke;
+#ifndef DISABLE_JIT
+	return_native_struct =
+#endif
+		sig->ret->type == MONO_TYPE_VALUETYPE && sig->pinvoke;
 
 	/* Create the signature for the wrapper */
 	csig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count * sizeof (MonoType*)));

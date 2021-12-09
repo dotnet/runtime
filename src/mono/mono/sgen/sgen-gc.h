@@ -1222,6 +1222,7 @@ sgen_dummy_use (gpointer v)
 {
 #if defined(_MSC_VER) || defined(HOST_WASM)
 	static volatile gpointer ptr;
+	(void)ptr; // avoid compiler warning: variable 'ptr' set but not used
 	ptr = v;
 #elif defined(__GNUC__)
 	__asm__ volatile ("" : "=r"(v) : "r"(v));

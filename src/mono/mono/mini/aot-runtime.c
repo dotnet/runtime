@@ -2658,7 +2658,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 
 #ifdef HOST_WASM
 		gsize min = 1 << 30, max = 0;
-		gsize prev = 0;
+		//gsize prev = 0;
 
 		// FIXME: This depends on emscripten allocating ftnptr ids sequentially
 		for (int i = 0; i < amodule->info.nmethods; ++i) {
@@ -2672,7 +2672,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 					min = val;
 				else if (val > max)
 					max = val;
-				prev = val;
+				//prev = val;
 			}
 		}
 		if (max) {
@@ -5678,12 +5678,16 @@ get_new_unbox_arbitrary_trampoline_frome_page (gpointer addr)
 static gpointer
 get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotModule **out_amodule, guint32 *got_offset, guint32 *out_tramp_size)
 {
+#ifndef DISABLE_ASSERT_MESSAGES
 	MonoImage *image;
+#endif
 	MonoAotModule *amodule = get_mscorlib_aot_module ();
 	int index, tramp_size;
 
+#ifndef DISABLE_ASSERT_MESSAGES
 	/* Currently, we keep all trampolines in the mscorlib AOT image */
 	image = mono_defaults.corlib;
+#endif
 
 	*out_amodule = amodule;
 
