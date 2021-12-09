@@ -36,7 +36,6 @@ namespace System.Text.RegularExpressions.Generator
             "#nullable enable",
             "#pragma warning disable CS0162 // Unreachable code",
             "#pragma warning disable CS0164 // Unreferenced label",
-            "#pragma warning disable CS0168 // Variable declared but never used",
             "#pragma warning disable CS0219 // Variable assigned but never used",
             "",
         };
