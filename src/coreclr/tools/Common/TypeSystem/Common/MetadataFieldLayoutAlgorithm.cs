@@ -802,13 +802,10 @@ namespace Internal.TypeSystem
                 result.Alignment = fieldType.Context.Target.LayoutPointerSize;
             }
 
+            // For non-auto layouts, we need to respect tighter packing requests for alignment.
             if (hasLayout)
             {
                 result.Alignment = LayoutInt.Min(result.Alignment, new LayoutInt(packingSize));
-            }
-            else
-            {
-                result.Alignment = LayoutInt.Min(result.Alignment, fieldType.Context.Target.GetObjectAlignment(result.Alignment));
             }
 
             return result;
