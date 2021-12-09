@@ -2321,56 +2321,44 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             var className = await GetTypeName(typeId[0], token);
 
-            JArray publicProperties = new JArray();
-            JArray privateProperties = new JArray();
-            JArray protectedAndInternalProperties = new JArray();
+            JArray allProperties = new JArray();
             if (await IsDelegate(objectId, token))
             {
                 var description = await GetDelegateMethodDescription(objectId, token);
 
-                var obj = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "symbol",
-                                value = description,
-                                description
-                            },
-                            name = "Target"
-                        });
-                publicProperties.Add(obj);
+                var obj = JObject.FromObject(new
+                {
+                    value = new
+                    {
+                        type = "symbol",
+                        value = description,
+                        description
+                    },
+                    name = "Target"
+                });
+                allProperties.Add(obj);
                 return sortByAccessLevel ?
-                    new JArray(JObject.FromObject(new { result = publicProperties, internalProperties = new JArray(), privateProperties = new JArray() })) :
-                    publicProperties;
+                    new JArray(JObject.FromObject(new { result = allProperties, internalProperties = new JArray(), privateProperties = new JArray() })) :
+                    allProperties;
             }
+
+            var allFields = new List<FieldTypeClass>();
             for (int i = 0; i < typeId.Count; i++)
             {
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                 {
                     className = await GetTypeName(typeId[i], token);
-                    var fields = await GetTypeFields(typeId[i], token);
-                    var pubFields = fields.Where(field => field.ProtectionLevel == FieldAttributes.Public).ToList();
-                    var privFields = fields.Where(field =>
-                        field.ProtectionLevel == FieldAttributes.Private ||
-                        field.ProtectionLevel == FieldAttributes.FamANDAssem
-                        ).ToList();
-                    //protected == family, internal == assembly
-                    var protectedAndInternalFields = fields.Where(field =>
-                        field.ProtectionLevel == FieldAttributes.Family ||
-                        field.ProtectionLevel == FieldAttributes.Assembly ||
-                        field.ProtectionLevel == FieldAttributes.FamORAssem
-                        ).ToList();
-                    publicProperties = await GetNotOnlyAccessorProperties(pubFields, publicProperties, typeId[i], i == 0, token);
-                    privateProperties = await GetNotOnlyAccessorProperties(privFields, privateProperties, typeId[i], i == 0, token);
-                    protectedAndInternalProperties = await GetNotOnlyAccessorProperties(protectedAndInternalFields, protectedAndInternalProperties, typeId[i], i == 0, token);
+                    allFields.AddRange(await GetTypeFields(typeId[i], token));
+                    allProperties = await GetAllProperties(allFields, allProperties, typeId[i], i == 0, token);
                 }
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
-                    return sortByAccessLevel ?
-                        new JArray(JObject.FromObject(new { result = publicProperties, internalProperties = protectedAndInternalProperties, privateProperties = privateProperties })) :
-                        new JArray(publicProperties.Union(protectedAndInternalProperties).Union(privateProperties));
-
-                publicProperties = await AppendProperties(typeId[i], publicProperties, i == 0, token);
-                privateProperties = await AppendProperties(typeId[i], privateProperties, i == 0, token);
-                protectedAndInternalProperties = await AppendProperties(typeId[i], protectedAndInternalProperties, i == 0, token);
+                {
+                    if (!sortByAccessLevel)
+                        return allProperties;
+                    return SegregatePropertiesByAccessLevel(allFields, allProperties, token);
+                }
+                var accessorProperties = await GetAccessorProperties(typeId[i], allProperties, i == 0, token);
+                allProperties = new JArray(allProperties.Union(accessorProperties));
 
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,
@@ -2383,23 +2371,53 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
             {
-                publicProperties = await RemoveFields(publicProperties, token);
-                privateProperties = await RemoveFields(privateProperties, token);
-                protectedAndInternalProperties = await RemoveFields(protectedAndInternalProperties, token);
+                allProperties = await RemovePropertiesWithMatchingField(allProperties, token);
             }
-            return sortByAccessLevel ?
-                    new JArray(JObject.FromObject(new { result = publicProperties, internalProperties = protectedAndInternalProperties, privateProperties = privateProperties })) :
-                    new JArray(publicProperties.Union(protectedAndInternalProperties).Union(privateProperties));
+            if (!sortByAccessLevel)
+                return allProperties;
+            return SegregatePropertiesByAccessLevel(allFields, allProperties, token);
 
-            async Task<JArray> AppendProperties(int typeId, JArray properties, bool isParent, CancellationToken token)
+            JArray SegregatePropertiesByAccessLevel(List<FieldTypeClass> fields, JArray allProperties, CancellationToken token)
+            {
+                if (fields.Count == 0)
+                    return allProperties;
+
+                var pubNames = fields.Where(field => field.ProtectionLevel == FieldAttributes.Public).Select(field => field.Name).ToList();
+                var privNames = fields.Where(field =>
+                    field.ProtectionLevel == FieldAttributes.Private ||
+                    field.ProtectionLevel == FieldAttributes.FamANDAssem
+                    ).Select(field => field.Name).ToList();
+                //protected == family, internal == assembly
+                var protectedAndInternalNames = fields.Where(field =>
+                    field.ProtectionLevel == FieldAttributes.Family ||
+                    field.ProtectionLevel == FieldAttributes.Assembly ||
+                    field.ProtectionLevel == FieldAttributes.FamORAssem
+                    ).Select(field => field.Name).ToList();
+                var accessorProperties = allProperties.Where(prop => (
+                    !pubNames.Any(name => name == prop["name"].Value<string>()) &&
+                    !privNames.Any(name => name == prop["name"].Value<string>()) &&
+                    !protectedAndInternalNames.Any(name => name == prop["name"].Value<string>())));
+
+                var pubProperties = new JArray(allProperties.Where(prop => pubNames.Any(name => name == prop["name"].Value<string>())));
+                var privProperties = new JArray(allProperties.Where(prop => privNames.Any(name => name == prop["name"].Value<string>())));
+                var protAndIntProperties = new JArray(allProperties.Where(prop => protectedAndInternalNames.Any(name => name == prop["name"].Value<string>())));
+
+                return new JArray(JObject.FromObject(new
+                {
+                    result = new JArray(pubProperties.Union(accessorProperties)),
+                    internalProperties = protAndIntProperties,
+                    privateProperties = privProperties
+                }));
+            }
+
+            async Task<JArray> GetAccessorProperties(int typeId, JArray properties, bool isParent, CancellationToken token)
             {
                 using var commandParamsObjWriter = new MonoBinaryWriter();
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", $"{objectId}"), this);
-                var props = await CreateJArrayForProperties(typeId, commandParamsObjWriter.GetParameterBuffer(), properties, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute), $"dotnet:object:{objectId}", isParent, token);
-                return new JArray(properties.Union(props));
+                return await CreateJArrayForProperties(typeId, commandParamsObjWriter.GetParameterBuffer(), properties, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute), $"dotnet:object:{objectId}", isParent, token);
             }
 
-            async Task<JArray> GetNotOnlyAccessorProperties(List<FieldTypeClass> fields, JArray properties, int typeId, bool isParent, CancellationToken token)
+            async Task<JArray> GetAllProperties(List<FieldTypeClass> fields, JArray properties, int typeId, bool isParent, CancellationToken token)
             {
                 if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
                     fields = fields.Where(field => field.IsNotPrivate).ToList();
@@ -2421,7 +2439,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     int valtype = retDebuggerCmdReader.ReadByte();
                     retDebuggerCmdReader.BaseStream.Position = initialPos;
                     var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, isParent, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
-                    if (properties.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any())
+                    if (properties.Any(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())))
                     {
                         continue;
                     }
@@ -2447,7 +2465,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return new JArray(properties.Union(objectFields));
             }
 
-            async Task<JArray> RemoveFields(JArray properties, CancellationToken token)
+            async Task<JArray> RemovePropertiesWithMatchingField(JArray properties, CancellationToken token)
             {
                 var retAfterRemove = new JArray();
                 List<List<FieldTypeClass>> allFields = new List<List<FieldTypeClass>>();

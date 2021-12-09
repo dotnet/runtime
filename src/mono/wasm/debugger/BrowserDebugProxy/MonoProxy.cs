@@ -439,7 +439,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else
                         {
-                            ret = ret.Any() ? ret[0] : ret;
                             SendResponse(id, Result.OkFromObject(ret), token);
                         }
                         return true;
@@ -655,15 +654,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     case "scope":
                     {
-                        var res = await GetScopeProperties(id, int.Parse(objectId.Value), token);
-                        return res.Value?["result"];
+                        var resScope = await GetScopeProperties(id, int.Parse(objectId.Value), token);
+                        if (sortByAccessLevel)
+                            return resScope.Value;
+                        return resScope.Value?["result"];
                     }
                     case "valuetype":
-                        return await context.SdbAgent.GetValueTypeValues(int.Parse(objectId.Value), accessorPropertiesOnly, token);
+                    {
+                        var resValType = await context.SdbAgent.GetValueTypeValues(int.Parse(objectId.Value), accessorPropertiesOnly, token);
+                        return sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType;
+                    }
                     case "array":
                         return await context.SdbAgent.GetArrayValues(int.Parse(objectId.Value), token);
                     case "object":
-                        return await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), objectValuesOpt, token, sortByAccessLevel);
+                        var resObj = (await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), objectValuesOpt, token, sortByAccessLevel));
+                        return sortByAccessLevel ? resObj[0] : resObj;
                     case "pointer":
                         return new JArray{await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token)};
                     case "cfo_res":
