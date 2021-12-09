@@ -40,9 +40,9 @@ namespace Microsoft.Extensions.Configuration
     }
     public partial class FileLoadExceptionContext
     {
-        public FileLoadExceptionContext() { }
-        public System.Exception? Exception { get { throw null; } set { } }
+        public FileLoadExceptionContext(FileConfigurationProvider provider, System.Exception exception) { }
+        public System.Exception Exception { get { throw null; } set { } }
         public bool Ignore { get { throw null; } set { } }
-        public Microsoft.Extensions.Configuration.FileConfigurationProvider? Provider { get { throw null; } set { } }
+        public Microsoft.Extensions.Configuration.FileConfigurationProvider Provider { get { throw null; } set { } }
     }
 }
