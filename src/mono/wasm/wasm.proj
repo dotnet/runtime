@@ -81,7 +81,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <_EmccFlags Include="--profiling-funcs" />
+      <_EmccLinkFlags Include="--profiling-funcs" />
       <_EmccFlags Include="@(_EmccCommonFlags)" />
     </ItemGroup>
 
