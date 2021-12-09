@@ -855,6 +855,16 @@ namespace DebuggerTests
                    ("\"15\"", TString("15")));
            });
 
+        [Fact]
+        public async Task EvaluateStaticAttributeInAssemblyNotRelatedButLoaded() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               await RuntimeEvaluateAndCheck(
+                   ("ClassToBreak.valueToCheck", TNumber(10)));
+           });
+
     }
 
 }

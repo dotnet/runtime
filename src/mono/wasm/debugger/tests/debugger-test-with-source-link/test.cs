@@ -8,5 +8,6 @@ namespace DebuggerTests
         {
             return 50;
         }
+        public static int valueToCheck = 10;
     }
 }
