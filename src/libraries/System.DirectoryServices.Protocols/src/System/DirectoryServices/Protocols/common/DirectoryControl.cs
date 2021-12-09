@@ -746,7 +746,7 @@ namespace System.DirectoryServices.Protocols
 
                 LdapControl managedControl = new LdapControl();
                 Marshal.PtrToStructure(control, managedControl);
-                berval value = managedControl.ldctl_value;
+                BerVal value = managedControl.ldctl_value;
                 // reinitialize the value
                 _directoryControlValue = null;
                 if (value != null)
