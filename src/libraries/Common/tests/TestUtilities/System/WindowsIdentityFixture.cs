@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System
 {
@@ -37,6 +38,8 @@ namespace System
 
         public WindowsTestAccount(string userName)
         {
+            Assert.True(PlatformDetection.IsWindowsAndElevated);
+
             _userName = userName;
             CreateUser();
         }
