@@ -246,28 +246,28 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             const string Json = "{\"MyEnum\":\"One\"}";
 
-            ClassWithCustomConverterPropertyFactory obj = new()
+            ClassWithCustomConverterFactoryProperty obj = new()
             {
                 MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactoryProperty));
             }
             else
             {
-                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory);
+                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactoryProperty);
                 Assert.Equal(Json, json);
             }
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterPropertyFactory));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactoryProperty));
             }
             else
             {
-                obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterPropertyFactory);
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterFactoryProperty);
                 Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
@@ -277,28 +277,28 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             const string Json = "{\"MyEnum\":\"One\"}";
 
-            StructWithCustomConverterPropertyFactory obj = new()
+            StructWithCustomConverterFactoryProperty obj = new()
             {
                 MyEnum = SampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterFactoryProperty));
             }
             else
             {
-                string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory);
+                string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterFactoryProperty);
                 Assert.Equal(Json, json);
             }
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterPropertyFactory));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterFactoryProperty));
             }
             else
             {
-                obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterPropertyFactory);
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterFactoryProperty);
                 Assert.Equal(SampleEnum.One, obj.MyEnum);
             }
         }
