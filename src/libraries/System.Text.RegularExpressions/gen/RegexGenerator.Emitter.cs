@@ -1605,7 +1605,8 @@ namespace System.Text.RegularExpressions.Generator
                              RegexNode.Oneloopatomic or RegexNode.Notoneloopatomic or RegexNode.Setloopatomic or // same for atomic loops
                              RegexNode.One or RegexNode.Notone or RegexNode.Set or // individual characters don't backtrack
                              RegexNode.Multi or // multiple characters don't backtrack
-                             RegexNode.Beginning or RegexNode.Start or RegexNode.End or RegexNode.EndZ or RegexNode.Boundary or RegexNode.NonBoundary or RegexNode.ECMABoundary or RegexNode.NonECMABoundary or // anchors don't backtrack
+                             RegexNode.Ref or // backreferences don't backtrack
+                             RegexNode.Beginning or RegexNode.Bol or RegexNode.Start or RegexNode.End or RegexNode.EndZ or RegexNode.Eol or RegexNode.Boundary or RegexNode.NonBoundary or RegexNode.ECMABoundary or RegexNode.NonECMABoundary or // anchors don't backtrack
                              RegexNode.Nothing or RegexNode.Empty or RegexNode.UpdateBumpalong // empty/nothing don't do anything
                 // Fixed-size repeaters of single characters or atomic don't backtrack
                 || node.Type is RegexNode.Oneloop or RegexNode.Notoneloop or RegexNode.Setloop or RegexNode.Onelazy or RegexNode.Notonelazy or RegexNode.Setlazy && node.M == node.N
