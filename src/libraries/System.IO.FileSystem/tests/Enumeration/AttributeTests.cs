@@ -55,18 +55,30 @@ namespace System.IO.Tests.Enumeration
             }
         }
 
+        public static IEnumerable<object[]> PropertiesWhenItemNoLongerExists_Data
+        {
+            get
+            {
+                yield return new object[] { "file1", "dir2" };
+                yield return new object[] { "dir1", "dir2" };
+                yield return new object[] { "dir1", "file2" };
+                yield return new object[] { "file1", "file2" };
+
+                if (MountHelper.CanCreateSymbolicLinks)
+                {
+                    yield return new object[] { "dir1", "link2" };
+                    yield return new object[] { "file1", "link2" };
+                    yield return new object[] { "link1", "file2" };
+                    yield return new object[] { "link1", "dir2" };
+                    yield return new object[] { "link1", "link2" };
+                }
+            }
+        }
+
         // The test is performed using two items with different properties (file/dir, file length)
         // to check cached values from the previous entry don't leak into the non-existing entry.
-        [InlineData("dir1", "dir2")]
-        [InlineData("dir1", "file2")]
-        [InlineData("dir1", "link2")]
-        [InlineData("file1", "file2")]
-        [InlineData("file1", "dir2")]
-        [InlineData("file1", "link2")]
-        [InlineData("link1", "file2")]
-        [InlineData("link1", "dir2")]
-        [InlineData("link1", "link2")]
         [Theory]
+        [MemberData(nameof(PropertiesWhenItemNoLongerExists_Data))]
         public void PropertiesWhenItemNoLongerExists(string item1, string item2)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());

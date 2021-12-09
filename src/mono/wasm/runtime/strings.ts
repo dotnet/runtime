@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root_buffer, WasmRootBuffer } from "./roots";
-import { CharPtr, MonoString, MonoStringNull, NativePointer } from "./types";
+import { MonoString, MonoStringNull, } from "./types";
 import { Module } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
 import { getI32 } from "./memory";
+import { NativePointer, CharPtr } from "./types/emscripten";
 
 export class StringDecoder {
 

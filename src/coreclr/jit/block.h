@@ -552,7 +552,8 @@ enum BasicBlockFlags : unsigned __int64
     BBF_PATCHPOINT           = MAKE_BBFLAG(36), // Block is a patchpoint
     BBF_HAS_CLASS_PROFILE    = MAKE_BBFLAG(37), // BB contains a call needing a class profile
     BBF_PARTIAL_COMPILATION_PATCHPOINT  = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
-    BBF_HAS_ALIGN          = MAKE_BBFLAG(39), // BB ends with 'align' instruction
+    BBF_HAS_ALIGN            = MAKE_BBFLAG(39), // BB ends with 'align' instruction
+    BBF_TAILCALL_SUCCESSOR   = MAKE_BBFLAG(40), // BB has pred that has potential tail call
 
     // The following are sets of flags.
 
@@ -1560,6 +1561,10 @@ public:
 // BasicBlock specified with both `begin` and `end` blocks. `begin` and `end` are *inclusive*
 // and must be non-null. E.g.,
 //    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
+//
+// Note that endBlock->bbNext is captured at the beginning of the iteration. Thus, any blocks
+// inserted before that will continue the iteration. In particular, inserting blocks between endBlock
+// and endBlock->bbNext will yield unexpected results, as the iteration will continue longer than desired.
 //
 class BasicBlockRangeList
 {

@@ -907,13 +907,13 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
-        // If prevTree has side effects other than GTF_EXCEPT or GTF_ASG, bail,
+        // If prevTree has side effects, bail,
         // unless it is in the immediately preceeding statement.
         //
         // (we'll later show that any exception must come from the RHS as the LHS
         // will be a simple local).
         //
-        if ((prevTree->gtFlags & GTF_SIDE_EFFECT) != (prevTree->gtFlags & (GTF_EXCEPT | GTF_ASG)))
+        if ((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
         {
             if (prevStmt->GetNextStmt() != stmt)
             {
@@ -1027,7 +1027,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtHasRef(prevTreeRHS, definedLocals[i], /*def only*/ false))
+            if (gtHasRef(prevTreeRHS, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;

@@ -7,13 +7,13 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Metadata
 {
-    public static class MetadataUpdater
+    public static partial class MetadataUpdater
     {
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_ApplyUpdate")]
-        private static extern unsafe void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_ApplyUpdate")]
+        private static unsafe partial void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
-        private static extern unsafe bool IsApplyUpdateSupported();
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
+        private static unsafe partial bool IsApplyUpdateSupported();
 
         /// <summary>
         /// Updates the specified assembly using the provided metadata, IL and PDB deltas.

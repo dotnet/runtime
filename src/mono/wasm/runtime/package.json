@@ -6,6 +6,8 @@
     "url": "git@github.com:dotnet/runtime.git"
   },
   "version": "1.0.0",
+  "main": "dotnet.js",
+  "types": "dotnet.d.ts",
   "scripts": {
     "rollup": "rollup -c",
     "lint": "eslint --no-color --max-warnings=0 ./**/*.ts ./*.js"

@@ -1545,8 +1545,8 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 	 */
 
 
-	MonoClass *add_method_klass = NULL;
 #ifdef ALLOW_METHOD_ADD
+	MonoClass *add_method_klass = NULL;
 	uint32_t add_param_method_index = 0;
 #endif
 
@@ -1666,7 +1666,9 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 				/* rva points probably into image_base IL stream. can this ever happen? */
 				g_print ("TODO: this case is still a bit contrived. token=0x%08x with rva=0x%04x\n", log_token, rva);
 			}
+#ifdef ALLOW_METHOD_ADD
 			add_method_klass = NULL;
+#endif
 			break;
 		}
 		case MONO_TABLE_TYPEDEF: {
@@ -1941,7 +1943,6 @@ hot_reload_table_bounds_check (MonoImage *base_image, int table_index, int token
 	g_assert (base_info);
 
 	GList *list = base_info->delta_info;
-	MonoImage *dmeta;
 	MonoTableInfo *table;
 	/* result row, 0-based */
 	int ridx;
@@ -1952,7 +1953,6 @@ hot_reload_table_bounds_check (MonoImage *base_image, int table_index, int token
 			return TRUE;
 		DeltaInfo *delta_info = (DeltaInfo*)list->data;
 		g_assert (delta_info);
-		dmeta = delta_info->delta_image;
 		if (delta_info->generation > exposed_gen)
 			return TRUE;
 		list = list->next;

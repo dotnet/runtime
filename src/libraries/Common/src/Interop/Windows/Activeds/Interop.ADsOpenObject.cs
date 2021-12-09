@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Activeds
     {
         [DllImport(Interop.Libraries.Activeds, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern int ADsOpenObject(string path, string userName, string password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject);
+        internal static extern int ADsOpenObject(string path, string? userName, string? password, int flags, [In, Out] ref Guid iid, [Out, MarshalAs(UnmanagedType.Interface)] out object ppObject);
     }
 }
