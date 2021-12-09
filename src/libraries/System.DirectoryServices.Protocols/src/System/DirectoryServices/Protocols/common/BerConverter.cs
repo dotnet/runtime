@@ -251,7 +251,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             // get the binary value back
-            berval binaryValue = new berval();
+            BerVal binaryValue = new BerVal();
             IntPtr flattenptr = IntPtr.Zero;
 
             try
@@ -309,7 +309,7 @@ namespace System.DirectoryServices.Protocols
             Debug.WriteLine("Begin decoding");
 
             UTF8Encoding utf8Encoder = new UTF8Encoding(false, true);
-            berval berValue = new berval();
+            BerVal berValue = new BerVal();
             ArrayList resultList = new ArrayList();
             SafeBerHandle berElement = null;
 
@@ -390,7 +390,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else if (fmt == 'O')
                 {
-                    // return berval
+                    // return BerVal
                     byte[] byteArray = DecodingByteArrayHelper(berElement, fmt, ref error);
                     if (!BerPal.IsBerDecodeError(error))
                     {
@@ -488,7 +488,7 @@ namespace System.DirectoryServices.Protocols
         {
             error = 0;
             IntPtr result = IntPtr.Zero;
-            berval binaryValue = new berval();
+            BerVal binaryValue = new BerVal();
             byte[] byteArray = null;
 
             // can't use SafeBerval here as CLR creates a SafeBerval which points to a different memory location, but when doing memory
@@ -523,7 +523,7 @@ namespace System.DirectoryServices.Protocols
         {
             IntPtr berValArray = IntPtr.Zero;
             IntPtr tempPtr = IntPtr.Zero;
-            berval[] managedBervalArray = null;
+            BerVal[] managedBervalArray = null;
             int error = 0;
 
             try
@@ -532,15 +532,15 @@ namespace System.DirectoryServices.Protocols
                 {
                     int i = 0;
                     berValArray = Utility.AllocHGlobalIntPtrArray(tempValue.Length + 1);
-                    int structSize = Marshal.SizeOf(typeof(berval));
-                    managedBervalArray = new berval[tempValue.Length];
+                    int structSize = Marshal.SizeOf(typeof(BerVal));
+                    managedBervalArray = new BerVal[tempValue.Length];
 
                     for (i = 0; i < tempValue.Length; i++)
                     {
                         byte[] byteArray = tempValue[i];
 
-                        // construct the managed berval
-                        managedBervalArray[i] = new berval();
+                        // construct the managed BerVal
+                        managedBervalArray[i] = new BerVal();
 
                         if (byteArray != null)
                         {
@@ -577,7 +577,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 if (managedBervalArray != null)
                 {
-                    foreach (berval managedBerval in managedBervalArray)
+                    foreach (BerVal managedBerval in managedBervalArray)
                     {
                         if (managedBerval.bv_val != IntPtr.Zero)
                         {
@@ -593,7 +593,7 @@ namespace System.DirectoryServices.Protocols
         private static byte[][] DecodingMultiByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
         {
             error = 0;
-            // several berval
+            // several BerVal
             IntPtr ptrResult = IntPtr.Zero;
             int i = 0;
             ArrayList binaryList = new ArrayList();
@@ -611,7 +611,7 @@ namespace System.DirectoryServices.Protocols
                         tempPtr = Marshal.ReadIntPtr(ptrResult);
                         while (tempPtr != IntPtr.Zero)
                         {
-                            berval ber = new berval();
+                            BerVal ber = new BerVal();
                             Marshal.PtrToStructure(tempPtr, ber);
 
                             byte[] berArray = new byte[ber.bv_len];

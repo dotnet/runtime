@@ -24,7 +24,7 @@
     };
 
     const App = {
-      init: () => {
+      init: ({ MONO, BINDING, Module }) => {
         const testMeaning = BINDING.bind_static_method("[Wasm.Browser.Sample] Sample.Test:TestMeaning");
         const ret = testMeaning();
         document.getElementById("out").innerHTML = ret;
@@ -35,8 +35,8 @@
       },
     };
   </script>
+  <script type="text/javascript" src="dotnet.js"></script>
   <script type="text/javascript" src="main.js"></script>
-  <script defer src="dotnet.js"></script>
 
 </body>
 

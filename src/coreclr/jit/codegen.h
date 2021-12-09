@@ -1254,6 +1254,7 @@ protected:
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForMadd(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
+    void genCodeForAddEx(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1302,8 +1303,7 @@ protected:
         {
             return false;
         }
-        const LclVarDsc* varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->GetLclNum()];
-        return (varDsc->lvIsRegCandidate());
+        return compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
@@ -1476,7 +1476,7 @@ public:
 
         static const GenConditionDesc& Get(GenCondition condition)
         {
-            assert(condition.GetCode() < _countof(map));
+            assert(condition.GetCode() < ArrLen(map));
             const GenConditionDesc& desc = map[condition.GetCode()];
             assert(desc.jumpKind1 != EJ_NONE);
             assert((desc.oper == GT_NONE) || (desc.oper == GT_AND) || (desc.oper == GT_OR));

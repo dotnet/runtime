@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Configuration.Ini
                     if (line[0] == '[' && line[line.Length - 1] == ']')
                     {
                         // remove the brackets
-#if NETCOREAPP
+#if NET
                         sectionPrefix = string.Concat(line.AsSpan(1, line.Length - 2), ConfigurationPath.KeyDelimiter);
 #else
                         sectionPrefix = line.Substring(1, line.Length - 2) + ConfigurationPath.KeyDelimiter;

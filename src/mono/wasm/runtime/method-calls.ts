@@ -5,7 +5,7 @@ import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer
 import {
     JSHandle, MonoArray, MonoMethod, MonoObject,
     MonoObjectNull, MonoString, coerceNull as coerceNull,
-    VoidPtr, VoidPtrNull, Int32Ptr, MonoStringNull
+    VoidPtrNull, MonoStringNull
 } from "./types";
 import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
@@ -21,6 +21,7 @@ import { conv_string, js_string_to_mono_string } from "./strings";
 import cwraps from "./cwraps";
 import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
+import { VoidPtr, Int32Ptr, EmscriptenModule } from "./types/emscripten";
 
 function _verify_args_for_method_call(args_marshal: ArgsMarshalString, args: any) {
     const has_args = args && (typeof args === "object") && args.length > 0;
@@ -249,7 +250,7 @@ export function call_static_method(fqn: string, args: any[], signature: ArgsMars
     return call_method(method, undefined, signature, args);
 }
 
-export function mono_bind_static_method(fqn: string, signature: ArgsMarshalString): Function {
+export function mono_bind_static_method(fqn: string, signature?: ArgsMarshalString): Function {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
     const method = mono_method_resolve(fqn);

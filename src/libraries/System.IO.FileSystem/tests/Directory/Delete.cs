@@ -98,11 +98,11 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Delete(Directory.GetCurrentDirectory()));
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void DeletingSymLinkDoesntDeleteTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             Directory.CreateDirectory(path);
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
@@ -289,6 +289,35 @@ namespace System.IO.Tests
                 Assert.Throws<IOException>(() => Delete(testDir.FullName, true));
             }
             Assert.True(testDir.Exists);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void RecursiveDeletingDoesntFollowLinks()
+        {
+            var target = GetTestFilePath();
+            Directory.CreateDirectory(target);
+
+            var fileInTarget = Path.Combine(target, GetTestFileName());
+            File.WriteAllText(fileInTarget, "");
+
+            var linkParent = GetTestFilePath();
+            Directory.CreateDirectory(linkParent);
+
+            var linkPath = Path.Combine(linkParent, GetTestFileName());
+            Assert.NotNull(Directory.CreateSymbolicLink(linkPath, target));
+
+            // Both the symlink and the target exist
+            Assert.True(Directory.Exists(target), "target should exist");
+            Assert.True(Directory.Exists(linkPath), "linkPath should exist");
+            Assert.True(File.Exists(fileInTarget), "fileInTarget should exist");
+
+            // Delete the parent folder of the symlink.
+            Delete(linkParent, true);
+
+            // Target should still exist
+            Assert.True(Directory.Exists(target), "target should still exist");
+            Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
+            Assert.True(File.Exists(fileInTarget), "fileInTarget should exist");
         }
     }
 }

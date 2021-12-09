@@ -344,8 +344,8 @@ void CodeGen::genCodeForBBlist()
 #if FEATURE_LOOP_ALIGN
         if (GetEmitter()->emitEndsWithAlignInstr())
         {
-            // we had better be planning on starting a new IG
-            assert(needLabel);
+            // Force new label if current IG ends with an align instruction.
+            needLabel = true;
         }
 #endif
 
@@ -877,7 +877,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void CodeGen::genSpillVar(GenTree* tree)
 {
     unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
-    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
     assert(varDsc->lvIsRegCandidate());
 
@@ -1206,7 +1206,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
             GenTreeLclVar* lcl       = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc    = compiler->lvaGetDesc(lcl->GetLclNum());
+            LclVarDsc*     varDsc    = compiler->lvaGetDesc(lcl);
             var_types      spillType = varDsc->GetRegisterType(lcl);
             assert(spillType != TYP_UNDEF);
 
@@ -1245,7 +1245,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(tree == unspillTree);
 
             GenTreeLclVar* lclNode  = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc   = compiler->lvaGetDesc(lclNode->GetLclNum());
+            LclVarDsc*     varDsc   = compiler->lvaGetDesc(lclNode);
             unsigned       regCount = varDsc->lvFieldCnt;
 
             for (unsigned i = 0; i < regCount; ++i)
@@ -1475,7 +1475,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     if (genIsRegCandidateLocal(tree))
     {
         GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
-        LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
+        LclVarDsc*           varDsc = compiler->lvaGetDesc(lcl);
         if (varDsc->GetRegNum() != REG_STK)
         {
             var_types regType = varDsc->GetRegisterType(lcl);
@@ -1498,7 +1498,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         assert(tree->gtHasReg());
 
         GenTreeLclVarCommon* lcl    = tree->AsLclVar();
-        LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
+        LclVarDsc*           varDsc = compiler->lvaGetDesc(lcl);
         assert(varDsc->lvLRACandidate);
 
         if (varDsc->GetRegNum() == REG_STK)
@@ -1519,7 +1519,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         unsigned       firstFieldVarNum = varDsc->lvFieldLclStart;
         for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
         {
-            LclVarDsc* fldVarDsc = &(compiler->lvaTable[firstFieldVarNum + i]);
+            LclVarDsc* fldVarDsc = compiler->lvaGetDesc(firstFieldVarNum + i);
             assert(fldVarDsc->lvLRACandidate);
             regNumber reg;
             if (tree->OperIs(GT_COPY, GT_RELOAD) && (tree->AsCopyOrReload()->GetRegByIndex(i) != REG_NA))
@@ -1610,7 +1610,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
             // register candidate.
             unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = compiler->lvaTable + varNum;
+            LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
             noway_assert(varDsc->GetRegNum() == REG_STK);
             noway_assert(tree->IsRegOptional() || !varDsc->lvLRACandidate);
@@ -1643,7 +1643,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST, GT_NEG))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH))
         {
             genConsumeRegs(tree->gtGetOp1());
         }
@@ -2251,7 +2251,7 @@ void CodeGen::genProduceReg(GenTree* tree)
             {
                 assert(compiler->lvaEnregMultiRegVars);
                 GenTreeLclVar* lclNode  = tree->AsLclVar();
-                LclVarDsc*     varDsc   = compiler->lvaGetDesc(lclNode->GetLclNum());
+                LclVarDsc*     varDsc   = compiler->lvaGetDesc(lclNode);
                 unsigned       regCount = varDsc->lvFieldCnt;
                 for (unsigned i = 0; i < regCount; i++)
                 {
@@ -2558,7 +2558,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 
     GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
     unsigned             lclNum  = lclNode->GetLclNum();
-    LclVarDsc*           varDsc  = &(compiler->lvaTable[lclNum]);
+    LclVarDsc*           varDsc  = compiler->lvaGetDesc(lclNum);
     assert(varDsc->TypeGet() == TYP_LONG);
     assert(!varDsc->lvPromoted);
     GenTree* op1 = treeNode->AsOp()->gtOp1;

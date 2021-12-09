@@ -23,6 +23,7 @@ typedef unsigned short char16_t;
 #include <pal_assert.h>
 #include <pal.h>
 #include <palprivate.h>
+#include <minipal/utils.h>
 
 #define PALTEST(testfunc, testname) \
  int __cdecl testfunc(int argc, char* argv[]); \
@@ -38,7 +39,7 @@ enum
 inline void Trace(const char *format, ...)
 {
     va_list arglist;
-	
+
     va_start(arglist, format);
 
     vprintf(format, arglist);
@@ -49,10 +50,10 @@ inline void Trace(const char *format, ...)
 inline void Fail(const char *format, ...)
 {
     va_list arglist;
-	
+
     va_start(arglist, format);
 
-    vprintf(format, arglist);    
+    vprintf(format, arglist);
 
     va_end(arglist);
     printf("\n");
@@ -102,7 +103,7 @@ int __cdecl main(int argc, char **argv)
   // time between PAL_Initialize and PAL_Terminate. However, getenv in PAL
   // can be run only after PAL_Initialize.
   szPerfLoopEnv = getenv(PALTEST_LOOP_ENV);
-  if (szPerfLoopEnv != NULL) 
+  if (szPerfLoopEnv != NULL)
   {
      loopCount = atoi(szPerfLoopEnv);
      if (loopCount <= 0) loopCount = 1;
@@ -146,9 +147,9 @@ void Bogus_PAL_Terminate()
 #ifdef BIGENDIAN
 inline ULONG   VAL32(ULONG x)
 {
-    return( ((x & 0xFF000000L) >> 24) |               
-            ((x & 0x00FF0000L) >>  8) |              
-            ((x & 0x0000FF00L) <<  8) |              
+    return( ((x & 0xFF000000L) >> 24) |
+            ((x & 0x00FF0000L) >>  8) |
+            ((x & 0x0000FF00L) <<  8) |
             ((x & 0x000000FFL) << 24) );
 }
 #define th_htons(w)  (w)
@@ -157,14 +158,11 @@ inline ULONG   VAL32(ULONG x)
 #define th_htons(w)  (((w) >> 8) | ((w) << 8))
 #endif  // BIGENDIAN
 
-#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
-
 WCHAR* convert(const char * aString);
 char* convertC(const WCHAR * wString);
 UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency);
 
 extern const char* szTextFile;
-
 
 int
 mkAbsoluteFilename( LPSTR dirName,
@@ -177,10 +175,10 @@ BOOL CleanupHelper (HANDLE *hArray, DWORD dwIndex);
 BOOL Cleanup(HANDLE *hArray, DWORD dwIndex);
 
 
-/* 
+/*
  * Tokens 0 and 1 are events.  Token 2 is the thread.
  */
-#define NUM_TOKENS 3                             
+#define NUM_TOKENS 3
 
 extern HANDLE hToken[NUM_TOKENS];
 extern CRITICAL_SECTION CriticalSection;
@@ -194,11 +192,11 @@ extern CRITICAL_SECTION CriticalSection;
  * Returns: The number of wide characters in the resulting string.
  * 0 is returned on Error.
  */
-int 
-mkAbsoluteFilenameW ( 
-    LPWSTR dirName,  
-    DWORD dwDirLength, 
-    LPCWSTR fileName, 
+int
+mkAbsoluteFilenameW (
+    LPWSTR dirName,
+    DWORD dwDirLength,
+    LPCWSTR fileName,
     DWORD dwFileLength,
     LPWSTR absPathName );
 
@@ -211,11 +209,11 @@ mkAbsoluteFilenameW (
  * Returns: The number of wide characters in the resulting string.
  * 0 is returned on Error.
  */
-int 
-mkAbsoluteFilenameA ( 
-    LPSTR dirName,  
-    DWORD dwDirLength, 
-    LPCSTR fileName, 
+int
+mkAbsoluteFilenameA (
+    LPSTR dirName,
+    DWORD dwDirLength,
+    LPCSTR fileName,
     DWORD dwFileLength,
     LPSTR absPathName );
 

@@ -7,7 +7,7 @@
 .module a.exe
 
 // This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an asignment flag, when
-// its children was optimized in the assertion propogation. 
+// its children was optimized in the assertion propagation.
 
 .class ILGEN_CLASS
 {
@@ -69,7 +69,7 @@
         IL_0064: starg 0x0001
         IL_0068: neg
         IL_0069: nop
-        IL_006a: bgt 
+        IL_006a: bgt
         IL_0074
         IL_006f: ldarg 0x0000
         IL_0073: pop
@@ -100,9 +100,9 @@
         IL_00a9: conv.u4
         IL_00aa: div.un
         IL_00ab: pop
-        IL_00ac: ret   
+        IL_00ac: ret
     }
-    
+
     .method private static int32 Main()
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -127,7 +127,7 @@
         IL_000c:  nop
         IL_000d:  leave.s    IL_0014
         }  // end .try
-        catch [mscorlib]System.OverflowException 
+        catch [mscorlib]System.OverflowException
         {
         IL_000f:  stloc.0
         IL_0010:  nop

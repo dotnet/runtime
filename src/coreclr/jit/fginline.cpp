@@ -1905,7 +1905,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
         GenTree* retExpr = inlineInfo->retExpr;
         if (retExpr != nullptr)
         {
-            const bool interferesWithReturn = gtHasRef(inlineInfo->retExpr, tmpNum, false);
+            const bool interferesWithReturn = gtHasRef(inlineInfo->retExpr, tmpNum);
             noway_assert(!interferesWithReturn);
         }
 

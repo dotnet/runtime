@@ -100,6 +100,7 @@
     <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools." />
     <SubsetName Include="Clr.PalTests" OnDemand="true" Description="The CoreCLR PAL tests." />
     <SubsetName Include="Clr.PalTestList" OnDemand="true" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
+    <SubsetName Include="Clr.Hosts" Description="The CoreCLR corerun test host." />
     <SubsetName Include="Clr.Jit" Description="The JIT for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.AllJits" Description="All of the cross-targeting JIT compilers for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.CoreLib" Description="The managed System.Private.CoreLib library for CoreCLR." />
@@ -163,6 +164,10 @@
   <ItemGroup Condition="$(_subset.Contains('+clr.corelib+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
   </ItemGroup>
+
+  <PropertyGroup Condition="$(_subset.Contains('+clr.hosts+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrHostsSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.runtime+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrRuntimeSubset=true</ClrRuntimeBuildSubsets>
@@ -280,7 +285,7 @@
 
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)Native\build-native.proj" Category="libs" />
+    <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj" Category="libs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.ref+'))">

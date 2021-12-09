@@ -125,7 +125,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_File_Create_SymLink()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -134,8 +134,8 @@ namespace System.IO.Tests
             using (var watcher = new FileSystemWatcher(dir.Path, "*"))
             {
                 // Make the symlink in our path (to the temp file) and make sure an event is raised
-                string symLinkPath = Path.Combine(dir.Path, Path.GetFileName(temp.Path));
-                Action action = () => Assert.True(CreateSymLink(temp.Path, symLinkPath, false));
+                string symLinkPath = Path.Combine(dir.Path, GetRandomLinkName());
+                Action action = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, temp.Path, false));
                 Action cleanup = () => File.Delete(symLinkPath);
 
                 ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, symLinkPath);

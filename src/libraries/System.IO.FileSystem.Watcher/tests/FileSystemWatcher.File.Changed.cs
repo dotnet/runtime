@@ -65,7 +65,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_File_Changed_SymLink()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -74,7 +74,7 @@ namespace System.IO.Tests
             using (var watcher = new FileSystemWatcher(dir.Path, "*"))
             {
                 watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size;
-                Assert.True(CreateSymLink(file.Path, Path.Combine(dir.Path, "link"), false));
+                Assert.True(MountHelper.CreateSymbolicLink(Path.Combine(dir.Path, GetRandomLinkName()), file.Path, false));
 
                 Action action = () => File.AppendAllText(file.Path, "longtext");
                 Action cleanup = () => File.AppendAllText(file.Path, "short");
