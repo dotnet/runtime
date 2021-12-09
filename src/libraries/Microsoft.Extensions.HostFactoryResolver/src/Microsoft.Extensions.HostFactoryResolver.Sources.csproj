@@ -9,7 +9,6 @@
     <IsSourcePackage>true</IsSourcePackage>
     <!-- This is non-shipping package. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.</PackageDescription>
   </PropertyGroup>
