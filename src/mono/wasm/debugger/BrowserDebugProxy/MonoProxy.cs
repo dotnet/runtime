@@ -665,17 +665,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType;
                     }
                     case "array":
-                        return await context.SdbAgent.GetArrayValues(int.Parse(objectId.Value), token);
+                    {
+                        var resArr = await context.SdbAgent.GetArrayValues(int.Parse(objectId.Value), token);
+                        return sortByAccessLevel ? JObject.FromObject(new { result = resArr }) : resArr;
+                    }
                     case "object":
                         var resObj = (await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), objectValuesOpt, token, sortByAccessLevel));
                         return sortByAccessLevel ? resObj[0] : resObj;
-                    case "pointer":
-                        return new JArray{await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token)};
+                    case "pointer": 
+                        var resPointer = new JArray { await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token) };
+                        return sortByAccessLevel ? JObject.FromObject(new { result = resPointer }) : resPointer;
                     case "cfo_res":
                     {
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, int.Parse(objectId.Value), args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
-                        return value_json_str != null ? JArray.Parse(value_json_str) : null;
+                        return value_json_str != null ?
+                                (sortByAccessLevel ? JObject.FromObject(new { result = JArray.Parse(value_json_str) }) : JArray.Parse(value_json_str)) :
+                                null;
                     }
                     default:
                         return null;
