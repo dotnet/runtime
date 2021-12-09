@@ -8211,6 +8211,13 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
                 }
+                else
+                {
+                    // We are in the case of an auto-layout struct that has no GC pointers and no other alignment requirements.
+                    // We don't have a good place to track alignment, so we're going to do a best-effort sort of option and use
+                    // min(pByValueMT->GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE) as our alignment for this field.
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, min(pByValueMT->GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE));
+                }
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
