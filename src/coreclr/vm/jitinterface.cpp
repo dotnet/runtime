@@ -8365,11 +8365,6 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
         result = arrMethod->GetIntrinsicID();
     }
     else
-    if (method->IsFCall())
-    {
-        result = ECall::GetIntrinsicID(method);
-    }
-    else
     {
         MethodTable * pMT = method->GetMethodTable();
         if (pMT->GetModule()->IsSystem() && pMT->IsByRefLike())

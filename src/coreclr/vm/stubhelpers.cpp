@@ -524,15 +524,9 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
     // See code:GenericPInvokeCalliHelper
     // The lowest bit is used to distinguish between MD and target on 64-bit.
     target = (target << 1) | 1;
+#endif // HOST_64BIT
 
-#elif defined(TARGET_ARM)
-    // @ARMTODO: Nothing to do for ARM yet since we don't support the hosted path.
-#endif // HOST_64BIT, TARGET_ARM
-
-    if (pEntryPoint == NULL)
-    {
-        pEntryPoint = orefThis->GetMethodPtrAux();
-    }
+    pEntryPoint = orefThis->GetMethodPtrAux();
 
 #ifdef _DEBUG
     END_PRESERVE_LAST_ERROR;
