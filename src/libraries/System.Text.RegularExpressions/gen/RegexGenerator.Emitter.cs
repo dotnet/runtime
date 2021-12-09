@@ -1952,14 +1952,14 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNode.End:
-                        using (EmitBlock(writer, $"if ({sliceSpan}.Length > {sliceStaticPos})"))
+                        using (EmitBlock(writer, $"if ({IsSliceLengthGreaterThanSliceStaticPos()})"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
                         break;
 
                     case RegexNode.EndZ:
-                        writer.WriteLine($"if ({sliceSpan}.Length - 1 > {sliceStaticPos} || ({sliceSpan}.Length > {sliceStaticPos} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
+                        writer.WriteLine($"if ({sliceSpan}.Length - 1 > {sliceStaticPos} || ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
                         using (EmitBlock(writer, null))
                         {
                             writer.WriteLine($"goto {doneLabel};");
@@ -1967,11 +1967,15 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNode.Eol:
-                        using (EmitBlock(writer, $"if ({sliceSpan}.Length > {sliceStaticPos} && {sliceSpan}[{sliceStaticPos}] != '\\n')"))
+                        using (EmitBlock(writer, $"if ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n')"))
                         {
                             writer.WriteLine($"goto {doneLabel};");
                         }
                         break;
+
+                        string IsSliceLengthGreaterThanSliceStaticPos() =>
+                            sliceStaticPos == 0 ? $"!{sliceSpan}.IsEmpty" :
+                            $"{sliceSpan}.Length > {sliceStaticPos}";
                 }
             }
 
