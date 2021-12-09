@@ -4,7 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
-    <Scenario>WasmTestOnBrowser</Scenario>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />

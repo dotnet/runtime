@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
-    [Trait("Category", "Pavel")]
+    // V8's implementation of setTimer ignores delay parameter and always run immediately. So it could not be used to test this.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupported))]
     public class TimerTests : IAsyncLifetime
     {
         static JSObject _timersHelper;
@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         static Function _getRegisterCount;
         static Function _getHitCount;
         static Function _cleanupWrapper;
-        static Function _log;
+        // static Function _log;
 
         public static IEnumerable<object[]> TestCases()
         {
@@ -36,18 +36,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Timer[] timers = new Timer[timeouts.Length];
             try
             {
-                _log.Call(null, $"Waiting for runtime to settle");
+                // _log.Call(null, $"Waiting for runtime to settle");
                 await Task.Delay(2000);
                 _installWrapper.Call();
-                _log.Call(null, $"Ready!");
+                // _log.Call(null, $"Ready!");
 
                 for (int i = 0; i < timeouts.Length; i++)
                 {
                     int index = i;
-                    _log.Call(null, $"Registering {index} delay {timeouts[i]}");
+                    // _log.Call(null, $"Registering {index} delay {timeouts[i]}");
                     timers[i] = new Timer((_) =>
                     {
-                        _log.Call(null, $"In timer{index}");
+                        // _log.Call(null, $"In timer{index}");
                         wasCalled++;
                     }, null, timeouts[i], 0);
                 }
@@ -83,10 +83,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         private async Task WaitForCleanup()
         {
-            _log.Call(null, "wait for cleanup begin");
+            // _log.Call(null, "wait for cleanup begin");
             await Task.Delay(1200);
             _cleanupWrapper.Call();
-            _log.Call(null, "wait for cleanup end");
+            // _log.Call(null, "wait for cleanup end");
         }
 
         public async Task InitializeAsync()
@@ -106,8 +106,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 _getRegisterCount = (Function)_timersHelper.GetObjectProperty("getRegisterCount");
                 _getHitCount = (Function)_timersHelper.GetObjectProperty("getHitCount");
                 _cleanupWrapper = (Function)_timersHelper.GetObjectProperty("cleanup");
-                var console = (JSObject)Runtime.GetGlobalObject("console");
-                _log = (Function)console.GetObjectProperty("log");
+                // var console = (JSObject)Runtime.GetGlobalObject("console");
+                // _log = (Function)console.GetObjectProperty("log");
             }
         }
 
