@@ -11,6 +11,6 @@ namespace System.Runtime.InteropServices
         Arm64,
         Wasm,
         S390x,
-        Armv6
+        Armv6,
     }
 }
