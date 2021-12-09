@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -875,44 +877,94 @@ namespace System.IO
 
         private async Task<string?> ReadLineAsyncInternal()
         {
+            static char[] ResizeArray(char[]? array, int atLeastSpace)
+            {
+                if (array == null)
+                {
+                    return ArrayPool<char>.Shared.Rent(atLeastSpace);
+                }
+
+                char[] newArr = ArrayPool<char>.Shared.Rent(array.Length + atLeastSpace);
+                Array.Copy(array, newArr, array.Length);
+                ArrayPool<char>.Shared.Return(array);
+                return newArr;
+            }
+            static char[] Append(char[]? array1, int destinationOffset, char[] array2, int offset, int length)
+            {
+                if (array1 != null && (destinationOffset + length) < array1.Length)
+                {
+                    Array.Copy(array2, offset, array1, destinationOffset, length);
+                }
+                else
+                {
+                    char[] newArr = ResizeArray(array1, destinationOffset + length + 80);
+                    Array.Copy(array2, offset, newArr, destinationOffset, length);
+                    return newArr;
+                }
+                return array1;
+            }
+
             if (_charPos == _charLen && (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) == 0)
             {
                 return null;
             }
 
-            _sb?.Clear();
-            do
+            char[]? polledArray = null;
+            var lastI = 0;
+            try
             {
-                // Note the following common line feed chars:
-                // \n - UNIX   \r\n - DOS   \r - Mac
-                int i = _charBuffer.AsSpan(_charPos).IndexOfAny('\r', '\n');
-                if (i >= 0)
+                do
                 {
-                    char ch = _charBuffer[_charPos + i];
-
-                    string s = _sb is { Length: > 0 }
-                        ? _sb!.Append(_charBuffer, _charPos, i - _charPos).ToString()
-                        : new string(_charBuffer, _charPos, i);
-
-                    _charPos += i + 1;
-
-                    if (ch == '\r' && (_charPos < _charLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
+                    // Note the following common line feed chars:
+                    // \n - UNIX   \r\n - DOS   \r - Mac
+                    int i = _charBuffer.AsSpan(_charPos).IndexOfAny('\r', '\n');
+                    if (i >= 0)
                     {
-                        if (_charBuffer[_charPos] == '\n')
+                        char ch = _charBuffer[_charPos + i];
+
+                        string? s = null;
+                        if (polledArray != null)
                         {
-                            _charPos++;
+                            polledArray = Append(polledArray, lastI, _charBuffer, _charPos, i - _charPos);
+                            // lastI += i - _charPos;;
+                            s = new string(polledArray);
                         }
+                        else
+                        {
+                            s = new string(_charBuffer, _charPos, i);
+                        }
+
+                        _charPos += i + 1;
+
+                        if (ch == '\r' && (_charPos < _charLen ||
+                                           (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
+                        {
+                            if (_charBuffer[_charPos] == '\n')
+                            {
+                                _charPos++;
+                            }
+                        }
+
+                        return s;
                     }
 
-                    return s;
+                    i = _charLen - _charPos;
+
+                    polledArray = Append(polledArray, lastI, _charBuffer, _charPos, i);
+                    lastI += i;
+                    // _sb ??= new StringBuilder(i + 80);
+                    // _sb.Append(_charBuffer, _charPos, i);
+                } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
+
+                return new string(polledArray);
+            }
+            finally
+            {
+                if (polledArray != null)
+                {
+                    ArrayPool<char>.Shared.Return(polledArray);
                 }
-
-                i = _charLen - _charPos;
-                _sb ??= new StringBuilder(i + 80);
-                _sb.Append(_charBuffer, _charPos, i);
-            } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
-
-            return _sb.ToString();
+            }
         }
 
         public override Task<string> ReadToEndAsync()
