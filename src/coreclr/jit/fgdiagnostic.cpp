@@ -839,7 +839,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     // that size, even though it means allocating a block map possibly much bigger than what's required for just
     // the inlinee blocks.
 
-    unsigned  blkMapSize   = 1 + (compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax);
+    unsigned  blkMapSize   = 1 + impInlineRoot()->fgBBNumMax;
     unsigned  blockOrdinal = 1;
     unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[blkMapSize];
     memset(blkMap, 0, sizeof(unsigned) * blkMapSize);
@@ -1794,8 +1794,8 @@ void Compiler::fgDispDoms()
 
 void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 */)
 {
-    const unsigned __int64 flags    = block->bbFlags;
-    unsigned               bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    const unsigned __int64 flags            = block->bbFlags;
+    unsigned               bbNumMax         = impInlineRoot()->fgBBNumMax;
     int                    maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
     int blockNumWidth                       = CountDigits(block->bbNum);
@@ -2178,7 +2178,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         ibcColWidth = max(ibcColWidth, 3) + 1; // + 1 for the leading space
     }
 
-    unsigned bbNumMax         = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    unsigned bbNumMax         = impInlineRoot()->fgBBNumMax;
     int      maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth          = max(maxBlockNumWidth, 2);
     int padWidth              = maxBlockNumWidth - 2; // Account for functions with a large number of blocks.
@@ -3796,7 +3796,7 @@ void Compiler::fgDebugCheckLoopTable()
     // `blockNumMap[bbNum] == 0` if the `bbNum` block was deleted and blocks haven't been renumbered since
     // the deletion.
 
-    unsigned bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    unsigned bbNumMax = impInlineRoot()->fgBBNumMax;
 
     // blockNumMap[old block number] => new block number
     size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);

@@ -3112,7 +3112,7 @@ void Compiler::fgVerifyHandlerTab()
     // between debug and non-debug code paths. So, create a renumbered block mapping: map the
     // existing block number to a renumbered block number that is ordered by block list order.
 
-    unsigned bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    unsigned bbNumMax = impInlineRoot()->fgBBNumMax;
 
     // blockNumMap[old block number] => new block number
     size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);

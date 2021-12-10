@@ -594,8 +594,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     {
         // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
         // about the BlockSet epoch.
-        unsigned bbNumMax =
-            compiler->compIsForInlining() ? compiler->impInlineInfo->InlinerCompiler->fgBBNumMax : compiler->fgBBNumMax;
+        unsigned     bbNumMax = compiler->impInlineRoot()->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
         for (BasicBlock* const bTarget : SwitchTargets())
