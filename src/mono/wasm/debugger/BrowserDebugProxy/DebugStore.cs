@@ -580,7 +580,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             Populate();
         }
 
-        public async Task<int> DebugId(MonoSDBHelper sdbAgent, CancellationToken token)
+        public async Task<int> GetDebugId(MonoSDBHelper sdbAgent, CancellationToken token)
         {
             if (debugId != -1)
                 return debugId;
