@@ -148,7 +148,7 @@ namespace DebuggerTests
         }
 
         internal async Task CheckInspectLocalsAtBreakpointSite(string url_key, int line, int column, string function_name, string eval_expression,
-            Action<JToken> test_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false)
+            Func<JToken, Task> test_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false)
         {
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -171,10 +171,10 @@ namespace DebuggerTests
                    else
                        await Task.CompletedTask;
                },
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     if (test_fn != null)
-                        test_fn(locals);
+                        await test_fn(locals);
                 }
             );
         }
@@ -436,7 +436,7 @@ namespace DebuggerTests
         }
 
         internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, int times = 1)
+            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, int times = 1)
         {
             string method = (kind == StepKind.Resume ? "Debugger.resume" : $"Debugger.step{kind}");
             for (int i = 0; i < times - 1; i++)
@@ -451,15 +451,17 @@ namespace DebuggerTests
                 locals_fn: locals_fn);
         }
 
-        internal async Task<JObject> EvaluateAndCheck(string expression, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null) => await SendCommandAndCheck(
-            JObject.FromObject(new { expression = expression }),
-            "Runtime.evaluate", script_loc, line, column, function_name,
-            wait_for_event_fn: wait_for_event_fn,
-            locals_fn: locals_fn);
+        internal async Task<JObject> EvaluateAndCheck(
+                                        string expression, string script_loc, int line, int column, string function_name,
+                                        Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
+            => await SendCommandAndCheck(
+                        JObject.FromObject(new { expression = expression }),
+                        "Runtime.evaluate", script_loc, line, column, function_name,
+                        wait_for_event_fn: wait_for_event_fn,
+                        locals_fn: locals_fn);
 
         internal async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, string waitForEvent = Inspector.PAUSE)
+            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)
         {
             var res = await cli.SendCommand(method, args, token);
             if (!res.IsOk)
@@ -486,7 +488,7 @@ namespace DebuggerTests
                 var locals = await GetProperties(wait_res["callFrames"][0]["callFrameId"].Value<string>());
                 try
                 {
-                    locals_fn(locals);
+                    await locals_fn(locals);
                 }
                 catch (System.AggregateException ex)
                 {
