@@ -22,6 +22,7 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Microsoft.VisualBasic;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -483,6 +484,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal string Namespace { get; }
 
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
+        public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableProperties = new();
 
         public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type)
         {
@@ -504,12 +506,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             else
                 FullName = Name;
 
-            DebuggerBrowsableFields = GetDebuggerBrowsableFields();
+            DebuggerBrowsableFields = GetDebuggerBrowsable(type.GetFields());
+            DebuggerBrowsableProperties = GetDebuggerBrowsable(type.GetProperties());
 
-            Dictionary<string, DebuggerBrowsableState?> GetDebuggerBrowsableFields()
+            Dictionary<string, DebuggerBrowsableState?> GetDebuggerBrowsable(dynamic typeCollection)
             {
                 var fields = new Dictionary<string, DebuggerBrowsableState?>();
-                foreach (FieldDefinitionHandle field in type.GetFields())
+                foreach (FieldDefinitionHandle field in typeCollection)
                 {
                     try
                     {
