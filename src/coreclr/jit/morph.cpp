@@ -4432,12 +4432,32 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 }
             }
         }
-#endif // !UNIX_AMD64_ABI
 
+        if (varDsc->lvPromoted && varDsc->lvIsHfa() && fgEntryPtr->isPassedInFloatRegisters())
+        {
+            bool canMorphToFieldList = true;
+
+            for (unsigned fldOffset = 0; fldOffset < varDsc->lvExactSize; fldOffset += elemSize)
+            {
+                const unsigned fldVarNum = lvaGetFieldLocal(varDsc, fldOffset);
+
+                if ((fldVarNum == BAD_VAR_NUM) || !varTypeUsesFloatReg(lvaGetDesc(fldVarNum)))
+                {
+                    canMorphToFieldList = false;
+                    break;
+                }
+            }
+
+            if (canMorphToFieldList)
+            {
+                newArg = fgMorphLclArgToFieldlist(varNode);
+            }
+        }
+        else
+#endif // !UNIX_AMD64_ABI
 #if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI)
-        // Is this LclVar a promoted struct with exactly 2 fields?
-        // TODO-ARM64-CQ: Support struct promoted HFA types here
-        if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2) && !varDsc->lvIsHfa())
+            // Is this LclVar a promoted struct with exactly 2 fields?
+            if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2) && !varDsc->lvIsHfa())
         {
             // See if we have two promoted fields that start at offset 0 and 8?
             unsigned loVarNum = lvaGetFieldLocal(varDsc, 0);
