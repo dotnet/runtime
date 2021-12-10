@@ -1,4 +1,6 @@
-﻿namespace ILLink.Shared
+﻿using System;
+
+namespace ILLink.Shared
 {
 	public readonly struct DiagnosticString
 	{

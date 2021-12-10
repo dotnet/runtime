@@ -5,6 +5,7 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
+using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {

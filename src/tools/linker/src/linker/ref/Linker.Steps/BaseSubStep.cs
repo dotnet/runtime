@@ -7,9 +7,9 @@ namespace Mono.Linker.Steps
 {
 	public abstract class BaseSubStep : ISubStep
 	{
-		protected static AnnotationStore Annotations { get => throw null; }
+		protected AnnotationStore Annotations { get => throw null; }
 
-		protected static LinkContext Context { get => throw null; }
+		protected LinkContext Context { get => throw null; }
 
 		public abstract SubStepTargets Targets { get; }
 

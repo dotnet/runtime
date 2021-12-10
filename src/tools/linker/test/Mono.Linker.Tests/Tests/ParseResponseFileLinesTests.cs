@@ -106,7 +106,7 @@ b""", new string[] { @"a
 b" });
 		}
 
-		private static void TestParseResponseFileLines (string v1, string[] v2)
+		private void TestParseResponseFileLines (string v1, string[] v2)
 		{
 			var result = new Queue<string> ();
 			using (var reader = new StringReader (v1))

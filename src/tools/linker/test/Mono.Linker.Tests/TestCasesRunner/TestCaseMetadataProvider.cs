@@ -69,7 +69,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					if (pos != -1) {
 						string custom_assembly_path = values[0].Substring (pos + 1);
 						if (!Path.IsPathRooted (custom_assembly_path))
-							values[0] = string.Concat (values[0].AsSpan (0, pos + 1), Path.Combine (inputPath, custom_assembly_path));
+							values[0] = values[0].Substring (0, pos + 1) + Path.Combine (inputPath, custom_assembly_path);
 					}
 					break;
 				case "-a":

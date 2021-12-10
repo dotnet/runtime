@@ -6,7 +6,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class TestReflectionPatternRecorder : IReflectionPatternRecorder
 	{
-		public IReflectionPatternRecorder PreviousRecorder;
+		public IReflectionPatternRecorder PreviousRecorder = null;
 
 		public struct ReflectionAccessPattern
 		{

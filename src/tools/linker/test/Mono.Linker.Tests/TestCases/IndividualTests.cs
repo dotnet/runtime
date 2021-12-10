@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.TestCases
 	[TestFixture]
 	public class IndividualTests
 	{
-		private static NPath TestsDirectory => TestDatabase.TestCasesRootDirectory.Parent.Combine ("Mono.Linker.Tests");
+		private NPath TestsDirectory => TestDatabase.TestCasesRootDirectory.Parent.Combine ("Mono.Linker.Tests");
 
 		[Test]
 		public void CanSkipUnresolved ()
@@ -217,14 +217,14 @@ namespace Mono.Linker.Tests.TestCases
 			Assert.That (secondOutputMvid, Is.EqualTo (firstOutputMvid));
 		}
 
-		protected static Guid GetMvid (NPath assemblyPath)
+		protected Guid GetMvid (NPath assemblyPath)
 		{
 			using (var assembly = AssemblyDefinition.ReadAssembly (assemblyPath)) {
 				return assembly.MainModule.Mvid;
 			}
 		}
 
-		private static TestCase CreateIndividualCase (Type testCaseType)
+		private TestCase CreateIndividualCase (Type testCaseType)
 		{
 			return TestDatabase.CreateCollector ().CreateIndividualCase (testCaseType);
 		}

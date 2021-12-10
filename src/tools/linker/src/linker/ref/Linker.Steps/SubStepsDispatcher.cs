@@ -11,7 +11,7 @@ namespace Mono.Linker.Steps
 
 		protected SubStepsDispatcher (IEnumerable<ISubStep> subSteps) => throw null;
 
-		public static void Add (ISubStep substep) => throw null;
+		public void Add (ISubStep substep) => throw null;
 
 		void IStep.Process (LinkContext context) => throw null;
 	}
