@@ -432,6 +432,7 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
         {
+            if (type.Name == "UnmanagedMemoryStream") System.Diagnostics.Debugger.Break();
             TypeSystemContext context = type.Context;
 
             bool hasLayout = type.HasLayout();
@@ -536,7 +537,7 @@ namespace Internal.TypeSystem
             // between base type and the current type.
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8, requiresAlignedBase: false);
             LayoutInt offsetBias = LayoutInt.Zero;
-            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && type.Context.Target.Architecture == TargetArchitecture.X86)
+            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && type.BaseType == type.Context.GetWellKnownType(WellKnownType.Object) && type.Context.Target.Architecture == TargetArchitecture.X86)
             {
                 offsetBias = new LayoutInt(type.Context.Target.PointerSize);
                 cumulativeInstanceFieldPos -= offsetBias;
