@@ -285,10 +285,7 @@ namespace System.IO.Compression
                         {
                             ThrowGenericInvalidData();
                         }
-                        else
-                        {
-                            break;
-                        }
+                        break;
                     }
                     else if (n > _buffer.Length)
                     {
@@ -429,10 +426,7 @@ namespace System.IO.Compression
                                 {
                                     ThrowGenericInvalidData();
                                 }
-                                else
-                                {
-                                    break;
-                                }
+                                break;
                             }
                             else if (n > _buffer.Length)
                             {
