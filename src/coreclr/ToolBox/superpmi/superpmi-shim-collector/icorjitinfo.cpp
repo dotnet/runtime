@@ -951,6 +951,15 @@ unsigned interceptor_ICJI::getArrayRank(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+// Get the index of runtime provided array method
+unsigned interceptor_ICJI::getArrayFuncIndex(CORINFO_METHOD_HANDLE ftn)
+{
+    mc->cr->AddCall("getArrayFuncIndex");
+    unsigned result = original_ICorJitInfo->getArrayFuncIndex(ftn);
+    mc->recGetArrayFuncIndex(ftn, result);
+    return result;
+}
+
 // Get static field data for an array
 void* interceptor_ICJI::getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint32_t size)
 {

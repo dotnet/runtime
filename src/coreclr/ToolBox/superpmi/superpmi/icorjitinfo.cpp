@@ -814,6 +814,13 @@ unsigned MyICJI::getArrayRank(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repGetArrayRank(cls);
 }
 
+// Get the index of runtime provided array method
+unsigned MyICJI::getArrayFuncIndex(CORINFO_METHOD_HANDLE hMethod)
+{
+    jitInstance->mc->cr->AddCall("getArrayFuncIndex");
+    return jitInstance->mc->repGetArrayFuncIndex(hMethod);
+}
+
 // Get static field data for an array
 void* MyICJI::getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint32_t size)
 {

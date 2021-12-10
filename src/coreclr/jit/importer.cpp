@@ -4977,13 +4977,30 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     {
         JITDUMP("%s", methodName);
     }
-    JITDUMP(": ");
 
     if ((namespaceName == nullptr) || (className == nullptr) || (methodName == nullptr))
     {
-        JITDUMP("Not recognized, not enough metadata\n");
+        // Check if we are dealing with an MD array's known runtime method
+        unsigned arrayFuncIndex = info.compCompHnd->getArrayFuncIndex(method);
+        switch (arrayFuncIndex)
+        {
+            // see ArrayMethodDesc in vm/method.hpp for details about VTABLE layout
+            case 0:
+                JITDUMP("ARRAY_FUNC_GET: Recognized\n");
+                return NI_Array_Get;
+            case 1:
+                JITDUMP("ARRAY_FUNC_SET: Recognized\n");
+                return NI_Array_Set;
+            case 2:
+                JITDUMP("ARRAY_FUNC_ADDRESS: Recognized\n");
+                return NI_Array_Address;
+        }
+
+        JITDUMP(": Not recognized, not enough metadata\n");
         return NI_Illegal;
     }
+
+    JITDUMP(": ");
 
     NamedIntrinsic result = NI_Illegal;
 

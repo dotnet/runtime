@@ -6692,6 +6692,30 @@ unsigned MethodContext::repGetArrayRank(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void MethodContext::recGetArrayFuncIndex(CORINFO_METHOD_HANDLE hMethod, unsigned result)
+{
+    if (GetArrayFuncIndex == nullptr)
+        GetArrayFuncIndex = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(hMethod);
+    DWORD value = (DWORD)result;
+    GetArrayFuncIndex->Add(key, value);
+    DEBUG_REC(dmpGetArrayFuncIndex(key, value));
+}
+void MethodContext::dmpGetArrayFuncIndex(DWORDLONG key, DWORD value)
+{
+    printf("GetArrayFuncIndex key %016llX, value %u", key, value);
+}
+unsigned MethodContext::repGetArrayFuncIndex(CORINFO_METHOD_HANDLE hMethod)
+{
+    DWORDLONG key = CastHandle(hMethod);
+    AssertMapAndKeyExist(GetArrayFuncIndex, key, ": key %016llX", key);
+    DWORD value = GetArrayFuncIndex->Get(key);
+    DEBUG_REP(dmpGetArrayFuncIndex(key, value));
+    unsigned result = (unsigned)value;
+    return result;
+}
+
 void MethodContext::recIsFieldStatic(CORINFO_FIELD_HANDLE fhld, bool result)
 {
     if (IsFieldStatic == nullptr)

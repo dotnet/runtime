@@ -6,7 +6,6 @@
 
 // ===========================================================================
 
-
 #include "common.h"
 #include "jitinterface.h"
 #include "codeman.h"
@@ -4664,6 +4663,37 @@ unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
         _ASSERTE(th != TypeHandle(g_pArrayClass));
 
         result = th.GetRank();
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
+// Get the index of runtime provided array method
+unsigned CEEInfo::getArrayFuncIndex(CORINFO_METHOD_HANDLE ftn)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    unsigned result = -1;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pMD = GetMethod(ftn);
+
+    if (pMD->IsArray())
+    {
+        TypeHandle th = TypeHandle(pMD->GetMethodTable());
+
+        if (th.GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
+        {
+            result = ((ArrayMethodDesc*)pMD)->GetArrayFuncIndex();
+        }
     }
 
     EE_TO_JIT_TRANSITION();

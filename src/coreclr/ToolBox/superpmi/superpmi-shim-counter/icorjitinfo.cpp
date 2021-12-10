@@ -674,6 +674,13 @@ unsigned interceptor_ICJI::getArrayRank(
     return original_ICorJitInfo->getArrayRank(cls);
 }
 
+unsigned interceptor_ICJI::getArrayFuncIndex(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    mcs->AddCall("getArrayFuncIndex");
+    return original_ICorJitInfo->getArrayFuncIndex(ftn);
+}
+
 void* interceptor_ICJI::getArrayInitializationData(
           CORINFO_FIELD_HANDLE field,
           uint32_t size)

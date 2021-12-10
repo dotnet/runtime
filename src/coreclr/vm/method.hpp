@@ -611,7 +611,6 @@ public:
             || mcArray == GetClassification();
     }
 
-
     inline DWORD IsArray() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2641,7 +2640,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // The ru
         DWORD dwSlot = GetSlot();
         DWORD dwVirtuals = GetMethodTable()->GetNumVirtuals();
         _ASSERTE(dwSlot >= dwVirtuals);

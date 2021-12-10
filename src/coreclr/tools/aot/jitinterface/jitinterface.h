@@ -95,6 +95,7 @@ struct JitInterfaceCallbacks
     bool (* satisfiesClassConstraints)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* isSDArray)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getArrayRank)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
+    unsigned (* getArrayFuncIndex)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
     void* (* getArrayInitializationData)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint32_t size);
     CorInfoIsAccessAllowedResult (* canAccessClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper);
     const char* (* getFieldName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE ftn, const char** moduleName);
@@ -1008,6 +1009,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     unsigned temp = _callbacks->getArrayRank(_thisHandle, &pException, cls);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual unsigned getArrayFuncIndex(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    unsigned temp = _callbacks->getArrayFuncIndex(_thisHandle, &pException, ftn);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -2746,6 +2746,16 @@ namespace Internal.JitInterface
             return rank;
         }
 
+        private uint getArrayFuncIndex(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            uint kind = uint.MaxValue;
+            if (HandleToObject(ftn) is ArrayMethod am)
+            {
+                kind = (uint)am.Kind;
+            }
+            return kind;
+        }
+
         private void* getArrayInitializationData(CORINFO_FIELD_STRUCT_* field, uint size)
         {
             var fd = HandleToObject(field);

@@ -826,6 +826,15 @@ unsigned WrapICorJitInfo::getArrayRank(
     return temp;
 }
 
+unsigned WrapICorJitInfo::getArrayFuncIndex(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(getArrayFuncIndex);
+    unsigned temp = wrapHnd->getArrayFuncIndex(ftn);
+    API_LEAVE(getArrayFuncIndex);
+    return temp;
+}
+
 void* WrapICorJitInfo::getArrayInitializationData(
           CORINFO_FIELD_HANDLE field,
           uint32_t size)
