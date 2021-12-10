@@ -537,9 +537,9 @@ namespace Internal.TypeSystem
             // between base type and the current type.
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8, requiresAlignedBase: false);
             LayoutInt offsetBias = LayoutInt.Zero;
-            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && type.BaseType == type.Context.GetWellKnownType(WellKnownType.Object) && type.Context.Target.Architecture == TargetArchitecture.X86)
+            if (!type.IsValueType && cumulativeInstanceFieldPos == type.Context.Target.LayoutPointerSize && type.Context.Target.Architecture == TargetArchitecture.X86)
             {
-                offsetBias = new LayoutInt(type.Context.Target.PointerSize);
+                offsetBias = type.Context.Target.LayoutPointerSize;
                 cumulativeInstanceFieldPos -= offsetBias;
             }
 
