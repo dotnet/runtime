@@ -9,25 +9,25 @@ namespace Mono.Linker
 	public class LinkContext : IMetadataResolver
 	{
 		internal LinkContext () { }
-		public AnnotationStore Annotations { get { throw null; } }
+		public static AnnotationStore Annotations { get { throw null; } }
 
-		public TypeDefinition GetType (string fullName) { throw null; }
-		public string GetAssemblyLocation (AssemblyDefinition assembly) { throw null; }
-		public AssemblyDefinition GetLoadedAssembly (string name) { throw null; }
+		public static TypeDefinition GetType (string fullName) { throw null; }
+		public static string GetAssemblyLocation (AssemblyDefinition assembly) { throw null; }
+		public static AssemblyDefinition GetLoadedAssembly (string name) { throw null; }
 
-		public void LogMessage (MessageContainer message) { throw null; }
+		public static void LogMessage (MessageContainer message) { throw null; }
 
-		public bool HasCustomData (string key) { throw null; }
-		public bool TryGetCustomData (string key, out string value) { throw null; }
+		public static bool HasCustomData (string key) { throw null; }
+		public static bool TryGetCustomData (string key, out string value) { throw null; }
 
 		public MethodDefinition Resolve (MethodReference methodReference) { throw null; }
 		public FieldDefinition Resolve (FieldReference fieldReference) { throw null; }
 		public TypeDefinition Resolve (TypeReference typeReference) { throw null; }
 
-		public MethodDefinition TryResolve (MethodReference methodReference) { throw null; }
-		public FieldDefinition TryResolve (FieldReference fieldReference) { throw null; }
-		public TypeDefinition TryResolve (TypeReference typeReference) { throw null; }
+		public static MethodDefinition TryResolve (MethodReference methodReference) { throw null; }
+		public static FieldDefinition TryResolve (FieldReference fieldReference) { throw null; }
+		public static TypeDefinition TryResolve (TypeReference typeReference) { throw null; }
 
-		public AssemblyDefinition Resolve (AssemblyNameReference nameReference) { throw null; }
+		public static AssemblyDefinition Resolve (AssemblyNameReference nameReference) { throw null; }
 	}
 }

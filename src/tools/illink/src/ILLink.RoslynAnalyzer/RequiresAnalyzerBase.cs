@@ -220,7 +220,7 @@ namespace ILLink.RoslynAnalyzer
 					ISymbol containingSymbol = FindContainingSymbol (operationContext, AnalyzerDiagnosticTargets);
 
 					// Do not emit any diagnostic if caller is annotated with the attribute too.
-					if (containingSymbol.IsInRequiresScope(RequiresAttributeName))
+					if (containingSymbol.IsInRequiresScope (RequiresAttributeName))
 						return;
 
 					if (ReportSpecialIncompatibleMembersDiagnostic (operationContext, incompatibleMembers, member))

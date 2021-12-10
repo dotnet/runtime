@@ -3,9 +3,7 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Xml.Linq;
-using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Xunit;
 
@@ -47,7 +45,7 @@ namespace ILLink.Tasks.Tests
 			File.WriteAllText ("namespace.h",
 				"#define g_TestNS \"TestNS\"" + Environment.NewLine);
 
-			File.WriteAllLines ("cortypeinfo.h", new string[] { });
+			File.WriteAllLines ("cortypeinfo.h", Array.Empty<string> ());
 
 			File.WriteAllLines ("rexcep.h", new string[] {
 				"DEFINE_EXCEPTION(g_TestNS, TestAlwaysException, false, C)",
@@ -62,7 +60,7 @@ namespace ILLink.Tasks.Tests
 			XElement existingAssembly = new XElement ("assembly", new XAttribute ("fullname", "testassembly"),
 					new XComment ("Existing content"));
 			XElement existingContent = new XElement ("linker", existingAssembly);
-			(new XDocument (existingContent)).Save ("Test.ILLink.Descriptors.Combined.xml");
+			new XDocument (existingContent).Save ("Test.ILLink.Descriptors.Combined.xml");
 
 			var task = new CreateRuntimeRootILLinkDescriptorFile () {
 				NamespaceFilePath = new TaskItem ("namespace.h"),
@@ -142,7 +140,7 @@ namespace ILLink.Tasks.Tests
 			File.WriteAllText ("namespace.h",
 				"#define g_TestNS \"TestNS\"" + Environment.NewLine);
 
-			File.WriteAllLines ("cortypeinfo.h", new string[] { });
+			File.WriteAllLines ("cortypeinfo.h", Array.Empty<string> ());
 
 			File.WriteAllLines ("rexcep.h", new string[] {
 				"DEFINE_EXCEPTION(g_TestNS, TestAlwaysException, false, C)",
@@ -157,7 +155,7 @@ namespace ILLink.Tasks.Tests
 			XElement existingAssembly = new XElement ("assembly", new XAttribute ("fullname", "testassembly"),
 					new XComment ("Existing content"));
 			XElement existingContent = new XElement ("linker", existingAssembly);
-			(new XDocument (existingContent)).Save ("Test.ILLink.Descriptors.Combined.xml");
+			new XDocument (existingContent).Save ("Test.ILLink.Descriptors.Combined.xml");
 
 			var task = new CreateRuntimeRootILLinkDescriptorFile () {
 				NamespaceFilePath = new TaskItem ("namespace.h"),
