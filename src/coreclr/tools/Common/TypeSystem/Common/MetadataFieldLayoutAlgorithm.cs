@@ -374,6 +374,7 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
         {
+            if (type.Name == "TimeSpan") System.Diagnostics.Debugger.Break();
             var offsets = new FieldAndOffset[numInstanceFields];
 
             // For types inheriting from another type, field offsets continue on from where they left off
@@ -432,14 +433,14 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.Name == "UnmanagedMemoryStream") System.Diagnostics.Debugger.Break();
+            if (type.Name == "DateTimeResult") System.Diagnostics.Debugger.Break();
             TypeSystemContext context = type.Context;
 
             bool hasLayout = type.HasLayout();
             var layoutMetadata = type.GetClassLayout();
 
-            int packingSize = ComputePackingSize(type, layoutMetadata);
-            packingSize = Math.Min(context.Target.MaximumAutoLayoutPackingSize, packingSize);
+            // Auto-layout in CoreCLR does not respect packing size.
+            int packingSize = type.Context.Target.MaximumAlignment;
 
             var offsets = new FieldAndOffset[numInstanceFields];
             int fieldOrdinal = 0;
@@ -815,7 +816,7 @@ namespace Internal.TypeSystem
         private static int ComputePackingSize(MetadataType type, ClassLayoutMetadata layoutMetadata)
         {
             if (layoutMetadata.PackingSize == 0)
-                return type.Context.Target.DefaultPackingSize;
+                return type.Context.Target.MaximumAlignment;
             else
                 return layoutMetadata.PackingSize;
         }
