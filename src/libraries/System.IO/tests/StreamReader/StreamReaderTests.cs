@@ -288,6 +288,29 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public async Task VanillaReadLinesAsync()
+        {
+            var baseInfo = GetCharArrayStream();
+            var sr = baseInfo.Item2;
+
+            string valueString = new string(baseInfo.Item1);
+
+
+            var data = await sr.ReadLineAsync();
+            Assert.Equal(valueString.Substring(0, valueString.IndexOf('\r')), data);
+
+            data = await sr.ReadLineAsync();
+            Assert.Equal(valueString.Substring(valueString.IndexOf('\r') + 1, 3), data);
+
+            data = await sr.ReadLineAsync();
+            Assert.Equal(valueString.Substring(valueString.IndexOf('\n') + 1, 2), data);
+
+            data = await sr.ReadLineAsync();
+            Assert.Equal((valueString.Substring(valueString.LastIndexOf('\n') + 1)), data);
+        }
+
+
+        [Fact]
         public void VanillaReadLines2()
         {
             var baseInfo = GetCharArrayStream();
@@ -298,6 +321,20 @@ namespace System.IO.Tests
             var temp = new char[10];
             sr.Read(temp, 0, 1);
             var data = sr.ReadLine();
+            Assert.Equal(valueString.Substring(1, valueString.IndexOf('\r') - 1), data);
+        }
+
+        [Fact]
+        public async Task VanillaReadLines2Async()
+        {
+            var baseInfo = GetCharArrayStream();
+            var sr = baseInfo.Item2;
+
+            string valueString = new string(baseInfo.Item1);
+
+            var temp = new char[10];
+            sr.Read(temp, 0, 1);
+            var data = await sr.ReadLineAsync();
             Assert.Equal(valueString.Substring(1, valueString.IndexOf('\r') - 1), data);
         }
 
