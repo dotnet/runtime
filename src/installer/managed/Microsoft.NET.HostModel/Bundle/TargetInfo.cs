@@ -66,7 +66,7 @@ namespace Microsoft.NET.HostModel.Bundle
             }
             else if (IsWindows)
             {
-                // We align assemblies in the bundle at 4K - per requirements of memory mapping API (MapViewOfFile3, etc).
+                // We align assemblies in the bundle at 4K - per requirements of memory mapping API (MapViewOfFile3, et al).
                 // This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity.
                 AssemblyAlignment = 4096;
             }

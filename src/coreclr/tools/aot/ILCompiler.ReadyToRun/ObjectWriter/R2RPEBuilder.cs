@@ -687,8 +687,8 @@ namespace ILCompiler.PEWriter
             {
                 // To minimize wasted VA space on 32-bit systems, align file to page boundaries (presumed to be 4K)
                 //
-                // On Windows we use 4K file alignment, so that we could load the PE manually, if needed, using
-                // placeholdr APIs (MapViewOfFile3, etc), which have 4K granularity.
+                // On Windows we use 4K file alignment, per requirements of memory mapping API (MapViewOfFile3, et al).
+                // We also want files always accepted by the native loader, thus we can't use the same approach as on Unix.
                 fileAlignment = 0x1000;
             }
 

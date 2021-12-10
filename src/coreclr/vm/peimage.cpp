@@ -819,7 +819,8 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 
         BOOL bIsLoadedLayoutPreferred = !bIsFlatLayoutSuitable;
 
-#if !defined(TARGET_UNIX)
+#ifdef TARGET_WINDOWS
+        // on Windows we prefer to just load the file using OS loader
         if (!IsInBundle() && bIsLoadedLayoutSuitable)
         {
             bIsLoadedLayoutPreferred = TRUE;
@@ -865,6 +866,8 @@ PTR_PEImageLayout PEImage::CreateLoadedLayout(bool throwOnFailure)
     if (pLoadLayout != NULL)
     {
         SetLayout(IMAGE_LOADED,pLoadLayout);
+        // loaded layout is functionally a superset of flat,
+        // so fill the flat slot, if not filled already.
         if (m_pLayouts[IMAGE_FLAT] == NULL)
         {
             pLoadLayout->AddRef();
@@ -930,22 +933,20 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
     WszGetModuleFileName(hMod, path);
     PEImageHolder pImage(PEImage::OpenImage(path, MDInternalImport_Default));
 
-    if (pImage->HasLoadedLayout())
+    if (!pImage->HasLoadedLayout())
     {
-        _ASSERTE(pImage->m_pLayouts[IMAGE_FLAT] != NULL);
-        RETURN dac_cast<PTR_PEImage>(pImage.Extract());
+        PTR_PEImageLayout pLayout = PEImageLayout::CreateFromHMODULE(hMod, pImage);
+
+        SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
+        pImage->SetLayout(IMAGE_LOADED, pLayout);
+        if (pImage->m_pLayouts[IMAGE_FLAT] == NULL)
+        {
+            pLayout->AddRef();
+            pImage->SetLayout(IMAGE_FLAT, pLayout);
+        }
     }
 
-    PTR_PEImageLayout pLayout = PEImageLayout::CreateFromHMODULE(hMod, pImage);
-
-    SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
-    pImage->SetLayout(IMAGE_LOADED, pLayout);
-    if (pImage->m_pLayouts[IMAGE_FLAT] == NULL)
-    {
-        pLayout->AddRef();
-        pImage->SetLayout(IMAGE_FLAT, pLayout);
-    }
-
+    _ASSERTE(pImage->m_pLayouts[IMAGE_FLAT] != NULL);
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
 #endif // !TARGET_UNIX
@@ -969,7 +970,7 @@ HANDLE PEImage::GetFileHandle()
         m_hFile=WszCreateFile((LPCWSTR) GetPathToLoad(),
                                GENERIC_READ
 #if TARGET_WINDOWS
-                                   // the file may have native code sections, make sure we have execute permissions
+                                    // the file may have native code sections, make sure we are allowed to execute the file
                                    | GENERIC_EXECUTE
 #endif
                                ,
@@ -1005,7 +1006,7 @@ HRESULT PEImage::TryOpenFile()
         m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
                               GENERIC_READ
 #if TARGET_WINDOWS
-                                  // the file may have native code sections, make sure we have execute permissions
+                                  // the file may have native code sections, make sure we are allowed to execute the file
                                   | GENERIC_EXECUTE
 #endif
                               ,

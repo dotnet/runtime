@@ -225,11 +225,12 @@ void Assembly::AssociateMemoryIfCollectible()
     {
         COUNT_T size;
         BYTE* start = (BYTE*)m_pManifest->GetPEAssembly()->GetLoadedImageContents(&size);
-        if (start != NULL)
-        {
-            GCX_COOP();
-            LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
-        }
+
+        // We should have the content loaded at this time. There will be no other attempt to start tracking.
+        _ASSERTE(start != NULL);
+
+        GCX_COOP();
+        LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
     }
 }
 

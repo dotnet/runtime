@@ -126,7 +126,6 @@ public:
     FlatImageLayout(PEImage* pOwner);
     FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
     void* LoadImageByCopyingParts(SIZE_T* m_imageParts) const;
-
 #if TARGET_WINDOWS
     void* LoadImageByMappingParts(SIZE_T* m_imageParts) const;
 #endif

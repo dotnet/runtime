@@ -372,7 +372,10 @@ CHECK PEDecoder::CheckSection(COUNT_T previousAddressEnd, COUNT_T addressStart, 
         CHECK(alignedSize >= VAL32(pNT->OptionalHeader.SizeOfImage));
 
     // Check expected alignments
-    // CHECK(CheckAligned(addressStart, VAL32(pNT->OptionalHeader.SectionAlignment)));
+#if TARGET_WINDOWS
+    // R2R files on Unix do not align section RVAs
+    CHECK(CheckAligned(addressStart, VAL32(pNT->OptionalHeader.SectionAlignment)));
+#endif
     CHECK(CheckAligned(offsetStart, VAL32(pNT->OptionalHeader.FileAlignment)));
     CHECK(CheckAligned(offsetSize, VAL32(pNT->OptionalHeader.FileAlignment)));
 

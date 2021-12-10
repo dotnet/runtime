@@ -461,12 +461,7 @@ void PEAssembly::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *p
     }
     CONTRACTL_END;
 
-    // NOTE: it's not clear whether to load this from m_image or m_loadedImage.
-    // m_loadedImage is probably preferable, but this may be called by security
-    // before the image is loaded.
-
     PEImage* image = GetPEImage();
-
     PEImageLayout* theImage = image->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
     if (!theImage->CheckResource(dwOffset))
         ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -697,8 +692,8 @@ PEAssembly::PEAssembly(
     {
         _ASSERTE(pPEImage->CheckUniqueInstance());
         pPEImage->AddRef();
-
-        // We require a mapping for the file.
+        // We require an open layout for the file.
+        // Most likely we have one already, just make sure we have one.
         pPEImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
         m_PEImage = pPEImage;
     }
