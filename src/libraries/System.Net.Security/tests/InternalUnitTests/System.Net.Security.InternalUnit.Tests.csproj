@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Android</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
+    <Compile Include="MD4Tests.cs" />
+    <Compile Include="..\..\src\System\Net\Security\MD4.cs" />
+  </ItemGroup>
+</Project>
