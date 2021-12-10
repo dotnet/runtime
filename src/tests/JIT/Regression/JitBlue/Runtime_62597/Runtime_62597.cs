@@ -44,27 +44,26 @@ public static class Program
     public static int Main()
     {
         var value = new SmallString("foobar");
-        Execute(value);
 
-        var method = new DynamicMethod("test", typeof(void), new[] { typeof(SmallString) }, typeof(Program), true);
-        var il = method.GetILGenerator();
-        il.Emit(OpCodes.Ldarg_0);
-        il.EmitCall(OpCodes.Call, typeof(Program).GetMethod("Execute")!, null);
-        il.Emit(OpCodes.Pop);
-        il.Emit(OpCodes.Ret);
-
-        var action = (Action<SmallString>)method.CreateDelegate(typeof(Action<SmallString>));
-        action.Invoke(value);
+        TheTest(value);
 
         return result;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TheTest(SmallString foo)
+    {
+        Execute(foo);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static object Execute(SmallString foo)
     {
         byte value = foo.Dump();
+        // 111 corresponds to the ASCII code of 2nd characted of string "foobar" i.e. ASCII value of 'o'.
         if (value == 111)
         {
-            result += 50;
+            result = 100;
         }
         return new StringBuilder();
     }
