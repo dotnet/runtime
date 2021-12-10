@@ -1,13 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -29,12 +23,12 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="containingSymbol">
 		///	Symbol that is either an overriding member or an overriden/virtual member
 		/// </param>
-		public static bool IsOverrideInRequiresScope(this ISymbol member, string requiresAttribute) 
+		public static bool IsOverrideInRequiresScope (this ISymbol member, string requiresAttribute)
 		{
-			return member.IsInRequiresScope(requiresAttribute, false);
+			return member.IsInRequiresScope (requiresAttribute, false);
 		}
 
-		private static bool IsInRequiresScope (this ISymbol member, string requiresAttribute, bool checkAssociatedSymbol) 
+		private static bool IsInRequiresScope (this ISymbol member, string requiresAttribute, bool checkAssociatedSymbol)
 		{
 			if (member is ISymbol containingSymbol) {
 				if (containingSymbol.HasAttribute (requiresAttribute)

@@ -10,7 +10,6 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Xunit;
@@ -159,7 +158,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 		}
 
-		bool IsExpectedDiagnostic (AttributeSyntax attribute)
+		static bool IsExpectedDiagnostic (AttributeSyntax attribute)
 		{
 			switch (attribute.Name.ToString ()) {
 			case "ExpectedWarning":
@@ -282,7 +281,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 			}
 
-			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{(string.Join (Environment.NewLine, _diagnostics))}";
+			missingDiagnosticMessage = $"Could not find text:\n{text}\nIn diagnostics:\n{string.Join (Environment.NewLine, _diagnostics)}";
 			return false;
 		}
 

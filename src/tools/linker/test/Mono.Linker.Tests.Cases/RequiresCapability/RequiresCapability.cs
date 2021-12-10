@@ -935,12 +935,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[RequiresAssemblyFiles ("Message")]
 				public virtual string VirtualPropertyAnnotationInProperty { get; set; }
 
-				[RequiresAssemblyFiles("Message")]
-				public virtual string VirtualPropertyAnnotationInPropertyAndAccessor { 
-					[RequiresAssemblyFiles("Message")]
-					[RequiresUnreferencedCode("Message")]
-					get; 
-					set; 
+				[RequiresAssemblyFiles ("Message")]
+				public virtual string VirtualPropertyAnnotationInPropertyAndAccessor {
+					[RequiresAssemblyFiles ("Message")]
+					[RequiresUnreferencedCode ("Message")]
+					get;
+					set;
 				}
 			}
 
@@ -1019,14 +1019,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				private string name;
 
-				[RequiresAssemblyFiles("Message")]
+				[RequiresAssemblyFiles ("Message")]
 				[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor", ProducedBy = ProducedBy.Analyzer)]
 				public override string VirtualPropertyAnnotationInAccesor {
 					[ExpectedWarning ("IL2046", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
 					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Analyzer)]
 					get { return name; }
 					[RequiresAssemblyFiles ("Message")]
-					[RequiresUnreferencedCode("Message")]
+					[RequiresUnreferencedCode ("Message")]
 					[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInAccesor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.set")]
 					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.set", ProducedBy = ProducedBy.Analyzer)]
 					set { name = value; }
@@ -1043,7 +1043,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					[RequiresUnreferencedCode ("Message")]
 					[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInProperty.set", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty.set")]
 					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInProperty.set", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty.set", ProducedBy = ProducedBy.Analyzer)]
-					set; }
+					set;
+				}
 
 				[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInPropertyAndAccessor", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor", ProducedBy = ProducedBy.Analyzer)]
 				public override string VirtualPropertyAnnotationInPropertyAndAccessor {
@@ -1075,11 +1076,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				string PropertyAnnotationInProperty { get; set; }
 
 				[RequiresAssemblyFiles ("Message")]
-				string PropertyAnnotationInPropertyAndAccessor { 
+				string PropertyAnnotationInPropertyAndAccessor {
 					get;
 					[RequiresUnreferencedCode ("Message")]
 					[RequiresAssemblyFiles ("Message")]
-					set; }
+					set;
+				}
 			}
 
 			public interface IBaseWithoutRequires
@@ -1121,11 +1123,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[ExpectedWarning ("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInPropertyAndAccessor", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor", ProducedBy = ProducedBy.Analyzer)]
 				public string PropertyAnnotationInPropertyAndAccessor {
 					[RequiresAssemblyFiles ("Message")]
-					[RequiresUnreferencedCode("Message")]
+					[RequiresUnreferencedCode ("Message")]
 					[ExpectedWarning ("IL2046", "ImplementationClassWithRequires.PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get")]
 					[ExpectedWarning ("IL3003", "ImplementationClassWithRequires.PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Analyzer)]
-					get; 
-					set; }
+					get;
+					set;
+				}
 			}
 
 			class ExplicitImplementationClassWithRequires : IBaseWithoutRequires
@@ -1156,7 +1159,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[ExpectedWarning ("IL3003", "PropertyAnnotationInPropertyAndAccessor", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor", ProducedBy = ProducedBy.Analyzer)]
 				string IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor {
 					[RequiresAssemblyFiles ("Message")]
-					[RequiresUnreferencedCode("Message")]
+					[RequiresUnreferencedCode ("Message")]
 					[ExpectedWarning ("IL2046", "PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get")]
 					[ExpectedWarning ("IL3003", "PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Analyzer)]
 					get;
@@ -1185,8 +1188,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				[ExpectedWarning ("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInPropertyAndAccessor", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor", ProducedBy = ProducedBy.Analyzer)]
 				public string PropertyAnnotationInPropertyAndAccessor {
-					[RequiresAssemblyFiles("Message")]
-					[RequiresUnreferencedCode("Message")]
+					[RequiresAssemblyFiles ("Message")]
+					[RequiresUnreferencedCode ("Message")]
 					[ExpectedWarning ("IL2046", "ImplementationClassWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.get")]
 					[ExpectedWarning ("IL3003", "ImplementationClassWithoutRequires.PropertyAnnotationInPropertyAndAccessor.get", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Analyzer)]
 					get;
@@ -1535,8 +1538,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("RUC")]
 			class DerivedWithRequiresOnType : BaseWithoutRequiresOnType
 			{
-				// Bug https://github.com/dotnet/linker/issues/2379
-				//[ExpectedWarning ("IL2046", ProducedBy = ProducedBy.Analyzer)]
 				public override void Method () { }
 			}
 
@@ -1572,8 +1573,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					return 1;
 				}
 
-				// Bug https://github.com/dotnet/linker/issues/2379
-				//[ExpectedWarning ("IL2046", ProducedBy = ProducedBy.Analyzer)]
 				public int Method (int a)
 				{
 					return a;
