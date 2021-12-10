@@ -15648,11 +15648,12 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
         else if ((size == EA_4BYTE) && (emitLastIns != nullptr) && !isFirstInstrInBlock)
         {
+            const instruction prevIns = emitLastIns->idIns();
             // See if the previous instruction already cleared upper 4 bytes for us unintentionally
-            if ((emitLastIns->idIns() == INS_ldr) && (emitLastIns->idReg1() == dst) &&
-                (emitLastIns->idOpSize() == EA_4BYTE))
+            if (((prevIns == INS_ldr) || (prevIns == INS_ldrh) || (prevIns == INS_ldrb)) &&
+                (emitLastIns->idReg1() == dst) && (emitLastIns->idOpSize() == EA_4BYTE))
             {
-                JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
+                JITDUMP("\n -- suppressing mov because ldr[/h/b] already cleared upper 4 bytes\n");
                 return true;
             }
         }
