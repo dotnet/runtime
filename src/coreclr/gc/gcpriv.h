@@ -2466,6 +2466,10 @@ protected:
     void verify_mark_bits_cleared (uint8_t* obj, size_t s);
     PER_HEAP
     void clear_all_mark_array();
+#ifdef USE_REGIONS
+    PER_HEAP
+    void set_background_overflow_p (uint8_t* oo);
+#endif
 
 #ifdef BGC_SERVO_TUNING
 
