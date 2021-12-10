@@ -227,16 +227,48 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"            protected override bool FindFirstChar()");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
-            EmitFindFirstChar(writer, rm, id);
+            RequiredHelperFunctions requiredHelpers = EmitFindFirstChar(writer, rm, id);
             writer.Indent -= 4;
             writer.WriteLine($"            }}");
             writer.WriteLine();
             writer.WriteLine($"            protected override void Go()");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
-            EmitGo(writer, rm, id);
+            requiredHelpers |= EmitGo(writer, rm, id);
             writer.Indent -= 4;
             writer.WriteLine($"            }}");
+
+            if ((requiredHelpers & RequiredHelperFunctions.IsWordChar) != 0)
+            {
+                writer.WriteLine();
+                writer.WriteLine($"            /// <summary>Determines whether the character is part of the [\\w] set.</summary>");
+                writer.WriteLine($"            [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]");
+                writer.WriteLine($"            private static bool IsWordChar(char ch)");
+                writer.WriteLine($"            {{");
+                writer.WriteLine($"                global::System.ReadOnlySpan<byte> ascii = new byte[]");
+                writer.WriteLine($"                {{");
+                writer.WriteLine($"                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,");
+                writer.WriteLine($"                    0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07");
+                writer.WriteLine($"                }};");
+                writer.WriteLine();
+                writer.WriteLine($"                int chDiv8 = ch >> 3;");
+                writer.WriteLine($"                return (uint)chDiv8 < (uint)ascii.Length ?");
+                writer.WriteLine($"                    (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :");
+                writer.WriteLine($"                    global::System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch) switch");
+                writer.WriteLine($"                    {{");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.UppercaseLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.LowercaseLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.TitlecaseLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.ModifierLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.OtherLetter or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.NonSpacingMark or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.DecimalDigitNumber or");
+                writer.WriteLine($"                        global::System.Globalization.UnicodeCategory.ConnectorPunctuation => true,");
+                writer.WriteLine($"                        _ => false,");
+                writer.WriteLine($"                    }};");
+                writer.WriteLine($"            }}");
+            }
+
             writer.WriteLine($"        }}");
             writer.WriteLine($"    }}");
             writer.WriteLine("}");
@@ -266,11 +298,12 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the body of the FindFirstChar override.</summary>
-        private static void EmitFindFirstChar(IndentedTextWriter writer, RegexMethod rm, string id)
+        private static RequiredHelperFunctions EmitFindFirstChar(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             RegexOptions options = (RegexOptions)rm.Options;
             RegexCode code = rm.Code;
             bool hasTextInfo = false;
+            RequiredHelperFunctions requiredHelpers = RequiredHelperFunctions.None;
 
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.
             // To handle that, we build up a collection of all the declarations to include, track where they should be inserted,
@@ -344,7 +377,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // We're done.  Patch up any additional declarations.
             ReplaceAdditionalDeclarations(writer, additionalDeclarations, additionalDeclarationsPosition, additionalDeclarationsIndent);
-            return;
+            return requiredHelpers;
 
             // Emits any anchors.  Returns true if the anchor roots any match to a specific location and thus no further
             // searching is required; otherwise, false.
@@ -518,7 +551,7 @@ namespace System.Text.RegularExpressions.Generator
                         for (; setIndex < setsToUse; setIndex++)
                         {
                             string spanIndex = $"span[i{(sets[setIndex].Distance > 0 ? $" + {sets[setIndex].Distance}" : "")}]";
-                            string charInClassExpr = MatchCharacterClass(hasTextInfo, options, spanIndex, sets[setIndex].Set, sets[setIndex].CaseInsensitive, additionalDeclarations);
+                            string charInClassExpr = MatchCharacterClass(hasTextInfo, options, spanIndex, sets[setIndex].Set, sets[setIndex].CaseInsensitive, additionalDeclarations, ref requiredHelpers);
 
                             if (setIndex == start)
                             {
@@ -571,7 +604,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the body of the Go override.</summary>
-        private static void EmitGo(IndentedTextWriter writer, RegexMethod rm, string id)
+        private static RequiredHelperFunctions EmitGo(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -599,6 +632,7 @@ namespace System.Text.RegularExpressions.Generator
 
             RegexOptions options = (RegexOptions)rm.Options;
             RegexCode code = rm.Code;
+            RequiredHelperFunctions requiredHelpers = RequiredHelperFunctions.None;
 
             // Helper to define names.  Names start unadorned, but as soon as there's repetition,
             // they begin to have a numbered suffix.
@@ -622,14 +656,14 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"int end = start + {(node.Type == RegexNode.Multi ? node.Str!.Length : 1)};");
                     writer.WriteLine("base.Capture(0, start, end);");
                     writer.WriteLine("base.runtextpos = end;");
-                    return;
+                    return requiredHelpers;
 
                 case RegexNode.Empty:
                     // This case isn't common in production, but it's very common when first getting started with the
                     // source generator and seeing what happens as you add more to expressions.  When approaching
                     // it from a learning perspective, this is very common, as it's the empty string you start with.
                     writer.WriteLine("base.Capture(0, base.runtextpos, base.runtextpos);");
-                    return;
+                    return requiredHelpers;
             }
 
             // In some cases, we need to emit declarations at the beginning of the method, but we only discover we need them later.
@@ -717,7 +751,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            return;
+            return requiredHelpers;
 
             // Helper to create a name guaranteed to be unique within the function.
             string ReserveName(string prefix)
@@ -1864,7 +1898,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (node.IsSetFamily)
                 {
-                    expr = $"!{MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations)}";
+                    expr = $"!{MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations, ref requiredHelpers)}";
                 }
                 else
                 {
@@ -2662,7 +2696,7 @@ namespace System.Text.RegularExpressions.Generator
                     string expr = $"{sliceSpan}[{iterationLocal}]";
                     if (node.IsSetFamily)
                     {
-                        expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations);
+                        expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations, ref requiredHelpers);
                     }
                     else
                     {
@@ -2716,7 +2750,7 @@ namespace System.Text.RegularExpressions.Generator
                 string expr = $"{sliceSpan}[{sliceStaticPos}]";
                 if (node.IsSetFamily)
                 {
-                    expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations);
+                    expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node), additionalDeclarations, ref requiredHelpers);
                 }
                 else
                 {
@@ -3070,7 +3104,7 @@ namespace System.Text.RegularExpressions.Generator
 
         private static string ToLowerIfNeeded(bool hasTextInfo, RegexOptions options, string expression, bool toLower) => toLower ? ToLower(hasTextInfo, options, expression) : expression;
 
-        private static string MatchCharacterClass(bool hasTextInfo, RegexOptions options, string chExpr, string charClass, bool caseInsensitive, HashSet<string>? additionalDeclarations)
+        private static string MatchCharacterClass(bool hasTextInfo, RegexOptions options, string chExpr, string charClass, bool caseInsensitive, HashSet<string> additionalDeclarations, ref RequiredHelperFunctions requiredHelpers)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
@@ -3097,6 +3131,14 @@ namespace System.Text.RegularExpressions.Generator
 
                 case RegexCharClass.NotSpaceClass:
                     return $"!char.IsWhiteSpace({chExpr})";
+
+                case RegexCharClass.WordClass:
+                    requiredHelpers |= RequiredHelperFunctions.IsWordChar;
+                    return $"IsWordChar({chExpr})";
+
+                case RegexCharClass.NotWordClass:
+                    requiredHelpers |= RequiredHelperFunctions.IsWordChar;
+                    return $"!IsWordChar({chExpr})";
             }
 
             // If we're meant to be doing a case-insensitive lookup, and if we're not using the invariant culture,
@@ -3146,11 +3188,11 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             return $"(({chExpr} | 0x20) == {Literal(setChars[1])})";
                         }
-                        additionalDeclarations?.Add("char ch;");
+                        additionalDeclarations.Add("char ch;");
                         return $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}))";
 
                     case 3:
-                        additionalDeclarations?.Add("char ch;");
+                        additionalDeclarations.Add("char ch;");
                         return (setChars[0] | 0x20) == setChars[1] ?
                             $"((((ch = {chExpr}) | 0x20) == {Literal(setChars[1])}) | (ch == {Literal(setChars[2])}))" :
                             $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}) | (ch == {Literal(setChars[2])}))";
@@ -3159,7 +3201,7 @@ namespace System.Text.RegularExpressions.Generator
                         if (((setChars[0] | 0x20) == setChars[1]) &&
                             ((setChars[2] | 0x20) == setChars[3]))
                         {
-                            additionalDeclarations?.Add("char ch;");
+                            additionalDeclarations.Add("char ch;");
                             return $"(((ch = ({chExpr} | 0x20)) == {Literal(setChars[1])}) | (ch == {Literal(setChars[3])}))";
                         }
                         break;
@@ -3167,7 +3209,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // All options after this point require a ch local.
-            additionalDeclarations?.Add("char ch;");
+            additionalDeclarations.Add("char ch;");
 
             // Analyze the character set more to determine what code to generate.
             RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);
@@ -3470,6 +3512,16 @@ namespace System.Text.RegularExpressions.Generator
                     _writer.WriteLine(_faux ? "//}" : "}");
                 }
             }
+        }
+
+        /// <summary>Bit flags indicating which additional helpers should be emitted into the regex class.</summary>
+        [Flags]
+        private enum RequiredHelperFunctions
+        {
+            /// <summary>No additional functions are required.</summary>
+            None,
+            /// <summary>The IsWordChar helper is required.</summary>
+            IsWordChar
         }
     }
 }
