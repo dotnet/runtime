@@ -2384,8 +2384,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var pubNames = fields.Where(field => field.ProtectionLevel == FieldAttributes.Public).Select(field => field.Name).ToList();
                 var privNames = fields.Where(field =>
-                    field.ProtectionLevel == FieldAttributes.Private ||
-                    field.ProtectionLevel == FieldAttributes.FamANDAssem
+                    (field.ProtectionLevel == FieldAttributes.Private ||
+                    field.ProtectionLevel == FieldAttributes.FamANDAssem) &&
+                    // when field is inherited it is listed both in Private and Public, to avoid duplicates:
+                    pubNames.All(pubFieldName => pubFieldName != field.Name)
                     ).Select(field => field.Name).ToList();
                 //protected == family, internal == assembly
                 var protectedAndInternalNames = fields.Where(field =>
