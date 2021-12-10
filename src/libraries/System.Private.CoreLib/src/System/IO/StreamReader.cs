@@ -867,7 +867,7 @@ namespace System.IO
 
         private async Task<string?> ReadLineAsyncInternal()
         {
-            static char[] ResizeArray(char[]? array, int atLeastSpace)
+            static char[] ResizeOrPoolNewArray(char[]? array, int atLeastSpace)
             {
                 if (array == null)
                 {
@@ -879,19 +879,19 @@ namespace System.IO
                 ArrayPool<char>.Shared.Return(array);
                 return newArr;
             }
-            static char[] Append(char[]? array1, int destinationOffset, char[] array2, int offset, int length)
+            static char[] Append(char[]? to, int destinationOffset, char[] @from, int offset, int length)
             {
-                if (array1 != null && (destinationOffset + length) < array1.Length)
+                if (to != null && (destinationOffset + length) < to.Length)
                 {
-                    Array.Copy(array2, offset, array1, destinationOffset, length);
+                    Array.Copy(@from, offset, to, destinationOffset, length);
                 }
                 else
                 {
-                    char[] newArr = ResizeArray(array1, destinationOffset + length + 80);
-                    Array.Copy(array2, offset, newArr, destinationOffset, length);
-                    return newArr;
+                    char[] newArr = ResizeOrPoolNewArray(to, destinationOffset + length + 80);
+                    Array.Copy(@from, offset, newArr, destinationOffset, length);
+                    to = newArr;
                 }
-                return array1;
+                return to;
             }
 
             if (_charPos == _charLen && (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) == 0)
@@ -899,8 +899,8 @@ namespace System.IO
                 return null;
             }
 
-            char[]? polledArray = null;
-            int lastI = 0;
+            char[]? rentedArray = null;
+            int lastWrittenIndex = 0;
             try
             {
                 do
@@ -913,11 +913,11 @@ namespace System.IO
                         char ch = _charBuffer[_charPos + i];
 
                         string? s;
-                        if (polledArray != null)
+                        if (rentedArray != null)
                         {
-                            polledArray = Append(polledArray, lastI, _charBuffer, _charPos, i);
-                            lastI += i;
-                            s = new string(polledArray, 0, lastI);
+                            rentedArray = Append(rentedArray, lastWrittenIndex, _charBuffer, _charPos, i);
+                            lastWrittenIndex += i;
+                            s = new string(rentedArray, 0, lastWrittenIndex);
                         }
                         else
                         {
@@ -937,16 +937,16 @@ namespace System.IO
 
                     i = _charLen - _charPos;
 
-                    polledArray = Append(polledArray, lastI, _charBuffer, _charPos, i);
-                    lastI += i;
+                    rentedArray = Append(rentedArray, lastWrittenIndex, _charBuffer, _charPos, i);
+                    lastWrittenIndex += i;
                 } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
-                return new string(polledArray, 0, lastI);
+                return new string(rentedArray, 0, lastWrittenIndex);
             }
             finally
             {
-                if (polledArray != null)
+                if (rentedArray != null)
                 {
-                    ArrayPool<char>.Shared.Return(polledArray);
+                    ArrayPool<char>.Shared.Return(rentedArray);
                 }
             }
         }
