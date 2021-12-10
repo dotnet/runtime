@@ -5,13 +5,8 @@
 // Instead, modify HtmlRawTextWriterGenerator.ttinclude
 
 #nullable disable
-using System;
 using System.IO;
-using System.Text;
-using System.Xml;
-using System.Xml.Schema;
 using System.Diagnostics;
-using MS.Internal.Xml;
 
 namespace System.Xml
 {
@@ -26,9 +21,6 @@ namespace System.Xml
 
         private string _mediaType;
         private bool _doNotEscapeUriAttributes;
-
-        protected static TernaryTreeReadOnly _elementPropertySearch;
-        protected static TernaryTreeReadOnly _attributePropertySearch;
 
         private const int StackIncrement = 10;
 
@@ -112,7 +104,7 @@ namespace System.Xml
 
                 if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
 
-                _currentElementProperties = (ElementProperties)_elementPropertySearch.FindCaseInsensitiveString(localName);
+                _currentElementProperties = TernaryTreeReadOnly.FindElementProperty(localName);
                 base._bufChars[_bufPos++] = (char)'<';
                 base.RawText(localName);
                 base._attrEndPos = _bufPos;
@@ -309,7 +301,7 @@ namespace System.Xml
 
                 if ((_currentElementProperties & (ElementProperties.BOOL_PARENT | ElementProperties.URI_PARENT | ElementProperties.NAME_PARENT)) != 0)
                 {
-                    _currentAttributeProperties = (AttributeProperties)_attributePropertySearch.FindCaseInsensitiveString(localName) &
+                    _currentAttributeProperties = TernaryTreeReadOnly.FindAttributeProperty(localName) &
                                                  (AttributeProperties)_currentElementProperties;
 
                     if ((_currentAttributeProperties & AttributeProperties.BOOLEAN) != 0)
@@ -446,13 +438,6 @@ namespace System.Xml
             Debug.Assert((int)ElementProperties.URI_PARENT == (int)AttributeProperties.URI);
             Debug.Assert((int)ElementProperties.BOOL_PARENT == (int)AttributeProperties.BOOLEAN);
             Debug.Assert((int)ElementProperties.NAME_PARENT == (int)AttributeProperties.NAME);
-
-            if (_elementPropertySearch == null)
-            {
-                // _elementPropertySearch should be init last for the mutli thread safe situation.
-                _attributePropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlAttributes);
-                _elementPropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlElements);
-            }
 
             _elementScope = new ByteStack(StackIncrement);
             _uriEscapingBuffer = new byte[5];
@@ -660,7 +645,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80)
                     {
                         *pDst++ = (char)ch;
                         pSrc++;
@@ -839,7 +824,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                base._currentElementProperties = (ElementProperties)_elementPropertySearch.FindCaseInsensitiveString(localName);
+                base._currentElementProperties = TernaryTreeReadOnly.FindElementProperty(localName);
 
                 if (_endBlockPos == base._bufPos && (base._currentElementProperties & ElementProperties.BLOCK_WS) != 0)
                 {

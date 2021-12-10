@@ -10,17 +10,18 @@ const DotnetSupportLib = {
     $DOTNET__postset: `
     let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch};
     let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-        { isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
+        { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
         { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
         __dotnet_replacements);
     
     // here we replace things which are not exposed in another way
-    __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory; 
+    scriptDirectory = __dotnet_replacements.scriptDirectory;
     readAsync = __dotnet_replacements.readAsync;
     var fetch = __dotnet_replacements.fetch;
 
     // here we replace things which are broken on NodeJS for ES6
     if (ENVIRONMENT_IS_NODE) {
+        __dirname = __dotnet_replacements.scriptDirectory;
         getBinaryPromise = async () => {
             if (!wasmBinary) {
                 try {

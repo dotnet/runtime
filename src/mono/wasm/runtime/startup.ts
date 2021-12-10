@@ -142,7 +142,7 @@ function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: str
     }
     else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
-            console.error(`MONO_WASM: Error loading ICU asset ${asset.name}`);
+            Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
@@ -232,7 +232,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         runtime_is_initialized_resolve();
     } catch (err: any) {
-        console.error("MONO_WASM: Error in finalize_startup:", err);
+        Module.printErr("MONO_WASM: Error in finalize_startup: " + err);
         runtime_is_initialized_reject(err);
         throw err;
     }
@@ -399,7 +399,7 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
             console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
         }
     } catch (err: any) {
-        console.error("MONO_WASM: Error in mono_load_runtime_and_bcl_args:", err);
+        Module.printErr("MONO_WASM: Error in mono_load_runtime_and_bcl_args: " + err);
         runtime_is_initialized_reject(err);
         throw err;
     }
@@ -468,9 +468,9 @@ export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): b
  */
 export async function mono_wasm_load_config(configFilePath: string): Promise<void> {
     const module = Module;
-    module.addRunDependency(configFilePath);
     try {
-        // NOTE: when we add nodejs make sure to include the nodejs fetch package
+        module.addRunDependency(configFilePath);
+
         const configRaw = await runtimeHelpers.fetch(configFilePath);
         const config = await configRaw.json();
 
@@ -479,15 +479,13 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
         config.assets = config.assets || [];
         config.runtime_options = config.runtime_options || [];
         config.globalization_mode = config.globalization_mode || GlobalizationMode.AUTO;
-
+        Module.removeRunDependency(configFilePath);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err}`;
-        console.error(errMessage);
+        Module.printErr(errMessage);
         runtimeHelpers.config = { message: errMessage, error: err, isError: true };
         runtime_is_initialized_reject(err);
         throw err;
-    } finally {
-        Module.removeRunDependency(configFilePath);
     }
 }
 

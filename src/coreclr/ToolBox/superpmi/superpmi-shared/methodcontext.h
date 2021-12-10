@@ -569,7 +569,7 @@ public:
 
     void recGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult);
     void dmpGetFunctionFixedEntryPoint(DWORDLONG key, const Agnostic_CORINFO_CONST_LOOKUP& value);
-    void repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult);
+    void repGetFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
 
     void recGetFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num, CORINFO_FIELD_HANDLE result);
     void dmpGetFieldInClass(DLD key, DWORDLONG value);
@@ -1067,7 +1067,7 @@ enum mcPackets
     Packet_GetMethodNameFromMetadata = 161,
     Packet_GetDefaultEqualityComparerClass = 162,
     Packet_CompareTypesForCast = 163,
-    Packet_CompareTypesForEquality = 164, 
+    Packet_CompareTypesForEquality = 164,
     Packet_GetUnboxedEntry = 165,
     Packet_GetClassNameFromMetadata = 166,
     Packet_GetTypeInstantiationArgument = 167,
