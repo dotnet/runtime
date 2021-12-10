@@ -778,26 +778,26 @@ DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
     return value;
 }
 
-void MethodContext::recIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result)
+void MethodContext::recIsIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result)
 {
-    if (IsJitIntrinsic == nullptr)
-        IsJitIntrinsic = new LightWeightMap<DWORDLONG, DWORD>();
+    if (IsIntrinsic == nullptr)
+        IsIntrinsic = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORDLONG key = CastHandle(ftn);
     DWORD value = result ? 1 : 0;
-    IsJitIntrinsic->Add(key, value);
-    DEBUG_REC(dmpIsJitIntrinsic(key, value));
+    IsIntrinsic->Add(key, value);
+    DEBUG_REC(dmpIsIntrinsic(key, value));
 }
-void MethodContext::dmpIsJitIntrinsic(DWORDLONG key, DWORD value)
+void MethodContext::dmpIsIntrinsic(DWORDLONG key, DWORD value)
 {
-    printf("IsJitIntrinsic key ftn-%016llX, value res-%u", key, value);
+    printf("IsIntrinsic key ftn-%016llX, value res-%u", key, value);
 }
-bool MethodContext::repIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool MethodContext::repIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
     DWORDLONG key = CastHandle(ftn);
-    AssertMapAndKeyExist(IsJitIntrinsic, key, ": key %016llX", key);
-    DWORD value = IsJitIntrinsic->Get(key);
-    DEBUG_REP(dmpIsJitIntrinsic(key, value));
+    AssertMapAndKeyExist(IsIntrinsic, key, ": key %016llX", key);
+    DWORD value = IsIntrinsic->Get(key);
+    DEBUG_REP(dmpIsIntrinsic(key, value));
     return value != 0;
 }
 

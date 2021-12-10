@@ -12,12 +12,12 @@
 // clang-format off
 /**********************************************************************************/
 
-bool WrapICorJitInfo::isJitIntrinsic(
+bool WrapICorJitInfo::isIntrinsic(
           CORINFO_METHOD_HANDLE ftn)
 {
-    API_ENTER(isJitIntrinsic);
-    bool temp = wrapHnd->isJitIntrinsic(ftn);
-    API_LEAVE(isJitIntrinsic);
+    API_ENTER(isIntrinsic);
+    bool temp = wrapHnd->isIntrinsic(ftn);
+    API_LEAVE(isIntrinsic);
     return temp;
 }
 

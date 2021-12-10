@@ -25,10 +25,10 @@ ICorJitInfo* InitICorJitInfo(JitInstance* jitInstance)
 
 // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
 // CORINFO_FLG_INTRINSIC, except faster.
-bool MyICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool MyICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
-    jitInstance->mc->cr->AddCall("isJitIntrinsic");
-    return jitInstance->mc->repIsJitIntrinsic(ftn);
+    jitInstance->mc->cr->AddCall("isIntrinsic");
+    return jitInstance->mc->repIsIntrinsic(ftn);
 }
 
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)

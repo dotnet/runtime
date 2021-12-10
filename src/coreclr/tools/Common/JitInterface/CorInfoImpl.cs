@@ -1023,7 +1023,7 @@ namespace Internal.JitInterface
             return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
         }
 
-        private bool isJitIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
+        private bool isIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
         {
             MethodDesc method = HandleToObject(ftn);
             return method.IsIntrinsic;

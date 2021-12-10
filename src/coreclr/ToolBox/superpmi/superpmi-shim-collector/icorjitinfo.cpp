@@ -20,11 +20,11 @@
 
 // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
 // CORINFO_FLG_INTRINSIC, except faster.
-bool interceptor_ICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool interceptor_ICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
-    mc->cr->AddCall("isJitIntrinsic");
-    bool temp = original_ICorJitInfo->isJitIntrinsic(ftn);
-    mc->recIsJitIntrinsic(ftn, temp);
+    mc->cr->AddCall("isIntrinsic");
+    bool temp = original_ICorJitInfo->isIntrinsic(ftn);
+    mc->recIsIntrinsic(ftn, temp);
     return temp;
 }
 

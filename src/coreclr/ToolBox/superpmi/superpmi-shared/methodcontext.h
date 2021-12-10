@@ -125,9 +125,9 @@ public:
     void dmpGetClassAttribs(DWORDLONG key, DWORD value);
     DWORD repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle);
 
-    void recIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result);
-    void dmpIsJitIntrinsic(DWORDLONG key, DWORD value);
-    bool repIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
+    void recIsIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result);
+    void dmpIsIntrinsic(DWORDLONG key, DWORD value);
+    bool repIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
@@ -1095,7 +1095,7 @@ enum mcPackets
     Packet_GetClassModule = 189,
     Packet_GetModuleAssembly = 190,
     Packet_GetAssemblyName = 191,
-    Packet_IsJitIntrinsic = 192,
+    Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
 };
 

@@ -6338,7 +6338,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE 
 }
 
 /*********************************************************************/
-bool CEEInfo::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
     CONTRACTL {
         NOTHROW;
@@ -6353,7 +6353,7 @@ bool CEEInfo::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
     _ASSERTE(ftn);
 
     MethodDesc *pMD = (MethodDesc*)ftn;
-    ret = pMD->IsJitIntrinsic();
+    ret = pMD->IsIntrinsic();
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -6411,7 +6411,7 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_SYNCH;
     if (pMD->IsFCallOrIntrinsic())
         result |= CORINFO_FLG_NOGCCHECK | CORINFO_FLG_INTRINSIC;
-    if (pMD->IsJitIntrinsic())
+    if (pMD->IsIntrinsic())
         result |= CORINFO_FLG_INTRINSIC;
     if (IsMdVirtual(attribs))
         result |= CORINFO_FLG_VIRTUAL;
@@ -7305,7 +7305,7 @@ getMethodInfoHelper(
 
         MethodTable * pMT  = ftn->GetMethodTable();
 
-        if (ftn->IsJitIntrinsic())
+        if (ftn->IsIntrinsic())
         {
             if (CoreLibBinder::IsClass(pMT, CLASS__UNSAFE))
             {

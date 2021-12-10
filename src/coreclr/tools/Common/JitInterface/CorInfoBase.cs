@@ -13,12 +13,12 @@ namespace Internal.JitInterface
     unsafe partial class CorInfoImpl
     {
         [UnmanagedCallersOnly]
-        static byte _isJitIntrinsic(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn)
+        static byte _isIntrinsic(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isJitIntrinsic(ftn) ? (byte)1 : (byte)0;
+                return _this.isIntrinsic(ftn) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2568,7 +2568,7 @@ namespace Internal.JitInterface
         {
             void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 173);
 
-            callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isJitIntrinsic;
+            callbacks[0] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte>)&_isIntrinsic;
             callbacks[1] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint>)&_getMethodAttribs;
             callbacks[2] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CorInfoMethodRuntimeFlags, void>)&_setMethodAttribs;
             callbacks[3] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, CORINFO_CLASS_STRUCT_*, void>)&_getMethodSig;

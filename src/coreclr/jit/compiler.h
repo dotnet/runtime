@@ -8030,7 +8030,7 @@ public:
     // Get the flags
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
-    bool eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
+    bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
