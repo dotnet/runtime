@@ -369,7 +369,7 @@ namespace ILLink.Tasks.Tests
 			using (var driver = task.CreateDriver ()) {
 				var actualWarnAsError = driver.Context.WarnAsError;
 				var actualGeneralWarnAsError = driver.Context.GeneralWarnAsError;
-				Assert.Equal (warnAsError.Length + warnNotAsError.Length, actualWarnAsError.Count);
+				Assert.Equal (warnAsError.Count () + warnNotAsError.Count (), actualWarnAsError.Count);
 				Assert.Equal (treatWarningsAsErrors, actualGeneralWarnAsError);
 				if (warnAsError.Length > 0) {
 					foreach (var warningCode in warnAsError)
@@ -753,7 +753,7 @@ namespace ILLink.Tasks.Tests
 		public void TestErrorHandling ()
 		{
 			var task = new MockTask () {
-				RootAssemblyNames = Array.Empty<ITaskItem> ()
+				RootAssemblyNames = new ITaskItem[0]
 			};
 			task.BuildEngine = new MockBuildEngine ();
 			Assert.False (task.Execute ());

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Xml;
+using System.Xml.XPath;
 using Mono.Cecil;
 using Mono.Linker.Steps;
 

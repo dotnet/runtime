@@ -7,8 +7,8 @@
 // Copyright 2015 Xamarin Inc (http://www.xamarin.com).
 //
 using System;
-using LinkerAnalyzer.Core;
 using Mono.Options;
+using LinkerAnalyzer.Core;
 
 namespace LinkerAnalyzer
 {
@@ -56,7 +56,7 @@ namespace LinkerAnalyzer
 				return;
 			}
 
-			string dependencyFile = args[args.Length - 1];
+			string dependencyFile = args [args.Length - 1];
 
 			ConsoleDependencyGraph deps = new ConsoleDependencyGraph () { Tree = reduceToTree, FlatDeps = flatDeps };
 			deps.Load (dependencyFile);

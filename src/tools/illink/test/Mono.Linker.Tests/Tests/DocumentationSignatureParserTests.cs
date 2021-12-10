@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
+using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;
@@ -102,32 +103,32 @@ namespace Mono.Linker.Tests
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32[])")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32[])")]
-			public static void M (int[] a)
+			public void M (int[] a)
 			{
 			}
 
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32,System.Int32,System.Int32)~System.Int32")]
-			public static int M (int a, int b, int c)
+			public int M (int a, int b, int c)
 			{
 				return 0;
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MRef(System.Int32@)")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MRef(System.Int32@)")]
-			public static void MRef (ref int a)
+			public void MRef (ref int a)
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MOut(System.Int32@)")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MOut(System.Int32@)")]
-			public static void MOut (out int a)
+			public void MOut (out int a)
 			{
 				a = 5;
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MIn(System.Int32@)")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MIn(System.Int32@)")]
-			public static void MIn (in int a)
+			public void MIn (in int a)
 			{
 			}
 
@@ -136,7 +137,7 @@ namespace Mono.Linker.Tests
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MRefReturn")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MRefReturn")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MRefReturn~System.Int32@")]
-			public static ref int MRefReturn ()
+			public ref int MRefReturn ()
 			{
 				return ref i;
 			}
@@ -144,63 +145,63 @@ namespace Mono.Linker.Tests
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M")]
 			[ExpectResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M")] // binds to both.
 			[ExpectResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M()")] // binds to both.
-			public static void M ()
+			public void M ()
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M()")]
 			[ExpectResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M")]
 			[ExpectResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M()")]
-			public static void M (__arglist)
+			public void M (__arglist)
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32[][])")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32[][])")]
-			public static void M (int[][] a)
+			public void M (int[][] a)
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32[][0:,0:,0:])")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32[][0:,0:,0:])")]
-			public static void M (int[,,][] a)
+			public void M (int[,,][] a)
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32[0:,0:])")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32[0:,0:])")]
-			public static void M (int[,] a)
+			public void M (int[,] a)
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Object)")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Object)")]
-			public static void M (dynamic d)
+			public void M (dynamic d)
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32*)")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32*)")]
-			public static unsafe void M (int* a)
+			public unsafe void M (int* a)
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M``1(Mono.Linker.Tests.DocumentationSignatureParserTests.S{Mono.Linker.Tests.DocumentationSignatureParserTests.G{Mono.Linker.Tests.DocumentationSignatureParserTests.A,``0}}**[0:,0:,0:][][][0:,0:]@)")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M``1(Mono.Linker.Tests.DocumentationSignatureParserTests.S{Mono.Linker.Tests.DocumentationSignatureParserTests.G{Mono.Linker.Tests.DocumentationSignatureParserTests.A,``0}}**[0:,0:,0:][][][0:,0:]@)")]
-			public static unsafe void M<T> (ref S<G<A, T>>**[,][][][,,] a)
+			public unsafe void M<T> (ref S<G<A, T>>**[,][][][,,] a)
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Collections.Generic.List{System.Int32[]})")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Collections.Generic.List{System.Int32[]})")]
-			public static void M (List<int[]> a)
+			public void M (List<int[]> a)
 			{
 			}
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32,)")]
 			//[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.M(System.Int32,)")]
 			// there's no way to reference this, since the parsing logic doesn't like it.
-			public static void M (int abo, __arglist)
+			public void M (int abo, __arglist)
 			{
 			}
 
@@ -295,7 +296,7 @@ namespace Mono.Linker.Tests
 		{
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.B.Method(Mono.Linker.Tests.DocumentationSignatureParserTests.G{Mono.Linker.Tests.DocumentationSignatureParserTests.A{Mono.Linker.Tests.DocumentationSignatureParserTests.B},System.Collections.Generic.List{Mono.Linker.Tests.DocumentationSignatureParserTests.A}})")]
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.B.Method(Mono.Linker.Tests.DocumentationSignatureParserTests.G{Mono.Linker.Tests.DocumentationSignatureParserTests.A{Mono.Linker.Tests.DocumentationSignatureParserTests.B},System.Collections.Generic.List{Mono.Linker.Tests.DocumentationSignatureParserTests.A}})")]
-			public static void Method (G<A<B>, List<A>> l)
+			public void Method (G<A<B>, List<A>> l)
 			{
 			}
 		}
@@ -335,44 +336,44 @@ namespace Mono.Linker.Tests
 
 		[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Method")]
 		[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Method")]
-		public static void Method ()
+		public void Method ()
 		{
 		}
 
 		[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Method(System.Int32)")]
 		[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Method(System.Int32)")]
-		public static void Method (int i)
+		public void Method (int i)
 		{
 		}
 
 		[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.IntMethod")]
 		[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.IntMethod")]
-		public static int IntMethod () => 0;
+		public int IntMethod () => 0;
 
 		[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Method(Mono.Linker.Tests.DocumentationSignatureParserTests.G{Mono.Linker.Tests.DocumentationSignatureParserTests.A,Mono.Linker.Tests.DocumentationSignatureParserTests.A})")]
 		[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Method(Mono.Linker.Tests.DocumentationSignatureParserTests.G{Mono.Linker.Tests.DocumentationSignatureParserTests.A,Mono.Linker.Tests.DocumentationSignatureParserTests.A})")]
-		public static void Method (G<A, A> g)
+		public void Method (G<A, A> g)
 		{
 		}
 
 		[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Method(Mono.Linker.Tests.DocumentationSignatureParserTests.G{Mono.Linker.Tests.DocumentationSignatureParserTests.A,Mono.Linker.Tests.DocumentationSignatureParserTests.A}.NG{Mono.Linker.Tests.DocumentationSignatureParserTests.A})")]
 		[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Method(Mono.Linker.Tests.DocumentationSignatureParserTests.G{Mono.Linker.Tests.DocumentationSignatureParserTests.A,Mono.Linker.Tests.DocumentationSignatureParserTests.A}.NG{Mono.Linker.Tests.DocumentationSignatureParserTests.A})")]
-		public static void Method (G<A, A>.NG<A> g)
+		public void Method (G<A, A>.NG<A> g)
 		{
 		}
 
 		public class Invalid
 		{
 			[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NoReturnType~")]
-			public static int NoReturnType () => 0;
+			public int NoReturnType () => 0;
 
 			[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NoParameters(,)")]
-			public static void NoParameters (int a, int b)
+			public void NoParameters (int a, int b)
 			{
 			}
 
 			[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NoClosingParen(")]
-			public static void NoClosingParen () { }
+			public void NoClosingParen () { }
 
 			[ExpectUnresolvedDocumentationSignature ("T:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Whitespace ")]
 			[ExpectUnresolvedDocumentationSignature (" T:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Whitespace")]
@@ -383,12 +384,12 @@ namespace Mono.Linker.Tests
 			public class Whitespace
 			{
 				[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Whitespace.Method(System.Int32, System.Int32)")]
-				public static void Method (int a, int b)
+				public void Method (int a, int b)
 				{
 				}
 
 				[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Whitespace.Method(Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Generic{System.Int32, System.Int32})")]
-				public static void Method (Generic<int, int> g)
+				public void Method (Generic<int, int> g)
 				{
 				}
 			}
@@ -421,18 +422,18 @@ namespace Mono.Linker.Tests
 			}
 
 			[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.MethodWithGenericInstantiation(Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Generic`1)")]
-			public static void MethodWithGenericInstantiation (Generic<A> g)
+			public void MethodWithGenericInstantiation (Generic<A> g)
 			{
 			}
 
 			[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Method(System.Int32[:,:])")]
 			[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Method(System.Int32[0:,)")]
-			public static void Method (int[,] a)
+			public void Method (int[,] a)
 			{
 			}
 
 			[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NonGenericMethod(``0)")]
-			public static void NonGenericMethod (int i)
+			public void NonGenericMethod (int i)
 			{
 			}
 
@@ -444,7 +445,7 @@ namespace Mono.Linker.Tests
 			}
 
 			[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.MethodMissingArgumentTypeName(System.)")]
-			public static void MethodMissingArgumentTypeName (int i)
+			public void MethodMissingArgumentTypeName (int i)
 			{
 			}
 
@@ -452,7 +453,7 @@ namespace Mono.Linker.Tests
 			public class NoType
 			{
 				[ExpectUnresolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid..Method")]
-				public static void Method ()
+				public void Method ()
 				{
 				}
 			}
@@ -465,12 +466,12 @@ namespace Mono.Linker.Tests
 			}
 
 			[ExpectUnresolvedDocumentationSignature ("T:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NoParameterType()")]
-			public static void NoParameterType (int i)
+			public void NoParameterType (int i)
 			{
 			}
 
 			[ExpectUnresolvedDocumentationSignature ("T:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NoParameterType(Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Generic{})")]
-			public static void NoGenericParameterType (Generic<A> g)
+			public void NoGenericParameterType (Generic<A> g)
 			{
 			}
 
@@ -502,12 +503,12 @@ namespace Mono.Linker.Tests
 			}
 
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NoClosingParenWithParameters(System.Int32")]
-			public static void NoClosingParenWithParameters (int a)
+			public void NoClosingParenWithParameters (int a)
 			{
 			}
 
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.NoClosingBrace(Mono.Linker.Tests.DocumentationSignatureParserTests.Invalid.Generic{Mono.Linker.Tests.DocumentationSignatureParserTests.A)")]
-			public static void NoClosingBrace (Generic<A> g)
+			public void NoClosingBrace (Generic<A> g)
 			{
 			}
 

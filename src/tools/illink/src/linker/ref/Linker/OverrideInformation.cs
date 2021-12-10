@@ -11,9 +11,9 @@ namespace Mono.Linker
 		{
 		}
 
-		public static MethodDefinition Base { get { throw null; } }
-		public static MethodDefinition Override { get { throw null; } }
-		public static InterfaceImplementation MatchingInterfaceImplementation { get { throw null; } }
-		public static TypeDefinition InterfaceType { get { throw null; } }
+		public MethodDefinition Base { get { throw null; } }
+		public MethodDefinition Override { get { throw null; } }
+		public InterfaceImplementation MatchingInterfaceImplementation { get { throw null; } }
+		public TypeDefinition InterfaceType { get { throw null; } }
 	}
 }
