@@ -28,7 +28,7 @@
     <PropertyGroup>
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>    
       <WasmAppDir>$(AppDir)</WasmAppDir>
-      <WasmMainJSPath>$(MonoProjectRoot)wasm\debugger-main.js</WasmMainJSPath>
+      <WasmMainJSPath>debugger-main.js</WasmMainJSPath>
       <!-- like is used on blazor -->
       <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">-1</WasmDebugLevel>
 
