@@ -477,6 +477,9 @@
       </HelixWorkItem>
     </ItemGroup>
 
+    <Error Condition="('$(Scenario)' == 'WasmDebuggerTests' or '$(Scenario)' == 'BuildWasmApps') and @(_WorkItem->Count()) > 1"
+           Text="Found more than one workitem for Scenario=$(Scenario): @(_WorkItem)" />
+
     <PropertyGroup>
       <_BuildWasmAppsPayloadArchive>@(_WorkItem)</_BuildWasmAppsPayloadArchive>
       <_WasmDebuggerTestsPayloadArchive>@(_WorkItem)</_WasmDebuggerTestsPayloadArchive>
