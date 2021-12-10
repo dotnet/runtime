@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -17,15 +18,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         static Function _getRegisterCount;
         static Function _getHitCount;
         static Function _cleanupWrapper;
-        // static Function _log;
+        static Function _log;
 
         public static IEnumerable<object[]> TestCases()
         {
             yield return new object[] { new int[0], 0, null, null };
-            yield return new object[] { new[] { 10 }, 1 , null, null };
-            yield return new object[] { new[] { 10, 5 }, 2 , null, null };
-            yield return new object[] { new[] { 10, 20 }, 1 , null, null };
-            yield return new object[] { new[] { 800, 600, 400, 200, 050 }, 5, 13, 9 };
+            yield return new object[] { new[] { 10 }, 1, null, null };
+            yield return new object[] { new[] { 10, 5 }, 2, null, null };
+            yield return new object[] { new[] { 10, 20 }, 1, null, null };
+            yield return new object[] { new[] { 800, 600, 400, 200, 100 }, 5, 13, 9 };
         }
 
         [Theory]
@@ -36,41 +37,51 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Timer[] timers = new Timer[timeouts.Length];
             try
             {
-                // _log.Call(null, $"Waiting for runtime to settle");
+                _log.Call(_timersHelper, $"Waiting for runtime to settle");
+                // the test is quite sensitive to timing and order of execution. Here we are giving time to timers of XHarness and previous tests to finish.
                 await Task.Delay(2000);
-                _installWrapper.Call();
-                // _log.Call(null, $"Ready!");
+                _installWrapper.Call(_timersHelper);
+                _log.Call(_timersHelper, $"Ready!");
 
                 for (int i = 0; i < timeouts.Length; i++)
                 {
                     int index = i;
-                    // _log.Call(null, $"Registering {index} delay {timeouts[i]}");
+                    _log.Call(_timersHelper, $"Registering {index} delay {timeouts[i]}");
                     timers[i] = new Timer((_) =>
                     {
-                        // _log.Call(null, $"In timer{index}");
+                        _log.Call(_timersHelper, $"In timer{index}");
                         wasCalled++;
                     }, null, timeouts[i], 0);
                 }
 
-                var setCounter = (int)_getRegisterCount.Call();
+                var setCounter = (int)_getRegisterCount.Call(_timersHelper);
                 Assert.True(0 == wasCalled, $"wasCalled: {wasCalled}");
                 Assert.True((expectedSetCounter ?? timeouts.Length) == setCounter, $"setCounter: actual {setCounter} expected {expectedSetCounter}");
 
             }
             finally
             {
-                await WaitForCleanup();
+                // the test is quite sensitive to timing and order of execution. 
+                // Here we are giving time to our timers to finish.
+                var afterLastTimer = timeouts.Length == 0 ? 500 : 500 + timeouts.Max();
+
+                _log.Call(_timersHelper, "wait for timers to run");
+                // this delay is also implemented as timer, so it counts to asserts
+                await Task.Delay(afterLastTimer);
+                _log.Call(_timersHelper, "cleanup");
+                _cleanupWrapper.Call(_timersHelper);
+
                 Assert.True(timeouts.Length == wasCalled, $"wasCalled: actual {wasCalled} expected {timeouts.Length}");
 
                 if (expectedSetCounterAfterCleanUp != null)
                 {
-                    var setCounter = (int)_getRegisterCount.Call();
+                    var setCounter = (int)_getRegisterCount.Call(_timersHelper);
                     Assert.True(expectedSetCounterAfterCleanUp.Value == setCounter, $"setCounter: actual {setCounter} expected {expectedSetCounterAfterCleanUp.Value}");
                 }
 
                 if (expectedHitCount != null)
                 {
-                    var hitCounter = (int)_getHitCount.Call();
+                    var hitCounter = (int)_getHitCount.Call(_timersHelper);
                     Assert.True(expectedHitCount == hitCounter, $"hitCounter: actual {hitCounter} expected {expectedHitCount}");
                 }
 
@@ -79,14 +90,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     timers[i].Dispose();
                 }
             }
-        }
-
-        private async Task WaitForCleanup()
-        {
-            // _log.Call(null, "wait for cleanup begin");
-            await Task.Delay(1200);
-            _cleanupWrapper.Call();
-            // _log.Call(null, "wait for cleanup end");
         }
 
         public async Task InitializeAsync()
@@ -99,15 +102,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     };
                     return loadTimersJs();
                 ");
-                await (Task)helper.Call();
+                await (Task)helper.Call(_timersHelper);
 
                 _timersHelper = (JSObject)Runtime.GetGlobalObject("timersHelper");
                 _installWrapper = (Function)_timersHelper.GetObjectProperty("install");
                 _getRegisterCount = (Function)_timersHelper.GetObjectProperty("getRegisterCount");
                 _getHitCount = (Function)_timersHelper.GetObjectProperty("getHitCount");
                 _cleanupWrapper = (Function)_timersHelper.GetObjectProperty("cleanup");
-                // var console = (JSObject)Runtime.GetGlobalObject("console");
-                // _log = (Function)console.GetObjectProperty("log");
+                _log = (Function)_timersHelper.GetObjectProperty("log");
             }
         }
 
