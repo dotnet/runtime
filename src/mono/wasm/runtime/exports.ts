@@ -31,7 +31,6 @@ import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    mono_wasm_set_main_args,
     mono_wasm_pre_init,
     mono_wasm_runtime_is_initialized,
     mono_wasm_on_runtime_initialized
@@ -356,7 +355,6 @@ const INTERNAL: any = {
     mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
     mono_profiler_init_aot: cwraps.mono_profiler_init_aot,
     mono_wasm_set_runtime_options,
-    mono_wasm_set_main_args: mono_wasm_set_main_args,
     mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
     mono_method_resolve,//MarshalTests.cs
     mono_bind_static_method,// MarshalTests.cs

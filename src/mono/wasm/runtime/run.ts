@@ -1,6 +1,6 @@
 import { Module } from "./imports";
 import { mono_call_assembly_entry_point } from "./method-calls";
-import { runtime_is_initialized_reject } from "./startup";
+import { mono_wasm_set_main_args, runtime_is_initialized_reject } from "./startup";
 
 
 export async function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void> {
@@ -13,6 +13,7 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
 }
 
 export async function mono_run_main(main_assembly_name: string, args: string[]): Promise<number> {
+    mono_wasm_set_main_args(main_assembly_name, args);
     return mono_call_assembly_entry_point(main_assembly_name, [args], "m");
 }
 
