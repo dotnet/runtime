@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -1853,18 +1854,23 @@ namespace System
                 return this;
             }
 
-            int length = Length;
-            // Copy Span.Slice checks for perf
-            if ((uint)startIndex > (uint)length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+            int thisLength = Length;
+            if (startIndex == thisLength)
+            {
+                return string.Empty;
+            }
 
-            return InternalSubString(startIndex, length - startIndex);
+            // Copy Span.Slice checks for perf
+            if ((uint)startIndex > (uint)thisLength)
+                ThrowSubstringArgumentOutRangeException(startIndex, thisLength - startIndex);
+
+            return InternalSubString(startIndex, thisLength - startIndex);
         }
 
         public string Substring(int startIndex, int length)
         {
             // Copy Span.Slice checks for perf
-            int _length = Length;
+            int thisLength = Length;
 #if TARGET_64BIT
             // Since start and length are both 32-bit, their sum can be computed across a 64-bit domain
             // without loss of fidelity. The cast to uint before the cast to ulong ensures that the
@@ -1872,43 +1878,44 @@ namespace System
             // of this is that if either input is negative or if the input sum overflows past Int32.MaxValue,
             // that information is captured correctly in the comparison against the backing _length field.
             // We don't use this same mechanism in a 32-bit process due to the overhead of 64-bit arithmetic.
-            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)_length)
+            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)thisLength)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #else
-            if ((uint)startIndex > (uint)_length || (uint)length > (uint)(_length - startIndex))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+            if ((uint)startIndex > (uint)thisLength || (uint)length > (uint)(thisLength - startIndex))
+                ThrowSubstringArgumentOutRangeException(startIndex, length);
 #endif
-            //if (startIndex < 0)
-            //{
-            //    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            //}
-
-            //if (startIndex > Length)
-            //{
-            //    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
-            //}
-
-            //if (length < 0)
-            //{
-            //    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            //}
-
-            //if (startIndex > Length - length)
-            //{
-            //    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
-            //}
 
             if (length == 0)
             {
                 return string.Empty;
             }
 
-            if (startIndex == 0 && length == _length)
+            if (length == thisLength)
             {
                 return this;
             }
 
             return InternalSubString(startIndex, length);
+        }
+
+        [DoesNotReturn]
+        private void ThrowSubstringArgumentOutRangeException(int startIndex, int length)
+        {
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            }
+            if (startIndex > Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
+            }
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
+            }
+            // Check not needed since we only call this when startIndex, length are out of range
+            //if (startIndex > Length - length)
+            throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
         }
 
         private string InternalSubString(int startIndex, int length)
