@@ -8205,18 +8205,11 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     // Add pointer series for by-value classes
                     dwNumGCPointerSeries += (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
                 }
-                else if (pByValueMT->HasLayout())
-                {
-                    int fieldAlignmentRequirement = pByValueMT->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
-                }
                 else
                 {
-                    // We are in the case of an auto-layout struct that has no GC pointers and no other alignment requirements.
-                    // We don't have a good place to track alignment, so we're going to do a best-effort sort of option and use
-                    // min(pByValueMT->GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE) as our alignment for this field.
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, min(pByValueMT->GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE));
+                    int fieldAlignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
                 }
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
@@ -8257,6 +8250,13 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 minAlign = 1;
                 while (minAlign < dwNumInstanceFieldBytes)
                     minAlign *= 2;
+            }
+
+            if (minAlign != min(dwNumInstanceFieldBytes, TARGET_POINTER_SIZE))
+            {
+                EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+                GetHalfBakedClass()->GetOptionalFields()->m_requiredFieldAlignment = (BYTE)minAlign;
+                GetHalfBakedClass()->SetHasCustomFieldAlignment();
             }
 
             dwNumInstanceFieldBytes = (dwNumInstanceFieldBytes + minAlign-1) & ~(minAlign-1);

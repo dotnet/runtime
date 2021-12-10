@@ -1601,6 +1601,8 @@ public:
     //
     inline DWORD GetNumInstanceFieldBytes();
 
+    int GetFieldAlignmentRequirement();
+
     inline WORD GetNumIntroducedInstanceFields();
 
     // Note: This flag MUST be available even from an unrestored MethodTable - see GcScanRoots in siginfo.cpp.

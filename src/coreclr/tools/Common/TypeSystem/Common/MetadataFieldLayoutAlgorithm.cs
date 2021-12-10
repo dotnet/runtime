@@ -780,13 +780,6 @@ namespace Internal.TypeSystem
                     result.Size = defType.InstanceFieldSize;
                     result.Alignment = defType.InstanceFieldAlignment;
                     layoutAbiStable = defType.LayoutAbiStable;
-                    if (defType is MetadataType metadataType && !metadataType.IsSequentialLayout && !metadataType.IsExplicitLayout)
-                    {
-                        // For compatibility with CoreCLR, we will use min(result.Size, LayoutPointerSize)
-                        // as our alignment for this field as the native runtime can't easily track alignment requirements
-                        // for auto-layout value types.
-                        result.Alignment = LayoutInt.Min(result.Size, fieldType.Context.Target.LayoutPointerSize);
-                    }
                 }
                 else
                 {
