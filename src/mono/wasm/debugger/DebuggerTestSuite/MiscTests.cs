@@ -826,7 +826,7 @@ namespace DebuggerTests
             });
 
             var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
-            Assert.True(source.IsOk);
+            Assert.True(source.IsOk, $"Failed to getScriptSource: {source}");
         }
 
         [Fact]

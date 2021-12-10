@@ -203,7 +203,7 @@ namespace DebuggerTests
                             break;
 
                         case RunLoopStopReason.Cancelled when Token.IsCancellationRequested:
-                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds}"));
+                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})"));
                             break;
 
                         default:
