@@ -1233,23 +1233,48 @@ unsafe class Program
             expectedOffsetValue: 1
         );
 
-        succeeded &= Test<AutoLayoutDefaultPacking<Vector128<byte>>>(
-            expectedSize: 32,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 16
-        );
+        if (RuntimeInformation.ProcessArchitecture == Architecture.Arm)
+        {
+            // The Procedure Call Standard for ARM defines this type as having 8-byte alignment
 
-        succeeded &= Test<AutoLayoutMinPacking<Vector128<byte>>>(
-            expectedSize: 32,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 16
-        );
+            succeeded &= Test<AutoLayoutDefaultPacking<Vector128<byte>>>(
+                expectedSize: 24,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
 
-        succeeded &= Test<AutoLayoutMaxPacking<Vector128<byte>>>(
-            expectedSize: 32,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 16
-        );
+            succeeded &= Test<AutoLayoutDefaultPacking<Vector128<byte>>>(
+                expectedSize: 24,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+
+            succeeded &= Test<AutoLayoutMaxPacking<Vector128<byte>>>(
+                expectedSize: 24,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+        }
+        else
+        {
+            succeeded &= Test<AutoLayoutDefaultPacking<Vector128<byte>>>(
+                expectedSize: 32,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+
+            succeeded &= Test<AutoLayoutMinPacking<Vector128<byte>>>(
+                expectedSize: 32,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+
+            succeeded &= Test<AutoLayoutMaxPacking<Vector128<byte>>>(
+                expectedSize: 32,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+        }
 
         return succeeded;
     }
@@ -1279,6 +1304,23 @@ unsafe class Program
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 8
             );
+            succeeded &= Test<AutoLayoutDefaultPacking<Vector256<byte>>>(
+                expectedSize: 40,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+
+            succeeded &= Test<AutoLayoutMinPacking<Vector256<byte>>>(
+                expectedSize: 40,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
+
+            succeeded &= Test<AutoLayoutMaxPacking<Vector256<byte>>>(
+                expectedSize: 40,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 8
+            );
         }
         else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
         {
@@ -1297,6 +1339,23 @@ unsafe class Program
             );
 
             succeeded &= Test<SequentialLayoutMaxPacking<Vector256<byte>>>(
+                expectedSize: 48,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+            succeeded &= Test<AutoLayoutDefaultPacking<Vector256<byte>>>(
+                expectedSize: 48,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+
+            succeeded &= Test<AutoLayoutMinPacking<Vector256<byte>>>(
+                expectedSize: 48,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 16
+            );
+
+            succeeded &= Test<AutoLayoutMaxPacking<Vector256<byte>>>(
                 expectedSize: 48,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 16
@@ -1321,30 +1380,30 @@ unsafe class Program
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 32
             );
+
+            succeeded &= Test<AutoLayoutDefaultPacking<Vector256<byte>>>(
+                expectedSize: 64,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 32
+            );
+
+            succeeded &= Test<AutoLayoutMinPacking<Vector256<byte>>>(
+                expectedSize: 64,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 32
+            );
+
+            succeeded &= Test<AutoLayoutMaxPacking<Vector256<byte>>>(
+                expectedSize: 64,
+                expectedOffsetByte: 0,
+                expectedOffsetValue: 32
+            );
         }
 
         succeeded &= Test<SequentialLayoutMinPacking<Vector256<byte>>>(
             expectedSize: 33,
             expectedOffsetByte: 0,
             expectedOffsetValue: 1
-        );
-
-        succeeded &= Test<AutoLayoutDefaultPacking<Vector256<byte>>>(
-            expectedSize: 64,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 32
-        );
-
-        succeeded &= Test<AutoLayoutMinPacking<Vector256<byte>>>(
-            expectedSize: 64,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 32
-        );
-
-        succeeded &= Test<AutoLayoutMaxPacking<Vector256<byte>>>(
-            expectedSize: 64,
-            expectedOffsetByte: 0,
-            expectedOffsetValue: 32
         );
 
         return succeeded;
