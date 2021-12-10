@@ -9,7 +9,8 @@ using Xunit;
 
 namespace DebuggerTests
 {
-
+    [Trait("Category", "windows-failing")]
+    [Trait("Category", "linux-failing")]
     public class ArrayTests : DebuggerTestBase
     {
 

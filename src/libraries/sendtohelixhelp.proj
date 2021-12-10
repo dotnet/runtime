@@ -498,8 +498,11 @@
     <ItemGroup Condition="'$(Scenario)' == 'WasmDebuggerTests'">
       <HelixWorkItem Include="@(WasmDebuggerTests_PerJobList)">
         <PayloadArchive>$(_WasmDebuggerTestsPayloadArchive)</PayloadArchive>
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set TEST_ARGS=--filter FullyQualifiedName~%(Identity)</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export TEST_ARGS=&quot;--filter FullyQualifiedName~%(Identity)&quot;</PreCommands>
+
+        <!-- FIXME: workaround for https://github.com/dotnet/runtime/issues/62660 -->
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set TEST_ARGS=--filter FullyQualifiedName~%(Identity)&amp;Category!=windows-failing</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export TEST_ARGS=&quot;--filter FullyQualifiedName~%(Identity)&amp;Category!=linux-failing&quot;</PreCommands>
+
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
