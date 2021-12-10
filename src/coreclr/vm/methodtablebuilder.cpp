@@ -8202,8 +8202,6 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
                     largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
                     containsGCPointers = true;
-                    // Add pointer series for by-value classes
-                    dwNumGCPointerSeries += (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
                 }
                 else
                 {
@@ -8214,6 +8212,12 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
+
+                if (pByValueMT->ContainsPointers())
+                {
+                    // Add pointer series for by-value classes
+                    dwNumGCPointerSeries += (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
+                }
             }
             else
             {
