@@ -15629,6 +15629,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         return false;
     }
 
+    const bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
     if (dst == src)
     {
         // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
@@ -15644,9 +15646,17 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             JITDUMP("\n -- suppressing mov because src and dst is same 16-byte register.\n");
             return true;
         }
+        else if ((size == EA_4BYTE) && (emitLastIns != nullptr) && !isFirstInstrInBlock)
+        {
+            // See if the previos instruction already cleared upper 4 bytes for us unintentionally
+            if ((emitLastIns->idIns() == INS_ldr) && (emitLastIns->idReg1() == dst) &&
+                (emitLastIns->idOpSize() == EA_4BYTE))
+            {
+                JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
+                return true;
+            }
+        }
     }
-
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
 
     if (!isFirstInstrInBlock && // Don't optimize if instruction is not the first instruction in IG.
         (emitLastIns != nullptr) &&
