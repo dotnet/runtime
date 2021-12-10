@@ -13,7 +13,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class SourceList : DebuggerTestBase
+    public class MiscTests : DebuggerTestBase
     {
 
         [Fact]
