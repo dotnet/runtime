@@ -2345,8 +2345,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var regularObjects = await GetFieldsValues(regularFields, isOwn: i == 0);
                     var rootHiddenObjects = await GetFieldsValues(rootHiddenFields, isOwn: i == 0, isRootHidden: true);
 
-                    objectValues = new JArray(objectValues.Union(regularObjects));
-                    objectValues = new JArray(objectValues.Union(rootHiddenObjects));
+                    objectValues.AddRange(regularObjects);
+                    objectValues.AddRange(rootHiddenObjects);
                 }
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
                     return objectValues;
@@ -2360,7 +2360,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     $"dotnet:object:{objectId}",
                     i == 0,
                     token);
-                objectValues = new JArray(objectValues.Union(props));
+                objectValues.AddRange(props);
 
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,
@@ -2603,6 +2603,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (setDebuggerCmdReader.HasError)
                 return false;
             return true;
+        }
+    }
+
+    internal static class HelperExtensions
+    {
+        public static void AddRange(this JArray arr, JArray addedArr)
+        {
+            foreach (var item in addedArr)
+                arr.Add(item);
         }
     }
 }
