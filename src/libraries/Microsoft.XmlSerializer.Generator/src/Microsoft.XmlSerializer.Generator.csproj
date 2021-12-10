@@ -20,15 +20,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="build\prefercliruntime"
-          PackagePath="/"
-          Pack="true" />
-    <None Include="build\Microsoft.XmlSerializer.Generator.targets"
-          PackagePath="build"
-          Pack="true" />
-    <None Include="build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json"
-          PackagePath="lib\netstandard2.0"
-          Pack="true" />
+    <None Include="build\prefercliruntime" PackagePath="/" Pack="true" />
+    <None Include="build\Microsoft.XmlSerializer.Generator.targets" PackagePath="build" Pack="true" />
+    <None Include="build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json" PackagePath="lib\netstandard2.0" Pack="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="5.0.1" />
   </ItemGroup>
 
   <Import Project="GenerateThisAssemblyCs.targets" />
