@@ -32,13 +32,6 @@ pushd $BUILD_ROOT_DIR
 
 export LD_LIBRARY_PATH=$BUILD_ROOT_DIR:$LD_LIBRARY_PATH
 
-# Create absolute path to the file that contains a list of PAL tests to execute.
-# This file is located next to this script in the source tree
-RELATIVE_PATH_TO_PAL_TESTS=$0
-# Remove the name of this script from the path
-RELATIVE_PATH_TO_PAL_TESTS=${RELATIVE_PATH_TO_PAL_TESTS%/*.*}
-# Change current directory to the location of this script
-cd $RELATIVE_PATH_TO_PAL_TESTS
 # Environment variable PWD contains absolute path to the current folder
 # so use it to create absolute path to the file with a list of tests.
 PAL_TEST_LIST=$BUILD_ROOT_DIR/paltestlist.txt
@@ -78,8 +71,6 @@ then
     PAL_TEST_OUTPUT_DIR=$(mktemp -d /tmp/PalTestOutput/tmp.XXXXXXXX)
   fi
 fi
-
-cd $PAL_TEST_OUTPUT_DIR
 
 echo PAL tests will store their temporary files and output in $PAL_TEST_OUTPUT_DIR.
 if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
