@@ -6274,6 +6274,15 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
         return;
     }
 
+#ifdef DEBUG
+    GenTreeCall* call = tree->AsCall();
+    if ((call != nullptr) && (call->gtOper == GT_CALL))
+    {
+        // Make sure that we do not insert vector save before calls that does not return.
+        assert((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) == 0);
+    }
+#endif
+
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclVarInterval->varNum);
     assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()));
 
