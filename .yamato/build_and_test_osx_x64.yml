@@ -1,0 +1,25 @@
+name: Build and Test OSX x64
+
+agent:
+  type: Unity::VM::osx
+  image: platform-foundation/mac-bokken:latest
+  flavor: m1.mac
+
+commands:
+  - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs+libs.tests -test -a x64 -rc checked -lc release -ci -ninja
+  - ./src/tests/build.sh x64 checked ci
+  - ./src/tests/run.sh x64 checked
+  - ./build.sh clr.paltests
+  - ./artifacts/bin/coreclr/OSX.x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/OSX.x64.Debug/paltests
+
+triggers:
+  pull_requests:
+    - targets:
+        only:
+          - "unity-main"
+
+artifacts: 
+  osx64:
+    paths:
+      - artifacts/bin/coreclr/**
+      - artifacts/repro/**

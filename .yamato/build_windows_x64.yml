@@ -1,12 +1,14 @@
-name: Build Windows x64
+name: Build and Test Windows x64
 
 agent:
   type: Unity::VM
-  image: platform-foundation/windows-vs2019-il2cpp-bokken:stable
+  image: platform-foundation/windows-vs2019-il2cpp-bokken:latest
   flavor: b1.xlarge
 
 commands:
-  - .yamato/scripts/build_win.bat
+  - build.cmd -subset clr+libs+libs.tests -test -a x64 -rc checked -lc release -ci
+  - src\tests\build.cmd x64 checked ci
+  - src\tests\run.cmd x64 checked
 
 triggers:
   pull_requests:
@@ -17,4 +19,5 @@ triggers:
 artifacts: 
   win64:
     paths:
-      - incomingbuilds\win64\**
+      - artifacts\bin\coreclr\**
+      - artifacts\repro\**
