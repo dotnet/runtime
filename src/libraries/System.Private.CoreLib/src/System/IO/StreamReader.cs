@@ -18,7 +18,7 @@ namespace System.IO
     {
         // StreamReader.Null is threadsafe.
         public static new readonly StreamReader Null = new NullStreamReader();
-        private StringBuilder? _sb;
+        // private StringBuilder? _sb;
 
         // Using a 1K byte buffer and a 4K FileStream buffer works out pretty well
         // perf-wise.  On even a 40 MB text file, any perf loss by using a 4K
@@ -430,21 +430,14 @@ namespace System.IO
             CheckAsyncTaskInProgress();
 
             // Call ReadBuffer, then pull data out of charBuffer.
-            if (_sb == null)
-            {
-                _sb = new StringBuilder(_charLen - _charPos);
-            }
-            else
-            {
-                _sb.Clear();
-            }
+            using ValueStringBuilder sb = new(_charLen - _charPos);
             do
             {
-                _sb.Append(_charBuffer, _charPos, _charLen - _charPos);
+                sb.Append(_charBuffer.AsSpan(_charPos, _charLen - _charPos));
                 _charPos = _charLen;  // Note we consumed these characters
                 ReadBuffer();
             } while (_charLen > 0);
-            return _sb.ToString();
+            return sb.ToString();
         }
 
         public override int ReadBlock(char[] buffer, int index, int count)
@@ -814,45 +807,43 @@ namespace System.IO
                 }
             }
 
-
-            _sb?.Clear();
+            using ValueStringBuilder sb = new(0);
             do
             {
-                int i = _charPos;
-                do
+                // Note the following common line feed chars:
+                // \n - UNIX   \r\n - DOS   \r - Mac
+                int i = _charBuffer.AsSpan(_charPos).IndexOfAny('\r', '\n');
+                if (i >= 0)
                 {
-                    char ch = _charBuffer[i];
-                    // Note the following common line feed chars:
-                    // \n - UNIX   \r\n - DOS   \r - Mac
-                    if (ch == '\r' || ch == '\n')
+                    char ch = _charBuffer[_charPos + i];
+
+                    string? s;
+
+                    if (sb is { Length: > 0 })
                     {
-                        string s;
-                        if (_sb is { Length: > 0 })
-                        {
-                            s = _sb!.Append(_charBuffer, _charPos, i - _charPos).ToString();
-                        }
-                        else
-                        {
-                            s = new string(_charBuffer, _charPos, i - _charPos);
-                        }
-                        _charPos = i + 1;
-                        if (ch == '\r' && (_charPos < _charLen || ReadBuffer() > 0))
-                        {
-                            if (_charBuffer[_charPos] == '\n')
-                            {
-                                _charPos++;
-                            }
-                        }
-                        return s;
+                        sb.Append(_charBuffer.AsSpan(_charPos, i));
+                        s = sb.ToString();
                     }
-                    i++;
-                } while (i < _charLen);
+                    else
+                    {
+                        s = new string(_charBuffer, _charPos, i);
+                    }
+                    _charPos = i + 1;
+                    if (ch == '\r' && (_charPos < _charLen || ReadBuffer() > 0))
+                    {
+                        if (_charBuffer[_charPos] == '\n')
+                        {
+                            _charPos++;
+                        }
+                    }
+                    return s;
+                }
 
                 i = _charLen - _charPos;
-                _sb ??= new StringBuilder(i + 80);
-                _sb.Append(_charBuffer, _charPos, i);
+
+                sb.Append(_charBuffer.AsSpan(_charPos, i));
             } while (ReadBuffer() > 0);
-            return _sb.ToString();
+            return sb.ToString();
         }
 
         public override Task<string?> ReadLineAsync()
@@ -910,7 +901,7 @@ namespace System.IO
             }
 
             char[]? polledArray = null;
-            var lastI = 0;
+            int lastI = 0;
             try
             {
                 do
@@ -922,11 +913,11 @@ namespace System.IO
                     {
                         char ch = _charBuffer[_charPos + i];
 
-                        string? s = null;
+                        string? s;
                         if (polledArray != null)
                         {
-                            polledArray = Append(polledArray, lastI, _charBuffer, _charPos, i - _charPos);
-                            lastI += i - _charPos;
+                            polledArray = Append(polledArray, lastI, _charBuffer, _charPos, i);
+                            lastI += i;
                             s = new string(polledArray, 0, lastI);
                         }
                         else
@@ -936,8 +927,7 @@ namespace System.IO
 
                         _charPos += i + 1;
 
-                        if (ch == '\r' && (_charPos < _charLen ||
-                                           (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
+                        if (ch == '\r' && (_charPos < _charLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
                         {
                             if (_charBuffer[_charPos] == '\n')
                             {
@@ -952,8 +942,6 @@ namespace System.IO
 
                     polledArray = Append(polledArray, lastI, _charBuffer, _charPos, i);
                     lastI += i;
-                    // _sb ??= new StringBuilder(i + 80);
-                    // _sb.Append(_charBuffer, _charPos, i);
                 } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
 
                 return new string(polledArray, 0, lastI);
@@ -990,23 +978,17 @@ namespace System.IO
         private async Task<string> ReadToEndAsyncInternal()
         {
             // Call ReadBuffer, then pull data out of charBuffer.
-            if (_sb == null)
-            {
-                _sb = new StringBuilder(_charLen - _charPos);
-            }
-            else
-            {
-                _sb.Clear();
-            }
+
+            StringBuilder sb = new(_charLen - _charPos);
             do
             {
                 int tmpCharPos = _charPos;
-                _sb.Append(_charBuffer, tmpCharPos, _charLen - tmpCharPos);
+                sb.Append(_charBuffer.AsSpan(tmpCharPos, _charLen - tmpCharPos));
                 _charPos = _charLen;  // We consumed these characters
                 await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false);
             } while (_charLen > 0);
 
-            return _sb.ToString();
+            return sb.ToString();
         }
 
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
