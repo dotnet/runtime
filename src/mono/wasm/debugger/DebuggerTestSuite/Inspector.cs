@@ -42,7 +42,11 @@ namespace DebuggerTests
             Token = _cancellationTokenSource.Token;
 
             _loggerFactory = LoggerFactory.Create(builder =>
-                    builder.AddSimpleConsole(options => options.SingleLine = true)
+                    builder.AddSimpleConsole(options =>
+                            {
+                                options.SingleLine = true;
+                                options.TimestampFormat = "[HH:mm:ss] ";
+                            })
                            .AddFilter(null, LogLevel.Trace));
 
             Client = new InspectorClient(_loggerFactory.CreateLogger<InspectorClient>());
