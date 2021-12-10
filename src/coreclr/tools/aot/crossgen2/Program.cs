@@ -403,6 +403,12 @@ namespace ILCompiler
                     try
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
+                        if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0
+                            && module.PEReader.TryGetReadyToRunHeader(out int _))
+                        {
+                            Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
+                            continue;
+                        }
                         _allInputFilePaths.Add(inputFile.Key, inputFile.Value);
                         inputFilePaths.Add(inputFile.Key, inputFile.Value);
                         _referenceableModules.Add(module);
@@ -766,11 +772,6 @@ namespace ILCompiler
             foreach (string inputFilePath in inputPaths)
             {
                 EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFilePath);
-                if (module.PEReader.TryGetReadyToRunHeader(out int _))
-                {
-                    Console.WriteLine(SR.IgnoringCompositeImage, inputFilePath);
-                    continue;
-                }
                 if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0)
                 {
                     throw new CommandLineException(string.Format(SR.ManagedCppNotSupported, inputFilePath));
