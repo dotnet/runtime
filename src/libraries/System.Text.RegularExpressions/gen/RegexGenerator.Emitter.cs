@@ -3318,6 +3318,7 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.Boundary => $"Match if at a word boundary.",
                 RegexNode.Capture when node.N != -1 => $"{DescribeNonNegative(node.M)} capturing group. Uncaptures the {DescribeNonNegative(node.N)} capturing group.",
                 RegexNode.Capture when node.N == -1 => $"{DescribeNonNegative(node.M)} capturing group.",
+                RegexNode.Concatenate => "Match a sequence of expressions.",
                 RegexNode.ECMABoundary => $"Match if at a word boundary (according to ECMAScript rules).",
                 RegexNode.Empty => $"Match an empty string.",
                 RegexNode.End => "Match if at the end of the string.",
@@ -3353,9 +3354,18 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="depth">The depth of the current node.</param>
         private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, int depth = 0)
         {
-            bool skip =
-                node.Type is RegexNode.Concatenate ||
-                (node.Type == RegexNode.Atomic && node.Child(0).Type is RegexNode.Loop or RegexNode.Lazyloop or RegexNode.Alternate);
+            bool skip = node.Type switch
+            {
+                // For concatenations, flatten the contents into the parent, but only if the parent isn't a form of alternation,
+                // where each branch is considered to be independent rather than a concatenation.
+                RegexNode.Concatenate when node.Next is not { Type: RegexNode.Alternate or RegexNode.Testref or RegexNode.Testgroup } => true,
+
+                // For atomic, skip the node if we'll instead render the atomic label as part of rendering the child.
+                RegexNode.Atomic when node.Child(0).Type is RegexNode.Loop or RegexNode.Lazyloop or RegexNode.Alternate => true,
+
+                // Don't skip anything else.
+                _ => false,
+            };
 
             if (!skip)
             {
