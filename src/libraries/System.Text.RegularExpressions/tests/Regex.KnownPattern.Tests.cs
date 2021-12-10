@@ -1458,7 +1458,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [OuterLoop("Takes minutes to generate and compile thousands of expressions")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         public void PatternsDataSet_ConstructRegexForAll_SourceGenerated()
         {
             Parallel.ForEach(s_patternsDataSet.Value.Chunk(50), chunk =>
