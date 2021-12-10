@@ -2506,8 +2506,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             break;
                         case DebuggerBrowsableState.RootHidden:
                             var typeName = await GetTypeName(field.TypeId, token);
-                            if (typeName.StartsWith("System.Collections.Generic") ||
-                                typeName.EndsWith("[]"))
+                            if (typeName.StartsWith("System.Collections.Generic", StringComparison.Ordinal) ||
+                                typeName.EndsWith("[]", StringComparison.Ordinal))
                                 rootHiddenFields.Add(field);
                             break;
                         case DebuggerBrowsableState.Collapsed:
