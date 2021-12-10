@@ -2342,8 +2342,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var fields = await GetTypeFields(typeIdsIncludingParent[i], token);
                     var (regularFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParent[i], token);
 
-                    var regularObjects = await GetFieldsValues(regularFields, i == 0);
-                    var rootHiddenObjects = await GetFieldsValues(rootHiddenFields, i == 0, true);
+                    var regularObjects = await GetFieldsValues(regularFields, isOwn: i == 0);
+                    var rootHiddenObjects = await GetFieldsValues(rootHiddenFields, isOwn: i == 0, isRootHidden: true);
 
                     objectValues = new JArray(objectValues.Union(regularObjects));
                     objectValues = new JArray(objectValues.Union(rootHiddenObjects));
@@ -2373,14 +2373,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
             {
-                var retAfterRemove = new JArray();
                 List<List<FieldTypeClass>> allFields = new List<List<FieldTypeClass>>();
                 for (int i = 0; i < typeIdsIncludingParent.Count; i++)
                 {
                     var fields = await GetTypeFields(typeIdsIncludingParent[i], token);
-                    var (regularFields, _) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParent[i], token);
+                    var (regularFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParent[i], token);
                     allFields.Add(regularFields);
+                    allFields.Add(rootHiddenFields);
                 }
+                var retAfterRemove = new JArray();
                 foreach (var item in objectValues)
                 {
                     bool foundField = false;
@@ -2398,7 +2399,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (foundField)
                             break;
                     }
-                    if (!foundField) {
+                    if (!foundField)
+                    {
                         retAfterRemove.Add(item);
                     }
                 }
@@ -2406,7 +2408,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return objectValues;
 
-            async Task<JArray> GetFieldsValues(List<FieldTypeClass> fields, bool isParent, bool isRootHidden = false)
+            async Task<JArray> GetFieldsValues(List<FieldTypeClass> fields, bool isOwn, bool isRootHidden = false)
             {
                 JArray objFields = new JArray();
                 if (fields.Count == 0)
@@ -2427,7 +2429,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     long initialPos = retDebuggerCmdReader.BaseStream.Position;
                     int valtype = retDebuggerCmdReader.ReadByte();
                     retDebuggerCmdReader.BaseStream.Position = initialPos;
-                    var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, isOwn: isParent, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
+                    var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, isOwn: isOwn, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
                     if (objectValues.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any())
                         continue;
                     if (getCommandType.HasFlag(GetObjectCommandOptions.WithSetter))
@@ -2504,17 +2506,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                             break;
                         case DebuggerBrowsableState.RootHidden:
                             var typeName = await GetTypeName(field.TypeId, token);
-                            //var info = await GetTypeInfo(field.TypeId, token);
-                            if (typeName.StartsWith("System.Collections.Generic"))
-                            {
+                            if (typeName.StartsWith("System.Collections.Generic") ||
+                                typeName.EndsWith("[]"))
                                 rootHiddenFields.Add(field);
-                                break;
-                            }
-                            if (typeName.EndsWith("[]"))
-                            {
-                                rootHiddenFields.Add(field);
-                                break;
-                            }
                             break;
                         case DebuggerBrowsableState.Collapsed:
                             regularFields.Add(field);
