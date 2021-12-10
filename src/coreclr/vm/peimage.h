@@ -28,17 +28,55 @@ class SimpleRWLock;
 class Crst;
 
 // --------------------------------------------------------------------------------
-// PEImage is a PE file loaded by our "simulated LoadLibrary" mechanism.  A PEImage
-// can be loaded either FLAT (same layout as on disk) or MAPPED (PE sections
-// mapped into virtual addresses.)
+// PEImage is a PE file loaded into memory.
+// 
+// The actual data is represented by PEImageLayout instances which are created on demand.
 //
-// The MAPPED format is currently limited to "IL only" images - this can be checked
-// for via PEDecoder::IsILOnlyImage.
+// Various PEImageLayouts can be classified into two kinds -
+//  - Flat    - the same layout as on disk/array or
+// 
+//  - Loaded  - PE sections are mapped into virtual addresses.
+//              PE relocations are applied
+//              native exception handlers are registered with OS.
+// 
+// Flat layouts are sufficient for operatons that do not require running native code,
+// Anything based on RVA, such as retrieving IL method bodies, is slightly less efficient,
+// since RVA must be translated to file form.
+// The additional cost is not very high though, since our PEs have only a few sections.
 //
-// NOTE: PEImage will NEVER call LoadLibrary.
-// --------------------------------------------------------------------------------
-
-
+// Loaded layouts are functional supersets of Flat - anything that can be done with Flat
+// can be done with Loaded.
+// 
+// Running native code in the PE (i.e. R2R or IJW) scenarios require Loaded layout.
+// In a case of IJW, the PE must be loaded by the native loader to ensure that native dependencies
+// are resolved.
+// It is possible to execute R2R assembly from Flat layout in IL mode, but its R2R functionality
+// will be disabled.
+// 
+// In some scenarios we create Loaded layouts by manually mapping images into memory.
+// That is particularly true on Unix where we cannot rely on OS loader.
+// Manual creation of layouts is limited to "IL only" images - this can be checked
+// for via `PEDecoder::IsILOnlyImage`
+// NOTE: historically, and somewhat confusingly, R2R PEs are considered IsILOnlyImage for this
+//       purpose. That is true even for composite R2R PEs that do not contain IL.
+// 
+// A PEImage, depending on scenario, may end up creating both Flat and Loaded layouts,
+// thus it has two slots - m_pLayouts[IMAGE_COUNT].
+// 
+// m_pLayouts[IMAGE_FLAT]
+//   When initialized contains a layout that allows operations for which Flat layout is sufficient -
+//   i.e. reading metadata
+// 
+// m_pLayouts[IMAGE_LOADED]
+//   When initialized contains a layout that allows loading/running code.
+// 
+// The layouts can only be unloaded together with the owning PEImage, so if we have Flat and
+// then need Loaded, we can only add one more. Thus we have two slots.
+// 
+// Often the slots refer to the same layout though. That is because if we create Loaded before Flat,
+// we put it into both slots, since it is functionally a superset.
+// Also the pure-IL assemblies do not require Loaded, so we may put Flat into both slots.
+//
 
 #define CV_SIGNATURE_RSDS   0x53445352
 
@@ -285,7 +323,7 @@ private:
     };
 
     SimpleRWLock *m_pLayoutLock;
-    PTR_PEImageLayout m_pLayouts[IMAGE_COUNT] ;
+    PTR_PEImageLayout m_pLayouts[IMAGE_COUNT];
 
 #ifdef METADATATRACKER_DATA
     class MetaDataTracker   *m_pMDTracker;

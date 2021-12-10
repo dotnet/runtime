@@ -76,9 +76,28 @@ public:
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;
 
-class FlatImageLayout;
+// A simple layout where data stays the same as in the input (file or a byte array)
+class FlatImageLayout : public PEImageLayout
+{
+    VPTR_VTABLE_CLASS(FlatImageLayout, PEImageLayout)
+        VPTR_UNIQUE(0x59)
+protected:
+    CLRMapViewHolder m_FileView;
+public:
+    HandleHolder m_FileMap;
 
-// ConvertedImageView is for the case when we manually layout a flat image
+#ifndef DACCESS_COMPILE
+    FlatImageLayout(PEImage* pOwner);
+    FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
+    void* LoadImageByCopyingParts(SIZE_T* m_imageParts) const;
+#if TARGET_WINDOWS
+    void* LoadImageByMappingParts(SIZE_T* m_imageParts) const;
+#endif
+#endif
+};
+
+// ConvertedImageView is for the case when we construct a loaded
+// layout by mapping or copying portions of a flat layout
 class ConvertedImageLayout: public PEImageLayout
 {
     VPTR_VTABLE_CLASS(ConvertedImageLayout,PEImageLayout)
@@ -94,6 +113,7 @@ private:
     SIZE_T              m_imageParts[MAX_PARTS];
 };
 
+// LoadedImageLayout is for the case when we construct a loaded layout directly
 class LoadedImageLayout: public PEImageLayout
 {
     VPTR_VTABLE_CLASS(LoadedImageLayout,PEImageLayout)
@@ -113,27 +133,10 @@ public:
 #endif // !DACCESS_COMPILE
 };
 
-class FlatImageLayout: public PEImageLayout
-{
-    VPTR_VTABLE_CLASS(FlatImageLayout,PEImageLayout)
-    VPTR_UNIQUE(0x59)
-protected:
-    CLRMapViewHolder m_FileView;
-public:
-    HandleHolder m_FileMap;
-
 #ifndef DACCESS_COMPILE
-    FlatImageLayout(PEImage* pOwner);
-    FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
-    void* LoadImageByCopyingParts(SIZE_T* m_imageParts) const;
-#if TARGET_WINDOWS
-    void* LoadImageByMappingParts(SIZE_T* m_imageParts) const;
-#endif
-#endif
-
-};
-
-#ifndef DACCESS_COMPILE
+// A special layout that is used to load standalone composite r2r files.
+// This layout is not owned by a PEImage and created by simply loading the file
+// at the given path.
 class NativeImageLayout : public PEImageLayout
 {
     VPTR_VTABLE_CLASS(NativeImageLayout, PEImageLayout)
