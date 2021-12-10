@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateRunScript>false</GenerateRunScript>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XUnitWrapperLibrary/XUnitWrapperLibrary.csproj" />
+    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-dev.21608.1" />
+  </ItemGroup>
+</Project>

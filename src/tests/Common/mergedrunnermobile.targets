@@ -12,6 +12,10 @@
     </ItemGroup>
   </Target>
 
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/tests/Common/XHarnessRunnerLibrary/XHarnessRunnerLibrary.csproj" />
+  </ItemGroup>
+
   <!-- Don't use the usual script generation, the scripts it generates are not useful for these tests. -->
   <Target Name="GenerateExecutionScriptsInternal" />
   <Target Name="GenerateLocalRunnerScript" DependsOnTargets="GenerateRunScript" AfterTargets="PublishTestAsSelfContained" />
