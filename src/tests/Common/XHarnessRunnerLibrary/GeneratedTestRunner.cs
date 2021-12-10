@@ -61,7 +61,6 @@ public sealed class GeneratedTestRunner : TestRunner
 
     public override void SkipCategories(IEnumerable<string> categories)
     {
-        throw new NotImplementedException();
     }
 
     public override void SkipMethod(string method, bool isExcluded)
