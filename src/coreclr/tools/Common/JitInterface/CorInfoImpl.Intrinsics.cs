@@ -79,11 +79,6 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Get, "Get", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Address, "Address", null, null);
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Array_Set, "Set", null, null);
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal, "GetValueInternal", "System", "RuntimeTypeHandle");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Object_GetType, "GetType", "System", "Object");
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContext, "GetStubContext", "System.StubHelpers", "StubHelpers"); // interop-specific
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr, "GetStubContextAddr", "System.StubHelpers", "StubHelpers"); // interop-specific
-            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress, "NextCallReturnAddress", "System.StubHelpers", "StubHelpers");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor, ".ctor", "System", "ByReference`1");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value, "get_Value", "System", "ByReference`1");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetRawHandle, "EETypePtrOf", "System", "EETypePtr");
@@ -134,7 +129,6 @@ namespace Internal.JitInterface
                         return CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal;
                     break;
 
-                case CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Ctor:
                 case CorInfoIntrinsics.CORINFO_INTRINSIC_ByReference_Value:
                     if (pMustExpand != null)

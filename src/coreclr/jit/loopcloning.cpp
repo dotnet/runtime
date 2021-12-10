@@ -1604,7 +1604,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
 
     if (end->bbJumpDest != beg)
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'end' not looping to 'begin'.\n", loopInd);
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'bottom' not looping to 'top'.\n", loopInd);
         return false;
     }
 

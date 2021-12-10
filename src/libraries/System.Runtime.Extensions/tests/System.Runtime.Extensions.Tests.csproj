@@ -4,6 +4,7 @@
     <DefineConstants Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">$(DefineConstants);Unix</DefineConstants>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>

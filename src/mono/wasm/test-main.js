@@ -22,40 +22,37 @@ const originalConsole = {
     error: console.error
 };
 
-let isXUnitDoneCheck = false;
-let isXmlDoneCheck = false;
-
-function proxyMethod(prefix, func, asJson) {
+function proxyConsoleMethod(prefix, func, asJson) {
     return function () {
-        const args = [...arguments];
-        let payload = args[0];
-        if (payload === undefined) payload = 'undefined';
-        else if (payload === null) payload = 'null';
-        else if (typeof payload === 'function') payload = payload.toString();
-        else if (typeof payload !== 'string') {
-            try {
-                payload = JSON.stringify(payload);
-            } catch (e) {
-                payload = payload.toString();
+        try {
+            const args = [...arguments];
+            let payload = args[0];
+            if (payload === undefined) payload = 'undefined';
+            else if (payload === null) payload = 'null';
+            else if (typeof payload === 'function') payload = payload.toString();
+            else if (typeof payload !== 'string') {
+                try {
+                    payload = JSON.stringify(payload);
+                } catch (e) {
+                    payload = payload.toString();
+                }
             }
-        }
-        if (payload.indexOf("=== TEST EXECUTION SUMMARY ===") != -1) {
-            isXUnitDoneCheck = true;
-        }
 
-        if (payload.startsWith("STARTRESULTXML")) {
-            originalConsole.log('Sending RESULTXML')
-            isXmlDoneCheck = true;
-            func(payload);
-        }
-        else if (asJson) {
-            func(JSON.stringify({
-                method: prefix,
-                payload: payload,
-                arguments: args
-            }));
-        } else {
-            func([prefix + payload, ...args.slice(1)]);
+            if (payload.startsWith("STARTRESULTXML")) {
+                originalConsole.log('Sending RESULTXML')
+                func(payload);
+            }
+            else if (asJson) {
+                func(JSON.stringify({
+                    method: prefix,
+                    payload: payload,
+                    arguments: args
+                }));
+            } else {
+                func([prefix + payload, ...args.slice(1)]);
+            }
+        } catch (err) {
+            originalConsole.error(`proxyConsole failed: ${err}`)
         }
     };
 };
@@ -63,7 +60,7 @@ function proxyMethod(prefix, func, asJson) {
 const methods = ["debug", "trace", "warn", "info", "error"];
 for (let m of methods) {
     if (typeof (console[m]) !== "function") {
-        console[m] = proxyMethod(`console.${m}: `, console.log, false);
+        console[m] = proxyConsoleMethod(`console.${m}: `, console.log, false);
     }
 }
 
@@ -94,7 +91,7 @@ if (is_browser) {
 
     // redirect output early, so that when emscripten starts it's already redirected
     for (let m of ["log", ...methods])
-        console[m] = proxyMethod(`console.${m}`, send, true);
+        console[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 
 if (typeof globalThis.crypto === 'undefined') {
@@ -369,20 +366,9 @@ async function loadDotnet(file) {
         };
     } else if (is_browser) { // vanila JS in browser
         loadScript = async function (file) {
-            const script = document.createElement("script");
-            script.src = file;
-            document.head.appendChild(script);
-            let timeout = 100;
-            // bysy spin waiting for script to load into global namespace
-            while (timeout > 0) {
-                if (globalThis.createDotnetRuntime) {
-                    return globalThis.createDotnetRuntime;
-                }
-                // delay 10ms
-                await new Promise(resolve => setTimeout(resolve, 10));
-                timeout--;
-            }
-            throw new Error("Can't load " + file);
+            globalThis.exports = {}; // if we are loading cjs file
+            const createDotnetRuntime = await import(file);
+            return typeof createDotnetRuntime === "function" ? createDotnetRuntime : globalThis.exports.createDotnetRuntime;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {

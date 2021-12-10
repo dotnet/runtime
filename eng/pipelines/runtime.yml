@@ -1026,7 +1026,8 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
-    - Linux_arm64
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -1035,7 +1036,10 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: minijit
       condition: >-
-        eq(variables['isFullMatrix'], true)
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
@@ -1047,7 +1051,8 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
-    - Linux_arm64
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -1056,7 +1061,10 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: monointerpreter
       condition: >-
-        eq(variables['isFullMatrix'], true)
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
 # Only when Mono is changed
@@ -1078,7 +1086,10 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: llvmaot
       condition: >-
-        eq(variables['isFullMatrix'], true)
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
@@ -1101,7 +1112,10 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: llvmfullaot
       condition: >-
-        eq(variables['isFullMatrix'], true)
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Libraries Release Test Execution against a release mono runtime.

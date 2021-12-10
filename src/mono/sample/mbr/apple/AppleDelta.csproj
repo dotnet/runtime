@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <MonoForceInterpreter>true</MonoForceInterpreter>
