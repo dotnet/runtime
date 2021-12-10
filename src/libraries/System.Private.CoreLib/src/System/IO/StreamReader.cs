@@ -818,7 +818,6 @@ namespace System.IO
                     char ch = _charBuffer[_charPos + i];
 
                     string? s;
-
                     if (sb is { Length: > 0 })
                     {
                         sb.Append(_charBuffer.AsSpan(_charPos, i));
@@ -828,7 +827,7 @@ namespace System.IO
                     {
                         s = new string(_charBuffer, _charPos, i);
                     }
-                    _charPos = i + 1;
+                    _charPos += i + 1;
                     if (ch == '\r' && (_charPos < _charLen || ReadBuffer() > 0))
                     {
                         if (_charBuffer[_charPos] == '\n')
@@ -924,9 +923,7 @@ namespace System.IO
                         {
                             s = new string(_charBuffer, _charPos, i);
                         }
-
                         _charPos += i + 1;
-
                         if (ch == '\r' && (_charPos < _charLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
                         {
                             if (_charBuffer[_charPos] == '\n')
@@ -943,7 +940,6 @@ namespace System.IO
                     polledArray = Append(polledArray, lastI, _charBuffer, _charPos, i);
                     lastI += i;
                 } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
-
                 return new string(polledArray, 0, lastI);
             }
             finally
