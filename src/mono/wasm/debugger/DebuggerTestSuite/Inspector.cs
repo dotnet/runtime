@@ -179,6 +179,7 @@ namespace DebuggerTests
             }
             else if (fail)
             {
+                args["__forMethod"] = method;
                 FailAllWaiters(new ArgumentException(args.ToString()));
             }
         }
