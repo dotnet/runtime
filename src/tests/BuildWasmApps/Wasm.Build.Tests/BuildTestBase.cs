@@ -147,7 +147,7 @@ namespace Wasm.Build.Tests
             string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config), "AppBundle");
             (string testCommand, string extraXHarnessArgs) = host switch
             {
-                RunHost.V8 => ("wasm test", "--js-file=main.js --engine=V8 -v trace"),
+                RunHost.V8 => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),
                 _          => ("wasm test-browser", $"-v trace -b {host}")
             };
 
@@ -480,7 +480,7 @@ namespace Wasm.Build.Tests
             AssertFilesExist(bundleDir, new []
             {
                 "index.html",
-                "main.js",
+                "test-main.js",
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
