@@ -2316,7 +2316,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (debuggerProxy != null)
                     return debuggerProxy;
             }
-            var className = await GetTypeName(typeIdsIncludingParent[0], token);
             JArray objectValues = new JArray();
             if (await IsDelegate(objectId, token))
             {
@@ -2336,17 +2335,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             for (int i = 0; i < typeIdsIncludingParent.Count; i++)
             {
+                int typeId = typeIdsIncludingParent[i];
+                // 0th id is for the object itself, and then its parents
+                bool isOwn = i == 0;
+
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                 {
-                    className = await GetTypeName(typeIdsIncludingParent[i], token);
                     var fields = await GetTypeFields(typeIdsIncludingParent[i], token);
                     var (regularFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParent[i], token);
 
-                    var regularObjects = await GetFieldsValues(regularFields, isOwn: i == 0);
-                    var rootHiddenObjects = await GetFieldsValues(rootHiddenFields, isOwn: i == 0, isRootHidden: true);
-
-                    objectValues.AddRange(regularObjects);
-                    objectValues.AddRange(rootHiddenObjects);
+                    objectValues.AddRange(await GetFieldsValues(regularFields, isOwn));
+                    objectValues.AddRange(await GetFieldsValues(rootHiddenFields, isOwn, isRootHidden: true));
                 }
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
                     return objectValues;
