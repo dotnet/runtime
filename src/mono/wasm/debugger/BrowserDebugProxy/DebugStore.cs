@@ -506,48 +506,53 @@ namespace Microsoft.WebAssembly.Diagnostics
             else
                 FullName = Name;
 
-            DebuggerBrowsableFields = GetDebuggerBrowsable(type.GetFields());
-            DebuggerBrowsableProperties = GetDebuggerBrowsable(type.GetProperties());
-
-            Dictionary<string, DebuggerBrowsableState?> GetDebuggerBrowsable(dynamic typeCollection)
+            foreach (var field in type.GetFields())
             {
-                var fields = new Dictionary<string, DebuggerBrowsableState?>();
-                foreach (FieldDefinitionHandle field in typeCollection)
+                try
+                {
+                    var fieldDefinition = metadataReader.GetFieldDefinition(field);
+                    var fieldName = metadataReader.GetString(fieldDefinition.Name);
+                    AppendToBrowsable(DebuggerBrowsableFields, fieldDefinition.GetCustomAttributes(), fieldName);
+                }
+                catch { continue; }
+            }
+
+            foreach (var prop in type.GetProperties())
+            {
+                try
+                {
+                    var propDefinition = metadataReader.GetPropertyDefinition(prop);
+                    var propdName = metadataReader.GetString(propDefinition.Name);
+                    AppendToBrowsable(DebuggerBrowsableProperties, propDefinition.GetCustomAttributes(), propdName);
+                }
+                catch { continue; }
+            }
+
+            void AppendToBrowsable(Dictionary<string, DebuggerBrowsableState?> dict, CustomAttributeHandleCollection customAttrs, string fieldName)
+            {
+                foreach (var cattr in customAttrs)
                 {
                     try
                     {
-                        var fieldDefinition = metadataReader.GetFieldDefinition(field);
-                        var fieldName = metadataReader.GetString(fieldDefinition.Name);
-                        foreach (var cattr in fieldDefinition.GetCustomAttributes())
-                        {
-                            try
-                            {
-                                var ctorHandle = metadataReader.GetCustomAttribute(cattr).Constructor;
-                                if (ctorHandle.Kind != HandleKind.MemberReference)
-                                    continue;
-                                var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
-                                var valueBytes = metadataReader.GetBlobBytes(metadataReader.GetCustomAttribute(cattr).Value);
-                                var attributeName = metadataReader.GetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                                if (attributeName != "DebuggerBrowsableAttribute")
-                                    continue;
-                                var state = (DebuggerBrowsableState)valueBytes[2];
-                                if (!Enum.IsDefined(typeof(DebuggerBrowsableState), state))
-                                    continue;
-                                fields.Add(fieldName, state);
-                                break;
-                            }
-                            catch
-                            {
-                                continue;
-                            }
-                        }
+                        var ctorHandle = metadataReader.GetCustomAttribute(cattr).Constructor;
+                        if (ctorHandle.Kind != HandleKind.MemberReference)
+                            continue;
+                        var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
+                        var valueBytes = metadataReader.GetBlobBytes(metadataReader.GetCustomAttribute(cattr).Value);
+                        var attributeName = metadataReader.GetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                        if (attributeName != "DebuggerBrowsableAttribute")
+                            continue;
+                        var state = (DebuggerBrowsableState)valueBytes[2];
+                        if (!Enum.IsDefined(typeof(DebuggerBrowsableState), state))
+                            continue;
+                        dict.Add(fieldName, state);
+                        break;
                     }
                     catch
                     {
                         continue;
                     }
                 }
-                return fields;
             }
         }
 
