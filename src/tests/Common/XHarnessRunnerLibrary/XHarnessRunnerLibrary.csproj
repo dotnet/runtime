@@ -12,6 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../XUnitWrapperLibrary/XUnitWrapperLibrary.csproj" />
-    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-dev.21608.1" />
+    <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Common" Version="$(MicrosoftDotNetXHarnessTestRunnersCommonVersion)" />
   </ItemGroup>
 </Project>
