@@ -254,11 +254,9 @@ namespace System.Runtime.InteropServices.JavaScript
             var typePtr = argType.TypeHandle.Value;
             var converterKey = $"type{typePtr.ToInt32()}";
             state.TypeReferences.Add((converterKey, typePtr.ToInt32()));
-            var convertedKey = $"converted{state.ArgIndex}";
-            var callArgs = $"{state.ArgKey}, methodPtr, {state.ArgIndex}";
-            state.Output.AppendLine($"  const {convertedKey} = {converterKey}({callArgs});");
 
-            state.Output.AppendLine($"  rootBuffer.set({state.RootIndex}, {convertedKey});");
+            var callArgs = $"{state.ArgKey}, methodPtr, {state.ArgIndex}";
+            state.Output.AppendLine($"  rootBuffer.set({state.RootIndex}, {converterKey}({callArgs}));");
             state.RootIndex += 1;
 
             if (argType.IsValueType) {
@@ -267,10 +265,13 @@ namespace System.Runtime.InteropServices.JavaScript
                 // HACK: We need to do all these unboxes last after all the transform steps have run,
                 //  because invoking a converter or creating a string instance could cause a GC and move
                 //  the rooted object to a new location, invalidating the unbox_rooted return value.
-                state.Phase2.AppendLine($"  const {unboxedKey} = mono_wasm_unbox_rooted({convertedKey});");
+                state.Phase2.AppendLine($"  const {unboxedKey} = mono_wasm_unbox_rooted(rootBuffer.get({state.RootIndex}));");
                 state.Phase2.AppendLine($"  setU32(directBuffer + {state.DirectOffset}, {unboxedKey});");
             } else {
-                state.Output.AppendLine($"  setU32(directBuffer + {state.DirectOffset}, {convertedKey});");
+                // Note that even though we aren't unboxing, we still read the object address back from
+                //  the root buffer, because the conversion steps may have caused a GC and moved the
+                //  object after we initially created it.
+                state.Phase2.AppendLine($"  setU32(directBuffer + {state.DirectOffset}, rootBuffer.get({state.RootIndex}));");
             }
 
             state.DirectOffset += PointerSize;
