@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Configuration
         public ReferenceCountedProviders GetReference()
         {
             // Lock to ensure oldRefCountedProviders.Dispose() in ReplaceProviders() doesn't decrement ref count to zero
-            // before calling _refCountedProviders.AddRef().
+            // before calling _refCountedProviders.AddReference().
             lock (_replaceProvidersLock)
             {
                 _refCountedProviders.AddReference();
