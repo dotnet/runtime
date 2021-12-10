@@ -22,7 +22,7 @@ PALEXPORT int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monito
 
 PALEXPORT void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor);
 
-PALEXPORT int32_t SystemNative_RuntimeThread_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter);
+PALEXPORT int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter);
 
 PALEXPORT int32_t SystemNative_SchedGetCpu(void);
 
