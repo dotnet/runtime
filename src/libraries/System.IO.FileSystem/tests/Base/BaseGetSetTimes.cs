@@ -90,7 +90,9 @@ namespace System.IO.Tests
         public void SettingUpdatesPropertiesWhenReadOnly()
         {
             if (!CanBeReadOnly)
+            {
                 return; // directories can't be read only, so automatic pass
+            }
 
             T item = GetExistingItem(readOnly: true);
             SettingUpdatesPropertiesCore(item);

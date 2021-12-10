@@ -18,7 +18,9 @@ namespace System.IO.Tests
             File.Create(path).Dispose();
 
             if (readOnly)
+            {
                 File.SetAttributes(path, FileAttributes.ReadOnly);
+            }
 
             return new FileInfo(path);
         }
