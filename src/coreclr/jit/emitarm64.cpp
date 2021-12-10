@@ -15648,7 +15648,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
         else if ((size == EA_4BYTE) && (emitLastIns != nullptr) && !isFirstInstrInBlock)
         {
-            // See if the previos instruction already cleared upper 4 bytes for us unintentionally
+            // See if the previous instruction already cleared upper 4 bytes for us unintentionally
             if ((emitLastIns->idIns() == INS_ldr) && (emitLastIns->idReg1() == dst) &&
                 (emitLastIns->idOpSize() == EA_4BYTE))
             {
