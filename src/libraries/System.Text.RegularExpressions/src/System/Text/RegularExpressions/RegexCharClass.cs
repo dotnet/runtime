@@ -1924,25 +1924,16 @@ namespace System.Text.RegularExpressions
             };
 
         [ExcludeFromCodeCoverage]
-        private static string CategoryDescription(char ch)
-        {
-            if (ch == SpaceConst)
+        private static string CategoryDescription(char ch) =>
+            (short)ch switch
             {
-                return "\\s";
-            }
-
-            if ((short)ch == NotSpaceConst)
-            {
-                return "\\S";
-            }
-
-            if ((short)ch < 0)
-            {
-                return "\\P{" + CategoryIdToName[(-((short)ch) - 1)] + "}";
-            }
-
-            return "\\p{" + CategoryIdToName[(ch - 1)] + "}";
-        }
+                SpaceConst => @"\s",
+                NotSpaceConst => @"\S",
+                (short)(UnicodeCategory.DecimalDigitNumber + 1) => @"\d",
+                -(short)(UnicodeCategory.DecimalDigitNumber + 1) => @"\D",
+                < 0 => $"\\P{{{CategoryIdToName[-(short)ch - 1]}}}",
+                _ => $"\\p{{{CategoryIdToName[ch - 1]}}}",
+            };
 
         /// <summary>
         /// A first/last pair representing a single range of characters.
