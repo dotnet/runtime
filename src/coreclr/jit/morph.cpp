@@ -6249,8 +6249,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
         else
         {
-            // Normal static field reference
+            assert(!fieldMayOverlap);
 
+            // Normal static field reference
             //
             // If we can we access the static's address directly
             // then pFldAddr will be NULL and
@@ -6266,9 +6267,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // For boxed statics, this direct address will be for the box. We have already added
             // the indirection for the field itself and attached the sequence, in importation.
             bool          isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
-            FieldSeqNode* fldSeq        = (!isBoxedStatic && !fieldMayOverlap)
-                ? GetFieldSeqStore()->CreateSingleton(symHnd)
-                : FieldSeqStore::NotAField();
+            FieldSeqNode* fldSeq =
+                !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(symHnd) : FieldSeqStore::NotAField();
 
 #ifdef TARGET_64BIT
             bool isStaticReadOnlyInited = false;

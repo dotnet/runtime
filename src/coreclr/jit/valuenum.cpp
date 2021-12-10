@@ -4228,8 +4228,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq)
     else if (funcApp.m_func == VNF_PtrToStatic)
     {
         ValueNum fldSeqVN = VNForFieldSeq(fldSeq);
-        res               = VNForFunc(TYP_BYREF, VNF_PtrToStatic, funcApp.m_args[0],
-                                      FieldSeqVNAppend(funcApp.m_args[1], fldSeqVN));
+        res = VNForFunc(TYP_BYREF, VNF_PtrToStatic, funcApp.m_args[0], FieldSeqVNAppend(funcApp.m_args[1], fldSeqVN));
     }
     else if (funcApp.m_func == VNF_PtrToArrElem)
     {
@@ -7949,24 +7948,16 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             FieldSeqNode* fldSeq = lhs->AsClsVar()->gtFieldSeq;
             assert(fldSeq != nullptr);
 
-            if (fldSeq == FieldSeqStore::NotAField())
-            {
-                // (Possibly) overlapping RVA static - mutate the heaps.
-                fgMutateGcHeap(tree DEBUGARG("NotAField store"));
-            }
-            else
-            {
-                // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
-                ValueNum storeVal  = rhsVNPair.GetLiberal();
-                ValueNum newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
-                                                                     storeVal, lhs->TypeGet());
-
-                // Update the field map for the fgCurMemoryVN and SSA for the tree
-                recordGcHeapStore(tree, newHeapVN DEBUGARG("Static Field store"));
-            }
+            // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
+            ValueNum storeVal = rhsVNPair.GetLiberal();
+            ValueNum newHeapVN =
+                vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, storeVal, lhs->TypeGet());
 
             // bbMemoryDef must include GcHeap for any block that mutates the GC heap
             assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
+
+            // Update the field map for the fgCurMemoryVN and SSA for the tree
+            recordGcHeapStore(tree, newHeapVN DEBUGARG("Static Field store"));
         }
         break;
 
@@ -8186,7 +8177,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                                 ValueNum selectedStaticVar;
                                 size_t   structSize = 0;
                                 selectedStaticVar   = vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap],
-                                                                                fldSeqForStaticVar, &structSize);
+                                                                              fldSeqForStaticVar, &structSize);
                                 selectedStaticVar =
                                     vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, indType, structSize);
 
@@ -8650,24 +8641,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     if (fldSeq == FieldSeqStore::NotAField())
                     {
-                        // "NotAField" here can mean two things (see "fgMorphField"):
-                        //  1. This is the box for a "boxed static" field.
-                        //  2. This is an overlapping RVA field.
-                        //
-                        if (gtIsStaticFieldPtrToBoxedStruct(clsVar->TypeGet(), fieldHnd))
-                        {
-                            // We will create an empty field sequence for VNF_PtrToStatic here. We will assume
-                            // the actual sequence will get appended later, when processing the TARGET_POINTER_SIZE
-                            // offset that is always added to this box to get to its payload.
+                        // This is the box for a "boxed static" - see "fgMorphField".
+                        assert(gtIsStaticFieldPtrToBoxedStruct(clsVar->TypeGet(), fieldHnd));
 
-                            ValueNum fieldHndVN = vnStore->VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
-                            ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
-                            clsVarVNPair.SetBoth(vnStore->VNForFunc(TYP_REF, VNF_PtrToStatic, fieldHndVN, fieldSeqVN));
-                        }
-                        else
-                        {
-                            clsVarVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                        }
+                        // We will create an empty field sequence for VNF_PtrToStatic here. We will assume
+                        // the actual sequence will get appended later, when processing the TARGET_POINTER_SIZE
+                        // offset that is always added to this box to get to its payload.
+
+                        ValueNum fieldHndVN = vnStore->VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
+                        ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
+                        clsVarVNPair.SetBoth(vnStore->VNForFunc(TYP_REF, VNF_PtrToStatic, fieldHndVN, fieldSeqVN));
                     }
                     else
                     {
@@ -8675,8 +8658,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
 
                         size_t structSize = 0;
-                        selectedStaticVar = vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap],
-                                                                      fldSeq, &structSize);
+                        selectedStaticVar =
+                            vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, &structSize);
                         selectedStaticVar =
                             vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, tree->TypeGet(), structSize);
 

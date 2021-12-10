@@ -8144,24 +8144,21 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                                               var_types               lclTyp)
 {
     // Ordinary static fields never overlap. RVA statics, however, can overlap (if they're
-    // mapped to the same ".data" declaration). We used to not support value numbering of
-    // RVA statics at all, so we'll take the very conservative approach of assuming all
-    // RVA statics do in fact overlap and cannot be reasoned about reliably.
-    bool fieldMayOverlap = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
+    // mapped to the same ".data" declaration). That said, such mappings only appear to be
+    // possible with ILASM, and in ILASM-produced (ILONLY) images, RVA statics are always
+    // read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
+    // be mutable, but the only current producer of such images, the C++/CLI compiler, does
+    // not appear to support mapping different fields to the same address. So we will say
+    // that "mutable overlapping RVA statics" are UB as well. If this ever changes, code in
+    // morph and value numbering will need to be updated to respect "gtFldMayOverlap" and
+    // "NotAField FldSeq".
 
     // For statics that are not "boxed", the initial address tree will contain the field sequence.
     // For those that are, we will attach it later, when adding the indirection for the box, since
     // that tree will represent the true address.
     bool          isBoxedStatic = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
-    FieldSeqNode* innerFldSeq   = (!isBoxedStatic && !fieldMayOverlap)
-        ? GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField)
-        : FieldSeqStore::NotAField();
-
-    // It is the case that in the current VM implementation RVA statics are never boxed. But
-    // let's be resilient against the possibility (however remote) of that ceasing to be true.
-    FieldSeqNode* outerFldSeq = (isBoxedStatic && !fieldMayOverlap)
-        ? GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField)
-        : FieldSeqStore::NotAField();
+    FieldSeqNode* innerFldSeq =
+        !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField) : FieldSeqStore::NotAField();
 
     GenTree* op1;
     switch (pFieldInfo->fieldAccessor)
@@ -8281,8 +8278,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             else // We need the value of a static field
             {
                 // In future, it may be better to just create the right tree here instead of folding it later.
-                op1                             = gtNewFieldRef(lclTyp, pResolvedToken->hField);
-                op1->AsField()->gtFldMayOverlap = fieldMayOverlap;
+                op1 = gtNewFieldRef(lclTyp, pResolvedToken->hField);
 
                 if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
@@ -8291,6 +8287,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
                 if (isBoxedStatic)
                 {
+                    FieldSeqNode* outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+
                     op1->ChangeType(TYP_REF); // points at boxed object
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
 
@@ -8315,6 +8313,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     if (isBoxedStatic)
     {
+        FieldSeqNode* outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+
         op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
         op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
 
