@@ -2048,7 +2048,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
             if (structPromotionInfo.fieldCnt == 2)
             {
                 unsigned structSize = varDsc->GetLayout()->GetSize();
-                if (structPromotionInfo.fields[0].fldSize * 2 != structSize)
+                if ((structPromotionInfo.fields[0].fldSize + structPromotionInfo.fields[1].fldSize) != structSize)
                 {
                     // Ensure that the combined fldSize matches the structSize otherwise partial information might
                     // be passed.
