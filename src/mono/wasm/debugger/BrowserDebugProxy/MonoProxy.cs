@@ -438,9 +438,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             SendResponse(id, Result.Err($"Unable to RuntimeGetProperties '{objectId}'"), token);
                         }
                         else
-                        {
                             SendResponse(id, Result.OkFromObject(ret), token);
-                        }
                         return true;
                     }
 
