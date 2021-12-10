@@ -582,7 +582,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<int> GetDebugId(MonoSDBHelper sdbAgent, CancellationToken token)
         {
-            if (debugId != -1)
+            if (debugId > 0)
                 return debugId;
             debugId = await sdbAgent.GetAssemblyId(Name, token);
             return debugId;
@@ -590,7 +590,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public void SetDebugId(int id)
         {
-            debugId = id;
+            if (debugId <= 0 && debugId != id)
+                debugId = id;
         }
 
         public bool EnC(byte[] meta, byte[] pdb)
