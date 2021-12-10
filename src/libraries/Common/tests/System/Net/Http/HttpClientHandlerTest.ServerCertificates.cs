@@ -95,18 +95,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Fact]
-        public async Task NoCallback_ValidCertificate_FQDN_Succeeds()
-        {
-            using (HttpClient client = CreateHttpClient())
-            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteFQDNServer))
-            {
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            }
-
-        }
-
-        [OuterLoop("Uses external servers")]
-        [Fact]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
