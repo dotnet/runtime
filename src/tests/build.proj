@@ -25,6 +25,7 @@
     <RestoreProjects Include="Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperGenerator\XUnitWrapperGenerator.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperLibrary\XUnitWrapperLibrary.csproj" />
+    <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />
     <RestoreProjects Include="Common\external\external.csproj" />
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
   </ItemGroup>

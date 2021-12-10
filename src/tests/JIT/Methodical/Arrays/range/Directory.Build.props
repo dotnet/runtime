@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
+
+  <PropertyGroup>
+    <AssemblyName>$(MSBuildProjectName.Replace("_il_dbg", "").Replace("_il_rel", ""))</AssemblyName>
+  </PropertyGroup>
+</Project>

@@ -7,6 +7,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <Nullable>enable</Nullable>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>

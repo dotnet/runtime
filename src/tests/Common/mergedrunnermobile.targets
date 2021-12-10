@@ -3,6 +3,7 @@
   <PropertyGroup>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <WasmMainAssemblyFileName>$(AssemblyName).dll</WasmMainAssemblyFileName>
     <TestFramework>GeneratedRunner</TestFramework>
   </PropertyGroup>
 
@@ -11,6 +12,10 @@
       <RuntimePackAsset Include="@(RuntimeFiles);@(LibrariesRuntimeFiles)" AssetType="runtime" />
     </ItemGroup>
   </Target>
+
+  <ItemGroup>
+    <RuntimePackAsset Include="$(TargetingPackPath)/*.dll" AssetType="runtime" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(RepoRoot)/src/tests/Common/XHarnessRunnerLibrary/XHarnessRunnerLibrary.csproj" />
