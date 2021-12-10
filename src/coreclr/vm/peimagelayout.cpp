@@ -979,10 +979,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
 
     pReserved = AllocPlaceholder(usedBaseAddr, reserveSize);
     if (pReserved == NULL)
-    {
-        _ASSERTE(!"FAILED");
         goto FAILED;
-    }
 
     PVOID reservedEnd = (char*)pReserved + reserveSize;
     IMAGE_DOS_HEADER* loadedHeader = (IMAGE_DOS_HEADER*)((SIZE_T)pReserved + OffsetWithinPage(offset));
@@ -996,17 +993,11 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     SIZE_T mapSize = mapEnd - mapFrom;
     PVOID  pMapped = SplitPlaceholder(pReserved, reservedEnd, mapSize);
     if (!pMapped)
-    {
-        _ASSERTE(!"FAILED");
         goto FAILED;
-    }
 
     pMapped = MapIntoPlaceholder(m_FileMap, mapFrom, pMapped, mapSize, PAGE_READONLY);
     if (!pMapped)
-    {
-        _ASSERTE(!"FAILED");
         goto FAILED;
-    }
 
     m_imageParts[imagePartIndex++] = MappedPart(pMapped);
 
@@ -1017,7 +1008,8 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
         + VAL16(ntHeader->FileHeader.SizeOfOptionalHeader));
 
     unsigned numSections = ntHeader->FileHeader.NumberOfSections;
-    if (numSections + 2 > ConvertedImageLayout::MAX_PARTS)
+    // in a worst case we need 2 parts for every section and a header + 1 for unused tail.
+    if ((numSections + 1) * 2 + 1 > ConvertedImageLayout::MAX_PARTS)
     {
         // too many sections. we do not expect this and do not want to handle here, but it is not an error.
         _ASSERTE(!"too many sections");
@@ -1043,16 +1035,17 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
         // Is there space between the previous section and this one? If so, split an unmapped placeholder to cover it.
         if ((SIZE_T)pReserved < sectionBaseAligned)
         {
+            // we can handle a hole between sections, but it may indicate a noncompliant R2R PE.
+            _ASSERTE(!"Hole between sections");
+
             SIZE_T holeSize = (SIZE_T)sectionBaseAligned - (SIZE_T)pReserved;
             _ASSERTE((char*)pReserved + holeSize <= reservedEnd);
             PVOID pHole = SplitPlaceholder(pReserved, reservedEnd, holeSize);
             if (!pHole)
-            {
-                _ASSERTE(!"FAILED");
                 goto FAILED;
-            }
 
-            VirtualFree(pHole, 0, MEM_RELEASE);
+            // can't MEM_RELEASE the unused part yet, since the image must be contiguous. (see AssociateMemoryWithLoaderAllocator)
+            m_imageParts[imagePartIndex++] = AllocatedPart(pHole);
         }
 
         DWORD pageProtection = currentHeader.Characteristics & IMAGE_SCN_MEM_EXECUTE ?
@@ -1080,17 +1073,11 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
             _ASSERTE((char*)pReserved + mapSize <= reservedEnd);
             pMapped = SplitPlaceholder(pReserved, reservedEnd, mapSize);
             if (!pMapped)
-            {
-                _ASSERTE(!"FAILED");
                 goto FAILED;
-            }
 
             pMapped = MapIntoPlaceholder(m_FileMap, mapFrom, pMapped, mapSize, pageProtection);
             if (!pMapped)
-            {
-                _ASSERTE(!"FAILED");
                 goto FAILED;
-            }
 
             m_imageParts[imagePartIndex++] = MappedPart(pMapped);
         }
@@ -1103,17 +1090,11 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
             _ASSERTE((char*)pReserved + toAllocate <= reservedEnd);
             PVOID pAllocated = SplitPlaceholder(pReserved, reservedEnd, toAllocate);
             if (!pAllocated)
-            {
-                _ASSERTE(!"FAILED");
                 goto FAILED;
-            }
 
             pAllocated = CommitIntoPlaceholder(pAllocated, toAllocate, PAGE_READWRITE);
             if (!pAllocated)
-            {
-                _ASSERTE(!"FAILED");
                 goto FAILED;
-            }
 
             m_imageParts[imagePartIndex++] = AllocatedPart(pAllocated);
 
@@ -1122,10 +1103,13 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
         }
     }
 
-    // Is there reserved space that we did not use? If so, release it.
+    // Is there reserved space that we did not use?
     if (pReserved < reservedEnd)
     {
-        VirtualFree(pReserved, 0, MEM_RELEASE);
+        // we can handle an image that request extra VM size, but it may indicate a noncompliant R2R PE.
+        _ASSERTE(!"Unused part of an image.");
+        // can't MEM_RELEASE the unused part yet, since the image must be contiguous. (see AssociateMemoryWithLoaderAllocator)
+        m_imageParts[imagePartIndex++] = AllocatedPart(pReserved);
     }
 
     return loadedHeader;
