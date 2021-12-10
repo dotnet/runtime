@@ -262,9 +262,18 @@ check_symbol_exists(
     HAVE_SCHED_SETAFFINITY)
 
 check_symbol_exists(
+    sched_getcpu
+    "sched.h"
+    HAVE_SCHED_GETCPU)
+
+check_symbol_exists(
     pthread_setcancelstate
     "pthread.h"
     HAVE_PTHREAD_SETCANCELSTATE)
+
+check_include_files(
+    gnu/lib-names.h
+    HAVE_GNU_LIBNAMES_H)
 
 check_symbol_exists(
     arc4random_buf

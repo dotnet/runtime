@@ -2606,7 +2606,7 @@ public:
     bool HasMDContextArg()
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || IsPInvokeStub();
+        return IsCLRToCOMStub() || (IsPInvokeStub() && !IsDelegateStub());
     }
 
     //

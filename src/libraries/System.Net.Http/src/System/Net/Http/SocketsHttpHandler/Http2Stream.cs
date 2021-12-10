@@ -195,7 +195,7 @@ namespace System.Net.Http
 
                     if (sendRequestContent)
                     {
-                        using var writeStream = new Http2WriteStream(this);
+                        using var writeStream = new Http2WriteStream(this, _request.Content.Headers.ContentLength.GetValueOrDefault(-1));
 
                         if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
 
@@ -212,6 +212,12 @@ namespace System.Net.Http
                             }
 
                             await vt.ConfigureAwait(false);
+                        }
+
+                        if (writeStream.BytesWritten < writeStream.ContentLength)
+                        {
+                            // The number of bytes we actually sent doesn't match the advertised Content-Length
+                            throw new HttpRequestException(SR.Format(SR.net_http_request_content_length_mismatch, writeStream.BytesWritten, writeStream.ContentLength));
                         }
 
                         if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
@@ -1506,10 +1512,14 @@ namespace System.Net.Http
 
                 public long BytesWritten { get; private set; }
 
-                public Http2WriteStream(Http2Stream http2Stream)
+                public long ContentLength { get; private set; }
+
+                public Http2WriteStream(Http2Stream http2Stream, long contentLength)
                 {
                     Debug.Assert(http2Stream != null);
+                    Debug.Assert(contentLength >= -1);
                     _http2Stream = http2Stream;
+                    ContentLength = contentLength;
                 }
 
                 protected override void Dispose(bool disposing)
@@ -1533,6 +1543,11 @@ namespace System.Net.Http
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
                     BytesWritten += buffer.Length;
+
+                    if ((ulong)BytesWritten > (ulong)ContentLength) // If ContentLength == -1, this will always be false
+                    {
+                        return ValueTask.FromException(new HttpRequestException(SR.net_http_content_write_larger_than_content_length));
+                    }
 
                     Http2Stream? http2Stream = _http2Stream;
 
