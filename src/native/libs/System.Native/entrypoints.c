@@ -7,6 +7,7 @@
 #include "pal_autoreleasepool.h"
 #include "pal_console.h"
 #include "pal_datetime.h"
+#include "pal_dynamicload.h"
 #include "pal_environment.h"
 #include "pal_errno.h"
 #include "pal_interfaceaddresses.h"
@@ -235,6 +236,12 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelMonitor_Wait)
     DllImportEntry(SystemNative_LowLevelMonitor_TimedWait)
     DllImportEntry(SystemNative_LowLevelMonitor_Signal_Release)
+    DllImportEntry(SystemNative_LoadLibrary)
+    DllImportEntry(SystemNative_GetProcAddress)
+    DllImportEntry(SystemNative_FreeLibrary)
+    DllImportEntry(SystemNative_SchedGetCpu)
+    DllImportEntry(SystemNative_Exit)
+    DllImportEntry(SystemNative_Abort)
     DllImportEntry(SystemNative_UTimensat)
     DllImportEntry(SystemNative_GetTimestamp)
     DllImportEntry(SystemNative_GetCpuUtilization)
@@ -253,6 +260,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_PWrite)
     DllImportEntry(SystemNative_PReadV)
     DllImportEntry(SystemNative_PWriteV)
+    DllImportEntry(SystemNative_RuntimeThread_CreateThread)
     DllImportEntry(SystemNative_EnablePosixSignalHandling)
     DllImportEntry(SystemNative_DisablePosixSignalHandling)
     DllImportEntry(SystemNative_HandleNonCanceledPosixSignal)
