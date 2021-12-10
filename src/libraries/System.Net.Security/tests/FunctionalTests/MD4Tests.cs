@@ -24,11 +24,9 @@ namespace System.Net.Security.Tests
 
         private void Verify(MD4 hash, byte[] input, byte[] expected) 
         {
-            // Span<byte> outputSpan = stackalloc byte[expected.Length];
             byte[] outputSpan = new byte[expected.Length];
             int bytesWritten = hash.HashData(input, outputSpan);
             Assert.Equal(hash.HashSizeBytes, bytesWritten);
-            // Assert.Equal(expected, outputSpan.ToArray());
             Assert.Equal(expected, outputSpan);
         }
 

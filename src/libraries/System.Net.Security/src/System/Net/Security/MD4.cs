@@ -4,6 +4,12 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
+//
+// This class is a port of the Mono managed implementation of the MD4 algorithm
+// and required to support NTLM in Android only.
+// It's an implementation detail and is not intended to be a public API.
+// Assuming that NTLM would be System.Net.Security, it makes sense to put MD4 here as well.
+//
 namespace System.Net.Security
 {
     internal sealed class MD4
