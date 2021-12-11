@@ -869,28 +869,30 @@ namespace System.IO
         {
             static char[] ResizeOrPoolNewArray(char[]? array, int atLeastSpace)
             {
-                if (array == null)
-                {
-                    return ArrayPool<char>.Shared.Rent(atLeastSpace);
-                }
+                if (array == null) return ArrayPool<char>.Shared.Rent(atLeastSpace);
 
                 char[] newArr = ArrayPool<char>.Shared.Rent(array.Length + atLeastSpace);
-                Array.Copy(array, newArr, array.Length);
+                try
+                {
+                    Array.Copy(array, newArr, array.Length);
+                }
+                catch
+                {
+                    ArrayPool<char>.Shared.Return(newArr);
+                    throw;
+                }
+
                 ArrayPool<char>.Shared.Return(array);
                 return newArr;
             }
             static void Append(ref char[]? to, int destinationOffset, char[] @from, int offset, int length)
             {
-                if (to != null && (destinationOffset + length) < to.Length)
+                if (to == null || (destinationOffset + length) > to.Length)
                 {
-                    Array.Copy(@from, offset, to, destinationOffset, length);
+                    to = ResizeOrPoolNewArray(to, destinationOffset + length + 80);
                 }
-                else
-                {
-                    char[] newArr = ResizeOrPoolNewArray(to, destinationOffset + length + 80);
-                    Array.Copy(@from, offset, newArr, destinationOffset, length);
-                    to = newArr;
-                }
+
+                Array.Copy(@from, offset, to, destinationOffset, length);
             }
 
             if (_charPos == _charLen && (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) == 0)
@@ -976,22 +978,26 @@ namespace System.IO
             static char[] Resize(char[] array, int atLeastSpace)
             {
                 char[] newArr = ArrayPool<char>.Shared.Rent(array.Length + atLeastSpace);
-                Array.Copy(array, newArr, array.Length);
+                try
+                {
+                    Array.Copy(array, newArr, array.Length);
+                }
+                catch
+                {
+                    ArrayPool<char>.Shared.Return(newArr);
+                    throw;
+                }
                 ArrayPool<char>.Shared.Return(array);
                 return newArr;
             }
             static void Append(ref char[] to, int destinationOffset, char[] @from, int offset, int length)
             {
-                if ((destinationOffset + length) < to.Length)
+                if ((destinationOffset + length) >= to.Length)
                 {
-                    Array.Copy(@from, offset, to, destinationOffset, length);
+                    to = Resize(to, destinationOffset + length + 80);
                 }
-                else
-                {
-                    char[] newArr = Resize(to, destinationOffset + length + 80);
-                    Array.Copy(@from, offset, newArr, destinationOffset, length);
-                    to = newArr;
-                }
+
+                Array.Copy(@from, offset, to, destinationOffset, length);
             }
 
             char[] rentedArray = ArrayPool<char>.Shared.Rent(_charLen - _charPos);
