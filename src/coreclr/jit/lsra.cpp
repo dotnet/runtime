@@ -6275,11 +6275,10 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     }
 
 #ifdef DEBUG
-    GenTreeCall* call = tree->AsCall();
-    if ((call != nullptr) && (call->gtOper == GT_CALL))
+    if ((tree != nullptr) && tree->IsCall())
     {
         // Make sure that we do not insert vector save before calls that does not return.
-        assert((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) == 0);
+        assert((tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) == 0);
     }
 #endif
 

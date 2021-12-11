@@ -1481,10 +1481,9 @@ Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 //
 void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet)
 {
-    GenTreeCall* call = tree->AsCall();
-    if ((call != nullptr) && (call->gtOper == GT_CALL))
+    if ((tree != nullptr) && tree->IsCall())
     {
-        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
+        if ((tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
         {
             // No point in having vector save/restore if the call will not return.
             return;
