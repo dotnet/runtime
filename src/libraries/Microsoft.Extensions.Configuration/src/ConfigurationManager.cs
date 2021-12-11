@@ -92,9 +92,9 @@ namespace Microsoft.Extensions.Configuration
 
         void IConfigurationRoot.Reload()
         {
-            using (var reference = _providerManager.GetReference())
+            using (ReferenceCountedProviders reference = _providerManager.GetReference())
             {
-                foreach (var provider in reference.Providers)
+                foreach (IConfigurationProvider provider in reference.Providers)
                 {
                     provider.Load();
                 }
@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Configuration
         // Don't rebuild and reload all providers in the common case when a source is simply added to the IList.
         private void AddSource(IConfigurationSource source)
         {
-            var provider = source.Build(this);
+            IConfigurationProvider provider = source.Build(this);
 
             provider.Load();
             _changeTokenRegistrations.Add(ChangeToken.OnChange(() => provider.GetReloadToken(), () => RaiseChanged()));
@@ -132,12 +132,12 @@ namespace Microsoft.Extensions.Configuration
 
             var newProvidersList = new List<IConfigurationProvider>();
 
-            foreach (var source in _sources)
+            foreach (IConfigurationSource source in _sources)
             {
                 newProvidersList.Add(source.Build(this));
             }
 
-            foreach (var p in newProvidersList)
+            foreach (IConfigurationProvider p in newProvidersList)
             {
                 p.Load();
                 _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.Configuration
         private void DisposeRegistrations()
         {
             // dispose change token registrations
-            foreach (var registration in _changeTokenRegistrations)
+            foreach (IDisposable registration in _changeTokenRegistrations)
             {
                 registration.Dispose();
             }

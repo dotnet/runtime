@@ -45,15 +45,28 @@ namespace Microsoft.Extensions.Configuration
             Interlocked.Increment(ref _refCount);
         }
 
+        // This is not a "real" Dispose(). It exists to conveniently release a reference at the end of a using block.
         public void Dispose()
         {
             if (Interlocked.Decrement(ref _refCount) == 0)
             {
-                foreach (var provider in _providers)
+                foreach (IConfigurationProvider provider in _providers)
                 {
                     (provider as IDisposable)?.Dispose();
                 }
             }
+        }
+
+        // This is the "real" Dispose() that is only called as part of ConfigurationManager.Dispose().
+        // If there are any active references, that indicates a use-after-dispose bug in the code using the ConfigurationManager.
+        //
+        // If there are active references after dispose, the providers could get disposed more than once. We could prevent this
+        // by preemptively throwing an ODE from ReferenceCountedProviderManager.GetReference() after it's disposed, but this might
+        // break existing apps that are today able to continue to read configuration after disposing an ConfigurationManager.
+        public void ReleaseFinalReference()
+        {
+            Debug.Assert(_refCount == 1);
+            Dispose();
         }
     }
 }

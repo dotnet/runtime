@@ -38,6 +38,8 @@ namespace Microsoft.Extensions.Configuration
                 _refCountedProviders = new ReferenceCountedProviders(providers);
             }
 
+            // Decrement the reference count to the old providers. If they are being concurrently read from
+            // the actual disposal of the old providers will be delayed until the final reference is released.
             oldRefCountedProviders.Dispose();
         }
 
@@ -50,6 +52,10 @@ namespace Microsoft.Extensions.Configuration
             };
         }
 
-        public void Dispose() => _refCountedProviders.Dispose();
+        public void Dispose()
+        {
+            // Equivalent to _refCountedProvider.Dispose() but asserts there a no concurrent references.
+            _refCountedProviders.ReleaseFinalReference();
+        }
     }
 }
