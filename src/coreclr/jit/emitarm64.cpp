@@ -15719,7 +15719,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 }
 
 //----------------------------------------------------------------------------------------
-// IsRedundantSignExtend:
+// IsRedundantSxtw:
 //    Check if the current `sxtw` instruction is redundant and can be omitted.
 //
 // Arguments:
