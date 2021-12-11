@@ -807,7 +807,7 @@ namespace System.IO
                 }
             }
 
-            using ValueStringBuilder sb = new(0);
+            using ValueStringBuilder sb = new(stackalloc char[256]);
             do
             {
                 // Note the following common line feed chars:
@@ -815,10 +815,8 @@ namespace System.IO
                 int i = _charBuffer.AsSpan(_charPos).IndexOfAny('\r', '\n');
                 if (i >= 0)
                 {
-                    char ch = _charBuffer[_charPos + i];
-
                     string s;
-                    if (sb is { Length: > 0 })
+                    if (sb.Length > 0)
                     {
                         sb.Append(_charBuffer.AsSpan(_charPos, i));
                         s = sb.ToString();
@@ -827,6 +825,7 @@ namespace System.IO
                     {
                         s = new string(_charBuffer, _charPos, i);
                     }
+                    char ch = _charBuffer[_charPos + i];
                     _charPos += i + 1;
                     if (ch == '\r' && (_charPos < _charLen || ReadBuffer() > 0))
                     {
@@ -839,6 +838,7 @@ namespace System.IO
                 }
 
                 i = _charLen - _charPos;
+                if (i < 0) break; // a hack for System.Globalization.Tests (to check on CI if it fixes the problem)
 
                 sb.Append(_charBuffer.AsSpan(_charPos, i));
             } while (ReadBuffer() > 0);
@@ -935,6 +935,7 @@ namespace System.IO
                     }
 
                     i = _charLen - _charPos;
+                    if (i < 0) break; // a hack for System.Globalization.Tests (to check on CI if it fixes the problem)
 
                     Append(ref rentedArray, lastWrittenIndex, _charBuffer, _charPos, i);
                     lastWrittenIndex += i;
