@@ -111,23 +111,7 @@ declare class WasmRoot<T extends ManagedPointer | NativePointer> {
     toString(): string;
 }
 
-declare const enum ArgsMarshal {
-    Int32 = "i",
-    Int32Enum = "j",
-    Int64 = "l",
-    Int64Enum = "k",
-    Float32 = "f",
-    Float64 = "d",
-    String = "s",
-    InternedString = "S",
-    Uri = "u",
-    JSObj = "o",
-    MONOObj = "m",
-    Auto = "a",
-    ByteSpan = "b"
-}
-declare type _ExtraArgsMarshalOperators = "!" | "";
-declare type ArgsMarshalString = "" | `${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
+declare type ArgsMarshalString = string;
 
 interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject";
@@ -269,10 +253,11 @@ declare function mono_call_assembly_entry_point(assembly: string, args: any[], s
 
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
-declare type _MemOffset = number | VoidPtr | NativePointer;
+declare type _MemOffset = number | NativePointer;
+declare type _MemValue = number | NativePointer | ManagedPointer;
 declare function setU8(offset: _MemOffset, value: number): void;
 declare function setU16(offset: _MemOffset, value: number): void;
-declare function setU32(offset: _MemOffset, value: number | VoidPtr | NativePointer | ManagedPointer): void;
+declare function setU32(offset: _MemOffset, value: _MemValue): void;
 declare function setI8(offset: _MemOffset, value: number): void;
 declare function setI16(offset: _MemOffset, value: number): void;
 declare function setI32(offset: _MemOffset, value: number): void;

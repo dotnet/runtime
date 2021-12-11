@@ -364,7 +364,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     return result;
 }
 
-declare const enum ArgsMarshal {
+export enum ArgsMarshal {
     Int32 = "i", // int32
     Int32Enum = "j", // int32 - Enum with underlying type of int32
     Int64 = "l", // int64

@@ -257,7 +257,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var callArgs = $"{state.ArgKey}, methodPtr, {state.ArgIndex}";
             state.Output.AppendLine($"  rootBuffer.set({state.RootIndex}, {converterKey}({callArgs}));");
-            state.RootIndex += 1;
 
             if (argType.IsValueType) {
                 state.ClosureReferences.Add("mono_wasm_unbox_rooted");
@@ -274,6 +273,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 state.Phase2.AppendLine($"  setU32(directBuffer + {state.DirectOffset}, rootBuffer.get({state.RootIndex}));");
             }
 
+            state.RootIndex += 1;
             state.DirectOffset += PointerSize;
         }
 
