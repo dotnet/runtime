@@ -857,6 +857,58 @@ namespace System.Collections
             }
         }
 
+        private void InternalCopyTo(Span<byte> span)
+        {
+            // equivalent to m_length % BitsPerByte, since BitsPerByte is a power of 2
+            uint extraBits = (uint)m_length & (BitsPerByte - 1);
+            if (extraBits > 0)
+            {
+                // last byte is not aligned, we will directly copy one less byte
+                arrayLength -= 1;
+            }
+
+            int quotient = Div4Rem(arrayLength, out int remainder);
+            for (int i = 0; i < quotient; i++)
+            {
+                BinaryPrimitives.WriteInt32LittleEndian(span, m_array[i]);
+                span = span.Slice(4);
+            }
+
+            if (extraBits > 0)
+            {
+                Debug.Assert(span.Length > 0);
+                Debug.Assert(m_array.Length > quotient);
+                // mask the final byte
+                span[remainder] = (byte)((m_array[quotient] >> (remainder * 8)) & ((1 << (int)extraBits) - 1));
+            }
+
+            switch (remainder)
+            {
+                case 3:
+                    span[2] = (byte)(m_array[quotient] >> 16);
+                    goto case 2;
+                // fall through
+                case 2:
+                    span[1] = (byte)(m_array[quotient] >> 8);
+                    goto case 1;
+                // fall through
+                case 1:
+                    span[0] = (byte)m_array[quotient];
+                    break;
+            }
+        }
+
+        public void CopyTo(Span<byte> span)
+        {
+            int arrayLength = GetByteArrayLengthFromBitLength(m_length);
+            if (span.Length < arrayLength)
+            {
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            }
+
+            InternalCopyTo(span);
+        }
+
         public unsafe void CopyTo(Array array, int index)
         {
             if (array == null)
@@ -895,45 +947,9 @@ namespace System.Collections
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
 
-                // equivalent to m_length % BitsPerByte, since BitsPerByte is a power of 2
-                uint extraBits = (uint)m_length & (BitsPerByte - 1);
-                if (extraBits > 0)
-                {
-                    // last byte is not aligned, we will directly copy one less byte
-                    arrayLength -= 1;
-                }
-
                 Span<byte> span = byteArray.AsSpan(index);
 
-                int quotient = Div4Rem(arrayLength, out int remainder);
-                for (int i = 0; i < quotient; i++)
-                {
-                    BinaryPrimitives.WriteInt32LittleEndian(span, m_array[i]);
-                    span = span.Slice(4);
-                }
-
-                if (extraBits > 0)
-                {
-                    Debug.Assert(span.Length > 0);
-                    Debug.Assert(m_array.Length > quotient);
-                    // mask the final byte
-                    span[remainder] = (byte)((m_array[quotient] >> (remainder * 8)) & ((1 << (int)extraBits) - 1));
-                }
-
-                switch (remainder)
-                {
-                    case 3:
-                        span[2] = (byte)(m_array[quotient] >> 16);
-                        goto case 2;
-                    // fall through
-                    case 2:
-                        span[1] = (byte)(m_array[quotient] >> 8);
-                        goto case 1;
-                    // fall through
-                    case 1:
-                        span[0] = (byte)m_array[quotient];
-                        break;
-                }
+                InternalCopyTo(span);
             }
             else if (array is bool[] boolArray)
             {
