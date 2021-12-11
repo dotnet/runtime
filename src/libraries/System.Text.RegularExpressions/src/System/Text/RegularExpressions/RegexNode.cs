@@ -1915,8 +1915,8 @@ namespace System.Text.RegularExpressions
                         case End:
                         case EndZ when node.Ch != '\n':
                         case Eol when node.Ch != '\n':
-                        case Boundary when RegexCharClass.IsWordChar(node.Ch):
-                        case NonBoundary when !RegexCharClass.IsWordChar(node.Ch):
+                        case Boundary when RegexCharClass.IsBoundaryWordChar(node.Ch):
+                        case NonBoundary when !RegexCharClass.IsBoundaryWordChar(node.Ch):
                         case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
                         case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
                             return true;

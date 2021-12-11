@@ -167,6 +167,8 @@
   <PropertyGroup>
     <TestWrapperTargetsWindows>false</TestWrapperTargetsWindows>
     <TestWrapperTargetsWindows Condition=" ('$(TargetsWindows)' != '' And '$(TargetsWindows)' ) OR ('$(TargetOS)' == 'Android' And '$(TargetArchitecture)' == 'arm64' )">true</TestWrapperTargetsWindows>
+    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
+    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -182,6 +184,6 @@
 
   <PropertyGroup Condition="'$(IsTestsCommonProject)' != 'true'">
     <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">true</BuildAsStandalone>
-    <OutputType>Exe</OutputType>
+    <OutputType Condition="$(BuildAsStandalone)">Exe</OutputType>
   </PropertyGroup>
 </Project>
