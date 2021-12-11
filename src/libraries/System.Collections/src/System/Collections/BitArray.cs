@@ -857,7 +857,7 @@ namespace System.Collections
             }
         }
 
-        private void InternalCopyTo(Span<byte> span)
+        private void InternalCopyTo(Span<byte> span, int arrayLength)
         {
             // equivalent to m_length % BitsPerByte, since BitsPerByte is a power of 2
             uint extraBits = (uint)m_length & (BitsPerByte - 1);
@@ -906,7 +906,7 @@ namespace System.Collections
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            InternalCopyTo(span);
+            InternalCopyTo(span, arrayLength);
         }
 
         public unsafe void CopyTo(Array array, int index)
@@ -949,7 +949,7 @@ namespace System.Collections
 
                 Span<byte> span = byteArray.AsSpan(index);
 
-                InternalCopyTo(span);
+                InternalCopyTo(span, arrayLength);
             }
             else if (array is bool[] boolArray)
             {
