@@ -191,7 +191,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
     PEAssembly* pPEAssembly = GetManifestFile();
 
-    // Module::Create will initialize R2R support
+    // "Module::Create" will initialize R2R support, if there is an R2R header.
     // make sure the PE is loaded or R2R will be disabled.
     pPEAssembly->EnsureLoaded();
 
@@ -214,7 +214,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
 
-    if (IsCollectible())
+    if (IsCollectible() && !pPEAssembly->IsDynamic())
     {
         COUNT_T size;
         BYTE* start = (BYTE*)pPEAssembly->GetLoadedImageContents(&size);

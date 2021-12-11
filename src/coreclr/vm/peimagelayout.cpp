@@ -402,7 +402,6 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
     bool relocationMustWriteCopy = false;
     void* loadedImage = NULL;
 
-    // TODO: VS deal with LOG things.
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
 #ifdef TARGET_WINDOWS
