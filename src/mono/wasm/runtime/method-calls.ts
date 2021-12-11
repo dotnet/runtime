@@ -261,7 +261,7 @@ export function mono_bind_static_method(fqn: string, signature?: ArgsMarshalStri
     return mono_bind_method(method, null, signature, fqn);
 }
 
-export function mono_bind_assembly_entry_point(assembly: string, signature: ArgsMarshalString): Function {
+export function mono_bind_assembly_entry_point(assembly: string, signature?: ArgsMarshalString): Function {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
     const asm = cwraps.mono_wasm_assembly_load(assembly);
@@ -272,23 +272,20 @@ export function mono_bind_assembly_entry_point(assembly: string, signature: Args
     if (!method)
         throw new Error("Could not find entry point for assembly: " + assembly);
 
-    if (typeof signature === "undefined")
+    if (!signature)
         signature = mono_method_get_call_signature(method);
 
-    return function (...args: any[]) {
-        try {
-            if (args.length > 0 && Array.isArray(args[0]))
-                args[0] = js_array_to_mono_array(args[0], true, false);
-
-            const result = call_method(method, undefined, signature, args);
-            return Promise.resolve(result);
-        } catch (error) {
-            return Promise.reject(error);
-        }
+    return async function (...args: any[]) {
+        if (args.length > 0 && Array.isArray(args[0]))
+            args[0] = js_array_to_mono_array(args[0], true, false);
+        return call_method(method, undefined, signature!, args);
     };
 }
 
-export function mono_call_assembly_entry_point(assembly: string, args: any[], signature: ArgsMarshalString): any {
+export function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: ArgsMarshalString): number {
+    if (!args) {
+        args = [[]];
+    }
     return mono_bind_assembly_entry_point(assembly, signature)(...args);
 }
 

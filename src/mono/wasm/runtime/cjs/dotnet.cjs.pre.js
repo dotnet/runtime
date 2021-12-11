@@ -6,8 +6,12 @@ if (ENVIRONMENT_IS_GLOBAL) {
     globalThis.Module.ready = Module.ready;
     Module = createDotnetRuntime = globalThis.Module;
 }
+else if (typeof createDotnetRuntime === "object") {
+    Module = { ready: Module.ready, __undefinedConfig: Object.keys(createDotnetRuntime).length === 1 };
+    Object.assign(Module, createDotnetRuntime);
+    createDotnetRuntime = Module;
+}
 else if (typeof createDotnetRuntime === "function") {
-    ENVIRONMENT_IS_GLOBAL = false;
     Module = { ready: Module.ready };
     const extension = createDotnetRuntime({ MONO, BINDING, INTERNAL, Module })
     if (extension.ready) {

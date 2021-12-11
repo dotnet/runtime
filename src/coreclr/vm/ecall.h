@@ -83,7 +83,6 @@ class ECall
         static PCODE GetFCallImpl(MethodDesc* pMD, BOOL * pfSharedOrDynamicFCallImpl = NULL);
         static MethodDesc* MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoint = NULL);
         static DWORD GetIDForMethod(MethodDesc *pMD);
-        static CorInfoIntrinsics GetIntrinsicID(MethodDesc *pMD);
 
         // Some fcalls (delegate ctors and tlbimpl ctors) shared one implementation.
         // We should never patch vtable for these since they have 1:N mapping between
