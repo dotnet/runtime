@@ -101,17 +101,7 @@ else ()
             zlib-intel/zutil.c
         )
     else ()
-        set(ZLIB_SOURCES
-            zlib/adler32.c
-            zlib/compress.c
-            zlib/crc32.c
-            zlib/deflate.c
-            zlib/inffast.c
-            zlib/inflate.c
-            zlib/inftrees.c
-            zlib/trees.c
-            zlib/zutil.c
-        )
+        include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
     endif ()
 
     set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})

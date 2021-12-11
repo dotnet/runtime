@@ -1,4 +1,4 @@
-set(zlib_sources_base
+set(ZLIB_SOURCES_BASE
     adler32.c
     compress.c
     crc32.c
@@ -23,4 +23,4 @@ set(zlib_sources_base
     zutil.h
 )
 
-addprefix(zlib_sources ../zlib  "${zlib_sources_base}")
+addprefix(ZLIB_SOURCES "${CMAKE_CURRENT_LIST_DIR}/zlib"  "${ZLIB_SOURCES_BASE}")
