@@ -4148,9 +4148,8 @@ void emitter::emitIns_Mov(
         {
             assert(size == EA_8BYTE);
 
-            if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+            if (IsRedundantSxtw(ins, size, dstReg, srcReg))
             {
-                // These instructions have no side effect and can be skipped
                 return;
             }
 
@@ -15622,11 +15621,9 @@ bool emitter::IsMovInstruction(instruction ins)
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
-    assert(ins == INS_mov || ins == INS_sxtw);
+    assert(ins == INS_mov);
 
-    const bool isSignExtendMov = ins == INS_sxtw;
-
-    if (canSkip && (dst == src) && !isSignExtendMov)
+    if (canSkip && (dst == src))
     {
         // These elisions used to be explicit even when optimizations were disabled
         return true;
@@ -15645,50 +15642,26 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
         // So only eliminate mov instructions that are not clearing the upper bits
         //
-        if (isGeneralRegisterOrSP(dst) && (size == EA_8BYTE) && !isSignExtendMov)
+        if (isGeneralRegisterOrSP(dst) && (size == EA_8BYTE))
         {
             JITDUMP("\n -- suppressing mov because src and dst is same 8-byte register.\n");
             return true;
         }
-        else if (isVectorRegister(dst) && (size == EA_16BYTE) && !isSignExtendMov)
+        else if (isVectorRegister(dst) && (size == EA_16BYTE))
         {
             JITDUMP("\n -- suppressing mov because src and dst is same 16-byte register.\n");
             return true;
         }
-        else if ((emitLastIns != nullptr) && !isFirstInstrInBlock)
+        else if (isGeneralRegisterOrSP(dst) && (size == EA_4BYTE))
         {
-            const instruction prevIns = emitLastIns->idIns();
             // See if the previous instruction already cleared upper 4 bytes for us unintentionally
-            if ((emitLastIns->idReg1() == dst) && (emitLastIns->idOpSize() == EA_4BYTE))
+            if (!isFirstInstrInBlock && (emitLastIns != nullptr) && (emitLastIns->idReg1() == dst) &&
+                (emitLastIns->idOpSize() == size) && emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
             {
-                if (!isSignExtendMov && (size == EA_4BYTE) &&
-                    ((prevIns == INS_ldr) || (prevIns == INS_ldrh) || (prevIns == INS_ldrb)))
-                {
-                    JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
-                    return true;
-                }
-                else if (isSignExtendMov && (size == EA_8BYTE) && ((prevIns == INS_ldr) || (prevIns == INS_ldrsw) ||
-                                                                   (prevIns == INS_ldrsh) || (prevIns == INS_ldrsb)))
-                {
-                    // Special case: upgrade ldr to ldrsw
-                    if (prevIns == INS_ldr)
-                    {
-                        emitLastIns->idIns(INS_ldrsw);
-                        JITDUMP("\n -- suppressing sxtw and chaning previous ldr to ldrsw\n");
-                    }
-                    else
-                    {
-                        JITDUMP("\n -- suppressing sxtw because ldrs already cleared upper 4 bytes\n");
-                    }
-                    return true;
-                }
+                JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
+                return true;
             }
         }
-    }
-
-    if (isSignExtendMov)
-    {
-        return false;
     }
 
     if (!isFirstInstrInBlock && // Don't optimize if instruction is not the first instruction in IG.
@@ -15742,6 +15715,51 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
+    return false;
+}
+
+//----------------------------------------------------------------------------------------
+// IsRedundantSignExtend:
+//    Check if the current `sxtw` instruction is redundant and can be omitted.
+//
+// Arguments:
+//    ins  - The current instruction, only sxtw is handled atm
+//    size - Operand size of current instruction, only 8BYTE is handled atm
+//    dst  - The current destination
+//    src  - The current source
+//
+// Return Value:
+//    true if sign extension can be omitted.
+
+bool emitter::IsRedundantSxtw(instruction ins, emitAttr size, regNumber dst, regNumber src)
+{
+    assert(ins == INS_sxtw && size == EA_8BYTE);
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    const bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
+    if ((dst == src) && (emitLastIns != nullptr) && !isFirstInstrInBlock)
+    {
+        // Check if the previous instruction has a side-effect to do sxtw's job
+        if (emitLastIns->idOpSize() == EA_4BYTE && emitLastIns->idInsIs(INS_ldr, INS_ldrsw, INS_ldrsh, INS_ldrsb))
+        {
+            if (emitLastIns->idInsIs(INS_ldr))
+            {
+                emitLastIns->idIns(INS_ldrsw);
+                JITDUMP("\n -- suppressing sxtw and upgrading previous ldr to ldrsw\n");
+            }
+            else
+            {
+                JITDUMP("\n -- suppressing sxtw because ldrs already cleared upper 4 bytes\n");
+            }
+            emitLastIns->idOpSize(size);
+            return true;
+        }
+    }
     return false;
 }
 

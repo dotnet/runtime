@@ -610,6 +610,15 @@ protected:
             assert((ins != INS_invalid) && (ins < INS_count));
             _idIns = ins;
         }
+        bool idInsIs(instruction ins) const
+        {
+            return idIns() == ins;
+        }
+        template <typename... T>
+        bool idInsIs(instruction ins, T... rest) const
+        {
+            return idInsIs(ins) || idInsIs(rest...);
+        }
 
         insFormat idInsFmt() const
         {
