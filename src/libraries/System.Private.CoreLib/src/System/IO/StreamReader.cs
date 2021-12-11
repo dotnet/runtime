@@ -18,7 +18,6 @@ namespace System.IO
     {
         // StreamReader.Null is threadsafe.
         public static new readonly StreamReader Null = new NullStreamReader();
-        // private StringBuilder? _sb;
 
         // Using a 1K byte buffer and a 4K FileStream buffer works out pretty well
         // perf-wise.  On even a 40 MB text file, any perf loss by using a 4K
