@@ -4672,7 +4672,7 @@ unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
 
 /*********************************************************************/
 // Get the index of runtime provided array method
-unsigned CEEInfo::getArrayFuncIndex(CORINFO_METHOD_HANDLE ftn)
+CorInfoArrayIntrinsic CEEInfo::getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)
 {
     CONTRACTL {
         THROWS;
@@ -4680,7 +4680,7 @@ unsigned CEEInfo::getArrayFuncIndex(CORINFO_METHOD_HANDLE ftn)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    unsigned result = -1;
+    CorInfoArrayIntrinsic result = CorInfoArrayIntrinsic::ILLEGAL;
 
     JIT_TO_EE_TRANSITION();
 
@@ -4688,11 +4688,18 @@ unsigned CEEInfo::getArrayFuncIndex(CORINFO_METHOD_HANDLE ftn)
 
     if (pMD->IsArray())
     {
-        TypeHandle th = TypeHandle(pMD->GetMethodTable());
-
-        if (th.GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
+        DWORD index = ((ArrayMethodDesc*)pMD)->GetArrayFuncIndex();
+        switch (index)
         {
-            result = ((ArrayMethodDesc*)pMD)->GetArrayFuncIndex();
+            case 0: // ARRAY_FUNC_GET
+                result = CorInfoArrayIntrinsic::GET;
+                break;
+            case 1: // ARRAY_FUNC_SET
+                result = CorInfoArrayIntrinsic::SET;
+                break;
+            case 2: // ARRAY_FUNC_ADDRESS
+                result = CorInfoArrayIntrinsic::ADDRESS;
+                break;
         }
     }
 
@@ -6409,9 +6416,9 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_STATIC;
     if (pMD->IsSynchronized())
         result |= CORINFO_FLG_SYNCH;
-    if (pMD->IsFCallOrIntrinsic())
-        result |= CORINFO_FLG_NOGCCHECK | CORINFO_FLG_INTRINSIC;
-    if (pMD->IsIntrinsic())
+    if (pMD->IsFCall())
+        result |= CORINFO_FLG_NOGCCHECK;
+    if (pMD->IsIntrinsic() || pMD->IsArray())
         result |= CORINFO_FLG_INTRINSIC;
     if (IsMdVirtual(attribs))
         result |= CORINFO_FLG_VIRTUAL;

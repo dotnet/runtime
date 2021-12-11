@@ -826,12 +826,12 @@ unsigned WrapICorJitInfo::getArrayRank(
     return temp;
 }
 
-unsigned WrapICorJitInfo::getArrayFuncIndex(
+CorInfoArrayIntrinsic WrapICorJitInfo::getArrayIntrinsicID(
           CORINFO_METHOD_HANDLE ftn)
 {
-    API_ENTER(getArrayFuncIndex);
-    unsigned temp = wrapHnd->getArrayFuncIndex(ftn);
-    API_LEAVE(getArrayFuncIndex);
+    API_ENTER(getArrayIntrinsicID);
+    CorInfoArrayIntrinsic temp = wrapHnd->getArrayIntrinsicID(ftn);
+    API_LEAVE(getArrayIntrinsicID);
     return temp;
 }
 

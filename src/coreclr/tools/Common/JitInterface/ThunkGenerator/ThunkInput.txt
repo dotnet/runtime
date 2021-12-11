@@ -109,6 +109,7 @@ CorInfoInitClassResult
 CorInfoInlineTypeCheck
 CorInfoInlineTypeCheckSource
 CorInfoInline
+CorInfoArrayIntrinsic
 CorInfoIsAccessAllowedResult
 CorInfoMethodRuntimeFlags
 CorInfoTailCall
@@ -236,7 +237,7 @@ FUNCTIONS
     bool satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
     bool isSDArray(CORINFO_CLASS_HANDLE cls)
     unsigned getArrayRank(CORINFO_CLASS_HANDLE cls)
-    unsigned getArrayFuncIndex(CORINFO_METHOD_HANDLE ftn)
+    CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)
     void* getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint32_t size)
     CorInfoIsAccessAllowedResult canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper)
     const char* getFieldName(CORINFO_FIELD_HANDLE ftn, const char** moduleName)

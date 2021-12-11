@@ -952,11 +952,11 @@ unsigned interceptor_ICJI::getArrayRank(CORINFO_CLASS_HANDLE cls)
 }
 
 // Get the index of runtime provided array method
-unsigned interceptor_ICJI::getArrayFuncIndex(CORINFO_METHOD_HANDLE ftn)
+CorInfoArrayIntrinsic interceptor_ICJI::getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)
 {
-    mc->cr->AddCall("getArrayFuncIndex");
-    unsigned result = original_ICorJitInfo->getArrayFuncIndex(ftn);
-    mc->recGetArrayFuncIndex(ftn, result);
+    mc->cr->AddCall("getArrayIntrinsicID");
+    CorInfoArrayIntrinsic result = original_ICorJitInfo->getArrayIntrinsicID(ftn);
+    mc->recGetArrayIntrinsicID(ftn, result);
     return result;
 }
 

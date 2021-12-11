@@ -710,8 +710,6 @@ public:
         return mcFCall == GetClassification();
     }
 
-    BOOL IsFCallOrIntrinsic();
-
     BOOL IsQCall();
 
     //================================================================

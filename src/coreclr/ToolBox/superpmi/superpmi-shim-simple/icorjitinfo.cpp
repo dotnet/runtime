@@ -590,10 +590,10 @@ unsigned interceptor_ICJI::getArrayRank(
     return original_ICorJitInfo->getArrayRank(cls);
 }
 
-unsigned interceptor_ICJI::getArrayFuncIndex(
+CorInfoArrayIntrinsic interceptor_ICJI::getArrayIntrinsicID(
           CORINFO_METHOD_HANDLE ftn)
 {
-    return original_ICorJitInfo->getArrayFuncIndex(ftn);
+    return original_ICorJitInfo->getArrayIntrinsicID(ftn);
 }
 
 void* interceptor_ICJI::getArrayInitializationData(

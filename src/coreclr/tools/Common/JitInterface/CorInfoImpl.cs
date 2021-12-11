@@ -1026,7 +1026,7 @@ namespace Internal.JitInterface
         private bool isIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
         {
             MethodDesc method = HandleToObject(ftn);
-            return method.IsIntrinsic;
+            return method.IsIntrinsic || HardwareIntrinsicHelpers.IsHardwareIntrinsic(method);
         }
 
         private uint getMethodAttribsInternal(MethodDesc method)
@@ -2746,12 +2746,18 @@ namespace Internal.JitInterface
             return rank;
         }
 
-        private uint getArrayFuncIndex(CORINFO_METHOD_STRUCT_* ftn)
+        private CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_STRUCT_* ftn)
         {
-            uint kind = uint.MaxValue;
+            CorInfoArrayIntrinsic kind = CorInfoArrayIntrinsic.ILLEGAL;
             if (HandleToObject(ftn) is ArrayMethod am)
             {
-                kind = (uint)am.Kind;
+                kind = am.Kind switch
+                {
+                    ArrayMethodKind.Get => CorInfoArrayIntrinsic.GET,
+                    ArrayMethodKind.Set => CorInfoArrayIntrinsic.SET,
+                    ArrayMethodKind.Address => CorInfoArrayIntrinsic.ADDRESS,
+                    _ => CorInfoArrayIntrinsic.ILLEGAL
+                };
             }
             return kind;
         }

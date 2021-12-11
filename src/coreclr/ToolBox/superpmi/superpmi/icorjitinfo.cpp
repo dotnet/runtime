@@ -815,10 +815,10 @@ unsigned MyICJI::getArrayRank(CORINFO_CLASS_HANDLE cls)
 }
 
 // Get the index of runtime provided array method
-unsigned MyICJI::getArrayFuncIndex(CORINFO_METHOD_HANDLE hMethod)
+CorInfoArrayIntrinsic MyICJI::getArrayIntrinsicID(CORINFO_METHOD_HANDLE hMethod)
 {
-    jitInstance->mc->cr->AddCall("getArrayFuncIndex");
-    return jitInstance->mc->repGetArrayFuncIndex(hMethod);
+    jitInstance->mc->cr->AddCall("getArrayIntrinsicID");
+    return jitInstance->mc->repGetArrayIntrinsicID(hMethod);
 }
 
 // Get static field data for an array

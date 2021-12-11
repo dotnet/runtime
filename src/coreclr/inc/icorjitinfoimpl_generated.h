@@ -347,7 +347,7 @@ bool isSDArray(
 unsigned getArrayRank(
           CORINFO_CLASS_HANDLE cls) override;
 
-unsigned getArrayFuncIndex(
+CorInfoArrayIntrinsic getArrayIntrinsicID(
           CORINFO_METHOD_HANDLE ftn) override;
 
 void* getArrayInitializationData(

@@ -814,9 +814,9 @@ public:
     void dmpGetArrayRank(DWORDLONG key, DWORD value);
     unsigned repGetArrayRank(CORINFO_CLASS_HANDLE cls);
 
-    void recGetArrayFuncIndex(CORINFO_METHOD_HANDLE hMethod, unsigned result);
-    void dmpGetArrayFuncIndex(DWORDLONG key, DWORD value);
-    unsigned repGetArrayFuncIndex(CORINFO_METHOD_HANDLE hMethod);
+    void recGetArrayIntrinsicID(CORINFO_METHOD_HANDLE hMethod, CorInfoArrayIntrinsic result);
+    void dmpGetArrayIntrinsicID(DWORDLONG key, DWORD value);
+    CorInfoArrayIntrinsic repGetArrayIntrinsicID(CORINFO_METHOD_HANDLE hMethod);
 
     void recIsFieldStatic(CORINFO_FIELD_HANDLE fhld, bool result);
     void dmpIsFieldStatic(DWORDLONG key, DWORD value);
@@ -970,7 +970,7 @@ enum mcPackets
     Packet_GetHelperFtn = 63,
     Packet_GetHelperName = 64,
     Packet_GetInlinedCallFrameVptr = 65,
-    Packet_GetArrayFuncIndex = 66,
+    Packet_GetArrayIntrinsicID = 66,
     Packet_GetJitTimeLogFilename = 67,
     Packet_GetJustMyCodeHandle = 68,
     Packet_GetLocationOfThisType = 69,

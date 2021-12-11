@@ -3808,9 +3808,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 {
     assert((methodFlags & CORINFO_FLG_INTRINSIC) != 0);
 
-    bool           mustExpand  = false;
-    bool           isSpecial   = false;
-    NamedIntrinsic ni          = NI_Illegal;
+    bool           mustExpand = false;
+    bool           isSpecial  = false;
+    NamedIntrinsic ni         = NI_Illegal;
 
     if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
@@ -3889,6 +3889,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         mustExpand = true;
     }
 
+    if ((ni == NI_System_ByReference_ctor) || (ni == NI_System_ByReference_get_Value))
+    {
+        mustExpand = true;
+    }
+
     GenTree* retNode = nullptr;
 
     // Under debug and minopts, only expand what is required.
@@ -3898,6 +3903,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // the NextCallReturnAddress intrinsic.
     if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
     {
+        *pIntrinsicName = NI_Illegal;
         return retNode;
     }
 
@@ -3967,7 +3973,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 // Remove call to constructor and directly assign the byref passed
                 // to the call to the first slot of the ByReference struct.
-                GenTree* op1                           = impPopStack().val;
+                GenTree*             op1               = impPopStack().val;
                 GenTree*             thisptr           = newobjThis;
                 CORINFO_FIELD_HANDLE fldHnd            = info.compCompHnd->getFieldInClass(clsHnd, 0);
                 GenTree*             field             = gtNewFieldRef(TYP_BYREF, fldHnd, thisptr, 0);
@@ -4586,8 +4592,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     JITDUMP("Expanding as special intrinsic\n");
                     impPopStack();
-                    op1 = new (this, GT_INTRINSIC)
-                        GenTreeIntrinsic(genActualType(callType), op1, ni, method);
+                    op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, ni, method);
 
                     // Set the CALL flag to indicate that the operator is implemented by a call.
                     // Set also the EXCEPTION flag because the native implementation of
@@ -4895,8 +4900,7 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                     op1 = gtNewCastNode(callType, op1, false, callType);
                 }
 
-                op1 = new (this, GT_INTRINSIC)
-                    GenTreeIntrinsic(genActualType(callType), op1, intrinsicName, method);
+                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicName, method);
                 break;
 
             case 2:
@@ -4921,8 +4925,8 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                     op2 = gtNewCastNode(callType, op2, false, callType);
                 }
 
-                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, op2,
-                                                                intrinsicName, method);
+                op1 =
+                    new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, op2, intrinsicName, method);
                 break;
 
             default:
@@ -4981,19 +4985,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     if ((namespaceName == nullptr) || (className == nullptr) || (methodName == nullptr))
     {
         // Check if we are dealing with an MD array's known runtime method
-        unsigned arrayFuncIndex = info.compCompHnd->getArrayFuncIndex(method);
+        CorInfoArrayIntrinsic arrayFuncIndex = info.compCompHnd->getArrayIntrinsicID(method);
         switch (arrayFuncIndex)
         {
-            // see ArrayMethodDesc in vm/method.hpp for details about VTABLE layout
-            case 0:
+            case CorInfoArrayIntrinsic::GET:
                 JITDUMP("ARRAY_FUNC_GET: Recognized\n");
                 return NI_Array_Get;
-            case 1:
+            case CorInfoArrayIntrinsic::SET:
                 JITDUMP("ARRAY_FUNC_SET: Recognized\n");
                 return NI_Array_Set;
-            case 2:
+            case CorInfoArrayIntrinsic::ADDRESS:
                 JITDUMP("ARRAY_FUNC_ADDRESS: Recognized\n");
                 return NI_Array_Address;
+            default:
+                break;
         }
 
         JITDUMP(": Not recognized, not enough metadata\n");
@@ -8861,9 +8866,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
-            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
-                                isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &ni,
-                                &isSpecialIntrinsic);
+            call =
+                impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
+                             isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &ni, &isSpecialIntrinsic);
 
             if (compDonotInline())
             {

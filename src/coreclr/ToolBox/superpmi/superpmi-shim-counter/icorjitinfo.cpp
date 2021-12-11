@@ -674,11 +674,11 @@ unsigned interceptor_ICJI::getArrayRank(
     return original_ICorJitInfo->getArrayRank(cls);
 }
 
-unsigned interceptor_ICJI::getArrayFuncIndex(
+CorInfoArrayIntrinsic interceptor_ICJI::getArrayIntrinsicID(
           CORINFO_METHOD_HANDLE ftn)
 {
-    mcs->AddCall("getArrayFuncIndex");
-    return original_ICorJitInfo->getArrayFuncIndex(ftn);
+    mcs->AddCall("getArrayIntrinsicID");
+    return original_ICorJitInfo->getArrayIntrinsicID(ftn);
 }
 
 void* interceptor_ICJI::getArrayInitializationData(

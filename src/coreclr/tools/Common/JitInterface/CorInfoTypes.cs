@@ -437,6 +437,17 @@ namespace Internal.JitInterface
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
     }
 
+    // These are used to detect array methods as NamedIntrinsic in JIT importer,
+    // which otherwise don't have a name.
+    public enum CorInfoArrayIntrinsic
+    {
+        GET = 0,
+        SET = 1,
+        ADDRESS = 2,
+
+        ILLEGAL
+    }
+
     // Can a value be accessed directly from JITed code.
     public enum InfoAccessType
     {

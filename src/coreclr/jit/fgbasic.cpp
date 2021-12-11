@@ -1097,14 +1097,14 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     break;
                 }
 
-                CORINFO_METHOD_HANDLE methodHnd      = nullptr;
+                CORINFO_METHOD_HANDLE methodHnd   = nullptr;
                 bool                  isIntrinsic = false;
-                NamedIntrinsic        ni             = NI_Illegal;
+                NamedIntrinsic        ni          = NI_Illegal;
 
                 if (resolveTokens)
                 {
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
-                    methodHnd      = resolvedToken.hMethod;
+                    methodHnd   = resolvedToken.hMethod;
                     isIntrinsic = eeIsIntrinsic(methodHnd);
                 }
 

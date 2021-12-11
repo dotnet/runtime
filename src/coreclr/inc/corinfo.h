@@ -795,6 +795,7 @@ enum CorInfoFlag
 //  CORINFO_FLG_UNUSED                = 0x08000000,
     CORINFO_FLG_DONT_INLINE           = 0x10000000, // The method should not be inlined
     CORINFO_FLG_DONT_INLINE_CALLER    = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
+//  CORINFO_FLG_UNUSED                = 0x40000000,
 
     // These are internal flags that can only be on Classes
     CORINFO_FLG_VALUECLASS            = 0x00010000, // is the class a value class
@@ -871,6 +872,17 @@ enum CorInfoException
     CORINFO_ArgumentNullException,
     CORINFO_ArgumentException,
     CORINFO_Exception_Count,
+};
+
+// These are used to detect array methods as NamedIntrinsic in JIT importer,
+// which otherwise don't have a name.
+enum class CorInfoArrayIntrinsic
+{
+    GET = 0,
+    SET = 1,
+    ADDRESS = 2,
+
+    ILLEGAL
 };
 
 // Can a value be accessed directly from JITed code.
@@ -2532,7 +2544,7 @@ public:
             ) = 0;
 
     // Get the index of runtime provided array method
-    virtual unsigned getArrayFuncIndex(
+    virtual CorInfoArrayIntrinsic getArrayIntrinsicID(
             CORINFO_METHOD_HANDLE        ftn
             ) = 0;
 

@@ -5015,25 +5015,15 @@ struct GenTreeIntrinsic : public GenTreeOp
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
-    GenTreeIntrinsic(var_types             type,
-                     GenTree*              op1,
-                     NamedIntrinsic        intrinsicName,
-                     CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr)
-        , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(var_types type, GenTree* op1, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr), gtIntrinsicName(intrinsicName), gtMethodHandle(methodHandle)
     {
         assert(intrinsicName != NI_Illegal);
     }
 
-    GenTreeIntrinsic(var_types             type,
-                     GenTree*              op1,
-                     GenTree*              op2,
-                     NamedIntrinsic        intrinsicName,
-                     CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, op2)
-        , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(
+        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, op2), gtIntrinsicName(intrinsicName), gtMethodHandle(methodHandle)
     {
         assert(intrinsicName != NI_Illegal);
     }
