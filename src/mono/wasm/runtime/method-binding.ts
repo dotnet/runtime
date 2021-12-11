@@ -380,17 +380,7 @@ declare const enum ArgsMarshal {
     ByteSpan = "b", // Span<byte>
 }
 
-// to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
-type _ExtraArgsMarshalOperators = "!" | "";
-
-// TODO make this more efficient so we can add more parameters (currently it only checks up to 4). One option is to add a
-// blank to the ArgsMarshal enum but that doesn't solve the TS limit of number of options in 1 type
-// Take the marshaling enums and convert to all the valid strings for type checking.
-export type ArgsMarshalString = ""
-    | `${ArgsMarshal}${_ExtraArgsMarshalOperators}`
-    | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
-    | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
-    | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
+export type ArgsMarshalString = string;
 
 export type TypeConverter = {
     needs_unbox: boolean;
