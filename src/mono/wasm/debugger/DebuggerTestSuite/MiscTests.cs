@@ -756,6 +756,7 @@ namespace DebuggerTests
         }
 
         [Fact]
+        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62667
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
             int line = 9;
