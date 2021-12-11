@@ -2909,7 +2909,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         //                                                # GT_XCHG storeDataReg === dataReg
         //     stxr exResult, storeDataReg, [addrReg]
         //     cbnz exResult, retry
-        //     dmb ish
 
         BasicBlock* labelRetry = genCreateTempLabel();
         genDefineTempLabel(labelRetry);
@@ -2942,11 +2941,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         // The following instruction includes a release half barrier
         GetEmitter()->emitIns_R_R_R(INS_stlxr, dataSize, exResultReg, storeDataReg, addrReg);
-
         GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
-
-        instGen_MemoryBarrier();
-
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }
 
@@ -3024,9 +3019,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
         gcInfo.gcMarkRegPtrVal(addrReg, addr->TypeGet());
 
-        // TODO-ARM64-CQ Use ARMv8.1 atomics if available
-        // https://github.com/dotnet/runtime/issues/8225
-
         // Emit code like this:
         //   retry:
         //     ldxr targetReg, [addrReg]
@@ -3035,7 +3027,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         //     stxr exResult, dataReg, [addrReg]
         //     cbnz exResult, retry
         //   compareFail:
-        //     dmb ish
 
         BasicBlock* labelRetry       = genCreateTempLabel();
         BasicBlock* labelCompareFail = genCreateTempLabel();
@@ -3065,13 +3056,8 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
         // The following instruction includes a release half barrier
         GetEmitter()->emitIns_R_R_R(INS_stlxr, emitTypeSize(treeNode), exResultReg, dataReg, addrReg);
-
         GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
-
         genDefineTempLabel(labelCompareFail);
-
-        instGen_MemoryBarrier();
-
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }
 
