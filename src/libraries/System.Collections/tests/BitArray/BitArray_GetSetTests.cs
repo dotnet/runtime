@@ -351,6 +351,28 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void CopyToByteSpan()
+        {
+            for (int size = 4; size < 100; size++)
+            {
+                var bitArray = new BitArray(size);
+                bitArray[1] = true;
+                bitArray[3] = true;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    byte[] expectedOutput = new byte[100 + (size / 8 + 1)];
+                    byte[] actualOutput = new byte[expectedOutput.Length];
+
+                    expectedOutput[i] = 10;
+                    bitArray.CopyTo(actualOutput.AsSpan(i));
+
+                    Assert.Equal(expectedOutput, actualOutput);
+                }
+            }
+        }
+
+        [Fact]
         public static void CopyToBoolArray()
         {
             for (int size = 4; size < 100; size++)
