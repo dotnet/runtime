@@ -6968,6 +6968,17 @@ public:
     unsigned char optLoopCount;        // number of tracked loops
     unsigned char loopAlignCandidates; // number of loops identified for alignment
 
+    // Every time we rebuild the loop table, we increase the global "loop epoch". Any loop indices or
+    // loop table pointers from the previous epoch are invalid.
+    // TODO: validate this in some way?
+    unsigned optCurLoopEpoch;
+
+    void NewLoopEpoch()
+    {
+        ++optCurLoopEpoch;
+        JITDUMP("New loop epoch %d\n", optCurLoopEpoch);
+    }
+
 #ifdef DEBUG
     unsigned char loopsAligned; // number of loops actually aligned
 #endif                          // DEBUG

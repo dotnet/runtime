@@ -4015,6 +4015,11 @@ void Compiler::fgDebugCheckLoopTable()
         {
             // ...it must be the one pointed to by bbNatLoopNum.
             assert(block->bbNatLoopNum == loopNum);
+
+            // TODO: We might want the following assert, but there are cases where we don't move all
+            //       return blocks out of the loop.
+            // Return blocks are not allowed inside a loop; they should have been moved elsewhere.
+            // assert(block->bbJumpKind != BBJ_RETURN);
         }
         else
         {

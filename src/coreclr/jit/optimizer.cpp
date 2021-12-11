@@ -25,8 +25,9 @@ void Compiler::optInit()
     loopAlignCandidates = 0;
 
     /* Initialize the # of tracked loops to 0 */
-    optLoopCount = 0;
-    optLoopTable = nullptr;
+    optLoopCount    = 0;
+    optLoopTable    = nullptr;
+    optCurLoopEpoch = 0;
 
 #ifdef DEBUG
     loopsAligned = 0;
@@ -1210,6 +1211,8 @@ bool Compiler::optRecordLoop(
     {
         assert(loopInd == 0);
         optLoopTable = getAllocator(CMK_LoopOpt).allocate<LoopDsc>(BasicBlock::MAX_LOOP_NUM);
+
+        NewLoopEpoch();
     }
     else
     {
@@ -3931,8 +3934,9 @@ PhaseStatus Compiler::optUnrollLoops()
             BasicBlock::loopNumber newLoopNum                     = loop.lpParent;
             bool                   anyNestedLoopsUnrolledThisLoop = false;
             int                    lval;
+            unsigned               iterToUnroll = totalIter; // The number of iterations left to unroll
 
-            for (lval = lbeg; totalIter > 0; totalIter--)
+            for (lval = lbeg; iterToUnroll > 0; iterToUnroll--)
             {
                 // Note: we can't use the loop.LoopBlocks() iterator, as it captures loop.lpBottom->bbNext at the
                 // beginning of iteration, and we insert blocks before that. So we need to evaluate lpBottom->bbNext
@@ -3959,8 +3963,12 @@ PhaseStatus Compiler::optUnrollLoops()
                         goto DONE_LOOP;
                     }
 
-                    // All blocks in the unrolled loop and all children loops will now be marked
-                    // with the parent loop number.
+                    // All blocks in the unrolled loop will now be marked with the parent loop number. Note that
+                    // if the loop being unrolled contains nested (child) loops, we will notice this below (when
+                    // we set anyNestedLoopsUnrolledThisLoop), and that will cause us to rebuild the entire loop
+                    // table and all loop annotations on blocks. However, if the loop contains no nested loops,
+                    // setting the block `bbNatLoopNum` here is sufficient to incrementally update the block's
+                    // loop info.
 
                     newBlock->bbNatLoopNum = newLoopNum;
 
@@ -4878,9 +4886,15 @@ void Compiler::optResetLoopInfo()
     }
 #endif
 
-    optLoopCount        = 0;       // This will force the table to be rebuilt
-    optLoopTable        = nullptr; // This will cause users to crash if they use the table when it is considered empty.
+    optLoopCount        = 0; // This will force the table to be rebuilt
     loopAlignCandidates = 0;
+
+    // This will cause users to crash if they use the table when it is considered empty.
+    // TODO: the loop table is always allocated as the same (maximum) size, so this is wasteful.
+    // We could zero it out (possibly only in DEBUG) to be paranoid, but there's no reason to
+    // force it to be re-allocated.
+    optLoopTable = nullptr;
+
     for (BasicBlock* const block : Blocks())
     {
         // If the block weight didn't come from profile data, reset it so it can be calculated again.
