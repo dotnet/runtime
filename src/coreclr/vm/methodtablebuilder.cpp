@@ -8111,10 +8111,10 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 continue;
 
             // Align instance fields if we aren't already
-#ifdef FEATURE_64BIT_ALIGNMENT
-            DWORD dwDataAlignment = 1 << i;
-#else
+#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             DWORD dwDataAlignment = min(1 << i, DATA_ALIGNMENT);
+#else
+            DWORD dwDataAlignment = 1 << i;
 #endif
             dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, dwDataAlignment);
 

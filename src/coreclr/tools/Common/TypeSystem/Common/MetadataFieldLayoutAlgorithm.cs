@@ -374,7 +374,6 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.Name == "TimeSpan") System.Diagnostics.Debugger.Break();
             var offsets = new FieldAndOffset[numInstanceFields];
 
             // For types inheriting from another type, field offsets continue on from where they left off
@@ -433,7 +432,7 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.Name == "DateTimeResult") System.Diagnostics.Debugger.Break();
+            if (type.Name == "EventCounter") System.Diagnostics.Debugger.Break();
             TypeSystemContext context = type.Context;
 
             bool hasLayout = type.HasLayout();
@@ -538,7 +537,7 @@ namespace Internal.TypeSystem
             // between base type and the current type.
             LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8, requiresAlignedBase: false);
             LayoutInt offsetBias = LayoutInt.Zero;
-            if (!type.IsValueType && cumulativeInstanceFieldPos == type.Context.Target.LayoutPointerSize && type.Context.Target.Architecture == TargetArchitecture.X86)
+            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && type.Context.Target.Architecture == TargetArchitecture.X86)
             {
                 offsetBias = type.Context.Target.LayoutPointerSize;
                 cumulativeInstanceFieldPos -= offsetBias;
