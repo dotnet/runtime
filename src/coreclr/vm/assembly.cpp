@@ -189,11 +189,17 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
 
-    if (GetManifestFile()->IsDynamic())
+    PEAssembly* pPEAssembly = GetManifestFile();
+
+    // Module::Create will initialize R2R support
+    // make sure the PE is loaded or R2R will be disabled.
+    pPEAssembly->EnsureLoaded();
+
+    if (pPEAssembly->IsDynamic())
         // manifest modules of dynamic assemblies are always transient
-        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
+        m_pManifest = ReflectionModule::Create(this, pPEAssembly, pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
-        m_pManifest = Module::Create(this, mdFileNil, GetManifestFile(), pamTracker);
+        m_pManifest = Module::Create(this, mdFileNil, pPEAssembly, pamTracker);
 
     FastInterlockIncrement((LONG*)&g_cAssemblies);
 
@@ -208,6 +214,18 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
 
+    if (IsCollectible())
+    {
+        COUNT_T size;
+        BYTE* start = (BYTE*)pPEAssembly->GetLoadedImageContents(&size);
+
+        // We should have the content loaded at this time. There will be no other attempt to associate memory.
+        _ASSERTE(start != NULL);
+
+        GCX_COOP();
+        LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
+    }
+
     {
         CANNOTTHROWCOMPLUSEXCEPTION();
         FAULT_FORBID();
@@ -216,21 +234,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         PublishModuleIntoAssembly(m_pManifest);
 
         return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW/FAULT_FORBID expires
-    }
-}
-
-void Assembly::AssociateMemoryIfCollectible()
-{
-    if (IsCollectible())
-    {
-        COUNT_T size;
-        BYTE* start = (BYTE*)m_pManifest->GetPEAssembly()->GetLoadedImageContents(&size);
-
-        // We should have the content loaded at this time. There will be no other attempt to start tracking.
-        _ASSERTE(start != NULL);
-
-        GCX_COOP();
-        LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
     }
 }
 

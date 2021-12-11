@@ -81,7 +81,6 @@ class Assembly
 public:
     Assembly(BaseDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
     void Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
-    void AssociateMemoryIfCollectible();
 
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );

@@ -525,8 +525,6 @@ void DomainFile::LoadLibrary()
     }
     CONTRACTL_END;
 
-    GetPEAssembly()->EnsureLoaded();
-    ((DomainAssembly*)this)->GetAssembly()->AssociateMemoryIfCollectible();
 }
 
 void DomainFile::PostLoadLibrary()
