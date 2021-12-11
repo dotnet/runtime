@@ -12,7 +12,8 @@ namespace Microsoft.Extensions.Configuration
     internal sealed class ReferenceCountedProviderManager : IDisposable
     {
         private readonly object _replaceProvidersLock = new object();
-        private ReferenceCountedProviders _refCountedProviders = new(new List<IConfigurationProvider>());
+        private ReferenceCountedProviders _refCountedProviders = ReferenceCountedProviders.Create(new List<IConfigurationProvider>());
+        private bool _disposed;
 
         // This is only used to support IConfigurationRoot.Providers because we cannot track the lifetime of that reference.
         public IEnumerable<IConfigurationProvider> NonReferenceCountedProviders => _refCountedProviders.NonReferenceCountedProviders;
@@ -35,7 +36,12 @@ namespace Microsoft.Extensions.Configuration
 
             lock (_replaceProvidersLock)
             {
-                _refCountedProviders = new ReferenceCountedProviders(providers);
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(nameof(ConfigurationManager));
+                }
+
+                _refCountedProviders = ReferenceCountedProviders.Create(providers);
             }
 
             // Decrement the reference count to the old providers. If they are being concurrently read from
@@ -45,17 +51,36 @@ namespace Microsoft.Extensions.Configuration
 
         public void AddProvider(IConfigurationProvider provider)
         {
-            // Maintain existing references, but replace list with copy containing new item.
-            _refCountedProviders.Providers = new List<IConfigurationProvider>(_refCountedProviders.Providers)
+            lock (_replaceProvidersLock)
             {
-                provider
-            };
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(nameof(ConfigurationManager));
+                }
+
+                // Maintain existing references, but replace list with copy containing new item.
+                _refCountedProviders.Providers = new List<IConfigurationProvider>(_refCountedProviders.Providers)
+                {
+                    provider
+                };
+            }
         }
 
         public void Dispose()
         {
-            // Equivalent to _refCountedProvider.Dispose() but asserts there a no concurrent references.
-            _refCountedProviders.ReleaseFinalReference();
+            ReferenceCountedProviders oldRefCountedProviders = _refCountedProviders;
+
+            lock (_replaceProvidersLock)
+            {
+                _disposed = true;
+
+                // Create a non-reference-counting ReferenceCountedProviders instance now that the ConfigurationManager is disposed.
+                // We could preemptively throw an ODE from ReferenceCountedProviderManager.GetReference() instead, but this might
+                // break existing apps that were previously able to continue to read configuration after disposing an ConfigurationManager.
+                _refCountedProviders = ReferenceCountedProviders.CreateDisposed(oldRefCountedProviders.Providers);
+            }
+
+            oldRefCountedProviders.Dispose();
         }
     }
 }

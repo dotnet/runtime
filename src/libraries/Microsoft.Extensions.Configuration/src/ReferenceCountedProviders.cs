@@ -9,64 +9,82 @@ using System.Threading;
 namespace Microsoft.Extensions.Configuration
 {
     // ReferenceCountedProviders is used by ConfigurationManager to wait until all readers unreference it before disposing any providers.
-    internal sealed class ReferenceCountedProviders : IDisposable
+    internal abstract class ReferenceCountedProviders : IDisposable
     {
-        private long _refCount = 1;
-        // volatile is not strictly necessary because the runtime adds a barrier either way, but volatile indicates that this field has
-        // unsynchronized readers meaning the all writes initializing the list must be published before updating the _providers reference.
-        private volatile List<IConfigurationProvider> _providers;
+        public static ReferenceCountedProviders Create(List<IConfigurationProvider> providers) => new ActiveReferenceCountedProviders(providers);
 
-        public ReferenceCountedProviders(List<IConfigurationProvider> providers)
-        {
-            _providers = providers;
-        }
+        // If anything references DisposedReferenceCountedProviders, it indicates something is using the ConfigurationManager after it's been disposed.
+        // We could preemptively throw an ODE from ReferenceCountedProviderManager.GetReference() instead of returning this type, but this might
+        // break existing apps that are previously able to continue to read configuration after disposing an ConfigurationManager.
+        public static ReferenceCountedProviders CreateDisposed(List<IConfigurationProvider> providers) => new DisposedReferenceCountedProviders(providers);
 
-        public List<IConfigurationProvider> Providers
-        {
-            get
-            {
-                Debug.Assert(_refCount > 0);
-                return _providers;
-            }
-            set
-            {
-                Debug.Assert(_refCount > 0);
-                _providers = value;
-            }
-        }
-
+        public abstract List<IConfigurationProvider> Providers { get; set; }
         // This is only used to support IConfigurationRoot.Providers because we cannot track the lifetime of that reference.
-        public List<IConfigurationProvider> NonReferenceCountedProviders => _providers;
+        public abstract List<IConfigurationProvider> NonReferenceCountedProviders { get; }
 
-        public void AddReference()
-        {
-            // AddReference() is always called with a lock to ensure _refCount hasn't already decremented to zero.
-            Debug.Assert(_refCount > 0);
-            Interlocked.Increment(ref _refCount);
-        }
+        public abstract void AddReference();
+        // This is Dispose() rather than RemoveReference() so we can conveniently release a reference at the end of a using block.
+        public abstract void Dispose();
 
-        // This is not a "real" Dispose(). It exists to conveniently release a reference at the end of a using block.
-        public void Dispose()
+        private sealed class ActiveReferenceCountedProviders : ReferenceCountedProviders
         {
-            if (Interlocked.Decrement(ref _refCount) == 0)
+            private long _refCount = 1;
+            // volatile is not strictly necessary because the runtime adds a barrier either way, but volatile indicates that this field has
+            // unsynchronized readers meaning the all writes initializing the list must be published before updating the _providers reference.
+            private volatile List<IConfigurationProvider> _providers;
+
+            public ActiveReferenceCountedProviders(List<IConfigurationProvider> providers)
             {
-                foreach (IConfigurationProvider provider in _providers)
+                _providers = providers;
+            }
+
+            public override List<IConfigurationProvider> Providers
+            {
+                get
                 {
-                    (provider as IDisposable)?.Dispose();
+                    Debug.Assert(_refCount > 0);
+                    return _providers;
+                }
+                set
+                {
+                    Debug.Assert(_refCount > 0);
+                    _providers = value;
+                }
+            }
+
+            public override List<IConfigurationProvider> NonReferenceCountedProviders => _providers;
+
+            public override void AddReference()
+            {
+                // AddReference() is always called with a lock to ensure _refCount hasn't already decremented to zero.
+                Debug.Assert(_refCount > 0);
+                Interlocked.Increment(ref _refCount);
+            }
+
+            public override void Dispose()
+            {
+                if (Interlocked.Decrement(ref _refCount) == 0)
+                {
+                    foreach (IConfigurationProvider provider in _providers)
+                    {
+                        (provider as IDisposable)?.Dispose();
+                    }
                 }
             }
         }
 
-        // This is the "real" Dispose() that is only called as part of ConfigurationManager.Dispose().
-        // If there are any active references, that indicates a use-after-dispose bug in the code using the ConfigurationManager.
-        //
-        // If there are active references after dispose, the providers could get disposed more than once. We could prevent this
-        // by preemptively throwing an ODE from ReferenceCountedProviderManager.GetReference() after it's disposed, but this might
-        // break existing apps that are today able to continue to read configuration after disposing an ConfigurationManager.
-        public void ReleaseFinalReference()
+        private sealed class DisposedReferenceCountedProviders : ReferenceCountedProviders
         {
-            Debug.Assert(_refCount == 1);
-            Dispose();
+            public DisposedReferenceCountedProviders(List<IConfigurationProvider> providers)
+            {
+                Providers = providers;
+            }
+
+            public override List<IConfigurationProvider> Providers { get; set; }
+            public override List<IConfigurationProvider> NonReferenceCountedProviders => Providers;
+
+            public override void AddReference() { }
+            public override void Dispose() { }
         }
     }
 }
