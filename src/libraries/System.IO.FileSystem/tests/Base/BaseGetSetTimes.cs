@@ -21,7 +21,9 @@ namespace System.IO.Tests
         protected static bool LowTemporalResolution => PlatformDetection.IsBrowser || isHFS;
         protected static bool HighTemporalResolution => !LowTemporalResolution;
 
-        protected abstract T GetExistingItem();
+        protected abstract bool CanBeReadOnly { get; }
+
+        protected abstract T GetExistingItem(bool readOnly = false);
         protected abstract T GetMissingItem();
 
         protected abstract T CreateSymlink(string path, string pathToTarget);
@@ -81,6 +83,18 @@ namespace System.IO.Tests
         public void SettingUpdatesProperties()
         {
             T item = GetExistingItem();
+            SettingUpdatesPropertiesCore(item);
+        }
+
+        [Fact]
+        public void SettingUpdatesPropertiesWhenReadOnly()
+        {
+            if (!CanBeReadOnly)
+            {
+                return; // directories can't be read only, so automatic pass
+            }
+
+            T item = GetExistingItem(readOnly: true);
             SettingUpdatesPropertiesCore(item);
         }
 
@@ -164,7 +178,7 @@ namespace System.IO.Tests
                 TimeFunction function1 = functions.x;
                 TimeFunction function2 = functions.y;
                 bool reverse = functions.reverse;
-                
+
                 // Checking that milliseconds are not dropped after setter.
                 DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
                 DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);

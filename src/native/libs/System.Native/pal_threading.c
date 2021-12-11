@@ -218,7 +218,7 @@ void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
     (void)error; // unused in release build
 }
 
-int32_t SystemNative_RuntimeThread_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
+int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
 {
     bool result = false;
     pthread_attr_t attrs;
