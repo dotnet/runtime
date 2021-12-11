@@ -83,23 +83,7 @@ else ()
     endif ()
 
     if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
-        set(ZLIB_SOURCES
-            zlib-intel/adler32.c
-            zlib-intel/compress.c
-            zlib-intel/crc_folding.c
-            zlib-intel/crc32.c
-            zlib-intel/deflate_medium.c
-            zlib-intel/deflate_quick.c
-            zlib-intel/deflate.c
-            zlib-intel/inffast.c
-            zlib-intel/inflate.c
-            zlib-intel/inftrees.c
-            zlib-intel/match.c
-            zlib-intel/slide_sse.c
-            zlib-intel/trees.c
-            zlib-intel/x86.c
-            zlib-intel/zutil.c
-        )
+        include(${CLR_SRC_NATIVE_DIR}/external/zlib-intel.cmake)
     else ()
         include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
     endif ()
