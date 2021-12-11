@@ -37,7 +37,8 @@ export function _release_temp_frame(): void {
     alloca_offset = <VoidPtr>alloca_stack.pop();
 }
 
-type _MemOffset = number | VoidPtr | NativePointer;
+type _MemOffset = number | NativePointer;
+type _MemValue = number | NativePointer | ManagedPointer;
 
 export function setU8(offset: _MemOffset, value: number): void {
     Module.HEAPU8[<any>offset] = value;
@@ -47,7 +48,7 @@ export function setU16(offset: _MemOffset, value: number): void {
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
-export function setU32 (offset: _MemOffset, value: number | VoidPtr | NativePointer | ManagedPointer) : void {
+export function setU32 (offset: _MemOffset, value: _MemValue) : void {
     Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 

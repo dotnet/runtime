@@ -165,7 +165,7 @@ function _setSpan (offset : VoidPtr, span : Array<number>) : void {
     setU32(<any>offset + 4, span[1]);
 }
 
-function _bindingsError (message : string) {
+function _bindingsError (message : string) : void {
     throw new Error(message);
 }
 
@@ -241,7 +241,7 @@ function _generate_bound_method (typePtr: MonoType, method: MonoMethod, args_mar
     }
 }
 
-function _initialize_bindings_named_closures () {
+function _initialize_bindings_named_closures () : void {
     // HACK: Populate the lookup table used by compiled closures
     const closure: any = {
         _create_temp_frame,

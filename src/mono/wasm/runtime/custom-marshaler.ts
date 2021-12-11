@@ -33,7 +33,7 @@ export const _custom_marshaler_name_table : { [key: string] : string } = {};
 const _temp_unbox_buffer_cache = new Map<MonoType, VoidPtr>();
 let _has_logged_custom_marshaler_table = false;
 
-function extract_js_obj_root_with_converter_impl (root : WasmRoot<MonoObject>, typePtr : MonoType, unbox_buffer : VoidPtr, optional: boolean) {
+function extract_js_obj_root_with_converter_impl (root : WasmRoot<MonoObject>, typePtr : MonoType, unbox_buffer : VoidPtr, optional: boolean) : any {
     if (root.value === MonoObjectNull)
         return null;
 
@@ -169,7 +169,7 @@ function _compile_interchange_to_js (typePtr : MonoType, boundConverter : Functi
     return result;
 }
 
-function _get_custom_marshaler_info_for_type (typePtr : MonoType) {
+function _get_custom_marshaler_info_for_type (typePtr : MonoType) : CustomMarshalerInfo | null {
     if (!typePtr)
         return null;
     if (!_custom_marshaler_name_table)
@@ -216,10 +216,10 @@ function _get_custom_marshaler_info_for_type (typePtr : MonoType) {
         result = _custom_marshaler_info_cache.get (typePtr);
     }
 
-    return result;
+    return result || null;
 }
 
-function _get_struct_unboxer_for_type (typePtr : MonoType) {
+function _get_struct_unboxer_for_type (typePtr : MonoType) : Function | null {
     if (!typePtr)
         throw new Error("no type");
 
@@ -254,7 +254,7 @@ function _get_struct_unboxer_for_type (typePtr : MonoType) {
         }
     }
 
-    return _struct_unboxer_cache.get (typePtr);
+    return _struct_unboxer_cache.get (typePtr) || null;
 }
 
 function _compile_js_to_interchange (typePtr : MonoType, boundConverter : Function, js : string | undefined, info : CustomMarshalerInfo) : Function {

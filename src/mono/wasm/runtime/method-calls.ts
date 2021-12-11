@@ -23,7 +23,7 @@ import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
 import { VoidPtr, Int32Ptr, EmscriptenModule } from "./types/emscripten";
 
-function _verify_args_for_method_call(args_marshal: ArgsMarshalString, args: any) {
+function _verify_args_for_method_call(args_marshal: ArgsMarshalString, args: any) : boolean {
     const has_args = args && (typeof args === "object") && args.length > 0;
     const has_args_marshal = typeof args_marshal === "string";
 
@@ -83,7 +83,7 @@ export function _get_args_root_buffer_for_method_call(converter: SignatureConver
 
 function _release_args_root_buffer_from_method_call(
     converter?: SignatureConverter, token?: BoundMethodToken | null, argsRootBuffer?: WasmRootBuffer
-) {
+) : void {
     if (!argsRootBuffer || !converter)
         return;
 
@@ -101,7 +101,7 @@ function _release_args_root_buffer_from_method_call(
 
 function _release_buffer_from_method_call(
     converter: SignatureConverter | undefined, token?: BoundMethodToken | null, buffer?: VoidPtr
-) {
+) : void {
     if (!converter || !buffer)
         return;
 
