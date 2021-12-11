@@ -1,14 +1,15 @@
 import {
     JSHandle, MonoArray, MonoObject, MarshalType,
-    MonoString, VoidPtr, VoidPtrNull, MonoType, MonoTypeNull
+    MonoString, VoidPtrNull, MonoType, MonoTypeNull
 } from "./types";
+import { VoidPtr } from "./types/emscripten";
 import { mono_wasm_new_root, mono_wasm_new_external_root, WasmRoot } from "./roots";
 import { _unbox_mono_obj_root, mono_array_to_js_array } from "./cs-to-js";
 import { _js_to_mono_obj } from "./js-to-cs";
 import { conv_string, js_string_to_mono_string_new } from "./strings";
 import { extract_js_obj_root_with_possible_converter, unbox_struct_at_address } from "./custom-marshaler";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
-import { MONO, BINDING, INTERNAL } from "./exports";
+import { MONO, BINDING, INTERNAL } from "./imports";
 import {
     getI32,
     getF32,
