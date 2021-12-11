@@ -208,13 +208,9 @@ const App = {
                 return;
             }
             try {
-
                 const main_assembly_name = processedArguments.applicationArgs[1];
                 const app_args = processedArguments.applicationArgs.slice(2);
-                INTERNAL.mono_wasm_set_main_args(main_assembly_name, app_args);
-
-                // Automatic signature isn't working correctly
-                const result = await BINDING.call_assembly_entry_point(main_assembly_name, [app_args], "m");
+                const result = await MONO.mono_run_main(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
                 set_exit_code(1, error);

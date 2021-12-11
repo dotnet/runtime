@@ -430,6 +430,11 @@ namespace System.Net.Http.HPack
                 currentIndex += count;
 
                 _state = State.HeaderValueLength;
+                ParseHeaderValueLength(data, ref currentIndex, handler);
+            }
+            else if (count == 0)
+            {
+                // no-op
             }
             else
             {
@@ -503,7 +508,7 @@ namespace System.Net.Http.HPack
 
                 if (_index)
                 {
-                    _dynamicTable.Insert(H2StaticTable.Get(_headerStaticIndex - 1).Name, headerValueSpan);
+                    _dynamicTable.Insert(_headerStaticIndex, H2StaticTable.Get(_headerStaticIndex - 1).Name, headerValueSpan);
                 }
             }
             else
@@ -543,7 +548,7 @@ namespace System.Net.Http.HPack
             else
             {
                 ref readonly HeaderField header = ref GetDynamicHeader(index);
-                handler.OnHeader(header.Name, header.Value);
+                handler.OnDynamicIndexedHeader(header.StaticTableIndex, header.Name, header.Value);
             }
 
             _state = State.Ready;

@@ -27,7 +27,7 @@
 
 static Vector256L Vector256LValue = { };
 
-extern "C" DLL_EXPORT Vector256L STDMETHODCALLTYPE GetVector256L(int64_t e00, int64_t e01, int64_t e02, int64_t e03)
+extern "C" DLL_EXPORT Vector256L STDMETHODCALLTYPE ENABLE_AVX GetVector256L(int64_t e00, int64_t e01, int64_t e02, int64_t e03)
 {
     union {
         int64_t value[4];
@@ -42,7 +42,7 @@ extern "C" DLL_EXPORT Vector256L STDMETHODCALLTYPE GetVector256L(int64_t e00, in
     return result;
 }
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector256LOut(int64_t e00, int64_t e01, int64_t e02, int64_t e03, Vector256L* pValue)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE ENABLE_AVX GetVector256LOut(int64_t e00, int64_t e01, int64_t e02, int64_t e03, Vector256L* pValue)
 {
     Vector256L value = GetVector256L(e00, e01, e02, e03);
 
@@ -54,18 +54,18 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector256LOut(int64_t e00, int64
 #endif
 }
 
-extern "C" DLL_EXPORT const Vector256L* STDMETHODCALLTYPE GetVector256LPtr(int64_t e00, int64_t e01, int64_t e02, int64_t e03)
+extern "C" DLL_EXPORT const Vector256L* STDMETHODCALLTYPE ENABLE_AVX GetVector256LPtr(int64_t e00, int64_t e01, int64_t e02, int64_t e03)
 {
     GetVector256LOut(e00, e01, e02, e03, &Vector256LValue);
     return &Vector256LValue;
 }
 
-extern "C" DLL_EXPORT Vector256L STDMETHODCALLTYPE AddVector256L(Vector256L lhs, Vector256L rhs)
+extern "C" DLL_EXPORT Vector256L STDMETHODCALLTYPE ENABLE_AVX AddVector256L(Vector256L lhs, Vector256L rhs)
 {
     throw "P/Invoke for Vector256<long> should be unsupported.";
 }
 
-extern "C" DLL_EXPORT Vector256L STDMETHODCALLTYPE AddVector256Ls(const Vector256L* pValues, uint32_t count)
+extern "C" DLL_EXPORT Vector256L STDMETHODCALLTYPE ENABLE_AVX AddVector256Ls(const Vector256L* pValues, uint32_t count)
 {
     throw "P/Invoke for Vector256<long> should be unsupported.";
 }

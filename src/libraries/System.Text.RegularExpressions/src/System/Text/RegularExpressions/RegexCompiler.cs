@@ -30,6 +30,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_matchLengthMethod = RegexRunnerMethod("MatchLength");
         private static readonly MethodInfo s_matchIndexMethod = RegexRunnerMethod("MatchIndex");
         private static readonly MethodInfo s_isBoundaryMethod = RegexRunnerMethod("IsBoundary");
+        private static readonly MethodInfo s_isWordCharMethod = RegexRunnerMethod("IsWordChar");
         private static readonly MethodInfo s_isECMABoundaryMethod = RegexRunnerMethod("IsECMABoundary");
         private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
@@ -3526,6 +3527,18 @@ namespace System.Text.RegularExpressions
                 case RegexCharClass.NotSpaceClass:
                     // !char.IsWhiteSpace(ch)
                     Call(s_charIsWhiteSpaceMethod);
+                    Ldc(0);
+                    Ceq();
+                    return;
+
+                case RegexCharClass.WordClass:
+                    // RegexRunner.IsWordChar(ch)
+                    Call(s_isWordCharMethod);
+                    return;
+
+                case RegexCharClass.NotWordClass:
+                    // !RegexRunner.IsWordChar(ch)
+                    Call(s_isWordCharMethod);
                     Ldc(0);
                     Ceq();
                     return;

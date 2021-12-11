@@ -12,7 +12,6 @@
     <WasmExtraFilesToDeploy Include="debugger-driver.html" />
     <WasmExtraFilesToDeploy Include="non-wasm-page.html" />
     <WasmExtraFilesToDeploy Include="other.js" />
-    <WasmExtraFilesToDeploy Include="debugger-main.js" />
     <WasmExtraFilesToDeploy Include="weather.json" />
 
     <!-- We want to bundle these assemblies, so build them first -->
@@ -29,7 +28,7 @@
     <PropertyGroup>
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>    
       <WasmAppDir>$(AppDir)</WasmAppDir>
-      <WasmMainJSPath>$(MonoProjectRoot)wasm\test-main.js</WasmMainJSPath>
+      <WasmMainJSPath>debugger-main.js</WasmMainJSPath>
       <!-- like is used on blazor -->
       <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">-1</WasmDebugLevel>
 
