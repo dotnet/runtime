@@ -75,6 +75,15 @@ function(get_include_directories_asm IncludeDirectories)
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
 endfunction(get_include_directories_asm)
 
+# Adds prefix to paths list
+function(addprefix var prefix list)
+  set(f)
+  foreach(i ${list})
+    set(f ${f} ${prefix}/${i})
+  endforeach()
+  set(${var} ${f} PARENT_SCOPE)
+endfunction()
+
 # Finds and returns unwind libs
 function(find_unwind_libs UnwindLibs)
     if(CLR_CMAKE_HOST_ARCH_ARM)
