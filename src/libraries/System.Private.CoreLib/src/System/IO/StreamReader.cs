@@ -812,7 +812,7 @@ namespace System.IO
             {
                 // Note the following common line feed chars:
                 // \n - UNIX   \r\n - DOS   \r - Mac
-                int i = _charBuffer.AsSpan(_charPos).IndexOfAny('\r', '\n');
+                int i = _charBuffer.AsSpan(_charPos, _charLen - _charPos).IndexOfAny('\r', '\n');
                 if (i >= 0)
                 {
                     string s;
@@ -838,7 +838,6 @@ namespace System.IO
                 }
 
                 i = _charLen - _charPos;
-                if (i < 0) break; // a hack for System.Globalization.Tests (to check on CI if it fixes the problem)
 
                 sb.Append(_charBuffer.AsSpan(_charPos, i));
             } while (ReadBuffer() > 0);
@@ -908,11 +907,9 @@ namespace System.IO
                 {
                     // Note the following common line feed chars:
                     // \n - UNIX   \r\n - DOS   \r - Mac
-                    int i = _charBuffer.AsSpan(_charPos).IndexOfAny('\r', '\n');
+                    int i = _charBuffer.AsSpan(_charPos, _charLen - _charPos).IndexOfAny('\r', '\n');
                     if (i >= 0)
                     {
-                        char ch = _charBuffer[_charPos + i];
-
                         string? s;
                         if (rentedArray != null)
                         {
@@ -924,6 +921,7 @@ namespace System.IO
                         {
                             s = new string(_charBuffer, _charPos, i);
                         }
+                        char ch = _charBuffer[_charPos + i];
                         _charPos += i + 1;
                         if (ch == '\r' && (_charPos < _charLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
                         {
