@@ -1562,6 +1562,10 @@ public:
 // and must be non-null. E.g.,
 //    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
 //
+// Note that endBlock->bbNext is captured at the beginning of the iteration. Thus, any blocks
+// inserted before that will continue the iteration. In particular, inserting blocks between endBlock
+// and endBlock->bbNext will yield unexpected results, as the iteration will continue longer than desired.
+//
 class BasicBlockRangeList
 {
     BasicBlock* m_begin;

@@ -3380,6 +3380,15 @@ namespace Internal.JitInterface
                 blobData[i] = pUnwindBlock[i];
             }
 
+#if !READYTORUN
+            var target = _compilation.TypeSystemContext.Target;
+
+            if (target.Architecture == TargetArchitecture.ARM64 && target.OperatingSystem == TargetOS.Linux)
+            {
+                blobData = CompressARM64CFI(blobData);
+            }
+#endif
+
             _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
         }
 

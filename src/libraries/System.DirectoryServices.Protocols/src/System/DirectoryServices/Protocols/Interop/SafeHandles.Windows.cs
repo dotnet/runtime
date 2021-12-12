@@ -16,7 +16,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        internal SafeBerHandle(berval value) : base(true)
+        internal SafeBerHandle(BerVal value) : base(true)
         {
             SetHandle(Interop.Ldap.ber_init(value));
             if (handle == IntPtr.Zero)

@@ -508,7 +508,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
             unsigned lclNum = tree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
             for (unsigned level = 0; level < chkLevel; level++)
             {
-                assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum, false));
+                assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum));
                 assert(!lvaTable[lclNum].IsAddressExposed() ||
                        (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT) == 0);
             }
@@ -2757,7 +2757,7 @@ void Compiler::impSpillLclRefs(ssize_t lclNum)
         /* Skip the tree if it doesn't have an affected reference,
            unless xcptnCaught */
 
-        if (xcptnCaught || gtHasRef(tree, lclNum, false))
+        if (xcptnCaught || gtHasRef(tree, lclNum))
         {
             impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impSpillLclRefs"));
         }
@@ -3648,17 +3648,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 const char* Compiler::impGetIntrinsicName(CorInfoIntrinsics intrinsicID)
 {
     static const char* const intrinsicNameMap[CORINFO_INTRINSIC_Count] = {
-        "CORINFO_INTRINSIC_Array_Get",
-        "CORINFO_INTRINSIC_Array_Address",
-        "CORINFO_INTRINSIC_Array_Set",
-        "CORINFO_INTRINSIC_RTH_GetValueInternal",
-        "CORINFO_INTRINSIC_Object_GetType",
-        "CORINFO_INTRINSIC_StubHelpers_GetStubContext",
-        "CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr",
-        "CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress",
-        "CORINFO_INTRINSIC_ByReference_Ctor",
-        "CORINFO_INTRINSIC_ByReference_Value",
-        "CORINFO_INTRINSIC_GetRawHandle",
+        "CORINFO_INTRINSIC_Array_Get",        "CORINFO_INTRINSIC_Array_Address",     "CORINFO_INTRINSIC_Array_Set",
+        "CORINFO_INTRINSIC_ByReference_Ctor", "CORINFO_INTRINSIC_ByReference_Value", "CORINFO_INTRINSIC_GetRawHandle",
     };
 
     if ((0 <= intrinsicID) && (intrinsicID < CORINFO_INTRINSIC_Count))
@@ -3844,6 +3835,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                 CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
                                 CorInfoIntrinsics*      pIntrinsicID,
+                                NamedIntrinsic*         pIntrinsicName,
                                 bool*                   isSpecialIntrinsic)
 {
     assert((methodFlags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0);
@@ -3919,24 +3911,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         }
     }
 
-    *pIntrinsicID = intrinsicID;
+    *pIntrinsicID   = intrinsicID;
+    *pIntrinsicName = ni;
 
-    if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_GetStubContext)
+    if (ni == NI_System_StubHelpers_GetStubContext)
     {
         // must be done regardless of DbgCode and MinOpts
         return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
     }
-#ifdef TARGET_64BIT
-    if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr)
-    {
-        // must be done regardless of DbgCode and MinOpts
-        return gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL));
-    }
-#else
-    assert(intrinsicID != CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr);
-#endif
 
-    if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress)
+    if (ni == NI_System_StubHelpers_NextCallReturnAddress)
     {
         // For now we just avoid inlining anything into these methods since
         // this intrinsic is only rarely used. We could do this better if we
@@ -3981,127 +3965,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         case CORINFO_INTRINSIC_Array_Set:
             retNode = impArrayAccessIntrinsic(clsHnd, sig, memberRef, readonlyCall, intrinsicID);
             break;
-
-        case CORINFO_INTRINSIC_RTH_GetValueInternal:
-            op1 = impStackTop(0).val;
-            if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
-                gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall()))
-            {
-                // Old tree
-                // Helper-RuntimeTypeHandle -> TreeToGetNativeTypeHandle
-                //
-                // New tree
-                // TreeToGetNativeTypeHandle
-
-                // Remove call to helper and return the native TypeHandle pointer that was the parameter
-                // to that helper.
-
-                op1 = impPopStack().val;
-
-                // Get native TypeHandle argument to old helper
-                GenTreeCall::Use* arg = op1->AsCall()->gtCallArgs;
-                assert(arg->GetNext() == nullptr);
-                op1     = arg->GetNode();
-                retNode = op1;
-            }
-            // Call the regular function.
-            break;
-
-        case CORINFO_INTRINSIC_Object_GetType:
-        {
-            JITDUMP("\n impIntrinsic: call to Object.GetType\n");
-            op1 = impStackTop(0).val;
-
-            // If we're calling GetType on a boxed value, just get the type directly.
-            if (op1->IsBoxedValue())
-            {
-                JITDUMP("Attempting to optimize box(...).getType() to direct type construction\n");
-
-                // Try and clean up the box. Obtain the handle we
-                // were going to pass to the newobj.
-                GenTree* boxTypeHandle = gtTryRemoveBoxUpstreamEffects(op1, BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE);
-
-                if (boxTypeHandle != nullptr)
-                {
-                    // Note we don't need to play the TYP_STRUCT games here like
-                    // do for LDTOKEN since the return value of this operator is Type,
-                    // not RuntimeTypeHandle.
-                    impPopStack();
-                    GenTreeCall::Use* helperArgs = gtNewCallArgs(boxTypeHandle);
-                    GenTree*          runtimeType =
-                        gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
-                    retNode = runtimeType;
-                }
-            }
-
-            // If we have a constrained callvirt with a "box this" transform
-            // we know we have a value class and hence an exact type.
-            //
-            // If so, instead of boxing and then extracting the type, just
-            // construct the type directly.
-            if ((retNode == nullptr) && (pConstrainedResolvedToken != nullptr) &&
-                (constraintCallThisTransform == CORINFO_BOX_THIS))
-            {
-                // Ensure this is one of the is simple box cases (in particular, rule out nullables).
-                const CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pConstrainedResolvedToken->hClass);
-                const bool            isSafeToOptimize = (boxHelper == CORINFO_HELP_BOX);
-
-                if (isSafeToOptimize)
-                {
-                    JITDUMP("Optimizing constrained box-this obj.getType() to direct type construction\n");
-                    impPopStack();
-                    GenTree* typeHandleOp =
-                        impTokenToHandle(pConstrainedResolvedToken, nullptr, true /* mustRestoreHandle */);
-                    if (typeHandleOp == nullptr)
-                    {
-                        assert(compDonotInline());
-                        return nullptr;
-                    }
-                    GenTreeCall::Use* helperArgs = gtNewCallArgs(typeHandleOp);
-                    GenTree*          runtimeType =
-                        gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
-                    retNode = runtimeType;
-                }
-            }
-
-#ifdef DEBUG
-            if (retNode != nullptr)
-            {
-                JITDUMP("Optimized result for call to GetType is\n");
-                if (verbose)
-                {
-                    gtDispTree(retNode);
-                }
-            }
-#endif
-
-            // Else expand as an intrinsic, unless the call is constrained,
-            // in which case we defer expansion to allow impImportCall do the
-            // special constraint processing.
-            if ((retNode == nullptr) && (pConstrainedResolvedToken == nullptr))
-            {
-                JITDUMP("Expanding as special intrinsic\n");
-                impPopStack();
-                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, ni, method);
-
-                // Set the CALL flag to indicate that the operator is implemented by a call.
-                // Set also the EXCEPTION flag because the native implementation of
-                // CORINFO_INTRINSIC_Object_GetType intrinsic can throw NullReferenceException.
-                op1->gtFlags |= (GTF_CALL | GTF_EXCEPT);
-                retNode = op1;
-                // Might be further optimizable, so arrange to leave a mark behind
-                isSpecial = true;
-            }
-
-            if (retNode == nullptr)
-            {
-                JITDUMP("Leaving as normal call\n");
-                // Might be further optimizable, so arrange to leave a mark behind
-                isSpecial = true;
-            }
-
-            break;
-        }
 
         // Implement ByReference Ctor.  This wraps the assignment of the ref into a byref-like field
         // in a value type.  The canonical example of this is Span<T>. In effect this is just a
@@ -4315,6 +4178,33 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(resultType == result->TypeGet());
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
+                break;
+            }
+
+            case NI_System_RuntimeTypeHandle_GetValueInternal:
+            {
+                GenTree* op1 = impStackTop(0).val;
+                if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
+                    gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall()))
+                {
+                    // Old tree
+                    // Helper-RuntimeTypeHandle -> TreeToGetNativeTypeHandle
+                    //
+                    // New tree
+                    // TreeToGetNativeTypeHandle
+
+                    // Remove call to helper and return the native TypeHandle pointer that was the parameter
+                    // to that helper.
+
+                    op1 = impPopStack().val;
+
+                    // Get native TypeHandle argument to old helper
+                    GenTreeCall::Use* arg = op1->AsCall()->gtCallArgs;
+                    assert(arg->GetNext() == nullptr);
+                    op1     = arg->GetNode();
+                    retNode = op1;
+                }
+                // Call the regular function.
                 break;
             }
 
@@ -4675,6 +4565,103 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 // Flag for later handling.
                 isSpecial = true;
+                break;
+            }
+
+            case NI_System_Object_GetType:
+            {
+                JITDUMP("\n impIntrinsic: call to Object.GetType\n");
+                GenTree* op1 = impStackTop(0).val;
+
+                // If we're calling GetType on a boxed value, just get the type directly.
+                if (op1->IsBoxedValue())
+                {
+                    JITDUMP("Attempting to optimize box(...).getType() to direct type construction\n");
+
+                    // Try and clean up the box. Obtain the handle we
+                    // were going to pass to the newobj.
+                    GenTree* boxTypeHandle = gtTryRemoveBoxUpstreamEffects(op1, BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE);
+
+                    if (boxTypeHandle != nullptr)
+                    {
+                        // Note we don't need to play the TYP_STRUCT games here like
+                        // do for LDTOKEN since the return value of this operator is Type,
+                        // not RuntimeTypeHandle.
+                        impPopStack();
+                        GenTreeCall::Use* helperArgs = gtNewCallArgs(boxTypeHandle);
+                        GenTree*          runtimeType =
+                            gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
+                        retNode = runtimeType;
+                    }
+                }
+
+                // If we have a constrained callvirt with a "box this" transform
+                // we know we have a value class and hence an exact type.
+                //
+                // If so, instead of boxing and then extracting the type, just
+                // construct the type directly.
+                if ((retNode == nullptr) && (pConstrainedResolvedToken != nullptr) &&
+                    (constraintCallThisTransform == CORINFO_BOX_THIS))
+                {
+                    // Ensure this is one of the is simple box cases (in particular, rule out nullables).
+                    const CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pConstrainedResolvedToken->hClass);
+                    const bool            isSafeToOptimize = (boxHelper == CORINFO_HELP_BOX);
+
+                    if (isSafeToOptimize)
+                    {
+                        JITDUMP("Optimizing constrained box-this obj.getType() to direct type construction\n");
+                        impPopStack();
+                        GenTree* typeHandleOp =
+                            impTokenToHandle(pConstrainedResolvedToken, nullptr, true /* mustRestoreHandle */);
+                        if (typeHandleOp == nullptr)
+                        {
+                            assert(compDonotInline());
+                            return nullptr;
+                        }
+                        GenTreeCall::Use* helperArgs = gtNewCallArgs(typeHandleOp);
+                        GenTree*          runtimeType =
+                            gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
+                        retNode = runtimeType;
+                    }
+                }
+
+#ifdef DEBUG
+                if (retNode != nullptr)
+                {
+                    JITDUMP("Optimized result for call to GetType is\n");
+                    if (verbose)
+                    {
+                        gtDispTree(retNode);
+                    }
+                }
+#endif
+
+                // Else expand as an intrinsic, unless the call is constrained,
+                // in which case we defer expansion to allow impImportCall do the
+                // special constraint processing.
+                if ((retNode == nullptr) && (pConstrainedResolvedToken == nullptr))
+                {
+                    JITDUMP("Expanding as special intrinsic\n");
+                    impPopStack();
+                    op1 = new (this, GT_INTRINSIC)
+                        GenTreeIntrinsic(genActualType(callType), op1, intrinsicID, ni, method);
+
+                    // Set the CALL flag to indicate that the operator is implemented by a call.
+                    // Set also the EXCEPTION flag because the native implementation of
+                    // NI_System_Object_GetType intrinsic can throw NullReferenceException.
+                    op1->gtFlags |= (GTF_CALL | GTF_EXCEPT);
+                    retNode = op1;
+                    // Might be further optimizable, so arrange to leave a mark behind
+                    isSpecial = true;
+                }
+
+                if (retNode == nullptr)
+                {
+                    JITDUMP("Leaving as normal call\n");
+                    // Might be further optimizable, so arrange to leave a mark behind
+                    isSpecial = true;
+                }
+
                 break;
             }
 
@@ -5206,6 +5193,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Object_MemberwiseClone;
             }
+            else if (strcmp(methodName, "GetType") == 0)
+            {
+                result = NI_System_Object_GetType;
+            }
+        }
+        else if (strcmp(className, "RuntimeTypeHandle") == 0)
+        {
+            if (strcmp(methodName, "GetValueInternal") == 0)
+            {
+                result = NI_System_RuntimeTypeHandle_GetValueInternal;
+            }
         }
         else if (strcmp(className, "Type") == 0)
         {
@@ -5417,6 +5415,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 // IsSupported check so the throw PNSE will be valid or dropped.
 
                 result = NI_Throw_PlatformNotSupportedException;
+            }
+        }
+    }
+    else if (strcmp(namespaceName, "System.StubHelpers") == 0)
+    {
+        if (strcmp(className, "StubHelpers") == 0)
+        {
+            if (strcmp(methodName, "GetStubContext") == 0)
+            {
+                result = NI_System_StubHelpers_GetStubContext;
+            }
+            else if (strcmp(methodName, "NextCallReturnAddress") == 0)
+            {
+                result = NI_System_StubHelpers_NextCallReturnAddress;
             }
         }
     }
@@ -8279,15 +8291,23 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 void** pFldAddr = nullptr;
                 void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
 
-                // We should always be able to access this static's address directly
-                //
+                // We should always be able to access this static's address directly.
                 assert(pFldAddr == nullptr);
+
+                GenTreeFlags handleKind;
+                if ((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0)
+                {
+                    handleKind = GTF_ICON_STATIC_BOX_PTR;
+                }
+                else
+                {
+                    handleKind = GTF_ICON_STATIC_HDL;
+                }
 
                 FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
 
-                /* Create the data member node */
-                op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
-                                          fldSeq);
+                // Create the address node.
+                op1 = gtNewIconHandleNode((size_t)fldAddr, handleKind, fldSeq);
 #ifdef DEBUG
                 op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
 #endif
@@ -8338,6 +8358,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
     {
         op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
+        op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
 
         FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(FieldSeqStore::FirstElemPseudoField);
 
@@ -8761,6 +8782,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     else // (opcode != CEE_CALLI)
     {
         CorInfoIntrinsics intrinsicID = CORINFO_INTRINSIC_Count;
+        NamedIntrinsic    ni          = NI_Illegal;
 
         // Passing CORINFO_CALLINFO_ALLOWINSTPARAM indicates that this JIT is prepared to
         // supply the instantiation parameters necessary to make direct calls to underlying
@@ -8848,7 +8870,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
             call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
-                                isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID,
+                                isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID, &ni,
                                 &isSpecialIntrinsic);
 
             if (compDonotInline())
@@ -9076,7 +9098,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // TODO-CQ: JIT64 does not introduce the null check for many more helper calls
                 // and intrinsics.
                 if (callInfo->nullInstanceCheck &&
-                    !((mflags & CORINFO_FLG_INTRINSIC) != 0 && (intrinsicID == CORINFO_INTRINSIC_Object_GetType)))
+                    !((mflags & CORINFO_FLG_INTRINSIC) != 0 && (ni == NI_System_Object_GetType)))
                 {
                     call->gtFlags |= GTF_CALL_NULLCHECK;
                 }
@@ -18547,7 +18569,7 @@ SPILLSTACK:
                are spilling to the temps already used by a previous block),
                we need to spill addStmt */
 
-            if (addStmt != nullptr && !newTemps && gtHasRef(addStmt->GetRootNode(), tempNum, false))
+            if (addStmt != nullptr && !newTemps && gtHasRef(addStmt->GetRootNode(), tempNum))
             {
                 GenTree* addTree = addStmt->GetRootNode();
 
@@ -18558,7 +18580,7 @@ SPILLSTACK:
 
                     var_types type = genActualType(relOp->AsOp()->gtOp1->TypeGet());
 
-                    if (gtHasRef(relOp->AsOp()->gtOp1, tempNum, false))
+                    if (gtHasRef(relOp->AsOp()->gtOp1, tempNum))
                     {
                         unsigned temp = lvaGrabTemp(true DEBUGARG("spill addStmt JTRUE ref Op1"));
                         impAssignTempGen(temp, relOp->AsOp()->gtOp1, level);
@@ -18566,7 +18588,7 @@ SPILLSTACK:
                         relOp->AsOp()->gtOp1 = gtNewLclvNode(temp, type);
                     }
 
-                    if (gtHasRef(relOp->AsOp()->gtOp2, tempNum, false))
+                    if (gtHasRef(relOp->AsOp()->gtOp2, tempNum))
                     {
                         unsigned temp = lvaGrabTemp(true DEBUGARG("spill addStmt JTRUE ref Op2"));
                         impAssignTempGen(temp, relOp->AsOp()->gtOp2, level);

@@ -96,6 +96,9 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly HashSet<string> _emittedPropertyFileNames = new();
 
+            private bool _generateGetConverterMethodForTypes = false;
+            private bool _generateGetConverterMethodForProperties = false;
+
             public Emitter(in JsonSourceGenerationContext sourceGenerationContext, SourceGenerationSpec generationSpec)
             {
                 _sourceGenerationContext = sourceGenerationContext;
@@ -107,16 +110,12 @@ namespace System.Text.Json.SourceGeneration
                 foreach (ContextGenerationSpec contextGenerationSpec in _generationSpec.ContextGenerationSpecList)
                 {
                     _currentContext = contextGenerationSpec;
-
-                    bool generateGetConverterMethodForTypes = false;
-                    bool generateGetConverterMethodForProperties = false;
+                    _generateGetConverterMethodForTypes = false;
+                    _generateGetConverterMethodForProperties = false;
 
                     foreach (TypeGenerationSpec typeGenerationSpec in _currentContext.RootSerializableTypes)
                     {
                         GenerateTypeInfo(typeGenerationSpec);
-
-                        generateGetConverterMethodForTypes |= typeGenerationSpec.HasTypeFactoryConverter;
-                        generateGetConverterMethodForProperties |= typeGenerationSpec.HasPropertyFactoryConverters;
                     }
 
                     string contextName = _currentContext.ContextType.Name;
@@ -124,7 +123,7 @@ namespace System.Text.Json.SourceGeneration
                     // Add root context implementation.
                     AddSource(
                         $"{contextName}.g.cs",
-                        GetRootJsonContextImplementation(generateGetConverterMethodForTypes, generateGetConverterMethodForProperties),
+                        GetRootJsonContextImplementation(),
                         isRootContextDef: true);
 
                     // Add GetJsonTypeInfo override implementation.
@@ -297,6 +296,9 @@ namespace {@namespace}
                     Location location = typeGenerationSpec.AttributeLocation ?? _currentContext.Location;
                     _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(DuplicateTypeName, location, new string[] { typeGenerationSpec.TypeInfoPropertyName }));
                 }
+
+                _generateGetConverterMethodForTypes |= typeGenerationSpec.HasTypeFactoryConverter;
+                _generateGetConverterMethodForProperties |= typeGenerationSpec.HasPropertyFactoryConverters;
             }
 
             private string GenerateForTypeWithKnownConverter(TypeGenerationSpec typeMetadata)
@@ -1140,9 +1142,7 @@ public {typeInfoPropertyTypeRef} {typeFriendlyName}
                 {IndentSource(source, numIndentations: 1)}
             }}";
 
-            private string GetRootJsonContextImplementation(
-                bool generateGetConverterMethodForTypes,
-                bool generateGetConverterMethodForProperties)
+            private string GetRootJsonContextImplementation()
             {
                 string contextTypeRef = _currentContext.ContextTypeRef;
                 string contextTypeName = _currentContext.ContextType.Name;
@@ -1166,12 +1166,12 @@ public {contextTypeName}({JsonSerializerOptionsTypeRef} options) : base(options)
 
 {GetFetchLogicForRuntimeSpecifiedCustomConverter()}");
 
-                if (generateGetConverterMethodForProperties)
+                if (_generateGetConverterMethodForProperties)
                 {
                     sb.Append(GetFetchLogicForGetCustomConverter_PropertiesWithFactories());
                 }
 
-                if (generateGetConverterMethodForProperties || generateGetConverterMethodForTypes)
+                if (_generateGetConverterMethodForProperties || _generateGetConverterMethodForTypes)
                 {
                     sb.Append(GetFetchLogicForGetCustomConverter_TypesWithFactories());
                 }

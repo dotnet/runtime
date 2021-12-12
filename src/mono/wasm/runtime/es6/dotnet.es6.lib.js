@@ -10,7 +10,7 @@ const DotnetSupportLib = {
     $DOTNET__postset: `
     let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch};
     let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-        { isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
+        { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
         { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
         __dotnet_replacements);
     

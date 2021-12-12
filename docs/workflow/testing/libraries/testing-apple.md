@@ -108,6 +108,10 @@ To build for AOT only mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpre
 
 To build for AOT-LLVM mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=false /p:MonoEnableLLVM=true` to a build command.
 
+4. App Sandbox
+
+To build the test app bundle with the App Sandbox entitlement, add `/p:EnableAppSandbox=true` to a build command.
+
 ### Test App Design
 iOS/tvOS `*.app` (or `*.ipa`) is basically a simple [ObjC app](https://github.com/dotnet/runtime/blob/main/src/tasks/AppleAppBuilder/Templates/main-console.m) that inits the Mono Runtime. This Mono Runtime starts a simple xunit test
 runner called XHarness.TestRunner (see https://github.com/dotnet/xharness) which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool to deploy `*.app` and `*.ipa` to a target (device or simulator) and listens for logs via network sockets.

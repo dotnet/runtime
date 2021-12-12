@@ -11,7 +11,10 @@
 
   <!-- Default priority building values. -->
   <PropertyGroup>
-    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildAndRun</CLRTestKind>
+    <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
+    <OutputType Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)">Exe</OutputType>
+    <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
+    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
   </PropertyGroup>
 
@@ -245,6 +248,11 @@
      <Copy SourceFiles="$(AssemblyName).reflect.xml"
            DestinationFolder="$(OutputPath)"
        Condition="Exists('$(AssemblyName).reflect.xml')"/>
+
+    <WriteLinesToFile
+        Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+        File="$(OutputPath)\$(MSBuildProjectName).MergedTestAssembly"
+        Lines="MergedTestAssembly" />
   </Target>
 
   <PropertyGroup>
@@ -417,12 +425,16 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(IsMergedTestAssembly)' == 'true')">
+  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(IsMergedTestRunnerAssembly)' == 'true')">
     <ReferenceXUnitWrapperGenerator Condition="'$(ReferenceXUnitWrapperGenerator)' == ''">true</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ReferenceXUnitWrapperGenerator)' == 'true'">
     <ProjectReference Include="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
+    <ProjectReference Include="$(RepoRoot)/src/tests/Common/XUnitWrapperLibrary/XUnitWrapperLibrary.csproj" />
   </ItemGroup>
 
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />

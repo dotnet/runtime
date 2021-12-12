@@ -31,7 +31,7 @@ internal static partial class Interop
         // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
         [DllImport(Libraries.Wldap32, EntryPoint = "ber_init", CharSet = CharSet.Unicode)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        public static extern IntPtr ber_init(berval value);
+        public static extern IntPtr ber_init(BerVal value);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time

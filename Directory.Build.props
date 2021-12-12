@@ -278,6 +278,8 @@
   <PropertyGroup>
     <!-- default to allowing all language features -->
     <LangVersion>preview</LangVersion>
+    <!-- default to max warnlevel -->
+    <AnalysisLevel Condition="'$(MSBuildProjectExtension)' == '.csproj'">preview</AnalysisLevel>
     <LangVersion Condition="'$(MSBuildProjectExtension)' == '.vbproj'">latest</LangVersion>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
