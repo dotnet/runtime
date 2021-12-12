@@ -2651,6 +2651,18 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #endif
         }
     }
+    else if (op1->OperIs(GT_SUB) && !op1->gtOverflow() && op2->IsIntegralConst(0) && varTypeIsIntegralOrI(op1) &&
+             (cmp->gtFlags & GTF_RELOP_JMP_USED))
+    {
+        // Transform "(X - Y) cmp 0" to "X cmp Y" if it's a jump condition
+        cmp->AsOp()->gtOp1 = op1->gtGetOp1();
+        cmp->AsOp()->gtOp2 = op1->gtGetOp2();
+        BlockRange().Remove(op1);
+        BlockRange().Remove(op2);
+        cmp->gtGetOp1()->ClearContained();
+        cmp->gtGetOp2()->ClearContained();
+        return cmp;
+    }
 
     if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
