@@ -3889,7 +3889,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         mustExpand = true;
     }
 
-    if ((ni == NI_System_ByReference_ctor) || (ni == NI_System_ByReference_get_Value))
+    if ((ni == NI_System_ByReference_ctor) || (ni == NI_System_ByReference_get_Value) ||
+        (ni == NI_System_Activator_AllocatorOf) || (ni == NI_System_Activator_DefaultConstructorOf) ||
+        (ni == NI_System_Object_MethodTableOf) || (ni == NI_System_EETypePtr_EETypePtrOf))
     {
         mustExpand = true;
     }
@@ -4012,7 +4014,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Object_MethodTableOf:
             case NI_System_EETypePtr_EETypePtrOf:
             {
-                noway_assert(IsTargetAbi(CORINFO_CORERT_ABI)); // Only CoreRT supports it.
+                assert(IsTargetAbi(CORINFO_CORERT_ABI)); // Only CoreRT supports it.
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 resolvedToken.tokenContext = impTokenLookupContextHandle;
                 resolvedToken.tokenScope   = info.compScopeHnd;
