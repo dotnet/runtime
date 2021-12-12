@@ -357,7 +357,7 @@ namespace System.IO
             string fullSourcePath = Path.GetFullPath(sourcePath);
             string fullDestinationPath = Path.GetFullPath(destinationPath);
 
-            return FileSystem.Copy(sourcePath, destinationPath, recursive, skipExistingFiles, cancellationToken);
+            return FileSystem.Copy(fullSourcePath, fullDestinationPath, recursive, skipExistingFiles, cancellationToken);
         }
     }
 }
