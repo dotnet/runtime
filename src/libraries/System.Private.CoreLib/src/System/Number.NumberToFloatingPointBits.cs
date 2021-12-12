@@ -1557,7 +1557,7 @@ namespace System
         internal static (int power2, ulong mantissa) ComputeFloat(long q, ulong w, FloatingPointInfo info)
         {
             int power2 = 0;
-            ulong mantissa= 0 ;
+            ulong mantissa = 0;
 
             if ((w == 0) || (q < info.SmallerPowerOfTen))
             {
@@ -1585,10 +1585,10 @@ namespace System
             var product = ComputeProductApproximation(info.DenormalMantissaBits + 3, q, w);
             if (product.low == 0xFFFFFFFFFFFFFFFF)
             {
-              // could guard it further
-              // In some very rare cases, this could happen, in which case we might need a more accurate
-              // computation that what we can provide cheaply. This is very, very unlikely.
-              //
+                // could guard it further
+                // In some very rare cases, this could happen, in which case we might need a more accurate
+                // computation that what we can provide cheaply. This is very, very unlikely.
+                //
                 bool inside_safe_exponent = (q >= -27) && (q <= 55); // always good because 5**q <2**128 when q>=0,
                                                                      // and otherwise, for q<0, we have 5**-q<2**64 and the 128-bit reciprocal allows for exact computation.
                 if (!inside_safe_exponent)
@@ -1607,8 +1607,8 @@ namespace System
             power2 = (int)(CalculatePower((int)(q)) + upperbit - lz - (-info.MaxBinaryExponent));
             if (power2 <= 0)
             {
-              // we have a subnormal?
-              // Here have that answer.power2 <= 0 so -answer.power2 >= 0
+                // we have a subnormal?
+                // Here have that answer.power2 <= 0 so -answer.power2 >= 0
                 if (-power2 + 1 >= 64)
                 {
                     // if we have more than 64 bits below the minimum exponent, you have a zero for sure.
@@ -1621,8 +1621,8 @@ namespace System
                 mantissa >>= -power2 + 1;
                 // Thankfully, we can't have both "round-to-even" and subnormals because
                 // "round-to-even" only occurs for powers close to 0.
-               mantissa += (mantissa & 1); // round up
-               mantissa >>= 1;
+                mantissa += (mantissa & 1); // round up
+                mantissa >>= 1;
                 // There is a weird scenario where we don't have a subnormal but just.
                 // Suppose we start with 2.2250738585072013e-308, we end up
                 // with 0x3fffffffffffff x 2^-1023-53 which is technically subnormal
@@ -1640,10 +1640,10 @@ namespace System
             if ((product.low <= 1) && (q >= info.MinExponentRoundToEven) && (q <= info.MaxExponentRoundToEven) &&
                 ((mantissa & 3) == 1))
             {
-              // we may fall between two floats!
-              // To be in-between two floats we need that in doing
-              // answer.mantissa = product.high >> (upperbit + 64 - mantissa_explicit_bits() - 3);
-              // ... we dropped out only zeroes. But if this happened, then we can go back!!!
+                // we may fall between two floats!
+                // To be in-between two floats we need that in doing
+                // answer.mantissa = product.high >> (upperbit + 64 - mantissa_explicit_bits() - 3);
+                // ... we dropped out only zeroes. But if this happened, then we can go back!!!
                 if ((mantissa << (upperbit + 64 - info.DenormalMantissaBits - 3)) == product.high)
                 {
                     // flip it so that we do not round up
@@ -1679,8 +1679,8 @@ namespace System
             ulong precision_mask = (bitPrecision < 64) ? (0xFFFFFFFFFFFFFFFFUL >> bitPrecision) : 0xFFFFFFFFFFFFFFFFUL;
             if ((high & precision_mask) == precision_mask)
             {
-              // could further guard with  (lower + w < lower)
-              // regarding the second product, we only need secondproduct.high, but our expectation is that the compiler will optimize this extra work away if needed.
+                // could further guard with  (lower + w < lower)
+                // regarding the second product, we only need secondproduct.high, but our expectation is that the compiler will optimize this extra work away if needed.
                 ulong high2 = Math.BigMul(w, s_Pow5128Table[index + 1], out ulong _);
                 low += high2;
                 if (high2 > low)
