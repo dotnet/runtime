@@ -99,7 +99,7 @@ g_unichar_break_type (gunichar c)
 static gunichar
 g_unichar_case (gunichar c, gboolean upper)
 {
-	gint8 i, i2;
+	guint8 i, i2;
 	guint32 cp = (guint32) c, v;
 
 	for (i = 0; i < simple_case_map_ranges_count; i++) {

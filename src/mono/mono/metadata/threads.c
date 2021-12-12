@@ -1096,7 +1096,7 @@ fire_attach_profiler_events (MonoNativeThreadId tid)
 		(const mono_byte*)(info->stack_start_limit),
 		(char *) info->stack_end - (char *) info->stack_start_limit,
 		MONO_ROOT_SOURCE_STACK,
-		(void *) tid,
+		(gpointer)(gsize) tid,
 		"Thread Stack"));
 
 	// The handle stack is a pseudo-root similar to the finalizer queues.
@@ -1104,7 +1104,7 @@ fire_attach_profiler_events (MonoNativeThreadId tid)
 		(const mono_byte*)info->handle_stack,
 		1,
 		MONO_ROOT_SOURCE_HANDLE,
-		(void *) tid,
+		(gpointer)(gsize) tid,
 		"Handle Stack"));
 }
 
@@ -3391,7 +3391,7 @@ alloc_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 	MonoInternalThread *thread = (MonoInternalThread *)value;
 	guint32 offset = GPOINTER_TO_UINT (user);
 
-	mono_alloc_static_data (&(thread->static_data), offset, (void *) MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid));
+	mono_alloc_static_data (&(thread->static_data), offset, (gpointer)(gsize) MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid));
 }
 
 static StaticDataFreeList*
@@ -4441,7 +4441,7 @@ threads_add_pending_joinable_runtime_thread (MonoThreadInfo *mono_thread_info)
 	g_assert (mono_thread_info);
 
 	if (mono_thread_info->runtime_thread) {
-		threads_add_pending_joinable_thread ((gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (mono_thread_info_get_tid (mono_thread_info))));
+		threads_add_pending_joinable_thread ((gpointer)(gsize) (MONO_UINT_TO_NATIVE_THREAD_ID (mono_thread_info_get_tid (mono_thread_info))));
 	}
 }
 
@@ -4502,7 +4502,7 @@ mono_threads_add_joinable_runtime_thread (MonoThreadInfo *thread_info)
 	MonoThreadInfo *mono_thread_info = thread_info;
 
 	if (mono_thread_info->runtime_thread) {
-		gpointer tid = (gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (mono_thread_info_get_tid (mono_thread_info)));
+		gpointer tid = (gpointer)(gsize) (MONO_UINT_TO_NATIVE_THREAD_ID (mono_thread_info_get_tid (mono_thread_info)));
 
 		joinable_threads_lock ();
 

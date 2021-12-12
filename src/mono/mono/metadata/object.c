@@ -266,7 +266,7 @@ mono_thread_set_main (MonoThread *thread)
 	static gboolean registered = FALSE;
 
 	if (!registered) {
-		void *key = thread->internal_thread ? (void *) MONO_UINT_TO_NATIVE_THREAD_ID (thread->internal_thread->tid) : NULL;
+		void *key = thread->internal_thread ? (gpointer)(gsize) MONO_UINT_TO_NATIVE_THREAD_ID (thread->internal_thread->tid) : NULL;
 		MONO_GC_REGISTER_ROOT_SINGLE (main_thread, MONO_ROOT_SOURCE_THREADING, key, "Thread Main Object");
 		registered = TRUE;
 	}
