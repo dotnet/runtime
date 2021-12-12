@@ -710,82 +710,6 @@ namespace System.Numerics
 #endif
         }
 
-        private static class Crc32Fallback
-        {
-
-            private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
-
-            internal static uint Crc32C(uint crc, byte data)
-            {
-                if (!BitConverter.IsLittleEndian)
-                {
-                    data = BinaryPrimitives.ReverseEndianness(data);
-                }
-
-                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
-
-                return crc;
-            }
-
-            internal static uint Crc32C(uint crc, ushort data)
-            {
-                if (!BitConverter.IsLittleEndian)
-                {
-                    data = BinaryPrimitives.ReverseEndianness(data);
-                }
-
-                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-
-                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
-                data >>= 8;
-                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
-
-                return crc;
-            }
-
-            internal static uint Crc32C(uint crc, uint data)
-            {
-                if (!BitConverter.IsLittleEndian)
-                {
-                    data = BinaryPrimitives.ReverseEndianness(data);
-                }
-
-                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-                return Crc32CCore(ref lookupTable, crc, data);
-            }
-
-            internal static uint Crc32C(uint crc, ulong data)
-            {
-                if (!BitConverter.IsLittleEndian)
-                {
-                    data = BinaryPrimitives.ReverseEndianness(data);
-                }
-
-                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-
-                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
-                data >>= 32;
-                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
-
-                return crc;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static uint Crc32CCore(ref uint lookupTable, uint crc, uint data)
-            {
-                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
-                data >>= 8;
-                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
-                data >>= 8;
-                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
-                data >>= 8;
-                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
-
-                return crc;
-            }
-        }
-
         /// <summary>
         /// Accumulates the CRC (Cyclic redundancy check) checksum.
         ///
@@ -899,6 +823,81 @@ namespace System.Numerics
 
             // Software fallback
             return Crc32Fallback.Crc32C(crc, data);
+        }
+
+        private static class Crc32Fallback
+        {
+            private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
+
+            internal static uint Crc32C(uint crc, byte data)
+            {
+                if (!BitConverter.IsLittleEndian)
+                {
+                    data = BinaryPrimitives.ReverseEndianness(data);
+                }
+
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
+
+            internal static uint Crc32C(uint crc, ushort data)
+            {
+                if (!BitConverter.IsLittleEndian)
+                {
+                    data = BinaryPrimitives.ReverseEndianness(data);
+                }
+
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
+
+            internal static uint Crc32C(uint crc, uint data)
+            {
+                if (!BitConverter.IsLittleEndian)
+                {
+                    data = BinaryPrimitives.ReverseEndianness(data);
+                }
+
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+                return Crc32CCore(ref lookupTable, crc, data);
+            }
+
+            internal static uint Crc32C(uint crc, ulong data)
+            {
+                if (!BitConverter.IsLittleEndian)
+                {
+                    data = BinaryPrimitives.ReverseEndianness(data);
+                }
+
+                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
+
+                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
+                data >>= 32;
+                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
+
+                return crc;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static uint Crc32CCore(ref uint lookupTable, uint crc, uint data)
+            {
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
+                data >>= 8;
+                crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
+
+                return crc;
+            }
         }
     }
 }
