@@ -17,7 +17,7 @@ using Xunit;
 
 namespace System.Net.Mail.Tests
 {
-    public class MailMessageTest
+    public partial class MailMessageTest
     {
         MailMessage messageWithSubjectAndBody;
         MailMessage emptyMessage;
@@ -148,6 +148,12 @@ namespace System.Net.Mail.Tests
             Assert.Equal(Encoding.UTF8.CodePage, msg.SubjectEncoding.CodePage);
         }
 
+        [RegexGenerator(@"Date:.*?\r\n")]
+        private static partial Regex DateValueReplacementRegex();
+
+        [RegexGenerator(@"_[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}", RegexOptions.IgnoreCase)]
+        private static partial Regex GuidValueReplacementRegex();
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
         public void SendMailMessageTest()
@@ -188,11 +194,11 @@ Content-Transfer-Encoding: quoted-printable
 blah blah
 ----boundary_1_GUID--
 ";
-            expected = expected.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n");
+            expected = expected.ReplaceLineEndings("\r\n");
 
             string sent = DecodeSentMailMessage(messageWithSubjectAndBody).Raw;
-            sent = Regex.Replace(sent, "Date:.*?\r\n", "Date: DATE\r\n");
-            sent = Regex.Replace(sent, @"_.{8}-.{4}-.{4}-.{4}-.{12}", "_GUID");
+            sent = DateValueReplacementRegex().Replace(sent, "Date: DATE\r\n");
+            sent = GuidValueReplacementRegex().Replace(sent, "_GUID");
 
             // name and charset can appear in different order
             Assert.Contains("; name=AttachmentName", sent);
