@@ -10377,6 +10377,7 @@ namespace System.IO
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
         public static void Delete(string path) { }
         public static void Delete(string path, bool recursive) { }
+        public static bool Copy(string sourcePath, string destinationPath, bool recursive, bool skipExistingFiles = true, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
@@ -10458,6 +10459,7 @@ namespace System.IO
         public System.IO.DirectoryInfo CreateSubdirectory(string path) { throw null; }
         public override void Delete() { }
         public void Delete(bool recursive) { }
+        public bool CopyTo(string destinationPath, bool recursive, bool skipExistingFiles = true, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories() { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern) { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
