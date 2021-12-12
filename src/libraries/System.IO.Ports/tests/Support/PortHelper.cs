@@ -2,22 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Ports;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
 namespace Legacy.Support
 {
-    public class PortHelper
+    public partial class PortHelper
     {
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern int GetLastError();
 
         [DllImport("kernel32.dll", EntryPoint = "QueryDosDeviceW", CharSet = CharSet.Unicode)]
         private static extern int QueryDosDevice(string lpDeviceName, IntPtr lpTargetPath, int ucchMax);
+
+        [RegexGenerator(@"com\d{1,3}", RegexOptions.IgnoreCase)]
+        public static partial Regex ComPortRegex();
 
         public static string[] GetPorts()
         {
@@ -43,14 +46,8 @@ namespace Legacy.Support
             {
                 if (serialKey != null)
                 {
-                    string[] result = serialKey.GetValueNames();
-                    for (int i = 0; i < result.Length; i++)
-                    {
-                        // Replace the name in the array with its value.
-                        result[i] = (string)serialKey.GetValue(result[i]);
-                    }
-
-                    return result;
+                    string[] valueNames = serialKey.GetValueNames();
+                    return valueNames.Select((Func<string, object>)serialKey.GetValue).Cast<string>().ToArray();
                 }
             }
 
@@ -59,10 +56,8 @@ namespace Legacy.Support
 
         private static string[] GetCommPortsViaQueryDosDevice()
         {
-            List<string> ports = new List<string>();
             int returnSize = 0;
             int maxSize = 1000000;
-            string[] retval = null;
             const int ERROR_INSUFFICIENT_BUFFER = 122;
             while (returnSize == 0)
             {
@@ -75,9 +70,10 @@ namespace Legacy.Support
                         returnSize = QueryDosDevice(null, mem, maxSize);
                         if (returnSize != 0)
                         {
-                            string allDevices = Marshal.PtrToStringUni(mem, returnSize);
-                            retval = allDevices.Split('\0');
-                            break;    // not really needed, but makes it more clear...
+                            string[] allDevices = Marshal.PtrToStringUni(mem, returnSize).Split('\0');
+                            string[] ports = allDevices.Where((Func<String, bool>)ComPortRegex().IsMatch).ToArray();
+                            Array.ForEach(ports, p => Debug.WriteLine($"Installed serial ports :{p}"));
+                            return ports;
                         }
                         else if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
                         {
@@ -99,20 +95,7 @@ namespace Legacy.Support
                 }
             }
 
-            if (retval != null)
-            {
-                var serialRegex = new Regex(@"^COM\d{1,3}$");
-                foreach (string str in retval)
-                {
-                    if (serialRegex.IsMatch(str))
-                    {
-                        ports.Add(str);
-                        Debug.WriteLine("Installed serial ports :" + str);
-                    }
-                }
-            }
-
-            return ports.ToArray();
+            return Array.Empty<string>();
         }
     }
 
