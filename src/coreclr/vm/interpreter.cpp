@@ -9129,16 +9129,19 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // Point A in our cycle count.
 
 
+    // TODO: enable when NamedIntrinsic is available to interpreter
+
+    /*
     // Is the method an intrinsic?  If so, and if it's one we've written special-case code for
     // handle intrinsically.
-    CorInfoIntrinsics intrinsicId;
+    NamedIntrinsic intrinsicName;
     {
         GCX_PREEMP();
-        intrinsicId = m_interpCeeInfo.getIntrinsicID(CORINFO_METHOD_HANDLE(methToCall), nullptr);
+        intrinsicName = getIntrinsicName(CORINFO_METHOD_HANDLE(methToCall), nullptr);
     }
 
 #if INTERP_TRACING
-    if (intrinsicId != CORINFO_INTRINSIC_Illegal)
+    if (intrinsicName == NI_Illegal)
         InterlockedIncrement(&s_totalInterpCallsToIntrinsics);
 #endif // INTERP_TRACING
     bool didIntrinsic = false;
@@ -9146,23 +9149,20 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
-        case CORINFO_INTRINSIC_ByReference_Ctor:
+        case NI_System_ByReference_ctor:
             DoByReferenceCtor();
             didIntrinsic = true;
             break;
-        case CORINFO_INTRINSIC_ByReference_Value:
+        case NI_System_ByReference_get_Value:
             DoByReferenceValue();
             didIntrinsic = true;
             break;
 #if INTERP_ILSTUBS
-        // TODO: enable when NamedIntrinsic is available to interpreter
-        /*
         case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
             OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_NATIVEINT));
             m_curStackHt++; didIntrinsic = true;
             break;
-        */
 #endif // INTERP_ILSTUBS
         default:
 #if INTERP_TRACING
@@ -9253,6 +9253,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         // Now we can return.
         return;
     }
+    */
 
     // Handle other simple special cases:
 

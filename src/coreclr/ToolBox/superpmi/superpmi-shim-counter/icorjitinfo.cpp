@@ -12,11 +12,11 @@
 #include "spmiutil.h"
 
 
-bool interceptor_ICJI::isJitIntrinsic(
+bool interceptor_ICJI::isIntrinsic(
           CORINFO_METHOD_HANDLE ftn)
 {
-    mcs->AddCall("isJitIntrinsic");
-    return original_ICorJitInfo->isJitIntrinsic(ftn);
+    mcs->AddCall("isIntrinsic");
+    return original_ICorJitInfo->isIntrinsic(ftn);
 }
 
 uint32_t interceptor_ICJI::getMethodAttribs(
@@ -159,14 +159,6 @@ void interceptor_ICJI::expandRawHandleIntrinsic(
 {
     mcs->AddCall("expandRawHandleIntrinsic");
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
-}
-
-CorInfoIntrinsics interceptor_ICJI::getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand)
-{
-    mcs->AddCall("getIntrinsicID");
-    return original_ICorJitInfo->getIntrinsicID(method, pMustExpand);
 }
 
 bool interceptor_ICJI::isIntrinsicType(
@@ -680,6 +672,13 @@ unsigned interceptor_ICJI::getArrayRank(
 {
     mcs->AddCall("getArrayRank");
     return original_ICorJitInfo->getArrayRank(cls);
+}
+
+CorInfoArrayIntrinsic interceptor_ICJI::getArrayIntrinsicID(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    mcs->AddCall("getArrayIntrinsicID");
+    return original_ICorJitInfo->getArrayIntrinsicID(ftn);
 }
 
 void* interceptor_ICJI::getArrayInitializationData(

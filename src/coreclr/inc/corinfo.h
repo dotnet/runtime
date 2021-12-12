@@ -795,7 +795,7 @@ enum CorInfoFlag
 //  CORINFO_FLG_UNUSED                = 0x08000000,
     CORINFO_FLG_DONT_INLINE           = 0x10000000, // The method should not be inlined
     CORINFO_FLG_DONT_INLINE_CALLER    = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
-    CORINFO_FLG_JIT_INTRINSIC         = 0x40000000, // Method is a potential jit intrinsic; verify identity by name check
+//  CORINFO_FLG_UNUSED                = 0x40000000,
 
     // These are internal flags that can only be on Classes
     CORINFO_FLG_VALUECLASS            = 0x00010000, // is the class a value class
@@ -874,24 +874,15 @@ enum CorInfoException
     CORINFO_Exception_Count,
 };
 
-
-// This enumeration is returned by getIntrinsicID. Methods corresponding to
-// these values will have "well-known" specified behavior. Calls to these
-// methods could be replaced with inlined code corresponding to the
-// specified behavior (without having to examine the IL beforehand).
-
-enum CorInfoIntrinsics
+// These are used to detect array methods as NamedIntrinsic in JIT importer,
+// which otherwise don't have a name.
+enum class CorInfoArrayIntrinsic
 {
-    CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
-    CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
-    CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
+    GET = 0,
+    SET = 1,
+    ADDRESS = 2,
 
-    CORINFO_INTRINSIC_ByReference_Ctor,
-    CORINFO_INTRINSIC_ByReference_Value,
-    CORINFO_INTRINSIC_GetRawHandle,
-
-    CORINFO_INTRINSIC_Count,
-    CORINFO_INTRINSIC_Illegal = -1,         // Not a true intrinsic,
+    ILLEGAL
 };
 
 // Can a value be accessed directly from JITed code.
@@ -1962,8 +1953,8 @@ public:
     //
     /**********************************************************************************/
 
-    // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_JIT_INTRINSIC, except faster.
-    virtual bool isJitIntrinsic(CORINFO_METHOD_HANDLE ftn) = 0;
+    // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_INTRINSIC, except faster.
+    virtual bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getMethodAttribs (
@@ -2094,22 +2085,15 @@ public:
             CORINFO_CLASS_HANDLE elemType
             ) = 0;
 
-    // Given resolved token that corresponds to an intrinsic classified as
-    // a CORINFO_INTRINSIC_GetRawHandle intrinsic, fetch the handle associated
-    // with the token. If this is not possible at compile-time (because the current method's
-    // code is shared and the token contains generic parameters) then indicate
-    // how the handle should be looked up at runtime.
+    // Given resolved token that corresponds to an intrinsic classified to
+    // get a raw handle (NI_System_Activator_AllocatorOf etc.), fetch the
+    // handle associated with the token. If this is not possible at
+    // compile-time (because the current method's code is shared and the
+    // token contains generic parameters) then indicate how the handle
+    // should be looked up at runtime.
     virtual void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
         CORINFO_GENERICHANDLE_RESULT *  pResult) = 0;
-
-    // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
-    // getIntrinsicID() returns the intrinsic ID.
-    // *pMustExpand tells whether or not JIT must expand the intrinsic.
-    virtual CorInfoIntrinsics getIntrinsicID(
-            CORINFO_METHOD_HANDLE       method,
-            bool*                       pMustExpand = NULL      /* OUT */
-            ) = 0;
 
     // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
     // This defaults to false.
@@ -2557,6 +2541,11 @@ public:
     // Get the numbmer of dimensions in an array
     virtual unsigned getArrayRank(
             CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    // Get the index of runtime provided array method
+    virtual CorInfoArrayIntrinsic getArrayIntrinsicID(
+            CORINFO_METHOD_HANDLE        ftn
             ) = 0;
 
     // Get static field data for an array
