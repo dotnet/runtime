@@ -118,7 +118,7 @@ mono_gc_wbarrier_value_copy_internal (gpointer dest, gconstpointer src, int coun
 	if (sgen_ptr_in_nursery (dest) || ptr_on_stack (dest) || !sgen_gc_descr_has_references ((mword)m_class_get_gc_descr (klass))) {
 		size_t element_size = mono_class_value_size (klass, NULL);
 		size_t size = count * element_size;
-		mono_gc_memmove_atomic (dest, src, size);		
+		mono_gc_memmove_atomic (dest, src, size);
 		return;
 	}
 
@@ -154,7 +154,7 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src)
 		size = m_class_get_instance_size (mono_object_class (obj));
 		mono_gc_memmove_aligned ((char*)obj + MONO_ABI_SIZEOF (MonoObject), (char*)src + MONO_ABI_SIZEOF (MonoObject),
 				size - MONO_ABI_SIZEOF (MonoObject));
-		return;	
+		return;
 	}
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL

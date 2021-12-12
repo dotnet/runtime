@@ -248,7 +248,7 @@ mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 
 				printf ("[STRING:%p:%s]", s, as);
 				g_free (as);
-			} else 
+			} else
 				printf ("[STRING:null]");
 			break;
 		}
@@ -406,7 +406,7 @@ mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 			}
 		} else
 			printf ("[OBJECT:%p]", o);
-	       
+
 		break;
 	}
 	case MONO_TYPE_I8: {

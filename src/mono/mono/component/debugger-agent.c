@@ -10034,7 +10034,7 @@ wait_for_attach (void)
 	MONO_ENTER_GC_SAFE;
 	conn_fd = socket_transport_accept (listen_fd);
 	MONO_EXIT_GC_SAFE;
-	
+
 	PRINT_DEBUG_MSG (1, "Accepted connection on %d\n", conn_fd);
 	if (conn_fd == -1) {
 		PRINT_DEBUG_MSG (1, "[dbg] Bad client connection\n");

@@ -322,7 +322,7 @@ static GCObject **valid_nursery_objects;
 static int valid_nursery_object_count;
 static gboolean broken_heap;
 
-static void 
+static void
 setup_mono_sgen_scan_area_with_callback (GCObject *object, size_t size, void *data)
 {
 	valid_nursery_objects [valid_nursery_object_count++] = object;
@@ -396,7 +396,7 @@ is_valid_object_pointer (char *object)
 {
 	if (sgen_ptr_in_nursery (object))
 		return find_object_in_nursery_dump (object);
-	
+
 	if (sgen_los_is_valid_object (object))
 		return TRUE;
 
@@ -479,7 +479,7 @@ ptr_in_heap (char *object)
 {
 	if (sgen_ptr_in_nursery (object))
 		return TRUE;
-	
+
 	if (sgen_los_is_valid_object (object))
 		return TRUE;
 
