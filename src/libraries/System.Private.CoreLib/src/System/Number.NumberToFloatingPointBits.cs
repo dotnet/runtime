@@ -75,7 +75,7 @@ namespace System
             public int MaxExponentFastPath { get; }
 
             public int LargerPowerOfTen { get; }
-            public ulong MaxMantissaFastPath { get => (ulong)2 << DenormalMantissaBits; }
+            public ulong MaxMantissaFastPath { get => 2UL << DenormalMantissaBits; }
             public ushort ExponentBits { get; }
 
             public FloatingPointInfo(ushort denormalMantissaBits, ushort exponentBits, int maxBinaryExponent, int exponentBias, ulong infinityBits, int smallerPowerOfTen, int largerPowerOfTen, int infinitePower, int minExponentRoundToEven, int maxExponentRoundToEven, int maxExponentFastPath)
@@ -108,7 +108,8 @@ namespace System
                 MaxExponentFastPath = maxExponentFastPath;
             }
         }
-        private static float[] s_Pow10SingleTable = {
+
+        private static readonly float[] s_Pow10SingleTable = {
             1e0f,   // 10^0
             1e1f,   // 10^1
             1e2f,   // 10^2
@@ -122,7 +123,7 @@ namespace System
             1e10f,  // 10^10
         };
 
-        private static double[] s_Pow10DoubleTable =  {
+        private static readonly double[] s_Pow10DoubleTable =  {
             1e0,    // 10^0
             1e1,    // 10^1
             1e2,    // 10^2
@@ -148,7 +149,7 @@ namespace System
             1e22,   // 10^22
         };
 
-        private static ulong[] s_Pow5128Table = {
+        private static readonly ulong[] s_Pow5128Table = {
         0xeef453d6923bd65a, 0x113faa2906a13b3f,
         0x9558b4661b6565f8, 0x4ac7ca59a424c507,
         0xbaaee17fa23ebf76, 0x5d79bcf00d2df649,
@@ -801,11 +802,8 @@ namespace System
         0xe3d8f9e563a198e5, 0x58180fddd97723a6,
         0x8e679c2f5e44ff8f, 0x570f09eaa7ea7648};
 
-
         internal const int SmallestPowerOfFive = -342;
         internal const int LargestPowerOfFive = 308;
-
-
 
         private static void AccumulateDecimalDigitsIntoBigInteger(ref NumberBuffer number, uint firstIndex, uint lastIndex, out BigInteger result)
         {
@@ -1046,7 +1044,7 @@ namespace System
             return res;
         }
 
-
+        /// <summary>Parse eight consecutive digits using SWAR</summary>
         internal static uint ParseEightDigitsUnrolled(byte* chars)
         {
             ulong val = Unsafe.ReadUnaligned<ulong>(chars);
@@ -1123,7 +1121,7 @@ namespace System
 
                 // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
                 // https://arxiv.org/abs/2101.11408
-                AdjustedMantissa am = ComputeFloat(exponent, mantissa, info);
+                var am = ComputeFloat(exponent, mantissa, info);
 
                 // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
                 // then we need to go the long way around again. This is very uncommon.
@@ -1138,6 +1136,7 @@ namespace System
 
             return NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
         }
+
         private static ushort NumberToHalfFloatingPointBits(ref NumberBuffer number, in FloatingPointInfo info)
         {
             Debug.Assert(info.DenormalMantissaBits == 10);
@@ -1223,7 +1222,7 @@ namespace System
 
                 // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
                 // https://arxiv.org/abs/2101.11408
-                AdjustedMantissa am = ComputeFloat(exponent, mantissa, info);
+                var am = ComputeFloat(exponent, mantissa, info);
 
                 // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
                 // then we need to go the long way around again. This is very uncommon.
@@ -1278,7 +1277,7 @@ namespace System
                     // It is only valid to do this optimization for single-precision floating-point
                     // values since we can lose some of the mantissa bits and would return the
                     // wrong value when upcasting to double.
-                    //
+
                     float result = DigitsToUInt32(src, (int)(totalDigits));
                     float scale = s_Pow10SingleTable[fastExponent];
 
@@ -1326,7 +1325,7 @@ namespace System
                 // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
                 // https://arxiv.org/abs/2101.11408
 
-                AdjustedMantissa am = ComputeFloat(exponent, mantissa, info);
+                var am = ComputeFloat(exponent, mantissa, info);
 
                 // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
                 // then we need to go the long way around again. This is very uncommon.
@@ -1521,6 +1520,7 @@ namespace System
 
             return AssembleFloatingPointBits(in info, completeMantissa, finalExponent, hasZeroTail);
         }
+
         private static ulong RightShiftWithRounding(ulong value, int shift, bool hasZeroTail)
         {
             // If we'd need to shift further than it is possible to shift, the answer
@@ -1552,42 +1552,11 @@ namespace System
             return roundBit && (hasTailBits || lsbBit);
         }
 
-        internal struct AdjustedMantissa
+        /// <summary> Daniel Lemire's Fast-float algorithm please refer to https://arxiv.org/abs/2101.11408 </summary>
+        internal static (int power2, ulong mantissa) ComputeFloat(long q, ulong w, FloatingPointInfo info)
         {
-            internal ulong mantissa;
-            internal int power2; // a negative value indicates an invalid result
-            public static bool operator ==(AdjustedMantissa a, AdjustedMantissa b)
-                 => a.mantissa == b.mantissa && a.power2 == b.power2;
-
-            public static bool operator !=(AdjustedMantissa a, AdjustedMantissa b)
-               => a.mantissa != b.mantissa || a.power2 != b.power2;
-
-            public override bool Equals(object? obj) => base.Equals(obj);
-
-            public override int GetHashCode() => base.GetHashCode();
-        }
-        internal struct value128
-        {
-            public ulong low;
-            public ulong high;
-
-            public value128(ulong h, ulong l) : this()
-            {
-                high = h;
-                low = l;
-            }
-        }
-
-        /// <summary>
-        /// Daniel Lemire's Fast-float algorithm
-        /// please refer to https://arxiv.org/abs/2101.11408
-        /// </summary>
-        /// <param name="q">exponemt</param>
-        /// <param name="w">decimal mantissa</param>
-        /// <param name="info">Parameters that corresponds to parsed type</param>
-        internal static AdjustedMantissa ComputeFloat(long q, ulong w, FloatingPointInfo info)
-        {
-            AdjustedMantissa answer = new() { power2 = 0, mantissa = 0 };
+            int power2 = 0;
+            ulong mantissa= 0 ;
 
             if ((w == 0) || (q < info.SmallerPowerOfTen))
             {
@@ -1597,9 +1566,9 @@ namespace System
             if (q > info.LargerPowerOfTen)
             {
                 // we want to get infinity:
-                answer.power2 = info.InfinitePower;
-                answer.mantissa = 0;
-                return answer;
+                power2 = info.InfinitePower;
+                mantissa = 0;
+                return (power2, mantissa);
             }
             // At this point in time q is in [smallest_power_of_five, largest_power_of_five].
 
@@ -1612,9 +1581,10 @@ namespace System
             // 2. We need an extra bit for rounding purposes
             // 3. We might lose a bit due to the "upperbit" routine (result too small, requiring a shift)
 
-            value128 product = ComputeProductApproximation(info.DenormalMantissaBits + 3, q, w);
+            var product = ComputeProductApproximation(info.DenormalMantissaBits + 3, q, w);
             if (product.low == 0xFFFFFFFFFFFFFFFF)
-            { //  could guard it further
+            {
+              // could guard it further
               // In some very rare cases, this could happen, in which case we might need a more accurate
               // computation that what we can provide cheaply. This is very, very unlikely.
               //
@@ -1622,8 +1592,8 @@ namespace System
                                                                      // and otherwise, for q<0, we have 5**-q<2**64 and the 128-bit reciprocal allows for exact computation.
                 if (!inside_safe_exponent)
                 {
-                    answer.power2 = -1; // This (a negative value) indicates an error condition.
-                    return answer;
+                    power2 = -1; // This (a negative value) indicates an error condition.
+                    return (power2, mantissa);
                 }
             }
             // The "compute_product_approximation" function can be slightly slower than a branchless approach:
@@ -1631,25 +1601,27 @@ namespace System
             // is easily predicted. Which is best is data specific.
             int upperbit = (int)(product.high >> 63);
 
-            answer.mantissa = product.high >> (upperbit + 64 - info.DenormalMantissaBits - 3);
+            mantissa = product.high >> (upperbit + 64 - info.DenormalMantissaBits - 3);
 
-            answer.power2 = (int)(CalculatePower((int)(q)) + upperbit - lz - (-info.MaxBinaryExponent));
-            if (answer.power2 <= 0)
-            { // we have a subnormal?
+            power2 = (int)(CalculatePower((int)(q)) + upperbit - lz - (-info.MaxBinaryExponent));
+            if (power2 <= 0)
+            {
+              // we have a subnormal?
               // Here have that answer.power2 <= 0 so -answer.power2 >= 0
-                if (-answer.power2 + 1 >= 64)
-                { // if we have more than 64 bits below the minimum exponent, you have a zero for sure.
-                    answer.power2 = 0;
-                    answer.mantissa = 0;
+                if (-power2 + 1 >= 64)
+                {
+                    // if we have more than 64 bits below the minimum exponent, you have a zero for sure.
+                    power2 = 0;
+                    mantissa = 0;
                     // result should be zero
-                    return answer;
+                    return (power2, mantissa);
                 }
                 // next line is safe because -answer.power2 + 1 < 64
-                answer.mantissa >>= -answer.power2 + 1;
+                mantissa >>= -power2 + 1;
                 // Thankfully, we can't have both "round-to-even" and subnormals because
                 // "round-to-even" only occurs for powers close to 0.
-                answer.mantissa += (answer.mantissa & 1); // round up
-                answer.mantissa >>= 1;
+               mantissa += (mantissa & 1); // round up
+               mantissa >>= 1;
                 // There is a weird scenario where we don't have a subnormal but just.
                 // Suppose we start with 2.2250738585072013e-308, we end up
                 // with 0x3fffffffffffff x 2^-1023-53 which is technically subnormal
@@ -1657,52 +1629,58 @@ namespace System
                 // up 0x3fffffffffffff x 2^-1023-53  and once we do, we are no longer
                 // subnormal, but we can only know this after rounding.
                 // So we only declare a subnormal if we are smaller than the threshold.
-                answer.power2 = (answer.mantissa < ((ulong)(1) << info.DenormalMantissaBits)) ? 0 : 1;
-                return answer;
+                power2 = (mantissa < (1UL << info.DenormalMantissaBits)) ? 0 : 1;
+                return (power2, mantissa);
             }
 
             // usually, we round *up*, but if we fall right in between and and we have an
             // even basis, we need to round down
             // We are only concerned with the cases where 5**q fits in single 64-bit word.
             if ((product.low <= 1) && (q >= info.MinExponentRoundToEven) && (q <= info.MaxExponentRoundToEven) &&
-                ((answer.mantissa & 3) == 1))
-            { // we may fall between two floats!
+                ((mantissa & 3) == 1))
+            {
+              // we may fall between two floats!
               // To be in-between two floats we need that in doing
-              //   answer.mantissa = product.high >> (upperbit + 64 - mantissa_explicit_bits() - 3);
+              // answer.mantissa = product.high >> (upperbit + 64 - mantissa_explicit_bits() - 3);
               // ... we dropped out only zeroes. But if this happened, then we can go back!!!
-                if ((answer.mantissa << (upperbit + 64 - info.DenormalMantissaBits - 3)) == product.high)
+                if ((mantissa << (upperbit + 64 - info.DenormalMantissaBits - 3)) == product.high)
                 {
-                    answer.mantissa &= ~(ulong)(1);          // flip it so that we do not round up
+                    // flip it so that we do not round up
+                    mantissa &= ~1UL;
                 }
             }
 
-            answer.mantissa += (answer.mantissa & 1); // round up
-            answer.mantissa >>= 1;
-            if (answer.mantissa >= ((ulong)(2) << info.DenormalMantissaBits))
+            mantissa += (mantissa & 1); // round up
+            mantissa >>= 1;
+            if (mantissa >= (2UL << info.DenormalMantissaBits))
             {
-                answer.mantissa = ((ulong)(1) << info.DenormalMantissaBits);
-                answer.power2++; // undo previous addition
+                mantissa = (1UL << info.DenormalMantissaBits);
+                // undo previous addition
+                power2++;
             }
 
-            answer.mantissa &= ~((ulong)(1) << info.DenormalMantissaBits);
-            if (answer.power2 >= info.InfinitePower)
-            { // infinity
-                answer.power2 = info.InfinitePower;
-                answer.mantissa = 0;
+            mantissa &= ~(1UL << info.DenormalMantissaBits);
+            if (power2 >= info.InfinitePower)
+            {
+                // infinity
+                power2 = info.InfinitePower;
+                mantissa = 0;
             }
-            return answer;
+            return (power2, mantissa);
         }
-        private static value128 ComputeProductApproximation(int bitPrecision, long q, ulong w)
+
+        private static (ulong high, ulong low) ComputeProductApproximation(int bitPrecision, long q, ulong w)
         {
             int index = 2 * (int)(q - SmallestPowerOfFive);
             // For small values of q, e.g., q in [0,27], the answer is always exact because
             // FullMultiplication gives the exact answer.
-            value128 firstproduct = FullMultiplication(w, s_Pow5128Table[index]);
-            ulong precision_mask = (bitPrecision < 64) ? ((ulong)(0xFFFFFFFFFFFFFFFF) >> bitPrecision) : (ulong)(0xFFFFFFFFFFFFFFFF);
+            var firstproduct = FullMultiplication(w, s_Pow5128Table[index]);
+            ulong precision_mask = (bitPrecision < 64) ? (0xFFFFFFFFFFFFFFFFUL >> bitPrecision) : 0xFFFFFFFFFFFFFFFFUL;
             if ((firstproduct.high & precision_mask) == precision_mask)
-            { // could further guard with  (lower + w < lower)
+            {
+              // could further guard with  (lower + w < lower)
               // regarding the second product, we only need secondproduct.high, but our expectation is that the compiler will optimize this extra work away if needed.
-                value128 secondproduct = FullMultiplication(w, s_Pow5128Table[index + 1]);
+                var secondproduct = FullMultiplication(w, s_Pow5128Table[index + 1]);
                 firstproduct.low += secondproduct.high;
                 if (secondproduct.high > firstproduct.low)
                 {
@@ -1715,13 +1693,10 @@ namespace System
         internal static int CalculatePower(int q)
             => (((152170 + 65536) * q) >> 16) + 63;
 
-
-
-        internal static value128 FullMultiplication(ulong value1, ulong value2)
+        internal static (ulong high, ulong low) FullMultiplication(ulong value1, ulong value2)
         {
-            ulong hi = Math.BigMul(value1, value2, out ulong lo);
-            return new value128(hi, lo);
+            ulong hi = Math.BigMul(value1, value2, out ulong low);
+            return (hi, low);
         }
-
     }
 }
