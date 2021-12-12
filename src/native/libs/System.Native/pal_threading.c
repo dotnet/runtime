@@ -243,9 +243,9 @@ int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(voi
 
     if (stackSize > 0)
     {
-        if (stackSize < PTHREAD_STACK_MIN)
+        if (stackSize < (uintptr_t)PTHREAD_STACK_MIN)
         {
-            stackSize = PTHREAD_STACK_MIN;
+            stackSize = (uintptr_t)PTHREAD_STACK_MIN;
         }
 
         error = pthread_attr_setstacksize(&attrs, stackSize);
