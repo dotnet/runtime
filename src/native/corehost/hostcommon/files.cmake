@@ -3,11 +3,10 @@
 
 # Include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../fxr)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/../json)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 list(APPEND SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/../json/json_parser.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../json_parser.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../deps_format.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../deps_entry.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../host_startup_info.cpp
@@ -24,7 +23,7 @@ list(APPEND SOURCES
 )
 
 list(APPEND HEADERS
-    ${CMAKE_CURRENT_LIST_DIR}/../json/json_parser.h
+    ${CMAKE_CURRENT_LIST_DIR}/../json_parser.h
     ${CMAKE_CURRENT_LIST_DIR}/../deps_format.h
     ${CMAKE_CURRENT_LIST_DIR}/../deps_entry.h
     ${CMAKE_CURRENT_LIST_DIR}/../host_startup_info.h
@@ -39,5 +38,3 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/reader.h
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/header.h
 )
-
-
