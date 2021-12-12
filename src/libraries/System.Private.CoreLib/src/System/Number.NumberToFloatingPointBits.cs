@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -1045,6 +1046,7 @@ namespace System
         }
 
         /// <summary>Parse eight consecutive digits using SWAR</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static uint ParseEightDigitsUnrolled(byte* chars)
         {
             ulong val = Unsafe.ReadUnaligned<ulong>(chars);
@@ -1121,7 +1123,7 @@ namespace System
 
                 // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
                 // https://arxiv.org/abs/2101.11408
-                var am = ComputeFloat(exponent, mantissa, info);
+                (int power2, ulong mantissa) am = ComputeFloat(exponent, mantissa, info);
 
                 // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
                 // then we need to go the long way around again. This is very uncommon.
@@ -1222,7 +1224,7 @@ namespace System
 
                 // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
                 // https://arxiv.org/abs/2101.11408
-                var am = ComputeFloat(exponent, mantissa, info);
+                (int power2, ulong mantissa) am = ComputeFloat(exponent, mantissa, info);
 
                 // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
                 // then we need to go the long way around again. This is very uncommon.
@@ -1324,8 +1326,7 @@ namespace System
 
                 // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
                 // https://arxiv.org/abs/2101.11408
-
-                var am = ComputeFloat(exponent, mantissa, info);
+                (int power2, ulong mantissa) am = ComputeFloat(exponent, mantissa, info);
 
                 // If we called compute_float<binary_format<T>>(pns.exponent, pns.mantissa) and we have an invalid power (am.power2 < 0),
                 // then we need to go the long way around again. This is very uncommon.
@@ -1673,30 +1674,38 @@ namespace System
         {
             int index = 2 * (int)(q - SmallestPowerOfFive);
             // For small values of q, e.g., q in [0,27], the answer is always exact because
-            // FullMultiplication gives the exact answer.
-            var firstproduct = FullMultiplication(w, s_Pow5128Table[index]);
+            // Math.BigMul gives the exact answer.
+            ulong high = Math.BigMul(w, s_Pow5128Table[index], out ulong low);
             ulong precision_mask = (bitPrecision < 64) ? (0xFFFFFFFFFFFFFFFFUL >> bitPrecision) : 0xFFFFFFFFFFFFFFFFUL;
-            if ((firstproduct.high & precision_mask) == precision_mask)
+            if ((high & precision_mask) == precision_mask)
             {
               // could further guard with  (lower + w < lower)
               // regarding the second product, we only need secondproduct.high, but our expectation is that the compiler will optimize this extra work away if needed.
-                var secondproduct = FullMultiplication(w, s_Pow5128Table[index + 1]);
-                firstproduct.low += secondproduct.high;
-                if (secondproduct.high > firstproduct.low)
+                ulong high2 = Math.BigMul(w, s_Pow5128Table[index + 1], out ulong _);
+                low += high2;
+                if (high2 > low)
                 {
-                    firstproduct.high++;
+                    high++;
                 }
             }
-            return firstproduct;
+            return (high, low);
         }
 
+        // For q in (0,350), we have that :
+        // f = (((152170 + 65536) * q) >> 16);
+        // is equal to
+        //   floor(p) + q
+        // where
+        //   p = log(5**q)/log(2) = q* log(5)/log(2)
+        //
+        // For negative values of q in (-400,0), we have that
+        // f = (((152170 + 65536) * q) >> 16);
+        // is equal to :
+        //   -ceil(p) + q
+        // where
+        //   p = log(5**-q)/log(2) = -q* log(5)/log(2)
+        //
         internal static int CalculatePower(int q)
             => (((152170 + 65536) * q) >> 16) + 63;
-
-        internal static (ulong high, ulong low) FullMultiplication(ulong value1, ulong value2)
-        {
-            ulong hi = Math.BigMul(value1, value2, out ulong low);
-            return (hi, low);
-        }
     }
 }
