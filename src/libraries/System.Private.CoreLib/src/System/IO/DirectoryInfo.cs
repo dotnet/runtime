@@ -235,6 +235,18 @@ namespace System.IO
             Invalidate();
         }
 
+        /// <summary>
+        /// Copies this directory into another directory.
+        ///
+        /// <paramref name="recursive"/> specifies whether only the top-level files (<see langword="false"/>) should be copied or also subordinate ones (<see langword="true"/>).
+        /// If <paramref name="skipExistingFiles"/> is <see langword="false"/>, an <see cref="IOException"/> is thrown on an already existing file.
+        /// </summary>
+        /// <param name="destinationPath">The destination path</param>
+        /// <param name="recursive">Copy recursively</param>
+        /// <param name="skipExistingFiles">Skip existing files</param>
+        /// <param name="cancellationToken">Token for cancellation handling</param>
+        /// <returns>If the operation succeeded, <see langword="true"/>. Otherwise <see langword="false"/>.</returns>
+        /// <exception cref="IOException">A write operation fails</exception>
         public bool CopyTo(string destinationPath, bool recursive, bool skipExistingFiles = true,
             CancellationToken cancellationToken = default)
         {
