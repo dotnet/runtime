@@ -1127,8 +1127,6 @@ inline GenTree* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fld
     }
     else
     {
-        // TODO-CQ: if this field is a "boxed static", it represents an address,
-        // and does not need to be marked as GTF_GLOB_REF.
         fieldNode->gtFlags |= GTF_GLOB_REF;
     }
 

@@ -15919,7 +15919,7 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 #endif // TARGET_X86
 
 //------------------------------------------------------------------------
-// IsFieldAddr: Is "this" a field address?
+// IsFieldAddr: Is "this" a static or class field address?
 //
 // Recognizes the following three patterns:
 //    this: [Zero FldSeq]
@@ -15942,9 +15942,6 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 //
 bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq)
 {
-    // TODO-VNTypes: validate how things work with "System.Object" in NativeAOT's CoreLib that has
-    // a field with zero offset (the method table pointer). For now, tentatively allow TYP_REF here
-    // because of this case.
     assert(TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
 
     *pObj    = nullptr;
@@ -15969,6 +15966,11 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, Fie
             assert(!AsOp()->gtOp1->IsCnsIntOrI() || !AsOp()->gtOp1->IsIconHandle());
             fldSeq   = AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
             baseAddr = AsOp()->gtOp1;
+        }
+
+        if (baseAddr != nullptr)
+        {
+            assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
         }
     }
     else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
@@ -16008,7 +16010,8 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, Fie
 
     if (baseAddr->TypeIs(TYP_REF))
     {
-        // TODO-VNTypes: assert that the first field belongs to a class here.
+        assert(!comp->eeIsValueClass(comp->info.compCompHnd->getFieldClass(fldSeq->GetFieldHandle())));
+
         *pObj    = baseAddr;
         *pFldSeq = fldSeq;
         return true;
