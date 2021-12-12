@@ -885,10 +885,11 @@ namespace System.Numerics
         {
             if (Sse42.X64.IsSupported)
             {
-                // unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
-                ulong result = Sse42.X64.Crc32(crc, data);
-
-                return unchecked((uint)result);
+                return (uint)Sse42.X64.Crc32(crc, data);
+            }
+            if (Sse42.IsSupported)
+            {
+                return Sse42.Crc32(Sse42.Crc32(crc, (uint)data), (uint)(data >> 32));
             }
             if (Crc32.Arm64.IsSupported)
             {
