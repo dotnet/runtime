@@ -120,7 +120,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
 
     if (bundle::info_t::is_single_file_bundle())
     {
-        // Due to in-situ parsing on Linux, 
+        // Due to in-situ parsing on Linux,
         //  * The json file is mapped as copy-on-write.
         //  * The mapping cannot be immediately released, and will be unmapped by the json_parser destructor.
         m_bundle_data = bundle::info_t::config_t::map(path, m_bundle_location);
