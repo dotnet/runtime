@@ -3,12 +3,11 @@
 
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
-    public static class CompilerTests
+    public static partial class CompilerTests
     {
         [Theory]
         [ClassData(typeof(CompilationTypes))]
@@ -383,17 +382,18 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(nExpected, nActual);
         }
 
+        [RegexGenerator(@"lambda_method[0-9]*")]
+        private static partial Regex NormalizeRegex();
+
         private static string Normalize(string s)
         {
             Collections.Generic.IEnumerable<string> lines =
                 s
-                .Replace("\r\n", "\n")
-                .Split(new[] { '\n' })
-                .Select(line => line.Trim())
-                .Where(line => line != "" && !line.StartsWith("//"));
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(line => !line.StartsWith("//"))
+                .Select(beforeLambdaUniquifierRemoval => NormalizeRegex().Replace(beforeLambdaUniquifierRemoval, "lambda_method"));
 
-            string beforeLambdaUniquifierRemoval = string.Join("\n", lines);
-            return Regex.Replace(beforeLambdaUniquifierRemoval, "lambda_method[0-9]*", "lambda_method");
+            return string.Join("\n", lines);
         }
 
         private static void VerifyEmitConstantsToIL<T>(T value)
