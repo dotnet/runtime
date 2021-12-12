@@ -15754,7 +15754,8 @@ bool emitter::IsRedundantSxtw(instruction ins, emitAttr size, regNumber dst, reg
             }
             else
             {
-                JITDUMP("\n -- suppressing sxtw because ldrs already cleared upper 4 bytes\n");
+                //JITDUMP("\n -- suppressing sxtw because ldrs already cleared upper 4 bytes\n");
+                return false;
             }
             emitLastIns->idOpSize(size);
             return true;
