@@ -1623,8 +1623,8 @@ namespace System
                 // "round-to-even" only occurs for powers close to 0.
                 mantissa += (mantissa & 1); // round up
                 mantissa >>= 1;
-                // There is a weird scenario where we don't have a subnormal but just.
-                // Suppose we start with 2.2250738585072013e-308, we end up
+                // There is a weird scenario where we don't have a subnormal but just
+                // suppose we start with 2.2250738585072013e-308, we end up
                 // with 0x3fffffffffffff x 2^-1023-53 which is technically subnormal
                 // whereas 0x40000000000000 x 2^-1023-53  is normal. Now, we need to round
                 // up 0x3fffffffffffff x 2^-1023-53  and once we do, we are no longer
@@ -1640,7 +1640,7 @@ namespace System
             if ((product.low <= 1) && (q >= info.MinExponentRoundToEven) && (q <= info.MaxExponentRoundToEven) &&
                 ((mantissa & 3) == 1))
             {
-                // we may fall between two floats!
+                // We may fall between two floats!
                 // To be in-between two floats we need that in doing
                 // answer.mantissa = product.high >> (upperbit + 64 - mantissa_explicit_bits() - 3);
                 // ... we dropped out only zeroes. But if this happened, then we can go back!!!
