@@ -831,11 +831,6 @@ namespace System.Numerics
 
             internal static uint Crc32C(uint crc, byte data)
             {
-                if (!BitConverter.IsLittleEndian)
-                {
-                    data = BinaryPrimitives.ReverseEndianness(data);
-                }
-
                 ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
                 crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ data)) ^ (crc >> 8);
 
