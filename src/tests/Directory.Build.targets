@@ -11,7 +11,7 @@
 
   <!-- Default priority building values. -->
   <PropertyGroup>
-    <CLRTestTargetUnsupported Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</CLRTestTargetUnsupported>
+    <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
     <OutputType Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)">Exe</OutputType>
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>

@@ -1191,6 +1191,8 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     print("Analyzing {}".format(xml_result_file))
     xml_assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
     for assembly in xml_assemblies:
+        if "name" not in assembly.attrib:
+            continue
         assembly_name = assembly.attrib["name"]
         assembly_info = assemblies[assembly_name]
         display_name = assembly_name
