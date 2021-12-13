@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -13,7 +14,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public class TelemetryTest
+    public partial class TelemetryTest
     {
         public readonly ITestOutputHelper _output;
 
@@ -375,6 +376,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [RegexGenerator(@"^InterNetwork.*?:\d\d:{(?:\d{1,3},?)+}$")]
+        private static partial Regex VerifyNetworkAddressRegex();
+
         private static void VerifyEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, bool connect, int? expectedCount, bool shouldHaveFailures = false)
         {
             bool start = false;
@@ -403,7 +407,7 @@ namespace System.Net.Sockets.Tests
                         start = true;
 
                         string startAddress = Assert.IsType<string>(Assert.Single(Event.Payload));
-                        Assert.Matches(@"^InterNetwork.*?:\d\d:{(?:\d{1,3},?)+}$", startAddress);
+                        Assert.Matches(VerifyNetworkAddressRegex(), startAddress);
                         break;
 
                     case "ConnectStop":
