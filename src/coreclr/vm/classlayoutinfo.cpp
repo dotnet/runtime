@@ -288,7 +288,7 @@ namespace
             }
             else
 #elif defined(FEATURE_64BIT_ALIGNMENT)
-            if (pNestedType->RequiresAlign8())
+            if (pNestedType.RequiresAlign8())
             {
                 pManagedPlacementInfo->m_alignment = 8;
             }
