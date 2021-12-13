@@ -1183,7 +1183,6 @@ public:
     }
 
     BOOL HasSameTypeDefAs(MethodTable *pMT);
-    BOOL HasSameTypeDefAs_NoLogging(MethodTable *pMT);
 
     //-------------------------------------------------------------------
     // GENERICS & CODE SHARING

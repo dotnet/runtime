@@ -30,7 +30,7 @@
 
 #define ALLOW_PARTIAL_SHARING TRUE
 //#define ALLOW_PARTIAL_SHARING FALSE
- 
+
 #if 0
 #define DEBUG(...) __VA_ARGS__
 #else
@@ -767,7 +767,7 @@ free_inflated_info (MonoRgctxInfoType info_type, gpointer info)
 
 static MonoRuntimeGenericContextInfoTemplate
 class_get_rgctx_template_oti (MonoClass *klass, int type_argc, guint32 slot, gboolean temporary, gboolean shared, gboolean *do_free);
- 
+
 static MonoClass*
 class_uninstantiated (MonoClass *klass)
 {
@@ -2503,7 +2503,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 			} else if (call_sig == mono_method_signature_internal (method)) {
 			} else {
 				sig = mono_method_signature_internal (method);
-				gsig = mono_method_signature_internal (jinfo_get_method (callee_ji)); 
+				gsig = mono_method_signature_internal (jinfo_get_method (callee_ji));
 
 				addr = mini_get_gsharedvt_wrapper (TRUE, jinfo_get_ftnptr (callee_ji), sig, gsig, -1, FALSE);
 
@@ -2541,7 +2541,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 					align = sizeof (gpointer);
 				if (MONO_TYPE_ISSTRUCT (t) && align < 2 * sizeof (gpointer))
 					align = 2 * sizeof (gpointer);
-			
+
 				// FIXME: Do the same things as alloc_stack_slots
 				offset += align - 1;
 				offset &= ~(align - 1);
@@ -3528,7 +3528,7 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 
 		g_assert (inflated->declaring);
 
-#if FALSE
+#if 0
 		if (inflated->declaring->is_generic) {
 			if (has_constraints (mono_method_get_generic_container (inflated->declaring))) {
 			}
@@ -3891,7 +3891,7 @@ mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke)
 			size = mini_type_stack_size (t, NULL);
 		}
 	}
-	
+
 	return size;
 }
 
