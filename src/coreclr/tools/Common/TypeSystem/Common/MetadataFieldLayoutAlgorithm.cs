@@ -432,7 +432,6 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.Name == "EventCounter") System.Diagnostics.Debugger.Break();
             TypeSystemContext context = type.Context;
 
             bool hasLayout = type.HasLayout();

@@ -264,10 +264,9 @@ namespace
 #else // TARGET_X86 && UNIX_X86_ABI
             pManagedPlacementInfo->m_alignment = pManagedPlacementInfo->m_size;
 #endif
-
             return FALSE;
         }
-        else if (corElemType == ELEMENT_TYPE_PTR)
+        else if (corElemType == ELEMENT_TYPE_PTR || corElemType == ELEMENT_TYPE_FNPTR)
         {
             pManagedPlacementInfo->m_size = TARGET_POINTER_SIZE;
             pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
@@ -282,21 +281,32 @@ namespace
 
             pManagedPlacementInfo->m_size = (pNestedType.GetMethodTable()->GetNumInstanceFieldBytes());
 
-            if (pNestedType.GetMethodTable()->HasLayout())
-            {
-                pManagedPlacementInfo->m_alignment = pNestedType.GetMethodTable()->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
-            }
-            else
-            {
-#ifdef FEATURE_64BIT_ALIGNMENT
-                pManagedPlacementInfo->m_alignment = pNestedType.RequiresAlign8() ? 8 : TARGET_POINTER_SIZE;
-#else
-                pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
-#endif
-            }
-
-            // Types that have GC Pointer fields (objects or byrefs) are disqualified from ManagedSequential layout.
-            return pNestedType.GetMethodTable()->ContainsPointers() != FALSE;
+#if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
+                if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
+                {
+                    pManagedPlacementInfo->m_alignment = DATA_ALIGNMENT;
+                }
+                else
+#elif defined(FEATURE_64BIT_ALIGNMENT)
+                if (pByValueMT->RequiresAlign8())
+                {
+                    pManagedPlacementInfo->m_alignment = 8;
+                }
+                else
+#endif // FEATURE_64BIT_ALIGNMENT
+                if (pByValueMT->ContainsPointers())
+                {
+                    // this field type has GC pointers in it, which need to be pointer-size aligned
+                    // so do this if it has not been done already
+                    pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
+                    // Types that have GC Pointer fields (objects or byrefs) are disqualified from ManagedSequential layout.
+                    return TRUE;
+                }
+                else
+                {
+                    pManagedPlacementInfo->m_alignment = pByValueMT->GetFieldAlignmentRequirement();
+                }
+            return FALSE;
         }
 
         // No other type permitted for ManagedSequential.
