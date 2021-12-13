@@ -8,9 +8,9 @@ const DotnetSupportLib = {
     $DOTNET: {},
     // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
     $DOTNET__postset: `
-    let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch};
+    let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch, require};
     let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-        { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
+        { isES6:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_ }, 
         { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
         __dotnet_replacements);
     
@@ -18,6 +18,7 @@ const DotnetSupportLib = {
     scriptDirectory = __dotnet_replacements.scriptDirectory;
     readAsync = __dotnet_replacements.readAsync;
     var fetch = __dotnet_replacements.fetch;
+    require = __dotnet_replacements.require;
 
     // here we replace things which are broken on NodeJS for ES6
     if (ENVIRONMENT_IS_NODE) {

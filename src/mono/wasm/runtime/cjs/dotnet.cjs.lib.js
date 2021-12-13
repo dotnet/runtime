@@ -8,9 +8,9 @@ const DotnetSupportLib = {
     $DOTNET: {},
     // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
     $DOTNET__postset: `
-    let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch};
+    let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch, require};
     let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-        { isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
+        { isES6:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_ }, 
         { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
         __dotnet_replacements);
     
@@ -20,6 +20,7 @@ const DotnetSupportLib = {
     var fetch = __dotnet_replacements.fetch;
     if (ENVIRONMENT_IS_NODE) { 
         __dirname = __dotnet_replacements.scriptDirectory; 
+        require = __dotnet_replacements.require;
     }
     `,
 };
