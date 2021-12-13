@@ -282,30 +282,30 @@ namespace
             pManagedPlacementInfo->m_size = (pNestedType.GetMethodTable()->GetNumInstanceFieldBytes());
 
 #if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
-                if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
-                {
-                    pManagedPlacementInfo->m_alignment = DATA_ALIGNMENT;
-                }
-                else
+            if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
+            {
+                pManagedPlacementInfo->m_alignment = DATA_ALIGNMENT;
+            }
+            else
 #elif defined(FEATURE_64BIT_ALIGNMENT)
-                if (pByValueMT->RequiresAlign8())
-                {
-                    pManagedPlacementInfo->m_alignment = 8;
-                }
-                else
+            if (pByValueMT->RequiresAlign8())
+            {
+                pManagedPlacementInfo->m_alignment = 8;
+            }
+            else
 #endif // FEATURE_64BIT_ALIGNMENT
-                if (pByValueMT->ContainsPointers())
-                {
-                    // this field type has GC pointers in it, which need to be pointer-size aligned
-                    // so do this if it has not been done already
-                    pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
-                    // Types that have GC Pointer fields (objects or byrefs) are disqualified from ManagedSequential layout.
-                    return TRUE;
-                }
-                else
-                {
-                    pManagedPlacementInfo->m_alignment = pByValueMT->GetFieldAlignmentRequirement();
-                }
+            if (pByValueMT->ContainsPointers())
+            {
+                // this field type has GC pointers in it, which need to be pointer-size aligned
+                // so do this if it has not been done already
+                pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
+                // Types that have GC Pointer fields (objects or byrefs) are disqualified from ManagedSequential layout.
+                return TRUE;
+            }
+            else
+            {
+                pManagedPlacementInfo->m_alignment = pByValueMT->GetFieldAlignmentRequirement();
+            }
             return FALSE;
         }
 
