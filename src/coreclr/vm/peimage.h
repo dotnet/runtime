@@ -36,10 +36,10 @@ class Crst;
 //  - Flat    - the same layout as on disk/array or
 // 
 //  - Loaded  - PE sections are mapped into virtual addresses.
-//              PE relocations are applied
-//              native exception handlers are registered with OS.
+//              PE relocations are applied.
+//              Native exception handlers are registered with OS (on Windows).
 // 
-// Flat layouts are sufficient for operatons that do not require running native code,
+// Flat layouts are sufficient for operations that do not require running native code,
 // Anything based on RVA, such as retrieving IL method bodies, is slightly less efficient,
 // since RVA must be translated to file form.
 // The additional cost is not very high though, since our PEs have only a few sections.
@@ -47,15 +47,16 @@ class Crst;
 // Loaded layouts are functional supersets of Flat - anything that can be done with Flat
 // can be done with Loaded.
 // 
-// Running native code in the PE (i.e. R2R or IJW) scenarios require Loaded layout.
+// Running native code in the PE (i.e. R2R or IJW scenarios) requires Loaded layout.
+// It is possible to execute R2R assembly from Flat layout in IL mode, but its R2R functionality
+// will be disabled. When R2R is explicitly turned off, Flat is sufficient for any scenario with
+// R2R assemblies.
 // In a case of IJW, the PE must be loaded by the native loader to ensure that native dependencies
 // are resolved.
-// It is possible to execute R2R assembly from Flat layout in IL mode, but its R2R functionality
-// will be disabled.
 // 
 // In some scenarios we create Loaded layouts by manually mapping images into memory.
 // That is particularly true on Unix where we cannot rely on OS loader.
-// Manual creation of layouts is limited to "IL only" images - this can be checked
+// Manual creation of layouts is limited to "IL only" images. This can be checked
 // for via `PEDecoder::IsILOnlyImage`
 // NOTE: historically, and somewhat confusingly, R2R PEs are considered IsILOnlyImage for this
 //       purpose. That is true even for composite R2R PEs that do not contain IL.
@@ -139,12 +140,12 @@ public:
 
     BOOL IsFile();
     BOOL IsInBundle() const;
-    HANDLE GetFileHandle();
     INT64 GetOffset() const;
     INT64 GetSize() const;
     INT64 GetUncompressedSize() const;
 
-    HRESULT TryOpenFile();
+    HANDLE GetFileHandle();
+    HRESULT TryOpenFile(bool takeLock = false);
 
     void GetMVID(GUID *pMvid);
     BOOL HasV1Metadata();

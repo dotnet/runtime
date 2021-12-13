@@ -965,61 +965,49 @@ HANDLE PEImage::GetFileHandle()
     if (m_hFile!=INVALID_HANDLE_VALUE)
         return m_hFile;
 
-    {
-        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
-        m_hFile=WszCreateFile((LPCWSTR) GetPathToLoad(),
-                               GENERIC_READ
-#if TARGET_WINDOWS
-                                    // the file may have native code sections, make sure we are allowed to execute the file
-                                   | GENERIC_EXECUTE
-#endif
-                               ,
-                               FILE_SHARE_READ|FILE_SHARE_DELETE,
-                               NULL,
-                               OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL,
-                               NULL);
-    }
+    HRESULT hr = TryOpenFile(/*takeLock*/ false);
 
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
 #if !defined(DACCESS_COMPILE)
-        EEFileLoadException::Throw(GetPathToLoad(), HRESULT_FROM_WIN32(GetLastError()));
+        EEFileLoadException::Throw(GetPathToLoad(), hr);
 #else // defined(DACCESS_COMPILE)
-        ThrowLastError();
+        ThrowHR(hr);
 #endif // !defined(DACCESS_COMPILE)
     }
 
     return m_hFile;
 }
 
-HRESULT PEImage::TryOpenFile()
+HRESULT PEImage::TryOpenFile(bool takeLock)
 {
     STANDARD_VM_CONTRACT;
 
-    SimpleWriteLockHolder lock(m_pLayoutLock);
+    SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
 
     if (m_hFile!=INVALID_HANDLE_VALUE)
         return S_OK;
-    {
-        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
-        m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
-                              GENERIC_READ
+
+    ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
+    m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
+                          GENERIC_READ
 #if TARGET_WINDOWS
-                                  // the file may have native code sections, make sure we are allowed to execute the file
-                                  | GENERIC_EXECUTE
+                          // the file may have native code sections, make sure we are allowed to execute the file
+                          | GENERIC_EXECUTE
 #endif
-                              ,
-                              FILE_SHARE_READ|FILE_SHARE_DELETE,
-                              NULL,
-                              OPEN_EXISTING,
-                              FILE_ATTRIBUTE_NORMAL,
-                              NULL);
-    }
+                          ,
+                          FILE_SHARE_READ|FILE_SHARE_DELETE,
+                          NULL,
+                          OPEN_EXISTING,
+                          FILE_ATTRIBUTE_NORMAL,
+                          NULL);
+
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;
+
     if (GetLastError())
         return HRESULT_FROM_WIN32(GetLastError());
+
     return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 

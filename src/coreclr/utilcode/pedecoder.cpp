@@ -373,7 +373,10 @@ CHECK PEDecoder::CheckSection(COUNT_T previousAddressEnd, COUNT_T addressStart, 
 
     // Check expected alignments
 #if TARGET_WINDOWS
-    // R2R files on Unix do not align section RVAs
+    // On Windows we expect section starts to be a multiple of SectionAlignment.
+    // That is not an explicit requirement in the documentation, but it looks like OS loader expects it.
+    // In contrast to this, in Unix R2R files we keep lower 16bits of sections RVA and
+    // this condition does not hold.
     CHECK(CheckAligned(addressStart, VAL32(pNT->OptionalHeader.SectionAlignment)));
 #endif
     CHECK(CheckAligned(offsetStart, VAL32(pNT->OptionalHeader.FileAlignment)));

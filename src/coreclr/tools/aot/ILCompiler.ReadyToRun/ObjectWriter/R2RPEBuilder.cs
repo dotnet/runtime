@@ -683,17 +683,21 @@ namespace ILCompiler.PEWriter
             ulong imageBase = is64BitTarget ? PE64HeaderConstants.DllImageBase : PE32HeaderConstants.ImageBase;
 
             int fileAlignment = 0x200;
-            if (target.IsWindows || !is64BitTarget)
+            bool isWindowsOr32bit = target.IsWindows || !is64BitTarget;
+            if (isWindowsOr32bit)
             {
-                // To minimize wasted VA space on 32-bit systems, align file to page boundaries (presumed to be 4K)
+                // To minimize wasted VA space on 32-bit systems (regardless of OS),
+                // align file to page boundaries (presumed to be 4K)
                 //
-                // On Windows we use 4K file alignment, per requirements of memory mapping API (MapViewOfFile3, et al).
-                // We also want files always accepted by the native loader, thus we can't use the same approach as on Unix.
+                // On Windows we use 4K file alignment (regardless of ptr size),
+                // per requirements of memory mapping API (MapViewOfFile3, et al).
+                // The alternative could be using the same approach as on Unix, but that would result in PEs
+                // incompatible with OS loader. While that is not a problem on Unix, we do not want that on Windows.
                 fileAlignment = 0x1000;
             }
 
             int sectionAlignment = 0x1000;
-            if (!target.IsWindows && is64BitTarget)
+            if (!isWindowsOr32bit)
             {
                 // On 64bit Linux, we must match the bottom 12 bits of section RVA's to their file offsets. For this reason
                 // we need the same alignment for both.
