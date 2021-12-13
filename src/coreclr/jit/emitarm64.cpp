@@ -12063,22 +12063,25 @@ void emitter::emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm)
     assert(insOptsNone(opt) || insOptsAnyExtend(opt) || (opt == INS_OPTS_LSL));
 
     // size is based on the extend option, not the instr size.
-    emitAttr size = insOpts64BitExtend(opt) ? EA_8BYTE : EA_4BYTE;
+    // Assume INS_OPTS_NONE and INS_OPTS_LSL are 64bit as they usually are.
+    emitAttr size = (insOptsNone(opt) || insOptsLSL(opt) || insOpts64BitExtend(opt)) ? EA_8BYTE : EA_4BYTE;
 
     if (strictArmAsm)
     {
-        if (insOptsNone(opt))
+        if (insOptsNone(opt) || (insOptsLSL(opt) && imm == 0))
         {
             emitDispReg(reg, size, false);
         }
         else
         {
             emitDispReg(reg, size, true);
-            if (opt == INS_OPTS_LSL)
+
+            if (insOptsLSL(opt))
                 printf("LSL");
             else
                 emitDispExtendOpts(opt);
-            if ((imm > 0) || (opt == INS_OPTS_LSL))
+
+            if (imm > 0)
             {
                 printf(" ");
                 emitDispImm(imm, false);
