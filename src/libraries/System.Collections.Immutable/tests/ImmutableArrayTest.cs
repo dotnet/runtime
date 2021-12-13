@@ -379,6 +379,14 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(source.Skip(start).Take(length), ImmutableArray.Create(source.ToArray(), start, length));
         }
 
+        [Theory]
+        [MemberData(nameof(CreateFromSliceData))]
+        public void SliceFromSliceData(IEnumerable<int> source, int start, int length)
+        {
+            var immutableArray = source.ToImmutableArray();
+            Assert.Equal(source.Skip(start).Take(length), immutableArray.Slice(start, length));
+        }
+
         public static IEnumerable<object[]> CreateFromSliceData()
         {
             yield return new object[] { new int[] { }, 0, 0 };
@@ -419,6 +427,15 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
+        public void SliceFromCompleteImmutableArrayOptimizations(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            var slice = array.Slice(0, array.Length);
+            Assert.True(array == slice); // Verify that the underlying arrays are reference-equal.
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
         public void CreateFromSliceOfImmutableArrayEmptyReturnsSingleton(IEnumerable<int> source)
         {
             var array = source.ToImmutableArray();
@@ -447,11 +464,48 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
+        public void SliceFromInvalidRange(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => array.Slice(-1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => array.Slice(array.Length + 1, 0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(0, array.Length + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(Math.Max(0, array.Length - 1), 2));
+
+            if (array.Length > 0)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(1, array.Length));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
         public void CreateFromSliceOfArrayEmptyReturnsSingleton(IEnumerable<int> source)
         {
             var array = source.ToArray();
             var slice = ImmutableArray.Create(array, Math.Min(1, array.Length), 0);
             Assert.True(s_empty == slice);
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void SliceEmptyReturnsSingleton(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            var slice = array.Slice(Math.Min(1, array.Length), 0);
+            Assert.True(s_empty == slice);
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, -1)]
+        [InlineData(-1, 0)]
+        public void SliceDefaultInvalid(int start, int length)
+        {
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.Slice(start, length));
         }
 
         [Theory]
