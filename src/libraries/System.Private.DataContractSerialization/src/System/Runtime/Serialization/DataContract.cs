@@ -2215,7 +2215,7 @@ namespace System.Runtime.Serialization
                 string internalsVisibleAttributeAssemblyName = internalsVisibleAttribute.AssemblyName;
 
                 if (internalsVisibleAttributeAssemblyName.Trim().Equals("System.Runtime.Serialization") ||
-                    Regex.IsMatch(internalsVisibleAttributeAssemblyName, Globals.FullSRSInternalsVisiblePattern))
+                    Globals.FullSRSInternalsVisibleRegex().IsMatch(internalsVisibleAttributeAssemblyName))
                 {
                     return true;
                 }
