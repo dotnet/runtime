@@ -15745,7 +15745,7 @@ bool emitter::IsRedundantSxtw(instruction ins, emitAttr size, regNumber dst, reg
     if ((dst == src) && (emitLastIns != nullptr) && !isFirstInstrInBlock)
     {
         // Check if the previous instruction has a side-effect to do sxtw's job
-        if (emitLastIns->idOpSize() == EA_4BYTE && emitLastIns->idInsIs(INS_ldr, INS_ldrsw, INS_ldrsh, INS_ldrsb))
+        if (emitLastIns->idOpSize() == EA_4BYTE && emitLastIns->idInsIs(INS_ldrsw, INS_ldrsh, INS_ldrsb))
         {
             if (emitLastIns->idInsIs(INS_ldr))
             {
@@ -15754,8 +15754,7 @@ bool emitter::IsRedundantSxtw(instruction ins, emitAttr size, regNumber dst, reg
             }
             else
             {
-                //JITDUMP("\n -- suppressing sxtw because ldrs already cleared upper 4 bytes\n");
-                return false;
+                JITDUMP("\n -- suppressing sxtw because ldrs already cleared upper 4 bytes\n");
             }
             emitLastIns->idOpSize(size);
             return true;
