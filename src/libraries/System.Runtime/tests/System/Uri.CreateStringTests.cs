@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class UriCreateStringTests
+    public partial class UriCreateStringTests
     {
         private static readonly bool s_isWindowsSystem = PlatformDetection.IsWindows;
         public static readonly string s_longString = new string('a', 65520 + 1);
@@ -802,6 +802,9 @@ namespace System.Tests
             yield return new object[] { "file://C:/abc/def/../ghi", "C:/abc/ghi", "", "" };
         }
 
+        [RegexGenerator(@"(?<=/)")]
+        private static partial Regex UriSegmentsSplitRegex();
+
         [Theory]
         [MemberData(nameof(Path_Query_Fragment_TestData))]
         public void Path_Query_Fragment(string uriString, string path, string query, string fragment)
@@ -831,7 +834,7 @@ namespace System.Tests
                         segmentsPath = '/' + segmentsPath;
                         localPath = localPath.Replace('/', '\\');
                     }
-                    segments = Regex.Split(segmentsPath, @"(?<=/)").TakeWhile(s => s.Length != 0);
+                    segments = UriSegmentsSplitRegex().Split(segmentsPath).TakeWhile(s => s.Length != 0);
                 }
 
                 Assert.Equal(path, uri.AbsolutePath);

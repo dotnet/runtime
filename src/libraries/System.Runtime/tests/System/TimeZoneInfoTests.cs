@@ -2325,7 +2325,9 @@ namespace System.Tests
         }
 
         private const string IanaAbbreviationPattern = @"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$";
-        private static readonly Regex s_IanaAbbreviationRegex = new Regex(IanaAbbreviationPattern);
+
+        [RegexGenerator(IanaAbbreviationPattern)]
+        private static partial Regex IanaAbbreviationRegex();
 
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // (This list is not likely to change.)
@@ -2375,9 +2377,9 @@ namespace System.Tests
                 else
                 {
                     // For other time zones, match any valid IANA time zone abbreviation, including numeric forms
-                    Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.StandardName),
+                    Assert.True(IanaAbbreviationRegex().IsMatch(timeZone.StandardName),
                         $"Id: \"{timeZone.Id}\", StandardName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual StandardName: \"{timeZone.StandardName}\"");
-                    Assert.True(s_IanaAbbreviationRegex.IsMatch(timeZone.DaylightName),
+                    Assert.True(IanaAbbreviationRegex().IsMatch(timeZone.DaylightName),
                         $"Id: \"{timeZone.Id}\", DaylightName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
                 }
             }
@@ -2582,6 +2584,9 @@ namespace System.Tests
             }
         }
 
+        [RegexGenerator(@"^\(UTC(?<sign>\+|-)(?<amount>[0-9]{2}:[0-9]{2})\) \S.*")]
+        private static partial Regex UtcOffsetRegex();
+
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void TimeZoneInfo_DisplayNameStartsWithOffset(TimeZoneInfo tzi)
@@ -2598,12 +2603,13 @@ namespace System.Tests
             else
             {
                 Assert.False(string.IsNullOrWhiteSpace(tzi.StandardName));
-                Assert.Matches(@"^\(UTC(\+|-)[0-9]{2}:[0-9]{2}\) \S.*", tzi.DisplayName);
+                Match match = UtcOffsetRegex().Match(tzi.DisplayName);
+                Assert.True(match.Success);
 
                 // see https://github.com/dotnet/corefx/pull/33204#issuecomment-438782500
                 if (PlatformDetection.IsNotWindowsNanoServer && !PlatformDetection.IsWindows7)
                 {
-                    string offset = Regex.Match(tzi.DisplayName, @"(-|)[0-9]{2}:[0-9]{2}").Value;
+                    string offset = (match.Groups["sign"].Value == "-" ? "-" : "") + match.Groups["amount"].Value;
                     TimeSpan ts = TimeSpan.Parse(offset);
                     if (PlatformDetection.IsWindows &&
                         tzi.BaseUtcOffset != ts &&
