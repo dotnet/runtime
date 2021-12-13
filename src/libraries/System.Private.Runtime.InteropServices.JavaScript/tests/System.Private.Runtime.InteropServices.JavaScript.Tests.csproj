@@ -23,7 +23,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Simple\SimpleTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="simple.html" />
     <WasmExtraFilesToDeploy Include="simple.js" />
   </ItemGroup>
   <ItemGroup>
