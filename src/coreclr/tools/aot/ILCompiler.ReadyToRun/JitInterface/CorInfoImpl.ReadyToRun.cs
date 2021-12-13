@@ -970,8 +970,8 @@ namespace Internal.JitInterface
 
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
         {
-            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc) 
-                || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod) 
+            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc)
+                || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
                 || methodDesc.IsPInvoke))
             {
                 if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
@@ -1129,7 +1129,7 @@ namespace Internal.JitInterface
             {
                 _debugVarInfos[i] = vars[i];
             }
-            
+
             // JIT gave the ownership of this to us, so need to free this.
             freeArray(vars);
         }
@@ -1146,7 +1146,7 @@ namespace Internal.JitInterface
             {
                 _debugLocInfos[i] = pMap[i];
             }
-            
+
             // JIT gave the ownership of this to us, so need to free this.
             freeArray(pMap);
         }
@@ -1599,6 +1599,7 @@ namespace Internal.JitInterface
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
             {
+                PrepareForUseAsAFunctionPointer(targetMethod);
                 directCall = true;
             }
             else
@@ -1644,7 +1645,7 @@ namespace Internal.JitInterface
                     //  3) JIT intrinsics - since they have pre-defined behavior
                     devirt = targetMethod.OwningType.IsValueType ||
                         (targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke") ||
-                        (targetMethod.IsIntrinsic && getIntrinsicID(targetMethod, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal);
+                        (targetMethod.OwningType.IsObject && targetMethod.Name == "GetType");
 
                     callVirtCrossingVersionBubble = true;
                 }
@@ -1821,6 +1822,17 @@ namespace Internal.JitInterface
             MethodDesc method = HandleToObject(ftn);
             return getMethodAttribsInternal(method);
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
+        }
+
+        private void PrepareForUseAsAFunctionPointer(MethodDesc method)
+        {
+            foreach (TypeDesc type in method.Signature)
+            {
+                if (type.IsValueType)
+                {
+                    classMustBeLoadedBeforeCodeIsRun(type);
+                }
+            }
         }
 
         private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)

@@ -58,24 +58,6 @@ DWORD ArrayMethodDesc::GetAttrs()
     return (GetArrayFuncIndex() >= ARRAY_FUNC_CTOR) ? (mdPublic | mdRTSpecialName) : mdPublic;
 }
 
-/*****************************************************************************************/
-CorInfoIntrinsics ArrayMethodDesc::GetIntrinsicID()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    switch (GetArrayFuncIndex())
-    {
-    case ARRAY_FUNC_GET:
-        return CORINFO_INTRINSIC_Array_Get;
-    case ARRAY_FUNC_SET:
-        return CORINFO_INTRINSIC_Array_Set;
-    case ARRAY_FUNC_ADDRESS:
-        return CORINFO_INTRINSIC_Array_Address;
-    default:
-        return CORINFO_INTRINSIC_Illegal;
-    }
-}
-
 #ifndef DACCESS_COMPILE
 
 /*****************************************************************************************/

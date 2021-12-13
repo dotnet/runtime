@@ -37,7 +37,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AdditionalXHarnessArguments>$(Configuration)</AdditionalXHarnessArguments>
     <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">$(AdditionalXHarnessArguments) --expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
@@ -56,9 +55,9 @@
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 
-  <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets" 
+  <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets"
           Condition="'$(TargetsAppleMobile)' == 'true'" />
-  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" 
+  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets"
           Condition="'$(TargetOS)' == 'Browser'" />
 
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
@@ -185,7 +184,7 @@
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
       <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
-      
+
       <!-- Even though we are trimming the test runner assembly, we want it to be treated
            as a root -->
       <TrimmerRootAssembly

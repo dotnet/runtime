@@ -231,6 +231,8 @@ CONFIG_INTEGER(JitDumpFgConstrained, W("JitDumpFgConstrained"), 1) // 0 == don't
                                                                    // linear layout
 CONFIG_INTEGER(JitDumpFgBlockID, W("JitDumpFgBlockID"), 0) // 0 == display block with bbNum; 1 == display with both
                                                            // bbNum and bbID
+CONFIG_INTEGER(JitDumpFgBlockFlags, W("JitDumpFgBlockFlags"), 0) // 0 == don't display block flags; 1 == display flags
+CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't display loop flags; 1 == display flags
 
 CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
 CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)

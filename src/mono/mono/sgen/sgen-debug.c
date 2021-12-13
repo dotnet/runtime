@@ -322,7 +322,7 @@ static GCObject **valid_nursery_objects;
 static int valid_nursery_object_count;
 static gboolean broken_heap;
 
-static void 
+static void
 setup_mono_sgen_scan_area_with_callback (GCObject *object, size_t size, void *data)
 {
 	valid_nursery_objects [valid_nursery_object_count++] = object;
@@ -396,7 +396,7 @@ is_valid_object_pointer (char *object)
 {
 	if (sgen_ptr_in_nursery (object))
 		return find_object_in_nursery_dump (object);
-	
+
 	if (sgen_los_is_valid_object (object))
 		return TRUE;
 
@@ -479,7 +479,7 @@ ptr_in_heap (char *object)
 {
 	if (sgen_ptr_in_nursery (object))
 		return TRUE;
-	
+
 	if (sgen_los_is_valid_object (object))
 		return TRUE;
 
@@ -511,7 +511,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 			continue;
 		while (start < (char**)info->client_info.info.stack_end) {
 			if (*start >= obj && *start < endobj)
-				SGEN_LOG (0, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p", obj, info, (gpointer)mono_thread_info_get_tid (info), start, info->client_info.stack_start, info->client_info.info.stack_end);
+				SGEN_LOG (0, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p", obj, info, (gpointer)(gsize) mono_thread_info_get_tid (info), start, info->client_info.stack_start, info->client_info.info.stack_end);
 			start++;
 		}
 
@@ -519,7 +519,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 			mword w = *ctxcurrent;
 
 			if (w >= (mword)obj && w < (mword)obj + size)
-				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, (int) (ctxcurrent - ctxstart), info, (gpointer)(gsize)mono_thread_info_get_tid (info));
+				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, (int) (ctxcurrent - ctxstart), info, (gpointer)(gsize) mono_thread_info_get_tid (info));
 		}
 	} FOREACH_THREAD_END
 #endif
