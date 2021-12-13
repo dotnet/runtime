@@ -489,7 +489,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
-    <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
+    <HelixCorrelationPayload Condition="'$(TargetsMobile)' != 'true'" Include="$(CoreRootDirectory)" />
 
     <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
     <LegacyPayloads Update="@(LegacyPayloads)">
