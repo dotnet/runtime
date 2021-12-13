@@ -299,14 +299,13 @@ namespace
                 // this field type has GC pointers in it, which need to be pointer-size aligned
                 // so do this if it has not been done already
                 pManagedPlacementInfo->m_alignment = TARGET_POINTER_SIZE;
-                // Types that have GC Pointer fields (objects or byrefs) are disqualified from ManagedSequential layout.
-                return TRUE;
             }
             else
             {
                 pManagedPlacementInfo->m_alignment = pNestedType.GetMethodTable()->GetFieldAlignmentRequirement();
             }
-            return FALSE;
+            // Types that have GC Pointer fields (objects or byrefs) are disqualified from ManagedSequential layout.
+            return pNestedType.GetMethodTable()->ContainsPointers() != FALSE;
         }
 
         // No other type permitted for ManagedSequential.
