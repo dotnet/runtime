@@ -4283,7 +4283,7 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
  */
 GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call)
 {
-    if (!call->NeedsNullCheck())
+    if ((call->gtFlags & GTF_CALL_NULLCHECK) == 0)
     {
         return nullptr;
     }

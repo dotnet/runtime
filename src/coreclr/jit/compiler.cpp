@@ -9479,7 +9479,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[CALL_VIRT_STUB]");
                 }
-                if (tree->AsCall()->NeedsNullCheck())
+                if (tree->gtFlags & GTF_CALL_NULLCHECK)
                 {
                     chars += printf("[CALL_NULLCHECK]");
                 }

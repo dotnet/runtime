@@ -8992,7 +8992,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
             assert(!"Unknown gtCallType");
         }
 
-        if (tree->AsCall()->NeedsNullCheck())
+        if (tree->gtFlags & GTF_CALL_NULLCHECK)
         {
             gtfType = " nullcheck";
         }
