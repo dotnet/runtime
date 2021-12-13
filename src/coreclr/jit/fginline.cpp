@@ -1497,7 +1497,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     //
     GenTree* nullcheck = nullptr;
 
-    if (call->gtFlags & GTF_CALL_NULLCHECK && !inlineInfo->thisDereferencedFirst)
+    if (call->NeedsNullCheck() && !inlineInfo->thisDereferencedFirst)
     {
         // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
         GenTree* thisOp = impInlineFetchArg(0, inlArgInfo, lclVarInfo);
