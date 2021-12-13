@@ -4115,7 +4115,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (elemSize != 1)
                 {
-                    GenTree* sizeofNode = gtNewIconNode(elemSize);
+                    GenTree* sizeofNode = gtNewIconNode(static_cast<ssize_t>(elemSize), TYP_I_IMPL);
                     index               = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, sizeofNode);
                 }
 
