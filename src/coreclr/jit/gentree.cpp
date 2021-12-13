@@ -15930,26 +15930,26 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 //    this: ADD(CONST FldSeq, baseAddr)
 //
 // Arguments:
-//    comp    - the Compiler object
-//    pObj    - [out] parameter for instance fields, the object reference
-//    pStatic - [out] parameter for static fields, the base address
-//    pFldSeq - [out] parameter for the field sequence
+//    comp      - the Compiler object
+//    pBaseAddr - [out] parameter for "the base address"
+//    pFldSeq   - [out] parameter for the field sequence
 //
 // Return Value:
 //    If "this" matches patterns denoted above, and the FldSeq found is "full",
 //    i. e. starts with a class field or a static field, and includes all the
 //    struct fields that this tree represents the address of, this method will
-//    return "true" and set either "pObj" or "pStatic" to some value, which must
-//    be used by the caller as the key into the "first field map" to obtain the
-//    actual value for the field.
+//    return "true" and set either "pBaseAddr" to some value, which must be used
+//    by the caller as the key into the "first field map" to obtain the actual
+//    value for the field. For instance fields, "base address" will be the object
+//    reference, for statics - the address to which the field offset with the
+//    field sequence is added, see "impImportStaticFieldAccess" and "fgMorphField".
 //
-bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq)
+bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq)
 {
     assert(TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
 
-    *pObj    = nullptr;
-    *pStatic = nullptr;
-    *pFldSeq = FieldSeqStore::NotAField();
+    *pBaseAddr = nullptr;
+    *pFldSeq   = FieldSeqStore::NotAField();
 
     GenTree*      baseAddr = nullptr;
     FieldSeqNode* fldSeq   = nullptr;
@@ -16006,8 +16006,8 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, Fie
         // TODO-VNTypes: we will always return the "baseAddr" here for now, but strictly speaking,
         // we only need to do that if we have a shared field, to encode the logical "instantiation"
         // argument. In all other cases, this serves no purpose and just leads to redundant maps.
-        *pStatic = baseAddr;
-        *pFldSeq = fldSeq;
+        *pBaseAddr = baseAddr;
+        *pFldSeq   = fldSeq;
         return true;
     }
 
@@ -16015,8 +16015,8 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, Fie
     {
         assert(!comp->eeIsValueClass(comp->info.compCompHnd->getFieldClass(fldSeq->GetFieldHandle())));
 
-        *pObj    = baseAddr;
-        *pFldSeq = fldSeq;
+        *pBaseAddr = baseAddr;
+        *pFldSeq   = fldSeq;
         return true;
     }
 

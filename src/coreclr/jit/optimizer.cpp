@@ -7852,22 +7852,15 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         // We are only interested in IsFieldAddr()'s fldSeq out parameter.
                         //
-                        GenTree*      obj          = nullptr; // unused
-                        GenTree*      staticOffset = nullptr; // unused
-                        FieldSeqNode* fldSeq       = nullptr;
+                        GenTree*      baseAddr = nullptr; // unused
+                        FieldSeqNode* fldSeq   = nullptr;
 
-                        if (arg->IsFieldAddr(this, &obj, &staticOffset, &fldSeq) &&
-                            (fldSeq != FieldSeqStore::NotAField()))
+                        if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
                         {
-                            // Get the first (object) field from field seq.  GcHeap[field] will yield the "field map".
-                            assert(fldSeq != nullptr);
-                            if (fldSeq->IsFirstElemFieldSeq())
-                            {
-                                fldSeq = fldSeq->m_next;
-                                assert(fldSeq != nullptr);
-                            }
+                            assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()) &&
+                                   !fldSeq->IsPseudoField());
 
-                            AddModifiedFieldAllContainingLoops(mostNestedLoop, fldSeq->m_fieldHnd);
+                            AddModifiedFieldAllContainingLoops(mostNestedLoop, fldSeq->GetFieldHandle());
                             // Conservatively assume byrefs may alias this object.
                             memoryHavoc |= memoryKindSet(ByrefExposed);
                         }
