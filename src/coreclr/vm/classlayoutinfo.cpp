@@ -282,19 +282,19 @@ namespace
             pManagedPlacementInfo->m_size = (pNestedType.GetMethodTable()->GetNumInstanceFieldBytes());
 
 #if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
-            if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
+            if (pManagedPlacementInfo->m_size >= DATA_ALIGNMENT)
             {
                 pManagedPlacementInfo->m_alignment = DATA_ALIGNMENT;
             }
             else
 #elif defined(FEATURE_64BIT_ALIGNMENT)
-            if (pByValueMT->RequiresAlign8())
+            if (pNestedType->RequiresAlign8())
             {
                 pManagedPlacementInfo->m_alignment = 8;
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
-            if (pByValueMT->ContainsPointers())
+            if (pNestedType.GetMethodTable()->ContainsPointers())
             {
                 // this field type has GC pointers in it, which need to be pointer-size aligned
                 // so do this if it has not been done already
@@ -304,7 +304,7 @@ namespace
             }
             else
             {
-                pManagedPlacementInfo->m_alignment = pByValueMT->GetFieldAlignmentRequirement();
+                pManagedPlacementInfo->m_alignment = pNestedType.GetMethodTable()->GetFieldAlignmentRequirement();
             }
             return FALSE;
         }
