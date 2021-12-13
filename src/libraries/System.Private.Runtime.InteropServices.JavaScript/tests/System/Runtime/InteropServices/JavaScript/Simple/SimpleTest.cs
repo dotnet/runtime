@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
-    public static class SimpleMain
+    public static class SimpleTest
     {
-        public static async Task<int> Main(string[] args)
+        public static async Task<int> Test()
         {
             var tests = new List<Func<Task>>();
             tests.Add(TimerTests.T0_NoTimer);

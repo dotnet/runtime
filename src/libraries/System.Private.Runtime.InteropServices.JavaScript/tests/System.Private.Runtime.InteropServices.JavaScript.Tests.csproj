@@ -4,7 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc</WasmXHarnessArgs>
-    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
@@ -21,7 +20,7 @@
 
     <!-- tests which are not working well in XHarness + XUnit -->
     <Compile Include="System\Runtime\InteropServices\JavaScript\Simple\TimerTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Simple\SimpleMain.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Simple\SimpleTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />

@@ -60,7 +60,7 @@ var Module = {
 
         Module.config.loaded_cb = function () {
             try {
-                BINDING.call_assembly_entry_point("System.Private.Runtime.InteropServices.JavaScript.Tests.dll", [""], "m");
+                BINDING.call_static_method("[System.Private.Runtime.InteropServices.JavaScript.Tests] System.Runtime.InteropServices.JavaScript.Tests.SimpleTest:Test", []);
             } catch (error) {
                 throw (error);
             }
