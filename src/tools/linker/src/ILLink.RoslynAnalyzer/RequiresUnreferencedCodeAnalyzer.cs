@@ -6,6 +6,8 @@ using System.Collections.Immutable;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -23,6 +25,8 @@ namespace ILLink.RoslynAnalyzer
 		static readonly DiagnosticDescriptor s_makeGenericTypeRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.MakeGenericType);
 		static readonly DiagnosticDescriptor s_makeGenericMethodRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.MakeGenericMethod);
 
+		static readonly DiagnosticDescriptor s_typeDerivesFromRucClassRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DerivedFromBaseWithRequiresUnreferencedCode);
+
 		static readonly Action<OperationAnalysisContext> s_dynamicTypeInvocation = operationContext => {
 			if (FindContainingSymbol (operationContext, DiagnosticTargets.All) is ISymbol containingSymbol &&
 				containingSymbol.HasAttribute (RequiresUnreferencedCodeAttribute))
@@ -31,9 +35,29 @@ namespace ILLink.RoslynAnalyzer
 			operationContext.ReportDiagnostic (Diagnostic.Create (s_dynamicTypeInvocationRule,
 				operationContext.Operation.Syntax.GetLocation ()));
 		};
+		[System.Diagnostics.CodeAnalysis.SuppressMessage ("MicrosoftCodeAnalysisPerformance", "RS1008:Avoid storing per-compilation data into the fields of a diagnostic analyzer", Justification = "Temporarily stored as a local variable in a lambda, not as a field")]
+		static readonly Action<SymbolAnalysisContext> s_typeDerivesFromRucBase = symbolAnalysisContext => {
+			if (symbolAnalysisContext.Symbol is INamedTypeSymbol typeSymbol && !typeSymbol.HasAttribute (RequiresUnreferencedCodeAttribute)) {
+				if (typeSymbol.Name == "DerivedWithoutRequires" && typeSymbol.BaseType?.Name == "ClassWithRequires") {
+					;
+				}
+				if (typeSymbol.BaseType is INamedTypeSymbol baseType && baseType.HasAttribute(RequiresUnreferencedCodeAttribute)) {
+					if(baseType.TryGetAttribute (RequiresUnreferencedCodeAttribute, out var requiresUnreferencedCodeAttribute)) {
+						symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (s_typeDerivesFromRucClassRule,
+							typeSymbol.Locations[0],
+							typeSymbol.GetDisplayName (),
+							baseType.Locations[0],
+							baseType.GetDisplayName (),
+							GetUrlFromAttribute (requiresUnreferencedCodeAttribute)));
+					}
+				}
+			}
+			
+			
+		};
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-			ImmutableArray.Create (s_dynamicTypeInvocationRule, s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch);
+			ImmutableArray.Create (s_dynamicTypeInvocationRule, s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_typeDerivesFromRucClassRule);
 
 		private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
@@ -76,6 +100,10 @@ namespace ILLink.RoslynAnalyzer
 
 			return false;
 		}
+		private protected override ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions =>
+			ImmutableArray.Create <(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>((s_typeDerivesFromRucBase, new SymbolKind[] {SymbolKind.NamedType}));
+
+
 
 		private protected override ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions =>
 				ImmutableArray.Create ((s_dynamicTypeInvocation, new OperationKind[] { OperationKind.DynamicInvocation }));

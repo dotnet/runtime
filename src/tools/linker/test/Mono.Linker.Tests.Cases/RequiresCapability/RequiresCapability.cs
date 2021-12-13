@@ -1227,7 +1227,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static void MethodWithRequires () { }
 			}
 
-			[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithoutRequires", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithoutRequires", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--")]
 			private class DerivedWithoutRequires : ClassWithRequires
 			{
 				public static void StaticMethodInInheritedClass () { }

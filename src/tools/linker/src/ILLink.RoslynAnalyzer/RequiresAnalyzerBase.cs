@@ -29,6 +29,7 @@ namespace ILLink.RoslynAnalyzer
 		private protected virtual ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions { get; } = ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)>.Empty;
 
 		private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
+		private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
 
 		public override void Initialize (AnalysisContext context)
 		{
@@ -197,6 +198,9 @@ namespace ILLink.RoslynAnalyzer
 				foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
 					context.RegisterSyntaxNodeAction (extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
 
+				foreach (var extraSymbolAction in ExtraSymbolActions)
+					context.RegisterSymbolAction (extraSymbolAction.Action, extraSymbolAction.SymbolKind);
+
 				void CheckAttributeInstantiation (
 					SymbolAnalysisContext symbolAnalysisContext,
 					ISymbol symbol)
@@ -259,7 +263,6 @@ namespace ILLink.RoslynAnalyzer
 								ReportMismatchInAttributesDiagnostic (symbolAnalysisContext, implementation, member, isInterface: true);
 						}
 					}
-
 				}
 			});
 		}
