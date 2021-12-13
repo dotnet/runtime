@@ -2238,7 +2238,8 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         string GetNamespaces();
         string GetGenericTypeName();
-        bool ParametersFromBuiltInNamespaces {
+        bool ParametersFromBuiltInNamespaces
+        {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get;
         }
