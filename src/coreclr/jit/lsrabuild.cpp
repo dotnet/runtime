@@ -1483,7 +1483,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 {
     if ((tree != nullptr) && tree->IsCall())
     {
-        if ((tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
+        if (tree->AsCall()->IsNoReturn())
         {
             // No point in having vector save/restore if the call will not return.
             return;
