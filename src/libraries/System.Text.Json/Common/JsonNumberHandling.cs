@@ -29,6 +29,9 @@ namespace System.Text.Json.Serialization
 
         /// <summary>
         /// Numbers will be written as JSON strings (with quotes), not as JSON numbers.
+        /// <remarks>
+        /// You can do this, but you need to be aware that this will create potentially non-interoperable JSON.
+        /// </remarks>
         /// </summary>
         WriteAsString = 0x2,
 
@@ -39,9 +42,9 @@ namespace System.Text.Json.Serialization
         /// will be written as their corresponding JSON string representations.
         /// Strings that have escaped characters will be unescaped before reading.
         /// Leading or trailing trivia within the string token, including whitespace, is not allowed.
-        /// <remark>
+        /// <remarks>
         /// You can do this, but you need to be aware that this will create potentially non-interoperable JSON.
-        /// </remark>
+        /// </remarks>
         /// </summary>
         AllowNamedFloatingPointLiterals = 0x4
     }
