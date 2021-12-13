@@ -8701,7 +8701,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             assert(mflags & CORINFO_FLG_FINAL);
 
             /* It should have the GTF_CALL_NULLCHECK flag set. Reset it */
-            assert(call->AsCall()->NeedsNullCheck());
+            assert(call->gtFlags & GTF_CALL_NULLCHECK);
             call->gtFlags &= ~GTF_CALL_NULLCHECK;
         }
     }
@@ -9375,7 +9375,7 @@ DONE:
         {
             GenTree* callObj = call->AsCall()->gtCallThisArg->GetNode();
 
-            if ((call->AsCall()->IsVirtual() || call->AsCall()->NeedsNullCheck()) &&
+            if ((call->AsCall()->IsVirtual() || (call->gtFlags & GTF_CALL_NULLCHECK)) &&
                 impInlineIsGuaranteedThisDerefBeforeAnySideEffects(nullptr, call->AsCall()->gtCallArgs, callObj,
                                                                    impInlineInfo->inlArgInfo))
             {
