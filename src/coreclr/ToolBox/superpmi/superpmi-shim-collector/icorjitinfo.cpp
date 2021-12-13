@@ -19,12 +19,12 @@
 /**********************************************************************************/
 
 // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
-// CORINFO_FLG_JIT_INTRINSIC, except faster.
-bool interceptor_ICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+// CORINFO_FLG_INTRINSIC, except faster.
+bool interceptor_ICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
-    mc->cr->AddCall("isJitIntrinsic");
-    bool temp = original_ICorJitInfo->isJitIntrinsic(ftn);
-    mc->recIsJitIntrinsic(ftn, temp);
+    mc->cr->AddCall("isIntrinsic");
+    bool temp = original_ICorJitInfo->isIntrinsic(ftn);
+    mc->recIsIntrinsic(ftn, temp);
     return temp;
 }
 
@@ -249,17 +249,6 @@ void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pR
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
-}
-
-// If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
-// getIntrinsicID() returns the intrinsic ID.
-CorInfoIntrinsics interceptor_ICJI::getIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand /* OUT */
-                                                   )
-{
-    mc->cr->AddCall("getIntrinsicID");
-    CorInfoIntrinsics temp = original_ICorJitInfo->getIntrinsicID(method, pMustExpand);
-    mc->recGetIntrinsicID(method, pMustExpand, temp);
-    return temp;
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -959,6 +948,15 @@ unsigned interceptor_ICJI::getArrayRank(CORINFO_CLASS_HANDLE cls)
     mc->cr->AddCall("getArrayRank");
     unsigned result = original_ICorJitInfo->getArrayRank(cls);
     mc->recGetArrayRank(cls, result);
+    return result;
+}
+
+// Get the index of runtime provided array method
+CorInfoArrayIntrinsic interceptor_ICJI::getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)
+{
+    mc->cr->AddCall("getArrayIntrinsicID");
+    CorInfoArrayIntrinsic result = original_ICorJitInfo->getArrayIntrinsicID(ftn);
+    mc->recGetArrayIntrinsicID(ftn, result);
     return result;
 }
 

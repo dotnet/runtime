@@ -13,8 +13,8 @@
 #endif
 
 #include "pal.h"
-#include "rapidjson/document.h"
-#include "rapidjson/fwd.h"
+#include <external/rapidjson/document.h>
+#include <external/rapidjson/fwd.h>
 #include <vector>
 #include "bundle/info.h"
 

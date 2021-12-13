@@ -1097,18 +1097,18 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     break;
                 }
 
-                CORINFO_METHOD_HANDLE methodHnd      = nullptr;
-                bool                  isJitIntrinsic = false;
-                NamedIntrinsic        ni             = NI_Illegal;
+                CORINFO_METHOD_HANDLE methodHnd   = nullptr;
+                bool                  isIntrinsic = false;
+                NamedIntrinsic        ni          = NI_Illegal;
 
                 if (resolveTokens)
                 {
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
-                    methodHnd      = resolvedToken.hMethod;
-                    isJitIntrinsic = eeIsJitIntrinsic(methodHnd);
+                    methodHnd   = resolvedToken.hMethod;
+                    isIntrinsic = eeIsIntrinsic(methodHnd);
                 }
 
-                if (isJitIntrinsic)
+                if (isIntrinsic)
                 {
                     ni = lookupNamedIntrinsic(methodHnd);
 
@@ -1244,7 +1244,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
 
-                if (!isJitIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()))
+                if (!isIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()))
                 {
                     // Optimistically assume that "call(arg)" returns something arg-dependent.
                     // However, we don't know how many args it expects and its return type.

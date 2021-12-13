@@ -47,6 +47,9 @@ declare interface EmscriptenModule {
     preInit?: (() => any)[];
     preRun?: (() => any)[];
     postRun?: (() => any)[];
+    onAbort?: {
+        (error: any): void;
+    };
     onRuntimeInitialized?: () => any;
     instantiateWasm: (imports: any, successCallback: Function) => any;
 }
@@ -258,7 +261,7 @@ declare function unbox_mono_obj(mono_obj: MonoObject): any;
 declare function mono_array_to_js_array(mono_array: MonoArray): any[] | null;
 
 declare function mono_bind_static_method(fqn: string, signature?: ArgsMarshalString): Function;
-declare function mono_call_assembly_entry_point(assembly: string, args: any[], signature: ArgsMarshalString): any;
+declare function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: ArgsMarshalString): number;
 
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
@@ -282,6 +285,9 @@ declare function getI64(offset: _MemOffset): number;
 declare function getF32(offset: _MemOffset): number;
 declare function getF64(offset: _MemOffset): number;
 
+declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
+declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;
+
 declare const MONO: {
     mono_wasm_setenv: typeof mono_wasm_setenv;
     mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
@@ -293,6 +299,8 @@ declare const MONO: {
     mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
     mono_wasm_new_root: typeof mono_wasm_new_root;
     mono_wasm_release_roots: typeof mono_wasm_release_roots;
+    mono_run_main: typeof mono_run_main;
+    mono_run_main_and_exit: typeof mono_run_main_and_exit;
     mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
     mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
     config: MonoConfig | MonoConfigError;
@@ -342,7 +350,7 @@ interface DotnetPublicAPI {
     };
 }
 
-declare function createDotnetRuntime(moduleFactory: (api: DotnetPublicAPI) => DotnetModuleConfig): Promise<DotnetPublicAPI>;
+declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: DotnetPublicAPI) => DotnetModuleConfig)): Promise<DotnetPublicAPI>;
 declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 declare global {
     function getDotnetRuntime(runtimeId: number): DotnetPublicAPI | undefined;
