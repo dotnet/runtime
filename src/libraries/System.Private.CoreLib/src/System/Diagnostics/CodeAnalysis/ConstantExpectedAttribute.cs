@@ -13,11 +13,11 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed class ConstantExpectedAttribute : Attribute
     {
         /// <summary>
-        /// Indicates the minimum inclusive bound of the constant expected
+        /// Indicates the minimum bound of the expected constant, inclusive.
         /// </summary>
         public object? Min { get; set; }
         /// <summary>
-        /// Indicates the maximum inclusive bound of the constant expected
+        /// Indicates the maximum bound of the expected constant, inclusive.
         /// </summary>
         public object? Max { get; set; }
     }
