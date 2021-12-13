@@ -87,7 +87,6 @@ namespace System.IO
             set => CreationTimeCore = File.GetUtcDateTimeOffset(value);
         }
 
-
         public DateTime LastAccessTime
         {
             get => LastAccessTimeUtc.ToLocalTime();

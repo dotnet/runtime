@@ -10,44 +10,46 @@ namespace System.IO
     {
         private const int NanosecondsPerTick = 100;
 
-        // The last cached lstat information about the file
+        private const int InitializedExists = -2;    // entry exists.
+        private const int InitializedNotExists = -1; // no entry exists.
+        private const int Uninitialized = 0;         // uninitialized, '0' to make default(FileStatus) uninitialized.
+
+        // Tracks the initialization state.
+        // < 0 : initialized succesfully. Value is InitializedExists or InitializedNotExists.
+        //   0 : uninitialized.
+        // > 0 : initialized with error. Value is raw errno.
+        private int _initialized;
+
+        // The last cached lstat information about the file.
+        // Must only be used after calling EnsureCachesInitialized and checking FileExists is true.
         private Interop.Sys.FileStatus _fileCache;
 
-        // -1: if the file cache isn't initialized - Refresh should always change this value
-        //  0: if the file cache was initialized with no errors
-        // Positive number: the error code returned by the lstat call
-        private int _initializedFileCache;
-
-        // We track intent of creation to know whether or not we want to (1) create a
-        // DirectoryInfo around this status struct or (2) actually are part of a DirectoryInfo.
-        // Set to true during initialization when the DirectoryEntry's INodeType describes a directory
-        internal bool InitiallyDirectory { get; set; }
-
-        // Is a directory as of the last refresh
-        // Its value can come from either the main path or the symbolic link path
+        // Is a directory as of the last refresh.
+        // Its value can come from either the main path or the symbolic link target.
+        // Must only be used after calling EnsureCachesInitialized.
         private bool _isDirectory;
 
-        // Exists as of the last refresh
-        private bool _exists;
+        private bool FileExists => _initialized == InitializedExists;
 
-        private bool IsFileCacheInitialized => _initializedFileCache == 0;
-
-        // Check if the main path (without following symlinks) has the hidden attribute set
-        // Ideally, use this if Refresh has been successfully called at least once.
-        // But since it is also used for soft retrieval during FileSystemEntry initialization,
-        // we return false early if the cache has not been initialized
-        internal bool HasHiddenFlag => IsFileCacheInitialized &&
-            (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
-
-        // Checks if the main path (without following symlinks) has the read-only attribute set
-        // Ideally, use this if Refresh has been successfully called at least once.
-        // But since it is also used for soft retrieval during FileSystemEntry initialization,
-        // we return false early if the cache has not been initialized
-        internal bool HasReadOnlyFlag
+        // Check if the main path (without following symlinks) has the hidden attribute set.
+        private bool HasHiddenFlag
         {
             get
             {
-                if (!IsFileCacheInitialized)
+                Debug.Assert(_initialized != Uninitialized); // Use this after EnsureCachesInitialized has been called.
+
+                return FileExists && (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
+            }
+        }
+
+        // Checks if the main path (without following symlinks) has the read-only attribute set.
+        private bool HasReadOnlyFlag
+        {
+            get
+            {
+                Debug.Assert(_initialized != Uninitialized); // Use this after EnsureCachesInitialized has been called.
+
+                if (!FileExists)
                 {
                     return false;
                 }
@@ -78,6 +80,7 @@ namespace System.IO
 
 #if !TARGET_BROWSER
         // HasReadOnlyFlag cache.
+        // Must only be used after calling EnsureCachesInitialized.
         private int _isReadOnlyCache;
 
         private bool IsModeReadOnlyCore()
@@ -123,20 +126,20 @@ namespace System.IO
 #endif
 
         // Checks if the main path is a symbolic link
-        // Only call if Refresh has been successfully called at least once
         private bool HasSymbolicLinkFlag
         {
             get
             {
-                Debug.Assert(IsFileCacheInitialized);
-                return (_fileCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+                Debug.Assert(_initialized != Uninitialized); // Use this after EnsureCachesInitialized has been called.
+
+                return FileExists && (_fileCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
             }
         }
 
-        // Sets the cache initialization flags to -1, which means the caches are now uninitialized
+        // Sets the cache initialization flags to 0, which means the caches are now uninitialized
         internal void InvalidateCaches()
         {
-            _initializedFileCache = -1;
+            _initialized = Uninitialized;
         }
 
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -176,7 +179,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
 
-            if (!_exists)
+            if (!FileExists)
                 return (FileAttributes)(-1);
 
             FileAttributes attributes = default;
@@ -196,7 +199,7 @@ namespace System.IO
             return attributes != default ? attributes : FileAttributes.Normal;
         }
 
-        internal void SetAttributes(string path, FileAttributes attributes)
+        internal void SetAttributes(string path, FileAttributes attributes, bool asDirectory)
         {
             // Validate that only flags from the attribute are being provided.  This is an
             // approximation for the validation done by the Win32 function.
@@ -215,7 +218,7 @@ namespace System.IO
 
             EnsureCachesInitialized(path);
 
-            if (!_exists)
+            if (!FileExists)
                 FileSystemInfo.ThrowNotFound(path);
 
             if (Interop.Sys.CanSetHiddenFlag)
@@ -223,12 +226,12 @@ namespace System.IO
                 if ((attributes & FileAttributes.Hidden) != 0 && (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == 0)
                 {
                     // If Hidden flag is set and cached file status does not have the flag set then set it
-                    Interop.CheckIo(Interop.Sys.LChflags(path, (_fileCache.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
+                    Interop.CheckIo(Interop.Sys.LChflags(path, (_fileCache.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, asDirectory);
                 }
                 else if (HasHiddenFlag)
                 {
                     // If Hidden flag is not set and cached file status does have the flag set then remove it
-                    Interop.CheckIo(Interop.Sys.LChflags(path, (_fileCache.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
+                    Interop.CheckIo(Interop.Sys.LChflags(path, (_fileCache.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, asDirectory);
                 }
             }
 
@@ -249,22 +252,23 @@ namespace System.IO
             // Change the permissions on the file
             if (newMode != _fileCache.Mode)
             {
-                Interop.CheckIo(Interop.Sys.ChMod(path, newMode), path, InitiallyDirectory);
+                Interop.CheckIo(Interop.Sys.ChMod(path, newMode), path, asDirectory);
             }
 
-            _initializedFileCache = -1;
+            InvalidateCaches();
         }
 
-        internal bool GetExists(ReadOnlySpan<char> path)
+        internal bool GetExists(ReadOnlySpan<char> path, bool asDirectory)
         {
             EnsureCachesInitialized(path, continueOnError: true);
-            return _exists && InitiallyDirectory == _isDirectory;
+            return FileExists && asDirectory == _isDirectory;
         }
 
         internal DateTimeOffset GetCreationTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
-            if (!_exists)
+
+            if (!FileExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
 
             if ((_fileCache.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0)
@@ -281,29 +285,35 @@ namespace System.IO
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
-            if (!_exists)
+
+            if (!FileExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
+
             return UnixTimeToDateTimeOffset(_fileCache.ATime, _fileCache.ATimeNsec);
         }
 
-        internal void SetLastAccessTime(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: true);
+        internal void SetLastAccessTime(string path, DateTimeOffset time, bool asDirectory)
+            => SetAccessOrWriteTime(path, time, isAccessTime: true, asDirectory);
 
         internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
-            if (!_exists)
+
+            if (!FileExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
+
             return UnixTimeToDateTimeOffset(_fileCache.MTime, _fileCache.MTimeNsec);
         }
 
-        internal void SetLastWriteTime(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: false);
+        internal void SetLastWriteTime(string path, DateTimeOffset time, bool asDirectory)
+            => SetAccessOrWriteTime(path, time, isAccessTime: false, asDirectory);
 
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
-        private unsafe void SetAccessOrWriteTimeCore(string path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime)
+        private unsafe void SetAccessOrWriteTimeCore(string path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
         {
             // This api is used to set creation time on non OSX platforms, and as a fallback for OSX platforms.
             // The reason why we use it to set 'creation time' is the below comment:
@@ -320,6 +330,9 @@ namespace System.IO
             // force a refresh so that we have an up-to-date times for values not being overwritten
             InvalidateCaches();
             EnsureCachesInitialized(path);
+
+            if (!FileExists)
+                FileSystemInfo.ThrowNotFound(path);
 
             // we use utimes()/utimensat() to set the accessTime and writeTime
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
@@ -348,7 +361,7 @@ namespace System.IO
                 buf[1].TvNsec = nanoseconds;
             }
 #endif
-            Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
+            Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, asDirectory);
 
             // On OSX-like platforms, when the modification time is less than the creation time (including
             // when the modification time is already less than but access time is being set), the creation
@@ -368,7 +381,7 @@ namespace System.IO
                 Interop.Error error = SetCreationTimeCore(path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
                 if (error != Interop.Error.SUCCESS && error != Interop.Error.ENOTSUP)
                 {
-                    Interop.CheckIo(error, path, InitiallyDirectory);
+                    Interop.CheckIo(error, path, asDirectory);
                 }
             }
         }
@@ -379,24 +392,40 @@ namespace System.IO
             // On Unix, it returns the length of the path stored in the link.
 
             EnsureCachesInitialized(path, continueOnError);
-            return IsFileCacheInitialized ? _fileCache.Size : 0;
+            return FileExists ? _fileCache.Size : 0;
         }
 
         // Tries to refresh the lstat cache (_fileCache).
         // This method should not throw. Instead, we store the results, and we will throw when the user attempts to access any of the properties when there was a failure
         internal void RefreshCaches(ReadOnlySpan<char> path)
         {
-            _isDirectory = false;
             path = Path.TrimEndingDirectorySeparator(path);
 
-            // Retrieve the file cache (lstat) to get the details on the object, without following symlinks.
-            // If it is a symlink, then subsequently get details on the target of the symlink.
-            // We only report failure if the initial lstat fails, as a broken symlink should still report info on exists, attributes, etc.
-            if (!TryRefreshFileCache(path))
+            _isDirectory = false;
+#if !TARGET_BROWSER
+            _isReadOnlyCache = -1;
+#endif
+
+            int rv = Interop.Sys.LStat(path, out _fileCache);
+            if (rv < 0)
             {
-                _exists = false;
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                if (errorInfo.Error == Interop.Error.ENOENT || // A component of the path does not exist, or path is an empty string
+                    errorInfo.Error == Interop.Error.ENOTDIR)  // A component of the path prefix of path is not a directory
+                {
+                    _initialized = InitializedNotExists;
+                }
+                else
+                {
+                    Debug.Assert(errorInfo.RawErrno > 0); // Expect a positive integer
+                    _initialized = errorInfo.RawErrno; // Initialized with error.
+                }
+
                 return;
             }
+
+            _initialized = InitializedExists;
 
             // Do an initial check in case the main path is pointing to a directory
             _isDirectory = CacheHasDirectoryFlag(_fileCache);
@@ -409,20 +438,15 @@ namespace System.IO
                 _isDirectory = CacheHasDirectoryFlag(target);
             }
 
-            _exists = true;
-
-            // Checks if the specified cache has the directory attribute set
-            // Only call if Refresh has been successfully called at least once, and you're
-            // certain the passed-in cache was successfully retrieved
             static bool CacheHasDirectoryFlag(Interop.Sys.FileStatus cache) =>
                 (cache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
         }
 
-        // Checks if the file cache is set to -1 and refreshes it's value.
+        // Checks if the file cache is uninitialized and refreshes it's value.
         // If it failed, and continueOnError is set to true, this method will throw.
         internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            if (_initializedFileCache == -1)
+            if (_initialized == Uninitialized)
             {
                 RefreshCaches(path);
             }
@@ -437,9 +461,9 @@ namespace System.IO
         private void ThrowOnCacheInitializationError(ReadOnlySpan<char> path)
         {
             // Lstat should always be initialized by Refresh
-            if (_initializedFileCache != 0)
+            int errno = _initialized;
+            if (errno > 0)
             {
-                int errno = _initializedFileCache;
                 InvalidateCaches();
                 throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
             }
@@ -450,42 +474,6 @@ namespace System.IO
             const long TicksPerMillisecond = 10000;
             const long TicksPerSecond = TicksPerMillisecond * 1000;
             return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
-        }
-
-        private bool TryRefreshFileCache(ReadOnlySpan<char> path)
-        {
-#if !TARGET_BROWSER
-            _isReadOnlyCache = -1;
-#endif
-            return VerifyStatCall(Interop.Sys.LStat(path, out _fileCache), out _initializedFileCache);
-        }
-
-        // Receives the return value of a stat or lstat call.
-        // If the call is unsuccessful, sets the initialized parameter to a positive number representing the last error info.
-        // If the call is successful, sets the initialized parameter to zero.
-        // The method returns true if the initialized parameter is set to zero, false otherwise.
-        private bool VerifyStatCall(int returnValue, out int initialized)
-        {
-            initialized = 0;
-
-            // Both stat and lstat return -1 on error, 0 on success
-            if (returnValue < 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-
-                // This should never set the error if the file can't be found.
-                // (see the Windows refresh passing returnErrorOnNotFound: false).
-                if (errorInfo.Error != Interop.Error.ENOENT && // A component of the path does not exist, or path is an empty string
-                    errorInfo.Error != Interop.Error.ENOTDIR)  // A component of the path prefix of path is not a directory
-                {
-                    // Expect a positive integer
-                    initialized = errorInfo.RawErrno;
-                    Debug.Assert(initialized > 0);
-                }
-                return false;
-            }
-
-            return true;
         }
     }
 }

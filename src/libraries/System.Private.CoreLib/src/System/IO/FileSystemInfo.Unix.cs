@@ -7,18 +7,18 @@ namespace System.IO
 {
     public partial class FileSystemInfo
     {
+        private readonly bool _asDirectory;
         private FileStatus _fileStatus;
 
         protected FileSystemInfo()
         {
-            _fileStatus.InitiallyDirectory = this is DirectoryInfo;
-            _fileStatus.InvalidateCaches();
+            _asDirectory = this is DirectoryInfo;
         }
 
-        internal static FileSystemInfo Create(string fullPath, string fileName, ref FileStatus fileStatus)
+        internal static FileSystemInfo Create(string fullPath, string fileName, bool asDirectory, ref FileStatus fileStatus)
         {
-            FileSystemInfo info = fileStatus.InitiallyDirectory
-                ? (FileSystemInfo)new DirectoryInfo(fullPath, fileName: fileName, isNormalized: true)
+            FileSystemInfo info = asDirectory
+                ? new DirectoryInfo(fullPath, fileName: fileName, isNormalized: true)
                 : new FileInfo(fullPath, fileName: fileName, isNormalized: true);
 
             Debug.Assert(!PathInternal.IsPartiallyQualified(fullPath), $"'{fullPath}' should be fully qualified when constructed from directory enumeration");
@@ -38,27 +38,27 @@ namespace System.IO
         public FileAttributes Attributes
         {
             get => _fileStatus.GetAttributes(FullPath, Name);
-            set => _fileStatus.SetAttributes(FullPath, value);
+            set => _fileStatus.SetAttributes(FullPath, value, _asDirectory);
         }
 
-        internal bool ExistsCore => _fileStatus.GetExists(FullPath);
+        internal bool ExistsCore => _fileStatus.GetExists(FullPath, _asDirectory);
 
         internal DateTimeOffset CreationTimeCore
         {
             get => _fileStatus.GetCreationTime(FullPath);
-            set => _fileStatus.SetCreationTime(FullPath, value);
+            set => _fileStatus.SetCreationTime(FullPath, value, _asDirectory);
         }
 
         internal DateTimeOffset LastAccessTimeCore
         {
             get => _fileStatus.GetLastAccessTime(FullPath);
-            set => _fileStatus.SetLastAccessTime(FullPath, value);
+            set => _fileStatus.SetLastAccessTime(FullPath, value, _asDirectory);
         }
 
         internal DateTimeOffset LastWriteTimeCore
         {
             get => _fileStatus.GetLastWriteTime(FullPath);
-            set => _fileStatus.SetLastWriteTime(FullPath, value);
+            set => _fileStatus.SetLastWriteTime(FullPath, value, _asDirectory);
         }
 
         internal long LengthCore => _fileStatus.GetLength(FullPath);
