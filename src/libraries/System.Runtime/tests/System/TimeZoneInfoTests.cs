@@ -86,7 +86,7 @@ namespace System.Tests
 
         //  Due to ICU size limitations, full daylight/standard names are not included for the browser.
         //  Name abbreviations, if available, are used instead
-        public static IEnumerable<object []> Platform_TimeZoneNamesTestData()
+        public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
         {
             if (PlatformDetection.IsBrowser || PlatformDetection.IsiOS || PlatformDetection.IstvOS)
                 return new TheoryData<TimeZoneInfo, string, string, string>
@@ -189,7 +189,7 @@ namespace System.Tests
                 TimeZoneInfo yukon = TimeZoneInfo.FindSystemTimeZoneById("Yukon Standard Time");
 
                 // First, ensure we have the updated data
-                TimeZoneInfo.AdjustmentRule [] rules = yukon.GetAdjustmentRules();
+                TimeZoneInfo.AdjustmentRule[] rules = yukon.GetAdjustmentRules();
                 if (rules.Length <= 0 || rules[rules.Length - 1].DateStart.Year != 2021 || rules[rules.Length - 1].DateEnd.Year != 9999)
                 {
                     return;
@@ -213,7 +213,7 @@ namespace System.Tests
             {
                 // Some Windows versions don't carry the complete TZ data. Ignore the tests on such versions.
             }
-       }
+        }
 
         [Fact]
         public static void RussianTimeZone()
@@ -2192,7 +2192,7 @@ namespace System.Tests
             {
                 // if the time is ambiguous this will not round trip the original value because this ambiguous time can be mapped into
                 // 2 UTC times. usually we return the value with the DST delta added to it.
-                back = back.AddTicks(- london.GetAdjustmentRules()[0].DaylightDelta.Ticks);
+                back = back.AddTicks(-london.GetAdjustmentRules()[0].DaylightDelta.Ticks);
             }
 
             Assert.Equal(utc, back);
@@ -2224,7 +2224,7 @@ namespace System.Tests
             VerifyCustomTimeZoneException<ArgumentException>("", new TimeSpan(0), null, null);                      // empty string Id
             VerifyCustomTimeZoneException<ArgumentException>("mytimezone", new TimeSpan(0, 0, 55), null, null);     // offset not minutes
             VerifyCustomTimeZoneException<ArgumentException>("mytimezone", new TimeSpan(14, 1, 0), null, null);     // offset too big
-            VerifyCustomTimeZoneException<ArgumentException>("mytimezone", - new TimeSpan(14, 1, 0), null, null);   // offset too small
+            VerifyCustomTimeZoneException<ArgumentException>("mytimezone", -new TimeSpan(14, 1, 0), null, null);   // offset too small
         }
 
         [Fact]
@@ -2341,7 +2341,7 @@ namespace System.Tests
         };
 
         // On Android GMT, GMT+0, and GMT-0 are values
-        private static readonly string[] s_GMTAliases = new [] {
+        private static readonly string[] s_GMTAliases = new[] {
             "GMT",
             "GMT0",
             "GMT+0",
@@ -2472,7 +2472,7 @@ namespace System.Tests
             }
         }
 
-        private static byte [] timeZoneFileContents = new byte[]
+        private static byte[] timeZoneFileContents = new byte[]
         {
             0x54, 0x5A, 0x69, 0x66, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -2510,14 +2510,14 @@ namespace System.Tests
                 fs.WriteByte(0x0A);
                 foreach (char c in posixRule)
                 {
-                    fs.WriteByte((byte) c);
+                    fs.WriteByte((byte)c);
                 }
                 fs.WriteByte(0x0A);
             }
 
             try
             {
-                ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+                ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
                 psi.Environment.Add("TZ", zoneFilePath);
 
                 RemoteExecutor.Invoke((day, month, succeed) =>
@@ -2526,7 +2526,7 @@ namespace System.Tests
                     int d = int.Parse(day);
                     int m = int.Parse(month);
 
-                    TimeZoneInfo.AdjustmentRule [] rules = TimeZoneInfo.Local.GetAdjustmentRules();
+                    TimeZoneInfo.AdjustmentRule[] rules = TimeZoneInfo.Local.GetAdjustmentRules();
 
                     if (expectedToSucceed)
                     {
@@ -2538,7 +2538,7 @@ namespace System.Tests
                     {
                         Assert.Equal(0, rules.Length);
                     }
-                }, dayNumber.ToString(), monthNumber.ToString(), shouldSucceed.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+                }, dayNumber.ToString(), monthNumber.ToString(), shouldSucceed.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
             }
             finally
             {
@@ -2551,7 +2551,7 @@ namespace System.Tests
         {
             string hostTZId = TimeZoneInfo.Local.Id;
 
-            ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+            ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", PlatformDetection.IsInvariantGlobalization ? "0" : "1");
 
             RemoteExecutor.Invoke((tzId, hostIsRunningInInvariantMode) =>
@@ -2567,7 +2567,7 @@ namespace System.Tests
 
                 Assert.Equal(tzId, TimeZoneInfo.Local.Id);
 
-            }, hostTZId, PlatformDetection.IsInvariantGlobalization.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+            }, hostTZId, PlatformDetection.IsInvariantGlobalization.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
         [Fact]
@@ -2607,7 +2607,7 @@ namespace System.Tests
                     TimeSpan ts = TimeSpan.Parse(offset);
                     if (PlatformDetection.IsWindows &&
                         tzi.BaseUtcOffset != ts &&
-                        (tzi.Id.Contains("Morocco")  || tzi.Id.Contains("Volgograd")))
+                        (tzi.Id.Contains("Morocco") || tzi.Id.Contains("Volgograd")))
                     {
                         // Windows data can report display name with UTC+01:00 offset which is not matching the actual BaseUtcOffset.
                         // We special case this in the test to avoid the test failures like:
@@ -2662,8 +2662,8 @@ namespace System.Tests
                 TimeZoneInfo tzi1 = TimeZoneInfo.FindSystemTimeZoneById(ianaId);
                 TimeZoneInfo tzi2 = TimeZoneInfo.FindSystemTimeZoneById(windowsId);
 
-                Assert.Equal(tzi1.BaseUtcOffset,  tzi2.BaseUtcOffset);
-                Assert.NotEqual(tzi1.Id,  tzi2.Id);
+                Assert.Equal(tzi1.BaseUtcOffset, tzi2.BaseUtcOffset);
+                Assert.NotEqual(tzi1.Id, tzi2.Id);
             }
             else
             {
@@ -3175,7 +3175,7 @@ namespace System.Tests
                 try
                 {
                     var handle = GCHandle.FromIntPtr(lParam);
-                    var list = (List<CultureInfo>) handle.Target;
+                    var list = (List<CultureInfo>)handle.Target;
                     list!.Add(CultureInfo.GetCultureInfo(cultureName));
                     return 1;
                 }
