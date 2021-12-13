@@ -150,7 +150,7 @@
   <data name="RequiresAssemblyFilesAttributeMismatchMessage" xml:space="preserve">
     <value>{0}. 'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
-	<data name="RequiresAssemblyFilesAttributeMismatchTitle" xml:space="preserve">
+  <data name="RequiresAssemblyFilesAttributeMismatchTitle" xml:space="preserve">
     <value>'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
   <data name="BaseRequiresMismatchMessage" xml:space="preserve">
@@ -191,5 +191,9 @@
   </data>
   <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
     <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
+  </data>
+  <data name="DerivedClassRequiresUnreferencedCodeAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}: Type '{0}' derives from '{1}' which has 'RequiresUnreferencedCodeAttribute'.  --{2}--.</value>
+    <comment>IL2109 for RequiresUnreferenedCode only</comment>
   </data>
 </root>

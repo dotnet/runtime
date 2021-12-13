@@ -1227,7 +1227,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static void MethodWithRequires () { }
 			}
 
-			[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithoutRequires", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--")]
+			[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithoutRequires", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2109", "RequiresOnClass.DerivedWithoutRequires", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+
 			private class DerivedWithoutRequires : ClassWithRequires
 			{
 				public static void StaticMethodInInheritedClass () { }
@@ -1400,6 +1402,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				// A nested class is not considered a static method nor constructor therefore RequiresUnreferencedCode doesnt apply
 				// and this warning is not suppressed
 				[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithRequires2/DerivedNestedClass", "--ClassWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2109", "RequiresOnClass.DerivedWithRequires2.DerivedNestedClass", "--ClassWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+
 				public class DerivedNestedClass : ClassWithRequires
 				{
 					public static void NestedStaticMethod () { }
@@ -1630,6 +1634,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor/DerivedWithoutRequires", "ReflectionAccessOnCtor.BaseWithRequires", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor.DerivedWithoutRequires", "ReflectionAccessOnCtor.BaseWithRequires", ProducedBy = ProducedBy.Analyzer)]
 				class DerivedWithoutRequires : BaseWithRequires
 				{
 					[ExpectedWarning ("IL2026", "--BaseWithRequires--", ProducedBy = ProducedBy.Trimmer)] // The body has direct call to the base.ctor()
@@ -1704,6 +1709,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				[ExpectedWarning ("IL2109", "ReflectionAccessOnField/DerivedWithoutRequires", "ReflectionAccessOnField.WithRequires", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2109", "ReflectionAccessOnField.DerivedWithoutRequires", "ReflectionAccessOnField.WithRequires", ProducedBy = ProducedBy.Analyzer)]
 				class DerivedWithoutRequires : WithRequires
 				{
 					public static int DerivedStaticField;
@@ -1828,6 +1834,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				[ExpectedWarning ("IL2109", "ReflectionAccessOnProperties/DerivedWithoutRequires", "ReflectionAccessOnProperties.WithRequires", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2109", "ReflectionAccessOnProperties.DerivedWithoutRequires", "ReflectionAccessOnProperties.WithRequires", ProducedBy = ProducedBy.Analyzer)]
 				class DerivedWithoutRequires : WithRequires
 				{
 					public static int DerivedStaticProperty { get; set; }

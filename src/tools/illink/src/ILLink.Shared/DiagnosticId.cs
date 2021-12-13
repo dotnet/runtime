@@ -8,7 +8,7 @@
 		CorrectnessOfCOMCannotBeGuaranteed = 2050,
 		MakeGenericType = 2055,
 		MakeGenericMethod = 2060,
-		DerivedFromBaseWithRequiresUnreferencedCode = 2109,
+		DerivedClassRequiresUnreferencedCodeAttributeMismatch = 2109,
 		RequiresUnreferencedCodeOnStaticConstructor = 2116,
 
 		// Single-file diagnostic ids.
