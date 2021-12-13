@@ -22,7 +22,6 @@
       _SetWasmBuildNativeDefaults
     </_BeforeWasmBuildAppDependsOn>
 
-    <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
   </PropertyGroup>
 
@@ -63,7 +62,7 @@
     <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != ''">
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
-      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(ExeSuffix)'))" />
     </ItemGroup>
 
     <ItemGroup>
@@ -405,7 +404,7 @@
     </ItemGroup>
 
     <Message Text="Optimizing dotnet.wasm ..." Importance="High" />
-    <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command='wasm-opt$(ExeSuffix) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
 
   <Target Name="_CompleteWasmBuildNative">

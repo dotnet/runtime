@@ -14,29 +14,21 @@
   <PropertyGroup>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">false</MonoForceInterpreter>
-    <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExt>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
-    <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExt>
-    <LibPrefix Condition="'$(TargetsWindows)' != 'true'">lib</LibPrefix>
-    <SharedLibExt Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">.dylib</SharedLibExt>
-    <SharedLibExt Condition="'$(TargetsWindows)' == 'true'">.dll</SharedLibExt>
-    <SharedLibExt Condition="'$(SharedLibExt)' == ''">.so</SharedLibExt>
-    <StaticLibExt Condition="'$(TargetsWindows)' == 'true'">.lib</StaticLibExt>
-    <StaticLibExt Condition="'$(StaticLibExt)' == ''">.a</StaticLibExt>
     <EscapedQuoteW Condition="'$(OS)' == 'Windows_NT'">\&quot;</EscapedQuoteW>
     <PythonCmd Condition="'$(OS)' != 'Windows_NT'">python3</PythonCmd>
     <PythonCmd Condition="'$(OS)' == 'Windows_NT'">python</PythonCmd>
     <CoreClrLibName>coreclr</CoreClrLibName>
-    <CoreClrFileName>$(LibPrefix)$(CoreClrLibName)$(SharedLibExt)</CoreClrFileName>
+    <CoreClrFileName>$(LibPrefix)$(CoreClrLibName)$(LibSuffix)</CoreClrFileName>
     <MonoLibName>monosgen-2.0</MonoLibName>
     <MonoSharedLibName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'">$(MonoLibName)</MonoSharedLibName>
     <MonoSharedLibName Condition="'$(MonoSharedLibName)' == ''">$(CoreClrLibName)</MonoSharedLibName>
-    <MonoSharedLibFileName>$(LibPrefix)$(MonoSharedLibName)$(SharedLibExt)</MonoSharedLibFileName>
-    <MonoStaticLibFileName>$(LibPrefix)$(MonoLibName)$(StaticLibExt)</MonoStaticLibFileName>
+    <MonoSharedLibFileName>$(LibPrefix)$(MonoSharedLibName)$(LibSuffix)</MonoSharedLibFileName>
+    <MonoStaticLibFileName>$(LibPrefix)$(MonoLibName)$(StaticLibSuffix)</MonoStaticLibFileName>
     <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">$(MonoStaticLibFileName)</MonoFileName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(MonoSharedLibFileName)</MonoFileName>
-    <MonoAotCrossFileName>mono-aot-cross$(ExeExt)</MonoAotCrossFileName>
+    <MonoAotCrossFileName>mono-aot-cross$(ExeSuffix)</MonoAotCrossFileName>
     <MonoAotCrossPdbFileName>mono-aot-cross.pdb</MonoAotCrossPdbFileName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
@@ -532,7 +524,7 @@
     </PropertyGroup>
     <ItemGroup>
       <FilesToStrip Include="$(_MonoRuntimeFilePath)" />
-      <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt)" />
+      <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(LibSuffix)" />
       <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\Mono*framework\**\Mono*" Exclude="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\Mono*framework\**\*.dwarf" />
     </ItemGroup>
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ($([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux')))" Text="Stripping debug symbols from %(FilesToStrip.Identity)" Importance="High"/>
@@ -760,10 +752,10 @@
 
     <!-- Copy Mono runtime files to artifacts directory -->
     <ItemGroup>
-      <_MonoRuntimeComponentsStaticFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(StaticLibExt)" Condition="Exists($(_MonoRuntimeFilePath))" />
-      <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt)" Condition="Exists($(_MonoRuntimeFilePath))" />
-      <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt).dwarf" Condition="Exists('$(_MonoRuntimeFilePath).dwarf')" />
-      <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt).dbg" Condition="Exists('$(_MonoRuntimeFilePath).dbg')" />
+      <_MonoRuntimeComponentsStaticFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(StaticLibSuffix)" Condition="Exists($(_MonoRuntimeFilePath))" />
+      <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(LibSuffix)" Condition="Exists($(_MonoRuntimeFilePath))" />
+      <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(LibSuffix).dwarf" Condition="Exists('$(_MonoRuntimeFilePath).dwarf')" />
+      <_MonoRuntimeComponentsSharedFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(LibSuffix).dbg" Condition="Exists('$(_MonoRuntimeFilePath).dbg')" />
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)" Condition="Exists($(_MonoRuntimeFilePath))">
         <Destination>$(RuntimeBinDir)$(MonoFileName)</Destination>
       </_MonoRuntimeArtifacts>
@@ -789,17 +781,17 @@
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
         <Destination>$(RuntimeBinDir)cross\$(PackageRID)\$(MonoAotCrossPdbFileName)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\llc$(ExeExt)">
-        <Destination>$(RuntimeBinDir)\llc$(ExeExt)</Destination>
+      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\llc$(ExeSuffix)">
+        <Destination>$(RuntimeBinDir)\llc$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\opt$(ExeExt)">
-        <Destination>$(RuntimeBinDir)\opt$(ExeExt)</Destination>
+      <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\opt$(ExeSuffix)">
+        <Destination>$(RuntimeBinDir)\opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoAOTLLVMDir)\bin\llc$(ExeExt)">
-        <Destination>$(RuntimeBinDir)cross\$(PackageRID)\llc$(ExeExt)</Destination>
+      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoAOTLLVMDir)\bin\llc$(ExeSuffix)">
+        <Destination>$(RuntimeBinDir)cross\$(PackageRID)\llc$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoAOTLLVMDir)\bin\opt$(ExeExt)">
-        <Destination>$(RuntimeBinDir)cross\$(PackageRID)\opt$(ExeExt)</Destination>
+      <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoAOTLLVMDir)\bin\opt$(ExeSuffix)">
+        <Destination>$(RuntimeBinDir)cross\$(PackageRID)\opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
       <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.release.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
@@ -851,11 +843,11 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(SharedLibExt)">
-        <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(SharedLibExt)</Destination>
+      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)dbgshim$(LibSuffix)">
+        <Destination>$(RuntimeBinDir)$(LibPrefix)dbgshim$(LibSuffix)</Destination>
       </_MonoICorDebugArtifacts>
-      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(SharedLibExt)">
-        <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(SharedLibExt)</Destination>
+      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibSuffix)">
+        <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibSuffix)</Destination>
       </_MonoICorDebugArtifacts>
 
       <_IcuArtifacts  Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
