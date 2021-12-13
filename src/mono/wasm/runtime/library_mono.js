@@ -1503,8 +1503,12 @@ var MonoSupportLib = {
 	mono_set_timeout: function (timeout, id) {
 
 		if (typeof globalThis.setTimeout === 'function') {
-			globalThis.setTimeout (function () {
-				MONO.mono_wasm_set_timeout_exec (id);
+			if (MONO.lastScheduleTimeoutId) {
+				globalThis.clearTimeout(MONO.lastScheduleTimeoutId);
+				MONO.lastScheduleTimeoutId = undefined;
+			}
+			MONO.lastScheduleTimeoutId = globalThis.setTimeout(function mono_wasm_set_timeout_exec () {
+				MONO.mono_wasm_set_timeout_exec(id);
 			}, timeout);
 		} else {
 			++MONO.pump_count;
