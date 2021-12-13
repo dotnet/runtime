@@ -3280,7 +3280,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             else
             {
                 // issue a full memory barrier before a volatile StInd
-                instGen_MemoryBarrier();
+                instGen_MemoryBarrier(BARRIER_STORE_ONLY);
             }
         }
 
@@ -9396,30 +9396,43 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     emitter::instrDesc* lastMemBarrier = GetEmitter()->emitLastMemBarrier;
     if ((lastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
     {
-        BarrierKind prevBarrierKind = BARRIER_FULL;
+        bool wasPrevBarrierLdOrStOnly = false;
         if (lastMemBarrier->idSmallCns() == INS_BARRIER_ISHLD)
         {
-            prevBarrierKind = BARRIER_LOAD_ONLY;
+            wasPrevBarrierLdOrStOnly = true;
+        }
+        else if (lastMemBarrier->idSmallCns() == INS_BARRIER_ISHST)
+        {
+            wasPrevBarrierLdOrStOnly = true;
         }
         else
         {
-            // Currently we only emit two kinds of barriers on arm64:
+            // Currently we only emit three kinds of barriers on arm64:
             //  ISH   - Full (inner shareable domain)
             //  ISHLD - LoadOnly (inner shareable domain)
+            //  ISHST - StoreOnly (inner shareable domain)
             assert(lastMemBarrier->idSmallCns() == INS_BARRIER_ISH);
         }
 
-        if ((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL))
+        if (wasPrevBarrierLdOrStOnly && (barrierKind == BARRIER_FULL))
         {
-            // Previous memory barrier: load-only, current: full
+            // Previous memory barrier: load-only or store-only, current: full
             // Upgrade the previous one to full
-            assert((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL));
             lastMemBarrier->idSmallCns(INS_BARRIER_ISH);
         }
     }
     else
     {
-        GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
+        insBarrier ins = INS_BARRIER_ISH;
+        if (barrierKind == BARRIER_LOAD_ONLY)
+        {
+            ins = INS_BARRIER_ISHLD;
+        }
+        else if (barrierKind == BARRIER_STORE_ONLY)
+        {
+            ins = INS_BARRIER_ISHST;
+        }
+        GetEmitter()->emitIns_BARR(INS_dmb, ins);
     }
 }
 
