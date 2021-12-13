@@ -39,8 +39,9 @@ namespace System.Text.Json.Serialization
         /// will be written as their corresponding JSON string representations.
         /// Strings that have escaped characters will be unescaped before reading.
         /// Leading or trailing trivia within the string token, including whitespace, is not allowed.
-        ///
-        /// You can do this, but you need to be aware that this will create potentially non-interoperable JSON (see https://docs.microsoft.com/dotnet/api/system.text.json.serialization.jsonnumberhandling).
+        /// <remark>
+        /// You can do this, but you need to be aware that this will create potentially non-interoperable JSON.
+        /// </remark>
         /// </summary>
         AllowNamedFloatingPointLiterals = 0x4
     }
