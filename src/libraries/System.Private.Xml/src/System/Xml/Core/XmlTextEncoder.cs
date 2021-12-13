@@ -4,7 +4,6 @@
 using System.IO;
 using System.Text;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Xml
 {
@@ -525,8 +524,12 @@ namespace System.Xml
         private static int WriteCharToSpan(Span<char> destination, int ch)
         {
             Debug.Assert(destination.Length >= 12);
-            bool result = destination.TryWrite($"&#x{(uint)ch:X};", out int charsWritten);
-            Debug.Assert(result);
+            destination[0] = '&';
+            destination[1] = '#';
+            destination[2] = 'x';
+            ((uint)ch).TryFormat(destination.Slice(3), out int charsWritten, "X");
+            Debug.Assert(charsWritten != 0);
+            destination[charsWritten + 3] = ';';
             return charsWritten;
         }
 
