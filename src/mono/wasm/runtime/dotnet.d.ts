@@ -114,21 +114,6 @@ declare class WasmRoot<T extends ManagedPointer | NativePointer> {
     toString(): string;
 }
 
-declare const enum ArgsMarshal {
-    Int32 = "i",
-    Int32Enum = "j",
-    Int64 = "l",
-    Int64Enum = "k",
-    Float32 = "f",
-    Float64 = "d",
-    String = "s",
-    Char = "s",
-    JSObj = "o",
-    MONOObj = "m"
-}
-declare type _ExtraArgsMarshalOperators = "!" | "";
-declare type ArgsMarshalString = "" | `${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
-
 interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject";
 }
@@ -260,8 +245,8 @@ declare function js_typed_array_to_array(js_obj: any): MonoArray;
 declare function unbox_mono_obj(mono_obj: MonoObject): any;
 declare function mono_array_to_js_array(mono_array: MonoArray): any[] | null;
 
-declare function mono_bind_static_method(fqn: string, signature?: ArgsMarshalString): Function;
-declare function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: ArgsMarshalString): number;
+declare function mono_bind_static_method(fqn: string, signature?: string): Function;
+declare function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string): number;
 
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
