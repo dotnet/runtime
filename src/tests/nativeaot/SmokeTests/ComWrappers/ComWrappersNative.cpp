@@ -12,7 +12,7 @@
 #define DLL_EXPORT extern "C" __attribute((visibility("default")))
 #endif
 
-#if !defined(__stdcall)
+#ifndef TARGET_WINDOWS
 #define __stdcall
 #endif
 
