@@ -75,6 +75,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsLargeExponent))]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteBigExponentPrivatePkcs1()
         {
             ReadWriteBase64PrivatePkcs1(
@@ -108,6 +109,7 @@ CE5b4bVi7nbp+SyaseWurZ0pGmM35N6FveZ6DXK05Vrc8gf3paUiXhU=",
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteDiminishedDPPrivatePkcs1()
         {
             ReadWriteBase64PrivatePkcs1(
@@ -174,6 +176,7 @@ t4Ru7LOzqUULk+Y3+gSNHX34/+Jw+VCq5hHlolNkpw+thqvba8lMvzMCAwEAAQ==",
         }
 
         [ConditionalFact(nameof(SupportsLargeExponent))]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -189,6 +192,7 @@ RwIFAgAABEE=",
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteSubjectPublicKeyInfo_DiminishedDPKey()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -199,6 +203,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==",
         }
 
         [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteRsa16384SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -469,6 +474,7 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadEncryptedDiminishedDP()
         {
             // PBES1: PbeWithMD5AndDESCBC
@@ -494,6 +500,7 @@ YMSYHxE=";
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadEncryptedRsa1032()
         {
             // PBES2: PBKDF2 + aes192
@@ -790,6 +797,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadEncryptedDiminishedDP_EmptyPassword()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
@@ -863,6 +871,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void NoFuzzyRSAPublicKey()
         {
             using (RSA key = RSAFactory.Create())
@@ -992,6 +1001,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void NoFuzzyPkcs8()
         {
             using (RSA key = RSAFactory.Create())
@@ -1036,6 +1046,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void NoFuzzyEncryptedPkcs8()
         {
             using (RSA key = RSAFactory.Create())
@@ -1073,6 +1084,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void NoPrivKeyFromPublicOnly()
         {
             using (RSA key = RSAFactory.Create())
@@ -1113,6 +1125,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
+        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void BadPbeParameters()
         {
             using (RSA key = RSAFactory.Create())
