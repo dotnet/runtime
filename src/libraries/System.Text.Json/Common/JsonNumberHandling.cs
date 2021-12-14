@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Numbers will be written as JSON strings (with quotes), not as JSON numbers.
         /// <remarks>
-        /// You can do this, but you need to be aware that this will create potentially non-interoperable JSON.
+        /// Mentioned values are not defined by the specification. Using this setting may potentially produce JSON which may be non-parsable in other JSON implementations.
         /// </remarks>
         /// </summary>
         WriteAsString = 0x2,
