@@ -15723,8 +15723,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 //    Check if the current `sxtw` instruction is redundant and can be omitted.
 //
 // Arguments:
-//    ins  - The current instruction, only sxtw is handled atm
-//    size - Operand size of current instruction, only 8BYTE is handled atm
+//    ins  - The current instruction
+//    size - Operand size of current instruction
 //    dst  - The current destination
 //    src  - The current source
 //
@@ -15747,15 +15747,7 @@ bool emitter::IsRedundantSxtw(instruction ins, emitAttr size, regNumber dst, reg
         // Check if the previous instruction has a side-effect to do sxtw's job
         if (emitLastIns->idOpSize() == EA_4BYTE && emitLastIns->idInsIs(INS_ldrsw, INS_ldrsh, INS_ldrsb))
         {
-            if (emitLastIns->idInsIs(INS_ldr))
-            {
-                emitLastIns->idIns(INS_ldrsw);
-                JITDUMP("\n -- suppressing sxtw and upgrading previous ldr to ldrsw\n");
-            }
-            else
-            {
-                JITDUMP("\n -- suppressing sxtw because ldrs already cleared upper 4 bytes\n");
-            }
+            JITDUMP("\n -- suppressing sxtw because ldrs already cleared upper 4 bytes\n");
             emitLastIns->idOpSize(size);
             return true;
         }
