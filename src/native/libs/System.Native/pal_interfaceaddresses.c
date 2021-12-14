@@ -55,7 +55,13 @@
 #endif
 #endif
 
-#if HAVE_GETIFADDRS
+#if !HAVE_GETIFADDRS
+#include <dlfcn.h>
+#if HAVE_GNU_LIBNAMES_H
+#include <gnu/lib-names.h>
+#endif
+#endif
+
 // Convert mask to prefix length e.g. 255.255.255.0 -> 24
 // mask parameter is pointer to buffer where address starts and length is
 // buffer length e.g. 4 for IPv4 and 16 for IPv6.
@@ -95,6 +101,66 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 
     return len;
 }
+
+#if !HAVE_GETIFADDRS
+/* This structure is exactly the same as struct ifaddrs defined in ifaddrs.h but since the header
+ * might not be available (e.g., in bionics used in Android) we need to mirror it here so that we can
+ * dynamically load the getifaddrs function and use it.
+ */
+struct ifaddrs {
+	struct ifaddrs *ifa_next;
+	char *ifa_name;
+	unsigned int ifa_flags;
+	struct sockaddr *ifa_addr;
+	struct sockaddr *ifa_netmask;
+	union {
+		struct sockaddr *ifu_broadaddr;
+		struct sockaddr *ifu_dstaddr;
+	} ifa_ifu;
+	void *ifa_data;
+};
+#endif
+
+typedef int (*getifaddrs_fptr)(struct ifaddrs**);
+typedef void (*freeifaddrs_fptr)(struct ifaddrs*);
+
+#if HAVE_GETIFADDRS
+static getifaddrs_fptr getifaddrs_impl = getifaddrs;
+static freeifaddrs_fptr freeifaddrs_impl = freeifaddrs;
+#else
+// we will try to load the getifaddrs and freeifaddrs functions dynamically (this is necessary on Android)
+static bool loading_getifaddrs_already_attempted = false;
+static getifaddrs_fptr getifaddrs_impl = NULL;
+static freeifaddrs_fptr freeifaddrs_impl = NULL;
+
+static bool ensure_getifaddrs_impl_available() {
+    // there is no reason to call this function multiple times even if it fails
+    if (!loading_getifaddrs_already_attempted)
+    {
+        loading_getifaddrs_already_attempted = true;
+
+#if defined(__APPLE__)
+        const char *libc_path = "/usr/lib/libc.dylib";
+#elif defined(__FreeBSD__)
+        const char *libc_path = "libc.so.7";
+#elif defined(LIBC_SO)
+        const char *libc_path = LIBC_SO;
+#else
+        const char *libc_path = "libc.so";
+#endif
+
+        void *libc = dlopen(libc_path, RTLD_NOW);
+        if (libc)
+        {
+            getifaddrs_impl = (getifaddrs_fptr)dlsym(libc, "getifaddrs");
+            freeifaddrs_impl = (freeifaddrs_fptr)dlsym(libc, "freeifaddrs");
+
+            dlclose(libc);
+        }
+    }
+
+    return getifaddrs_impl != NULL && freeifaddrs != NULL;
+}
 #endif
 
 int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
@@ -102,9 +168,16 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
-#if HAVE_GETIFADDRS
+#if !HAVE_GETIFADDRS
+    if (!ensure_getifaddrs_impl_available())
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
     struct ifaddrs* headAddr;
-    if (getifaddrs(&headAddr) == -1)
+    if ((*getifaddrs_impl)(&headAddr) == -1)
     {
         return -1;
     }
@@ -122,7 +195,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
         char* result = if_indextoname(interfaceIndex, actualName);
         if (result == NULL)
         {
-            freeifaddrs(headAddr);
+            (*freeifaddrs_impl)(headAddr);
             return -1;
         }
 
@@ -232,22 +305,21 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 #endif
     }
 
-    freeifaddrs(headAddr);
+    (*freeifaddrs_impl)(headAddr);
+
     return 0;
-#else
-    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
-    (void)context;
-    (void)onIpv4Found;
-    (void)onIpv6Found;
-    (void)onLinkLayerFound;
-    errno = ENOTSUP;
-    return -1;
-#endif
 }
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
-#if HAVE_GETIFADDRS
+#if !HAVE_GETIFADDRS
+    if (!ensure_getifaddrs_impl_available())
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;
@@ -260,7 +332,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
     NetworkInterfaceInfo *nii;
 
-    if (getifaddrs(&head) == -1)
+    if ((*getifaddrs_impl)(&head) == -1)
     {
         assert(errno != 0);
         return -1;
@@ -446,22 +518,13 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     *addressCount = ip4count + ip6count;
 
     // Cleanup.
-    freeifaddrs(head);
+    (*freeifaddrs_impl)(head);
     if (socketfd != -1)
     {
         close(socketfd);
     }
 
     return 0;
-#else
-    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
-    (void)interfaceCount;
-    (void)interfaceList;
-    (void)addressCount;
-    (void)addressList;
-    errno = ENOTSUP;
-    return -1;
-#endif
 }
 
 #if HAVE_RT_MSGHDR && defined(CTL_NET)
