@@ -342,6 +342,7 @@ namespace System.Text.RegularExpressions.Tests
         /// This test is to make sure that the generated IgnoreCaseRelation table for NonBacktracking does not need to be updated.
         /// It would need to be updated/regenerated if this test fails.
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60753")]
         [OuterLoop("May take several seconds due to large number of cultures tested")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
@@ -403,6 +404,7 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>
         /// This test currently only works correctly in NonBacktracking mode.
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60753")]
         [OuterLoop("May take tens of seconds")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Theory]

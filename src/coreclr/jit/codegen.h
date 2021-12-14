@@ -1254,6 +1254,7 @@ protected:
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForMadd(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
+    void genCodeForAddEx(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)

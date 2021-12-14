@@ -2034,9 +2034,9 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     var_types      baseType    = node->GetSimdBaseType();
     emitAttr       attr        = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
-    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // 213 form
-    instruction    _132form    = (instruction)(ins - 1);
-    instruction    _231form    = (instruction)(ins + 1);
+    instruction    _213form    = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // 213 form
+    instruction    _132form    = (instruction)(_213form - 1);
+    instruction    _231form    = (instruction)(_213form + 1);
     GenTree*       op1         = node->Op(1);
     GenTree*       op2         = node->Op(2);
     GenTree*       op3         = node->Op(3);
@@ -2058,49 +2058,37 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
     assert(!copiesUpperBits || !op1->isContained());
 
+    // We need to keep this in sync with lsraxarch.cpp
+    // Ideally we'd actually swap the operands in lsra and simplify codegen
+    // but its a bit more complicated to do so for many operands as well
+    // as being complicated to tell codegen how to pick the right instruction
+
+    instruction ins = INS_invalid;
+
     if (op1->isContained() || op1->isUsedFromSpillTemp())
     {
+        // targetReg == op3NodeReg or targetReg == ?
+        // op3 = ([op1] * op2) + op3
+        // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+        ins = _231form;
+        std::swap(emitOp1, emitOp3);
+
         if (targetReg == op2NodeReg)
         {
-            std::swap(emitOp1, emitOp2);
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
             ins = _132form;
-            std::swap(emitOp2, emitOp3);
-        }
-        else
-        {
-            // targetReg == op3NodeReg or targetReg == ?
-            // op3 = ([op1] * op2) + op3
-            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
-            ins = _231form;
-            std::swap(emitOp1, emitOp3);
+            std::swap(emitOp1, emitOp2);
         }
     }
-    else if (op2->isContained() || op2->isUsedFromSpillTemp())
-    {
-        if (!copiesUpperBits && (targetReg == op3NodeReg))
-        {
-            // op3 = (op1 * [op2]) + op3
-            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
-            ins = _231form;
-            std::swap(emitOp1, emitOp3);
-        }
-        else
-        {
-            // targetReg == op1NodeReg or targetReg == ?
-            // op1 = (op1 * [op2]) + op3
-            // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-            ins = _132form;
-        }
-        std::swap(emitOp2, emitOp3);
-    }
-    else
+    else if (op3->isContained() || op3->isUsedFromSpillTemp())
     {
         // targetReg could be op1NodeReg, op2NodeReg, or not equal to any op
         // op1 = (op1 * op2) + [op3] or op2 = (op1 * op2) + [op3]
         // ? = (op1 * op2) + [op3] or ? = (op1 * op2) + op3
         // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
+        ins = _213form;
+
         if (!copiesUpperBits && (targetReg == op2NodeReg))
         {
             // op2 = (op1 * op2) + [op3]
@@ -2108,7 +2096,44 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             std::swap(emitOp1, emitOp2);
         }
     }
+    else if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        // targetReg == op1NodeReg or targetReg == ?
+        // op1 = (op1 * [op2]) + op3
+        // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
+        ins = _132form;
+        std::swap(emitOp2, emitOp3);
 
+        if (!copiesUpperBits && (targetReg == op3NodeReg))
+        {
+            // op3 = (op1 * [op2]) + op3
+            // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
+            ins = _231form;
+            std::swap(emitOp1, emitOp2);
+        }
+    }
+    else
+    {
+        // When we don't have a contained operand we still want to
+        // preference based on the target register if possible.
+
+        if (targetReg == op2NodeReg)
+        {
+            ins = _213form;
+            std::swap(emitOp1, emitOp2);
+        }
+        else if (targetReg == op3NodeReg)
+        {
+            ins = _231form;
+            std::swap(emitOp1, emitOp3);
+        }
+        else
+        {
+            ins = _213form;
+        }
+    }
+
+    assert(ins != INS_invalid);
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3);
     genProduceReg(node);
 }

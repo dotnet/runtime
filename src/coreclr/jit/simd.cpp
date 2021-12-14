@@ -1904,7 +1904,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
     }
 
     // Exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
-    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) == 0)
+    if ((methodFlags & CORINFO_FLG_INTRINSIC) == 0)
     {
         return nullptr;
     }

@@ -20,13 +20,15 @@
                           ('@(Reference)' != ''
                             and @(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices')))
                           or ('@(ProjectReference)' != ''
-                            and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))))" />
+                            and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)')))
+                          or ('$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'
+                            and '$(DisableImplicitAssemblyReferences)' == 'false'))" />
     <EnabledGenerators Include="DllImportGenerator"
                        Condition="'$(EnableDllImportGenerator)' == ''
                         and '$(IsFrameworkSupportFacade)' != 'true'
                         and '$(IsSourceProject)' == 'true'
                         and '$(MSBuildProjectExtension)' == '.csproj'
-                        and ('$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFrameworkIdentifier)' == '.NETFramework')" />
+                        and ('$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFrameworkIdentifier)' == '.NETFramework' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '$(NetCoreAppCurrentVersion)'))))" />
   </ItemGroup>
 
   <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
