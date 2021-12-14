@@ -1107,6 +1107,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				[ExpectedWarning ("IL2046", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()")]
 				[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3051", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()")]
 				public override void VirtualMethod ()
 				{
 				}
@@ -1118,6 +1119,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public override string VirtualPropertyAnnotationInAccesor {
 					[ExpectedWarning ("IL2046", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
 					[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL3051", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()")]
 					get { return name; }
 					[RequiresAssemblyFiles ("Message")]
 					[RequiresUnreferencedCode ("Message")]
