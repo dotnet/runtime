@@ -2048,14 +2048,50 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' ">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case1/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case11/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case12/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case14/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case15/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case3/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case4/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case5/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case6/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case7/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case8/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case9/**">
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**">
-            <Issue>https://github.com/dotnet/runtime/issues/62567</Issue>
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**">
-            <Issue>https://github.com/dotnet/runtime/issues/62567</Issue>
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**">
-            <Issue>https://github.com/dotnet/runtime/issues/62567</Issue>
+            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/57361</Issue>
