@@ -131,7 +131,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module method016.exe
 // MVID: {05F812CC-B829-4F5E-8DBB-C106ABA247EF}
 .imagebase 0x00400000
 .subsystem 0x00000003

@@ -14,7 +14,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module format.exe
 .namespace JitTest
 {
   .class public auto ansi sealed PlatformID
