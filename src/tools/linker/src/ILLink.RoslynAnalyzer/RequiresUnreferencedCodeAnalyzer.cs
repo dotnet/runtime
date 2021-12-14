@@ -37,18 +37,16 @@ namespace ILLink.RoslynAnalyzer
 		private Action<SymbolAnalysisContext> typeDerivesFromRucBase {
 			get {
 				return symbolAnalysisContext => {
-					if (symbolAnalysisContext.Symbol is INamedTypeSymbol typeSymbol && !typeSymbol.HasAttribute (RequiresUnreferencedCodeAttribute)) {
-						if (typeSymbol.BaseType is INamedTypeSymbol baseType && baseType.HasAttribute (RequiresUnreferencedCodeAttribute)) {
-							if (baseType.TryGetAttribute (RequiresUnreferencedCodeAttribute, out var requiresUnreferencedCodeAttribute)) {
-								var diag = Diagnostic.Create (s_typeDerivesFromRucClassRule,
-									typeSymbol.Locations[0],
-									typeSymbol,
-									baseType.GetDisplayName (),
-									GetMessageFromAttribute (requiresUnreferencedCodeAttribute),
-									GetUrlFromAttribute (requiresUnreferencedCodeAttribute));
-								symbolAnalysisContext.ReportDiagnostic (diag);
-							}
-						}
+					if (symbolAnalysisContext.Symbol is INamedTypeSymbol typeSymbol && !typeSymbol.HasAttribute (RequiresUnreferencedCodeAttribute)
+						&& typeSymbol.BaseType is INamedTypeSymbol baseType && baseType.HasAttribute (RequiresUnreferencedCodeAttribute)
+						&& baseType.TryGetAttribute (RequiresUnreferencedCodeAttribute, out var requiresUnreferencedCodeAttribute)) {
+						var diag = Diagnostic.Create (s_typeDerivesFromRucClassRule,
+							typeSymbol.Locations[0],
+							typeSymbol,
+							baseType.GetDisplayName (),
+							GetMessageFromAttribute (requiresUnreferencedCodeAttribute),
+							GetUrlFromAttribute (requiresUnreferencedCodeAttribute));
+						symbolAnalysisContext.ReportDiagnostic (diag);
 					}
 				};
 			}
