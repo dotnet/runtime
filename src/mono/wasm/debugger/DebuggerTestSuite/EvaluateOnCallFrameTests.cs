@@ -855,16 +855,18 @@ namespace DebuggerTests
                    ("\"15\"", TString("15")));
            });
         
-        [Fact]
-        public async Task EvaluateBrowsableFieldsNone() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 5, "Evaluate",
+        [Theory]
+        [InlineData("TestEvaluateFieldsNone", "testFieldsNone")]
+        [InlineData("TestEvaluatePropertiesNone", "testPropertiesNone")]
+        public async Task EvaluateBrowsableNone(string className, string localVarName) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 10, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                var (testNone, _) = await EvaluateOnCallFrame(id, "testNone");
-                await CheckValue(testNone, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateNone"), nameof(testNone));
+                var (testNone, _) = await EvaluateOnCallFrame(id, localVarName);
+                await CheckValue(testNone, TObject($"DebuggerTests.EvaluateBrowsableProperties.{className}"), nameof(testNone));
                 var testNoneProps = await GetProperties(testNone["objectId"]?.Value<string>());
                 await CheckProps(testNoneProps, new
                 {
@@ -874,32 +876,36 @@ namespace DebuggerTests
                 }, "testNoneProps#1");
            });
 
-        [Fact]
-        public async Task EvaluateBrowsableFieldsNever() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 5, "Evaluate",
+        [Theory]
+        [InlineData("TestEvaluateFieldsNever", "testFieldsNever")]
+        [InlineData("TestEvaluatePropertiesNever", "testPropertiesNever")]
+        public async Task EvaluateBrowsableNever(string className, string localVarName) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 10, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                var (testNever, _) = await EvaluateOnCallFrame(id, "testNever");
-                await CheckValue(testNever, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateNever"), nameof(testNever));
+                var (testNever, _) = await EvaluateOnCallFrame(id, localVarName);
+                await CheckValue(testNever, TObject($"DebuggerTests.EvaluateBrowsableProperties.{className}"), nameof(testNever));
                 var testNeverProps = await GetProperties(testNever["objectId"]?.Value<string>());
                 await CheckProps(testNeverProps, new
                 {
                 }, "testNeverProps#1");
            });
 
-        [Fact]
-        public async Task EvaluateBrowsableFieldsCollapsed() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 5, "Evaluate",
+        [Theory]
+        [InlineData("TestEvaluateFieldsCollapsed", "testFieldsCollapsed")]
+        [InlineData("TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed")]
+        public async Task EvaluateBrowsableCollapsed(string className, string localVarName) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 10, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                var (testCollapsed, _) = await EvaluateOnCallFrame(id, "testCollapsed");
-                await CheckValue(testCollapsed, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateCollapsed"), nameof(testCollapsed));
+                var (testCollapsed, _) = await EvaluateOnCallFrame(id, localVarName);
+                await CheckValue(testCollapsed, TObject($"DebuggerTests.EvaluateBrowsableProperties.{className}"), nameof(testCollapsed));
                 var testCollapsedProps = await GetProperties(testCollapsed["objectId"]?.Value<string>());
                 await CheckProps(testCollapsedProps, new
                 {
@@ -909,21 +915,24 @@ namespace DebuggerTests
                 }, "testCollapsedProps#1");
            });
         
-        [Fact]
-        public async Task EvaluateBrowsableFieldsRootHidden() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 5, "Evaluate",
+        //PROPS FAILING
+        [Theory]
+        [InlineData("TestEvaluateFieldsRootHidden", "testFieldsRootHidden")]
+        [InlineData("TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden")]
+        public async Task EvaluateBrowsableRootHidden(string className, string localVarName) => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateBrowsableProperties", "Evaluate", 10, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateBrowsableProperties:Evaluate'); 1 })",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                var (testRootHidden, _) = await EvaluateOnCallFrame(id, "testRootHidden");
-                await CheckValue(testRootHidden, TObject("DebuggerTests.EvaluateBrowsableProperties.TestEvaluateRootHidden"), nameof(testRootHidden));
+                var (testRootHidden, _) = await EvaluateOnCallFrame(id, localVarName);
+                await CheckValue(testRootHidden, TObject($"DebuggerTests.EvaluateBrowsableProperties.{className}"), nameof(testRootHidden));
                 var testRootHiddenProps = await GetProperties(testRootHidden["objectId"]?.Value<string>());
-                var (refList, _) = await EvaluateOnCallFrame(id, "testNone.list");
+                var (refList, _) = await EvaluateOnCallFrame(id, "testFieldsNone.list");
                 var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
                 var refListElementsProp = await GetProperties(refListProp[0]["value"]["objectId"]?.Value<string>());
-                var (refArray, _) = await EvaluateOnCallFrame(id, "testNone.array");
+                var (refArray, _) = await EvaluateOnCallFrame(id, "testFieldsNone.array");
                 var refArrayProp = await GetProperties(refArray["objectId"]?.Value<string>());
 
                 //in Console App names are in []

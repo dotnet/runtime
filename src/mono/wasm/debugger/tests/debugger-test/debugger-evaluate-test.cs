@@ -498,14 +498,28 @@ namespace DebuggerTests
 
     public static class EvaluateBrowsableProperties
     {
-        public class TestEvaluateNone
+        public class TestEvaluateFieldsNone
         {
             public List<int> list = new List<int>() { 1, 2 };
             public int[] array = new int[] { 11, 22 };
             public string text = "text";
         }
 
-        public class TestEvaluateNever
+        public class TestEvaluatePropertiesNone
+        {
+            public List<int> list { get; set; }
+            public int[] array { get; set; }
+            public string text { get; set; }
+            
+            public TestEvaluatePropertiesNone()
+            {
+                list = new List<int>() { 1, 2 };
+                array = new int[] { 11, 22 };
+                text = "text";
+            }
+        }
+
+        public class TestEvaluateFieldsNever
         {
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
             public List<int> listNever = new List<int>() { 1, 2 };
@@ -517,7 +531,26 @@ namespace DebuggerTests
             public string textNever = "textNever";
         }
 
-        public class TestEvaluateCollapsed
+        public class TestEvaluatePropertiesNever
+        {
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public List<int> listNever { get; set; }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public int[] arrayNever { get; set; }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public string textNever { get; set; }
+
+            public TestEvaluatePropertiesNever()
+            {
+                listNever = new List<int>() { 1, 2 };
+                arrayNever = new int[] { 11, 22 };
+                textNever = "textNever";
+            }
+        }
+
+        public class TestEvaluateFieldsCollapsed
         {
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
             public List<int> listCollapsed = new List<int>() { 1, 2 };
@@ -529,7 +562,26 @@ namespace DebuggerTests
             public string textCollapsed = "textCollapsed";
         }
 
-        public class TestEvaluateRootHidden
+        public class TestEvaluatePropertiesCollapsed
+        {
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public List<int> listCollapsed { get; set; }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public int[] arrayCollapsed { get; set; }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public string textCollapsed { get; set; }
+
+            public TestEvaluatePropertiesCollapsed()
+            {
+                listCollapsed = new List<int>() { 1, 2 };
+                arrayCollapsed = new int[] { 11, 22 };
+                textCollapsed = "textCollapsed";
+            }
+        }
+
+        public class TestEvaluateFieldsRootHidden
         {
             [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
             public List<int> listRootHidden = new List<int>() { 1, 2 };
@@ -541,12 +593,36 @@ namespace DebuggerTests
             public string textRootHidden = "textRootHidden";
         }
 
+        public class TestEvaluatePropertiesRootHidden
+        {
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public List<int> listRootHidden { get; set; }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public int[] arrayRootHidden { get; set; }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public string textRootHidden { get; set; }
+
+            public TestEvaluatePropertiesRootHidden()
+            {
+                listRootHidden = new List<int>() { 1, 2 };
+                arrayRootHidden = new int[] { 11, 22 };
+                textRootHidden = "textRootHidden";
+            }
+        }
+
         public static void Evaluate()
         {
-            var testNone = new TestEvaluateNone();
-            var testNever = new TestEvaluateNever();
-            var testCollapsed = new TestEvaluateCollapsed();
-            var testRootHidden = new TestEvaluateRootHidden();
+            var testFieldsNone = new TestEvaluateFieldsNone();
+            var testFieldsNever = new TestEvaluateFieldsNever();
+            var testFieldsCollapsed = new TestEvaluateFieldsCollapsed();
+            var testFieldsRootHidden = new TestEvaluateFieldsRootHidden();
+
+            var testPropertiesNone = new TestEvaluatePropertiesNone();
+            var testPropertiesNever = new TestEvaluatePropertiesNever();
+            var testPropertiesCollapsed = new TestEvaluatePropertiesCollapsed();
+            var testPropertiesRootHidden = new TestEvaluatePropertiesRootHidden();
         }
     }
 }
