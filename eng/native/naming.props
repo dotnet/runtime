@@ -1,19 +1,19 @@
 <Project>
   <PropertyGroup>
     <StaticLibPrefix>lib</StaticLibPrefix>
+    <ExeSuffix Condition="'$(HostOS)' == 'windows'">.exe</ExeSuffix>
   </PropertyGroup>
 
   <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
   <Choose>
     <When Condition="$(PackageRID.StartsWith('win'))">
       <PropertyGroup>
-        <ExeSuffix>.exe</ExeSuffix>
         <LibSuffix>.dll</LibSuffix>
         <StaticLibSuffix>.lib</StaticLibSuffix>
         <SymbolsSuffix>.pdb</SymbolsSuffix>
       </PropertyGroup>
     </When>
-    <When Condition="$(PackageRID.StartsWith('osx')) or $(PackageRID.StartsWith('mac')) or $(PackageRID.StartsWith('ios')) or $(PackageRID.StartsWith('tvos'))">
+    <When Condition="$(PackageRID.StartsWith('osx')) or $(PackageRID.StartsWith('maccatalyst')) or $(PackageRID.StartsWith('ios')) or $(PackageRID.StartsWith('tvos'))">
       <PropertyGroup>
         <LibPrefix>lib</LibPrefix>
         <LibSuffix>.dylib</LibSuffix>
