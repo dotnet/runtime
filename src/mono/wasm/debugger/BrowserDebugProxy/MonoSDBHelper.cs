@@ -2309,10 +2309,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JArray> GetObjectValues(int objectId, GetObjectCommandOptions getCommandType, CancellationToken token)
         {
-            var typeIdsIncludingParent = await GetTypeIdFromObject(objectId, true, token);
+            var typeIdsIncludingParents = await GetTypeIdFromObject(objectId, true, token);
             if (!getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute))
             {
-                var debuggerProxy = await GetValuesFromDebuggerProxyAttribute(objectId, typeIdsIncludingParent[0], token);
+                var debuggerProxy = await GetValuesFromDebuggerProxyAttribute(objectId, typeIdsIncludingParents[0], token);
                 if (debuggerProxy != null)
                     return debuggerProxy;
             }
@@ -2333,9 +2333,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 objectValues.Add(obj);
                 return objectValues;
             }
-            for (int i = 0; i < typeIdsIncludingParent.Count; i++)
+            for (int i = 0; i < typeIdsIncludingParents.Count; i++)
             {
-                int typeId = typeIdsIncludingParent[i];
+                int typeId = typeIdsIncludingParents[i];
                 // 0th id is for the object itself, and then its parents
                 bool isOwn = i == 0;
 
@@ -2373,10 +2373,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
             {
                 List<List<FieldTypeClass>> allFields = new List<List<FieldTypeClass>>();
-                for (int i = 0; i < typeIdsIncludingParent.Count; i++)
+                for (int i = 0; i < typeIdsIncludingParents.Count; i++)
                 {
-                    var fields = await GetTypeFields(typeIdsIncludingParent[i], token);
-                    var (regularFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParent[i], token);
+                    var fields = await GetTypeFields(typeIdsIncludingParents[i], token);
+                    var (regularFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParents[i], token);
                     allFields.Add(regularFields);
                     allFields.Add(rootHiddenFields);
                 }
