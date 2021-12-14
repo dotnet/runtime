@@ -6,7 +6,7 @@
     <MajorVersion>6</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>1</PatchVersion>
-    <SdkBandVersion>6.0.100</SdkBandVersion>
+    <SdkBandVersion>6.0.200</SdkBandVersion>
     <PreReleaseVersionLabel>mauipre</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
     <!-- Set assembly version to align with major and minor version,
