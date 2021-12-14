@@ -157,7 +157,7 @@ usage_list+=("-allTargets: Build managed tests for all target platforms (includi
 
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
-usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so that mono-specific issues are honored.")
+usage_list+=("-mono: Build the tests for the Mono runtime honoring mono-specific issues.")
 
 usage_list+=("-log: base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step.")
 
@@ -245,6 +245,10 @@ handle_arguments_local() {
             ;;
 
         excludemonofailures|-excludemonofailures)
+            __Mono=1
+            ;;
+
+        mono|-mono)
             __Mono=1
             ;;
 
