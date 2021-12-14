@@ -1516,7 +1516,8 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // What it means that for this specific st(s)fld we can avoid emitting a heavy write-barrier
         // if we inline the candidate
         multiplier += 1.5 + m_ConstArgSetsFld;
-        JITDUMP("\nInline candidate has const arg that sets %d fields.  Multiplier increased to %g.", m_ConstArgSetsFld, multiplier);
+        JITDUMP("\nInline candidate has const arg that sets %d fields.  Multiplier increased to %g.", m_ConstArgSetsFld,
+                multiplier);
     }
 
     if ((m_FoldableBox > 0) && m_NonGenericCallsGeneric)
