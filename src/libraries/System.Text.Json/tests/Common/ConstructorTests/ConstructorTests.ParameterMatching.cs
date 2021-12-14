@@ -1385,5 +1385,57 @@ namespace System.Text.Json.Serialization.Tests
             public long A;
             public StructWithExplicitParameterlessCtor() => A = 42;
         }
+        
+        public async Task TestClassWithEmptyStringDefaultCtorParam()
+        {
+            ClassWithDefaultCtorParams obj = new ClassWithDefaultCtorParams("value", "val", 'v', 1, 2, 3, 4, 5, 6);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+
+            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithDefaultCtorParams>(json);
+            Assert.Equal("value", obj.Prop1);
+            Assert.Equal("val", obj.Prop2);
+            Assert.Equal('v', obj.Prop3);
+            Assert.Equal(1, obj.Prop4);
+            Assert.Equal(2, obj.Prop5);
+            Assert.Equal(3, obj.Prop6);
+            Assert.Equal(4, obj.Prop7);
+            Assert.Equal(5, obj.Prop8);
+            Assert.Equal(6, obj.Prop9);
+        }
+
+        public class ClassWithDefaultCtorParams
+        {
+            public string Prop1 { get; }
+            public string Prop2 { get; }
+            public char Prop3 { get; }
+            public double Prop4 { get; }
+            public double Prop5 { get; }
+            public double Prop6 { get; }
+            public float Prop7 { get; }
+            public float Prop8 { get; }
+            public float Prop9 { get; }
+
+            public ClassWithDefaultCtorParams(
+                string prop1 = "abc",
+                string prop2 = "",
+                char prop3 = 'a',
+                double prop4 = double.NegativeInfinity,
+                double prop5 = double.PositiveInfinity,
+                double prop6 = double.NaN,
+                float prop7 = float.NegativeInfinity,
+                float prop8 = float.PositiveInfinity,
+                float prop9 = float.NaN)
+            {
+                Prop1 = prop1;
+                Prop2 = prop2;
+                Prop3 = prop3;
+                Prop4 = prop4;
+                Prop5 = prop5;
+                Prop6 = prop6;
+                Prop7 = prop7;
+                Prop8 = prop8;
+                Prop9 = prop9;
+            }
+        }
     }
 }

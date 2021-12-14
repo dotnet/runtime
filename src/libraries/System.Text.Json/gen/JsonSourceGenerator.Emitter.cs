@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Reflection;
@@ -1326,9 +1327,32 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
             {
                 case null:
                     return $"default({objectTypeAsStr})";
-                case bool boolVal:
-                    return ToCSharpKeyword(boolVal);
+                case bool @bool:
+                    return ToCSharpKeyword(@bool);
+                case string @string:
+                    return @$"""{@string}""";
+                case char @char:
+                    return @$"'{@char}'";
+                case double.NegativeInfinity:
+                    return "double.NegativeInfinity";
+                case double.PositiveInfinity:
+                    return "double.PositiveInfinity";
+                case double.NaN:
+                    return "double.NaN";
+                case float.NegativeInfinity:
+                    return "float.NegativeInfinity";
+                case float.PositiveInfinity:
+                    return "float.PositiveInfinity";
+                case float.NaN:
+                    return "float.NaN";
+                case double @double:
+                    return @double.ToString(JsonConstants.DoubleFormatString, CultureInfo.InvariantCulture);
+                case float @float:
+                    return @float.ToString(JsonConstants.SingleFormatString, CultureInfo.InvariantCulture);
+                case decimal @decimal:
+                    return @decimal.ToString(CultureInfo.InvariantCulture);
                 default:
+                    // Assume this is a number.
                     return value!.ToString();
             }
         }
