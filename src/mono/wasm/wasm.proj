@@ -140,7 +140,7 @@
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones;InstallRollup;BuildWithRollup">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
@@ -240,9 +240,9 @@
           SkipUnchangedFiles="true" />
   </Target>
 
-  <Target Name="InstallRollup"
+  <Target Name="InstallNpmPackages"
           Inputs="$(MonoProjectRoot)wasm/runtime/package.json"
-          Outputs="$(MonoProjectRoot)wasm/runtime/node_modules/.package-lock.json"
+          Outputs="$(MonoProjectRoot)wasm/runtime/node_modules/.npm-stamp"
           >
     <!-- install typescript and rollup -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm ci" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
@@ -250,7 +250,7 @@
     <!-- npm install is faster on dev machine as it doesn't wipe node_modules folder -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
-    <Touch Files="$(MonoProjectRoot)wasm/runtime/node_modules/.package-lock.json" />
+    <Touch Files="$(MonoProjectRoot)wasm/runtime/node_modules/.npm-stamp" AlwaysCreate="true" />
   </Target>
 
 
@@ -264,7 +264,7 @@
 
   <Target Name="BuildWithRollup"
           Inputs="@(_RollupInputs)"
-          Outputs="$(NativeBinDir)dotnet.d.ts.sha256"
+          Outputs="$(NativeBinDir).rollup-stamp"
           >
     <!-- code style check -->
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
@@ -272,6 +272,6 @@
     <!-- compile typescript -->
     <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
-    <Touch Files="$(NativeBinDir)dotnet.d.ts.sha256" />
+    <Touch Files="$(NativeBinDir).rollup-stamp" AlwaysCreate="true" />
   </Target>
 </Project>
