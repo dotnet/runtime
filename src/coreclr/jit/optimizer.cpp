@@ -7249,14 +7249,44 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
         }
         if (loopHasProperEntryBlockPreds)
         {
-            JITDUMP("   converting existing header " FMT_BB " into pre-header\n", loop.lpHead->bbNum);
-            loop.lpFlags |= LPFLG_HAS_PREHEAD;
-            assert((loop.lpHead->bbFlags & BBF_LOOP_PREHEADER) == 0); // It isn't already a loop pre-header
-            loop.lpHead->bbFlags |= BBF_LOOP_PREHEADER;
-            INDEBUG(loop.lpValidatePreHeader());
-            INDEBUG(fgDebugCheckLoopTable());
-            return;
+            // Does this existing region have the same EH region index that we will use when we create the pre-header?
+            // If not, we want to create a new pre-header with the expected region.
+            bool headHasCorrectEHRegion = false;
+            if ((top->bbFlags & BBF_TRY_BEG) != 0)
+            {
+                assert(top->hasTryIndex());
+                unsigned newTryIndex     = ehTrueEnclosingTryIndexIL(top->getTryIndex());
+                unsigned compareTryIndex = head->hasTryIndex() ? head->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+                headHasCorrectEHRegion   = newTryIndex == compareTryIndex;
+            }
+            else
+            {
+                headHasCorrectEHRegion = BasicBlock::sameTryRegion(head, top);
+            }
+
+            if (headHasCorrectEHRegion)
+            {
+                JITDUMP("   converting existing header " FMT_BB " into pre-header\n", head->bbNum);
+                loop.lpFlags |= LPFLG_HAS_PREHEAD;
+                assert((head->bbFlags & BBF_LOOP_PREHEADER) == 0); // It isn't already a loop pre-header
+                head->bbFlags |= BBF_LOOP_PREHEADER;
+                INDEBUG(loop.lpValidatePreHeader());
+                INDEBUG(fgDebugCheckLoopTable());
+                return;
+            }
+            else
+            {
+                JITDUMP("   existing head " FMT_BB " doesn't have correct EH region\n", head->bbNum);
+            }
         }
+        else
+        {
+            JITDUMP("   existing head " FMT_BB " isn't unique non-loop predecessor of loop entry\n", head->bbNum);
+        }
+    }
+    else
+    {
+        JITDUMP("   existing head " FMT_BB " doesn't have unique successor branching to loop entry\n", head->bbNum);
     }
 
     // Allocate a new basic block for the pre-header.
