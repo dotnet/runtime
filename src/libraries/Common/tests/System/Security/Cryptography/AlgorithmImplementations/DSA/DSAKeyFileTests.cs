@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Security.Cryptography.Dsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
-    [ActiveIssue("TODO - create GH issue, x86", TestPlatforms.Android)]
+    // [ActiveIssue("TODO - create GH issue, x86", TestPlatforms.Android)]
     public static class DSAKeyFileTests
     {
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
@@ -566,6 +566,7 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
+        [ActiveIssue("TODO - create GH issue, x86", TestPlatforms.Android)]
         public static void DecryptPkcs12PbeTooManyIterations()
         {
             // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations

@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    [ActiveIssue("TODO - create GH issue, x64", TestPlatforms.Android)]
+    //[ActiveIssue("TODO - create GH issue, x64", TestPlatforms.Android)]
     public static class RSAKeyFileTests
     {
         public static bool Supports384BitPrivateKeyAndRC2 { get; } = RSAFactory.Supports384PrivateKey && RC2Factory.IsSupported;
@@ -1255,6 +1255,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
+        [ActiveIssue("TODO - create GH issue", TestPlatforms.Android)]
         public static void DecryptPkcs12PbeTooManyIterations()
         {
             // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
