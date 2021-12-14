@@ -840,8 +840,8 @@ MapViewOfFile3Fn pMapViewOfFile3 = NULL;
 
 static bool HavePlaceholderAPI()
 {
-    const MapViewOfFile3Fn INVALID_ADDRESS_CENTINEL = (MapViewOfFile3Fn)1;
-    if (pMapViewOfFile3 == INVALID_ADDRESS_CENTINEL)
+    const MapViewOfFile3Fn INVALID_ADDRESS_SENTINEL = (MapViewOfFile3Fn)1;
+    if (pMapViewOfFile3 == INVALID_ADDRESS_SENTINEL)
     {
         return false;
     }
@@ -859,7 +859,7 @@ static bool HavePlaceholderAPI()
 
         if (pMapViewOfFile3 == NULL || pVirtualAlloc2 == NULL)
         {
-            pMapViewOfFile3 = INVALID_ADDRESS_CENTINEL;
+            pMapViewOfFile3 = INVALID_ADDRESS_SENTINEL;
             return false;
         }
     }
