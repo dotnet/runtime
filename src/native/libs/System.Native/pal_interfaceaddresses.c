@@ -159,7 +159,7 @@ static bool ensure_getifaddrs_impl_available() {
         }
     }
 
-    return getifaddrs_impl != NULL && freeifaddrs != NULL;
+    return getifaddrs_impl != NULL && freeifaddrs_impl != NULL;
 }
 #endif
 
