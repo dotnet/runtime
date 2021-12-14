@@ -7,27 +7,27 @@
 using TestDelegate = LPCSTR(STDMETHODCALLTYPE*)(int);
 using TestDelegateRef = LPCSTR(STDMETHODCALLTYPE*)(int*);
 
-extern "C" int DLL_EXPORT NativeParseInt(LPCSTR str)
+extern "C" int DLL_EXPORT STDMETHODCALLTYPE NativeParseInt(LPCSTR str)
 {
     return atoi(str);
 }
 
-extern "C" int DLL_EXPORT NativeParseIntRef(LPCSTR* str)
+extern "C" int DLL_EXPORT STDMETHODCALLTYPE NativeParseIntRef(LPCSTR* str)
 {
     return atoi(*str);
 }
 
-extern "C" void DLL_EXPORT NativeParseIntOut(int* outVal)
+extern "C" void DLL_EXPORT STDMETHODCALLTYPE NativeParseIntOut(int* outVal)
 {
     *outVal = 2334;
 }
 
-extern "C" int DLL_EXPORT NativeParseIntDelegate(int val, TestDelegate del)
+extern "C" int DLL_EXPORT STDMETHODCALLTYPE NativeParseIntDelegate(int val, TestDelegate del)
 {
     return atoi(del(val));
 }
 
-extern "C" int DLL_EXPORT NativeParseIntDelegateRef(int val, TestDelegateRef del)
+extern "C" int DLL_EXPORT STDMETHODCALLTYPE NativeParseIntDelegateRef(int val, TestDelegateRef del)
 {
     return atoi(del(&val));
 }
