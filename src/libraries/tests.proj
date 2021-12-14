@@ -360,6 +360,11 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
 
+  <!-- temporarily add it to the default test run -->
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' == 'true' and '$(TargetOS)' == 'Android'">
+     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
