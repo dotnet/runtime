@@ -277,6 +277,6 @@ convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_subdirectory(Full)
+else()
+  add_subdirectory(Portable)
 endif()
-
-add_subdirectory(Portable)

@@ -57,7 +57,6 @@ import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from ".
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
-import { ArgsMarshalString } from "./method-binding";
 import {
     setI8, setI16, setI32, setI64,
     setU8, setU16, setU32, setF32, setF64,
@@ -134,9 +133,9 @@ let exportedAPI: DotnetPublicAPI;
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
+    imports: { isES6: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { scriptDirectory: any, fetch: any, readAsync: any },
+    replacements: { scriptDirectory: any, fetch: any, readAsync: any, require: any },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -184,13 +183,14 @@ function initializeImportsAndExports(
     }
     module.imports = module.imports || <DotnetModuleConfigImports>{};
     if (!module.imports.require) {
-        module.imports.require = globalThis.require;
-    }
-    if (!module.imports.require) {
+        const originalRequire = replacements.require;
         module.imports.require = (name) => {
             const resolve = (<any>module.imports)[name];
+            if (!resolve && originalRequire) {
+                return originalRequire(name);
+            }
             if (!resolve)
-                throw new Error(`Please provide Module.imports.${name}`);
+                throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
             return resolve;
         };
     }
@@ -206,7 +206,11 @@ function initializeImportsAndExports(
     }
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
+    replacements.require = module.imports.require;
 
+    if (typeof module.disableDotnet6Compatibility === "undefined") {
+        module.disableDotnet6Compatibility = imports.isES6;
+    }
     // here we expose objects global namespace for tests and backward compatibility
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
         Object.assign(module, exportedAPI);
@@ -214,7 +218,7 @@ function initializeImportsAndExports(
         // backward compatibility
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        module.mono_bind_static_method = (fqn: string, signature: ArgsMarshalString): Function => {
+        module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
             console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
         };

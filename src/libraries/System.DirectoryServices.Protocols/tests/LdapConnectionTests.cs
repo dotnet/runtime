@@ -112,6 +112,16 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(AuthType.Basic, connection.AuthType);
         }
 
+        [Fact]
+        public void AuthType_Anonymous_DoesNotThrowNull()
+        {
+            var connection = new LdapConnection("server");
+            connection.AuthType = AuthType.Anonymous;
+            // When calling Bind we make sure that the exception thrown is not that there was a NullReferenceException
+            // trying to retrive a null password's lenght, but instead an LdapException given the server cannot be reached.
+            Assert.Throws<LdapException>(() => connection.Bind());
+        }
+
         [Theory]
         [InlineData(AuthType.Anonymous - 1)]
         [InlineData(AuthType.Kerberos + 1)]

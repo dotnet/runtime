@@ -1,4 +1,4 @@
-import { Module } from "./imports";
+import { Module, quit } from "./imports";
 import { mono_call_assembly_entry_point } from "./method-calls";
 import { mono_wasm_set_main_args, runtime_is_initialized_reject } from "./startup";
 
@@ -30,11 +30,5 @@ function set_exit_code(exit_code: number, reason?: any) {
             Module.printErr(reason.stack);
         }
     }
-    const globalThisAny: any = globalThis;
-    if (typeof globalThisAny.exit === "function") {
-        globalThisAny.exit(exit_code);
-    }
-    else if (typeof globalThisAny.quit === "function") {
-        globalThisAny.quit(exit_code);
-    }
+    quit(exit_code, reason);
 }

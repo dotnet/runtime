@@ -6,22 +6,23 @@
 
 const DotnetSupportLib = {
     $DOTNET: {},
-    // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
+    // these lines will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
     $DOTNET__postset: `
-    let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch};
-    let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-        { isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile }, 
-        { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
-        __dotnet_replacements);
-    
-    // here we replace things which are not exposed in another way
-    scriptDirectory = __dotnet_replacements.scriptDirectory;
-    readAsync = __dotnet_replacements.readAsync;
-    var fetch = __dotnet_replacements.fetch;
-    if (ENVIRONMENT_IS_NODE) { 
-        __dirname = __dotnet_replacements.scriptDirectory; 
-    }
-    `,
+let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch, require};
+let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
+    { isES6:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_ }, 
+    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
+    __dotnet_replacements);
+
+// here we replace things which are not exposed in another way
+scriptDirectory = __dotnet_replacements.scriptDirectory;
+readAsync = __dotnet_replacements.readAsync;
+var fetch = __dotnet_replacements.fetch;
+if (ENVIRONMENT_IS_NODE) { 
+    __dirname = __dotnet_replacements.scriptDirectory; 
+    require = __dotnet_replacements.require;
+}
+`,
 };
 
 // the methods would be visible to EMCC linker
