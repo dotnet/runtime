@@ -117,7 +117,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50567", TestPlatforms.Android)]
         public async Task GetUnicastAddresses_NotEmpty()
         {
             IPGlobalProperties props = IPGlobalProperties.GetIPGlobalProperties();
