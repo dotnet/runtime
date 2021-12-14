@@ -57,7 +57,6 @@ import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from ".
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
-import { ArgsMarshalString } from "./method-binding";
 import {
     setI8, setI16, setI32, setI64,
     setU8, setU16, setU32, setF32, setF64,
@@ -219,7 +218,7 @@ function initializeImportsAndExports(
         // backward compatibility
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        module.mono_bind_static_method = (fqn: string, signature: ArgsMarshalString): Function => {
+        module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
             console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
         };
