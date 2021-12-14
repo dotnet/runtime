@@ -7742,6 +7742,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Avoid potential extra work for the return (for example, vzeroupper)
         call->gtType = TYP_VOID;
 
+        // The runtime requires that we perform a null check on the `this` argument before
+        // tail calling to a virtual dispatch stub. This requirement is a consequence of limitations
+        // in the runtime's ability to map an AV to a NullReferenceException if
+        // the AV occurs in a dispatch stub that has unmanaged caller.
+        if (call->IsVirtualStub())
+        {
+            call->gtFlags |= GTF_CALL_NULLCHECK;
+        }
+
         // Do some target-specific transformations (before we process the args,
         // etc.) for the JIT helper case.
         if (tailCallViaJitHelper)
@@ -8447,15 +8456,6 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 {
     JITDUMP("fgMorphTailCallViaJitHelper (before):\n");
     DISPTREE(call);
-
-    // The runtime requires that we perform a null check on the `this` argument before
-    // tail calling  to a virtual dispatch stub. This requirement is a consequence of limitations
-    // in the runtime's ability to map an AV to a NullReferenceException if
-    // the AV occurs in a dispatch stub that has unmanaged caller.
-    if (call->IsVirtualStub())
-    {
-        call->gtFlags |= GTF_CALL_NULLCHECK;
-    }
 
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning or end.
@@ -15302,7 +15302,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                         /* This was a bogus loop (condition always false)
                          * Remove the loop from the table */
 
-                        optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
+                        optMarkLoopRemoved(loopNum);
 
                         optLoopTable[loopNum].lpTop->unmarkLoopAlign(this DEBUG_ARG("Bogus loop"));
 

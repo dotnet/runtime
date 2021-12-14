@@ -150,6 +150,7 @@ usage_list+=("-dir:xxx - build all tests in a given directory");
 usage_list+=("-tree:xxx - build all tests in a given subtree");
 
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
+usage_list+=("-nativeaot: Builds the tests for Native AOT compilation.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
 usage_list+=("-composite: Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).")
 usage_list+=("-perfmap: emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
@@ -157,7 +158,7 @@ usage_list+=("-allTargets: Build managed tests for all target platforms (includi
 
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
-usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so that mono-specific issues are honored.")
+usage_list+=("-mono: Build the tests for the Mono runtime honoring mono-specific issues.")
 
 usage_list+=("-log: base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step.")
 
@@ -192,6 +193,10 @@ handle_arguments_local() {
         composite|-composite)
             __CompositeBuildMode=1
             __TestBuildMode=crossgen2
+            ;;
+
+        nativeaot|-nativeaot)
+            __TestBuildMode=nativeaot
             ;;
 
         perfmap|-perfmap)
@@ -245,6 +250,10 @@ handle_arguments_local() {
             ;;
 
         excludemonofailures|-excludemonofailures)
+            __Mono=1
+            ;;
+
+        mono|-mono)
             __Mono=1
             ;;
 

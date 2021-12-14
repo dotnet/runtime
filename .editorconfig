@@ -16,7 +16,7 @@ trim_trailing_whitespace = true
 indent_size = 2
 
 # Generated code
-[*{_AssemblyInfo.cs,.notsupported.cs}]
+[*{_AssemblyInfo.cs,.notsupported.cs,AsmOffsets.cs}]
 generated_code = true
 
 # C# files

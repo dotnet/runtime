@@ -2,14 +2,13 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType>Full</DebugType>
-    <Optimize>True</Optimize>
+    <DebugType>None</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="sin.cs" />
+    <Compile Include="sin_cs.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="sinlib_cs.csproj" />

@@ -2258,9 +2258,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                           void*                   compileTimeHandle)
 {
     GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
-#if 0
-    ctxTree->gtFlags |= GTF_DONT_CSE;   // ToDo Remove this
-#endif
+
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
     // It's available only via the run-time helper function
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
@@ -4115,7 +4113,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (elemSize != 1)
                 {
-                    GenTree* sizeofNode = gtNewIconNode(elemSize);
+                    GenTree* sizeofNode = gtNewIconNode(static_cast<ssize_t>(elemSize), TYP_I_IMPL);
                     index               = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, sizeofNode);
                 }
 
@@ -11725,7 +11723,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         if (!(cond))                                                                                                   \
         {                                                                                                              \
             const int cchAssertImpBuf = 600;                                                                           \
-            char*     assertImpBuf    = (char*)alloca(cchAssertImpBuf);                                                \
+            char*     assertImpBuf    = (char*)_alloca(cchAssertImpBuf);                                               \
             _snprintf_s(assertImpBuf, cchAssertImpBuf, cchAssertImpBuf - 1,                                            \
                         "%s : Possibly bad IL with CEE_%s at offset %04Xh (op1=%s op2=%s stkDepth=%d)", #cond,         \
                         impCurOpcName, impCurOpcOffs, op1 ? varTypeName(op1->TypeGet()) : "NULL",                      \
@@ -14494,7 +14492,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (prefixFlags & PREFIX_VOLATILE)
                 {
                     assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_DONT_CSE;      // Can't CSE a volatile
                     op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
                     op1->gtFlags |= GTF_IND_VOLATILE;
                 }
@@ -14591,7 +14588,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (prefixFlags & PREFIX_VOLATILE)
                 {
                     assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_DONT_CSE;      // Can't CSE a volatile
                     op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
                     op1->gtFlags |= GTF_IND_VOLATILE;
                 }
@@ -15628,7 +15624,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (prefixFlags & PREFIX_VOLATILE)
                     {
-                        op1->gtFlags |= GTF_DONT_CSE;      // Can't CSE a volatile
                         op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
 
                         if (!usesHelper)
@@ -15868,7 +15863,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (prefixFlags & PREFIX_VOLATILE)
                     {
                         assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND));
-                        op1->gtFlags |= GTF_DONT_CSE;      // Can't CSE a volatile
                         op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
                         op1->gtFlags |= GTF_IND_VOLATILE;
                     }

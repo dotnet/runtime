@@ -17,6 +17,7 @@
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
+    <HostOS>$(_hostOS)</HostOS>
     <_hostOS Condition="'$(TargetOS)' == 'Browser'">Browser</_hostOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
@@ -162,13 +163,13 @@
 
     <!-- There are no WebAssembly tools, so use the default ones -->
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser'">linux-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and $([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and $([MSBuild]::IsOSPlatform('OSX'))">osx-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'windows'">win-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'osx'">osx-x64</_toolRuntimeRID>
 
     <!-- There are no Android tools, so use the default ones -->
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android'">linux-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android' and $([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android' and $([MSBuild]::IsOSPlatform('OSX'))">osx-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android' and '$(HostOS)' == 'windows'">win-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android' and '$(HostOS)' == 'osx'">osx-x64</_toolRuntimeRID>
 
     <!-- There are no Mac Catalyst, iOS or tvOS tools and it can be built on OSX only, so use that -->
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'maccatalyst' or '$(_runtimeOS)' == 'ios' or '$(_runtimeOS)' == 'iOSSimulator' or '$(_runtimeOS)' == 'tvos' or '$(_runtimeOS)' == 'tvOSSimulator'">osx-x64</_toolRuntimeRID>
