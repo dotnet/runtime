@@ -4428,7 +4428,9 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     // For types with layout we drop any 64-bit alignment requirement if the packing size was less than 8
     // bytes (this mimics what the native compiler does and ensures we match up calling conventions during
     // interop).
-    if (HasLayout() && GetLayoutInfo()->GetPackingSize() < 8)
+    // We don't do this for types that are marked as sequential but end up with auto-layout due to containing pointers,
+    // as auto-layout ignores any Pack directives.
+    if (HasLayout() && (HasExplicitFieldOffsetLayout() || IsManagedSequential()) && GetLayoutInfo()->GetPackingSize() < 8)
     {
         fFieldRequiresAlign8 = false;
     }
@@ -8222,6 +8224,8 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             else
             {
                 // non-value-type fields always require pointer alignment
+                // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
+                // but that is explicitly handled when we calculate the final alignment for the type.
                 largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
             }
         }
