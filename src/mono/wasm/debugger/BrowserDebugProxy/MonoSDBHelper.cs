@@ -2341,8 +2341,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                 {
-                    var fields = await GetTypeFields(typeIdsIncludingParent[i], token);
-                    var (regularFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParent[i], token);
+                    var fields = await GetTypeFields(typeId, token);
+                    var (regularFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeId, token);
 
                     objectValues.AddRange(await GetFieldsValues(regularFields, isOwn));
                     objectValues.AddRange(await GetFieldsValues(rootHiddenFields, isOwn, isRootHidden: true));
@@ -2352,7 +2352,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 using var commandParamsObjWriter = new MonoBinaryWriter();
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", $"{objectId}"), this);
                 var props = await CreateJArrayForProperties(
-                    typeIdsIncludingParent[i],
+                    typeId,
                     commandParamsObjWriter.GetParameterBuffer(),
                     objectValues,
                     getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute),
@@ -2366,7 +2366,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 // but we are going to ignore that here, because otherwise vscode/chrome don't
                 // seem to ask for inherited fields at all.
                 //if (ownProperties)
-                    //break;
+                //break;
                 /*if (accessorPropertiesOnly)
                     break;*/
             }
@@ -2487,6 +2487,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var typeInfo = await GetTypeInfo(typeId, token);
                 var typeFieldsBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableFields;
+                var typeProperitesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
                 if (typeFieldsBrowsableInfo == null || typeFieldsBrowsableInfo.Count == 0)
                     return (fields, new List<FieldTypeClass>());
 
@@ -2496,8 +2497,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     if (!typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state))
                     {
-                        regularFields.Add(field);
-                        continue;
+                        if (!typeProperitesBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? propState))
+                        {
+                            regularFields.Add(field);
+                            continue;
+                        }
+                        state = propState;
                     }
                     switch (state)
                     {
