@@ -7,6 +7,7 @@ using Xunit;
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [ActiveIssue("TODO - create GH issue, x86", TestPlatforms.Android)]
     public class ECDhKeyFileTests : ECKeyFileTests<ECDiffieHellman>
     {
         protected override ECDiffieHellman CreateKey() => ECDiffieHellmanFactory.Create();

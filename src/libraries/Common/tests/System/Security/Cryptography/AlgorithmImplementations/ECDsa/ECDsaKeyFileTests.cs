@@ -7,6 +7,7 @@ using Xunit;
 namespace System.Security.Cryptography.EcDsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [ActiveIssue("TODO - create GH issue, x64", TestPlatforms.Android)]
     public class ECDsaKeyFileTests : ECKeyFileTests<ECDsa>
     {
         protected override ECDsa CreateKey() => ECDsaFactory.Create();
