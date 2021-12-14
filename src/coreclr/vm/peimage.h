@@ -41,7 +41,7 @@ class Crst;
 // 
 // Flat layouts are sufficient for operations that do not require running native code,
 // Anything based on RVA, such as retrieving IL method bodies, is slightly less efficient,
-// since RVA must be translated to file form.
+// since RVA must be translated to file offsets by iterating through section headers.
 // The additional cost is not very high though, since our PEs have only a few sections.
 //
 // Loaded layouts are functional supersets of Flat - anything that can be done with Flat
@@ -75,8 +75,8 @@ class Crst;
 // then need Loaded, we can only add one more. Thus we have two slots.
 // 
 // Often the slots refer to the same layout though. That is because if we create Loaded before Flat,
-// we put it into both slots, since it is functionally a superset.
-// Also the pure-IL assemblies do not require Loaded, so we may put Flat into both slots.
+// we put Loaded into both slots, since it is functionally a superset of Flat.
+// Also for pure-IL assemblies Flat is sufficient for anything, so we may put Flat into both slots.
 //
 
 #define CV_SIGNATURE_RSDS   0x53445352
