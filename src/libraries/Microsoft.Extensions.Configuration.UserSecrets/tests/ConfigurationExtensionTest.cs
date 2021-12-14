@@ -87,12 +87,12 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         public void AddUserSecrets_ThrowsIfAssemblyAttributeFromType()
         {
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                new ConfigurationBuilder().AddUserSecrets<string>());
+                new ConfigurationBuilder().AddUserSecrets<string>(optional: false));
             Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(string).Assembly.GetName().Name),
                 ex.Message);
 
             ex = Assert.Throws<InvalidOperationException>(() =>
-                new ConfigurationBuilder().AddUserSecrets(typeof(JObject).Assembly));
+                new ConfigurationBuilder().AddUserSecrets(typeof(JObject).Assembly, optional: false));
             Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(JObject).Assembly.GetName().Name),
                 ex.Message);
         }
