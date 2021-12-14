@@ -1701,44 +1701,69 @@ namespace System.Net.Http
                 return;
             }
 
-            lock (SyncObj)
+            // Loop in case we get a cancelled request.
+            while (true)
             {
-                Debug.Assert(!_availableHttp11Connections.Contains(connection));
-
-                if (isNewConnection)
+                TaskCompletionSourceWithCancellation<HttpConnection>? waiter = null;
+                bool added = false;
+                lock (SyncObj)
                 {
-                    Debug.Assert(_pendingHttp11ConnectionCount > 0);
-                    _pendingHttp11ConnectionCount--;
+                    Debug.Assert(!_availableHttp11Connections.Contains(connection), $"Connection already in available list");
+                    Debug.Assert(_associatedHttp11ConnectionCount > 0, $"Expected {_associatedHttp11ConnectionCount} > 0");
+                    Debug.Assert(_associatedHttp11ConnectionCount <= _maxHttp11Connections, $"Expected {_associatedHttp11ConnectionCount} <= {_maxHttp11Connections}");
+
+                    if (isNewConnection)
+                    {
+                        Debug.Assert(_pendingHttp11ConnectionCount > 0);
+                        _pendingHttp11ConnectionCount--;
+                        isNewConnection = false;
+                    }
+
+                    if (_http11RequestQueue.TryDequeueRequest(out RequestQueue<HttpConnection>.QueueItem item))
+                    {
+                        Debug.Assert(_availableHttp11Connections.Count == 0, $"With {_availableHttp11Connections.Count} available HTTP/1.1 connections, we shouldn't have a waiter.");
+                        waiter = item.Waiter;
+                    }
+                    else if (!_disposed)
+                    {
+                        // Add connection to the pool.
+                        added = true;
+                        _availableHttp11Connections.Add(connection);
+                        Debug.Assert(_availableHttp11Connections.Count <= _associatedHttp11ConnectionCount, $"Expected {_availableHttp11Connections.Count} <= {_associatedHttp11ConnectionCount}");
+                    }
+
+                    // If the pool has been disposed of, we will dispose the connection below outside the lock.
+                    // We do this after processing the queue above so that any queued requests will be handled properly.
                 }
 
-                if (_http11RequestQueue.TryDequeueNextRequest(connection))
+                if (waiter is not null)
                 {
-                    Debug.Assert(_availableHttp11Connections.Count == 0, $"With {_availableHttp11Connections.Count} available HTTP/1.1 connections, we shouldn't have a waiter.");
-
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Dequeued waiting HTTP/1.1 request.");
-                    return;
+                    Debug.Assert(!added);
+                    if (waiter.TrySetResult(connection))
+                    {
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace("Dequeued waiting HTTP/1.1 request.");
+                        return;
+                    }
+                    else
+                    {
+                        Debug.Assert(waiter.Task.IsCanceled);
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace("Discarding canceled request from queue.");
+                        // Loop and process the queue again
+                    }
                 }
-
-                if (_disposed)
+                else if (added)
                 {
-                    // If the pool has been disposed of, dispose the connection being returned,
-                    // as the pool is being deactivated. We do this after the above in order to
-                    // use pooled connections to satisfy any requests that pended before the
-                    // the pool was disposed of.
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing connection returned to pool. Pool was disposed.");
-                }
-                else
-                {
-                    // Add connection to the pool.
-                    _availableHttp11Connections.Add(connection);
-                    Debug.Assert(_availableHttp11Connections.Count <= _maxHttp11Connections, $"Expected {_availableHttp11Connections.Count} <= {_maxHttp11Connections}");
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("Put connection in pool.");
                     return;
                 }
+                else
+                {
+                    Debug.Assert(_disposed);
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing connection returned to pool. Pool was disposed.");
+                    connection.Dispose();
+                    return;
+                }
             }
-
-            // We determined that the connection is no longer usable.
-            connection.Dispose();
         }
 
         public void ReturnHttp2Connection(Http2Connection connection, bool isNewConnection)
