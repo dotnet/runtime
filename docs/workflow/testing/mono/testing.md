@@ -17,11 +17,11 @@ To build the runtime tests for Mono JIT or interpreter:
 
 ```
 cd src/tests
-./build.sh excludemonofailures <release|debug>
+./build.sh mono <release|debug>
 ```
 
 To build an individual test, test directory, or a whole subdirectory tree, use the `-test:`, `-dir:` or `-tree:` options (without the src/tests prefix)
-For example: `./build.sh excludemonofailures release -test:JIT/opt/InstructionCombining/DivToMul.csproj`
+For example: `./build.sh mono release -test:JIT/opt/InstructionCombining/DivToMul.csproj`
 
 
 Run individual test:
@@ -47,7 +47,7 @@ bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivT
 ### WebAssembly:
 Build the runtime tests for WebAssembly
 ```
-$(REPO_ROOT)/src/tests/build.sh -excludemonofailures os Browser wasm <Release/Debug>
+$(REPO_ROOT)/src/tests/build.sh -mono os Browser wasm <Release/Debug>
 ```
 
 The last few lines of the build log should contain something like this:
@@ -64,7 +64,7 @@ To run all tests, execute that command, adding `wasm` to the end.
 ### Android:
 Build the runtime tests for Android x64/ARM64
 ```
-$(REPO_ROOT)/src/tests/build.sh -excludemonofailures os Android <x64/arm64> <Release/Debug>
+$(REPO_ROOT)/src/tests/build.sh -mono os Android <x64/arm64> <Release/Debug>
 ```
 
 Run one test wrapper from repo root

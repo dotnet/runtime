@@ -91,7 +91,7 @@ namespace System.Threading
             // This also avoids OOM after creating the thread.
             _stopped = new ManualResetEvent(false);
 
-            if (!Interop.Sys.RuntimeThread_CreateThread((IntPtr)_startHelper!._maxStackSize, &ThreadEntryPoint, (IntPtr)thisThreadHandle))
+            if (!Interop.Sys.CreateThread((IntPtr)_startHelper!._maxStackSize, &ThreadEntryPoint, (IntPtr)thisThreadHandle))
             {
                 return false;
             }

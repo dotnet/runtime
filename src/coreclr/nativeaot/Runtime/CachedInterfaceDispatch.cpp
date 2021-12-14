@@ -305,7 +305,7 @@ static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * 
                                                                      (sizeof(InterfaceDispatchCacheEntry) * cCacheEntries),
                                                                      sizeof(void*) * 2);
         if (pCache == NULL)
-            return NULL;
+            return (uintptr_t)NULL;
 
         CID_COUNTER_INC(CacheAllocates);
 #ifdef FEATURE_CID_STATS

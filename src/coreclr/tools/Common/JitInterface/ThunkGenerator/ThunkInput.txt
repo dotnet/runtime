@@ -109,7 +109,7 @@ CorInfoInitClassResult
 CorInfoInlineTypeCheck
 CorInfoInlineTypeCheckSource
 CorInfoInline
-CorInfoIntrinsics
+CorInfoArrayIntrinsic
 CorInfoIsAccessAllowedResult
 CorInfoMethodRuntimeFlags
 CorInfoTailCall
@@ -153,7 +153,7 @@ struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*
 ICorJitInfo::errorTrapFunction,void*
 
 FUNCTIONS
-    bool isJitIntrinsic(        CORINFO_METHOD_HANDLE       ftn        );
+    bool isIntrinsic(        CORINFO_METHOD_HANDLE       ftn        );
     uint32_t getMethodAttribs(        CORINFO_METHOD_HANDLE       ftn        );
     void setMethodAttribs(        CORINFO_METHOD_HANDLE       ftn,        CorInfoMethodRuntimeFlags   attribs        );
     void getMethodSig(        CORINFO_METHOD_HANDLE      ftn,        CORINFO_SIG_INFO          *sig,        CORINFO_CLASS_HANDLE      memberParent         );
@@ -171,7 +171,6 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
     void expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN *        pResolvedToken, CORINFO_GENERICHANDLE_RESULT *  pResult);
-    CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , BoolStar pMustExpand);
     bool isIntrinsicType(           CORINFO_CLASS_HANDLE        classHnd );
     CorInfoCallConvExtension getUnmanagedCallConv(            CORINFO_METHOD_HANDLE       method,            CORINFO_SIG_INFO*           callSiteSig, bool* pSuppressGCTransition);
     bool pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
@@ -238,6 +237,7 @@ FUNCTIONS
     bool satisfiesClassConstraints(CORINFO_CLASS_HANDLE cls)
     bool isSDArray(CORINFO_CLASS_HANDLE cls)
     unsigned getArrayRank(CORINFO_CLASS_HANDLE cls)
+    CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)
     void* getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint32_t size)
     CorInfoIsAccessAllowedResult canAccessClass(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper)
     const char* getFieldName(CORINFO_FIELD_HANDLE ftn, const char** moduleName)

@@ -5,8 +5,6 @@
 // Most functionality for generic methods is put here
 //
 
-
-
 #include "common.h"
 #include "method.hpp"
 #include "field.h"
@@ -117,9 +115,9 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     {
         pMD->SetSynchronized();
     }
-    if (pTemplateMD->IsJitIntrinsic())
+    if (pTemplateMD->IsIntrinsic())
     {
-        pMD->SetIsJitIntrinsic();
+        pMD->SetIsIntrinsic();
     }
 
     pMD->SetMemberDef(token);

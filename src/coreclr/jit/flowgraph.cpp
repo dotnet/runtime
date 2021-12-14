@@ -920,7 +920,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
     // intrinsics, flag the helper call. Later during inlining, we can
     // remove the helper call if the associated field lookup is unused.
-    if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+    if ((info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
         NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
         if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
@@ -1394,14 +1394,13 @@ void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
     }
 }
 
-/*****************************************************************************
- *
- *  Mark which loops are guaranteed to execute a call.
- */
-
+//------------------------------------------------------------------------
+// fgLoopCallMark: Mark which loops are guaranteed to execute a call by setting the
+// block BBF_LOOP_CALL0 and BBF_LOOP_CALL1 flags, as appropriate.
+//
 void Compiler::fgLoopCallMark()
 {
-    /* If we've already marked all the block, bail */
+    // If we've already marked all the blocks, bail.
 
     if (fgLoopCallMarked)
     {
@@ -1410,7 +1409,12 @@ void Compiler::fgLoopCallMark()
 
     fgLoopCallMarked = true;
 
-    /* Walk the blocks, looking for backward edges */
+#ifdef DEBUG
+    // This code depends on properly ordered bbNum, so check that.
+    fgDebugCheckBBNumIncreasing();
+#endif // DEBUG
+
+    // Walk the blocks, looking for backward edges.
 
     for (BasicBlock* const block : Blocks())
     {

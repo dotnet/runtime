@@ -1645,8 +1645,7 @@ namespace Internal.JitInterface
                     //  3) JIT intrinsics - since they have pre-defined behavior
                     devirt = targetMethod.OwningType.IsValueType ||
                         (targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke") ||
-                        (targetMethod.OwningType.IsObject && targetMethod.Name == "GetType") ||
-                        (targetMethod.IsIntrinsic && getIntrinsicID(targetMethod, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal);
+                        (targetMethod.OwningType.IsObject && targetMethod.Name == "GetType");
 
                     callVirtCrossingVersionBubble = true;
                 }

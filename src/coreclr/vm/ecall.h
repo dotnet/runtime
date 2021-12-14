@@ -50,7 +50,6 @@ struct ECFunc {
     bool                IsEndOfArray()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_EndOfArray); }
     bool                HasSignature()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_HasSignature); }
     bool                IsUnreferenced(){ LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_Unreferenced); }
-    CorInfoIntrinsics   IntrinsicID()   { LIMITED_METHOD_CONTRACT; return (CorInfoIntrinsics)((INT8)(m_dwFlags >> 16)); }
     int                 DynamicID()     { LIMITED_METHOD_CONTRACT; return (int)              ((INT8)(m_dwFlags >> 24)); }
 
     ECFunc*             NextInArray()

@@ -5,6 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <IsPackable>true</IsPackable>
     <PackageDescription>Abstractions of files and directories.
 
 Commonly Used Types:

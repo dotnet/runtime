@@ -3112,7 +3112,7 @@ void Compiler::fgVerifyHandlerTab()
     // between debug and non-debug code paths. So, create a renumbered block mapping: map the
     // existing block number to a renumbered block number that is ordered by block list order.
 
-    unsigned bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    unsigned bbNumMax = impInlineRoot()->fgBBNumMax;
 
     // blockNumMap[old block number] => new block number
     size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);
@@ -4616,4 +4616,32 @@ bool Compiler::fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionInde
     } // end of for(;;)
 
     return insertOK;
+}
+
+//------------------------------------------------------------------------
+// fgIsFirstBlockOfFilterOrHandler: return true if the given block is the first block of an EH handler
+// or filter.
+//
+// Arguments:
+//    block - the BasicBlock in question
+//
+// Return Value:
+//    As described above.
+//
+bool Compiler::fgIsFirstBlockOfFilterOrHandler(BasicBlock* block)
+{
+    if (!block->hasHndIndex())
+    {
+        return false;
+    }
+    EHblkDsc* ehDsc = ehGetDsc(block->getHndIndex());
+    if (ehDsc->ebdHndBeg == block)
+    {
+        return true;
+    }
+    if (ehDsc->HasFilter() && (ehDsc->ebdFilter == block))
+    {
+        return true;
+    }
+    return false;
 }

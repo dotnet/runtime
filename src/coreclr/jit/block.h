@@ -559,7 +559,7 @@ enum BasicBlockFlags : unsigned __int64
 
     // Flags that relate blocks to loop structure.
 
-    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1,
+    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_ALIGN,
 
     // Flags to update when two blocks are compacted
 
@@ -998,6 +998,16 @@ struct BasicBlock : private LIR::Range
     void copyEHRegion(const BasicBlock* from)
     {
         bbTryIndex = from->bbTryIndex;
+        bbHndIndex = from->bbHndIndex;
+    }
+
+    void copyTryIndex(const BasicBlock* from)
+    {
+        bbTryIndex = from->bbTryIndex;
+    }
+
+    void copyHndIndex(const BasicBlock* from)
+    {
         bbHndIndex = from->bbHndIndex;
     }
 

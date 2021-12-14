@@ -1515,7 +1515,7 @@ void SsaBuilder::Build()
     }
     else
     {
-        postOrder = (BasicBlock**)alloca(blockCount * sizeof(BasicBlock*));
+        postOrder = (BasicBlock**)_alloca(blockCount * sizeof(BasicBlock*));
     }
 
     m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
