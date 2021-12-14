@@ -18,6 +18,7 @@ namespace ILLink.RoslynAnalyzer
 		private const string StructLayoutAttribute = nameof (StructLayoutAttribute);
 		private const string DllImportAttribute = nameof (DllImportAttribute);
 		private const string MarshalAsAttribute = nameof (MarshalAsAttribute);
+		private const string RequiresUnreferencedCodeAttribute = nameof (RequiresUnreferencedCodeAttribute);
 
 		static readonly DiagnosticDescriptor s_correctnessOfCOMCannotBeGuaranteed = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed,
 			helpLinkUri: "https://docs.microsoft.com/en-us/dotnet/core/deploying/trim-warnings/il2050");
@@ -37,6 +38,9 @@ namespace ILLink.RoslynAnalyzer
 					var invocationOperation = (IInvocationOperation) operationContext.Operation;
 					var targetMethod = invocationOperation.TargetMethod;
 					if (!targetMethod.HasAttribute (DllImportAttribute))
+						return;
+
+					if (operationContext.ContainingSymbol.IsInRequiresScope (RequiresUnreferencedCodeAttribute))
 						return;
 
 					bool comDangerousMethod = IsComInterop (targetMethod.ReturnType);

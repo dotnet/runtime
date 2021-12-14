@@ -156,8 +156,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		static extern IFoo CanSuppressWarningOnReturnType ();
 
 		[RequiresUnreferencedCode ("test")]
-		// Bug https://github.com/dotnet/linker/issues/2378
-		[ExpectedWarning ("IL2050", ProducedBy = ProducedBy.Analyzer)]
 		static void Call_CanSuppressWithRequiresUnreferencedCode ()
 		{
 			CanSuppressWithRequiresUnreferencedCode (null);
@@ -167,8 +165,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		static extern void CanSuppressWithRequiresUnreferencedCode (IFoo foo);
 
 		[RequiresUnreferencedCode ("test")]
-		// Bug https://github.com/dotnet/linker/issues/2378
-		[ExpectedWarning ("IL2050", ProducedBy = ProducedBy.Analyzer)]
 		static void Call_CanSuppressPInvokeWithRequiresUnreferencedCode ()
 		{
 			CanSuppressPInvokeWithRequiresUnreferencedCode (null);
