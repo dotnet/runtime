@@ -838,6 +838,10 @@ public:
     }
     static bool IsExactArgument(FgSlot value, InlineInfo* info)
     {
+        if (IsConstantOrConstArg(value, info))
+        {
+            return true;
+        }
         if ((info == nullptr) || !IsArgument(value))
         {
             return false;
@@ -1107,7 +1111,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 {
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
                     methodHnd   = resolvedToken.hMethod;
-                    isIntrinsic = eeIsJitIntrinsic(methodHnd);
+                    isIntrinsic = eeIsIntrinsic(methodHnd);
                     isPinvoke   = info.compCompHnd->getMethodAttribs(methodHnd) & CORINFO_FLG_PINVOKE;
                 }
 
@@ -1143,6 +1147,17 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 if (FgStack::IsArgument(pushedStack.Top(0)) || FgStack::IsArgument(pushedStack.Top(1)))
                                 {
                                     compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
+                                }
+                                break;
+                            }
+
+                            case NI_System_Object_GetType:
+                            {
+                                if (FgStack::IsExactArgument(pushedStack.Top(0), impInlineInfo))
+                                {
+                                    // TODO: if arg is constant/valuetype/exact
+                                    pushedStack.PushConstant();
+                                    foldableIntrinsc = true;
                                 }
                                 break;
                             }
@@ -1253,8 +1268,24 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             }
             break;
 
+            case CEE_STFLD:
+            case CEE_STSFLD:
+            {
+                if (makeInlineObservations)
+                {
+                    // If we inline we'll end up setting a constant value to a field
+                    // e.g. it might help us to avoid emitting a write barrier if the
+                    // field is of a reference type and we set argument (which is null) to it.
+                    if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo))
+                    {
+                        compInlineResult->Note(InlineObservation::CALLSITE_CONST_ARG_SETS_FLD);
+                    }
+                }
+            }
+            break;
+
             case CEE_LDSFLD:
-                if (resolveTokens && !isPreJit)
+                if (resolveTokens && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
                 {
                     // Push a constant to the stack for static readonly fields (initialized)
                     // of primitive types.
@@ -1553,7 +1584,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             if (FgStack::IsConstArgument(op1, impInlineInfo) ||
                                 FgStack::IsConstArgument(op2, impInlineInfo))
                             {
-                                compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
+                                compInlineResult->Note(InlineObservation::CALLSITE_CONST_ARG_FEEDS_TEST);
                             }
 
                             if ((FgStack::IsArgument(op1) && FgStack::IsArrayLen(op2)) ||
@@ -1601,18 +1632,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 }
             }
             break;
-
-            case CEE_LDFLDA:
-            case CEE_LDFLD:
-            case CEE_STFLD:
-            {
-                if (FgStack::IsArgument(pushedStack.Top()))
-                {
-                    compInlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS);
-                    handled = true; // keep argument on top of the stack
-                }
-                break;
-            }
 
             case CEE_LDELEM_I1:
             case CEE_LDELEM_U1:
@@ -2302,7 +2321,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
                     unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
                     if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
                     {
-                        compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
+                        compInlineResult->Note(InlineObservation::CALLSITE_CONST_ARG_FEEDS_TEST);
                     }
                 }
             }
@@ -2344,7 +2363,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
             unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
             if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
             {
-                compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
+                compInlineResult->Note(InlineObservation::CALLSITE_CONST_ARG_FEEDS_TEST);
             }
         }
 
@@ -2355,7 +2374,7 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
             unsigned varNum = FgStack::SlotTypeToArgNum(slot1);
             if (impInlineInfo->inlArgInfo[varNum].argIsInvariant)
             {
-                compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
+                compInlineResult->Note(InlineObservation::CALLSITE_CONST_ARG_FEEDS_TEST);
             }
         }
     }

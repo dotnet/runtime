@@ -330,11 +330,15 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 propagate = true;
                 break;
 
-            case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
+            case InlineObservation::CALLSITE_CONST_ARG_SETS_FLD:
+                m_ConstArgSetsFld++;
+                break;
+
+            case InlineObservation::CALLSITE_CONST_ARG_FEEDS_TEST:
                 // We shouldn't see this for a prejit root since
                 // we don't know anything about callers.
                 assert(!m_IsPrejitRoot);
-                m_ConstantArgFeedsConstantTest++;
+                m_ConstArgFeedsConstantTest++;
                 break;
 
             case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
@@ -727,7 +731,7 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
-    if (m_ConstantArgFeedsConstantTest > 0)
+    if (m_ConstArgFeedsConstantTest > 0)
     {
         multiplier += 3.0;
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
@@ -998,7 +1002,8 @@ void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_ArgFeedsTest);
     XATTR_I4(m_ArgFeedsConstantTest);
     XATTR_I4(m_ArgFeedsRangeCheck);
-    XATTR_I4(m_ConstantArgFeedsConstantTest);
+    XATTR_I4(m_ConstArgFeedsConstantTest);
+    XATTR_I4(m_ConstArgSetsFld);
     XATTR_I4(m_CalleeNativeSizeEstimate);
     XATTR_I4(m_CallsiteNativeSizeEstimate);
     XATTR_B(m_IsForceInline);
@@ -1493,7 +1498,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
     }
-    else if (m_ConstantArgFeedsConstantTest > 0)
+    else if (m_ConstArgFeedsConstantTest > 0)
     {
         multiplier += 3.0;
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
@@ -1503,7 +1508,15 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // TODO: handle 'if (SomeMethod(constArg))' patterns in fgFindJumpTargets
         // The previous version of inliner optimistically assumed this is "has const arg that feeds a conditional"
         multiplier += 3.0;
-        JITDUMP("\nCallsite passes a consant.  Multiplier increased to %g.", multiplier);
+        JITDUMP("\nCallsite passes a constant.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_ConstArgSetsFld > 0)
+    {
+        // What it means that for this specific st(s)fld we can avoid emitting a heavy write-barrier
+        // if we inline the candidate
+        multiplier += 1.5 + m_ConstArgSetsFld;
+        JITDUMP("\nInline candidate has const arg that sets %d fields.  Multiplier increased to %g.", m_ConstArgSetsFld, multiplier);
     }
 
     if ((m_FoldableBox > 0) && m_NonGenericCallsGeneric)
@@ -2460,7 +2473,7 @@ void DiscretionaryPolicy::EstimateCodeSize()
           6.021 * m_CallCount +
          -0.238 * m_IsInstanceCtor +
          -5.357 * m_IsFromPromotableValueClass +
-         -7.901 * (m_ConstantArgFeedsConstantTest > 0 ? 1 : 0)  +
+         -7.901 * (m_ConstArgFeedsConstantTest > 0 ? 1 : 0)  +
           0.065 * m_CalleeNativeSizeEstimate;
     // clang-format on
 
@@ -2660,7 +2673,8 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_ArgFeedsConstantTest);
     fprintf(file, ",%u", m_MethodIsMostlyLoadStore ? 1 : 0);
     fprintf(file, ",%u", m_ArgFeedsRangeCheck);
-    fprintf(file, ",%u", m_ConstantArgFeedsConstantTest);
+    fprintf(file, ",%u", m_ConstArgFeedsConstantTest);
+    fprintf(file, ",%u", m_ConstArgSetsFld);
     fprintf(file, ",%d", m_CalleeNativeSizeEstimate);
     fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
     fprintf(file, ",%d", m_ModelCodeSizeEstimate);
