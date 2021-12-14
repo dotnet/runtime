@@ -289,16 +289,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     {
         // Actually, we don't overflow if both upper and lower limits are known
         // to be constants
-        if (lowerLimit.IsConstant() && upperLimit.IsConstant() && (lowerLimit.cns <= upperLimit.cns) &&
-            (lowerLimit.cns > 0))
-        {
-            JITDUMP("Upper and lower limits are constants => we don't overflow.\n");
-        }
-        else
-        {
-            JITDUMP("Method determined to overflow.\n");
-            return;
-        }
+        JITDUMP("Method determined to overflow.\n");
+        return;
     }
 
     JITDUMP("Range value %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
@@ -1185,7 +1177,12 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
 bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
 {
     LclSsaVarDsc* ssaDef = GetSsaDefAsg(lcl);
-    return (ssaDef == nullptr) || DoesOverflow(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2());
+    if (ssaDef == nullptr)
+    {
+        // Parameters don't have definitions but are known to never overflow
+        return !m_pCompiler->lvaIsParameter(lcl->GetLclNum());
+    }
+    return DoesOverflow(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2());
 }
 
 bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr)
