@@ -336,18 +336,20 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
 
 bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
 {
-    assert(binop->OperIs(GT_ADD));
+    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
     JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
             Compiler::dspTreeID(op2));
-    // Check if we have a var + const.
-    if (op2->OperGet() == GT_LCL_VAR)
+
+    // Check if we have a var + const or var * const.
+    if (binop->OperIs(GT_ADD, GT_MUL) && op2->OperGet() == GT_LCL_VAR)
     {
         std::swap(op1, op2);
     }
+
     if (op1->OperGet() != GT_LCL_VAR)
     {
         JITDUMP("Not monotonically increasing because op1 is not lclVar.\n");
@@ -356,7 +358,8 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     switch (op2->OperGet())
     {
         case GT_LCL_VAR:
-            // When adding two local variables, we also must ensure that any constant is non-negative.
+            // When adding/multiplying/shifting two local variables, we also must ensure that any constant is
+            // non-negative.
             return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
@@ -417,7 +420,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         return (ssaDef != nullptr) &&
                IsMonotonicallyIncreasing(ssaDef->GetAssignment()->gtGetOp2(), rejectNegativeConst);
     }
-    else if (expr->OperGet() == GT_ADD)
+    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
     {
         return IsBinOpMonotonicallyIncreasing(expr->AsOp());
     }
@@ -894,11 +897,12 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
-    assert(binop->OperIs(GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD));
+    assert(binop->OperIs(GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD, GT_MUL));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
+    // Special cases for binops where op2 is a constant
     if (binop->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
     {
         if (!op2->IsIntCnsFitsInI32())
@@ -929,17 +933,21 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             }
         }
 
-        if (icon < 0)
+        if (icon >= 0)
+        {
+            Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, icon));
+            JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+            return range;
+        }
+        // Generalized range computation not implemented for these operators
+        else if (binop->OperIs(GT_AND, GT_UMOD, GT_RSH))
         {
             return Range(Limit::keUnknown);
         }
-        Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, icon));
-        JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
-        return range;
     }
 
     // other operators are expected to be handled above.
-    assert(binop->OperIs(GT_ADD));
+    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
 
     Range* op1RangeCached = nullptr;
     Range  op1Range       = Limit(Limit::keUndef);
@@ -985,9 +993,30 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         op2Range = *op2RangeCached;
     }
 
-    Range r = RangeOps::Add(op1Range, op2Range);
-    JITDUMP("BinOp add ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-            op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()), r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    Range r = Range(Limit::keUnknown);
+    if (binop->OperIs(GT_ADD))
+    {
+        r = RangeOps::Add(op1Range, op2Range);
+        JITDUMP("BinOp add ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    }
+    else if (binop->OperIs(GT_MUL))
+    {
+        r = RangeOps::Multiply(op1Range, op2Range);
+        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    }
+    else if (binop->OperIs(GT_LSH))
+    {
+        // help the next step a bit, convert the LSH rhs to a multiply
+        Range convertedOp2Range = RangeOps::ConvertShiftToMultiply(op2Range);
+        r                       = RangeOps::Multiply(op1Range, convertedOp2Range);
+        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                convertedOp2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
+                r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    }
     return r;
 }
 
@@ -1077,6 +1106,24 @@ bool RangeCheck::AddOverflows(Limit& limit1, Limit& limit2)
     return IntAddOverflows(max1, max2);
 }
 
+// Check if the arithmetic overflows.
+bool RangeCheck::MultiplyOverflows(Limit& limit1, Limit& limit2)
+{
+    int max1;
+    if (!GetLimitMax(limit1, &max1))
+    {
+        return true;
+    }
+
+    int max2;
+    if (!GetLimitMax(limit2, &max2))
+    {
+        return true;
+    }
+
+    return CheckedOps::MulOverflows(max1, max2, CheckedOps::Signed);
+}
+
 // Does the bin operation overflow.
 bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
 {
@@ -1109,10 +1156,15 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
     JITDUMP("Checking bin op overflow %s %s\n", op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
             op2Range->ToString(m_pCompiler->getAllocatorDebugOnly()));
 
-    if (!AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit()))
+    if (binop->OperIs(GT_ADD))
     {
-        return false;
+        return AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
     }
+    else if (binop->OperIs(GT_MUL))
+    {
+        return MultiplyOverflows(op1Range->UpperLimit(), op2Range->UpperLimit());
+    }
+
     return true;
 }
 
@@ -1180,7 +1232,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
         overflows = DoesVarDefOverflow(expr->AsLclVarCommon());
     }
     // Check if add overflows.
-    else if (expr->OperGet() == GT_ADD)
+    else if (expr->OperGet() == GT_ADD || expr->OperGet() == GT_MUL)
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
@@ -1276,7 +1328,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
-    else if (expr->OperIs(GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD))
+    else if (expr->OperIs(GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD, GT_MUL))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }

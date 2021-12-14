@@ -162,7 +162,7 @@ write_events (
 	uint32_t i = 0;
 	for (; i < event_count; ++i) {
 		EventPipeEventPayload payload;
-		ep_event_payload_init (&payload, (uint8_t *)TEST_EVENT_DATA, EP_ARRAY_SIZE (TEST_EVENT_DATA));
+		ep_event_payload_init (&payload, (uint8_t *)TEST_EVENT_DATA, ARRAY_SIZE (TEST_EVENT_DATA));
 		result = ep_buffer_manager_write_event (buffer_manager, thread, session, ep_event, &payload, NULL, NULL, thread, NULL);
 		ep_event_payload_fini (&payload);
 

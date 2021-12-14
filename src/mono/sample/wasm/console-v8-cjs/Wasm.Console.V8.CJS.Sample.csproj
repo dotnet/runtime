@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    <WasmEnableES6>false</WasmEnableES6>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Console.V8.CJS.Sample.csproj</_SampleProject>
+    <_SampleAssembly>Wasm.Console.V8.CJS.Sample.dll</_SampleAssembly>
+  </PropertyGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
+</Project>

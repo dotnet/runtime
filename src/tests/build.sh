@@ -5,11 +5,10 @@ build_Tests()
     echo "${__MsgPrefix}Building Tests..."
 
     __ProjectFilesDir="$__TestDir"
-    __TestBinDir="$__TestWorkingDir"
     __Exclude="$__RepoRootDir/src/tests/issues.targets"
 
-    if [[ -f  "${__TestWorkingDir}/build_info.json" ]]; then
-        rm  "${__TestWorkingDir}/build_info.json"
+    if [[ -f  "${__TestBinDir}/build_info.json" ]]; then
+        rm  "${__TestBinDir}/build_info.json"
     fi
 
     if [[ "$__RebuildTests" -ne 0 ]]; then
@@ -158,7 +157,7 @@ usage_list+=("-allTargets: Build managed tests for all target platforms (includi
 
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
-usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so that mono-specific issues are honored.")
+usage_list+=("-mono: Build the tests for the Mono runtime honoring mono-specific issues.")
 
 usage_list+=("-log: base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step.")
 
@@ -246,6 +245,10 @@ handle_arguments_local() {
             ;;
 
         excludemonofailures|-excludemonofailures)
+            __Mono=1
+            ;;
+
+        mono|-mono)
             __Mono=1
             ;;
 
@@ -363,7 +366,7 @@ __OSPlatformConfig="$__TargetOS.$__BuildArch.$__BuildType"
 __BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"
-__TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
+__TestBinDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
@@ -382,10 +385,10 @@ if [[ -z "$HOME" ]]; then
 fi
 
 if [[ "$__RebuildTests" -ne 0 ]]; then
-    if [[ -d "${__TestWorkingDir}" ]]; then
-        echo "Removing tests build dir: ${__TestWorkingDir}"
-        rm -rf "${__TestWorkingDir}"
-    fi
+    echo "Removing test build dir: ${__TestBinDir}"
+    rm -rf "${__TestBinDir}"
+    echo "Removing test intermediate dir: ${__TestIntermediatesDir}"
+    rm -rf "${__TestIntermediatesDir}" 
 fi
 
 build_Tests

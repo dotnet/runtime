@@ -92,7 +92,7 @@
   </ItemGroup>
 
   <!-- CI specific build options -->
-  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsBrowser)' == 'true')">
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(Targetsillumos)' == 'true')">
     <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
   </ItemGroup>
 
@@ -214,18 +214,18 @@
     </ItemGroup>
 
     <!-- We build LLVM bits for x64 Linux without C++11 ABI (CentOS 7 has libstdc++ < 5.1) -->
-    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
+    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' != 'true'">
+    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' != 'true'">
       <_MonoAOTCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
     </ItemGroup>
 
     <!-- We build LLVM bits for ARM64 Linux with C++11 ABI (Ubuntu 16.04 has libstdc++ > 5.1)-->
-    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' == 'true'">
+    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' == 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetOS)' == 'Linux' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' == 'true'">
+    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMUseCxx11Abi)' == 'true'">
       <_MonoAOTCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=1" />
     </ItemGroup>
 
@@ -239,7 +239,7 @@
     </ItemGroup>
 
     <!-- x64 illumos cross build options -->
-    <ItemGroup Condition="'$(TargetsIllumos)' == 'true' and '$(MonoCrossDir)' != ''">
+    <ItemGroup Condition="'$(Targetsillumos)' == 'true' and '$(MonoCrossDir)' != ''">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/lib/pkgconfig" />
@@ -574,7 +574,7 @@
     <ItemGroup Condition="'$(RealTargetOS)' == 'Linux' or $([MSBuild]::IsOSPlatform('Linux'))">
       <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib64/libclang.so.*"/>
     </ItemGroup>
-    <PropertyGroup Condition="'$(TargetOS)' == 'Linux' and '$(Platform)' == 'arm64'">
+    <PropertyGroup Condition="'$(TargetsLinux)' == 'true' and '$(Platform)' == 'arm64'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi>aarch64-linux-gnu</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-aarch-linux-gnu.h</MonoAotOffsetsFile>

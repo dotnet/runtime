@@ -116,7 +116,7 @@ private static readonly (string templateFileName, string outputTemplateName, Dic
     ("_UnaryOpTestTemplate.template",         "SimpleUnOpTest.template",        new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic }),
 };
 
-private static readonly (string templateFileName, Dictionary<string, string> templateData)[] SseInputs = new []
+private static readonly (string templateFileName, Dictionary<string, string> templateData)[] Sse1Inputs = new []
 {
     ("SimpleBinOpTest.template",  new Dictionary<string, string> { ["Isa"] = "Sse", ["LoadIsa"] = "Sse", ["Method"] = "Add",                                      ["RetVectorType"] = "Vector128", ["RetBaseType"] = "Single",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] =  "Single", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "Single", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "TestLibrary.Generator.GetSingle()", ["NextValueOp2"] = "TestLibrary.Generator.GetSingle()", ["ValidateFirstResult"] = "BitConverter.SingleToInt32Bits(left[0] + right[0]) != BitConverter.SingleToInt32Bits(result[0])",                                    ["ValidateRemainingResults"] = "BitConverter.SingleToInt32Bits(left[i] + right[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
     ("SimpleBinOpTest.template",  new Dictionary<string, string> { ["Isa"] = "Sse", ["LoadIsa"] = "Sse", ["Method"] = "AddScalar",                                ["RetVectorType"] = "Vector128", ["RetBaseType"] = "Single",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] =  "Single", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "Single", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "TestLibrary.Generator.GetSingle()", ["NextValueOp2"] = "TestLibrary.Generator.GetSingle()", ["ValidateFirstResult"] = "BitConverter.SingleToInt32Bits(left[0] + right[0]) != BitConverter.SingleToInt32Bits(result[0])",                                    ["ValidateRemainingResults"] = "BitConverter.SingleToInt32Bits(left[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
@@ -175,7 +175,7 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("SimpleBinOpTest.template",  new Dictionary<string, string> { ["Isa"] = "Sse", ["LoadIsa"] = "Sse", ["Method"] = "Xor",                                      ["RetVectorType"] = "Vector128", ["RetBaseType"] = "Single",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] =  "Single", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "Single", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "TestLibrary.Generator.GetSingle()", ["NextValueOp2"] = "TestLibrary.Generator.GetSingle()", ["ValidateFirstResult"] = "(BitConverter.SingleToInt32Bits(left[0]) ^ BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])",  ["ValidateRemainingResults"] = "(BitConverter.SingleToInt32Bits(left[0]) ^ BitConverter.SingleToInt32Bits(right[0])) != BitConverter.SingleToInt32Bits(result[0])"}),
 };
 
-private static readonly (string templateFileName, Dictionary<string, string> templateData)[] SseX64Inputs = new []
+private static readonly (string templateFileName, Dictionary<string, string> templateData)[] Sse1X64Inputs = new []
 {
     ("SimdScalarUnOpConvTest.template", new Dictionary<string, string> { ["Isa"] = "Sse.X64", ["LoadIsa"] = "Sse", ["Method"] = "ConvertToInt64",                                                  ["RetBaseType"] = "Int64",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "Single",                                                                ["LargestVectorSize"] = "16", ["NextValueOp1"] = "TestLibrary.Generator.GetSingle()",                                                          ["ValidateFirstResult"] = "(long)Math.Round(firstOp[0]) != result"}),
     ("SimdScalarUnOpConvTest.template", new Dictionary<string, string> { ["Isa"] = "Sse.X64", ["LoadIsa"] = "Sse", ["Method"] = "ConvertToInt64WithTruncation",                                    ["RetBaseType"] = "Int64",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "Single",                                                                ["LargestVectorSize"] = "16", ["NextValueOp1"] = "TestLibrary.Generator.GetSingle()",                                                          ["ValidateFirstResult"] = "(long) firstOp[0] != result"}),
@@ -628,7 +628,7 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("SimpleBinOpTest.template", new Dictionary<string, string> { ["Isa"] = "Sse42", ["LoadIsa"] = "Sse2", ["Method"] = "CompareGreaterThan", ["RetVectorType"] = "Vector128", ["RetBaseType"] = "Int64", ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "Int64", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "Int64", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "TestLibrary.Generator.GetInt64()", ["NextValueOp2"] = "TestLibrary.Generator.GetInt64()", ["ValidateFirstResult"] = "result[0] != ((left[0] > right[0]) ? unchecked((long)(-1)) : 0)", ["ValidateRemainingResults"] = "result[i] != ((left[i] > right[i]) ? unchecked((long)(-1)) : 0)"}),
 };
 
-private static readonly (string templateFileName, Dictionary<string, string> templateData)[] AvxInputs = new []
+private static readonly (string templateFileName, Dictionary<string, string> templateData)[] Avx1Inputs = new []
 {
     ("SimpleBinOpTest.template",     new Dictionary<string, string> { ["Isa"] = "Avx", ["LoadIsa"] = "Avx", ["Method"] = "Add",                     ["RetVectorType"] = "Vector256", ["RetBaseType"] = "Double", ["Op1VectorType"] = "Vector256", ["Op1BaseType"] = "Double", ["Op2VectorType"] = "Vector256", ["Op2BaseType"] = "Double",                                                                                                       ["LargestVectorSize"] = "32", ["NextValueOp1"] = "TestLibrary.Generator.GetDouble()", ["NextValueOp2"] = "TestLibrary.Generator.GetDouble()",                                                             ["ValidateFirstResult"] = "BitConverter.DoubleToInt64Bits(left[0] + right[0]) != BitConverter.DoubleToInt64Bits(result[0])",                                                                                                                                                    ["ValidateRemainingResults"] = "BitConverter.DoubleToInt64Bits(left[i] + right[i]) != BitConverter.DoubleToInt64Bits(result[i])"}),
     ("SimpleBinOpTest.template",     new Dictionary<string, string> { ["Isa"] = "Avx", ["LoadIsa"] = "Avx", ["Method"] = "Add",                     ["RetVectorType"] = "Vector256", ["RetBaseType"] = "Single", ["Op1VectorType"] = "Vector256", ["Op1BaseType"] = "Single", ["Op2VectorType"] = "Vector256", ["Op2BaseType"] = "Single",                                                                                                       ["LargestVectorSize"] = "32", ["NextValueOp1"] = "TestLibrary.Generator.GetSingle()", ["NextValueOp2"] = "TestLibrary.Generator.GetSingle()",                                                             ["ValidateFirstResult"] = "BitConverter.SingleToInt32Bits(left[0] + right[0]) != BitConverter.SingleToInt32Bits(result[0])",                                                                                                                                                    ["ValidateRemainingResults"] = "BitConverter.SingleToInt32Bits(left[i] + right[i]) != BitConverter.SingleToInt32Bits(result[i])"}),
@@ -778,7 +778,7 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("SimpleBinOpTest.template",     new Dictionary<string, string> { ["Isa"] = "Avx", ["LoadIsa"] = "Avx", ["Method"] = "Xor",                     ["RetVectorType"] = "Vector256", ["RetBaseType"] = "Double", ["Op1VectorType"] = "Vector256", ["Op1BaseType"] = "Double", ["Op2VectorType"] = "Vector256", ["Op2BaseType"] = "Double",                                                                                                       ["LargestVectorSize"] = "32", ["NextValueOp1"] = "TestLibrary.Generator.GetDouble()", ["NextValueOp2"] = "TestLibrary.Generator.GetDouble()",                                                             ["ValidateFirstResult"] = "(BitConverter.DoubleToInt64Bits(left[0]) ^ BitConverter.DoubleToInt64Bits(right[0])) != BitConverter.DoubleToInt64Bits(result[0])",                                                                                                                  ["ValidateRemainingResults"] = "(BitConverter.DoubleToInt64Bits(left[i]) ^ BitConverter.DoubleToInt64Bits(right[i])) != BitConverter.DoubleToInt64Bits(result[i])"}),
 };
 
-private static readonly (string templateFileName, Dictionary<string, string> templateData)[] Avx_Vector128Inputs = new []
+private static readonly (string templateFileName, Dictionary<string, string> templateData)[] Avx1_Vector128Inputs = new []
 {
     ("LoadBinOpTest.template",       new Dictionary<string, string> { ["Isa"] = "Avx", ["LoadIsa"] = "Avx", ["Method"] = "MaskLoad",                ["RetVectorType"] = "Vector128", ["RetBaseType"] = "Double", ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "Double", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "Double", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "TestLibrary.Generator.GetDouble()", ["NextValueOp2"] = "TestLibrary.Generator.GetDouble()", ["ValidateFirstResult"] = "BitConverter.DoubleToInt64Bits(result[0]) != BitConverter.DoubleToInt64Bits((BitConverter.DoubleToInt64Bits(right[0]) < 0) ? left[0] : 0)",                                         ["ValidateRemainingResults"] = "BitConverter.DoubleToInt64Bits(result[i]) != BitConverter.DoubleToInt64Bits((BitConverter.DoubleToInt64Bits(right[i]) < 0) ? left[i] : 0)"}),
     ("LoadBinOpTest.template",       new Dictionary<string, string> { ["Isa"] = "Avx", ["LoadIsa"] = "Avx", ["Method"] = "MaskLoad",                ["RetVectorType"] = "Vector128", ["RetBaseType"] = "Single", ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "Single", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "Single", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "TestLibrary.Generator.GetSingle()", ["NextValueOp2"] = "TestLibrary.Generator.GetSingle()", ["ValidateFirstResult"] = "BitConverter.SingleToInt32Bits(result[0]) != BitConverter.SingleToInt32Bits((BitConverter.SingleToInt32Bits(right[0]) < 0) ? left[0] : 0)",                                         ["ValidateRemainingResults"] = "BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits((BitConverter.SingleToInt32Bits(right[i]) < 0) ? left[i] : 0)"}),
@@ -1378,8 +1378,8 @@ private static void ProcessInput(StreamWriter testListFile, string groupName, (s
     File.WriteAllText(testFileName, template);
 }
 
-ProcessInputs("Sse", SseInputs);
-ProcessInputs("Sse.X64", SseX64Inputs);
+ProcessInputs("Sse1", Sse1Inputs);
+ProcessInputs("Sse1.X64", Sse1X64Inputs);
 ProcessInputs("Sse2", Sse2Inputs);
 ProcessInputs("Sse2.X64", Sse2X64Inputs);
 ProcessInputs("Sse3", Sse3Inputs);
@@ -1388,8 +1388,8 @@ ProcessInputs("Sse41", Sse41Inputs);
 ProcessInputs("Sse41_Overloaded", Sse41_OverloadedInputs);
 ProcessInputs("Sse41.X64", Sse41X64Inputs);
 ProcessInputs("Sse42", Sse42Inputs);
-ProcessInputs("Avx", AvxInputs);
-ProcessInputs("Avx_Vector128", Avx_Vector128Inputs);
+ProcessInputs("Avx1", Avx1Inputs);
+ProcessInputs("Avx1_Vector128", Avx1_Vector128Inputs);
 ProcessInputs("Avx2", Avx2Inputs);
 ProcessInputs("Avx2_Vector128", Avx2_Vector128Inputs);
 ProcessInputs("Fma_Vector128", Fma_Vector128Inputs);

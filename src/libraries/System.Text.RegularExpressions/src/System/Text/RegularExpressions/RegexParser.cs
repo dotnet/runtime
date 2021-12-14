@@ -894,7 +894,7 @@ namespace System.Text.RegularExpressions
                                         throw MakeException(RegexParseError.CaptureGroupOfZero, SR.CaptureGroupOfZero);
                                     }
                                 }
-                                else if (RegexCharClass.IsWordChar(ch))
+                                else if (RegexCharClass.IsBoundaryWordChar(ch))
                                 {
                                     string capname = ScanCapname();
 
@@ -941,7 +941,7 @@ namespace System.Text.RegularExpressions
                                             throw MakeException(RegexParseError.CaptureGroupNameInvalid, SR.CaptureGroupNameInvalid);
                                         }
                                     }
-                                    else if (RegexCharClass.IsWordChar(ch))
+                                    else if (RegexCharClass.IsBoundaryWordChar(ch))
                                     {
                                         string uncapname = ScanCapname();
 
@@ -1001,7 +1001,7 @@ namespace System.Text.RegularExpressions
 
                                 throw MakeException(RegexParseError.AlternationHasMalformedReference, SR.Format(SR.AlternationHasMalformedReference, capnum.ToString()));
                             }
-                            else if (RegexCharClass.IsWordChar(ch))
+                            else if (RegexCharClass.IsBoundaryWordChar(ch))
                             {
                                 string capname = ScanCapname();
 
@@ -1352,7 +1352,7 @@ namespace System.Text.RegularExpressions
 
             // Try to parse backreference: \<foo>
 
-            else if (angled && RegexCharClass.IsWordChar(ch))
+            else if (angled && RegexCharClass.IsBoundaryWordChar(ch))
             {
                 string capname = ScanCapname();
 
@@ -1456,7 +1456,7 @@ namespace System.Text.RegularExpressions
                     }
                 }
             }
-            else if (angled && RegexCharClass.IsWordChar(ch))
+            else if (angled && RegexCharClass.IsBoundaryWordChar(ch))
             {
                 string capname = ScanCapname();
                 if (CharsRight() > 0 && RightCharMoveRight() == '}')
@@ -1537,7 +1537,7 @@ namespace System.Text.RegularExpressions
 
             while (CharsRight() > 0)
             {
-                if (!RegexCharClass.IsWordChar(RightCharMoveRight()))
+                if (!RegexCharClass.IsBoundaryWordChar(RightCharMoveRight()))
                 {
                     MoveLeft();
                     break;
@@ -1743,7 +1743,7 @@ namespace System.Text.RegularExpressions
                 case 'c':
                     return ScanControl();
                 default:
-                    if (!UseOptionE() && RegexCharClass.IsWordChar(ch))
+                    if (!UseOptionE() && RegexCharClass.IsBoundaryWordChar(ch))
                     {
                         throw MakeException(RegexParseError.UnrecognizedEscape, SR.Format(SR.UnrecognizedEscape, ch));
                     }
@@ -1769,7 +1769,7 @@ namespace System.Text.RegularExpressions
             while (CharsRight() > 0)
             {
                 ch = RightCharMoveRight();
-                if (!(RegexCharClass.IsWordChar(ch) || ch == '-'))
+                if (!(RegexCharClass.IsBoundaryWordChar(ch) || ch == '-'))
                 {
                     MoveLeft();
                     break;
@@ -1885,7 +1885,7 @@ namespace System.Text.RegularExpressions
                                     MoveRight();
                                     ch = RightChar();
 
-                                    if (ch != '0' && RegexCharClass.IsWordChar(ch))
+                                    if (ch != '0' && RegexCharClass.IsBoundaryWordChar(ch))
                                     {
                                         if ((uint)(ch - '1') <= '9' - '1')
                                         {
@@ -2071,6 +2071,17 @@ namespace System.Text.RegularExpressions
             return i >= 0 && i < _capsize;
         }
 
+        /// <summary>
+        /// When generating code on a regex that uses a sparse set
+        /// of capture slots, we hash them to a dense set of indices
+        /// for an array of capture slots. Instead of doing the hash
+        /// at match time, it's done at compile time, here.
+        /// </summary>
+        internal static int MapCaptureNumber(int capnum, Hashtable? caps) =>
+            capnum == -1 ? -1 :
+            caps != null ? (int)caps[capnum]! :
+            capnum;
+
         /// <summary>Looks up the slot number for a given name</summary>
         private bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
 
@@ -2171,7 +2182,7 @@ namespace System.Text.RegularExpressions
                     _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(_pattern[pos], isReplacement ? _options & ~RegexOptions.IgnoreCase : _options, _culture));
                     break;
 
-                case > 1 when !UseOptionI() || isReplacement:
+                case > 1 when !UseOptionI() || isReplacement || !RegexCharClass.ParticipatesInCaseConversion(_pattern.AsSpan(pos, cch)):
                     _concatenation!.AddChild(new RegexNode(RegexNode.Multi, _options & ~RegexOptions.IgnoreCase, _pattern.Substring(pos, cch)));
                     break;
 

@@ -69,14 +69,21 @@ namespace System.ComponentModel
 
         // These are attributes that, when we discover them on interfaces, we do
         // not merge them into the attribute set for a class.
-        private static readonly Type[] s_skipInterfaceAttributeList = new Type[]
+        private static readonly Type[] s_skipInterfaceAttributeList = InitializeSkipInterfaceAttributeList();
+
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2045:AttributeRemoval",
+            Justification = "The ComVisibleAttribute is marked for removal and it's referenced here. Since this array" +
+                            "contains only attributes which are going to be ignored, removing such attribute" +
+                            "will not break the functionality in any way.")]
+        private static Type[] InitializeSkipInterfaceAttributeList()
         {
-#if FEATURE_SKIP_INTERFACE
-            typeof(System.Runtime.InteropServices.GuidAttribute),
-            typeof(System.Runtime.InteropServices.InterfaceTypeAttribute)
-#endif
-            typeof(System.Runtime.InteropServices.ComVisibleAttribute),
-        };
+            return new Type[]
+            {
+                typeof(System.Runtime.InteropServices.GuidAttribute),
+                typeof(System.Runtime.InteropServices.InterfaceTypeAttribute),
+                typeof(System.Runtime.InteropServices.ComVisibleAttribute),
+            };
+        }
 
 
         internal static Guid ExtenderProviderKey { get; } = Guid.NewGuid();
@@ -640,16 +647,14 @@ namespace System.ComponentModel
                 {
                     return GetExtenders(extenderList.GetExtenderProviders(), instance, cache);
                 }
-#if FEATURE_COMPONENT_COLLECTION
                 else
                 {
-                    IContainer cont = component.Site.Container;
+                    IContainer? cont = component.Site.Container;
                     if (cont != null)
                     {
                         return GetExtenders(cont.Components, instance, cache);
                     }
                 }
-#endif
             }
             return Array.Empty<IExtenderProvider>();
         }

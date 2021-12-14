@@ -384,6 +384,14 @@ namespace System.Net.Http
                 await content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
             }
 
+            if (_requestContentLengthRemaining > 0)
+            {
+                // The number of bytes we actually sent doesn't match the advertised Content-Length
+                long contentLength = content.Headers.ContentLength.GetValueOrDefault();
+                long sent = contentLength - _requestContentLengthRemaining;
+                throw new HttpRequestException(SR.Format(SR.net_http_request_content_length_mismatch, sent, contentLength));
+            }
+
             // Set to 0 to recognize that the whole request body has been sent and therefore there's no need to abort write side in case of a premature disposal.
             _requestContentLengthRemaining = 0;
 
@@ -414,8 +422,7 @@ namespace System.Net.Http
 
                 if (buffer.Length > _requestContentLengthRemaining)
                 {
-                    string msg = SR.net_http_content_write_larger_than_content_length;
-                    throw new IOException(msg, new HttpRequestException(msg));
+                    throw new HttpRequestException(SR.net_http_content_write_larger_than_content_length);
                 }
                 _requestContentLengthRemaining -= buffer.Length;
 
@@ -839,8 +846,9 @@ namespace System.Net.Http
                 }
 
                 int processLength = (int)Math.Min(headersLength, _recvBuffer.ActiveLength);
+                bool endHeaders = headersLength == processLength;
 
-                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(0, processLength), this);
+                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(0, processLength), endHeaders, this);
                 _recvBuffer.Discard(processLength);
                 headersLength -= processLength;
             }
@@ -1050,7 +1058,7 @@ namespace System.Net.Http
             {
                 int totalBytesRead = 0;
 
-                while (buffer.Length != 0)
+                do
                 {
                     // Sync over async here -- QUIC implementation does it per-I/O already; this is at least more coarse-grained.
                     if (_responseDataPayloadRemaining <= 0 && !ReadNextDataFrameAsync(response, CancellationToken.None).AsTask().GetAwaiter().GetResult())
@@ -1086,7 +1094,7 @@ namespace System.Net.Http
                         int copyLen = (int)Math.Min(buffer.Length, _responseDataPayloadRemaining);
                         int bytesRead = _stream.Read(buffer.Slice(0, copyLen));
 
-                        if (bytesRead == 0)
+                        if (bytesRead == 0 && buffer.Length != 0)
                         {
                             throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
                         }
@@ -1100,6 +1108,7 @@ namespace System.Net.Http
                         break;
                     }
                 }
+                while (buffer.Length != 0);
 
                 return totalBytesRead;
             }
@@ -1120,7 +1129,7 @@ namespace System.Net.Http
             {
                 int totalBytesRead = 0;
 
-                while (buffer.Length != 0)
+                do
                 {
                     if (_responseDataPayloadRemaining <= 0 && !await ReadNextDataFrameAsync(response, cancellationToken).ConfigureAwait(false))
                     {
@@ -1155,7 +1164,7 @@ namespace System.Net.Http
                         int copyLen = (int)Math.Min(buffer.Length, _responseDataPayloadRemaining);
                         int bytesRead = await _stream.ReadAsync(buffer.Slice(0, copyLen), cancellationToken).ConfigureAwait(false);
 
-                        if (bytesRead == 0)
+                        if (bytesRead == 0 && buffer.Length != 0)
                         {
                             throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
                         }
@@ -1169,6 +1178,7 @@ namespace System.Net.Http
                         break;
                     }
                 }
+                while (buffer.Length != 0);
 
                 return totalBytesRead;
             }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -25,10 +26,12 @@ internal static partial class Interop
         internal static unsafe partial int LastIndexOf(IntPtr sortHandle, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, int* matchLengthPtr);
 
         [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_StartsWith", CharSet = CharSet.Unicode)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool StartsWith(IntPtr sortHandle, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options, int* matchedLength);
 
         [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_EndsWith", CharSet = CharSet.Unicode)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool EndsWith(IntPtr sortHandle, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options, int* matchedLength);
 

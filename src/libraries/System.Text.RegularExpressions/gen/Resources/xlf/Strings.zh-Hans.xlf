@@ -152,6 +152,16 @@
         <target state="translated">长度不能小于 0 或超过输入长度。</target>
         <note />
       </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
+        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>RegexGenerator limitation reached.</source>
+        <target state="new">RegexGenerator limitation reached.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MakeException">
         <source>Invalid pattern '{0}' at offset {1}. {2}</source>
         <target state="translated">偏移 {0} 处的模式“{1}”无效。{2}</target>

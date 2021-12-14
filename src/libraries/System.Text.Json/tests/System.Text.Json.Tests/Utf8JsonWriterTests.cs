@@ -2911,6 +2911,59 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(2048)]
+        [InlineData(1024 * 1024)]
+        public static void CustomMaxDepth_DepthWithinLimit_ShouldSucceed(int maxDepth)
+        {
+            var options = new JsonWriterOptions { MaxDepth = maxDepth };
+            int effectiveMaxDepth = maxDepth == 0 ? 1000 : maxDepth;
+
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+
+            for (int i = 0; i < effectiveMaxDepth; i++)
+            {
+                writer.WriteStartArray();
+            }
+
+            Assert.Equal(effectiveMaxDepth, writer.CurrentDepth);
+
+            for (int i = 0; i < effectiveMaxDepth; i++)
+            {
+                writer.WriteEndArray();
+            }
+
+            Assert.Equal(0, writer.CurrentDepth);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(2048)]
+        [InlineData(1024 * 1024)]
+        public static void CustomMaxDepth_DepthExceedingLimit_ShouldFail(int maxDepth)
+        {
+            var options = new JsonWriterOptions { MaxDepth = maxDepth };
+            int effectiveMaxDepth = maxDepth == 0 ? 1000 : maxDepth;
+
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+
+            for (int i = 0; i < effectiveMaxDepth; i++)
+            {
+                writer.WriteStartArray();
+            }
+
+            Assert.Equal(effectiveMaxDepth, writer.CurrentDepth);
+
+            Assert.Throws<InvalidOperationException>(() => writer.WriteStartArray());
+        }
+
         // NOTE: WritingTooLargeProperty test is constrained to run on Windows and MacOSX because it causes
         //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the

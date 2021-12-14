@@ -10,8 +10,10 @@
          so, just setting it true by default -->
     <IncludeSatelliteAssembliesInVFS Condition="'$(IncludeSatelliteAssembliesInVFS)' == ''">true</IncludeSatelliteAssembliesInVFS>
 
-    <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;</_ShellCommandSeparator>
+    <!-- Run only if previous command succeeded -->
+    <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
+    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -27,7 +29,7 @@
     <_XHarnessArgs Condition="'$(OS)' != 'Windows_NT'">wasm $XHARNESS_COMMAND --app=. --output-directory=$XHARNESS_OUT</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(OS)' == 'Windows_NT'">wasm %XHARNESS_COMMAND% --app=. --output-directory=%XHARNESS_OUT%</_XHarnessArgs>
 
-    <_XHarnessArgs Condition="'$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">$(_XHarnessArgs) --engine=$(JSEngine) $(JSEngineArgs) --js-file=main.js</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">$(_XHarnessArgs) --engine=$(JSEngine) $(JSEngineArgs) --js-file=test-main.js</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(BrowserHost)' == 'windows'">$(_XHarnessArgs) --browser=chrome --browser-path=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
@@ -137,6 +139,7 @@
       <_WasmPropertyNames Include="WasmDedup" />
       <_WasmPropertyNames Include="WasmLinkIcalls" />
       <_WasmPropertyNames Include="WasmNativeStrip" />
+      <_WasmPropertyNames Include="WasmEnableES6" />
       <_WasmPropertyNames Include="_WasmDevel" />
 
       <_WasmPropertiesToPass

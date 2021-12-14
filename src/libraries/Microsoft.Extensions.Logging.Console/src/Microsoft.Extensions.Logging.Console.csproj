@@ -10,6 +10,7 @@
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <IsPackable>true</IsPackable>
     <PackageDescription>Console logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>
 

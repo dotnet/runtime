@@ -575,18 +575,49 @@ unsigned BasicBlock::dspCheapPreds()
     return count;
 }
 
-/*****************************************************************************
- *
- *  Display the basic block successors.
- */
-
+//------------------------------------------------------------------------
+// dspSuccs: Display the basic block successors.
+//
+// Arguments:
+//    compiler - compiler instance; passed to NumSucc(Compiler*) -- see that function for implications.
+//
 void BasicBlock::dspSuccs(Compiler* compiler)
 {
     bool first = true;
-    for (BasicBlock* const succ : Succs(compiler))
+
+    // If this is a switch, we don't want to call `Succs(Compiler*)` because it will eventually call
+    // `GetSwitchDescMap()`, and that will have the side-effect of allocating the unique switch descriptor map
+    // and/or compute this switch block's unique succ set if it is not present. Debug output functions should
+    // never have an effect on codegen. We also don't want to assume the unique succ set is accurate, so we
+    // compute it ourselves here.
+    if (bbJumpKind == BBJ_SWITCH)
     {
-        printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
-        first = false;
+        // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
+        // about the BlockSet epoch.
+        unsigned     bbNumMax = compiler->impInlineRoot()->fgBBNumMax;
+        BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
+        BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
+        for (BasicBlock* const bTarget : SwitchTargets())
+        {
+            BitVecOps::AddElemD(&bitVecTraits, uniqueSuccBlocks, bTarget->bbNum);
+        }
+        BitVecOps::Iter iter(&bitVecTraits, uniqueSuccBlocks);
+        unsigned        bbNum = 0;
+        while (iter.NextElem(&bbNum))
+        {
+            // Note that we will output switch successors in increasing numerical bbNum order, which is
+            // not related to their order in the bbJumpSwt->bbsDstTab table.
+            printf("%s" FMT_BB, first ? "" : ",", bbNum);
+            first = false;
+        }
+    }
+    else
+    {
+        for (BasicBlock* const succ : Succs(compiler))
+        {
+            printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
+            first = false;
+        }
     }
 }
 
@@ -720,8 +751,8 @@ const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */)
     static int  nextBufferIndex = 0;
 
     auto& buffer    = buffers[nextBufferIndex];
-    nextBufferIndex = (nextBufferIndex + 1) % _countof(buffers);
-    _snprintf_s(buffer, _countof(buffer), _countof(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding, "", bbID);
+    nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
+    _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB "%*s [%04u]", bbNum, blockNumPadding, "", bbID);
     return buffer;
 }
 
@@ -774,7 +805,7 @@ bool BasicBlock::CloneBlockState(
 
     for (Statement* const fromStmt : from->Statements())
     {
-        auto newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
+        GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
         if (!newExpr)
         {
             // gtCloneExpr doesn't handle all opcodes, so may fail to clone a statement.
@@ -782,7 +813,7 @@ bool BasicBlock::CloneBlockState(
             // return `false` to the caller to indicate that cloning was unsuccessful.
             return false;
         }
-        compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr));
+        compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr, fromStmt->GetDebugInfo()));
     }
     return true;
 }
@@ -839,14 +870,6 @@ Statement* BasicBlock::lastStmt() const
     Statement* result = bbStmtList->GetPrevStmt();
     assert(result != nullptr && result->GetNextStmt() == nullptr);
     return result;
-}
-
-//------------------------------------------------------------------------
-// BasicBlock::firstNode: Returns the first node in the block.
-//
-GenTree* BasicBlock::firstNode() const
-{
-    return IsLIR() ? GetFirstLIRNode() : Compiler::fgGetFirstNode(firstStmt()->GetRootNode());
 }
 
 //------------------------------------------------------------------------
@@ -1678,6 +1701,6 @@ void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason
     {
         compiler->loopAlignCandidates--;
         bbFlags &= ~BBF_LOOP_ALIGN;
-        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.", bbNum, reason);
+        JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.\n", bbNum, reason);
     }
 }

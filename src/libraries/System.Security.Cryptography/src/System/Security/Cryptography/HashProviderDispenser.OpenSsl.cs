@@ -6,8 +6,9 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
+using Internal.Cryptography;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     internal static partial class HashProviderDispenser
     {
@@ -94,6 +95,11 @@ namespace Internal.Cryptography
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
+                if (data.IsEmpty)
+                {
+                    return;
+                }
+
                 _running = true;
                 Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
             }
@@ -166,6 +172,11 @@ namespace Internal.Cryptography
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
+                if (data.IsEmpty)
+                {
+                    return;
+                }
+
                 _running = true;
                 Check(Interop.Crypto.HmacUpdate(_hmacCtx, data, data.Length));
             }

@@ -317,6 +317,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSwap(treeNode->AsOp());
             break;
 
+        case GT_ADDEX:
+            genCodeForAddEx(treeNode->AsOp());
+            break;
+
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
             break;
@@ -549,7 +553,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         {
 #ifdef DEBUG
             char message[256];
-            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s",
+            _snprintf_s(message, ArrLen(message), _TRUNCATE, "NYI: Unimplemented node type %s",
                         GenTree::OpName(treeNode->OperGet()));
             NYIRAW(message);
 #else
@@ -712,7 +716,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         // Since it is a fast tail call, the existence of first incoming arg is guaranteed
         // because fast tail call requires that in-coming arg area of caller is >= out-going
         // arg area required for tail call.
-        LclVarDsc* varDsc = &(compiler->lvaTable[varNumOut]);
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNumOut);
         assert(varDsc != nullptr);
 #endif // FEATURE_FASTTAILCALL
     }
@@ -1247,10 +1251,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         {
             assert(varNode->isContained());
             srcVarNum = varNode->GetLclNum();
-            assert(srcVarNum < compiler->lvaCount);
 
             // handle promote situation
-            LclVarDsc* varDsc = compiler->lvaTable + srcVarNum;
+            LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
 
             // This struct also must live in the stack frame
             // And it can't live in a register (SIMD)
@@ -2648,16 +2651,16 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     // But that would require us to deal with circularity while moving values around.  Spilling
     // to stack makes the implementation simple, which is not a bad trade off given Jmp calls
     // are not frequent.
-    for (varNum = 0; (varNum < compiler->info.compArgsCount); varNum++)
+    for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
 
         if (varDsc->lvPromoted)
         {
             noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
 
             unsigned fieldVarNum = varDsc->lvFieldLclStart;
-            varDsc               = compiler->lvaTable + fieldVarNum;
+            varDsc               = compiler->lvaGetDesc(fieldVarNum);
         }
         noway_assert(varDsc->lvIsParam);
 
@@ -2723,15 +2726,15 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     // Next move any un-enregistered register arguments back to their register.
     regMaskTP fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
     unsigned  firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
-    for (varNum = 0; (varNum < compiler->info.compArgsCount); varNum++)
+    for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
         if (varDsc->lvPromoted)
         {
             noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
 
             unsigned fieldVarNum = varDsc->lvFieldLclStart;
-            varDsc               = compiler->lvaTable + fieldVarNum;
+            varDsc               = compiler->lvaGetDesc(fieldVarNum);
         }
         noway_assert(varDsc->lvIsParam);
 
@@ -3253,9 +3256,9 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
     if (compiler->opts.IsReversePInvoke())
     {
         unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
-        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM && reversePInvokeFrameVarNumber < compiler->lvaRefCount);
-        LclVarDsc& reversePInvokeFrameVar = compiler->lvaTable[reversePInvokeFrameVarNumber];
-        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar.GetStackOffset());
+        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM);
+        const LclVarDsc* reversePInvokeFrameVar = compiler->lvaGetDesc(reversePInvokeFrameVarNumber);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar->GetStackOffset());
     }
 
     gcInfoEncoder->Build();
@@ -3835,7 +3838,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     // The amount to subtract from SP before starting to store the callee-saved registers. It might be folded into the
     // first save instruction as a "predecrement" amount, if possible.
-    int calleeSaveSPDelta = 0;
+    int calleeSaveSpDelta = 0;
 
     if (isFramePointerUsed())
     {
@@ -3917,7 +3920,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                 // separate SUB instruction or the SP adjustment might be folded in to the first STP if there is
                 // no outgoing argument space AND no local frame space, that is, if the only thing the frame does
                 // is save callee-saved registers (and possibly varargs argument registers).
-                calleeSaveSPDelta = totalFrameSize;
+                calleeSaveSpDelta = totalFrameSize;
 
                 offset = (int)compiler->compLclFrameSize;
             }
@@ -4012,7 +4015,7 @@ void CodeGen::genPushCalleeSavedRegisters()
             // slots. In fact, we are not; any empty alignment slots were calculated in
             // Compiler::lvaAssignFrameOffsets() and its callees.
 
-            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize;
+            int calleeSaveSpDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize;
             if (genSaveFpLrWithAllCalleeSavedRegisters)
             {
                 JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
@@ -4032,19 +4035,19 @@ void CodeGen::genPushCalleeSavedRegisters()
 
                 frameType = 3;
 
-                calleeSaveSPDeltaUnaligned -= 2 * REGSIZE_BYTES; // 2 for FP, LR which we'll save later.
+                calleeSaveSpDeltaUnaligned -= 2 * REGSIZE_BYTES; // 2 for FP, LR which we'll save later.
 
                 // We'll take care of these later, but callee-saved regs code shouldn't see them.
                 maskSaveRegsInt &= ~(RBM_FP | RBM_LR);
             }
 
-            assert(calleeSaveSPDeltaUnaligned >= 0);
-            assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
-            calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
+            assert(calleeSaveSpDeltaUnaligned >= 0);
+            assert((calleeSaveSpDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
+            calleeSaveSpDelta = AlignUp((UINT)calleeSaveSpDeltaUnaligned, STACK_ALIGN);
 
-            offset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
+            offset = calleeSaveSpDelta - calleeSaveSpDeltaUnaligned;
 
-            JITDUMP("    calleeSaveSPDelta=%d, offset=%d\n", calleeSaveSPDelta, offset);
+            JITDUMP("    calleeSaveSpDelta=%d, offset=%d\n", calleeSaveSpDelta, offset);
 
             // At most one alignment slot between SP and where we store the callee-saved registers.
             assert((offset == 0) || (offset == REGSIZE_BYTES));
@@ -4065,8 +4068,10 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     assert(frameType != 0);
 
-    JITDUMP("    offset=%d, calleeSaveSPDelta=%d\n", offset, calleeSaveSPDelta);
-    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSPDelta);
+    const int calleeSaveSpOffset = offset;
+
+    JITDUMP("    offset=%d, calleeSaveSpDelta=%d\n", offset, calleeSaveSpDelta);
+    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSpDelta);
 
     offset += genCountBits(maskSaveRegsInt | maskSaveRegsFloat) * REGSIZE_BYTES;
 
@@ -4111,10 +4116,10 @@ void CodeGen::genPushCalleeSavedRegisters()
     {
         assert(!genSaveFpLrWithAllCalleeSavedRegisters);
 
-        int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
+        int remainingFrameSz = totalFrameSize - calleeSaveSpDelta;
         assert(remainingFrameSz > 0);
         assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
-                                              // totalFrameSize and calleeSaveSPDelta -- is 16-byte aligned.
+                                              // totalFrameSize and calleeSaveSpDelta -- is 16-byte aligned.
 
         if (compiler->lvaOutgoingArgSpaceSize > 504)
         {
@@ -4163,14 +4168,14 @@ void CodeGen::genPushCalleeSavedRegisters()
     else if (frameType == 4)
     {
         assert(genSaveFpLrWithAllCalleeSavedRegisters);
-        offsetSpToSavedFp = calleeSaveSPDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
+        offsetSpToSavedFp = calleeSaveSpDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
                             2 * REGSIZE_BYTES; // -2 for FP, LR
     }
     else if (frameType == 5)
     {
         assert(genSaveFpLrWithAllCalleeSavedRegisters);
 
-        offsetSpToSavedFp = calleeSaveSPDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
+        offsetSpToSavedFp = calleeSaveSpDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
                             2 * REGSIZE_BYTES; // -2 for FP, LR
         JITDUMP("    offsetSpToSavedFp=%d\n", offsetSpToSavedFp);
         genEstablishFramePointer(offsetSpToSavedFp, /* reportUnwindData */ true);
@@ -4178,10 +4183,10 @@ void CodeGen::genPushCalleeSavedRegisters()
         // We just established the frame pointer chain; don't do it again.
         establishFramePointer = false;
 
-        int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
+        int remainingFrameSz = totalFrameSize - calleeSaveSpDelta;
         assert(remainingFrameSz > 0);
         assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
-                                              // totalFrameSize and calleeSaveSPDelta -- is 16-byte aligned.
+                                              // totalFrameSize and calleeSaveSpDelta -- is 16-byte aligned.
 
         JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
@@ -4201,6 +4206,13 @@ void CodeGen::genPushCalleeSavedRegisters()
     }
 
     assert(offset == totalFrameSize);
+
+    // Save off information about the frame for later use
+    //
+    compiler->compFrameInfo.frameType          = frameType;
+    compiler->compFrameInfo.calleeSaveSpOffset = calleeSaveSpOffset;
+    compiler->compFrameInfo.calleeSaveSpDelta  = calleeSaveSpDelta;
+    compiler->compFrameInfo.offsetSpToSavedFp  = offsetSpToSavedFp;
 #endif // TARGET_ARM64
 }
 

@@ -298,7 +298,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             // TODO-Throughput: implement product shipping solution to query base type.
             WCHAR  className[256] = {0};
             WCHAR* pbuf           = &className[0];
-            int    len            = _countof(className);
+            int    len            = ArrLen(className);
             info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, true, false, false);
             noway_assert(pbuf < &className[256]);
             JITDUMP("SIMD Candidate Type %S\n", className);
@@ -1277,9 +1277,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
 
     if (tree->OperGet() == GT_LCL_VAR)
     {
-        unsigned   lclNum    = tree->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVarDsc = &lvaTable[lclNum];
-        isParam              = lclVarDsc->lvIsParam;
+        isParam = lvaGetDesc(tree->AsLclVarCommon())->lvIsParam;
     }
 
     // normalize TYP_STRUCT value
@@ -1532,8 +1530,7 @@ GenTree* Compiler::getOp1ForConstructor(OPCODE opcode, GenTree* newobjThis, CORI
 void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
 {
     assert(tree->OperIsLocal());
-    unsigned   lclNum                = tree->AsLclVarCommon()->GetLclNum();
-    LclVarDsc* lclVarDsc             = &lvaTable[lclNum];
+    LclVarDsc* lclVarDsc             = lvaGetDesc(tree->AsLclVarCommon());
     lclVarDsc->lvUsedInSIMDIntrinsic = true;
 }
 
@@ -1907,7 +1904,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
     }
 
     // Exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
-    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) == 0)
+    if ((methodFlags & CORINFO_FLG_INTRINSIC) == 0)
     {
         return nullptr;
     }

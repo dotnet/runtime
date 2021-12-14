@@ -163,7 +163,7 @@ namespace Internal.Cryptography.Pal
             //
             // For compat with desktop, ignoring any failures from this call. (It is pretty unlikely to fail, in any case.)
             //
-            _ = Interop.crypt32.CertControlStore(certStore, CertControlStoreFlags.None, CertControlStoreType.CERT_STORE_CTRL_AUTO_RESYNC, IntPtr.Zero);
+            _ = Interop.Crypt32.CertControlStore(certStore, Interop.Crypt32.CertControlStoreFlags.None, Interop.Crypt32.CertControlStoreType.CERT_STORE_CTRL_AUTO_RESYNC, IntPtr.Zero);
 
             return new StorePal(certStore);
         }

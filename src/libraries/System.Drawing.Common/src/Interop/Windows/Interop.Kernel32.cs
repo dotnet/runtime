@@ -8,11 +8,11 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        public static extern int GetSystemDefaultLCID();
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        public static partial int GetSystemDefaultLCID();
 
-        [DllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true, EntryPoint = "GlobalAlloc", CharSet = CharSet.Auto)]
-        internal static extern IntPtr IntGlobalAlloc(int uFlags, UIntPtr dwBytes); // size should be 32/64bits compatible
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GlobalAlloc", SetLastError = true)]
+        internal static partial IntPtr IntGlobalAlloc(int uFlags, UIntPtr dwBytes); // size should be 32/64bits compatible
 
         internal static IntPtr GlobalAlloc(int uFlags, uint dwBytes)
         {

@@ -10,7 +10,6 @@ using System.Diagnostics.Tracing;
 
 namespace System.Reflection
 {
-    [StructLayout(LayoutKind.Sequential)]
     public partial class Assembly
     {
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod

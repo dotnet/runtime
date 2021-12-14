@@ -666,11 +666,24 @@ get_target_imethod (GSList *list, InterpMethod *imethod)
 	return NULL;
 }
 
+static inline MonoVTableEEData*
+get_vtable_ee_data (MonoVTable *vtable)
+{
+	MonoVTableEEData *ee_data = (MonoVTableEEData*)vtable->ee_data;
+
+	if (G_UNLIKELY (!ee_data)) {
+		ee_data = m_class_alloc0 (vtable->klass, sizeof (MonoVTableEEData));
+		mono_memory_barrier ();
+		vtable->ee_data = ee_data;
+	}
+	return ee_data;
+}
+
 static gpointer*
 get_method_table (MonoVTable *vtable, int offset)
 {
 	if (offset >= 0)
-		return vtable->interp_vtable;
+		return get_vtable_ee_data (vtable)->interp_vtable;
 	else
 		return (gpointer*)vtable;
 }
@@ -682,7 +695,7 @@ alloc_method_table (MonoVTable *vtable, int offset)
 
 	if (offset >= 0) {
 		table = (gpointer*)m_class_alloc0 (vtable->klass, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
-		vtable->interp_vtable = table;
+		get_vtable_ee_data (vtable)->interp_vtable = table;
 	} else {
 		table = (gpointer*)vtable;
 	}
@@ -2234,6 +2247,7 @@ typedef struct {
 	int pindex;
 	gpointer jit_wrapper;
 	gpointer *args;
+	gpointer extra_arg;
 	MonoFtnDesc ftndesc;
 } JitCallCbData;
 
@@ -2245,7 +2259,7 @@ jit_call_cb (gpointer arg)
 	gpointer jit_wrapper = cb_data->jit_wrapper;
 	int pindex = cb_data->pindex;
 	gpointer *args = cb_data->args;
-	MonoFtnDesc *ftndesc = &cb_data->ftndesc;
+	gpointer ftndesc = cb_data->extra_arg;
 
 	switch (pindex) {
 	case 0: {
@@ -2339,6 +2353,7 @@ struct _JitCallInfo {
 	guint8 *arginfo;
 	gint32 res_size;
 	int ret_mt;
+	gboolean no_wrapper;
 };
 
 static MONO_NEVER_INLINE void
@@ -2357,20 +2372,38 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 	sig = mono_method_signature_internal (method);
 	g_assert (sig);
 
-	MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
-	//printf ("J: %s %s\n", mono_method_full_name (method, 1), mono_method_full_name (wrapper, 1));
-
-	gpointer jit_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
-	mono_error_assert_ok (error);
-
 	gpointer addr = mono_jit_compile_method_jit_only (method, error);
 	return_if_nok (error);
 	g_assert (addr);
 
-	if (mono_llvm_only)
-		cinfo->addr = mini_llvmonly_add_method_wrappers (method, addr, FALSE, FALSE, &cinfo->extra_arg);
-	else
+	gboolean need_wrapper = TRUE;
+	if (mono_llvm_only) {
+		MonoAotMethodFlags flags = mono_aot_get_method_flags (addr);
+
+		if (flags & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE) {
+			/*
+			 * The callee already has a gsharedvt signature, we can call it directly
+			 * instead of through a gsharedvt out wrapper.
+			 */
+			need_wrapper = FALSE;
+			cinfo->no_wrapper = TRUE;
+		}
+	}
+
+	gpointer jit_wrapper = NULL;
+	if (need_wrapper) {
+		MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
+		jit_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+		mono_error_assert_ok (error);
+	}
+
+	if (mono_llvm_only) {
+		gboolean caller_gsharedvt = !need_wrapper;
+		cinfo->addr = mini_llvmonly_add_method_wrappers (method, addr, caller_gsharedvt, FALSE, &cinfo->extra_arg);
+	} else {
 		cinfo->addr = addr;
+	}
+
 	cinfo->sig = sig;
 	cinfo->wrapper = jit_wrapper;
 
@@ -2456,11 +2489,17 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 
 	JitCallCbData cb_data;
 	memset (&cb_data, 0, sizeof (cb_data));
-	cb_data.jit_wrapper = cinfo->wrapper;
 	cb_data.pindex = pindex;
 	cb_data.args = args;
-	cb_data.ftndesc.addr = cinfo->addr;
-	cb_data.ftndesc.arg = cinfo->extra_arg;
+	if (cinfo->no_wrapper) {
+		cb_data.jit_wrapper = cinfo->addr;
+		cb_data.extra_arg = cinfo->extra_arg;
+	} else {
+		cb_data.ftndesc.addr = cinfo->addr;
+		cb_data.ftndesc.arg = cinfo->extra_arg;
+		cb_data.jit_wrapper = cinfo->wrapper;
+		cb_data.extra_arg = &cb_data.ftndesc;
+	}
 
 	interp_push_lmf (&ext, frame);
 	gboolean thrown = FALSE;
@@ -2802,6 +2841,23 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 }
 
 #endif /* MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE */
+
+static void
+interp_entry_llvmonly (gpointer res, gpointer *args, gpointer imethod_untyped)
+{
+	InterpMethod *imethod = (InterpMethod*)imethod_untyped;
+
+	if (imethod->hasthis)
+		interp_entry_general (*(gpointer*)(args [0]), res, args + 1, imethod);
+	else
+		interp_entry_general (NULL, res, args, imethod);
+}
+
+static gpointer
+interp_get_interp_method (MonoMethod *method, MonoError *error)
+{
+    return mono_interp_get_imethod (method, error);
+}
 
 static InterpMethod*
 lookup_method_pointer (gpointer addr)
