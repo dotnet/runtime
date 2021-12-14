@@ -20,7 +20,7 @@ typedef char(__stdcall *f_ReturnsPrimitiveChar)();
 typedef void(__stdcall *f_EnsureManagedClassLoaders)();
 
 #ifdef TARGET_WINDOWS
-int main()
+int __cdecl main()
 #else
 int main(int argc, char* argv[])
 #endif
