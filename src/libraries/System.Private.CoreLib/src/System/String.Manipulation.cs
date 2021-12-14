@@ -1919,7 +1919,6 @@ namespace System
             throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string InternalSubString(int startIndex, int length)
         {
             Debug.Assert(startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
@@ -1927,42 +1926,11 @@ namespace System
 
             string result = FastAllocateString(length);
 
-            ref char source = ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex); /* force zero-extension */
-            ref char destination = ref result._firstChar;
-            if (length < 16)
-            {
-                int offset = 0;
-                if (length >= 8)
-                {
-                    Unsafe.As<char, ulong>(ref destination) = Unsafe.As<char, ulong>(ref source);
-                    Unsafe.As<char, ulong>(ref Unsafe.Add(ref destination, 4)) = Unsafe.As<char, ulong>(ref Unsafe.Add(ref source, 4));
-                    length -= 8;
-                    offset += 8;
-                }
-                if (length >= 4)
-                {
-                    Unsafe.As<char, ulong>(ref Unsafe.Add(ref destination, offset)) = Unsafe.As<char, ulong>(ref Unsafe.Add(ref source, offset));
-                    length -= 4;
-                    offset += 4;
-                }
-                if (length >= 2)
-                {
-                    Unsafe.As<char, uint>(ref Unsafe.Add(ref destination, offset)) = Unsafe.As<char, uint>(ref Unsafe.Add(ref source, offset));
-                    length -= 2;
-                    offset += 2;
-                }
-                if (length > 0)
-                {
-                    Unsafe.Add(ref destination, offset) = Unsafe.Add(ref source, offset);
-                }
-            }
-            else
-            {
-                Buffer.Memmove(
-                    elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
-                    destination: ref destination,
-                    source: ref source);
-            }
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex) /* force zero-extension */);
+
             return result;
         }
 
