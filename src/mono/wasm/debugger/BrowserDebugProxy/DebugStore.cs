@@ -816,7 +816,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (uri.IsFile && File.Exists(uri.LocalPath))
                 {
-                    using (FileStream file = File.Open(SourceUri.LocalPath, FileMode.Open))
+                    using (FileStream file = File.Open(uri.LocalPath, FileMode.Open))
                     {
                         await file.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;

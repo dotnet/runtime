@@ -2,14 +2,9 @@
   <PropertyGroup>
     <PackageId>LibraryTest</PackageId>
     <Version>1.0.0</Version>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <RepositoryUrl>https://github.com/dotnet/runtime.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <EnableSourceLink>true</EnableSourceLink>
-    <IncludeSymbols>true</IncludeSymbols>
-    <DebugType>embedded</DebugType>
-    <IncludeSymbols>true</IncludeSymbols>
+    <SourceLink>source-link.json</SourceLink>
     <DeterministicSourcePaths>true</DeterministicSourcePaths>
-    <DisableSourceLink>false</DisableSourceLink>
+    <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
+    <PathMap>$(AppOutputBase)=/fakepath/$(MSBuildProjectDirectory)</PathMap>
   </PropertyGroup>
 </Project>
