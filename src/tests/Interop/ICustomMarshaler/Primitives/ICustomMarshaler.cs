@@ -247,17 +247,17 @@ namespace System.Runtime.InteropServices.Tests
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
         public static extern string OrderTrackingMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] string str);
 
-        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntRef", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntRef")]
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
         public static extern string OrderTrackingMethodRef([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] ref string str);
 
-        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntOut", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntOut")]
         public static extern void OrderTrackingMethodOut([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] out string str);
 
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
         public delegate string TestDelegate(int val);
 
-        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegate", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegate")]
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
         public static extern string OrderTrackingMethodDelegate(int val, TestDelegate dlg);
 
@@ -661,7 +661,7 @@ namespace System.Runtime.InteropServices.Tests
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))]
         public delegate string TestDelegateRef([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))] ref int val);
 
-        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegateRef", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegateRef")]
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))]
         public static extern string CustomMarshallerWithDelegateRef(int val, TestDelegateRef dlg);
 
