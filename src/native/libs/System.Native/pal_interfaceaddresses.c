@@ -154,8 +154,6 @@ static bool ensure_getifaddrs_impl_available() {
         {
             getifaddrs_impl = (getifaddrs_fptr)dlsym(libc, "getifaddrs");
             freeifaddrs_impl = (freeifaddrs_fptr)dlsym(libc, "freeifaddrs");
-
-            dlclose(libc);
         }
     }
 
