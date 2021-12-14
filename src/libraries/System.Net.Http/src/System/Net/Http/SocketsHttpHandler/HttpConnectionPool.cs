@@ -574,8 +574,11 @@ namespace System.Net.Http
                 _pendingHttp2Connection = false;
 
                 // Signal to any queued HTTP2 requests that they must downgrade.
-                while (_http2RequestQueue.TryDequeueNextRequest(null))
-                    ;
+                while (_http2RequestQueue.TryDequeueRequest(out RequestQueue<Http2Connection?>.QueueItem item))
+                {
+                    // We don't care if this fails; that means the request was previously canceled.
+                    item.Waiter.TrySetResult(null);
+                }
 
                 if (_associatedHttp11ConnectionCount < _maxHttp11Connections)
                 {
@@ -2136,7 +2139,7 @@ namespace System.Net.Http
 
         private struct RequestQueue<T>
         {
-            private struct QueueItem
+            public struct QueueItem
             {
                 public HttpRequestMessage Request;
                 public TaskCompletionSourceWithCancellation<T> Waiter;
@@ -2156,6 +2159,7 @@ namespace System.Net.Http
                 return waiter;
             }
 
+<<<<<<< HEAD
             public bool TryDequeueSpecificRequest(HttpRequestMessage request, [MaybeNullWhen(false)] out TaskCompletionSourceWithCancellation<T> waiter)
             {
                 if (_queue is not null && _queue.TryPeek(out QueueItem item) && item.Request == request)
@@ -2170,6 +2174,14 @@ namespace System.Net.Http
             }
 
             // TODO: Remove
+=======
+            // TODO: TryDequeueNextRequest below was changed to not handle request cancellation.
+            // TryFailNextRequest should probably be changed similarly -- or rather, callers should just use the new
+            // TryDequeueRequest call below and then handle canceled requests themselves.
+            // However, we should fix the issue re cancellation failure first because that will affect this code too.
+            // TODO: Link cancellation failure issue here.
+
+>>>>>>> b178c595973... add TryDequeueRequest
             public bool TryFailNextRequest(Exception e)
             {
                 Debug.Assert(e is HttpRequestException or OperationCanceledException, "Unexpected exception type for connection failure");
@@ -2193,6 +2205,8 @@ namespace System.Net.Http
                 return false;
             }
 
+            // TODO: Remove this in favor of TryDequeueNextRequest below
+
             public bool TryDequeueNextRequest(T connection)
             {
                 if (_queue is not null)
@@ -2210,6 +2224,17 @@ namespace System.Net.Http
                     }
                 }
 
+                return false;
+            }
+
+            public bool TryDequeueRequest(out QueueItem item)
+            {
+                if (_queue is not null)
+                {
+                    return _queue.TryDequeue(out item);
+                }
+
+                item = default;
                 return false;
             }
 
