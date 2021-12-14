@@ -1880,7 +1880,7 @@ namespace System
             // that information is captured correctly in the comparison against the backing _length field.
             // We don't use this same mechanism in a 32-bit process due to the overhead of 64-bit arithmetic.
             if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)thisLength)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+                ThrowSubstringArgumentOutRangeException(startIndex, length);
 #else
             if ((uint)startIndex > (uint)thisLength || (uint)length > (uint)(thisLength - startIndex))
                 ThrowSubstringArgumentOutRangeException(startIndex, length);
