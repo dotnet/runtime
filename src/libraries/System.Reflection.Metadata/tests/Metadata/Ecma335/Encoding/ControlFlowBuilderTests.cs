@@ -435,11 +435,21 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 var code = new BlobBuilder();
                 var il = new InstructionEncoder(code, cfb);
 
-                var label = il.DefineLabel();
+                var l1 = il.DefineLabel();
+                var l2 = il.DefineLabel();
+                var l3 = il.DefineLabel();
+                var l4 = il.DefineLabel();
 
-                il.MarkLabel(label);
+                il.MarkLabel(l1);
                 il.OpCode(ILOpCode.Nop);
-                il.Branch(ILOpCode.Br_s, label);
+                il.Branch(ILOpCode.Br_s, l1);
+                il.MarkLabel(l2);
+                il.OpCode(ILOpCode.Nop);
+                il.MarkLabel(l3);
+                il.OpCode(ILOpCode.Nop);
+                il.MarkLabel(l4);
+
+                cfb.AddCatchRegion(l1, l2, l3, l4, MetadataTokens.TypeDefinitionHandle(1));
 
                 var builder = new BlobBuilder();
                 new MethodBodyStreamEncoder(builder).AddMethodBody(il);
