@@ -100,6 +100,8 @@ if defined RunNativeAot (
         <![CDATA[
 if defined RunNativeAot (
 
+    set ExePath=native\$(MSBuildProjectName)
+
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
     if defined __TestDotNetCmd (
@@ -121,11 +123,8 @@ if defined RunNativeAot (
     if errorlevel 1 (
         ECHO END COMPILATION - FAILED
         ECHO FAILED
-        rem TODO: Why doesn't "exit /b" end with failure? Crossgen uses that above, but it results in success here!?
-        exit 1
+        exit /b 1
     )
-
-    set ExePath=native\$(MSBuildProjectName)
 )
         ]]>
       </NativeAotBatchScript>
