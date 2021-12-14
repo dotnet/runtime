@@ -25,6 +25,5 @@
   <Target Name="GenerateExecutionScriptsInternal" />
   <Target Name="GenerateLocalRunnerScript" DependsOnTargets="GenerateRunScript" AfterTargets="PublishTestAsSelfContained" />
 
-  <Import Project="$(RepositoryEngineeringDir)testing\tests.props" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" />
 </Project>

@@ -185,5 +185,8 @@
   <PropertyGroup Condition="'$(IsTestsCommonProject)' != 'true'">
     <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">true</BuildAsStandalone>
     <OutputType Condition="$(BuildAsStandalone)">Exe</OutputType>
+    <TestFramework>GeneratedRunner</TestFramework>
   </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />
 </Project>
