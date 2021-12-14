@@ -35,7 +35,7 @@ namespace System.Net
         }
 
         public WebProxy(string Host, int Port)
-            : this(new Uri(string.Create(CultureInfo.InvariantCulture, $"http://{Host}:{Port}")), false, null, null)
+            : this(CreateProxyUri(Host, Port), false, null, null)
         {
         }
 
@@ -102,10 +102,27 @@ namespace System.Net
             return IsBypassed(destination) ? destination : Address;
         }
 
-        private static Uri? CreateProxyUri(string? address) =>
-            address == null ? null :
-            !address.Contains("://") ? new Uri("http://" + address) :
-            new Uri(address);
+        private static Uri? CreateProxyUri(string? address, int? port = null)
+        {
+            if (address is null)
+            {
+                return null;
+            }
+
+            if (!address.Contains("://", StringComparison.Ordinal))
+            {
+                address = "http://" + address;
+            }
+
+            var proxyUri = new Uri(address);
+
+            if (port.HasValue && proxyUri.IsAbsoluteUri)
+            {
+                proxyUri = new UriBuilder(proxyUri) { Port = port.Value }.Uri;
+            }
+
+            return proxyUri;
+        }
 
         private void UpdateRegexList(bool canThrow)
         {

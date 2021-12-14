@@ -523,7 +523,8 @@ namespace System.Text.RegularExpressions
         public bool IsAtomicByParent()
         {
             // Walk up the parent hierarchy.
-            for (RegexNode? parent = Next; parent is not null; parent = parent.Next)
+            RegexNode child = this;
+            for (RegexNode? parent = child.Next; parent is not null; child = parent, parent = child.Next)
             {
                 switch (parent.Type)
                 {
@@ -540,14 +541,14 @@ namespace System.Text.RegularExpressions
                         // so any atomicity applied to the alternation also applies to
                         // each individual branch.  This is true as well for conditional
                         // backreferences, where each of the yes/no branches are independent.
-                    case Testgroup when parent.Child(0) != this:
+                    case Testgroup when parent.Child(0) != child:
                         // As with alternations, each yes/no branch of an expression conditional
                         // are independent from each other, but the conditional expression itself
                         // can be backtracked into from each of the branches, so we can't make
                         // it atomic just because the whole conditional is.
                     case Capture:
                         // Skip captures. They don't affect atomicity.
-                    case Concatenate when parent.Child(parent.ChildCount() - 1) == this:
+                    case Concatenate when parent.Child(parent.ChildCount() - 1) == child:
                         // If the parent is a concatenation and this is the last node,
                         // any atomicity applying to the concatenation applies to this
                         // node, too.
@@ -591,6 +592,9 @@ namespace System.Text.RegularExpressions
                 case Setloopatomic:
                 case Setlazy:
                     return ReduceSet();
+
+                case Prevent:
+                    return ReducePrevent();
 
                 default:
                     return this;
@@ -1816,6 +1820,24 @@ namespace System.Text.RegularExpressions
             return null;
         }
 
+        /// <summary>Optimizations for negative lookaheads/behinds.</summary>
+        private RegexNode ReducePrevent()
+        {
+            Debug.Assert(Type == Prevent);
+            Debug.Assert(ChildCount() == 1);
+
+            // A negative lookahead/lookbehind wrapped around an empty child, i.e. (?!), is
+            // sometimes used as a way to insert a guaranteed no-match into the expression.
+            // We can reduce it to simply Nothing.
+            if (Child(0).Type == Empty)
+            {
+                Type = Nothing;
+                Children = null;
+            }
+
+            return this;
+        }
+
         /// <summary>
         /// Determines whether node can be switched to an atomic loop.  Subsequent is the node
         /// immediately after 'node'.
@@ -1893,8 +1915,8 @@ namespace System.Text.RegularExpressions
                         case End:
                         case EndZ when node.Ch != '\n':
                         case Eol when node.Ch != '\n':
-                        case Boundary when RegexCharClass.IsWordChar(node.Ch):
-                        case NonBoundary when !RegexCharClass.IsWordChar(node.Ch):
+                        case Boundary when RegexCharClass.IsBoundaryWordChar(node.Ch):
+                        case NonBoundary when !RegexCharClass.IsBoundaryWordChar(node.Ch):
                         case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
                         case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
                             return true;
@@ -2207,46 +2229,41 @@ namespace System.Text.RegularExpressions
             return 1;
         }
 
-        // Determines whether the node supports an optimized code gen strategy based on walking the node tree.
-        internal bool SupportsSimplifiedCodeGenerationImplementation()
+        // Determines whether the node supports a compilation / code generation strategy based on walking the node tree.
+        internal bool SupportsCompilation()
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, simplified code generation isn't supported as the tree is too deep.
+                // If we can't recur further, code generation isn't supported as the tree is too deep.
                 return false;
             }
 
-            if ((Options & RegexOptions.RightToLeft) != 0)
+            if ((Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
             {
-                // RightToLeft isn't supported.  That applies to both the top-level options as well as when used
-                // to specify positive and negative lookbehinds.
+                // NonBacktracking isn't supported, nor RightToLeft.  The latter applies to both the top-level
+                // options as well as when used to specify positive and negative lookbehinds.
                 return false;
-            }
-
-            // TODO: This should be moved somewhere else, to a pass somewhere where we explicitly
-            // annotate the tree, potentially as part of the final optimization pass.  It doesn't
-            // belong in this check.
-            switch (Type)
-            {
-                case Capture:
-                    // If we've found a supported capture, mark all of the nodes in its parent
-                    // hierarchy as containing a capture.
-                    RegexNode? parent = this;
-                    while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
-                    {
-                        parent.Options |= HasCapturesFlag;
-                        parent = parent.Next;
-                    }
-                    break;
             }
 
             int childCount = ChildCount();
             for (int i = 0; i < childCount; i++)
             {
                 // The node isn't supported if any of its children aren't supported.
-                if (!Child(i).SupportsSimplifiedCodeGenerationImplementation())
+                if (!Child(i).SupportsCompilation())
                 {
                     return false;
+                }
+            }
+
+            // TODO: This should be moved somewhere else, to a pass somewhere where we explicitly
+            // annotate the tree, potentially as part of the final optimization pass.  It doesn't
+            // belong in this check.
+            if (Type == Capture)
+            {
+                // If we've found a supported capture, mark all of the nodes in its parent hierarchy as containing a capture.
+                for (RegexNode? parent = this; parent != null && (parent.Options & HasCapturesFlag) == 0; parent = parent.Next)
+                {
+                    parent.Options |= HasCapturesFlag;
                 }
             }
 
@@ -2277,6 +2294,7 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
+#if DEBUG
         private string TypeName =>
             Type switch
             {
@@ -2394,7 +2412,6 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-#if DEBUG
         [ExcludeFromCodeCoverage]
         public void Dump() => Debug.WriteLine(ToString());
 

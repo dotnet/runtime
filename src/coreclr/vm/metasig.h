@@ -509,7 +509,6 @@ DEFINE_METASIG_T(IM(Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_Cult
                  s g(BINDING_FLAGS) C(BINDER) j a(j) a(g(PARAMETER_MODIFIER)) C(CULTURE_INFO) a(s), j))
 DEFINE_METASIG_T(IM(Str_Type_Str_RetVoid, s C(TYPE) s, v))
 DEFINE_METASIG_T(SM(Delegate_RetIntPtr, C(DELEGATE), I))
-DEFINE_METASIG_T(SM(Delegate_RefIntPtr_RetIntPtr, C(DELEGATE) r(I), I))
 DEFINE_METASIG_T(SM(RuntimeTypeHandle_RetType, g(RT_TYPE_HANDLE), C(TYPE)))
 DEFINE_METASIG_T(SM(RuntimeTypeHandle_RetIntPtr, g(RT_TYPE_HANDLE), I))
 DEFINE_METASIG_T(SM(RuntimeMethodHandle_RetIntPtr, g(METHOD_HANDLE), I))

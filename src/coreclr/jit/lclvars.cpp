@@ -2045,8 +2045,13 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         // multiple registers?
         if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
         {
-            if ((structPromotionInfo.fieldCnt != 2) &&
-                !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
+            if (structPromotionInfo.containsHoles && structPromotionInfo.customLayout)
+            {
+                JITDUMP("Not promoting multi-reg struct local V%02u with holes.\n", lclNum);
+                shouldPromote = false;
+            }
+            else if ((structPromotionInfo.fieldCnt != 2) &&
+                     !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
             {
                 JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true, #fields != 2 and it's "
                         "not a single SIMD.\n",

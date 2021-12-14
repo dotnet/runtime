@@ -19,8 +19,6 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Exposes new experimental APIs from System.Runtime</PackageDescription>
     <PackageId>$(MSBuildProjectName)</PackageId>
-    <!-- TODO: Remove when the package shipped with NET6. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.cs" />

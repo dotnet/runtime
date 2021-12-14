@@ -64,9 +64,6 @@ jobs:
       - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'), eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))  }}:
-          # This is needed for creating a CORE_ROOT in the current design.
-          - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }} :
           # minijit and mono interpreter runtimevariants do not require any special build of the runtime
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -104,7 +101,7 @@ jobs:
 
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
       - name: runtimeFlavorArgs
-        value: '-excludemonofailures'
+        value: '-mono'
 
     - name: runtimeVariantArg
       value: ''
@@ -299,15 +296,6 @@ jobs:
     # in ReadyToRun jobs.
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
-
-    # Overwrite coreclr runtime binaries with mono ones
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      - script: $(_msbuildCommand)
-                $(Build.SourcesDirectory)/src/mono/mono.proj
-                /t:PatchCoreClrCoreRoot
-                /p:Configuration=$(buildConfigUpper)
-                /p:TargetArchitecture=$(archType)
-        displayName: "Patch dotnet with mono"
 
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:

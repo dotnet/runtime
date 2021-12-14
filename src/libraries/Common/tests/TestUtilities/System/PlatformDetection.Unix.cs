@@ -41,6 +41,8 @@ namespace System
         public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
         public static bool IsMacOsAppleSilicon => IsOSX && IsArm64Process;
         public static bool IsNotMacOsAppleSilicon => !IsMacOsAppleSilicon;
+        public static bool IsAppSandbox => Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID") != null;
+        public static bool IsNotAppSandbox => !IsAppSandbox;
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
@@ -49,7 +51,7 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
+        public static bool IsSuperUser => IsBrowser || IsWindows ? false : Libc.geteuid() == 0;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
@@ -70,7 +72,7 @@ namespace System
 
                 try
                 {
-                    return Marshal.PtrToStringAnsi(libc.gnu_get_libc_release());
+                    return Marshal.PtrToStringAnsi(Libc.gnu_get_libc_release());
                 }
                 catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
                 {
@@ -94,7 +96,7 @@ namespace System
 
                 try
                 {
-                    return Marshal.PtrToStringAnsi(libc.gnu_get_libc_version());
+                    return Marshal.PtrToStringAnsi(Libc.gnu_get_libc_version());
                 }
                 catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
                 {
@@ -317,7 +319,7 @@ namespace System
             public Version VersionId { get; set; }
         }
 
-        private static partial class libc
+        private static partial class Libc
         {
             [GeneratedDllImport("libc", SetLastError = true)]
             public static unsafe partial uint geteuid();
