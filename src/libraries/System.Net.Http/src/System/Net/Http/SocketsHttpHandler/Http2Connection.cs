@@ -603,7 +603,7 @@ namespace System.Net.Http
             int streamId = frameHeader.StreamId;
             Http2Stream? http2Stream = GetStream(streamId);
 
-            IHttpHeadersHandler headersHandler;
+            IHttpStreamHeadersHandler headersHandler;
             if (http2Stream != null)
             {
                 http2Stream.OnHeadersStart();
@@ -645,14 +645,15 @@ namespace System.Net.Http
             http2Stream?.OnHeadersComplete(endStream);
         }
 
-        /// <summary>Nop implementation of <see cref="IHttpHeadersHandler"/> used by <see cref="ProcessHeadersFrame"/>.</summary>
-        private sealed class NopHeadersHandler : IHttpHeadersHandler
+        /// <summary>Nop implementation of <see cref="IHttpStreamHeadersHandler"/> used by <see cref="ProcessHeadersFrame"/>.</summary>
+        private sealed class NopHeadersHandler : IHttpStreamHeadersHandler
         {
             public static readonly NopHeadersHandler Instance = new NopHeadersHandler();
-            void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) { }
-            void IHttpHeadersHandler.OnHeadersComplete(bool endStream) { }
-            void IHttpHeadersHandler.OnStaticIndexedHeader(int index) { }
-            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value) { }
+            void IHttpStreamHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) { }
+            void IHttpStreamHeadersHandler.OnHeadersComplete(bool endStream) { }
+            void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index) { }
+            void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value) { }
+            void IHttpStreamHeadersHandler.OnDynamicIndexedHeader(int? index, ReadOnlySpan<byte> name, ReadOnlySpan<byte> value) { }
         }
 
         private ReadOnlySpan<byte> GetFrameData(ReadOnlySpan<byte> frameData, bool hasPad, bool hasPriority)

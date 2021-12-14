@@ -18,7 +18,7 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
-        private sealed class Http2Stream : IValueTaskSource, IHttpHeadersHandler, IHttpTrace
+        private sealed class Http2Stream : IValueTaskSource, IHttpStreamHeadersHandler, IHttpTrace
         {
             private const int InitialStreamBufferSize =
 #if DEBUG
@@ -525,7 +525,7 @@ namespace System.Net.Http
                 (KnownHeaders.WWWAuthenticate.Descriptor, Array.Empty<byte>()),
             };
 
-            void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
+            void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index)
             {
                 Debug.Assert(index >= FirstHPackRequestPseudoHeaderId && index <= LastHPackNormalHeaderId);
 
@@ -548,7 +548,7 @@ namespace System.Net.Http
                 }
             }
 
-            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+            void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
             {
                 Debug.Assert(index >= FirstHPackRequestPseudoHeaderId && index <= LastHPackNormalHeaderId);
 
@@ -569,6 +569,11 @@ namespace System.Net.Http
 
                     OnHeader(descriptor, value);
                 }
+            }
+
+            void IHttpStreamHeadersHandler.OnDynamicIndexedHeader(int? index, ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+            {
+                OnHeader(name, value);
             }
 
             private void AdjustHeaderBudget(int amount)
