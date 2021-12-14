@@ -9,6 +9,7 @@ using Xunit;
 namespace System.Security.Cryptography.Dsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ActiveIssue("TODO - create GH issue, x86", TestPlatforms.Android)]
     public static class DSAKeyFileTests
     {
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
