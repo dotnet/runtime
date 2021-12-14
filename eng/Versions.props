@@ -154,7 +154,7 @@
     <MicrosoftNETTestSdkVersion>16.9.0-preview-20201201-01</MicrosoftNETTestSdkVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.21613.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21613.2</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.0.2-alpha.0.21606.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.0.2-alpha.0.21613.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.2-pre.9</XUnitVersion>
     <XUnitRunnerVisualStudioVersion>2.4.2</XUnitRunnerVisualStudioVersion>
     <CoverletCollectorVersion>1.3.0</CoverletCollectorVersion>
