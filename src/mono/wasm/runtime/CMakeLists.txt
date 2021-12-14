@@ -24,8 +24,8 @@ target_link_libraries(dotnet
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
 
 set_target_properties(dotnet PROPERTIES
-    LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/runtime.iffe.js;${SOURCE_DIR}/library-dotnet.js;${SYSTEM_NATIVE_DIR}/pal_random.js"
-    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_LINK_FLAGS} -DENABLE_NETCORE=1 --extern-pre-js ${NATIVE_BIN_DIR}/src/runtime.iffe.js --js-library ${SOURCE_DIR}/library-dotnet.js --js-library ${SYSTEM_NATIVE_DIR}/pal_random.js"
+    LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.pre.js;${NATIVE_BIN_DIR}/src/cjs/runtime.cjs.iffe.js;${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.lib.js;${NATIVE_BIN_DIR}/src/pal_random.lib.js;${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.post.js;${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.extpost.js;"
+    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_LINK_FLAGS} -DENABLE_NETCORE=1 --extern-pre-js ${NATIVE_BIN_DIR}/src/cjs/runtime.cjs.iffe.js --pre-js ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.pre.js --js-library ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.lib.js --js-library ${NATIVE_BIN_DIR}/src/pal_random.lib.js --post-js ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.post.js --extern-post-js ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.extpost.js "
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

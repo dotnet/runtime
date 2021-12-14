@@ -1481,6 +1481,15 @@ Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 //
 void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet)
 {
+    if ((tree != nullptr) && tree->IsCall())
+    {
+        if (tree->AsCall()->IsNoReturn())
+        {
+            // No point in having vector save/restore if the call will not return.
+            return;
+        }
+    }
+
     if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
     {
         // We assume that the kill set includes at least some callee-trash registers, but
@@ -3102,9 +3111,10 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         // Can be contained for MultiplyAdd on arm64
         return BuildBinaryUses(node->AsOp(), candidates);
     }
-    if (node->OperIs(GT_NEG))
+    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH))
     {
-        // Can be contained for MultiplyAdd on arm64
+        // GT_NEG can be contained for MultiplyAdd on arm64
+        // GT_CAST and GT_LSH for ADD with sign/zero extension
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
 #endif

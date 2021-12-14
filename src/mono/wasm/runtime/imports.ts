@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable @typescript-eslint/triple-slash-reference */
-/// <reference path="./types/emscripten.d.ts" />
 /// <reference path="./types/v8.d.ts" />
 
-import { EmscriptenModuleMono, MonoConfig, RuntimeHelpers } from "./types";
+import { DotnetModule, MonoConfig, RuntimeHelpers } from "./types";
+import { EmscriptenModule } from "./types/emscripten";
 
 // these are our public API (except internal)
-export let Module: EmscriptenModule & EmscriptenModuleMono;
+export let Module: EmscriptenModule & DotnetModule;
 export let MONO: any;
 export let BINDING: any;
 export let INTERNAL: any;
@@ -19,12 +19,13 @@ export let ENVIRONMENT_IS_NODE: boolean;
 export let ENVIRONMENT_IS_SHELL: boolean;
 export let ENVIRONMENT_IS_WEB: boolean;
 export let locateFile: Function;
+export let quit: Function;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function setImportsAndExports(
-    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
+    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function },
     exports: { mono: any, binding: any, internal: any, module: any },
-) {
+): void {
     MONO = exports.mono;
     BINDING = exports.binding;
     INTERNAL = exports.internal;
@@ -34,6 +35,7 @@ export function setImportsAndExports(
     ENVIRONMENT_IS_SHELL = imports.isShell;
     ENVIRONMENT_IS_WEB = imports.isWeb;
     locateFile = imports.locateFile;
+    quit = imports.quit_;
 }
 
 let monoConfig: MonoConfig;
@@ -57,4 +59,5 @@ export const runtimeHelpers: RuntimeHelpers = <any>{
         MONO.config = value;
         Module.config = value;
     },
+    fetch: null
 };

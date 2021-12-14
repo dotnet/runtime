@@ -650,24 +650,6 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
     return (GetModule() == pMT->GetModule());
 }
 
-//==========================================================================================
-BOOL MethodTable::HasSameTypeDefAs_NoLogging(MethodTable *pMT)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (this == pMT)
-        return TRUE;
-
-    // optimize for the negative case where we expect RID mismatch
-    if (GetTypeDefRid_NoLogging() != pMT->GetTypeDefRid_NoLogging())
-        return FALSE;
-
-    if (GetCanonicalMethodTable() == pMT->GetCanonicalMethodTable())
-        return TRUE;
-
-    return (GetModule_NoLogging() == pMT->GetModule_NoLogging());
-}
-
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================

@@ -5154,7 +5154,7 @@ MethodTableBuilder::InitNewMethodDesc(
                                                     NULL,
                                                     NULL)))
         {
-            pNewMD->SetIsJitIntrinsic();
+            pNewMD->SetIsIntrinsic();
         }
 
     }

@@ -89,11 +89,13 @@ namespace Wasm.Build.Tests
                                         insertAtEnd: printValueTarget);
 
             (_, string output) = BuildProject(buildArgs,
-                                    initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                    dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                                    id: Path.GetRandomFileName(),
-                                    expectSuccess: false,
-                                    useCache: false);
+                                                id: Path.GetRandomFileName(),
+                                                new BuildProjectOptions(
+                                                    InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                                    DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                                                    ExpectSuccess: false,
+                                                    UseCache: false,
+                                                    BuildOnlyAfterPublish: false));
 
             return output;
         }

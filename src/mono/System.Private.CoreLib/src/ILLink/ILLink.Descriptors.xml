@@ -459,7 +459,7 @@
 		</type>
 
 		<!-- appdomain.c (ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies) -->
-		<type fullname="System.Reflection.Assembly" preserve="fields"/>
+		<type fullname="System.Reflection.Assembly" preserve="nothing"/>
 
 		<!-- reflection.c: mono_method_body_get_object -->
 		<type fullname="System.Reflection.RuntimeExceptionHandlingClause" preserve="fields" >
@@ -483,8 +483,9 @@
 			<method name=".ctor" />
 		</type>
 
-		<type fullname="System.Reflection.RuntimeAssembly" preserve="fields">
+		<type fullname="System.Reflection.RuntimeAssembly">
 			<method name=".ctor" />
+			<field name="_mono_assembly" />
 		</type>
 
 		<type fullname="System.Reflection.RuntimeConstructorInfo" preserve="fields" >
