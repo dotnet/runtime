@@ -641,6 +641,28 @@ namespace DebuggerTests
                 );
             });
 
+        [Fact]
+        public async Task EvaluateStaticAttributeInAssemblyNotRelatedButLoaded() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateTestsClass/TestEvaluate", "EvaluateLocalsFromAnotherAssembly", 5, "EvaluateLocalsFromAnotherAssembly",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocalsFromAnotherAssembly'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+               await EvaluateOnCallFrameAndCheck(id, 
+                   ("DebuggerTests.ClassToBreak.valueToCheck", TNumber(10)));
+           });
+
+        [Fact]
+        public async Task EvaluateLocalObjectFromAssemblyNotRelatedButLoaded()
+         => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateTestsClass/TestEvaluate", "EvaluateLocalsFromAnotherAssembly", 5, "EvaluateLocalsFromAnotherAssembly",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocalsFromAnotherAssembly'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+               await EvaluateOnCallFrameAndCheck(id, 
+                   ("a.valueToCheck", TNumber(20)));
+           });
     }
 
 }
