@@ -141,6 +141,17 @@ check_c_source_compiles(
     "
     HAVE_FLOCK64)
 
+check_c_source_compiles(
+    "
+    #include <ifaddrs.h>
+    int main(void)
+    {
+        struct ifaddrs ia;
+        return 0;
+    }
+    "
+    HAVE_IFADDRS)
+
 check_symbol_exists(
     O_CLOEXEC
     fcntl.h

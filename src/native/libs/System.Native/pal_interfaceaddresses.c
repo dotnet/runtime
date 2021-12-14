@@ -102,10 +102,10 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
     return len;
 }
 
-#if !HAVE_GETIFADDRS
+#if !HAVE_IFADDRS
 /* This structure is exactly the same as struct ifaddrs defined in ifaddrs.h but since the header
- * might not be available (e.g., in bionics used in Android) we need to mirror it here so that we can
- * dynamically load the getifaddrs function and use it.
+ * might not be available (e.g., in bionics used in Android before API 24) we need to mirror it here
+ * so that we can dynamically load the getifaddrs function and use it.
  */
 struct ifaddrs {
 	struct ifaddrs *ifa_next;
@@ -125,8 +125,8 @@ typedef int (*getifaddrs_fptr)(struct ifaddrs**);
 typedef void (*freeifaddrs_fptr)(struct ifaddrs*);
 
 #if HAVE_GETIFADDRS
-static getifaddrs_fptr getifaddrs_impl = getifaddrs;
-static freeifaddrs_fptr freeifaddrs_impl = freeifaddrs;
+static const getifaddrs_fptr getifaddrs_impl = getifaddrs;
+static const freeifaddrs_fptr freeifaddrs_impl = freeifaddrs;
 #else
 // we will try to load the getifaddrs and freeifaddrs functions dynamically (this is necessary on Android)
 static bool loading_getifaddrs_already_attempted = false;
