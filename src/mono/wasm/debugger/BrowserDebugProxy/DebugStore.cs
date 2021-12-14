@@ -530,7 +530,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal MetadataReader asmMetadataReader { get; }
         internal MetadataReader pdbMetadataReader { get; set; }
         internal List<MetadataReader> enCMetadataReader  = new List<MetadataReader>();
-        public int DebugId { get; set; }
+        private int debugId;
         internal int PdbAge { get; }
         internal System.Guid PdbGuid { get; }
         internal string PdbName { get; }
@@ -539,6 +539,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, CancellationToken token)
         {
+            debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
             using var asmStream = new MemoryStream(assembly);
             peReader = new PEReader(asmStream);
@@ -577,6 +578,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
             Populate();
+        }
+
+        public async Task<int> GetDebugId(MonoSDBHelper sdbAgent, CancellationToken token)
+        {
+            if (debugId > 0)
+                return debugId;
+            debugId = await sdbAgent.GetAssemblyId(Name, token);
+            return debugId;
+        }
+
+        public void SetDebugId(int id)
+        {
+            if (debugId <= 0 && debugId != id)
+                debugId = id;
         }
 
         public bool EnC(byte[] meta, byte[] pdb)
