@@ -2359,7 +2359,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     $"dotnet:object:{objectId}",
                     i == 0,
                     token);
-                objectValues.AddRange(props);
+                objectValues.AddRange(await GetRegularProperties(props, typeId, token));
 
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,
@@ -2522,6 +2522,34 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
                 return (regularFields, rootHiddenFields);
+            }
+
+            async Task<JArray> GetRegularProperties(JArray props, int typeId, CancellationToken token)
+            {
+                var typeInfo = await GetTypeInfo(typeId, token);
+                var typeProperitesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
+                var regularProps = new JArray();
+                foreach (var p in props)
+                {
+                    if (!typeProperitesBrowsableInfo.TryGetValue(p["name"].Value<string>(), out DebuggerBrowsableState? state))
+                    {
+                        regularProps.Add(p);
+                        continue;
+                    }
+                    switch (state)
+                    {
+                        case DebuggerBrowsableState.Never:
+                            break;
+                        case DebuggerBrowsableState.RootHidden:
+                            break;
+                        case DebuggerBrowsableState.Collapsed:
+                            regularProps.Add(p);
+                            break;
+                        default:
+                            throw new NotImplementedException($"DebuggerBrowsableState: {state}");
+                    }
+                }
+                return regularProps;
             }
         }
 

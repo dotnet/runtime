@@ -915,7 +915,6 @@ namespace DebuggerTests
                 }, "testCollapsedProps#1");
            });
         
-        //PROPS FAILING
         [Theory]
         [InlineData("TestEvaluateFieldsRootHidden", "testFieldsRootHidden")]
         [InlineData("TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden")]
