@@ -4337,8 +4337,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 DWORD rva;
                 IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
 
-                // Ensure that the IL image is loaded.
-                GetModule()->GetPEAssembly()->EnsureLoaded();
+                // The PE should be loaded by now.
+                _ASSERT(GetModule()->GetPEAssembly()->IsLoaded());
 
                 DWORD fldSize;
                 if (FieldDescElementType == ELEMENT_TYPE_VALUETYPE)
