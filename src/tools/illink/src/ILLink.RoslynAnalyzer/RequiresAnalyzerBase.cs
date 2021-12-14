@@ -220,7 +220,7 @@ namespace ILLink.RoslynAnalyzer
 					ISymbol containingSymbol = FindContainingSymbol (operationContext, AnalyzerDiagnosticTargets);
 
 					// Do not emit any diagnostic if caller is annotated with the attribute too.
-					if (IsMemberInRequiresScope (containingSymbol))
+					if (containingSymbol.IsInRequiresScope (RequiresAttributeName))
 						return;
 
 					if (ReportSpecialIncompatibleMembersDiagnostic (operationContext, incompatibleMembers, member))
@@ -335,25 +335,11 @@ namespace ILLink.RoslynAnalyzer
 				message));
 		}
 
-		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2) => member1.HasAttribute (RequiresAttributeName) ^ member2.HasAttribute (RequiresAttributeName);
-
-		// TODO: Consider sharing with linker IsMethodInRequiresUnreferencedCodeScope method
-		/// <summary>
-		/// True if the source of a call is considered to be annotated with the Requires... attribute
-		/// </summary>
-		protected bool IsMemberInRequiresScope (ISymbol member)
+		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2)
 		{
-			if (member.HasAttribute (RequiresAttributeName) ||
-				(member is not ITypeSymbol &&
-				member.ContainingType.HasAttribute (RequiresAttributeName))) {
-				return true;
-			}
-
-			// Check also for RequiresAttribute in the associated symbol
-			if (member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (RequiresAttributeName))
-				return true;
-
-			return false;
+			bool member1HasAttribute = member1.IsOverrideInRequiresScope (RequiresAttributeName);
+			bool member2HasAttribute = member2.IsOverrideInRequiresScope (RequiresAttributeName);
+			return member1HasAttribute ^ member2HasAttribute;
 		}
 
 		// TODO: Consider sharing with linker DoesMethodRequireUnreferencedCode method
@@ -372,7 +358,7 @@ namespace ILLink.RoslynAnalyzer
 			}
 
 			// Also check the containing type
-			if ((member.IsStatic || member.IsConstructor ()) && member is not ITypeSymbol) {
+			if (member.IsStatic || member.IsConstructor ()) {
 				return TryGetRequiresAttribute (member.ContainingType, out requiresAttribute);
 			}
 			return false;
