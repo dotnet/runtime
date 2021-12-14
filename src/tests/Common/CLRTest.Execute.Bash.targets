@@ -340,6 +340,13 @@ CLRTestExitCode=$?
 if [ ! -z ${RunCrossGen+x} ]%3B then
   ReleaseLock
 fi
+if [ ! -z "$RunNativeAot" ]
+then
+    if [ -z "$CLRTestNoCleanup" ];
+    then
+      rm -rf native
+    fi
+fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
