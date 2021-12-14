@@ -248,16 +248,6 @@ jobs:
         artifactName: '$(buildProductArtifactName)'
         displayName: 'product build'
 
-
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      # We need to explictly download CoreCLR for Mono
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(coreClrProductRootFolderPath)
-          artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
-          artifactName: '$(coreClrProductArtifactName)'
-          displayName: 'CoreCLR product download for Mono'
-
     # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
     # ilproj test projects during copynativeonly.
     - template: /eng/pipelines/common/download-artifact-step.yml
