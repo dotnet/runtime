@@ -522,8 +522,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 try
                 {
                     var propDefinition = metadataReader.GetPropertyDefinition(prop);
-                    var propdName = metadataReader.GetString(propDefinition.Name);
-                    AppendToBrowsable(DebuggerBrowsableProperties, propDefinition.GetCustomAttributes(), propdName);
+                    var propName = metadataReader.GetString(propDefinition.Name);
+                    AppendToBrowsable(DebuggerBrowsableProperties, propDefinition.GetCustomAttributes(), propName);
                 }
                 catch { continue; }
             }
