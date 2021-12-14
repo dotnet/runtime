@@ -1000,7 +1000,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public override string VirtualPropertyAnnotationInProperty { get; set; }
 
 				[ExpectedWarning ("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor", ProducedBy = ProducedBy.Analyzer)]
-
 				public override string VirtualPropertyAnnotationInPropertyAndAccessor {
 					[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
 					[ExpectedWarning ("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Analyzer)]
