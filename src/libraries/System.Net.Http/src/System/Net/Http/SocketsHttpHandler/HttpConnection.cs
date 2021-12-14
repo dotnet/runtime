@@ -860,10 +860,11 @@ namespace System.Net.Http
 
         private HttpContentWriteStream CreateRequestContentStream(HttpRequestMessage request)
         {
+            Debug.Assert(request.Content is not null);
             bool requestTransferEncodingChunked = request.HasHeaders && request.Headers.TransferEncodingChunked == true;
             HttpContentWriteStream requestContentStream = requestTransferEncodingChunked ? (HttpContentWriteStream)
                 new ChunkedEncodingWriteStream(this) :
-                new ContentLengthWriteStream(this);
+                new ContentLengthWriteStream(this, request.Content.Headers.ContentLength.GetValueOrDefault());
             return requestContentStream;
         }
 

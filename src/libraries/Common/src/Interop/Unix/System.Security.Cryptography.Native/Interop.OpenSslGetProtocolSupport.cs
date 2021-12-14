@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class OpenSsl
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslGetProtocolSupport")]
-        internal static extern int OpenSslGetProtocolSupport(int protocol);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslGetProtocolSupport")]
+        internal static partial int OpenSslGetProtocolSupport(int protocol);
     }
 }

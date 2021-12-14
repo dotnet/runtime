@@ -16,7 +16,12 @@ namespace System.Net.Tests
             yield return new object[] { new WebProxy(), null, false, false, Array.Empty<string>(), null };
 
             yield return new object[] { new WebProxy("http://anything"), new Uri("http://anything"), false, false, Array.Empty<string>(), null };
+            yield return new object[] { new WebProxy("http://anything:42"), new Uri("http://anything:42"), false, false, Array.Empty<string>(), null };
+            yield return new object[] { new WebProxy("anything:42"), new Uri("http://anything:42"), false, false, Array.Empty<string>(), null };
             yield return new object[] { new WebProxy("anything", 42), new Uri("http://anything:42"), false, false, Array.Empty<string>(), null };
+            yield return new object[] { new WebProxy("http://anything", 42), new Uri("http://anything:42"), false, false, Array.Empty<string>(), null };
+            yield return new object[] { new WebProxy("http://anything:123", 42), new Uri("http://anything:42"), false, false, Array.Empty<string>(), null };
+            yield return new object[] { new WebProxy("socks5://anything", 42), new Uri("socks5://anything:42"), false, false, Array.Empty<string>(), null };
             yield return new object[] { new WebProxy(new Uri("http://anything")), new Uri("http://anything"), false, false, Array.Empty<string>(), null };
 
             yield return new object[] { new WebProxy("http://anything", true), new Uri("http://anything"), false, true, Array.Empty<string>(), null };

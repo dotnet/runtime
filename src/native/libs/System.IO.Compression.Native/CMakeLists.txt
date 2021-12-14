@@ -7,40 +7,11 @@ set(NATIVECOMPRESSION_SOURCES
 )
 
 if (NOT CLR_CMAKE_TARGET_BROWSER)
-    #Include Brotli include files
-    include_directories("brotli/include")
+    include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
 
     set (NATIVECOMPRESSION_SOURCES
         ${NATIVECOMPRESSION_SOURCES}
-        brotli/common/constants.c
-        brotli/common/context.c
-        brotli/common/dictionary.c
-        brotli/common/platform.c
-        brotli/common/transform.c
-        brotli/dec/bit_reader.c
-        brotli/dec/decode.c
-        brotli/dec/huffman.c
-        brotli/dec/state.c
-        brotli/enc/backward_references.c
-        brotli/enc/backward_references_hq.c
-        brotli/enc/bit_cost.c
-        brotli/enc/block_splitter.c
-        brotli/enc/brotli_bit_stream.c
-        brotli/enc/cluster.c
-        brotli/enc/command.c
-        brotli/enc/compress_fragment.c
-        brotli/enc/compress_fragment_two_pass.c
-        brotli/enc/dictionary_hash.c
-        brotli/enc/encode.c
-        brotli/enc/encoder_dict.c
-        brotli/enc/entropy_encode.c
-        brotli/enc/fast_log.c
-        brotli/enc/histogram.c
-        brotli/enc/literal_cost.c
-        brotli/enc/memory.c
-        brotli/enc/metablock.c
-        brotli/enc/static_dict.c
-        brotli/enc/utf8_util.c
+        ${BROTLI_SOURCES}
         entrypoints.c
     )
 endif ()
@@ -112,35 +83,9 @@ else ()
     endif ()
 
     if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
-        set(ZLIB_SOURCES
-            zlib-intel/adler32.c
-            zlib-intel/compress.c
-            zlib-intel/crc_folding.c
-            zlib-intel/crc32.c
-            zlib-intel/deflate_medium.c
-            zlib-intel/deflate_quick.c
-            zlib-intel/deflate.c
-            zlib-intel/inffast.c
-            zlib-intel/inflate.c
-            zlib-intel/inftrees.c
-            zlib-intel/match.c
-            zlib-intel/slide_sse.c
-            zlib-intel/trees.c
-            zlib-intel/x86.c
-            zlib-intel/zutil.c
-        )
+        include(${CLR_SRC_NATIVE_DIR}/external/zlib-intel.cmake)
     else ()
-        set(ZLIB_SOURCES
-            zlib/adler32.c
-            zlib/compress.c
-            zlib/crc32.c
-            zlib/deflate.c
-            zlib/inffast.c
-            zlib/inflate.c
-            zlib/inftrees.c
-            zlib/trees.c
-            zlib/zutil.c
-        )
+        include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
     endif ()
 
     set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})

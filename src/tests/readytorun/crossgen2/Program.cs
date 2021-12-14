@@ -2228,7 +2228,15 @@ internal class Program
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
-        RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+
+        // TODO: BUG BUG: allocation of MD arrays fails on OSX/ARM64 (https://github.com/dotnet/runtime/issues/62747)
+        //               the vararg helper does not run as expected on OSX/ARM64 due to ABI mismatch -
+        //               HCIMPL2VA(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs) 
+        if (!(RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)))
+        {
+            RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+        }
+
         RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
         RunTest("TestSingleElementStructABI", TestSingleElementStructABI());
         RunTest("TestEnumLayoutAlignments", TestEnumLayoutAlignments());

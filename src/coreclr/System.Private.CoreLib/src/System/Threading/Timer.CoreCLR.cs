@@ -59,14 +59,14 @@ namespace System.Threading
             Instances[id].FireNextTimers();
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomainTimer_Create")]
-        private static extern AppDomainTimerSafeHandle CreateAppDomainTimer(uint dueTime, int id);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomainTimer_Create")]
+        private static partial AppDomainTimerSafeHandle CreateAppDomainTimer(uint dueTime, int id);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomainTimer_Change")]
-        private static extern bool ChangeAppDomainTimer(AppDomainTimerSafeHandle handle, uint dueTime);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomainTimer_Change")]
+        private static partial bool ChangeAppDomainTimer(AppDomainTimerSafeHandle handle, uint dueTime);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomainTimer_Delete")]
-        private static extern bool DeleteAppDomainTimer(IntPtr handle);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomainTimer_Delete")]
+        private static partial bool DeleteAppDomainTimer(IntPtr handle);
 
         #endregion
     }

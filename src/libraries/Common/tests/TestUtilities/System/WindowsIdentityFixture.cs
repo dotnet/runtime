@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System
 {
@@ -28,7 +29,7 @@ namespace System
         }
     }
 
-    public sealed class WindowsTestAccount : IDisposable
+    public sealed partial class WindowsTestAccount : IDisposable
     {
         private readonly string _userName;
         private SafeAccessTokenHandle _accountTokenHandle;
@@ -37,6 +38,8 @@ namespace System
 
         public WindowsTestAccount(string userName)
         {
+            Assert.True(PlatformDetection.IsWindowsAndElevated);
+
             _userName = userName;
             CreateUser();
         }
@@ -77,6 +80,10 @@ namespace System
                         throw new Win32Exception((int)result);
                     }
                 }
+                else if (result != 0)
+                {
+                    throw new Win32Exception((int)result);
+                }
 
                 const int LOGON32_PROVIDER_DEFAULT = 0;
                 const int LOGON32_LOGON_INTERACTIVE = 2;
@@ -102,14 +109,18 @@ namespace System
             }
         }
 
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern bool LogonUser(string userName, string domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle safeAccessTokenHandle);
+        [GeneratedDllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static partial bool LogonUser(string userName, string domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle safeAccessTokenHandle);
 
+
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we add support for non-blittable struct marshalling.
         [DllImport("netapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern uint NetUserAdd([MarshalAs(UnmanagedType.LPWStr)]string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-        [DllImport("netapi32.dll")]
-        internal static extern uint NetUserDel([MarshalAs(UnmanagedType.LPWStr)]string servername, [MarshalAs(UnmanagedType.LPWStr)]string username);
+        [GeneratedDllImport("netapi32.dll")]
+        internal static partial uint NetUserDel([MarshalAs(UnmanagedType.LPWStr)]string servername, [MarshalAs(UnmanagedType.LPWStr)]string username);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct USER_INFO_1

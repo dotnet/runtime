@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 # This script is a bridge that allows .cmd files of individual tests to run the respective test executables
 # in an unloadable AssemblyLoadContext.
 #

@@ -840,7 +840,41 @@ namespace DebuggerTests
                     ("  str", "ReferenceError")
                 );
             });
+        
+        [Fact]
+        public async Task EvaluateConstantValueUsingRuntimeEvaluate() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var dt = new DateTime(2020, 1, 2, 3, 4, 5);
+               await RuntimeEvaluateAndCheck(
+                   ("15\n//comment as vs does\n", TNumber(15)),
+                   ("15", TNumber(15)),
+                   ("\"15\"\n//comment as vs does\n", TString("15")),
+                   ("\"15\"", TString("15")));
+           });
 
+        [Fact]
+        public async Task EvaluateStaticAttributeInAssemblyNotRelatedButLoaded() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               await RuntimeEvaluateAndCheck(
+                   ("ClassToBreak.valueToCheck", TNumber(10)));
+           });
+
+        [Fact]
+        public async Task EvaluateLocalObjectFromAssemblyNotRelatedButLoaded()
+         => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateTestsClass", "EvaluateLocalsFromAnotherAssembly", 5, "EvaluateLocalsFromAnotherAssembly",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocalsFromAnotherAssembly'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               await RuntimeEvaluateAndCheck(
+                   ("a.valueToCheck", TNumber(20)));
+           });
     }
 
 }

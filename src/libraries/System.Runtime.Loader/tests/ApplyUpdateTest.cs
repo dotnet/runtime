@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata
     /// script that applies one or more updates to Foo.dll The ApplyUpdateTest
     /// testsuite runs each test in sequence, loading the corresponding
     /// assembly, applying an update to it and observing the results.
-    [Collection(nameof(ApplyUpdateUtil.NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public class ApplyUpdateTest
     {
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]

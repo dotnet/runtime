@@ -901,6 +901,28 @@ namespace DebuggerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task InspectLocalsUsingClassFromLibraryUsingDebugTypeFull()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] DebugTypeFull:CallToEvaluateLocal'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 860, 8,
+                "CallToEvaluateLocal",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var a_props = await GetObjectOnFrame(pause_location["callFrames"][0], "a");
+                    await CheckProps(a_props, new
+                    {
+                        a = TNumber(10),
+                        b = TNumber(20),
+                        c = TNumber(30)
+                    }, "a");
+                }
+            );
+        }
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

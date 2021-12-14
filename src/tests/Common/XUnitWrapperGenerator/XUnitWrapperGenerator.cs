@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -26,12 +27,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         && method.AttributeLists.Count > 0,
                 static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node)!);
 
-        var methodsInReferencedAssemblies = context.MetadataReferencesProvider.Combine(context.CompilationProvider).SelectMany((data, ct) =>
-        {
-            ExternallyReferencedTestMethodsVisitor visitor = new();
-            return visitor.Visit(data.Right.GetAssemblyOrModuleSymbol(data.Left))!;
-        });
-
         var outOfProcessTests = context.AdditionalTextsProvider.Combine(context.AnalyzerConfigOptionsProvider).SelectMany((data, ct) =>
         {
             var (file, options) = data;
@@ -51,8 +46,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             return ImmutableArray<ITestInfo>.Empty;
         });
 
-        var allMethods = methodsInSource.Collect().Combine(methodsInReferencedAssemblies.Collect()).SelectMany((methods, ct) => methods.Left.AddRange(methods.Right));
-
         var aliasMap = context.CompilationProvider.Select((comp, ct) =>
         {
             var aliasMap = ImmutableDictionary.CreateBuilder<string, string>();
@@ -69,21 +62,55 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         var alwaysWriteEntryPoint = context.CompilationProvider.Select((comp, ct) => comp.Options.OutputKind == OutputKind.ConsoleApplication && comp.GetEntryPoint(ct) is null);
 
-        context.RegisterImplementationSourceOutput(
-            allMethods
+        var testsInSource =
+            methodsInSource
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Combine(aliasMap)
-            .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left.Left, data.Left.Right, data.Right)))
-            .Collect()
-            .Combine(outOfProcessTests.Collect())
-            .Select((tests, ct) => tests.Left.AddRange(tests.Right))
+            .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left.Left, data.Left.Right, data.Right)));
+
+        var pathsForReferences = context
+            .AdditionalTextsProvider
             .Combine(context.AnalyzerConfigOptionsProvider)
-            .Select((data, ct) =>
+            .Select((data, ct) => new KeyValuePair<string, string?>(data.Left.Path, data.Right.GetOptions(data.Left).SingleTestDisplayName()))
+            .Where(data => data.Value is not null)
+            .Collect()
+            .Select((paths, ct) => ImmutableDictionary.CreateRange(paths))
+            .WithComparer(new ImmutableDictionaryValueComparer<string, string?>(EqualityComparer<string?>.Default));
+
+        var testsInReferencedAssemblies = context
+            .MetadataReferencesProvider
+            .Combine(context.CompilationProvider)
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Combine(pathsForReferences)
+            .Combine(aliasMap)
+            .SelectMany((data, ct) =>
             {
-                var (tests, options) = data;
+                var ((((reference, compilation), configOptions), paths), aliasMap) = data;
+                ExternallyReferencedTestMethodsVisitor visitor = new();
+                IEnumerable<IMethodSymbol> testMethods = visitor.Visit(compilation.GetAssemblyOrModuleSymbol(reference))!;
+                ImmutableArray<ITestInfo> tests = ImmutableArray.CreateRange(testMethods.SelectMany(method => GetTestMethodInfosForMethod(method, configOptions, aliasMap)));
+                if (tests.Length == 1 && reference is PortableExecutableReference { FilePath: string pathOnDisk } && paths.TryGetValue(pathOnDisk, out string? referencePath))
+                {
+                    // If we only have one test in the module and we have a display name for the module the test comes from, then rename it to the module name to make on disk discovery easier.
+                    return ImmutableArray.Create((ITestInfo)new TestWithCustomDisplayName(tests[0], referencePath!));
+                }
+                return tests;
+            });
+
+        var allTests = testsInSource.Collect().Combine(testsInReferencedAssemblies.Collect()).Combine(outOfProcessTests.Collect()).SelectMany((tests, ct) => tests.Left.Left.AddRange(tests.Left.Right).AddRange(tests.Right));
+
+        context.RegisterImplementationSourceOutput(
+            allTests
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Where(data =>
+            {
+                var (test, options) = data;
                 var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter() ?? "");
-                return (ImmutableArray.CreateRange(tests.Where(test => filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>()))), options);
+                return filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>());
             })
+            .Select((data, ct) => data.Left)
+            .Collect()
+            .Combine(context.AnalyzerConfigOptionsProvider)
             .Combine(aliasMap)
             .Combine(assemblyName)
             .Combine(alwaysWriteEntryPoint),
@@ -129,7 +156,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             builder.AppendLine(test.GenerateTestExecution(reporter));
         }
 
-        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput());");
+        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput(""{assemblyName}""));");
+        builder.AppendLine("return 100;");
 
         return builder.ToString();
     }
