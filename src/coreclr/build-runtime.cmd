@@ -342,6 +342,9 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     if not "!string:-iltools-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! iltools
     )
+    if not "!string:-nativeaot-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! nativeaot
+    )
 )
 if [!__CMakeTarget!] == [] (
     set __CMakeTarget=install
