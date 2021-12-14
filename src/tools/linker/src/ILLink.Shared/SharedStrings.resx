@@ -192,8 +192,4 @@
   <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
     <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
   </data>
-  <data name="DerivedClassRequiresUnreferencedCodeAttributeMismatchMessage" xml:space="preserve">
-    <value>{0}: Type '{0}' derives from '{1}' which has 'RequiresUnreferencedCodeAttribute'.  --{2}--.</value>
-    <comment>IL2109 for RequiresUnreferenedCode only</comment>
-  </data>
 </root>
