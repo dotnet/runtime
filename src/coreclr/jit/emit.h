@@ -524,7 +524,7 @@ protected:
         IF_COUNT
     };
 
-#define AM_DISP_BITS ((sizeof(unsigned) * 8) - 2 * (REGNUM_BITS + 1) - 2)
+#define AM_DISP_BITS ((sizeof(unsigned) * 8) - 2 * (REGNUM_BITS + 1) - 3)
 #define AM_DISP_BIG_VAL (-(1 << (AM_DISP_BITS - 1)))
 #define AM_DISP_MIN (-((1 << (AM_DISP_BITS - 1)) - 1))
 #define AM_DISP_MAX (+((1 << (AM_DISP_BITS - 1)) - 1))
@@ -533,7 +533,7 @@ protected:
     {
         regNumber       amBaseReg : REGNUM_BITS + 1;
         regNumber       amIndxReg : REGNUM_BITS + 1;
-        emitter::opSize amScale : 2;
+        emitter::opSize amScale : 3;
         int             amDisp : AM_DISP_BITS;
     };
 
