@@ -134,9 +134,9 @@ let exportedAPI: DotnetPublicAPI;
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
+    imports: { isES6: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { scriptDirectory: any, fetch: any, readAsync: any },
+    replacements: { scriptDirectory: any, fetch: any, readAsync: any, require: any },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -184,13 +184,14 @@ function initializeImportsAndExports(
     }
     module.imports = module.imports || <DotnetModuleConfigImports>{};
     if (!module.imports.require) {
-        module.imports.require = globalThis.require;
-    }
-    if (!module.imports.require) {
+        const originalRequire = replacements.require;
         module.imports.require = (name) => {
             const resolve = (<any>module.imports)[name];
+            if (!resolve && originalRequire) {
+                return originalRequire(name);
+            }
             if (!resolve)
-                throw new Error(`Please provide Module.imports.${name}`);
+                throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
             return resolve;
         };
     }
@@ -206,7 +207,11 @@ function initializeImportsAndExports(
     }
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
+    replacements.require = module.imports.require;
 
+    if (typeof module.disableDotnet6Compatibility === "undefined") {
+        module.disableDotnet6Compatibility = imports.isES6;
+    }
     // here we expose objects global namespace for tests and backward compatibility
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
         Object.assign(module, exportedAPI);

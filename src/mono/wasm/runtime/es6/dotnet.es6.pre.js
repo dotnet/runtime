@@ -17,5 +17,5 @@ else if (typeof createDotnetRuntime === "object") {
 else {
     throw new Error("MONO_WASM: Can't use moduleFactory callback of createDotnetRuntime function.")
 }
-let require = (name) => { return Module.imports.require(name) };
-var __dirname = '';
+var require = require || undefined;
+var __dirname = __dirname || '';
