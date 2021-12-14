@@ -469,6 +469,11 @@ LclSsaVarDsc* RangeCheck::GetSsaDefAsg(GenTreeLclVarCommon* lclUse)
     // RangeCheck does not care about uninitialized variables.
     if (ssaDef->GetAssignment() == nullptr)
     {
+        // Parameters are expected to be defined in fgFirstBB if FIRST_SSA_NUM is set
+        if (varDsc->lvIsParam && (ssaNum == SsaConfig::FIRST_SSA_NUM))
+        {
+            assert(ssaDef->GetBlock() == m_pCompiler->fgFirstBB);
+        }
         return nullptr;
     }
 
@@ -1174,8 +1179,12 @@ bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
     LclSsaVarDsc* ssaDef = GetSsaDefAsg(lcl);
     if (ssaDef == nullptr)
     {
-        // Parameters don't have definitions but are known to never overflow
-        return !(lcl->OperIs(GT_LCL_VAR) && m_pCompiler->lvaIsParameter(lcl->GetLclNum()));
+        if ((lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM) && m_pCompiler->lvaIsParameter(lcl->GetLclNum()))
+        {
+            // Parameter definitions that come from outside the method could not have overflown.
+            return false;
+        }
+        return true;
     }
     return DoesOverflow(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2());
 }
