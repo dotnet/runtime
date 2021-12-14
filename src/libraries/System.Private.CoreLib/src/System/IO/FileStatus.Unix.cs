@@ -10,26 +10,24 @@ namespace System.IO
     {
         private const int NanosecondsPerTick = 100;
 
-        private const int InitializedExists = -2;    // entry exists.
-        private const int InitializedNotExists = -1; // no entry exists.
-        private const int Uninitialized = 0;         // uninitialized, '0' to make default(FileStatus) uninitialized.
+        private const int InitializedExistsDir = -3;  // target is directory.
+        private const int InitializedExistsFile = -2; // target is file.
+        private const int InitializedNotExists = -1;  // entry does not exist.
+        private const int Uninitialized = 0;          // uninitialized, '0' to make default(FileStatus) uninitialized.
 
         // Tracks the initialization state.
-        // < 0 : initialized succesfully. Value is InitializedExists or InitializedNotExists.
+        // < 0 : initialized succesfully. Value is InitializedNotExists, InitializedExistsFile or InitializedExistsDir.
         //   0 : uninitialized.
         // > 0 : initialized with error. Value is raw errno.
         private int _initialized;
 
         // The last cached lstat information about the file.
-        // Must only be used after calling EnsureCachesInitialized and checking FileExists is true.
+        // Must only be used after calling EnsureCachesInitialized and checking EntryExists is true.
         private Interop.Sys.FileStatus _fileCache;
 
-        // Is a directory as of the last refresh.
-        // Its value can come from either the main path or the symbolic link target.
-        // Must only be used after calling EnsureCachesInitialized.
-        private bool _isDirectory;
+        private bool EntryExists => _initialized <= InitializedExistsFile;
 
-        private bool FileExists => _initialized == InitializedExists;
+        private bool IsDir => _initialized == InitializedExistsDir;
 
         // Check if the main path (without following symlinks) has the hidden attribute set.
         private bool HasHiddenFlag
@@ -38,7 +36,7 @@ namespace System.IO
             {
                 Debug.Assert(_initialized != Uninitialized); // Use this after EnsureCachesInitialized has been called.
 
-                return FileExists && (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
+                return EntryExists && (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
             }
         }
 
@@ -49,7 +47,7 @@ namespace System.IO
             {
                 Debug.Assert(_initialized != Uninitialized); // Use this after EnsureCachesInitialized has been called.
 
-                if (!FileExists)
+                if (!EntryExists)
                 {
                     return false;
                 }
@@ -132,7 +130,7 @@ namespace System.IO
             {
                 Debug.Assert(_initialized != Uninitialized); // Use this after EnsureCachesInitialized has been called.
 
-                return FileExists && (_fileCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+                return EntryExists && (_fileCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
             }
         }
 
@@ -166,7 +164,7 @@ namespace System.IO
         internal bool IsDirectory(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
-            return _isDirectory;
+            return IsDir;
         }
 
         internal bool IsSymbolicLink(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -179,7 +177,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
 
-            if (!FileExists)
+            if (!EntryExists)
                 return (FileAttributes)(-1);
 
             FileAttributes attributes = default;
@@ -190,7 +188,7 @@ namespace System.IO
             if (HasSymbolicLinkFlag)
                 attributes |= FileAttributes.ReparsePoint;
 
-            if (_isDirectory) // Refresh caches this
+            if (IsDir) // Refresh caches this
                 attributes |= FileAttributes.Directory;
 
             if (IsNameHidden(fileName) || HasHiddenFlag)
@@ -218,7 +216,7 @@ namespace System.IO
 
             EnsureCachesInitialized(path);
 
-            if (!FileExists)
+            if (!EntryExists)
                 FileSystemInfo.ThrowNotFound(path);
 
             if (Interop.Sys.CanSetHiddenFlag)
@@ -261,14 +259,14 @@ namespace System.IO
         internal bool GetExists(ReadOnlySpan<char> path, bool asDirectory)
         {
             EnsureCachesInitialized(path, continueOnError: true);
-            return FileExists && asDirectory == _isDirectory;
+            return EntryExists && asDirectory == IsDir;
         }
 
         internal DateTimeOffset GetCreationTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
 
-            if (!FileExists)
+            if (!EntryExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
 
             if ((_fileCache.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0)
@@ -286,7 +284,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
 
-            if (!FileExists)
+            if (!EntryExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
 
             return UnixTimeToDateTimeOffset(_fileCache.ATime, _fileCache.ATimeNsec);
@@ -299,7 +297,7 @@ namespace System.IO
         {
             EnsureCachesInitialized(path, continueOnError);
 
-            if (!FileExists)
+            if (!EntryExists)
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(0));
 
             return UnixTimeToDateTimeOffset(_fileCache.MTime, _fileCache.MTimeNsec);
@@ -331,7 +329,7 @@ namespace System.IO
             InvalidateCaches();
             EnsureCachesInitialized(path);
 
-            if (!FileExists)
+            if (!EntryExists)
                 FileSystemInfo.ThrowNotFound(path);
 
             // we use utimes()/utimensat() to set the accessTime and writeTime
@@ -392,7 +390,7 @@ namespace System.IO
             // On Unix, it returns the length of the path stored in the link.
 
             EnsureCachesInitialized(path, continueOnError);
-            return FileExists ? _fileCache.Size : 0;
+            return EntryExists ? _fileCache.Size : 0;
         }
 
         // Tries to refresh the lstat cache (_fileCache).
@@ -401,7 +399,6 @@ namespace System.IO
         {
             path = Path.TrimEndingDirectorySeparator(path);
 
-            _isDirectory = false;
 #if !TARGET_BROWSER
             _isReadOnlyCache = -1;
 #endif
@@ -425,21 +422,14 @@ namespace System.IO
                 return;
             }
 
-            _initialized = InitializedExists;
+            // Check if the main path is a directory, or a link to a directory.
+            int fileType = _fileCache.Mode & Interop.Sys.FileTypes.S_IFMT;
+            bool isDirectory = fileType == Interop.Sys.FileTypes.S_IFDIR ||
+                               (fileType == Interop.Sys.FileTypes.S_IFLNK
+                                && Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0
+                                && (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
 
-            // Do an initial check in case the main path is pointing to a directory
-            _isDirectory = CacheHasDirectoryFlag(_fileCache);
-
-            // We also need to check if the main path is a symbolic link,
-            // in which case, we retrieve the symbolic link's target data
-            if (!_isDirectory && HasSymbolicLinkFlag && Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0)
-            {
-                // and check again if the symlink path is a directory
-                _isDirectory = CacheHasDirectoryFlag(target);
-            }
-
-            static bool CacheHasDirectoryFlag(Interop.Sys.FileStatus cache) =>
-                (cache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+            _initialized = isDirectory ? InitializedExistsDir : InitializedExistsFile;
         }
 
         // Checks if the file cache is uninitialized and refreshes it's value.
