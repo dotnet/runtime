@@ -1175,7 +1175,7 @@ bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
     if (ssaDef == nullptr)
     {
         // Parameters don't have definitions but are known to never overflow
-        return !m_pCompiler->lvaIsParameter(lcl->GetLclNum());
+        return !(lcl->OperIs(GT_LCL_VAR) && m_pCompiler->lvaIsParameter(lcl->GetLclNum()));
     }
     return DoesOverflow(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2());
 }
