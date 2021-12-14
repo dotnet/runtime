@@ -50,7 +50,7 @@
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.2</MicrosoftCodeAnalysisAnalyzersVersion>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.0.0-4.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>4.0.0-4.final</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.21572.6</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.21613.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>2.0.0-alpha.1.21525.11</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
