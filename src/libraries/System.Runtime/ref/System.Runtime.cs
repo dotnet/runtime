@@ -12972,6 +12972,11 @@ namespace System.Runtime.CompilerServices
     {
         public DisablePrivateReflectionAttribute() { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = false)]
+    public sealed class DisableRuntimeMarshallingAttribute : Attribute
+    {
+        public DisableRuntimeMarshallingAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
     public partial class DiscardableAttribute : System.Attribute
     {
