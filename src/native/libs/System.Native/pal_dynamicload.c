@@ -7,32 +7,13 @@
 #include <dlfcn.h>
 #include <string.h>
 
-#if HAVE_GNU_LIBNAMES_H
-#include <gnu/lib-names.h>
-#endif
-
 void* SystemNative_LoadLibrary(const char* filename)
 {
-    // Check whether we have been requested to load 'libc'. If that's the case, then:
-    // * For Linux, use the full name of the library that is defined in <gnu/lib-names.h> by the
-    //   LIBC_SO constant. The problem is that calling dlopen("libc.so") will fail for libc even
-    //   though it works for other libraries. The reason is that libc.so is just linker script
-    //   (i.e. a test file).
-    //   As a result, we have to use the full name (i.e. lib.so.6) that is defined by LIBC_SO.
-    // * For macOS, use constant value absolute path "/usr/lib/libc.dylib".
-    // * For FreeBSD, use constant value "libc.so.7".
-    // * For rest of Unices, use constant value "libc.so".
+    // Check whether we have been requested to load 'libc'. If that's the case, then use the
+    // correct file name based on the current platform.
     if (strcmp(filename, "libc") == 0)
     {
-#if defined(__APPLE__)
-        filename = "/usr/lib/libc.dylib";
-#elif defined(__FreeBSD__)
-        filename = "libc.so.7";
-#elif defined(LIBC_SO)
-        filename = LIBC_SO;
-#else
-        filename = "libc.so";
-#endif
+        filename = LIBC_FILENAME;
     }
 
     return dlopen(filename, RTLD_LAZY);
