@@ -4284,11 +4284,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     var_types type[MAX_ARG_REG_COUNT] = {}; // TYP_UNDEF = 0
 
     hfaType = fgEntryPtr->GetHfaType();
-    if (varTypeIsValidHfaType(hfaType)
-#if !defined(HOST_UNIX) && defined(TARGET_ARM64)
-        && !fgEntryPtr->IsVararg()
-#endif // !defined(HOST_UNIX) && defined(TARGET_ARM64)
-            )
+    if (varTypeIsValidHfaType(hfaType) && fgEntryPtr->isPassedInFloatRegisters())
     {
         elemType  = hfaType;
         elemSize  = genTypeSize(elemType);
@@ -4395,11 +4391,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 
 #ifndef UNIX_AMD64_ABI
         // This local variable must match the layout of the 'objClass' type exactly
-        if (varDsc->lvIsHfa()
-#if !defined(HOST_UNIX) && defined(TARGET_ARM64)
-            && !fgEntryPtr->IsVararg()
-#endif // !defined(HOST_UNIX) && defined(TARGET_ARM64)
-                )
+        if (varDsc->lvIsHfa() && fgEntryPtr->isPassedInFloatRegisters())
         {
             // We have a HFA struct.
             noway_assert(elemType == varDsc->GetHfaType());
@@ -4440,16 +4432,32 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 }
             }
         }
-#endif // !UNIX_AMD64_ABI
 
+        if (varDsc->lvPromoted && varDsc->lvIsHfa() && fgEntryPtr->isPassedInFloatRegisters())
+        {
+            bool canMorphToFieldList = true;
+
+            for (unsigned fldOffset = 0; fldOffset < varDsc->lvExactSize; fldOffset += elemSize)
+            {
+                const unsigned fldVarNum = lvaGetFieldLocal(varDsc, fldOffset);
+
+                if ((fldVarNum == BAD_VAR_NUM) || !varTypeUsesFloatReg(lvaGetDesc(fldVarNum)))
+                {
+                    canMorphToFieldList = false;
+                    break;
+                }
+            }
+
+            if (canMorphToFieldList)
+            {
+                newArg = fgMorphLclArgToFieldlist(varNode);
+            }
+        }
+        else
+#endif // !UNIX_AMD64_ABI
 #if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI)
-        // Is this LclVar a promoted struct with exactly 2 fields?
-        // TODO-ARM64-CQ: Support struct promoted HFA types here
-        if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2) && (!varDsc->lvIsHfa()
-#if !defined(HOST_UNIX) && defined(TARGET_ARM64)
-                                                                && !fgEntryPtr->IsVararg()
-#endif // !defined(HOST_UNIX) && defined(TARGET_ARM64)
-                                                                    ))
+            // Is this LclVar a promoted struct with exactly 2 fields?
+            if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2) && !varDsc->lvIsHfa())
         {
             // See if we have two promoted fields that start at offset 0 and 8?
             unsigned loVarNum = lvaGetFieldLocal(varDsc, 0);
@@ -7742,6 +7750,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Avoid potential extra work for the return (for example, vzeroupper)
         call->gtType = TYP_VOID;
 
+        // The runtime requires that we perform a null check on the `this` argument before
+        // tail calling to a virtual dispatch stub. This requirement is a consequence of limitations
+        // in the runtime's ability to map an AV to a NullReferenceException if
+        // the AV occurs in a dispatch stub that has unmanaged caller.
+        if (call->IsVirtualStub())
+        {
+            call->gtFlags |= GTF_CALL_NULLCHECK;
+        }
+
         // Do some target-specific transformations (before we process the args,
         // etc.) for the JIT helper case.
         if (tailCallViaJitHelper)
@@ -8447,15 +8464,6 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 {
     JITDUMP("fgMorphTailCallViaJitHelper (before):\n");
     DISPTREE(call);
-
-    // The runtime requires that we perform a null check on the `this` argument before
-    // tail calling  to a virtual dispatch stub. This requirement is a consequence of limitations
-    // in the runtime's ability to map an AV to a NullReferenceException if
-    // the AV occurs in a dispatch stub that has unmanaged caller.
-    if (call->IsVirtualStub())
-    {
-        call->gtFlags |= GTF_CALL_NULLCHECK;
-    }
 
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning or end.
@@ -15302,7 +15310,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                         /* This was a bogus loop (condition always false)
                          * Remove the loop from the table */
 
-                        optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
+                        optMarkLoopRemoved(loopNum);
 
                         optLoopTable[loopNum].lpTop->unmarkLoopAlign(this DEBUG_ARG("Bogus loop"));
 

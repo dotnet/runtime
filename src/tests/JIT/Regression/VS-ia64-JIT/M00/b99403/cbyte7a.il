@@ -13,7 +13,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly CByte7a
+.assembly 'cbyte7a'
 {
 
 
@@ -31,7 +31,6 @@
   .ver 1:0:585:20133
 }
 .assembly extern xunit.core {}
-.module CByte7a.exe
 .imagebase 0x11000000
 .file alignment 0x00000200
 .stackreserve 0x00100000

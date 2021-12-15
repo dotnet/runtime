@@ -16,6 +16,7 @@
 #define MAP_PRIVATE          2
 #define PROT_READ            4
 #define PROT_WRITE           8
+#define PROT_EXEC            16
 
 void* mmap(void *, size_t, int, int, int, size_t);
 int   munmap(void *, size_t);

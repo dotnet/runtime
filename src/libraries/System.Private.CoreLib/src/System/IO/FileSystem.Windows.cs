@@ -182,10 +182,9 @@ namespace System.IO
             }
         }
 
-        private static SafeFileHandle OpenHandle(string fullPath, bool asDirectory)
+        private static SafeFileHandle OpenHandleToWriteAttributes(string fullPath, bool asDirectory)
         {
-            string root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath.AsSpan()));
-            if (root == fullPath && root[1] == Path.VolumeSeparatorChar)
+            if (fullPath.Length == PathInternal.GetRootLength(fullPath) && fullPath[1] == Path.VolumeSeparatorChar)
             {
                 // intentionally not fullpath, most upstack public APIs expose this as path.
                 throw new ArgumentException(SR.Arg_PathIsVolume, "path");
@@ -199,7 +198,7 @@ namespace System.IO
 
             SafeFileHandle handle = Interop.Kernel32.CreateFile(
                 fullPath,
-                Interop.Kernel32.GenericOperations.GENERIC_WRITE,
+                Interop.Kernel32.FileOperations.FILE_WRITE_ATTRIBUTES,
                 FileShare.ReadWrite | FileShare.Delete,
                 FileMode.Open,
                 dwFlagsAndAttributes);
@@ -425,7 +424,7 @@ namespace System.IO
             long changeTime = -1,
             uint fileAttributes = 0)
         {
-            using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
+            using (SafeFileHandle handle = OpenHandleToWriteAttributes(fullPath, asDirectory))
             {
                 var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO()
                 {

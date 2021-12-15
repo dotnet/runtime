@@ -8,7 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly legacy library test {}
+.assembly legacy library 'cprop002' {}
 
 .class public auto ansi beforefieldinit TEST
 	extends [mscorlib]System.Object

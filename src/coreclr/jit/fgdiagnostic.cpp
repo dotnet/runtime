@@ -585,7 +585,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         {
             wCharCount += wcslen(pathname) + 1;
         }
-        filename = (LPCWSTR)alloca(wCharCount * sizeof(WCHAR));
+        filename = (LPCWSTR)_alloca(wCharCount * sizeof(WCHAR));
 
         if (pathname != nullptr)
         {
@@ -651,7 +651,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         {
             wCharCount += wcslen(pathname) + 1;
         }
-        filename = (LPCWSTR)alloca(wCharCount * sizeof(WCHAR));
+        filename = (LPCWSTR)_alloca(wCharCount * sizeof(WCHAR));
         if (pathname != nullptr)
         {
             swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%s.%s"), pathname, origFilename, type);
@@ -839,7 +839,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     // that size, even though it means allocating a block map possibly much bigger than what's required for just
     // the inlinee blocks.
 
-    unsigned  blkMapSize   = 1 + (compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax);
+    unsigned  blkMapSize   = 1 + impInlineRoot()->fgBBNumMax;
     unsigned  blockOrdinal = 1;
     unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[blkMapSize];
     memset(blkMap, 0, sizeof(unsigned) * blkMapSize);
@@ -1794,8 +1794,8 @@ void Compiler::fgDispDoms()
 
 void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 */)
 {
-    const unsigned __int64 flags    = block->bbFlags;
-    unsigned               bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    const unsigned __int64 flags            = block->bbFlags;
+    unsigned               bbNumMax         = impInlineRoot()->fgBBNumMax;
     int                    maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
     int blockNumWidth                       = CountDigits(block->bbNum);
@@ -2178,7 +2178,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         ibcColWidth = max(ibcColWidth, 3) + 1; // + 1 for the leading space
     }
 
-    unsigned bbNumMax         = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    unsigned bbNumMax         = impInlineRoot()->fgBBNumMax;
     int      maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth          = max(maxBlockNumWidth, 2);
     int padWidth              = maxBlockNumWidth - 2; // Account for functions with a large number of blocks.
@@ -2628,6 +2628,21 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
     assert(!"BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
     return false;
+}
+
+//------------------------------------------------------------------------------
+// fgDebugCheckBBNumIncreasing: Check that the block list bbNum are in increasing order in the bbNext
+// traversal. Given a block B1 and its bbNext successor B2, this means `B1->bbNum < B2->bbNum`, but not
+// that `B1->bbNum + 1 == B2->bbNum` (which is true after renumbering). This can be used as a precondition
+// to a phase that expects this ordering to compare block numbers (say, to look for backwards branches)
+// and doesn't want to call fgRenumberBlocks(), to avoid that potential expense.
+//
+void Compiler::fgDebugCheckBBNumIncreasing()
+{
+    for (BasicBlock* const block : Blocks())
+    {
+        assert(block->bbNext == nullptr || (block->bbNum < block->bbNext->bbNum));
+    }
 }
 
 // This variable is used to generate "traversal labels": one-time constants with which
@@ -3762,6 +3777,8 @@ void Compiler::fgDebugCheckNodesUniqueness()
 //------------------------------------------------------------------------------
 // fgDebugCheckLoopTable: checks that the loop table is valid.
 //    - If the method has natural loops, the loop table is not null
+//    - Loop `top` must come before `bottom`.
+//    - Loop `entry` must be between `top` and `bottom`.
 //    - All basic blocks with loop numbers set have a corresponding loop in the table
 //    - All basic blocks without a loop number are not in a loop
 //    - All parents of the loop with the block contain that block
@@ -3772,6 +3789,200 @@ void Compiler::fgDebugCheckLoopTable()
     {
         assert(optLoopTable != nullptr);
     }
+
+    // Build a mapping from existing block list number (bbNum) to the block number it would be after the
+    // blocks are renumbered. This allows making asserts about the relative ordering of blocks using block number
+    // without actually renumbering the blocks, which would affect non-DEBUG code paths. Note that there may be
+    // `blockNumMap[bbNum] == 0` if the `bbNum` block was deleted and blocks haven't been renumbered since
+    // the deletion.
+
+    unsigned bbNumMax = impInlineRoot()->fgBBNumMax;
+
+    // blockNumMap[old block number] => new block number
+    size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);
+    unsigned* blockNumMap   = (unsigned*)_alloca(blockNumBytes);
+    memset(blockNumMap, 0, blockNumBytes);
+
+    unsigned newBBnum = 1;
+    for (BasicBlock* const block : Blocks())
+    {
+        if ((block->bbFlags & BBF_REMOVED) == 0)
+        {
+            assert(1 <= block->bbNum && block->bbNum <= bbNumMax);
+            assert(blockNumMap[block->bbNum] == 0); // If this fails, we have two blocks with the same block number.
+            blockNumMap[block->bbNum] = newBBnum++;
+        }
+    }
+
+    struct MappedChecks
+    {
+        static bool lpWellFormed(const unsigned* blockNumMap, const LoopDsc* loop)
+        {
+            return (blockNumMap[loop->lpTop->bbNum] <= blockNumMap[loop->lpEntry->bbNum]) &&
+                   (blockNumMap[loop->lpEntry->bbNum] <= blockNumMap[loop->lpBottom->bbNum]) &&
+                   ((blockNumMap[loop->lpHead->bbNum] < blockNumMap[loop->lpTop->bbNum]) ||
+                    (blockNumMap[loop->lpHead->bbNum] > blockNumMap[loop->lpBottom->bbNum]));
+        }
+
+        static bool lpContains(const unsigned* blockNumMap, const LoopDsc* loop, const BasicBlock* blk)
+        {
+            return (blockNumMap[loop->lpTop->bbNum] <= blockNumMap[blk->bbNum]) &&
+                   (blockNumMap[blk->bbNum] <= blockNumMap[loop->lpBottom->bbNum]);
+        }
+        static bool lpContains(const unsigned*   blockNumMap,
+                               const LoopDsc*    loop,
+                               const BasicBlock* top,
+                               const BasicBlock* bottom)
+        {
+            return (blockNumMap[loop->lpTop->bbNum] <= blockNumMap[top->bbNum]) &&
+                   (blockNumMap[bottom->bbNum] < blockNumMap[loop->lpBottom->bbNum]);
+        }
+        static bool lpContains(const unsigned* blockNumMap, const LoopDsc* loop, const LoopDsc& lp2)
+        {
+            return lpContains(blockNumMap, loop, lp2.lpTop, lp2.lpBottom);
+        }
+
+        static bool lpContainedBy(const unsigned*   blockNumMap,
+                                  const LoopDsc*    loop,
+                                  const BasicBlock* top,
+                                  const BasicBlock* bottom)
+        {
+            return (blockNumMap[top->bbNum] <= blockNumMap[loop->lpTop->bbNum]) &&
+                   (blockNumMap[loop->lpBottom->bbNum] < blockNumMap[bottom->bbNum]);
+        }
+        static bool lpContainedBy(const unsigned* blockNumMap, const LoopDsc* loop, const LoopDsc& lp2)
+        {
+            return lpContainedBy(blockNumMap, loop, lp2.lpTop, lp2.lpBottom);
+        }
+
+        static bool lpDisjoint(const unsigned*   blockNumMap,
+                               const LoopDsc*    loop,
+                               const BasicBlock* top,
+                               const BasicBlock* bottom)
+        {
+            return (blockNumMap[bottom->bbNum] < blockNumMap[loop->lpTop->bbNum]) ||
+                   (blockNumMap[loop->lpBottom->bbNum] < blockNumMap[top->bbNum]);
+        }
+        static bool lpDisjoint(const unsigned* blockNumMap, const LoopDsc* loop, const LoopDsc& lp2)
+        {
+            return lpDisjoint(blockNumMap, loop, lp2.lpTop, lp2.lpBottom);
+        }
+    };
+
+    // Check the loop table itself.
+
+    int preHeaderCount = 0;
+
+    for (unsigned i = 0; i < optLoopCount; i++)
+    {
+        const LoopDsc& loop = optLoopTable[i];
+
+        // Ignore removed loops
+        if (loop.lpFlags & LPFLG_REMOVED)
+        {
+            continue;
+        }
+
+        assert(loop.lpHead != nullptr);
+        assert(loop.lpTop != nullptr);
+        assert(loop.lpEntry != nullptr);
+        assert(loop.lpBottom != nullptr);
+
+        assert(MappedChecks::lpWellFormed(blockNumMap, &loop));
+
+        if (loop.lpExitCnt == 1)
+        {
+            assert(loop.lpExit != nullptr);
+            assert(MappedChecks::lpContains(blockNumMap, &loop, loop.lpExit));
+        }
+        else
+        {
+            assert(loop.lpExit == nullptr);
+        }
+
+        if (loop.lpParent != BasicBlock::NOT_IN_LOOP)
+        {
+            assert(loop.lpParent < optLoopCount);
+            assert(loop.lpParent < i); // outer loops come before inner loops in the table
+            const LoopDsc& parentLoop = optLoopTable[loop.lpParent];
+            assert((parentLoop.lpFlags & LPFLG_REMOVED) == 0); // don't allow removed parent loop?
+            assert(MappedChecks::lpContainedBy(blockNumMap, &loop, optLoopTable[loop.lpParent]));
+        }
+
+        if (loop.lpChild != BasicBlock::NOT_IN_LOOP)
+        {
+            // Verify all child loops are contained in the parent loop.
+            for (unsigned child = loop.lpChild;    //
+                 child != BasicBlock::NOT_IN_LOOP; //
+                 child = optLoopTable[child].lpSibling)
+            {
+                assert(child < optLoopCount);
+                assert(i < child); // outer loops come before inner loops in the table
+                const LoopDsc& childLoop = optLoopTable[child];
+                if ((childLoop.lpFlags & LPFLG_REMOVED) == 0) // removed child loop might still be in table
+                {
+                    assert(MappedChecks::lpContains(blockNumMap, &loop, childLoop));
+                }
+            }
+
+            // Verify all child loops are disjoint.
+            for (unsigned child = loop.lpChild;    //
+                 child != BasicBlock::NOT_IN_LOOP; //
+                 child = optLoopTable[child].lpSibling)
+            {
+                const LoopDsc& childLoop = optLoopTable[child];
+                if (childLoop.lpFlags & LPFLG_REMOVED)
+                {
+                    continue;
+                }
+                for (unsigned child2 = optLoopTable[child].lpSibling; //
+                     child2 != BasicBlock::NOT_IN_LOOP;               //
+                     child2 = optLoopTable[child2].lpSibling)
+                {
+                    const LoopDsc& child2Loop = optLoopTable[child2];
+                    if (child2Loop.lpFlags & LPFLG_REMOVED)
+                    {
+                        continue;
+                    }
+                    assert(MappedChecks::lpDisjoint(blockNumMap, &childLoop, child2Loop));
+                }
+            }
+        }
+
+        // If the loop has a pre-header, ensure the pre-header form is correct.
+        if ((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0)
+        {
+            ++preHeaderCount;
+
+            BasicBlock* h = loop.lpHead;
+            assert(h->bbFlags & BBF_LOOP_PREHEADER);
+
+            // The pre-header can only be BBJ_ALWAYS or BBJ_NONE and must enter the loop.
+            BasicBlock* e = loop.lpEntry;
+            if (h->bbJumpKind == BBJ_ALWAYS)
+            {
+                assert(h->bbJumpDest == e);
+            }
+            else
+            {
+                assert(h->bbJumpKind == BBJ_NONE);
+                assert(h->bbNext == e);
+                assert(loop.lpTop == e);
+                assert(loop.lpIsTopEntry());
+            }
+
+            // The entry block has a single non-loop predecessor, and it is the pre-header.
+            for (BasicBlock* const predBlock : e->PredBlocks())
+            {
+                if (predBlock != h)
+                {
+                    assert(MappedChecks::lpContains(blockNumMap, &loop, predBlock));
+                }
+            }
+        }
+    }
+
+    // Check basic blocks for loop annotations.
 
     for (BasicBlock* const block : Blocks())
     {
@@ -3792,7 +4003,7 @@ void Compiler::fgDebugCheckLoopTable()
                 continue;
             }
             // Does this loop contain our block?
-            if (optLoopTable[i].lpContains(block))
+            if (MappedChecks::lpContains(blockNumMap, &optLoopTable[i], block))
             {
                 loopNum = i;
                 break;
@@ -3804,6 +4015,11 @@ void Compiler::fgDebugCheckLoopTable()
         {
             // ...it must be the one pointed to by bbNatLoopNum.
             assert(block->bbNatLoopNum == loopNum);
+
+            // TODO: We might want the following assert, but there are cases where we don't move all
+            //       return blocks out of the loop.
+            // Return blocks are not allowed inside a loop; they should have been moved elsewhere.
+            // assert(block->bbJumpKind != BBJ_RETURN);
         }
         else
         {
@@ -3814,11 +4030,21 @@ void Compiler::fgDebugCheckLoopTable()
         // All loops that contain the innermost loop with this block must also contain this block.
         while (loopNum != BasicBlock::NOT_IN_LOOP)
         {
-            assert(optLoopTable[loopNum].lpContains(block));
-
+            assert(MappedChecks::lpContains(blockNumMap, &optLoopTable[loopNum], block));
             loopNum = optLoopTable[loopNum].lpParent;
         }
+
+        if (block->bbFlags & BBF_LOOP_PREHEADER)
+        {
+            // Note that the bbNatLoopNum will not point to the loop where this is a pre-header, since bbNatLoopNum
+            // is only set on the blocks from `top` to `bottom`, and `head` is outside that.
+            --preHeaderCount;
+        }
     }
+
+    // Verify that the number of loops marked as having pre-headers is the same as the number of blocks
+    // with the pre-header flag set.
+    assert(preHeaderCount == 0);
 }
 
 /*****************************************************************************/

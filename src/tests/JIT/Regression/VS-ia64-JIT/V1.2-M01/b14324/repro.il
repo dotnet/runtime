@@ -2,7 +2,7 @@
 .assembly extern legacy library mscorlib {}
 .assembly extern common{}
 .assembly extern legacy library mscorlib {}
-.assembly call06{}
+.assembly 'repro'{}
 .assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit LocallocTest

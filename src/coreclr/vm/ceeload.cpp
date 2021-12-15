@@ -7705,7 +7705,7 @@ void Module::ExpandAll()
                 //These are the only methods we can jit
                 && (pMD->IsStatic() || pMD->GetNumGenericMethodArgs() == 0
                     || pMD->HasClassInstantiation())
-                && (pMD->MayHaveNativeCode() && !pMD->IsFCallOrIntrinsic()))
+                && (pMD->MayHaveNativeCode() && !pMD->IsFCall()))
             {
                 pMD->PrepareInitialCode();
             }

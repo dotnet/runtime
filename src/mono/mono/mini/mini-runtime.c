@@ -4972,7 +4972,7 @@ mono_runtime_print_stats (void)
 
 		g_print ("\nInitialized classes:    %" G_GINT32_FORMAT "\n", mono_stats.generic_class_count);
 		g_print ("Inflated types:         %" G_GINT32_FORMAT "\n", mono_stats.inflated_type_count);
-		g_print ("Generics virtual invokes: %ld\n", mono_jit_stats.generic_virtual_invocations);
+		g_print ("Generics virtual invokes: %" G_GINT32_FORMAT "\n", mono_jit_stats.generic_virtual_invocations);
 
 		g_print ("Sharable generic methods: %" G_GINT32_FORMAT "\n", mono_stats.generics_sharable_methods);
 		g_print ("Unsharable generic methods: %" G_GINT32_FORMAT "\n", mono_stats.generics_unsharable_methods);

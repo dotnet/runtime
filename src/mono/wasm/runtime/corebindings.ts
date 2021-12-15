@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { JSHandle, GCHandle, MonoObject } from "./types";
-import { ArgsMarshalString } from "./method-binding";
 import { PromiseControl } from "./cancelable-promise";
 import { runtimeHelpers } from "./imports";
 
-const fn_signatures: [jsname: string, csname: string, signature: ArgsMarshalString][] = [
+const fn_signatures: [jsname: string, csname: string, signature: string/*ArgsMarshalString*/][] = [
     ["_get_cs_owned_object_by_js_handle", "GetCSOwnedObjectByJSHandle", "ii!"],
     ["_get_cs_owned_object_js_handle", "GetCSOwnedObjectJSHandle", "mi"],
     ["_try_get_cs_owned_object_js_handle", "TryGetCSOwnedObjectJSHandle", "mi"],
