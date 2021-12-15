@@ -110,13 +110,8 @@ namespace System.IO
                                               (data.dwFileAttributes & Interop.Kernel32.FileAttributes
                                                   .FILE_ATTRIBUTE_DIRECTORY) == 0;
 
-                            bool directoryExists = noError &&
-                                                   data.dwFileAttributes != -1 &&
-                                                   (data.dwFileAttributes & Interop.Kernel32.FileAttributes
-                                                       .FILE_ATTRIBUTE_DIRECTORY) != 0;
-
                             // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
-                            if (!fileExists && (directoryExists || currentError != Interop.Errors.ERROR_ACCESS_DENIED))
+                            if (!fileExists && (fileExists || currentError != Interop.Errors.ERROR_ACCESS_DENIED))
                             {
                                 continue;
                             }
