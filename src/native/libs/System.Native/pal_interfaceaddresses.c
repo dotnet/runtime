@@ -126,7 +126,6 @@ static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 static bool loading_getifaddrs_already_attempted = false;
 
 static bool ensure_getifaddrs_is_loaded() {
-    // there is no reason to call this function multiple times even if it fails
     if (!loading_getifaddrs_already_attempted)
     {
         loading_getifaddrs_already_attempted = true;
