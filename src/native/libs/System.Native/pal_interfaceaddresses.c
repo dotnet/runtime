@@ -286,7 +286,6 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
     }
 
     freeifaddrs(headAddr);
-
     return 0;
 }
 
