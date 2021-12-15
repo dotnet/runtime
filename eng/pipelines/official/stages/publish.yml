@@ -19,7 +19,7 @@ stages:
       publishUsingPipelines: true
       dependsOn: PrepareSignedArtifacts
       pool:
-        name: NetCore1ESPool-Internal
+        name: NetCore1ESPool-Svc-Internal
         demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019
 
 # Stages-based publishing entry point
