@@ -230,7 +230,10 @@ namespace ILLink.RoslynAnalyzer
 					while (member is IMethodSymbol method && method.OverriddenMethod != null && SymbolEqualityComparer.Default.Equals (method.ReturnType, method.OverriddenMethod.ReturnType))
 						member = method.OverriddenMethod;
 
-					if (!TargetHasRequiresAttribute (member, out var requiresAttribute))
+					if (!member.TargetHasRequiresAttribute (RequiresAttributeName, out var requiresAttribute))
+						return;
+
+					if (!VerifyAttributeArguments (requiresAttribute))
 						return;
 
 					ReportRequiresDiagnostic (operationContext, member, requiresAttribute);
@@ -340,28 +343,6 @@ namespace ILLink.RoslynAnalyzer
 			bool member1HasAttribute = member1.IsOverrideInRequiresScope (RequiresAttributeName);
 			bool member2HasAttribute = member2.IsOverrideInRequiresScope (RequiresAttributeName);
 			return member1HasAttribute ^ member2HasAttribute;
-		}
-
-		// TODO: Consider sharing with linker DoesMethodRequireUnreferencedCode method
-		/// <summary>
-		/// True if the target of a call is considered to be annotated with the Requires... attribute
-		/// </summary>
-		protected bool TargetHasRequiresAttribute (ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
-		{
-			requiresAttribute = null;
-			if (member.IsStaticConstructor ()) {
-				return false;
-			}
-
-			if (TryGetRequiresAttribute (member, out requiresAttribute)) {
-				return true;
-			}
-
-			// Also check the containing type
-			if (member.IsStatic || member.IsConstructor ()) {
-				return TryGetRequiresAttribute (member.ContainingType, out requiresAttribute);
-			}
-			return false;
 		}
 
 		protected abstract string GetMessageFromAttribute (AttributeData requiresAttribute);
