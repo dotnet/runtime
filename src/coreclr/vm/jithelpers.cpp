@@ -2639,45 +2639,6 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 }
 HCIMPLEND
 
-/*********************************************************************
-// Allocate a multi-dimensional array
-*/
-OBJECTREF allocNewMDArr(TypeHandle typeHnd, unsigned dwNumArgs, va_list args)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(dwNumArgs > 0);
-    } CONTRACTL_END;
-
-    // Get the arguments in the right order
-
-    INT32* fwdArgList;
-
-#ifdef TARGET_X86
-    fwdArgList = (INT32*)args;
-
-    // reverse the order
-    INT32* p = fwdArgList;
-    INT32* q = fwdArgList + (dwNumArgs-1);
-    while (p < q)
-    {
-        INT32 t = *p; *p = *q; *q = t;
-        p++; q--;
-    }
-#else
-    // create an array where fwdArgList[0] == arg[0] ...
-    fwdArgList = (INT32*) _alloca(dwNumArgs * sizeof(INT32));
-    for (unsigned i = 0; i < dwNumArgs; i++)
-    {
-        fwdArgList[i] = va_arg(args, INT32);
-    }
-#endif
-
-    return AllocateArrayEx(typeHnd, fwdArgList, dwNumArgs);
-}
-
 /*************************************************************/
 HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs, INT32 * pArgList)
 {
