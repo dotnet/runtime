@@ -277,7 +277,7 @@ namespace System.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsDirectorySeparator(char c)
         {
-            return c == DirectorySeparatorChar || c == AltDirectorySeparatorChar;
+            return c is DirectorySeparatorChar or AltDirectorySeparatorChar;
         }
 
         /// <summary>
