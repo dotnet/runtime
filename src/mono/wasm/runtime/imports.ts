@@ -19,10 +19,11 @@ export let ENVIRONMENT_IS_NODE: boolean;
 export let ENVIRONMENT_IS_SHELL: boolean;
 export let ENVIRONMENT_IS_WEB: boolean;
 export let locateFile: Function;
+export let quit: Function;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function setImportsAndExports(
-    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
+    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function },
     exports: { mono: any, binding: any, internal: any, module: any },
 ): void {
     MONO = exports.mono;
@@ -34,6 +35,7 @@ export function setImportsAndExports(
     ENVIRONMENT_IS_SHELL = imports.isShell;
     ENVIRONMENT_IS_WEB = imports.isWeb;
     locateFile = imports.locateFile;
+    quit = imports.quit_;
 }
 
 let monoConfig: MonoConfig;

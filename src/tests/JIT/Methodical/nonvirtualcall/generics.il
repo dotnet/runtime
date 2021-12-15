@@ -23,7 +23,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module nonvirtualcalls_generics.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000

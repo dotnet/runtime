@@ -163,7 +163,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (type == null)
                         continue;
 
-                    int id = await context.SdbAgent.GetTypeIdFromToken(asm.DebugId, type.Token, token);
+                    int id = await context.SdbAgent.GetTypeIdFromToken(await asm.GetDebugId(context.SdbAgent, token), type.Token, token);
                     if (id != -1)
                         return id;
                 }

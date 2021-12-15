@@ -13,7 +13,6 @@
   .ver 4:0:0:0
 }
 .assembly CodeSize0 {}
-.module CodeSize0.exe
 .class private auto ansi beforefieldinit CodeSize0
        extends [mscorlib]System.Object
 {

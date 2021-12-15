@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ctor'// as "ctor"
+.assembly 'val_ctor_newobj'// as "ctor"
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -20,7 +20,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'ctor.exe'
 // MVID: {B57C6031-B1F4-4BAC-A5DE-7943EA8B199E}
 .namespace JitTest
 {

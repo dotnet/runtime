@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'switch'
+.assembly 'bug2'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -20,7 +20,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module switch.exe
 // MVID: {663074E2-0B73-434A-85B1-7077AA61100B}
 .imagebase 0x00400000
 .subsystem 0x00000003

@@ -11,7 +11,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module Runtime_40607.dll
 
 .class private auto ansi beforefieldinit Runtime_40607.Program extends [System.Runtime]System.Object
 {
