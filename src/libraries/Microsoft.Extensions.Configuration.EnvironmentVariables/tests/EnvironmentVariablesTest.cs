@@ -259,7 +259,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             }
             finally
             {
-                Environment.SetEnvironmentVariable(environmentVariable, null);
+                Environment.SetEnvironmentVariable(EnvironmentVariable, null);
             }
         }
 
