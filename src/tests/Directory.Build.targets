@@ -91,12 +91,6 @@
     <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
   </PropertyGroup>
 
-  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
-  <Import Project="$(MSBuildThisFileDirectory)Common\nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
-
-  <!-- RunOnly projects have a special build for dependent projects -->
-  <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
-
   <!-- We enable auto-unification of assembly references after importing the common targets.  Binding redirects are not needed
        for coreclr since it auto-unifies, so the warnings we get without this setting are just noise -->
   <PropertyGroup>
@@ -445,5 +439,11 @@
   <Target Name="GetBinPlaceTargetFramework" />
 
   <Import Project="$(RepoRoot)src\coreclr\clr.featuredefines.props" />
+
+  <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
+
+  <!-- RunOnly projects have a special build for dependent projects -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
 </Project>
