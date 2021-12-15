@@ -304,7 +304,7 @@ unw_tdep_context_t;
     ".code 16\n"                                                        \
     "mov r0, #0\n"                                                      \
     "ret%=:\n"                                                          \
-    : [r0] "=r" (r0) : [base] "r" (unw_base) : "memory", "cc");         \
+    : [r0] "=r" (r0), [base] "+r" (unw_base) : : "memory", "cc");         \
   (int)r0; })
 #endif
 
