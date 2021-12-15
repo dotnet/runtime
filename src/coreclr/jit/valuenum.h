@@ -767,8 +767,9 @@ public:
         int      constVal;
         unsigned cmpOper;
         ValueNum cmpOpVN;
+        bool     isUnsigned;
 
-        ConstantBoundInfo() : constVal(0), cmpOper(GT_NONE), cmpOpVN(NoVN)
+        ConstantBoundInfo() : constVal(0), cmpOper(GT_NONE), cmpOpVN(NoVN), isUnsigned(false)
         {
         }
 
@@ -799,7 +800,8 @@ public:
     // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
     bool IsVNConstantBound(ValueNum vn);
 
-    // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
+    // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant
+    // with (uint) cast for the other operand
     bool IsVNConstantBoundUnsigned(ValueNum vn);
 
     // If "vn" is constant bound, then populate the "info" fields for constVal, cmpOp, cmpOper.

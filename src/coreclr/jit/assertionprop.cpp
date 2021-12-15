@@ -1081,17 +1081,9 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                     printf("MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
                     assert(curAssertion->op2.u1.iconFlags != GTF_EMPTY);
                 }
-                else if (curAssertion->op1.kind == O1K_BOUND_OPER_BND)
-                {
-                    assert(!optLocalAssertionProp);
-                    vnStore->vnDump(this, curAssertion->op2.vn);
-                }
-                else if (curAssertion->op1.kind == O1K_BOUND_LOOP_BND)
-                {
-                    assert(!optLocalAssertionProp);
-                    vnStore->vnDump(this, curAssertion->op2.vn);
-                }
-                else if ((curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND) ||
+                else if ((curAssertion->op1.kind == O1K_BOUND_OPER_BND) ||
+                         (curAssertion->op1.kind == O1K_BOUND_LOOP_BND) ||
+                         (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND) ||
                          (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND_UN))
                 {
                     assert(!optLocalAssertionProp);

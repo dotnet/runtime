@@ -4795,7 +4795,7 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 
 bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
 {
-    // Do we have "var < 100"?
+    // Do we have "(unsigned type)var < 100"? which is an equivalent for "var >= 0 && var < 100"
     if (vn == NoVN)
     {
         return false;
@@ -4806,7 +4806,7 @@ bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
     {
         return false;
     }
-    if (funcAttr.m_func != VNF_GE_UN)
+    if ((funcAttr.m_func != VNF_GE_UN) && (funcAttr.m_func != VNF_GT_UN))
     {
         return false;
     }
@@ -4817,7 +4817,8 @@ bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
 
 void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 {
-    //assert(IsVNConstantBound(vn));
+    bool isUnsignedCnsBnd = IsVNConstantBoundUnsigned(vn);
+    assert(IsVNConstantBound(vn) || isUnsignedCnsBnd);
     assert(info);
 
     // Do we have var < 100?
@@ -4826,27 +4827,36 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 
     bool isOp1Const = IsVNInt32Constant(funcAttr.m_args[1]);
 
+    genTreeOps op;
+    if (funcAttr.m_func == VNF_GT_UN)
+    {
+        assert(isUnsignedCnsBnd);
+        op = GT_GT;
+    }
+    else if (funcAttr.m_func == VNF_GE_UN)
+    {
+        assert(isUnsignedCnsBnd);
+        op = GT_GE;
+    }
+    else
+    {
+        assert(!isUnsignedCnsBnd);
+        op = (genTreeOps)funcAttr.m_func;
+    }
+
     if (isOp1Const)
     {
-        info->cmpOper  = funcAttr.m_func;
+        info->cmpOper  = op;
         info->cmpOpVN  = funcAttr.m_args[0];
         info->constVal = GetConstantInt32(funcAttr.m_args[1]);
     }
     else
     {
-        genTreeOps op = (genTreeOps)funcAttr.m_func;
-        if (funcAttr.m_func == VNF_GT_UN)
-        {
-            op = GT_GT;
-        }
-        else if (funcAttr.m_func == VNF_GE_UN)
-        {
-            op = GT_GE;
-        }
         info->cmpOper  = GenTree::SwapRelop(op);
         info->cmpOpVN  = funcAttr.m_args[1];
         info->constVal = GetConstantInt32(funcAttr.m_args[0]);
     }
+    info->isUnsigned = isUnsignedCnsBnd;
 }
 
 //------------------------------------------------------------------------

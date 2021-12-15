@@ -12093,9 +12093,8 @@ DONE_MORPHING_CHILDREN:
             {
                 tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
                 oper = tree->OperGet();
-
-                assert(op1 == tree->AsOp()->gtGetOp1());
-                assert(op2 == tree->AsOp()->gtGetOp2());
+                op1  = tree->AsOp()->gtGetOp1();
+                op2  = tree->AsOp()->gtGetOp2();
             }
 
         COMPARE:
@@ -13709,6 +13708,33 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
                 cmp->gtFlags &= ~GTF_UNSIGNED;
             }
         }
+    }
+    else if (fgGlobalMorph && !cmp->IsUnsigned() && (op2Value >= 0) && cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GE) &&
+             op1->OperIs(GT_CAST) && varTypeIsLong(op1->CastToType()) && op1->gtGetOp1()->TypeIs(TYP_INT) &&
+             op1->IsUnsigned() && ((size_t)op2Value <= UINT_MAX))
+    {
+        // Transform
+        //
+        //   *  GE        int
+        //   +--*  CAST      long <- ulong <- uint
+        //   |  \--*  X         int
+        //   \--*  CNS_INT   long
+        //
+        // to
+        //
+        //   *  GE_un     int
+        //   +--*  X         int
+        //   \--*  CNS_INT   int
+        //
+        // TODO: handle small type casts. Also we can fold the whole condition
+        // if op2Value doesn't fit into CastToType.
+        //
+        cmp->gtOp1 = op1->gtGetOp1();
+        cmp->gtFlags |= GTF_UNSIGNED;
+        assert(op1->TypeIs(TYP_LONG) && op2->TypeIs(TYP_LONG));
+        op2->ChangeType(TYP_INT);
+        DEBUG_DESTROY_NODE(op1);
+        op1 = cmp->gtGetOp1();
     }
 
     if (!cmp->OperIs(oper))
