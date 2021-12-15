@@ -15,8 +15,10 @@
 #include <unistd.h>
 #include <limits.h>
 
+#ifdef HAVE_GNU_LIBNAMES_H
 #if HAVE_GNU_LIBNAMES_H
 #include <gnu/lib-names.h>
+#endif
 #endif
 
 #ifdef DEBUG
