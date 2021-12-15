@@ -809,7 +809,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return (start.StartLocation.Line, start.StartLocation.Column, end.EndLocation.Line, end.EndLocation.Column);
         }
 
-        private async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
+        private static async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
         {
             var mem = new MemoryStream();
             try

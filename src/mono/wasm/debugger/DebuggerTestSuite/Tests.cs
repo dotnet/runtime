@@ -807,6 +807,25 @@ namespace DebuggerTests
         }
 
         [Fact]
+        public async Task GetSourceUsingSourceUri()
+        {
+            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
+
+            Assert.EndsWith("debugger-test.cs", bp1_res.Value["breakpointId"].ToString());
+            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
+
+            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
+
+            var sourceToGet = JObject.FromObject(new
+            {
+                scriptId = loc["scriptId"]?.Value<string>()
+            });
+
+            Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts[loc["scriptId"]?.Value<string>()]);
+            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
+            Assert.True(source.IsOk);
+        }
+        [Fact]
         public async Task GetSourceUsingSourceLink()
         {
             var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
