@@ -2678,35 +2678,8 @@ OBJECTREF allocNewMDArr(TypeHandle typeHnd, unsigned dwNumArgs, va_list args)
     return AllocateArrayEx(typeHnd, fwdArgList, dwNumArgs);
 }
 
-/*********************************************************************
-// Allocate a multi-dimensional array with lower bounds specified.
-// The caller pushes both sizes AND/OR bounds for every dimension
-*/
-
-HCIMPL2VA(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF    ret = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(ret);    // Set up a frame
-
-    TypeHandle typeHnd(classHnd);
-    typeHnd.CheckRestore();
-    _ASSERTE(typeHnd.GetMethodTable()->IsArray());
-
-    va_list dimsAndBounds;
-    va_start(dimsAndBounds, dwNumArgs);
-
-    ret = allocNewMDArr(typeHnd, dwNumArgs, dimsAndBounds);
-    va_end(dimsAndBounds);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(ret);
-}
-HCIMPLEND
-
 /*************************************************************/
-HCIMPL3(Object*, JIT_NewMDArrNonVarArg, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs, INT32 * pArgList)
+HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs, INT32 * pArgList)
 {
     FCALL_CONTRACT;
 
