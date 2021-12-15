@@ -68,12 +68,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class TypeRequiresPublicFields<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) },
-				messageCode: "IL2087", message: new string[] {
-					nameof (T),
-					nameof (TypeRequiresPublicFields <T>),
-					nameof (DataFlowTypeExtensions.RequiresPublicMethods)
-				})]
+			[ExpectedWarning ("IL2087", "'" + nameof (T) + "'", nameof (TypeRequiresPublicFields<T>), nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 			public static void Test ()
 			{
 				typeof (T).RequiresPublicFields ();
@@ -81,12 +76,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (T).RequiresNone ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (FieldRequiresPublicMethods),
-				messageCode: "IL2089", message: new string[] {
-					nameof (T),
-					nameof (TypeRequiresPublicFields <T>),
-					nameof (FieldRequiresPublicMethods)
-				})]
+			[ExpectedWarning ("IL2089", "'" + nameof (T) + "'", nameof (TypeRequiresPublicFields<T>), nameof (FieldRequiresPublicMethods))]
 			public static void TestFields ()
 			{
 				FieldRequiresPublicFields = typeof (T);
@@ -95,7 +85,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 
-			[RecognizedReflectionAccessPattern]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 			public static Type ReturnRequiresPublicFields ()
 			{
@@ -103,12 +92,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 
-			[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicFields<>), nameof (ReturnRequiresPublicMethods), new Type[] { }, returnType: typeof (Type),
-				messageCode: "IL2088", message: new string[] {
-					nameof (T),
-					nameof (TypeRequiresPublicFields<T>),
-					nameof (ReturnRequiresPublicMethods)
-				})]
+			[ExpectedWarning ("IL2088", "'" + nameof (T) + "'", nameof (TypeRequiresPublicFields<T>), nameof (ReturnRequiresPublicMethods))]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public static Type ReturnRequiresPublicMethods ()
 			{
@@ -124,7 +108,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class TypeRequiresPublicMethods<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
 			public static void Test ()
 			{
 				typeof (T).RequiresPublicFields ();
@@ -135,8 +119,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class TypeRequiresNothing<T>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
-			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+			[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 			public static void Test ()
 			{
 				typeof (T).RequiresPublicFields ();
@@ -148,12 +132,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class TypeRequiresPublicFieldsPassThrough<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TSource>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), null, genericParameter: "T",
-				messageCode: "IL2091", message: new string[] {
-					nameof(TSource),
+			[ExpectedWarning ("IL2091", nameof (TSource),
 					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeRequiresPublicFieldsPassThrough<TSource>",
 					"T",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeRequiresPublicMethods<T>" })]
+					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeRequiresPublicMethods<T>")]
 			public static void Test ()
 			{
 				TypeRequiresPublicFields<TSource>.Test ();
@@ -164,8 +146,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class TypeRequiresNothingPassThrough<T>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicFields<>), null, genericParameter: "T", messageCode: "IL2091")]
-			[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), null, genericParameter: "T", messageCode: "IL2091")]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicFields<T>))]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<T>))]
 			public static void Test ()
 			{
 				TypeRequiresPublicFields<T>.Test ();
@@ -189,7 +171,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicMethods)] TBoth,
 			TNothing>
 		{
-			[RecognizedReflectionAccessPattern]
 			public static void TestMultiple ()
 			{
 				typeof (TFields).RequiresPublicFields ();
@@ -202,7 +183,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (TNothing).RequiresNone ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 			public static void TestFields ()
 			{
 				typeof (TFields).RequiresPublicFields ();
@@ -210,7 +191,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (TFields).RequiresNone ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
 			public static void TestMethods ()
 			{
 				typeof (TMethods).RequiresPublicFields ();
@@ -218,7 +199,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (TMethods).RequiresNone ();
 			}
 
-			[RecognizedReflectionAccessPattern]
 			public static void TestBoth ()
 			{
 				typeof (TBoth).RequiresPublicFields ();
@@ -226,8 +206,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (TBoth).RequiresNone ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
-			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+			[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 			public static void TestNothing ()
 			{
 				typeof (TNothing).RequiresPublicFields ();
@@ -236,7 +216,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestBaseTypeGenericRequirements ()
 		{
 			new DerivedTypeWithInstantiatedGenericOnBase ();
@@ -247,14 +226,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class GenericBaseTypeWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 		{
-			[RecognizedReflectionAccessPattern]
 			public GenericBaseTypeWithRequirements ()
 			{
 				typeof (T).RequiresPublicFields ();
 			}
 		}
 
-		[RecognizedReflectionAccessPattern]
 		class DerivedTypeWithInstantiatedGenericOnBase : GenericBaseTypeWithRequirements<TestType>
 		{
 		}
@@ -263,19 +240,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		[RecognizedReflectionAccessPattern]
 		class DerivedTypeWithInstantiationOverSelfOnBase : GenericBaseTypeWithRequirements<DerivedTypeWithInstantiationOverSelfOnBase>
 		{
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericBaseTypeWithRequirements<>), null, genericParameter: "T", messageCode: "IL2091")]
+		[ExpectedWarning ("IL2091", nameof (GenericBaseTypeWithRequirements<T>))]
 		class DerivedTypeWithOpenGenericOnBase<T> : GenericBaseTypeWithRequirements<T>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (GenericBaseTypeWithRequirements<>), null, genericParameter: "T", messageCode: "IL2091")]
+			[ExpectedWarning ("IL2091", nameof (GenericBaseTypeWithRequirements<T>))]
 			public DerivedTypeWithOpenGenericOnBase () { }
 		}
 
-		[RecognizedReflectionAccessPattern]
 		class DerivedTypeWithOpenGenericOnBaseWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 			: GenericBaseTypeWithRequirements<T>
 		{
@@ -293,7 +268,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		[RecognizedReflectionAccessPattern]
 		class InterfaceImplementationTypeWithInstantiatedGenericOnBase : IGenericInterfaceTypeWithRequirements<TestType>
 		{
 		}
@@ -302,23 +276,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		[RecognizedReflectionAccessPattern]
 		class InterfaceImplementationTypeWithInstantiationOverSelfOnBase : IGenericInterfaceTypeWithRequiresAll<InterfaceImplementationTypeWithInstantiationOverSelfOnBase>
 		{
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (IGenericInterfaceTypeWithRequirements<>), null, genericParameter: "T", messageCode: "IL2091")]
+		[ExpectedWarning ("IL2091", nameof (IGenericInterfaceTypeWithRequirements<T>))]
 		class InterfaceImplementationTypeWithOpenGenericOnBase<T> : IGenericInterfaceTypeWithRequirements<T>
 		{
 		}
 
-		[RecognizedReflectionAccessPattern]
 		class InterfaceImplementationTypeWithOpenGenericOnBaseWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 			: IGenericInterfaceTypeWithRequirements<T>
 		{
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestDeepNestedTypesWithGenerics ()
 		{
 			RootTypeWithRequirements<TestType>.InnerTypeWithNoAddedGenerics.TestAccess ();
@@ -330,12 +301,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				// The message is not ideal since we report the TRoot to come from RootTypeWithRequirements/InnerTypeWIthNoAddedGenerics
 				// while it originates on RootTypeWithRequirements, but it's correct from IL's point of view.
-				[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) },
-					messageCode: "IL2087", message: new string[] {
-						nameof(TRoot),
+				[ExpectedWarning ("IL2087", nameof (TRoot),
 						"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.RootTypeWithRequirements<TRoot>.InnerTypeWithNoAddedGenerics",
 						"type",
-						"DataFlowTypeExtensions.RequiresPublicMethods(Type)" })]
+						"DataFlowTypeExtensions.RequiresPublicMethods(Type)")]
 				public static void TestAccess ()
 				{
 					typeof (TRoot).RequiresPublicFields ();
@@ -344,7 +313,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestTypeGenericRequirementsOnMembers ()
 		{
 			// Basically just root everything we need to test
@@ -370,50 +338,43 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class TypeGenericRequirementsOnMembers<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
 		{
-			[RecognizedReflectionAccessPattern]
 			public TypeRequiresPublicFields<TOuter> PublicFieldsField;
 
-			[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), null, genericParameter: "T", messageCode: "IL2091")]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsField;
 
 			public TypeRequiresPublicFields<TOuter> PublicFieldsProperty {
-				[RecognizedReflectionAccessPattern]
 				get;
-				[RecognizedReflectionAccessPattern]
 				set;
 			}
 
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsProperty {
-				[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), null, genericParameter: "T", messageCode: "IL2091")]
+				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
 				get => null;
-				[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), null, genericParameter: "T", messageCode: "IL2091")]
+				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
 				set { }
 			}
 
-			[RecognizedReflectionAccessPattern]
 			public void PublicFieldsMethodParameter (TypeRequiresPublicFields<TOuter> param) { }
-			[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), null, genericParameter: "T", messageCode: "IL2091")]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
 			public void PublicMethodsMethodParameter (TypeRequiresPublicMethods<TOuter> param) { }
 
-			[RecognizedReflectionAccessPattern]
 			public TypeRequiresPublicFields<TOuter> PublicFieldsMethodReturnValue () { return null; }
-			[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), null, genericParameter: "T", messageCode: "IL2091")] // Return value
-			[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), null, genericParameter: "T", messageCode: "IL2091")] // Compiler generated local variable
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsMethodReturnValue () { return null; }
 
-			[RecognizedReflectionAccessPattern]
 			public void PublicFieldsMethodLocalVariable ()
 			{
 				TypeRequiresPublicFields<TOuter> t = null;
 			}
-			[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), null, genericParameter: "T", messageCode: "IL2091")]
+
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
 			public void PublicMethodsMethodLocalVariable ()
 			{
 				TypeRequiresPublicMethods<TOuter> t = null;
 			}
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestPartialInstantiationTypes ()
 		{
 			_ = new PartialyInstantiatedFields<TestType> ();
@@ -428,27 +389,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		[RecognizedReflectionAccessPattern]
 		class PartialyInstantiatedFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
 			: BaseForPartialInstantiation<TOuter, TestType>
 		{
 		}
 
-		[RecognizedReflectionAccessPattern]
 		class FullyInstantiatedOverPartiallyInstantiatedFields
 			: PartialyInstantiatedFields<TestType>
 		{
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (BaseForPartialInstantiation<,>), null, genericParameter: "TMethods", messageCode: "IL2091")]
+		[ExpectedWarning ("IL2091", nameof (BaseForPartialInstantiation<TestType, TOuter>), "'TMethods'")]
 		class PartialyInstantiatedMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
 			: BaseForPartialInstantiation<TestType, TOuter>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (BaseForPartialInstantiation<,>), null, genericParameter: "TMethods", messageCode: "IL2091")]
+			[ExpectedWarning ("IL2091", nameof (BaseForPartialInstantiation<TestType, TOuter>), "'TMethods'")]
 			public PartialyInstantiatedMethods () { }
 		}
 
-		[RecognizedReflectionAccessPattern]
 		class FullyInstantiatedOverPartiallyInstantiatedMethods
 			: PartialyInstantiatedMethods<TestType>
 		{
@@ -463,7 +421,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			MethodRequiresNothingPassThrough<TestType> ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void MethodRequiresPublicFields<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 		{
@@ -472,7 +430,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeof (T).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
 		static void MethodRequiresPublicMethods<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
 		{
@@ -481,8 +439,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeof (T).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void MethodRequiresNothing<T> ()
 		{
 			typeof (T).RequiresPublicFields ();
@@ -490,7 +448,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeof (T).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicMethods) + "<T>", new Type[0] { }, genericParameter: "T", messageCode: "IL2091")]
+		[ExpectedWarning ("IL2091", nameof (MethodRequiresPublicMethods), "'T'")]
 		static void MethodRequiresPublicFieldsPassThrough<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 		{
@@ -499,8 +457,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			MethodRequiresNothing<T> ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicFields) + "<T>", new Type[0] { }, genericParameter: "T", messageCode: "IL2091")]
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicMethods) + "<T>", new Type[0] { }, genericParameter: "T", messageCode: "IL2091")]
+		[ExpectedWarning ("IL2091", nameof (MethodRequiresPublicFields), "'T'")]
+		[ExpectedWarning ("IL2091", nameof (MethodRequiresPublicMethods), "'T'")]
 		static void MethodRequiresNothingPassThrough<T> ()
 		{
 			MethodRequiresPublicFields<T> ();
@@ -533,27 +491,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class BaseTypeWithGenericMethod
 		{
-			[RecognizedReflectionAccessPattern]
 			public static void StaticRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 				=> typeof (T).RequiresPublicFields ();
-			[RecognizedReflectionAccessPattern]
 			public void InstanceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 				=> typeof (T).RequiresPublicFields ();
-			[RecognizedReflectionAccessPattern]
 			public virtual void VirtualRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 				=> typeof (T).RequiresPublicFields ();
 
-			[RecognizedReflectionAccessPattern]
 			public static void StaticRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
 				=> typeof (T).RequiresPublicMethods ();
-			[RecognizedReflectionAccessPattern]
 			public void InstanceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]T> ()
 				=> typeof (T).RequiresPublicMethods ();
-			[RecognizedReflectionAccessPattern]
 			public virtual void VirtualRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]T> ()
 				=> typeof (T).RequiresPublicMethods ();
 
-			[RecognizedReflectionAccessPattern]
 			public static void StaticRequiresMultipleGenericParams<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods> ()
@@ -572,101 +523,90 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class TypeWithInstantiatedGenericMethodViaGenericParameter<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
 			: BaseTypeWithGenericMethod, IInterfaceWithGenericMethod
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.StaticRequiresPublicMethods) + "<T>", new Type[0] { }, genericParameter: "T",
-				messageCode: "IL2091", message: new string[] {
-					"TInner",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.StaticRequiresPublicFields<TInner>()",
-					"T",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresPublicMethods<T>()" })]
+			[ExpectedWarning ("IL2091",
+				"'TInner'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.StaticRequiresPublicFields<TInner>()",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresPublicMethods<T>()")]
 			public static void StaticRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TInner> ()
 			{
 				StaticRequiresPublicFields<TInner> ();
 				StaticRequiresPublicMethods<TInner> ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.StaticRequiresPublicMethods) + "<T>", new Type[0] { }, genericParameter: "T",
-				messageCode: "IL2091", message: new string[] {
-					"TOuter",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
-					"T",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresPublicMethods<T>()" })]
+			[ExpectedWarning ("IL2091",
+				"'TOuter'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresPublicMethods<T>()")]
 			public static void StaticRequiresPublicFieldsNonGeneric ()
 			{
 				StaticRequiresPublicFields<TOuter> ();
 				StaticRequiresPublicMethods<TOuter> ();
 			}
 
-			[RecognizedReflectionAccessPattern]
 			public static void StaticPartialInstantiation ()
 			{
 				StaticRequiresMultipleGenericParams<TOuter, TestType> ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams) + "<TFields,TMethods>", new Type[0] { }, genericParameter: "TMethods",
-				messageCode: "IL2091", message: new string[] {
-					"TOuter",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
-					"TMethods",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields,TMethods>()" })]
+			[ExpectedWarning ("IL2091",
+				"'TOuter'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"'TMethods'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields,TMethods>()")]
 			public static void StaticPartialInstantiationUnrecognized ()
 			{
 				StaticRequiresMultipleGenericParams<TestType, TOuter> ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.InstanceRequiresPublicMethods) + "<T>", new Type[0] { }, genericParameter: "T",
-				messageCode: "IL2091", message: new string[] {
-					"TInner",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.InstanceRequiresPublicFields<TInner>()",
-					"T",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()" })]
+			[ExpectedWarning ("IL2091",
+				"'TInner'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.InstanceRequiresPublicFields<TInner>()",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()")]
 			public void InstanceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TInner> ()
 			{
 				InstanceRequiresPublicFields<TInner> ();
 				InstanceRequiresPublicMethods<TInner> ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (BaseTypeWithGenericMethod), nameof (BaseTypeWithGenericMethod.InstanceRequiresPublicMethods) + "<T>", new Type[0] { }, genericParameter: "T",
-				messageCode: "IL2091", message: new string[] {
-					"TOuter",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
-					"T",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()" })]
+			[ExpectedWarning ("IL2091",
+				"'TOuter'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()")]
 			public void InstanceRequiresPublicFieldsNonGeneric ()
 			{
 				InstanceRequiresPublicFields<TOuter> ();
 				InstanceRequiresPublicMethods<TOuter> ();
 			}
 
-			[RecognizedReflectionAccessPattern]
 			public override void VirtualRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 			{
 				typeof (T).RequiresPublicFields ();
 			}
 
-			[RecognizedReflectionAccessPattern]
 			public override void VirtualRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
 			{
 				typeof (T).RequiresPublicMethods ();
 			}
 
-			[RecognizedReflectionAccessPattern]
 			public void InterfaceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 			{
 				typeof (T).RequiresPublicFields (); ;
 			}
 
-			[RecognizedReflectionAccessPattern]
 			public void InterfaceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
 			{
 				typeof (T).RequiresPublicMethods ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (IInterfaceWithGenericMethod), nameof (IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods) + "<T>", new Type[0] { }, genericParameter: "T",
-				messageCode: "IL2091", message: new string[] {
-					"TOuter",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
-					"T",
-					"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods<T>()" })]
+			[ExpectedWarning ("IL2091",
+				"'TOuter'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"'T'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods<T>()")]
 			public void CallInterface ()
 			{
 				IInterfaceWithGenericMethod interfaceInstance = (IInterfaceWithGenericMethod) this;
@@ -685,7 +625,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			MethodMultipleWithDifferentRequirements_TestNothing<TestType, TestType, TestType, TestType> ();
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void MethodMultipleWithDifferentRequirements_TestMultiple<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods,
@@ -702,7 +641,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeof (TNothing).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void MethodMultipleWithDifferentRequirements_TestFields<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods,
@@ -714,7 +653,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeof (TFields).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
 		static void MethodMultipleWithDifferentRequirements_TestMethods<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods,
@@ -737,8 +676,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeof (TBoth).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
-		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+		[ExpectedWarning ("IL2087", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 		static void MethodMultipleWithDifferentRequirements_TestNothing<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods,
@@ -779,29 +718,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// This is OK since we know it's null, so MakeGenericType is effectively a no-op (will throw)
 			// so no validation necessary.
-			[RecognizedReflectionAccessPattern]
 			static void TestNullType ()
 			{
 				Type nullType = null;
 				nullType.MakeGenericType (typeof (TestType));
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
 			static void TestUnknownInput (Type inputType)
 			{
 				inputType.MakeGenericType (typeof (TestType));
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
 			static void TestWithUnknownTypeArray (Type[] types)
 			{
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
 			static void TestWithArrayUnknownIndexSet (int indexToSet)
 			{
 				Type[] types = new Type[1];
@@ -809,8 +744,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
-				messageCode: "IL2055")]
+			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
 			static void TestWithArrayUnknownLengthSet (int arrayLen)
 			{
 				Type[] types = new Type[arrayLen];
@@ -818,7 +752,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestNoArguments ()
 			{
 				typeof (TypeMakeGenericNoArguments).MakeGenericType ();
@@ -828,7 +761,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirements ()
 			{
 				// Currently this is not analyzable since we don't track array elements.
@@ -836,14 +768,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (TestType));
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirementsFromParam (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
 			{
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirementsFromGenericParam<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 			{
@@ -854,13 +784,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNoRequirements ()
 			{
 				typeof (GenericWithNoRequirements<>).MakeGenericType (typeof (TestType));
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNoRequirementsFromParam (Type type)
 			{
 				typeof (GenericWithNoRequirements<>).MakeGenericType (type);
@@ -870,7 +798,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithMultipleArgumentsWithRequirements ()
 			{
 				typeof (GenericWithMultipleArgumentsWithRequirements<,>).MakeGenericType (typeof (TestType), typeof (TestType));
@@ -882,7 +809,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNewConstraint ()
 			{
 				typeof (GenericWithNewConstraint<>).MakeGenericType (typeof (TestType));
@@ -892,7 +818,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithStructConstraint ()
 			{
 				typeof (GenericWithStructConstraint<>).MakeGenericType (typeof (TestType));
@@ -902,7 +827,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithUnmanagedConstraint ()
 			{
 				typeof (GenericWithUnmanagedConstraint<>).MakeGenericType (typeof (TestType));
@@ -912,7 +836,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNullable ()
 			{
 				typeof (Nullable<>).MakeGenericType (typeof (TestType));
@@ -959,38 +882,33 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestWithUnmanagedConstraint ();
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestNullMethod ()
 			{
 				MethodInfo mi = null;
 				mi.MakeGenericMethod (typeof (TestType));
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestUnknownMethod (MethodInfo mi)
 			{
 				mi.MakeGenericMethod (typeof (TestType));
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestUnknownMethodButNoTypeArguments (MethodInfo mi)
 			{
 				// Thechnically linker could figure this out, but it's not worth the complexity - such call will always fail at runtime.
 				mi.MakeGenericMethod (Type.EmptyTypes);
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithUnknownTypeArray (Type[] types)
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
 					.MakeGenericMethod (types);
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithArrayUnknownIndexSet (int indexToSet)
 			{
 				Type[] types = new Type[1];
@@ -999,8 +917,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (types);
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithArrayUnknownIndexSetByRef (int indexToSet)
 			{
 				Type[] types = new Type[1];
@@ -1011,8 +928,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (types);
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithArrayUnknownLengthSet (int arrayLen)
 			{
 				Type[] types = new Type[arrayLen];
@@ -1025,8 +941,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithArrayPassedToAnotherMethod ()
 			{
 				Type[] types = new Type[1];
@@ -1036,7 +951,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (types);
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNoArguments ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (NonGenericMethod), BindingFlags.Static | BindingFlags.NonPublic)
@@ -1046,7 +960,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// This should not warn since we can't be always sure about the exact overload as we don't support
 			// method parameter signature matching, and thus the GetMethod may return multiple potential methods.
 			// It can happen that some are generic and some are not. The analysis should not fail on this.
-			[RecognizedReflectionAccessPattern]
 			static void TestWithArgumentsButNonGenericMethod ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (NonGenericMethod), BindingFlags.Static | BindingFlags.NonPublic)
@@ -1057,14 +970,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirements ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
 					.MakeGenericMethod (typeof (TestType));
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirementsFromParam (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
 			{
@@ -1080,15 +991,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithRequirementsViaRuntimeMethod ()
 			{
 				typeof (MakeGenericMethod).GetRuntimeMethod (nameof (GenericWithRequirements), Type.EmptyTypes)
 					.MakeGenericMethod (typeof (TestType));
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithRequirementsButNoTypeArguments ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
@@ -1099,23 +1008,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithMultipleKnownGenericParameters ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
 					.MakeGenericMethod (typeof (TestType), typeof (TestType), typeof (TestType));
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithOneUnknownGenericParameter (Type[] types)
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericMultipleParameters), BindingFlags.Static)
 					.MakeGenericMethod (typeof (TestType), typeof (TestStruct), types[0]);
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
-				messageCode: "IL2060")]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestWithPartiallyInitializedGenericTypeArray ()
 			{
 				Type[] types = new Type[3];
@@ -1125,7 +1031,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (types);
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithConditionalGenericTypeSet (bool thirdParameterIsStruct)
 			{
 				Type[] types = new Type[3];
@@ -1147,21 +1052,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNoRequirements ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements), BindingFlags.Static)
 					.MakeGenericMethod (typeof (TestType));
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNoRequirementsFromParam (Type type)
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements), BindingFlags.Static)
 					.MakeGenericMethod (type);
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNoRequirementsViaRuntimeMethod ()
 			{
 				typeof (MakeGenericMethod).GetRuntimeMethod (nameof (GenericWithNoRequirements), Type.EmptyTypes)
@@ -1169,7 +1071,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// There are no requirements, so no warnings
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNoRequirementsUnknownType (Type type)
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements))
@@ -1177,7 +1078,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// There are no requirements, so no warnings
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNoRequirementsWrongNumberOfTypeParameters ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements))
@@ -1185,7 +1085,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// There are no requirements, so no warnings
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNoRequirementsUnknownArrayElement ()
 			{
 				Type[] types = new Type[1];
@@ -1198,7 +1097,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithMultipleArgumentsWithRequirements ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithMultipleArgumentsWithRequirements), BindingFlags.Static | BindingFlags.NonPublic)
@@ -1211,7 +1109,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithNewConstraint ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
@@ -1223,7 +1120,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var t = new T ();
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithStructConstraint ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithStructConstraint), BindingFlags.Static | BindingFlags.NonPublic)
@@ -1235,7 +1131,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var t = new T ();
 			}
 
-			[RecognizedReflectionAccessPattern]
 			static void TestWithUnmanagedConstraint ()
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithUnmanagedConstraint), BindingFlags.Static | BindingFlags.NonPublic)
@@ -1248,19 +1143,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestNewConstraintSatisfiesParameterlessConstructor<T> () where T : new()
 		{
 			RequiresParameterlessConstructor<T> ();
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestStructConstraintSatisfiesParameterlessConstructor<T> () where T : struct
 		{
 			RequiresParameterlessConstructor<T> ();
 		}
 
-		[RecognizedReflectionAccessPattern]
 		static void TestUnmanagedConstraintSatisfiesParameterlessConstructor<T> () where T : unmanaged
 		{
 			RequiresParameterlessConstructor<T> ();

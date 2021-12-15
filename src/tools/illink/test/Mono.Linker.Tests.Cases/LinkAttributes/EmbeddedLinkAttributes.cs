@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkAttributes
@@ -12,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 	[SetupCompileResource ("EmbeddedLinkAttributes.xml", "ILLink.LinkAttributes.xml")]
 	[IgnoreLinkAttributes (false)]
 	[RemovedResourceInAssembly ("test.exe", "ILLink.LinkAttributes.xml")]
+	[ExpectedNoWarnings]
 	class EmbeddedLinkAttributes
 	{
 		public static void Main ()
@@ -24,47 +26,22 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 
 		Type _typeWithPublicParameterlessConstructor;
 
-		[UnrecognizedReflectionAccessPattern (typeof (EmbeddedLinkAttributes), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
-		[UnrecognizedReflectionAccessPattern (typeof (EmbeddedLinkAttributes), nameof (RequireNonPublicConstructors), new Type[] { typeof (Type) })]
-		[RecognizedReflectionAccessPattern]
+		[ExpectedWarning ("IL2077", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
+		[ExpectedWarning ("IL2077", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors))]
 		private void ReadFromInstanceField ()
 		{
-			RequirePublicParameterlessConstructor (_typeWithPublicParameterlessConstructor);
-			RequirePublicConstructors (_typeWithPublicParameterlessConstructor);
-			RequireNonPublicConstructors (_typeWithPublicParameterlessConstructor);
-		}
-		private static void RequirePublicParameterlessConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-			Type type)
-		{
-		}
-
-		private static void RequirePublicConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-			Type type)
-		{
-		}
-
-		private static void RequireNonPublicConstructors (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-			Type type)
-		{
+			_typeWithPublicParameterlessConstructor.RequiresPublicParameterlessConstructor ();
+			_typeWithPublicParameterlessConstructor.RequiresPublicConstructors ();
+			_typeWithPublicParameterlessConstructor.RequiresNonPublicConstructors ();
 		}
 
 		Type _typeWithPublicFields;
 
-		[UnrecognizedReflectionAccessPattern (typeof (EmbeddedLinkAttributes), nameof (RequirePublicConstructors), new Type[] { typeof (Type) })]
-		[RecognizedReflectionAccessPattern]
+		[ExpectedWarning ("IL2077", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
 		private void ReadFromInstanceField2 ()
 		{
-			RequirePublicConstructors (_typeWithPublicFields);
-			RequirePublicFields (_typeWithPublicFields);
-		}
-
-		private static void RequirePublicFields (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
-			Type type)
-		{
+			_typeWithPublicFields.RequiresPublicConstructors ();
+			_typeWithPublicFields.RequiresPublicFields ();
 		}
 	}
 }

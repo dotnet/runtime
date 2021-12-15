@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SetupCompileArgument ("/langversion:7.3")]
 	[Kept]
+	[ExpectedNoWarnings]
 	class ByRefDataflow
 	{
 		public static void Main ()
