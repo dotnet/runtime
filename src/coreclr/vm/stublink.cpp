@@ -1737,6 +1737,9 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
             (epilogUnwindCodeIndex << 22)|
             (codeWordsCount << 27);
     } // end else (!m_fProlog)
+
+#elif defined(TARGET_LOONGARCH64)
+    //not used on LoongArch64.
 #else
     PORTABILITY_ASSERT("StubLinker::EmitUnwindInfo");
     T_RUNTIME_FUNCTION *pCurFunction = NULL;

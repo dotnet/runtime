@@ -1128,6 +1128,10 @@ extern "C" void *JIT_WriteBarrier_Loc = 0;
 extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
 
+#ifdef TARGET_LOONGARCH64
+extern "C" void *JIT_WriteBarrier_Loc = 0;
+#endif // TARGET_LOONGARCH64
+
 #ifdef TARGET_ARM
 extern "C" void *JIT_WriteBarrier_Loc = 0;
 #endif // TARGET_ARM

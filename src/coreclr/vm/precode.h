@@ -108,7 +108,14 @@ public:
 
 #ifdef OFFSETOF_PRECODE_TYPE
 
+#ifdef TARGET_LOONGARCH64
+        assert(0 == OFFSETOF_PRECODE_TYPE);
+        short type = *((short*)m_data);
+        type >>= 5;
+#else
         BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
+#endif
+
 #ifdef TARGET_X86
         if (type == X86_INSTR_MOV_RM_R)
             type = m_data[OFFSETOF_PRECODE_TYPE_MOV_RM_R];

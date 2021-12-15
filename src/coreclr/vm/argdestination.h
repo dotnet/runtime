@@ -29,8 +29,8 @@ public:
         LIMITED_METHOD_CONTRACT;
 #if defined(UNIX_AMD64_ABI)
         _ASSERTE((argLocDescForStructInRegs != NULL) || (offset != TransitionBlock::StructInRegsOffset));
-#elif defined(TARGET_ARM64)
-        // This assert is not interesting on arm64. argLocDescForStructInRegs could be
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+        // This assert is not interesting on arm64/loongarch64. argLocDescForStructInRegs could be
         // initialized if the args are being enregistered.
 #else
         _ASSERTE(argLocDescForStructInRegs == NULL);
@@ -82,6 +82,37 @@ public:
 
 #endif // !DACCESS_COMPILE
 #endif // defined(TARGET_ARM64)
+
+#if defined(TARGET_LOONGARCH64)
+    bool IsStructPassedInRegs()
+    {
+        return m_argLocDescForStructInRegs != NULL;
+    }
+
+#ifndef DACCESS_COMPILE
+    void CopyStructToRegisters(void *src, int fieldBytes)
+    {
+        _ASSERTE(IsStructPassedInRegs());
+        _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
+        _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
+        _ASSERTE(fieldBytes <= 16);
+
+        int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_argLocDescForStructInRegs->m_idxFloatReg * 8;
+        *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;
+
+        ////TODO:maybe optimize ?
+        argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+        *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
+    }
+#endif // !DACCESS_COMPILE
+
+    PTR_VOID GetStructGenRegDestinationAddress()
+    {
+        _ASSERTE(IsStructPassedInRegs());
+        int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+        return dac_cast<PTR_VOID>(dac_cast<TADDR>(m_base) + argOfs);
+    }
+#endif // defined(TARGET_LOONGARCH64)
 
 #if defined(UNIX_AMD64_ABI)
 

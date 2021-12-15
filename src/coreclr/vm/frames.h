@@ -878,6 +878,9 @@ public:
 #elif defined(TARGET_ARM64)
             Object** firstIntReg = (Object**)&this->GetContext()->X0;
             Object** lastIntReg  = (Object**)&this->GetContext()->X28;
+#elif defined(TARGET_LOONGARCH64)
+            Object** firstIntReg = (Object**)&this->GetContext()->Tp;
+            Object** lastIntReg  = (Object**)&this->GetContext()->X0;
 #else
             _ASSERTE(!"nyi for platform");
 #endif
@@ -885,6 +888,14 @@ public:
             {
                 fn(ppObj, sc, GC_CALL_INTERIOR | GC_CALL_PINNED);
             }
+#if defined(TARGET_LOONGARCH64)
+            firstIntReg = (Object**)&this->GetContext()->S0;
+            lastIntReg  = (Object**)&this->GetContext()->S8;
+            for (Object** ppObj = firstIntReg; ppObj <= lastIntReg; ppObj++)
+            {
+                fn(ppObj, sc, GC_CALL_INTERIOR | GC_CALL_PINNED);
+            }
+#endif
         }
 #endif
     }
@@ -1850,7 +1861,7 @@ public:
     static BYTE GetOffsetOfArgs()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         size_t ofs = offsetof(UnmanagedToManagedFrame, m_argumentRegisters);
 #else
         size_t ofs = sizeof(UnmanagedToManagedFrame);
@@ -1916,6 +1927,10 @@ protected:
     TADDR           m_fp;
     TADDR           m_ReturnAddress;
     TADDR           m_x8; // ret buff arg
+    ArgumentRegisters m_argumentRegisters;
+#elif defined (TARGET_LOONGARCH64)
+    TADDR           m_fp;
+    TADDR           m_ReturnAddress;
     ArgumentRegisters m_argumentRegisters;
 #else
     TADDR           m_ReturnAddress;  // return address into unmanaged code

@@ -471,7 +471,11 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                     case 1:
                     case 2:
                     case 4:
+#if defined(TARGET_LOONGARCH64)
+                        *((INT64*)pDest) = (INT32)pArguments[arg];
+#else
                         *((INT32*)pDest) = (INT32)pArguments[arg];
+#endif
                         break;
 
                     case 8:

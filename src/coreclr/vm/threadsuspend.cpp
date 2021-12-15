@@ -3697,6 +3697,10 @@ void Thread::CommitGCStressInstructionUpdate()
 
         *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
+#elif defined(TARGET_LOONGARCH64)
+
+        *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
+
 #else
 
         *destCodeWriterHolder.GetRW() = *pbSrcCode;
@@ -4907,6 +4911,62 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             // pushed on the stack. We get it to determine the return address
                             // in the caller of the current non-interruptible frame.
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
+                        }
+#elif defined(TARGET_LOONGARCH64)
+
+                        // Why do we use CallerContextPointers below?
+                        //
+                        // Assume the following callstack, growing from left->right:
+                        //
+                        // C -> B -> A
+                        //
+                        // Assuming A is non-interruptible function and pushes RA on stack,
+                        // when we get the stackwalk callback for A, the CallerContext would
+                        // contain non-volatile register state for B and CallerContextPtrs would
+                        // contain the location where the caller's (B's) non-volatiles where restored
+                        // from. This would be the stack location in A where they were pushed. Thus,
+                        // CallerContextPtrs->Ra would contain the stack location in A where RA (representing an address in B)
+                        // was pushed and thus, contains the return address in B.
+
+                        // Note that the JIT always pushes RA even for leaf methods to make hijacking
+                        // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
+
+                        if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
+                        {
+                            // This is the case when we are either:
+                            //
+                            // 1) In a leaf method that does not push RA on stack, OR
+                            // 2) In the prolog/epilog of a non-leaf method that has not yet pushed RA on stack
+                            //    or has RA already popped off.
+                            //
+                            // The remaining case of non-leaf method is that of IP being in the body of the
+                            // function. In such a case, RA would be have been pushed on the stack and thus,
+                            // we wouldnt be here but in the "else" clause below.
+                            //
+                            // For (1) we can use CallerContext->ControlPC to be used as the return address
+                            // since we know that leaf frames will return back to their caller.
+                            // For this, we may need JIT support to do so.
+                            notJittedCase = true;
+                        }
+                        else if (pCF->HasTailCalls())
+                        {
+                            // Do not hijack functions that have tail calls, since there are two problems:
+                            // 1. When a function that tail calls another one is hijacked, the RA may be
+                            //    stored at a different location in the stack frame of the tail call target.
+                            //    So just by performing tail call, the hijacked location becomes invalid and
+                            //    unhijacking would corrupt stack by writing to that location.
+                            // 2. There is a small window after the caller pops RA from the stack in its
+                            //    epilog and before the tail called function pushes RA in its prolog when
+                            //    the hijacked return address would not be not on the stack and so we would
+                            //    not be able to unhijack.
+                            notJittedCase = true;
+                        }
+                        else
+                        {
+                            // This is the case of IP being inside the method body and RA is
+                            // pushed on the stack. We get it to determine the return address
+                            // in the caller of the current non-interruptible frame.
+                            pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
                         }
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
                         pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));

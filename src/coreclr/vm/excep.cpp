@@ -6601,7 +6601,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
 #endif // TARGET_UNIX
 
-#ifndef TARGET_ARM64
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
 EXTERN_C void JIT_StackProbe_End();
 #endif // TARGET_ARM64
 
@@ -6668,7 +6668,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
-#if !defined(TARGET_ARM64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64
 #else
@@ -6815,6 +6815,10 @@ AdjustContextForJITHelpers(
 
        // Now we save the address back into the context so that it gets used
        // as the faulting address.
+       SetIP(pContext, ControlPCPostAdjustment);
+#elif defined(TARGET_LOONGARCH64)
+       //TODO: should confirm for LOONGARCH64.
+       PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
        SetIP(pContext, ControlPCPostAdjustment);
 #endif // TARGET_ARM || TARGET_ARM64
 

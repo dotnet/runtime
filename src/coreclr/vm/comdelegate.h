@@ -204,6 +204,9 @@ struct ShuffleEntry
         UINT16    dstofs;           //if srcofs != SENTINEL
         UINT16    stacksizedelta;   //if srcofs == SENTINEL, difference in stack size between virtual and static sigs
     };
+#if defined(TARGET_LOONGARCH64)
+    UINT16 stackofs;
+#endif
 };
 
 

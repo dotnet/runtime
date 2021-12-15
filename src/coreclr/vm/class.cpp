@@ -1430,6 +1430,9 @@ MethodDesc* MethodTable::GetExistingUnboxedEntryPointMD(MethodDesc *pMD)
 bool MethodTable::IsHFA()
 {
     LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_LOONGARCH64)
+    return false;
+#else
 #ifdef DACCESS_COMPILE
     return false;
 #else
@@ -1441,6 +1444,7 @@ bool MethodTable::IsHFA()
     {
         return false;
     }
+#endif
 #endif
 }
 #endif // !FEATURE_HFA
