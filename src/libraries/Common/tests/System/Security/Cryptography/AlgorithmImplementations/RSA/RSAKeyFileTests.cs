@@ -74,7 +74,6 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsLargeExponent))]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteBigExponentPrivatePkcs1()
         {
             ReadWriteBase64PrivatePkcs1(
