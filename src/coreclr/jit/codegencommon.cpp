@@ -6192,7 +6192,15 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 // genEnregisterOSRArgsAndLocals: Initialize any enregistered args or locals
 //   that get values from the tier0 frame.
 //
+// Arguments:
+//    initReg -- scratch register to use if needed
+//    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
+//
+#if defined(TARGET_ARM64)
+void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
+#else
 void CodeGen::genEnregisterOSRArgsAndLocals()
+#endif
 {
     assert(compiler->opts.IsOSR());
     PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
@@ -6365,7 +6373,8 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
                 "delta %d total offset %d (0x%x)\n",
                 varNum, stkOffs, osrFrameSize, osrSpToFpDelta, offset, offset);
 
-        GetEmitter()->emitIns_R_R_I(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
+        genInstrWithConstant(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset, initReg);
+        *pInitRegZeroed = false;
 #endif
     }
 }
@@ -7568,7 +7577,12 @@ void CodeGen::genFnProlog()
         //
         // Otherwise we'll do some of these fetches twice.
         //
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_ARM64)
+        genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
+#else
         genEnregisterOSRArgsAndLocals();
+#endif
         compiler->lvaUpdateArgsWithInitialReg();
     }
     else
@@ -9399,6 +9413,11 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 #elif defined(TARGET_ARM64)
 
     int SPtoCallerSPdelta = -genCallerSPtoInitialSPdelta();
+
+    if (compiler->opts.IsOSR())
+    {
+        SPtoCallerSPdelta += compiler->info.compPatchpointInfo->TotalFrameSize();
+    }
 
     // We will just use the initReg since it is an available register
     // and we are probably done using it anyway...
