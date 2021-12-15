@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Numbers will be written as JSON strings (with quotes), not as JSON numbers.
         /// <remarks>
-        /// Mentioned values are not defined by the specification. Using this setting may potentially produce JSON which may be non-parsable in other JSON implementations.
+        /// Mentioned values are not defined by the specification. Using this setting may potentially produce JSON which may produce JSON which cannot be parsed by other JSON implementations.
         /// </remarks>
         /// </summary>
         WriteAsString = 0x2,
@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization
         /// Strings that have escaped characters will be unescaped before reading.
         /// Leading or trailing trivia within the string token, including whitespace, is not allowed.
         /// <remarks>
-        /// Mentioned values are not defined by the specification. Using this setting may potentially produce JSON which may be non-parsable in other JSON implementations.
+        /// Mentioned values are not defined by the specification. Using this setting may potentially produce JSON which may produce JSON which cannot be parsed by other JSON implementations.
         /// </remarks>
         /// </summary>
         AllowNamedFloatingPointLiterals = 0x4
