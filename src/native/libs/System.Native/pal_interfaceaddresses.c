@@ -117,11 +117,8 @@ struct ifaddrs {
 
 #if !HAVE_GETIFADDRS
 // we will try to load the getifaddrs and freeifaddrs functions dynamically (this is necessary on Android)
-typedef int (*getifaddrs_fptr)(struct ifaddrs**);
-typedef void (*freeifaddrs_fptr)(struct ifaddrs*);
-
-static getifaddrs_fptr getifaddrs = NULL;
-static freeifaddrs_fptr freeifaddrs = NULL;
+static int (*getifaddrs)(struct ifaddrs**) = NULL;
+static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
 static bool loading_getifaddrs_already_attempted = false;
 
@@ -134,8 +131,8 @@ static bool ensure_getifaddrs_is_loaded() {
         void *libc = dlopen(LIBC_FILENAME, RTLD_NOW);
         if (libc)
         {
-            getifaddrs = (getifaddrs_fptr)dlsym(libc, "getifaddrs");
-            freeifaddrs = (freeifaddrs_fptr)dlsym(libc, "freeifaddrs");
+            getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
+            freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
         }
     }
 
