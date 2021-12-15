@@ -13,7 +13,6 @@
 }
 .assembly extern xunit.core {}
 
-.module 'switch5.exe'
 
 .class public auto ansi TestStack
        extends ['mscorlib']System.Object

@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test'
+.assembly 'b42387'
 {
 
 
@@ -20,7 +20,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 // MVID: {23E3D49B-6CFD-4DA0-8C9D-A611CE0BA103}
 .namespace JitTest
 {

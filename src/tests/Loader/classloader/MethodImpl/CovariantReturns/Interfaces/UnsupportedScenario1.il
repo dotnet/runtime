@@ -8,7 +8,7 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { }
-.assembly UnsupportedScenario2 { }
+.assembly 'UnsupportedScenario1' { }
 
 .class public auto ansi beforefieldinit A { 
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 

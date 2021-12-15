@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
+.assembly 'DevDiv_491206' {}
 .assembly extern xunit.core {}
-.module a.exe
 
 // This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an asignment flag, when
 // its children was optimized in the assertion propagation.

@@ -9,7 +9,7 @@
 
 .assembly extern mscorlib
 { }
-.assembly 'test'
+.assembly 'i_array_merge-ia64'
 { }
 .assembly extern xunit.core {}
 .class private auto ansi Test_i_array_merge_ia64 extends [mscorlib]System.Object

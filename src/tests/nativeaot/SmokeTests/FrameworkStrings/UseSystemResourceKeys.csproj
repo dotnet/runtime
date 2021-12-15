@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <DefineConstants>$(DefineConstants);RESOURCE_KEYS</DefineConstants>
+    
+    <!-- Requires the framework to also be compiled with UseSystemResourceKeys -->
+    <NativeAotMultimoduleIncompatible>true</NativeAotMultimoduleIncompatible>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NativeAotProjectLines>
+      <![CDATA[
+  <ItemGroup>
+    <IlcArg Include="--feature:System.Resources.UseSystemResourceKeys=true" />
+  </ItemGroup>
+      ]]>
+    </NativeAotProjectLines>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>
