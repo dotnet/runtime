@@ -77,7 +77,7 @@ namespace System.IO
 
             fixed (byte* pSecurityDescriptor = securityDescriptor)
             {
-                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = new()
                 {
                     nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
                     lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
