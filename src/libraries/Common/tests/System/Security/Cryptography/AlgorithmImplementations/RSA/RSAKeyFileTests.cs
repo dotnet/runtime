@@ -107,7 +107,6 @@ CE5b4bVi7nbp+SyaseWurZ0pGmM35N6FveZ6DXK05Vrc8gf3paUiXhU=",
         }
 
         [Fact]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteDiminishedDPPrivatePkcs1()
         {
             ReadWriteBase64PrivatePkcs1(
