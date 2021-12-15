@@ -117,6 +117,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (!TestAsync)
+            {
+                // Test relies on ordering of async operations, so we can't test the sync case
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 int connectCount = 0;
@@ -124,8 +130,9 @@ namespace System.Net.Http.Functional.Tests
                 TaskCompletionSource tcsFirstRequestCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 using (var handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (var client = CreateHttpClient(handler))
                 {
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectCallback = async (context, token) =>
                     {
@@ -134,25 +141,33 @@ namespace System.Net.Http.Functional.Tests
 
                         if (Interlocked.Increment(ref connectCount) == 1)
                         {
+                            Console.WriteLine("First connection failed");
+
                             // Fail the first connection attempt
-                            throw new Exception("Connect failed");
+                            throw new Exception("Failing first connection");
                         }
                         else
                         {
                             // Succeed the second connection attempt
                             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
                             await socket.ConnectAsync(context.DnsEndPoint, token);
+
+
+                            Console.WriteLine("Second connection succeeded");
+
                             return new NetworkStream(socket, ownsSocket: true);
                         }
                     };
 
                     using CancellationTokenSource cts = new CancellationTokenSource();
-                    Task<HttpResponseMessage> t1 = client.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, cts.Token);
-                    Task<HttpResponseMessage> t2 = client.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, default);
+                    Task<HttpResponseMessage> t1 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, cts.Token);
+                    Task<HttpResponseMessage> t2 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, default);
 
                     // Cancel the first message and wait for it to complete
                     cts.Cancel();
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t1);
+
+                    Console.WriteLine("First request canceled");
 
                     // Signal connections to proceed
                     tcsFirstRequestCanceled.SetResult();

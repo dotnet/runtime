@@ -455,12 +455,12 @@ namespace System.Net.Http
                 }
                 catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
                 {
-                    HandleHttp11ConnectionFailure(CreateConnectTimeoutException(oce));
+                    HandleHttp11ConnectionFailure(request, CreateConnectTimeoutException(oce));
                     return;
                 }
                 catch (Exception e)
                 {
-                    HandleHttp11ConnectionFailure(e);
+                    HandleHttp11ConnectionFailure(request, e);
                     return;
                 }
             }
@@ -483,6 +483,8 @@ namespace System.Net.Http
                 _http11RequestQueue.Count > _pendingHttp11ConnectionCount &&        // More requests queued than pending connections
                 _associatedHttp11ConnectionCount < _maxHttp11Connections)           // Under the connection limit
             {
+//                Console.WriteLine($"Adding new HTTP/1.1 connection. _http11RequestQueue.Count={_http11RequestQueue.Count}, _pendingHttp11ConnectionCount={_pendingHttp11ConnectionCount}");
+
                 _associatedHttp11ConnectionCount++;
                 _pendingHttp11ConnectionCount++;
 
@@ -601,12 +603,12 @@ namespace System.Net.Http
             }
             catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
             {
-                HandleHttp11ConnectionFailure(CreateConnectTimeoutException(oce));
+                HandleHttp11ConnectionFailure(request, CreateConnectTimeoutException(oce));
                 return;
             }
             catch (Exception e)
             {
-                HandleHttp11ConnectionFailure(e);
+                HandleHttp11ConnectionFailure(request, e);
                 return;
             }
 
@@ -1573,10 +1575,12 @@ namespace System.Net.Http
             return (socket, stream);
         }
 
-        private void HandleHttp11ConnectionFailure(Exception e)
+        private void HandleHttp11ConnectionFailure(HttpRequestMessage request, Exception e)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("HTTP/1.1 connection failed");
 
+            bool failRequest;
+            TaskCompletionSourceWithCancellation<HttpConnection>? waiter;
             lock (SyncObj)
             {
                 Debug.Assert(_associatedHttp11ConnectionCount > 0);
@@ -1585,10 +1589,19 @@ namespace System.Net.Http
                 _associatedHttp11ConnectionCount--;
                 _pendingHttp11ConnectionCount--;
 
-                // Fail the next queued request (if any) with this error.
-                _http11RequestQueue.TryFailNextRequest(e);
+                // If the request that caused this connection attempt is still pending, fail it.
+                // Otherwise, the request must have been canceled or satisfied by another connection already.
+                failRequest = _http11RequestQueue.TryDequeueSpecificRequest(request, out waiter);
 
+//                Console.WriteLine($"HandleHttp11ConnectionFailure: failRequest={failRequest}, e={e}");
+//                Console.WriteLine("CheckForHttp11ConnectionInjection() from InvalidateHttp11Connection");
                 CheckForHttp11ConnectionInjection();
+            }
+
+            if (failRequest)
+            {
+                // This may fail if the request was already canceled, but we don't care.
+                waiter!.TrySetException(e);
             }
         }
 
@@ -1624,6 +1637,7 @@ namespace System.Net.Http
 
                 _associatedHttp11ConnectionCount--;
 
+//                Console.WriteLine("CheckForHttp11ConnectionInjection() from InvalidateHttp11Connection");
                 CheckForHttp11ConnectionInjection();
             }
         }
@@ -2142,6 +2156,20 @@ namespace System.Net.Http
                 return waiter;
             }
 
+            public bool TryDequeueSpecificRequest(HttpRequestMessage request, [MaybeNullWhen(false)] out TaskCompletionSourceWithCancellation<T> waiter)
+            {
+                if (_queue is not null && _queue.TryPeek(out QueueItem item) && item.Request == request)
+                {
+                    _queue.Dequeue();
+                    waiter = item.Waiter;
+                    return true;
+                }
+
+                waiter = null;
+                return false;
+            }
+
+            // TODO: Remove
             public bool TryFailNextRequest(Exception e)
             {
                 Debug.Assert(e is HttpRequestException or OperationCanceledException, "Unexpected exception type for connection failure");
