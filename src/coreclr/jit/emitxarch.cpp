@@ -11129,10 +11129,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Use the large version if this is not a byte
-        // TODO-XArch-Cleanup Can the need for the 'w' size bit be encoded in the instruction flags?
-        // Anthony: I believe we may remove !insIsCMOV check, but leaving for comparison purposes with another
-        // similar check below
-        if ((size != EA_1BYTE) && HasWBit(ins) && !insIsCMOV(ins))
+        if ((size != EA_1BYTE) && HasWBit(ins))
         {
             code |= 0x1;
         }
@@ -11595,11 +11592,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             code &= 0x0000FFFF;
         }
 
-        // Anthony: Per L10986, why is this insIsCMOV (which does not have a w bit)
-        // and above is !insIsCMOV
-        if (size != EA_1BYTE && (HasWBit(ins) || insIsCMOV(ins)))
+        if (size != EA_1BYTE && HasWBit(ins))
         {
-            // movsx and movzx are 'big' opcodes but also have the 'w' bit
             code |= 0x1;
         }
     }
