@@ -189,7 +189,6 @@ RwIFAgAABEE=",
         }
 
         [Fact]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteSubjectPublicKeyInfo_DiminishedDPKey()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
