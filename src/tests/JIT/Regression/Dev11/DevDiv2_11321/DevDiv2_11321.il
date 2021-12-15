@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 
-.assembly CrashTest
+.assembly 'DevDiv2_11321'
 {
   .hash algorithm 0x00008004
   .ver 1:0:0:0

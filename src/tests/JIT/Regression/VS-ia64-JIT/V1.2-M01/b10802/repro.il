@@ -16,7 +16,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly test
+.assembly 'repro'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -26,7 +26,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module convovf_i8_u.exe
 // MVID: {8F1AC63C-507C-42CD-B9EC-7E585802DBD0}
 .imagebase 0x00400000
 .subsystem 0x00000003

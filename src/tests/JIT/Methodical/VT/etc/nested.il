@@ -12,7 +12,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module nested.exe
 .namespace JitTest
 {
   .class value private auto ansi sealed Struct1

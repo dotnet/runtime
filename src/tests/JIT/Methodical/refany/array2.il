@@ -15,7 +15,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module array2.exe
 // MVID: {1781A471-82F3-4159-8D0F-B3B5A9FF1BB6}
 .namespace JitTest
 {

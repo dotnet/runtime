@@ -10,7 +10,7 @@
   .ver 4:0:0:0
 }
 .assembly extern common {}
-.assembly trycatch
+.assembly 'deadcodeincatch'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -19,7 +19,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module trycatch.exe
 // MVID: {3B8B6D1B-A317-4591-BD66-1D1000E3767F}
 .imagebase 0x00400000
 .subsystem 0x00000003

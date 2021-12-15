@@ -20,7 +20,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'arrres.exe'
 .namespace GCTest
 {
   .class private auto ansi Test

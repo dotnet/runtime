@@ -11,7 +11,6 @@
 .assembly extern common {}
 .assembly test {}
 
-.module test.exe
 
 
 .class private auto ansi beforefieldinit Program

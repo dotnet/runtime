@@ -8,7 +8,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib{}
 .assembly extern common{}
-.assembly eh05{}
+.assembly 'eh06_large'{}
 
 .class private auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
