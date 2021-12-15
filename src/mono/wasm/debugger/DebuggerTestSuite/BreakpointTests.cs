@@ -294,6 +294,8 @@ namespace DebuggerTests
         }
 
         [Fact]
+        [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/62823
+        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62823
         public async Task BreakpointInAssemblyUsingTypeFromAnotherAssembly_BothDynamicallyLoaded()
         {
             int line = 7;
