@@ -9,7 +9,6 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    //[ActiveIssue("TODO - create GH issue, x64", TestPlatforms.Android)]
     public static class RSAKeyFileTests
     {
         public static bool Supports384BitPrivateKeyAndRC2 { get; } = RSAFactory.Supports384PrivateKey && RC2Factory.IsSupported;
