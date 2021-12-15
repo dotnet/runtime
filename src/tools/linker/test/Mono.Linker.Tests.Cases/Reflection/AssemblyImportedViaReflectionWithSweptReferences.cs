@@ -5,6 +5,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
+	[ExpectedNoWarnings]
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupCompileBefore ("unusedreference.dll", new[] { "Dependencies/UnusedAssemblyDependency.cs" })]
 	[SetupCompileBefore ("reference.dll", new[] { "Dependencies/AssemblyDependency.cs" }, addAsReference: false)]
@@ -19,7 +20,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 
 		static void AccessNonExistingTypeInAssembly ()
 		{

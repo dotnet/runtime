@@ -12,8 +12,13 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SetupCompileArgument ("/optimize+")]
+	[ExpectedNoWarnings]
 	public class MemberTypes
 	{
+		// Some of the types below declare delegates and will mark all members on them, this includes the Delegate .ctor(object, string) which has RUC
+		[ExpectedWarning ("IL2026", nameof (System.Delegate), ProducedBy = ProducedBy.Trimmer)]
+		// Some of the types below declare delegates and will mark all members on them, this includes the Delegate .ctor(Type, string) which has DAM annotations
+		[ExpectedWarning ("IL2111", nameof (System.Delegate), ProducedBy = ProducedBy.Trimmer)]
 		public static void Main ()
 		{
 			RequirePublicParameterlessConstructor (typeof (PublicParameterlessConstructorType));

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -175,8 +174,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 				}
 
 				return true;
-			case "UnrecognizedReflectionAccessPattern":
-				return true;
 			default:
 				return false;
 			}
@@ -211,8 +208,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return TryValidateExpectedWarningAttribute (attribute!, diagnostics, out matchIndex, out missingDiagnosticMessage);
 			case "LogContains":
 				return TryValidateLogContainsAttribute (attribute!, diagnostics, out matchIndex, out missingDiagnosticMessage);
-			case "UnrecognizedReflectionAccessPattern":
-				return TryValidateUnrecognizedReflectionAccessPatternAttribute (attribute!, diagnostics, out matchIndex, out missingDiagnosticMessage);
 			default:
 				throw new InvalidOperationException ($"Unsupported attribute type {attribute.Name}");
 			}
@@ -296,87 +291,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var text = LinkerTestBase.GetStringFromExpression (arg.Value);
 			foreach (var diagnostic in diagnosticMessages)
 				Assert.DoesNotContain (text, diagnostic.GetMessage ());
-		}
-
-		private bool TryValidateUnrecognizedReflectionAccessPatternAttribute (AttributeSyntax attribute, List<Diagnostic> diagnostics, out int? matchIndex, out string? missingDiagnosticMessage)
-		{
-			missingDiagnosticMessage = null;
-			matchIndex = null;
-			var args = LinkerTestBase.GetAttributeArguments (attribute);
-
-			MemberDeclarationSyntax sourceMember = attribute.Ancestors ().OfType<MemberDeclarationSyntax> ().First ();
-			if (_semanticModel.GetDeclaredSymbol (sourceMember) is not ISymbol memberSymbol)
-				return false;
-
-			string sourceMemberName = memberSymbol!.GetDisplayName ();
-			string expectedReflectionMemberMethodType = LinkerTestBase.GetStringFromExpression ((TypeOfExpressionSyntax) args["#0"], _semanticModel, ISymbolExtensions.ILLinkTypeDisplayFormat);
-			string expectedReflectionMemberMethodName = LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel);
-
-			var reflectionMethodParameters = new List<string> ();
-			if (args.TryGetValue ("#2", out var reflectionMethodParametersExpr) || args.TryGetValue ("reflectionMethodParameters", out reflectionMethodParametersExpr)) {
-				if (reflectionMethodParametersExpr is ArrayCreationExpressionSyntax arrayReflectionMethodParametersExpr) {
-					foreach (var rmp in arrayReflectionMethodParametersExpr.Initializer!.Expressions) {
-						var parameterStr = rmp.Kind () == SyntaxKind.TypeOfExpression
-							? LinkerTestBase.GetStringFromExpression ((TypeOfExpressionSyntax) rmp, _semanticModel, ISymbolExtensions.ILLinkMemberDisplayFormat)
-							: LinkerTestBase.GetStringFromExpression (rmp, _semanticModel);
-						reflectionMethodParameters.Add (parameterStr);
-					}
-				}
-			}
-
-			var expectedStringsInMessage = new List<string> ();
-			if (args.TryGetValue ("#3", out var messageExpr) || args.TryGetValue ("message", out messageExpr)) {
-				if (messageExpr is ArrayCreationExpressionSyntax arrayMessageExpr) {
-					foreach (var m in arrayMessageExpr.Initializer!.Expressions)
-						expectedStringsInMessage.Add (LinkerTestBase.GetStringFromExpression (m, _semanticModel));
-				}
-			}
-
-			string expectedWarningCode = string.Empty;
-			if (args.TryGetValue ("#4", out var messageCodeExpr) || args.TryGetValue ("messageCode", out messageCodeExpr)) {
-				expectedWarningCode = LinkerTestBase.GetStringFromExpression (messageCodeExpr);
-				Assert.True (expectedWarningCode.StartsWith ("IL"),
-					$"The warning code specified in {messageCodeExpr.ToString ()} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'");
-			}
-
-			// Don't validate the return type becasue this is not included in the diagnostic messages.
-
-			var sb = new StringBuilder ();
-
-			// Format the member signature the same way Roslyn would since this is what will be included in the warning message.
-			sb.Append (expectedReflectionMemberMethodType).Append (".").Append (expectedReflectionMemberMethodName);
-			if (!expectedReflectionMemberMethodName.EndsWith (".get") &&
-				!expectedReflectionMemberMethodName.EndsWith (".set") &&
-				reflectionMethodParameters is not null)
-				sb.Append ("(").Append (string.Join (", ", reflectionMethodParameters)).Append (")");
-
-			var reflectionAccessPattern = sb.ToString ();
-
-			for (int i = 0; i < diagnostics.Count; i++) {
-				if (Matches (diagnostics[i])) {
-					matchIndex = i;
-					return true;
-				}
-			}
-
-			missingDiagnosticMessage = $"Expected to find unrecognized reflection access pattern '{(expectedWarningCode == string.Empty ? "" : expectedWarningCode + " ")}" +
-					$"{sourceMemberName}: Usage of {reflectionAccessPattern} unrecognized.";
-			return false;
-
-			bool Matches (Diagnostic diagnostic)
-			{
-				if (!string.IsNullOrEmpty (expectedWarningCode) && diagnostic.Id != expectedWarningCode)
-					return false;
-
-				// Don't check whether the message contains the source member name. Roslyn's diagnostics don't include the source
-				// member as part of the message.
-
-				foreach (var expectedString in expectedStringsInMessage)
-					if (!diagnostic.GetMessage ().Contains (expectedString))
-						return false;
-
-				return diagnostic.GetMessage ().Contains (reflectionAccessPattern);
-			}
 		}
 	}
 }

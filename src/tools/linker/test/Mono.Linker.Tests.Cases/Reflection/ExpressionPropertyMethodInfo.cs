@@ -76,7 +76,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern]
 			public static void Test ()
 			{
 				Expression<Func<int>> staticGetter = () => StaticProperty;
@@ -124,7 +123,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern]
 			public static void Test ()
 			{
 				Expression.Property (null, typeof (PropertySetter).GetMethod ("set_StaticProperty"));
@@ -136,7 +134,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestNull ()
 		{
 			MethodInfo mi = null;
@@ -144,16 +141,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.Property), new Type[] { typeof (Expression), typeof (MethodInfo) },
-			messageCode: "IL2103")]
+		[ExpectedWarning ("IL2103", nameof (Expression) + "." + nameof (Expression.Property))]
 		static void TestNonPropertyMethod ()
 		{
 			Expression.Property (null, typeof (ExpressionPropertyMethodInfo).GetMethod (nameof (TestNonPropertyMethod), BindingFlags.NonPublic | BindingFlags.Static));
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestNonExistentMethod ()
 		{
 			Expression.Property (null, typeof (ExpressionPropertyMethodInfo).GetMethod ("NonExistent"));
@@ -181,7 +175,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[RecognizedReflectionAccessPattern]
 			public static void Test (int p)
 			{
 				MethodInfo mi;
@@ -202,9 +195,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.Property), new Type[] { typeof (Expression), typeof (MethodInfo) },
-			messageCode: "IL2103")]
+		[ExpectedWarning ("IL2103", nameof (Expression) + "." + nameof (Expression.Property))]
 		static void TestUnknownMethod (MethodInfo mi)
 		{
 			Expression.Property (null, mi);
