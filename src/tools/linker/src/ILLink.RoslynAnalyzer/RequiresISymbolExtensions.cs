@@ -18,12 +18,12 @@ namespace ILLink.RoslynAnalyzer
 			if (member.IsStaticConstructor ())
 				return false;
 
-			if (TryGetRequiresAttribute (member, requiresAttribute, out requiresAttributeData))
+			if (member.TryGetAttribute (requiresAttribute, out requiresAttributeData))
 				return true;
 
 			// Also check the containing type
 			if (member.IsStatic || member.IsConstructor ())
-				return TryGetRequiresAttribute (member.ContainingType, requiresAttribute, out requiresAttributeData);
+				return member.ContainingType.TryGetAttribute (requiresAttribute, out requiresAttributeData);
 
 			return false;
 		}
@@ -63,23 +63,6 @@ namespace ILLink.RoslynAnalyzer
 				return true;
 
 			return false;
-		}
-
-		/// <summary>
-		/// This method determines if the member has a Requires attribute and returns it in the variable requiresAttribute.
-		/// </summary>
-		/// <param name="member">Symbol of the member to search attribute.</param>
-		/// <param name="requiresAttribute">Output variable in case of matching Requires attribute.</param>
-		/// <returns>True if the member contains a Requires attribute; otherwise, returns false.</returns>
-		private static bool TryGetRequiresAttribute (ISymbol member, string requiresAttribute, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttributeData)
-		{
-			requiresAttributeData = null;
-
-			if (!member.TryGetAttribute (requiresAttribute, out var attribute))
-				return false;
-
-			requiresAttributeData = attribute;
-			return true;
 		}
 	}
 }
