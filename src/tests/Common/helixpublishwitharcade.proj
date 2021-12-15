@@ -371,7 +371,7 @@
       <_MergedPayloadFilesPatterns>@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(Identity).app/**')</_MergedPayloadFilesPatterns>
     </PropertyGroup>
     <ItemGroup>
-      <_MergedPayloadFiles Include="_MergedPayloadFilesPatterns" />
+      <_MergedPayloadFiles Include="$(_MergedPayloadFilesPatterns)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
