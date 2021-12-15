@@ -39,7 +39,7 @@ namespace System.IO
                 length--;
             }
 
-            int lengthRoot = PathInternal.GetRootLength(fullPath.AsSpan());
+            int lengthRoot = PathInternal.GetRootLength(fullPathSpan);
 
             if (length > lengthRoot)
             {
