@@ -37,7 +37,7 @@
     manually enabled by updating the metadata.
   -->
   <ItemGroup>
-    <!-- Targeting packs are only patched in extreme cases. -->
+    <!-- Targeting packs are only patched when we need to patch reference assemblies, intellisense, or source generators. -->
     <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="2" />
   </ItemGroup>
   <PropertyGroup>
