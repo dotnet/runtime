@@ -18,6 +18,14 @@ namespace System.IO
             return DirectoryExists(fullPath, out int lastError);
         }
 
+        private static Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA GetAttributeData(string? path, out int lastError)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            lastError = FillAttributeInfo(path, ref data, true);
+
+            return data;
+        }
+
         private static bool DirectoryExists(string? path, out int lastError)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
