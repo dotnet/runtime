@@ -298,9 +298,9 @@ dump_threads (void)
 		char thread_name [256] = { 0 };
 		pthread_getname_np (mono_thread_info_get_tid (info), thread_name, 255);
 
-		g_async_safe_printf ("--thread %p id %p [%p] (%s) state %x  %s\n", info, (gpointer)(gsize) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, thread_name, info->thread_state, info == cur ? "GC INITIATOR" : "" );
+		g_async_safe_printf ("--thread %p id %p [%p] (%s) state %x  %s\n", info, (gpointer)(gsize) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, thread_name, info->thread_state.raw, info == cur ? "GC INITIATOR" : "" );
 #else
-		g_async_safe_printf ("--thread %p id %p [%p] state %x  %s\n", info, (gpointer)(gsize) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, info->thread_state, info == cur ? "GC INITIATOR" : "" );
+		g_async_safe_printf ("--thread %p id %p [%p] state %x  %s\n", info, (gpointer)(gsize) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, info->thread_state.raw, info == cur ? "GC INITIATOR" : "" );
 #endif
 	} FOREACH_THREAD_SAFE_END
 }
