@@ -123,12 +123,13 @@ struct ifaddrs {
 static int (*getifaddrs)(struct ifaddrs**) = NULL;
 static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
-static bool loading_getifaddrs_already_attempted = false;
 
 static bool ensure_getifaddrs_is_loaded() {
-    if (!loading_getifaddrs_already_attempted)
+    static bool loading_already_attempted = false;
+
+    if (!loading_already_attempted)
     {
-        loading_getifaddrs_already_attempted = true;
+        loading_already_attempted = true;
 
         void *libc = dlopen(LIBC_FILENAME, RTLD_NOW);
         if (libc)
