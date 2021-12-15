@@ -553,4 +553,15 @@
       DependsOnTargets="MonoAotCompileTests"
       AfterTargets="ManagedBuild"
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ($(MonoAot) or $(MonoFullAot))" />
+
+  <Target Name="NativeAotCompileFramework" AfterTargets="CopyDependencyToCoreRoot" Condition="'$(NativeAotMultimodule)' == 'true'">
+    <!-- MSBuild doesn't understand the Checked configuration -->
+    <PropertyGroup>
+      <_OptimizeFlagValue Condition="'$(Configuration)' == 'Checked' or '$(Configuration)' == 'Release'">true</_OptimizeFlagValue>
+    </PropertyGroup>
+    <MSBuild Projects="$(CORE_ROOT)/nativeaot/build/BuildFrameworkNativeObjects.proj"
+      Targets="CreateLib"
+      Properties="FrameworkLibPath=$(CORE_ROOT)/nativeaot/sdk;FrameworkObjPath=$(BaseIntermediateOutputPath)/NativeAOTFX;IlcPath=$(CORE_ROOT)/nativeaot;Optimize=$(_OptimizeFlagValue);NETCoreSdkVersion=6.0.0" />
+  </Target>
+
 </Project>

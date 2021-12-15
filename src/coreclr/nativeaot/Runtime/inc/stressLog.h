@@ -22,12 +22,17 @@
 #ifndef StressLog_h
 #define StressLog_h  1
 
+#ifdef _MSC_VER
 #define SUPPRESS_WARNING_4127   \
     __pragma(warning(push))     \
     __pragma(warning(disable:4127)) /* conditional expression is constant*/
 
 #define POP_WARNING_STATE       \
     __pragma(warning(pop))
+#else // _MSC_VER
+#define SUPPRESS_WARNING_4127
+#define POP_WARNING_STATE
+#endif // _MSC_VER
 
 #define WHILE_0             \
     SUPPRESS_WARNING_4127   \

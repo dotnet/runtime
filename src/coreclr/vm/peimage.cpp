@@ -726,8 +726,6 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // No lock here as the processs should be suspended.
     if (m_pLayouts[IMAGE_FLAT].IsValid() && m_pLayouts[IMAGE_FLAT]!=NULL)
         m_pLayouts[IMAGE_FLAT]->EnumMemoryRegions(flags);
-    if (m_pLayouts[IMAGE_MAPPED].IsValid() &&  m_pLayouts[IMAGE_MAPPED]!=NULL)
-        m_pLayouts[IMAGE_MAPPED]->EnumMemoryRegions(flags);
     if (m_pLayouts[IMAGE_LOADED].IsValid() &&  m_pLayouts[IMAGE_LOADED]!=NULL)
         m_pLayouts[IMAGE_LOADED]->EnumMemoryRegions(flags);
 }
@@ -816,38 +814,32 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 
     if (pRetVal==NULL)
     {
-        _ASSERTE(HasPath());
-
-        BOOL bIsMappedLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_MAPPED) != 0);
+        BOOL bIsLoadedLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_LOADED) != 0);
         BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
 
-#if !defined(TARGET_UNIX)
-        if (!IsInBundle() && bIsMappedLayoutSuitable)
+        BOOL bIsLoadedLayoutPreferred = !bIsFlatLayoutSuitable;
+
+#ifdef TARGET_WINDOWS
+        // on Windows we prefer to just load the file using OS loader
+        if (!IsInBundle() && bIsLoadedLayoutSuitable)
         {
-            bIsFlatLayoutSuitable = FALSE;
+            bIsLoadedLayoutPreferred = TRUE;
         }
 #endif // !TARGET_UNIX
 
-        _ASSERTE(bIsMappedLayoutSuitable || bIsFlatLayoutSuitable);
+        _ASSERTE(bIsLoadedLayoutSuitable || bIsFlatLayoutSuitable);
 
-        BOOL bIsMappedLayoutRequired = !bIsFlatLayoutSuitable;
-        BOOL bIsFlatLayoutRequired = !bIsMappedLayoutSuitable;
-
-        if (bIsFlatLayoutRequired
-            || bIsFlatLayoutSuitable)
+        if (bIsLoadedLayoutPreferred)
         {
-          _ASSERTE(bIsFlatLayoutSuitable);
-
-          BOOL bPermitWriteableSections = bIsFlatLayoutRequired;
-
-          pRetVal = PEImage::CreateLayoutFlat(bPermitWriteableSections);
+            _ASSERTE(bIsLoadedLayoutSuitable);
+            pRetVal = PEImage::CreateLoadedLayout(!bIsFlatLayoutSuitable);
         }
 
         if (pRetVal == NULL)
         {
-          _ASSERTE(bIsMappedLayoutSuitable);
-
-          pRetVal = PEImage::CreateLayoutMapped();
+            _ASSERTE(bIsFlatLayoutSuitable);
+            pRetVal = PEImage::CreateFlatLayout();
+            _ASSERTE(pRetVal != NULL);
         }
     }
 
@@ -856,7 +848,7 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
     return pRetVal;
 }
 
-PTR_PEImageLayout PEImage::CreateLayoutMapped()
+PTR_PEImageLayout PEImage::CreateLoadedLayout(bool throwOnFailure)
 {
     CONTRACTL
     {
@@ -867,75 +859,32 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     }
     CONTRACTL_END;
 
-    PTR_PEImageLayout pRetVal;
-
     PEImageLayout * pLoadLayout = NULL;
 
     HRESULT loadFailure = S_OK;
-    if (IsFile())
-    {
-        // Try to load all files via LoadLibrary first. If LoadLibrary did not work,
-        // retry using regular mapping.
-        pLoadLayout = PEImageLayout::Load(this, FALSE /* bNTSafeLoad */, &loadFailure);
-    }
-
+    pLoadLayout = PEImageLayout::Load(this, &loadFailure);
     if (pLoadLayout != NULL)
     {
-        SetLayout(IMAGE_MAPPED,pLoadLayout);
-        pLoadLayout->AddRef();
         SetLayout(IMAGE_LOADED,pLoadLayout);
-        pRetVal=pLoadLayout;
-    }
-    else if (IsFile())
-    {
-        PEImageLayoutHolder pLayout(PEImageLayout::Map(this));
-
-        bool fMarkAnyCpuImageAsLoaded = false;
-
-        // Avoid mapping another image if we can. We can only do this for IL-ONLY images
-        // since LoadLibrary is needed if we are to actually load code (e.g. IJW).
-        if (pLayout->HasCorHeader())
+        // loaded layout is functionally a superset of flat,
+        // so fill the flat slot, if not filled already.
+        if (m_pLayouts[IMAGE_FLAT] == NULL)
         {
-            // IJW images must be successfully loaded by the OS to handle
-            // native dependencies, therefore they cannot be mapped.
-            if (!pLayout->IsILOnly())
-            {
-                // For compat with older CoreCLR versions we will fallback to the
-                // COR_E_BADIMAGEFORMAT error code if a failure wasn't indicated.
-                loadFailure = FAILED(loadFailure) ? loadFailure : COR_E_BADIMAGEFORMAT;
-                EEFileLoadException::Throw(GetPath(), loadFailure);
-            }
-
-            // IL only images will always be mapped. We don't bother doing a conversion
-            // of PE header on 64bit, as done for .NET Framework, since there is no
-            // appcompat burden for CoreCLR on 64bit.
-            fMarkAnyCpuImageAsLoaded = true;
+            pLoadLayout->AddRef();
+            SetLayout(IMAGE_FLAT, pLoadLayout);
         }
-
-        pLayout.SuppressRelease();
-
-        SetLayout(IMAGE_MAPPED,pLayout);
-        if (fMarkAnyCpuImageAsLoaded)
-        {
-            pLayout->AddRef();
-            SetLayout(IMAGE_LOADED, pLayout);
-        }
-        pRetVal=pLayout;
     }
-    else
+
+    if (pLoadLayout == NULL && throwOnFailure)
     {
-        PEImageLayout* flatPE = GetOrCreateLayout(PEImageLayout::LAYOUT_FLAT);
-        if (!flatPE->CheckFormat() || !flatPE->IsILOnly())
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-
-        pRetVal=PEImageLayout::LoadFromFlat(flatPE);
-        SetLayout(IMAGE_MAPPED,pRetVal);
+        loadFailure = FAILED(loadFailure) ? loadFailure : COR_E_BADIMAGEFORMAT;
+        EEFileLoadException::Throw(GetPath(), loadFailure);
     }
 
-    return pRetVal;
+    return pLoadLayout;
 }
 
-PTR_PEImageLayout PEImage::CreateLayoutFlat(BOOL bPermitWriteableSections)
+PTR_PEImageLayout PEImage::CreateFlatLayout()
 {
     CONTRACTL
     {
@@ -945,28 +894,13 @@ PTR_PEImageLayout PEImage::CreateLayoutFlat(BOOL bPermitWriteableSections)
     }
     CONTRACTL_END;
 
-    _ASSERTE(m_pLayouts[IMAGE_FLAT] == NULL);
-
     PTR_PEImageLayout pFlatLayout = PEImageLayout::LoadFlat(this);
-
-    if (!bPermitWriteableSections
-        && pFlatLayout->CheckNTHeaders()
-        && pFlatLayout->HasWriteableSections())
-    {
-        pFlatLayout->Release();
-
-        return NULL;
-    }
-    else
-    {
-        m_pLayouts[IMAGE_FLAT] = pFlatLayout;
-
-        return pFlatLayout;
-    }
+    SetLayout(IMAGE_FLAT, pFlatLayout);
+    return pFlatLayout;
 }
 
 /* static */
-PTR_PEImage PEImage::LoadFlat(const void *flat, COUNT_T size)
+PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 {
     CONTRACT(PTR_PEImage)
     {
@@ -975,18 +909,17 @@ PTR_PEImage PEImage::LoadFlat(const void *flat, COUNT_T size)
     CONTRACT_END;
 
     PEImageHolder pImage(new PEImage());
-    PTR_PEImageLayout pLayout = PEImageLayout::CreateFlat(flat,size,pImage);
+    PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
     _ASSERTE(!pLayout->IsMapped());
 
     SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
-
     pImage->SetLayout(IMAGE_FLAT,pLayout);
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
 
 #ifndef TARGET_UNIX
 /* static */
-PTR_PEImage PEImage::LoadImage(HMODULE hMod)
+PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 {
     CONTRACT(PTR_PEImage)
     {
@@ -999,152 +932,26 @@ PTR_PEImage PEImage::LoadImage(HMODULE hMod)
     StackSString path;
     WszGetModuleFileName(hMod, path);
     PEImageHolder pImage(PEImage::OpenImage(path, MDInternalImport_Default));
-    if (pImage->HasLoadedLayout())
-        RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 
-    SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
-
-    if(pImage->m_pLayouts[IMAGE_LOADED]==NULL)
-        pImage->SetLayout(IMAGE_LOADED,PEImageLayout::CreateFromHMODULE(hMod,pImage,WszGetModuleHandle(NULL)!=hMod));
-
-    if(pImage->m_pLayouts[IMAGE_MAPPED]==NULL)
+    if (!pImage->HasLoadedLayout())
     {
-        pImage->m_pLayouts[IMAGE_LOADED]->AddRef();
-        pImage->SetLayout(IMAGE_MAPPED,pImage->m_pLayouts[IMAGE_LOADED]);
+        PTR_PEImageLayout pLayout = PEImageLayout::CreateFromHMODULE(hMod, pImage);
+
+        SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
+        pImage->SetLayout(IMAGE_LOADED, pLayout);
+        if (pImage->m_pLayouts[IMAGE_FLAT] == NULL)
+        {
+            pLayout->AddRef();
+            pImage->SetLayout(IMAGE_FLAT, pLayout);
+        }
     }
 
+    _ASSERTE(pImage->m_pLayouts[IMAGE_FLAT] != NULL);
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
 #endif // !TARGET_UNIX
 
-void PEImage::Load()
-{
-    STANDARD_VM_CONTRACT;
-
-    // Performance optimization to avoid lock acquisition
-    if (HasLoadedLayout())
-    {
-        _ASSERTE(GetLoadedLayout()->IsMapped()||GetLoadedLayout()->IsILOnly());
-        return;
-    }
-
-    SimpleWriteLockHolder lock(m_pLayoutLock);
-
-    // Re-check after lock is acquired as HasLoadedLayout here and the above line
-    // may return a different value in multi-threading environment.
-    if (HasLoadedLayout())
-    {
-        return;
-    }
-
-#ifdef TARGET_UNIX
-    bool canUseLoadedFlat = true;
-#else
-    bool canUseLoadedFlat = IsInBundle();
-#endif // TARGET_UNIX
-
-
-    if (canUseLoadedFlat
-        && m_pLayouts[IMAGE_FLAT] != NULL
-        && m_pLayouts[IMAGE_FLAT]->CheckILOnlyFormat()
-        && !m_pLayouts[IMAGE_FLAT]->HasWriteableSections())
-    {
-        // IL-only images with writeable sections are mapped in general way,
-        // because the writeable sections should always be page-aligned
-        // to make possible setting another protection bits exactly for these sections
-        _ASSERTE(!m_pLayouts[IMAGE_FLAT]->HasWriteableSections());
-
-        // As the image is IL-only, there should no be native code to execute
-        _ASSERTE(!m_pLayouts[IMAGE_FLAT]->HasNativeEntryPoint());
-
-        m_pLayouts[IMAGE_FLAT]->AddRef();
-
-        SetLayout(IMAGE_LOADED, m_pLayouts[IMAGE_FLAT]);
-    }
-    else
-    {
-        if(!IsFile())
-        {
-            _ASSERTE(m_pLayouts[IMAGE_FLAT] != NULL);
-
-            if (!m_pLayouts[IMAGE_FLAT]->CheckILOnly())
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            if(m_pLayouts[IMAGE_LOADED]==NULL)
-                SetLayout(IMAGE_LOADED,PEImageLayout::LoadFromFlat(m_pLayouts[IMAGE_FLAT]));
-        }
-        else
-        {
-            if(m_pLayouts[IMAGE_LOADED]==NULL)
-                SetLayout(IMAGE_LOADED,PEImageLayout::Load(this,TRUE));
-        }
-    }
-}
-
-void PEImage::LoadFromMapped()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (HasLoadedLayout())
-    {
-        _ASSERTE(GetLoadedLayout()->IsMapped());
-        return;
-    }
-
-    PEImageLayout* pLayout = GetOrCreateLayout(PEImageLayout::LAYOUT_MAPPED);
-    SimpleWriteLockHolder lock(m_pLayoutLock);
-    if (m_pLayouts[IMAGE_LOADED] == NULL)
-    {
-        pLayout->AddRef();
-        SetLayout(IMAGE_LOADED, pLayout);
-    }
-}
-
-void PEImage::LoadNoFile()
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(!IsFile());
-    }
-    CONTRACTL_END;
-    if (HasLoadedLayout())
-        return;
-
-    PEImageLayout* pLayout = GetExistingLayoutInternal(PEImageLayout::LAYOUT_ANY);
-    if (!pLayout->CheckILOnly())
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-
-    SimpleWriteLockHolder lock(m_pLayoutLock);
-    if (m_pLayouts[IMAGE_LOADED] == NULL)
-    {
-        pLayout->AddRef();
-        SetLayout(IMAGE_LOADED, pLayout);
-    }
-}
-
 #endif //DACCESS_COMPILE
-
-//-------------------------------------------------------------------------------
-// Make best-case effort to obtain an image name for use in an error message.
-//
-// This routine must expect to be called before the this object is fully loaded.
-// It can return an empty if the name isn't available or the object isn't initialized
-// enough to get a name, but it mustn't crash.
-//-------------------------------------------------------------------------------
-LPCWSTR PEImage::GetPathForErrorMessages()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        SUPPORTS_DAC_HOST_ONLY;
-    }
-    CONTRACTL_END
-
-    return m_path;
-}
-
 
 HANDLE PEImage::GetFileHandle()
 {
@@ -1158,51 +965,49 @@ HANDLE PEImage::GetFileHandle()
     if (m_hFile!=INVALID_HANDLE_VALUE)
         return m_hFile;
 
-    {
-        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
-        m_hFile=WszCreateFile((LPCWSTR) GetPathToLoad(),
-                               GENERIC_READ,
-                               FILE_SHARE_READ|FILE_SHARE_DELETE,
-                               NULL,
-                               OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL,
-                               NULL);
-    }
+    HRESULT hr = TryOpenFile(/*takeLock*/ false);
 
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
 #if !defined(DACCESS_COMPILE)
-        EEFileLoadException::Throw(GetPathToLoad(), HRESULT_FROM_WIN32(GetLastError()));
+        EEFileLoadException::Throw(GetPathToLoad(), hr);
 #else // defined(DACCESS_COMPILE)
-        ThrowLastError();
+        ThrowHR(hr);
 #endif // !defined(DACCESS_COMPILE)
     }
 
     return m_hFile;
 }
 
-HRESULT PEImage::TryOpenFile()
+HRESULT PEImage::TryOpenFile(bool takeLock)
 {
     STANDARD_VM_CONTRACT;
 
-    SimpleWriteLockHolder lock(m_pLayoutLock);
+    SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
 
     if (m_hFile!=INVALID_HANDLE_VALUE)
         return S_OK;
-    {
-        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
-        m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
-                              GENERIC_READ,
-                              FILE_SHARE_READ|FILE_SHARE_DELETE,
-                              NULL,
-                              OPEN_EXISTING,
-                              FILE_ATTRIBUTE_NORMAL,
-                              NULL);
-    }
+
+    ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
+    m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
+                          GENERIC_READ
+#if TARGET_WINDOWS
+                          // the file may have native code sections, make sure we are allowed to execute the file
+                          | GENERIC_EXECUTE
+#endif
+                          ,
+                          FILE_SHARE_READ|FILE_SHARE_DELETE,
+                          NULL,
+                          OPEN_EXISTING,
+                          FILE_ATTRIBUTE_NORMAL,
+                          NULL);
+
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;
+
     if (GetLastError())
         return HRESULT_FROM_WIN32(GetLastError());
+
     return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 

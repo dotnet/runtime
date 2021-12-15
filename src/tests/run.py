@@ -92,6 +92,8 @@ parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=Fa
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
+parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
+parser.add_argument("--nativeaot_multimodule", dest="nativeaot_multimodule", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
@@ -869,6 +871,16 @@ def run_tests(args,
         print("Setting RunCrossGen2=true")
         os.environ["RunCrossGen2"] = "true"
 
+    if args.run_nativeaot_tests:
+        print("Running tests Native AOT")
+        print("Setting RunNativeAot=true")
+        os.environ["RunNativeAot"] = "true"
+
+    if args.nativeaot_multimodule:
+        print("Native AOT will be compiled in multimodule mode")
+        print("Setting NativeAotMultimodule=true")
+        os.environ["NativeAotMultimodule"] = "true"
+
     if args.large_version_bubble:
         print("Large Version Bubble enabled")
         os.environ["LargeVersionBubble"] = "true"
@@ -990,6 +1002,16 @@ def setup_args(args):
                               "run_crossgen2_tests",
                               lambda unused: True,
                               "Error setting run_crossgen2_tests")
+
+    coreclr_setup_args.verify(args,
+                              "run_nativeaot_tests",
+                              lambda unused: True,
+                              "Error setting run_nativeaot_tests")
+
+    coreclr_setup_args.verify(args,
+                              "nativeaot_multimodule",
+                              lambda unused: True,
+                              "Error setting nativeaot_multimodule")
 
     coreclr_setup_args.verify(args,
                               "skip_test_run",
