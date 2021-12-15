@@ -9818,7 +9818,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
         case VNF_JitNewMdArr:
         {
-            generateUniqueVN  = true;
+            generateUniqueVN = true;
         }
         break;
 
@@ -10226,7 +10226,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_NEWARR_1_ALIGN8:
             vnf = VNF_JitNewArr;
             break;
-        
+
         case CORINFO_HELP_NEW_MDARR:
             vnf = VNF_JitNewMdArr;
             break;
