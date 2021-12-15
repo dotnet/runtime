@@ -256,8 +256,8 @@ namespace Mono.Linker
 			if (Origin?.Provider != null) {
 				if (Origin?.Provider is MethodDefinition method)
 					sb.Append (method.GetDisplayName ());
-				else if (Origin?.Provider is TypeDefinition type)
-					sb.Append (type.GetDisplayName ());
+				else if (Origin?.Provider is MemberReference memberRef)
+					sb.Append (memberRef.GetDisplayName ());
 				else if (Origin?.Provider is IMemberDefinition member)
 					sb.Append (member.FullName);
 				else if (Origin?.Provider is AssemblyDefinition assembly)
