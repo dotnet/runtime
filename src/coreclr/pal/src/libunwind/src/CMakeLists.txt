@@ -153,6 +153,40 @@ SET(libunwind_elfxx_la_SOURCES
     elfxx.c
 )
 
+# The list of files that go into libunwind and libunwind-loongarch:
+SET(libunwind_la_SOURCES_loongarch_common
+    ${libunwind_la_SOURCES_common}
+    loongarch/is_fpreg.c
+    loongarch/regname.c
+)
+
+# The list of files that go into libunwind:
+SET(libunwind_la_SOURCES_loongarch
+    ${libunwind_la_SOURCES_loongarch_common}
+    ${libunwind_la_SOURCES_local}
+	#loongarch/Lapply_reg_state.c loongarch/Lreg_states_iterate.c
+	#loongarch/Lcreate_addr_space.c loongarch/Lget_proc_info.c loongarch/Lget_save_loc.c
+	#loongarch/Lglobal.c loongarch/Linit.c loongarch/Linit_local.c loongarch/Linit_remote.c
+	#loongarch/Lis_signal_frame.c loongarch/Lregs.c loongarch/Lresume.c loongarch/Lstep.c
+	#loongarch/getcontext.S
+
+    loongarch/Lget_proc_info.c  loongarch/Linit.c  loongarch/Lis_signal_frame.c
+    loongarch/Lstep.c
+    loongarch/getcontext.S
+    loongarch/Lget_save_loc.c
+    loongarch/Linit_local.c   loongarch/Lregs.c
+    loongarch/Lcreate_addr_space.c  loongarch/Lglobal.c  loongarch/Linit_remote.c  loongarch/Lresume.c
+)
+
+SET(libunwind_loongarch_la_SOURCES_loongarch
+    ${libunwind_la_SOURCES_loongarch_common}
+    ${libunwind_la_SOURCES_generic}
+	#loongarch/Gapply_reg_state.c loongarch/Greg_states_iterate.c
+	loongarch/Gcreate_addr_space.c loongarch/Gget_proc_info.c loongarch/Gget_save_loc.c
+	loongarch/Gglobal.c loongarch/Ginit.c loongarch/Ginit_local.c loongarch/Ginit_remote.c
+	loongarch/Gis_signal_frame.c loongarch/Gregs.c loongarch/Gresume.c loongarch/Gstep.c
+)
+
 # The list of files that go into libunwind and libunwind-aarch64:
 SET(libunwind_la_SOURCES_aarch64_common
     ${libunwind_la_SOURCES_common}
@@ -330,6 +364,11 @@ if(CLR_CMAKE_HOST_UNIX)
         SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
         SET(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
         SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_loongarch})
+        SET(libunwind_remote_la_SOURCES             ${libunwind_loongarch_la_SOURCES_loongarch})
+        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+        list(APPEND libunwind_setjmp_la_SOURCES     loongarch/siglongjmp.S)
     endif()
 
     if(CLR_CMAKE_HOST_OSX)

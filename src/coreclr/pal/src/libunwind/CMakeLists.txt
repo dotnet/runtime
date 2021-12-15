@@ -24,6 +24,8 @@ if(CLR_CMAKE_HOST_UNIX)
       set(arch x86_64)
     elseif(CLR_CMAKE_HOST_ARCH_ARM64)
       set(arch aarch64)
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+      set(arch loongarch64)
     elseif(CLR_CMAKE_HOST_ARCH_ARM)
       set(arch arm)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
@@ -72,6 +74,8 @@ if(CLR_CMAKE_HOST_UNIX)
     elseif(CLR_CMAKE_HOST_ARCH_I386)
         # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
         add_compile_options(-Wno-incompatible-pointer-types)
+    elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+        ###TODO: maybe add options for LOONGARCH64
     endif()
 
     if (CLR_CMAKE_HOST_OSX)

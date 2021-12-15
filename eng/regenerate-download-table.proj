@@ -24,6 +24,7 @@
       <Platform Include="Linux (x64)" Parenthetical=" (for glibc based OS)" Abbr="linux-x64" />
       <Platform Include="Linux (armhf)" Parenthetical=" (for glibc based OS)" Abbr="linux-arm"/>
       <Platform Include="Linux (arm64)" Parenthetical=" (for glibc based OS)" Abbr="linux-arm64" />
+      <Platform Include="Linux (loongarch64)" Parenthetical=" (for glibc based OS)" Abbr="linux-loongarch64" />
       <Platform Include="Linux-musl (x64)" Abbr="linux-musl-x64" />
       <Platform Include="Linux-musl (arm)" Abbr="linux-musl-arm" />
       <Platform Include="Linux-musl (arm64)" Abbr="linux-musl-arm64" />

@@ -47,6 +47,8 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM)
   set(PAL_ARCH_SOURCES_DIR arm)
 elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
+elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+  set(PAL_ARCH_SOURCES_DIR loongarch64)
 elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
 elseif(CLR_CMAKE_HOST_ARCH_S390X)
@@ -297,11 +299,21 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 if(CLR_CMAKE_TARGET_LINUX)
   # On Android, we don't need to link with gcc_s, pthread and rt
   if(NOT CLR_CMAKE_TARGET_ANDROID)
+    if(NOT CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
     target_link_libraries(coreclrpal
       gcc_s
       pthread
       rt
     )
+    else()
+    find_library(LZMA NAMES lzma)
+    target_link_libraries(coreclrpal
+      gcc_s
+      pthread
+      rt
+      lzma
+    )
+    endif()
   else(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
       ${ANDROID_GLOB}
