@@ -1534,6 +1534,22 @@ namespace System.Net.Http
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP/2 option not supported");
             }
+
+            if (requestVersion == HttpVersion20 && WinHttpTrailersHelper.OsSupportsTrailers)
+            {
+                // Setting WINHTTP_OPTION_REQUIRE_STREAM_END to TRUE is needed for WinHttp to read trailing headers
+                // in case the response has Content-Lenght defined.
+                // According to the WinHttp team, the feature-detection logic in WinHttpTrailersHelper.OsSupportsTrailers
+                // should also indicate the support of WINHTTP_OPTION_REQUIRE_STREAM_END.
+                optionData = 1;
+                if (!Interop.WinHttp.WinHttpSetOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_REQUIRE_STREAM_END, ref optionData))
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(this, "Failed to enable WINHTTP_OPTION_REQUIRE_STREAM_END error code: " + Marshal.GetLastWin32Error());
+                    }
+                }
+            }
         }
 
         private void SetWinHttpOption(SafeWinHttpHandle handle, uint option, ref uint optionData)
