@@ -125,7 +125,7 @@ namespace System.Formats.Cbor
                         }
 
                         TimeSpan timespan = TimeSpan.FromSeconds(seconds);
-                        return DateTimeOffset.UnixEpoch + timespan;
+                        return CborHelpers.UnixEpoch + timespan;
 
                     default:
                         throw new CborContentException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
@@ -175,7 +175,7 @@ namespace System.Formats.Cbor
                 }
 
                 byte[] unsignedBigEndianEncoding = ReadByteString();
-                BigInteger unsignedValue = new BigInteger(unsignedBigEndianEncoding, isUnsigned: true, isBigEndian: true);
+                BigInteger unsignedValue = CborHelpers.CreateBigIntegerFromUnsignedBigEndianBytes(unsignedBigEndianEncoding);
                 return isNegative ? -1 - unsignedValue : unsignedValue;
             }
             catch

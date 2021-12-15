@@ -192,7 +192,7 @@ namespace System.Formats.Cbor
             string result;
             try
             {
-                result = utf8Encoding.GetString(encodedString);
+                result = CborHelpers.GetString(utf8Encoding, encodedString);
             }
             catch (DecoderFallbackException e)
             {
@@ -244,7 +244,7 @@ namespace System.Formats.Cbor
                 return false;
             }
 
-            utf8Encoding.GetChars(encodedSlice, destination);
+            CborHelpers.GetChars(utf8Encoding, encodedSlice, destination);
             AdvanceBuffer(bytesRead + byteLength);
             AdvanceDataItemCounters();
             charsWritten = charLength;
@@ -387,7 +387,7 @@ namespace System.Formats.Cbor
             }
 
             // build the string using range data
-            string output = string.Create(concatenatedStringSize, (ranges, _data.Slice(_offset), utf8Encoding), BuildString);
+            string output = CborHelpers.BuildStringFromIndefiniteLengthTextString(concatenatedStringSize, (ranges, _data.Slice(_offset), utf8Encoding), BuildString);
 
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();
@@ -400,7 +400,7 @@ namespace System.Formats.Cbor
 
                 foreach ((int o, int l) in input.ranges)
                 {
-                    int charsWritten = input.utf8Encoding.GetChars(source.Slice(o, l), target);
+                    int charsWritten = CborHelpers.GetChars(input.utf8Encoding, source.Slice(o, l), target);
                     target = target.Slice(charsWritten);
                 }
 
@@ -429,7 +429,7 @@ namespace System.Formats.Cbor
 
             foreach ((int o, int l) in ranges)
             {
-                utf8Encoding.GetChars(buffer.Slice(o, l), destination);
+                CborHelpers.GetChars(utf8Encoding, buffer.Slice(o, l), destination);
                 destination = destination.Slice(l);
             }
 
@@ -507,7 +507,7 @@ namespace System.Formats.Cbor
         {
             try
             {
-                return utf8Encoding.GetCharCount(buffer);
+                return CborHelpers.GetCharCount(utf8Encoding, buffer);
             }
             catch (DecoderFallbackException e)
             {
