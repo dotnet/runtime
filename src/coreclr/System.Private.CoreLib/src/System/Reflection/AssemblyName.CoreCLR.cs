@@ -58,9 +58,6 @@ namespace System.Reflection
             return nGetFileInformation(fullPath);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern byte[]? ComputePublicKeyToken();
-
         internal void SetProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm)
         {
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete

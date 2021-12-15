@@ -42,20 +42,6 @@ namespace System.Reflection
             }
         }
 
-        private unsafe byte[]? ComputePublicKeyToken()
-        {
-            if (_publicKey == null)
-                return null;
-            if (_publicKey.Length == 0)
-                return Array.Empty<byte>();
-
-            var token = new byte[8];
-            fixed (byte* pkt = token)
-            fixed (byte* pk = _publicKey)
-                get_public_token(pkt, pk, _publicKey.Length);
-            return token;
-        }
-
         internal static AssemblyName Create(IntPtr monoAssembly, string? codeBase)
         {
             AssemblyName aname = new AssemblyName();
@@ -140,9 +126,6 @@ namespace System.Reflection
                 }
             }
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void get_public_token(byte* token, byte* pubkey, int len);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe MonoAssemblyName* GetNativeName(IntPtr assemblyPtr);

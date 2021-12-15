@@ -68,45 +68,6 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
 }
 FCIMPLEND
 
-FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    U1ARRAYREF orOutputArray = NULL;
-    OBJECTREF refThis       = (OBJECTREF) refThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-
-    if (refThis == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-
-    ASSEMBLYNAMEREF orThis = (ASSEMBLYNAMEREF)refThis;
-    U1ARRAYREF orPublicKey = orThis->GetPublicKey();
-
-    if (orPublicKey != NULL) {
-        DWORD cb = orPublicKey->GetNumComponents();
-        StrongNameBufferHolder<BYTE> pbToken;
-
-        if (cb) {
-            CQuickBytes qb;
-            BYTE *pbKey = (BYTE*) qb.AllocThrows(cb);
-            memcpy(pbKey, orPublicKey->GetDataPtr(), cb);
-
-            {
-                GCX_PREEMP();
-                IfFailThrow(StrongNameTokenFromPublicKey(pbKey, cb, &pbToken, &cb));
-            }
-        }
-
-        orOutputArray = (U1ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_U1, cb);
-        memcpyNoGCRefs(orOutputArray->m_Array, pbToken, cb);
-    }
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(orOutputArray);
-}
-FCIMPLEND
-
-
 FCIMPL1(void, AssemblyNameNative::Init, Object * refThisUNSAFE)
 {
     FCALL_CONTRACT;

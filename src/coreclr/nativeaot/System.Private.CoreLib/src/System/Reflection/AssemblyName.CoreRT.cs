@@ -21,11 +21,6 @@ namespace System.Reflection
             runtimeAssemblyName.CopyToAssemblyName(this);
         }
 
-        private byte[] ComputePublicKeyToken()
-        {
-            return AssemblyNameHelpers.ComputePublicKeyToken(_publicKey);
-        }
-
         private static AssemblyName GetFileInformationCore(string assemblyFile)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_AssemblyName_GetAssemblyName);

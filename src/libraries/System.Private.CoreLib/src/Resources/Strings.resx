@@ -723,6 +723,9 @@
   <data name="Arg_SecurityException" xml:space="preserve">
     <value>Security error.</value>
   </data>
+  <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
+    <value>Invalid assembly public key.</value>
+  </data>  
   <data name="SerializationException" xml:space="preserve">
     <value>Serialization error.</value>
   </data>

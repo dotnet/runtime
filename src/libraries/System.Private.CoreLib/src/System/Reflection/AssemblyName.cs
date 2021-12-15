@@ -164,6 +164,11 @@ namespace System.Reflection
                 _flags |= AssemblyNameFlags.PublicKey;
         }
 
+        private byte[]? ComputePublicKeyToken()
+        {
+            return AssemblyNameHelpers.ComputePublicKeyToken(_publicKey);
+        }
+
         // The compressed version of the public key formed from a truncated hash.
         // Will throw a SecurityException if _publicKey is invalid
         public byte[]? GetPublicKeyToken() => _publicKeyToken ??= ComputePublicKeyToken();

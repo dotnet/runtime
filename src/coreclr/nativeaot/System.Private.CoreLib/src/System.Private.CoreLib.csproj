@@ -123,7 +123,6 @@
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeSearcher.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="System\Reflection\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\AssemblyNameHelpers.cs" />
     <Compile Include="System\Reflection\AssemblyNameLexer.cs" />
     <Compile Include="System\Reflection\AssemblyNameParser.cs" />

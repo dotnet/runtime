@@ -293,7 +293,6 @@ FCFuncEnd()
 
 FCFuncStart(gAssemblyNameFuncs)
     FCFuncElement("nInit", AssemblyNameNative::Init)
-    FCFuncElement("ComputePublicKeyToken", AssemblyNameNative::GetPublicKeyToken)
     FCFuncElement("nGetFileInformation", AssemblyNameNative::GetFileInformation)
 FCFuncEnd()
 
