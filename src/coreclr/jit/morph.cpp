@@ -13709,7 +13709,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
             }
         }
     }
-    else if (fgGlobalMorph && !cmp->IsUnsigned() && (op2Value >= 0) && cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GE) &&
+    else if (fgGlobalMorph && !cmp->IsUnsigned() && (op2Value >= 0) && cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) &&
              op1->OperIs(GT_CAST) && varTypeIsLong(op1->CastToType()) && op1->gtGetOp1()->TypeIs(TYP_INT) &&
              op1->IsUnsigned() && ((size_t)op2Value <= UINT_MAX))
     {

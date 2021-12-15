@@ -275,7 +275,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     // If upper or lower limit is found to be unknown (top), or it was found to
     // be unknown because of over budget or a deep search, then return early.
-    if (range.LowerLimit().IsUnknown() || range.UpperLimit().IsUnknown())
+    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
     {
         // Note: If we had stack depth too deep in the GetRange call, we'd be
         // too deep even in the DoesOverflow call. So return early.
