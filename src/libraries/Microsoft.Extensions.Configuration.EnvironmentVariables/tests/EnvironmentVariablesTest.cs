@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         {
             try
             {
-                Environment.SetEnvironmentVariable(environmentVariable, "myFooValue");
+                Environment.SetEnvironmentVariable(EnvironmentVariable, "myFooValue");
                 var configuration = new ConfigurationBuilder()
                     .AddEnvironmentVariables("Microsoft__Extensions__Configuration__EnvironmentVariables__Test__")
                     .Build();
