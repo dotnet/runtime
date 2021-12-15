@@ -17,7 +17,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'box.exe'
 // MVID: {8CBD3D83-F5B6-41AC-9D7A-099A59884AC4}
 .namespace JitTest
 {

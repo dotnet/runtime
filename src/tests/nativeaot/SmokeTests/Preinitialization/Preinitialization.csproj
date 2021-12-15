@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NativeAotMultimoduleIncompatible>true</NativeAotMultimoduleIncompatible>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NativeAotProjectLines>
+      <![CDATA[
+  <ItemGroup>
+    <IlcArg Include="--preinitstatics" />
+  </ItemGroup>
+      ]]>
+    </NativeAotProjectLines>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Preinitialization.cs" />
+  </ItemGroup>
+</Project>

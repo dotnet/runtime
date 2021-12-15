@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'bug'
+.assembly 'virtftn_t'
 {
 
 
@@ -20,7 +20,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'bug.exe'
 // MVID: {90803FD0-8E18-44C9-A242-98463ADD450D}
 .namespace JitTest
 {

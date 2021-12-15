@@ -86,7 +86,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module method014.exe
 // MVID: {5E79BC95-82C1-4B20-8867-C903C4ECBE7E}
 .imagebase 0x00400000
 .subsystem 0x00000003
