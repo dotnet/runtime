@@ -7467,7 +7467,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         GenTree* dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
         dest          = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
         dest          = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest,
-                                new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
+                            new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
         dest = gtNewOperNode(GT_IND, TYP_INT, dest);
 
         node = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
