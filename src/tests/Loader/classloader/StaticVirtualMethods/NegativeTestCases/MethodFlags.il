@@ -6,7 +6,7 @@
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
 .assembly extern TypeHierarchyCommonCs {}
-.assembly TypeHierarchyTest {}
+.assembly 'MethodFlags' {}
 
 .class public auto ansi BaseScenario1
        extends [System.Runtime]System.Object

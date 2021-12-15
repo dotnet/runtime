@@ -45,7 +45,6 @@
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module GenericArrayOverride.dll
 // MVID: {36F29C33-E2D3-47BA-B888-D30052D5C374}
 .imagebase 0x00400000
 .file alignment 0x00000200

@@ -8,7 +8,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module Runtime_45250.dll
 
 .class private auto ansi beforefieldinit Runtime_45250.Program
        extends [System.Runtime]System.Object

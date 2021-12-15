@@ -15,11 +15,10 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 0:0:0:0
 }
-.assembly AppCompatBug
+.assembly 'dev10_493135'
 {
   .ver 0:0:0:0
 }
-.module AppCompatBug.exe
 // MVID: {EAE2209C-4B54-47C6-96C2-EC2352FC6386}
 .imagebase 0x00400000
 .file alignment 0x00000200

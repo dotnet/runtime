@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
+.assembly 'DevDiv_278523_64' {}
 .assembly extern xunit.core {}
-.module a.exe
 
 // This test originally triggered an assert when computing the value number for a block assignment. In particular, the
 // VN framework expected any block assignments to a tracked lclVar to have a destination address of the form

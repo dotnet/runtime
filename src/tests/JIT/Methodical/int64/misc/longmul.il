@@ -3,7 +3,7 @@
 
 .assembly extern System.Console { auto }
 .assembly extern System.Runtime { auto }
-.assembly LongMulOn32BitTest { }
+.assembly 'longmul' { }
 .assembly extern xunit.core {}
 
 .class auto LongMulOn32BitTest extends [System.Runtime]System.Object
