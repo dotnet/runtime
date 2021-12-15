@@ -1,13 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.IO;
-using System.Text;
 
 namespace System.IO
 {
@@ -26,14 +21,14 @@ namespace System.IO
                 return;
             }
 
-            List<string> stackDir = new List<string>();
+            List<string> stackDir = new();
 
             // Attempt to figure out which directories don't exist, and only
             // create the ones we need.  Note that FileExists may fail due
             // to Win32 ACL's preventing us from seeing a directory, and this
             // isn't threadsafe.
 
-            bool somepathexists = false;
+            bool somePathExists = false;
             int length = fullPath.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
@@ -48,9 +43,9 @@ namespace System.IO
             {
                 // Special case root (fullpath = X:\\)
                 int i = length - 1;
-                while (i >= lengthRoot && !somepathexists)
+                while (i >= lengthRoot && !somePathExists)
                 {
-                    string dir = fullPath.Substring(0, i + 1);
+                    string dir = fullPath[..(i + 1)];
 
                     if (!DirectoryExists(dir)) // Create only the ones missing
                     {
@@ -58,7 +53,7 @@ namespace System.IO
                     }
                     else
                     {
-                        somepathexists = true;
+                        somePathExists = true;
                     }
 
                     while (i > lengthRoot && !PathInternal.IsDirectorySeparator(fullPath[i]))
@@ -89,7 +84,7 @@ namespace System.IO
                     stackDir.RemoveAt(stackDir.Count - 1);
 
                     r = Interop.Kernel32.CreateDirectory(name, ref secAttrs);
-                    if (!r && (firstError == 0))
+                    if (!r && firstError == 0)
                     {
                         int currentError = Marshal.GetLastWin32Error();
                         // While we tried to avoid creating directories that don't
@@ -119,7 +114,7 @@ namespace System.IO
 
             // We need this check to mask OS differences
             // Handle CreateDirectory("X:\\") when X: doesn't exist. Similarly for n/w paths.
-            if ((count == 0) && !somepathexists)
+            if (count == 0 && !somePathExists)
             {
                 string? root = Path.GetPathRoot(fullPath);
 
@@ -133,7 +128,7 @@ namespace System.IO
 
             // Only throw an exception if creating the exact directory we
             // wanted failed to work correctly.
-            if (!r && (firstError != 0))
+            if (!r && firstError != 0)
             {
                 throw Win32Marshal.GetExceptionForWin32Error(firstError, errorString);
             }
