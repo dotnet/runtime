@@ -602,7 +602,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -660,7 +660,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARM64
+#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64
 
 /*****************************************************************************/
 
@@ -1104,14 +1104,14 @@ inline GenTree* Compiler::gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldH
     {
         unsigned lclNum                  = obj->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
         lvaTable[lclNum].lvFieldAccessed = 1;
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // These structs are passed by reference; we should probably be able to treat these
         // as non-global refs, but downstream logic expects these to be marked this way.
         if (lvaTable[lclNum].lvIsParam)
         {
             tree->gtFlags |= GTF_GLOB_REF;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     }
     else
     {
@@ -1844,7 +1844,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 
             bool doubleWeight = lvIsTemp;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)|| defined(TARGET_LOONGARCH64)
             // and, for the time being, implicit byref params
             doubleWeight |= lvIsImplicitByRef;
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -3073,6 +3073,8 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
     assert(genRegMask(regNum) & RBM_FLTARG_REGS);
 
 #ifdef TARGET_ARM
+    return regNum - REG_F0;
+#elif defined(TARGET_LOONGARCH64)
     return regNum - REG_F0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;

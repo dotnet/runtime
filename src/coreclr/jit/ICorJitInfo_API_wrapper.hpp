@@ -986,11 +986,27 @@ CORINFO_ARG_LIST_HANDLE WrapICorJitInfo::getArgNext(
 CorInfoTypeWithMod WrapICorJitInfo::getArgType(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
-          CORINFO_CLASS_HANDLE* vcTypeRet)
+          CORINFO_CLASS_HANDLE* vcTypeRet
+#if defined(TARGET_LOONGARCH64)
+          ,int *flags = NULL
+#endif
+)
 {
     API_ENTER(getArgType);
+#if defined(TARGET_LOONGARCH64)
+    CorInfoTypeWithMod temp = wrapHnd->getArgType(sig, args, vcTypeRet, flags);
+#else
     CorInfoTypeWithMod temp = wrapHnd->getArgType(sig, args, vcTypeRet);
+#endif
     API_LEAVE(getArgType);
+    return temp;
+}
+
+uint32_t WrapICorJitInfo::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getFieldTypeByHnd);
+    DWORD temp = wrapHnd->getFieldTypeByHnd(cls);
+    API_LEAVE(getFieldTypeByHnd);
     return temp;
 }
 

@@ -162,6 +162,18 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
 #if FEATURE_MULTIREG_ARGS
     if (varTypeIsStruct(argDsc->lvType))
     {
+#ifdef TARGET_LOONGARCH64
+        {
+            if (argDsc->GetOtherArgReg() != REG_NA)
+            {
+                inArgMask = genRegMask(argDsc->GetOtherArgReg());
+                if (emitter::isFloatReg(argDsc->GetOtherArgReg()))
+                    codeGen->floatRegState.rsCalleeRegArgMaskLiveIn |= inArgMask;
+                else
+                    codeGen->intRegState.rsCalleeRegArgMaskLiveIn |= inArgMask;
+            }
+        }
+#else
         if (argDsc->lvIsHfaRegArg())
         {
             assert(regState->rsIsFloat);
@@ -186,6 +198,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
                 regState->rsCalleeRegArgMaskLiveIn |= genRegMask(nextArgReg);
             }
         }
+#endif
     }
 #endif // FEATURE_MULTIREG_ARGS
 
@@ -255,6 +268,16 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
         result = true;
     }
 #endif // TARGET_ARM64
+
+#ifdef TARGET_LOONGARCH64
+    // TODO-LOONGARCH64-NYI: This is temporary: force a frame pointer-based frame until genFnProlog
+    // can handle non-frame pointer frames.
+    if (!result)
+    {
+        INDEBUG(reason = "Temporary LOONGARCH64 force frame pointer");
+        result = true;
+    }
+#endif // TARGET_LOONGARCH64
 
 #ifdef DEBUG
     if ((result == true) && (wbReason != nullptr))

@@ -237,7 +237,12 @@ protected:
 
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
+#ifdef TARGET_LOONGARCH64
+    void genSetRegToIcon(regNumber reg, ssize_t val, var_types type);
+    void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind, instruction ins, regNumber reg1, BasicBlock* failBlk = nullptr, regNumber reg2 = REG_R0);
+#else
     void genCheckOverflow(GenTree* tree);
+#endif
 
     //-------------------------------------------------------------------------
     //
@@ -253,7 +258,11 @@ protected:
     //
 
     void genEstablishFramePointer(int delta, bool reportUnwindData);
+#if defined(TARGET_LOONGARCH64)
+    void genFnPrologCalleeRegArgs();
+#else
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
+#endif
     void genEnregisterIncomingStackArgs();
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
@@ -261,6 +270,67 @@ protected:
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
 #if defined(TARGET_ARM64)
+    bool genInstrWithConstant(instruction ins,
+                              emitAttr    attr,
+                              regNumber   reg1,
+                              regNumber   reg2,
+                              ssize_t     imm,
+                              regNumber   tmpReg,
+                              bool        inUnwindRegion = false);
+
+    void genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
+
+    void genPrologSaveRegPair(regNumber reg1,
+                              regNumber reg2,
+                              int       spOffset,
+                              int       spDelta,
+                              bool      useSaveNextPair,
+                              regNumber tmpReg,
+                              bool*     pTmpRegIsZero);
+
+    void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
+
+    void genEpilogRestoreRegPair(regNumber reg1,
+                                 regNumber reg2,
+                                 int       spOffset,
+                                 int       spDelta,
+                                 bool      useSaveNextPair,
+                                 regNumber tmpReg,
+                                 bool*     pTmpRegIsZero);
+
+    void genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
+
+    // A simple struct to keep register pairs for prolog and epilog.
+    struct RegPair
+    {
+        regNumber reg1;
+        regNumber reg2;
+        bool      useSaveNextPair;
+
+        RegPair(regNumber reg1) : reg1(reg1), reg2(REG_NA), useSaveNextPair(false)
+        {
+        }
+
+        RegPair(regNumber reg1, regNumber reg2) : reg1(reg1), reg2(reg2), useSaveNextPair(false)
+        {
+            assert(reg2 == REG_NEXT(reg1));
+        }
+    };
+
+    static void genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* regStack);
+    static void genSetUseSaveNextPairs(ArrayStack<RegPair>* regStack);
+
+    static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
+
+    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
+    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
+
+    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
+    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
+
+    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
+
+#elif defined(TARGET_LOONGARCH64)
     bool genInstrWithConstant(instruction ins,
                               emitAttr    attr,
                               regNumber   reg1,
@@ -400,7 +470,25 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#endif // TARGET_AMD64
+#elif defined(TARGET_LOONGARCH64)
+
+    // A set of information that is used by funclet prolog and epilog generation.
+    // It is collected once, before funclet prologs and epilogs are generated,
+    // and used by all funclet prologs and epilogs, which must all be the same.
+    struct FuncletFrameInfoDsc
+    {
+        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
+        int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
+                                             // (negative)
+        int fiSP_to_FPRA_save_delta;         // FP/RA register save offset from SP (positive)
+        int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
+        int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
+        int fiFrameType;                     // Funclet frame types are numbered. See genFuncletProlog() for details.
+        int fiSpDelta1;                      // Stack pointer delta 1 (negative)
+    };
+
+    FuncletFrameInfoDsc genFuncletInfo;
+#endif // TARGET_LOONGARCH64
 
 #if defined(TARGET_XARCH)
 
@@ -520,6 +608,10 @@ protected:
     void genArm64EmitterUnitTests();
 #endif
 
+#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
+    void genLOONGARCH64EmitterUnitTests();
+#endif
+
 #if defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
     void genAmd64EmitterUnitTests();
 #endif
@@ -529,6 +621,12 @@ protected:
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
 #endif // TARGET_ARM64
+
+#ifdef TARGET_LOONGARCH64
+    virtual void SetSaveFpRaWithAllCalleeSavedRegisters(bool value);
+    virtual bool IsSaveFpRaWithAllCalleeSavedRegisters() const;
+    bool         genSaveFpRaWithAllCalleeSavedRegisters;
+#endif // TARGET_LOONGARCH64
 
     //-------------------------------------------------------------------------
     //
@@ -835,10 +933,10 @@ protected:
     void genLeaInstruction(GenTreeAddrMode* lea);
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
     void genCodeForMulLong(GenTreeOp* mul);
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 #if !defined(TARGET_64BIT)
     void genLongToIntCast(GenTree* treeNode);
@@ -1231,6 +1329,11 @@ protected:
     void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
+#ifdef TARGET_LOONGARCH64
+    //TODO for LOONGARCH64 : maybe delete on LA64?
+    void genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* base, unsigned offset);
+#endif
+
     void genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
 #ifndef TARGET_X86
     void genCodeForInitBlkHelper(GenTreeBlk* initBlkNode);
@@ -1241,7 +1344,11 @@ protected:
     void genTableBasedSwitch(GenTree* tree);
     void genCodeForArrIndex(GenTreeArrIndex* treeNode);
     void genCodeForArrOffset(GenTreeArrOffs* treeNode);
+#if defined(TARGET_LOONGARCH64)
+    instruction genGetInsForOper(GenTree* treeNode);
+#else
     instruction genGetInsForOper(genTreeOps oper, var_types type);
+#endif
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
     GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
     regNumber getCallIndirectionCellReg(const GenTreeCall* call);
@@ -1250,7 +1357,11 @@ protected:
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
     void genCodeForJumpTrue(GenTreeOp* jtrue);
-#ifdef TARGET_ARM64
+#if defined(TARGET_LOONGARCH64)
+    //TODO: refactor for LA.
+    void genCodeForJumpCompare(GenTreeOp* tree);
+#endif
+#if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForMadd(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
@@ -1265,6 +1376,10 @@ protected:
 
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
     void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
+
+#if defined(TARGET_LOONGARCH64)
+    void genMultiRegCallStoreToLocal(GenTree* treeNode);
+#endif
 
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
@@ -1281,9 +1396,9 @@ protected:
     void genFloatReturn(GenTree* treeNode);
 #endif // TARGET_X86
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)|| defined(TARGET_LOONGARCH64)
     void genSimpleReturn(GenTree* treeNode);
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
 
     void genReturn(GenTree* treeNode);
 

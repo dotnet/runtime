@@ -762,6 +762,9 @@ private:
 #elif defined(TARGET_X86)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
+#elif defined(TARGET_LOONGARCH64)
+    static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
+    static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #else
 #error Unsupported or unset target architecture
 #endif // target
@@ -2215,7 +2218,12 @@ public:
     // The max bits needed is based on max value of MAX_RET_REG_COUNT value
     // across all targets and that happens 4 on on Arm.  Hence index value
     // would be 0..MAX_RET_REG_COUNT-1.
+#ifdef TARGET_LOONGARCH64
+    //TODO for LOONGARCH64: should confirm for ArgSplit?
+    unsigned char multiRegIdx : 3;
+#else // !TARGET_LOONGARCH64
     unsigned char multiRegIdx : 2;
+#endif // !TARGET_LOONGARCH64
 
     // Last Use - this may be true for multiple RefPositions in the same Interval
     unsigned char lastUse : 1;

@@ -179,7 +179,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
     {
         if (srcType == TYP_FLOAT
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // Arm64: src = float, dst is overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
             && tree->gtOverflow()
@@ -214,7 +214,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             if (!tree->gtOverflow())
             {
-#ifdef TARGET_ARM64 // ARM64 supports all non-overflow checking conversions directly.
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)// On ARM64 All non-overflow checking conversions can be optimized
                 return nullptr;
 #else
                 switch (dstType)
@@ -902,6 +902,36 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned                                    
     return curArgTabEntry;
 }
 #endif // defined(UNIX_AMD64_ABI)
+
+#if defined(TARGET_LOONGARCH64)
+fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
+                                    GenTree*          node,
+                                    GenTreeCall::Use* use,
+                                    regNumber         regNum,
+                                    unsigned          numRegs,
+                                    unsigned          byteSize,
+                                    unsigned          byteAlignment,
+                                    bool              isStruct,
+                                    bool              isFloatHfa, /* unused */
+                                    bool              isVararg,
+                                    const regNumber   otherRegNum)
+{
+    fgArgTabEntry* curArgTabEntry = AddRegArg(argNum, node, use, regNum, numRegs, byteSize, byteAlignment, isStruct, false, isVararg);
+    assert(curArgTabEntry != nullptr);
+
+    curArgTabEntry->isStruct = isStruct; // is this a struct arg
+
+    INDEBUG(curArgTabEntry->checkIsStruct();)
+    assert(numRegs <= 2);
+    if (numRegs == 2)
+    {
+        curArgTabEntry->setRegNum(1, otherRegNum);
+        //curArgTabEntry->isSplit = true;
+    }
+
+    return curArgTabEntry;
+}
+#endif // defined(TARGET_LOONGARCH64)
 
 fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
                                     GenTree*          node,
@@ -1751,7 +1781,7 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
     if (varTypeIsStruct(type))
     {
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 
         // Can this type be passed as a primitive type?
         // If so, the following call will return the corresponding primitive type.
@@ -1816,6 +1846,19 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
                 // Create an Obj of the temp to use it as a call argument.
                 arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
             }
+#elif defined(TARGET_LOONGARCH64)
+            assert(varTypeIsStruct(type));
+            if (lvaIsMultiregStruct(varDsc, curArgTabEntry->IsVararg()))
+            {
+                // ToDo-LOONGARCH64: Consider using:  arg->ChangeOper(GT_LCL_FLD);
+                // as that is how UNIX_AMD64_ABI works.
+                // We will create a GT_OBJ for the argument below.
+                // This will be passed by value in two registers.
+                assert(addrNode != nullptr);
+
+                // Create an Obj of the temp to use it as a call argument.
+                arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
+            }
 #else
             // Always create an Obj of the temp to use it as a call argument.
             arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
@@ -1823,7 +1866,7 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
 #endif // FEATURE_MULTIREG_ARGS
         }
 
-#else // not (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM)
+#else // not (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM or TARGET_LOONGARCH64)
 
         // other targets, we pass the struct by value
         assert(varTypeIsStruct(type));
@@ -1834,7 +1877,7 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         // gtNewObjNode will set the GTF_EXCEPT flag if this is not a local stack object.
         arg = gtNewObjNode(lvaGetStruct(tmpVarNum), addrNode);
 
-#endif // not (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM)
+#endif // not (TARGET_AMD64 or TARGET_ARM64 or TARGET_ARM or TARGET_LOONGARCH64)
 
     } // (varTypeIsStruct(type))
 
@@ -1959,7 +2002,7 @@ void fgArgInfo::EvalArgsToTemps()
                     if (setupArg->OperIsCopyBlkOp())
                     {
                         setupArg = compiler->fgMorphCopyBlock(setupArg);
-#if defined(TARGET_ARMARCH) || defined(UNIX_AMD64_ABI)
+#if defined(TARGET_ARMARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
                         if (lclVarType == TYP_STRUCT)
                         {
                             // This scalar LclVar widening step is only performed for ARM architectures.
@@ -1970,7 +2013,7 @@ void fgArgInfo::EvalArgsToTemps()
                             scalarType =
                                 compiler->getPrimitiveTypeForStruct(structSize, clsHnd, curArgTabEntry->IsVararg());
                         }
-#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI)
+#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
                     }
 
                     // scalarType can be set to a wider type for ARM or unix amd64 architectures: (3 => 4)  or (5,6,7 =>
@@ -2847,6 +2890,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         passUsingFloatRegs = false;
 
+#elif defined(TARGET_LOONGARCH64)
+        assert(!callIsVararg);
+        assert(!isHfaArg);
+        passUsingFloatRegs = !callIsVararg && varTypeIsFloating(argx);
+
 #else
 #error Unsupported or unset target architecture
 #endif // TARGET*
@@ -2963,6 +3011,27 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             size     = genTypeStSz(argx->gtType);
             byteSize = genTypeSize(argx);
         }
+#elif defined(TARGET_LOONGARCH64)
+        DWORD numFloatFields = 0;
+        if (!isStructArg)
+        {
+            size = 1;
+            byteSize = genTypeSize(argx);
+        }
+        else
+        {
+            // Structs are either passed in 1 or 2 (64-bit) slots.
+            // Structs that are the size of 2 pointers are passed by value in multiple registers,
+            // if sufficient registers are available.
+            // Structs that are larger than 2 pointers are passed by reference (to a copy).
+            size = (unsigned)(roundUp(structSize, TARGET_POINTER_SIZE)) / TARGET_POINTER_SIZE;
+
+            if (size > 2)
+            {
+                size = 1;
+            }
+            byteSize = structSize;
+        }
 #else
 #error Unsupported or unset target architecture
 #endif // TARGET_XXX
@@ -2975,6 +3044,27 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             structPassingKind howToPassStruct;
             structBaseType  = getArgTypeForStruct(objClass, &howToPassStruct, callIsVararg, structSize);
             passStructByRef = (howToPassStruct == SPK_ByReference);
+#if defined(TARGET_LOONGARCH64)
+            if (!passStructByRef)
+            {
+                assert((howToPassStruct == SPK_ByValue) || (howToPassStruct == SPK_PrimitiveType));
+
+                numFloatFields = info.compCompHnd->getFieldTypeByHnd(objClass);
+
+                passUsingFloatRegs = (numFloatFields & 0xf) ? true : false;
+                compFloatingPointUsed |= passUsingFloatRegs;
+
+                if (numFloatFields & 7)
+                    size = 1;
+                else if (numFloatFields & 8)
+                    size = 2;
+            }
+            else //if (passStructByRef)
+            {
+                size = 1;
+                byteSize = TARGET_POINTER_SIZE;
+            }
+#else
             if (howToPassStruct == SPK_ByReference)
             {
                 byteSize = TARGET_POINTER_SIZE;
@@ -3003,6 +3093,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             {
                 size = 1;
             }
+#endif
         }
 
         const var_types argType = args->GetNode()->TypeGet();
@@ -3023,6 +3114,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
         }
 
+#ifdef TARGET_LOONGARCH64
+        regNumber nextOtherRegNum = REG_STK;
+#endif
         //
         // Figure out if the argument will be passed in a register.
         //
@@ -3117,7 +3211,69 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     }
                 }
             }
-#else // not TARGET_ARM or TARGET_ARM64
+
+#elif defined(TARGET_LOONGARCH64)
+            if (passUsingFloatRegs)
+            {
+                // Check if the last register needed is still in the fp argument register range.
+                passUsingFloatRegs = isRegArg = (nextFltArgRegNum + (size - 1)) < MAX_FLOAT_REG_ARG;
+
+                if (isStructArg)
+                {
+                    if ((numFloatFields & 0x6) && passUsingFloatRegs)
+                        passUsingFloatRegs = isRegArg = intArgRegNum < maxRegArgs;
+
+                    if (!passUsingFloatRegs)
+                    {
+                        size = structSize > 8 ? 2 : 1;
+                        numFloatFields = 0;
+                    }
+                    else if (passUsingFloatRegs)
+                    {
+                        if (numFloatFields & 0x8)
+                            nextOtherRegNum = genMapFloatRegArgNumToRegNum(nextFltArgRegNum + 1);
+                        else if (numFloatFields & 0x4)
+                        {
+                            assert(size == 1);
+                            size = 2;
+                            passUsingFloatRegs = false;
+                            nextOtherRegNum = genMapFloatRegArgNumToRegNum(nextFltArgRegNum);
+                        }
+                        else if (/*(size == 1) && */(numFloatFields & 0x2))
+                        {
+                            assert((size == 1) && (numFloatFields & 0x2));
+                            size = 2;
+                            nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum);
+                        }
+                    }
+                }
+
+                assert(!isHfaArg);//LOONGARCH not support HFA.
+            }
+
+            // if run out the fp argument register, try the int argument register.
+            if (!isRegArg)
+            {
+                // Check if the last register needed is still in the int argument register range.
+                isRegArg = (intArgRegNum + (size - 1)) < maxRegArgs;
+                if (!passUsingFloatRegs && isRegArg && (size > 1))
+                    nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum + 1);
+
+                // Did we run out of registers when we had a 16-byte struct (size===2) ?
+                // (i.e we only have one register remaining but we needed two registers to pass this arg)
+                // This prevents us from backfilling a subsequent arg into x7
+                //
+                if (!isRegArg && (size > 1))
+                {
+                    // We also must update intArgRegNum so that we no longer try to
+                    // allocate any new general purpose registers for args
+                    //
+                    isRegArg = intArgRegNum < maxRegArgs;//the split-struct case.
+                    nextOtherRegNum = REG_STK;
+                    //assert((intArgRegNum + 1) == maxRegArgs);
+                }
+            }
+#else // not TARGET_ARM or TARGET_ARM64 or TARGET_LOONGARCH64
 
 #if defined(UNIX_AMD64_ABI)
 
@@ -3269,7 +3425,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             // This is a register argument - put it in the table
             newArgEntry =
                 call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, byteSize, argAlignBytes, isStructArg,
-                                           isFloatHfa, callIsVararg UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
+                                           isFloatHfa, callIsVararg UNIX_LOONGARCH64_ONLY_ARG(nextOtherRegNum) UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
                                                            UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
                                                                UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
                                                                    UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
@@ -3278,6 +3434,48 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             // Set up the next intArgRegNum and fltArgRegNum values.
             if (!isBackFilled)
             {
+#if defined(TARGET_LOONGARCH64)
+                // Increment intArgRegNum by 'size' registers
+                if (!isNonStandard)
+                {
+                    if ((size > 1) && ((intArgRegNum + 1) == maxRegArgs) && (nextOtherRegNum == REG_STK))
+                    {
+#if FEATURE_ARG_SPLIT
+                        // This indicates a partial enregistration of a struct type
+                        assert((isStructArg) || argx->OperIs(GT_FIELD_LIST) || argx->OperIsCopyBlkOp() ||
+                               (argx->gtOper == GT_COMMA && (argx->gtFlags & GTF_ASG)));
+                        call->fgArgInfo->SplitArg(argIndex, 1, 1);
+#endif // FEATURE_ARG_SPLIT
+                        assert(!passUsingFloatRegs);
+                        assert(size == 2);
+                        //assert(nextOtherRegNum == REG_STK);
+                        intArgRegNum = maxRegArgs;
+                    }
+                    else if ((numFloatFields & 0xf) == 0x0)
+                    {
+                        if (passUsingFloatRegs)
+                            fltArgRegNum += 1;
+                        else
+                            intArgRegNum += size;
+                    }
+                    else if (numFloatFields & 0x1)
+                    {
+                        structBaseType = structSize == 8 ? TYP_DOUBLE : TYP_FLOAT;
+                        fltArgRegNum += 1;
+                    }
+                    else if (numFloatFields & 0x6)
+                    {
+                        //assert((numFloatFields & 0x2) || (numFloatFields & 0x4));
+                        fltArgRegNum += 1;
+                        intArgRegNum += 1;
+                    }
+                    else if (numFloatFields & 0x8)
+                    {
+                        fltArgRegNum += 2;
+                    }
+                }
+#else
+
 #if defined(UNIX_AMD64_ABI)
                 if (isStructArg)
                 {
@@ -3326,6 +3524,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                         }
                     }
                 }
+#endif // defined(TARGET_LOONGARCH64)
             }
         }
         else // We have an argument that is not passed in a register
@@ -3358,7 +3557,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         if (newArgEntry->isStruct)
         {
             newArgEntry->passedByRef = passStructByRef;
+#if defined(TARGET_LOONGARCH64)
+            newArgEntry->argType     = (numFloatFields & 0xe) || (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+#else
             newArgEntry->argType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+#endif
         }
         else
         {
@@ -3571,6 +3774,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 assert(!"Structs are not passed by reference on x64/ux");
 #endif // UNIX_AMD64_ABI
             }
+#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
+            else if ((structBaseType == TYP_STRUCT) && (originalSize == TARGET_POINTER_SIZE) && (size == 2))
+            {
+                DEBUG_ARG_SLOTS_ASSERT(size == argEntry->numRegs);
+            }
+#endif
             else // This is passed by value.
             {
                 // Check to see if we can transform this into load of a primitive type.
@@ -3596,7 +3805,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         canTransform = (!argEntry->IsHfaArg() || (passingSize == genTypeSize(argEntry->GetHfaType())));
                     }
 
-#if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI)
+#if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
                     // For ARM64 or AMD64/UX we can pass non-power-of-2 structs in a register, but we can
                     // only transform in that case if the arg is a local.
                     // TODO-CQ: This transformation should be applicable in general, not just for the ARM64
@@ -3606,7 +3815,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         canTransform = (lclVar != nullptr);
                         passingSize  = genTypeSize(structBaseType);
                     }
-#endif //  TARGET_ARM64 || UNIX_AMD64_ABI
+#endif //  TARGET_ARM64 || UNIX_AMD64_ABI || TARGET_LOONGARCH64
                 }
 
                 if (!canTransform)
@@ -3645,6 +3854,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     }
 #endif // UNIX_AMD64_ABI
 #elif defined(TARGET_ARM64)
+                    if ((passingSize != structSize) && (lclVar == nullptr))
+                    {
+                        copyBlkClass = objClass;
+                    }
+#elif defined(TARGET_LOONGARCH64)
                     if ((passingSize != structSize) && (lclVar == nullptr))
                     {
                         copyBlkClass = objClass;
@@ -3767,7 +3981,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                            ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsEnregisterable(structBaseType)));
                 }
 
-#if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARMARCH)
+#if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
                 // TODO-CQ-XARCH: there is no need for a temp copy if we improve our code generation in
                 // `genPutStructArgStk` for xarch like we did it for Arm/Arm64.
 
@@ -3860,8 +4074,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #if FEATURE_MULTIREG_ARGS
         if (isStructArg)
         {
+#if defined(TARGET_LOONGARCH64)
+            if ((argEntry->numRegs + argEntry->GetStackSlotsNumber()) > 1)
+#else
             if (((argEntry->numRegs + argEntry->GetStackSlotsNumber()) > 1) ||
                 (isHfaArg && argx->TypeGet() == TYP_STRUCT))
+#endif
             {
                 hasMultiregStructArgs = true;
             }
@@ -4093,6 +4311,28 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
         if ((size > 1) || (fgEntryPtr->IsHfaArg() && argx->TypeGet() == TYP_STRUCT))
         {
             foundStructArg = true;
+#if defined(TARGET_LOONGARCH64)
+            if (!argx->OperIs(GT_FIELD_LIST))
+            {
+                GenTree* newArgx = fgMorphMultiregStructArg(argx, fgEntryPtr);
+
+                // Did we replace 'argx' with a new tree?
+                if (newArgx != argx)
+                {
+                    // link the new arg node into either the late arg list or the gtCallArgs list
+                    if (isLateArg)
+                    {
+                        lateUse->SetNode(newArgx);
+                    }
+                    else
+                    {
+                        use.SetNode(newArgx);
+                    }
+
+                    assert(fgEntryPtr->GetNode() == newArgx);
+                }
+            }
+#else
             if (varTypeIsStruct(argx) && !argx->OperIs(GT_FIELD_LIST))
             {
                 if (fgEntryPtr->IsHfaRegArg())
@@ -4142,6 +4382,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                     assert(fgEntryPtr->GetNode() == newArgx);
                 }
             }
+#endif
         }
     }
 
@@ -4180,9 +4421,11 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 //
 GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntryPtr)
 {
+#if !defined(TARGET_LOONGARCH64)
     assert(varTypeIsStruct(arg->TypeGet()));
+#endif
 
-#if !defined(TARGET_ARMARCH) && !defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_ARMARCH) && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
     NYI("fgMorphMultiregStructArg requires implementation for this target");
 #endif
 
@@ -4233,7 +4476,36 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 #if FEATURE_MULTIREG_ARGS
     // Examine 'arg' and setup argValue objClass and structSize
     //
+#if defined(TARGET_LOONGARCH64)
+    const CORINFO_CLASS_HANDLE objClass = gtGetStructHandleIfPresent(arg);
+    if (objClass == NO_CLASS_HANDLE)
+    {
+        assert(arg->TypeGet() != TYP_STRUCT);
+        assert(arg->OperGet() == GT_LCL_FLD);
+        assert(fgEntryPtr->numRegs == 2);
+
+        GenTreeLclVarCommon* varNode = arg->AsLclVarCommon();
+        unsigned             varNum  = varNode->GetLclNum();
+        assert(varNum < lvaCount);
+        LclVarDsc* varDsc = &lvaTable[varNum];
+        assert(varDsc->lvExactSize == 8);
+
+        unsigned offset = arg->AsLclVarCommon()->GetLclOffs();
+        GenTreeFieldList* newArg = nullptr;
+        var_types tmp_type = fgEntryPtr->isPassedInFloatRegisters() ? TYP_FLOAT : TYP_INT;
+        arg->gtType = tmp_type;
+
+        newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
+        newArg->AddField(this, arg, offset, tmp_type);
+        tmp_type = isValidFloatArgReg(fgEntryPtr->GetOtherRegNum()) ? TYP_FLOAT : TYP_INT;
+        GenTree* nextLclFld = gtNewLclFldNode(varNum, tmp_type, offset + 4);
+        newArg->AddField(this, nextLclFld, offset + 4, tmp_type);
+
+        return newArg;
+    }
+#else
     const CORINFO_CLASS_HANDLE objClass   = gtGetStructHandle(arg);
+#endif
     GenTree*                   argValue   = arg; // normally argValue will be arg, but see right below
     unsigned                   structSize = 0;
 
@@ -4351,11 +4623,11 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                     case 2:
                         type[lastElem] = TYP_SHORT;
                         break;
-#if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI)
+#if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
                     case 4:
                         type[lastElem] = TYP_INT;
                         break;
-#endif // (TARGET_ARM64) || (UNIX_AMD64_ABI)
+#endif // (TARGET_ARM64) || (UNIX_AMD64_ABI) || (TARGET_LOONGARCH64)
                     default:
                         noway_assert(!"NYI: odd sized struct in fgMorphMultiregStructArg");
                         break;
@@ -4394,6 +4666,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 #endif // DEBUG
 
 #ifndef UNIX_AMD64_ABI
+#if !defined(TARGET_LOONGARCH64)
         // This local variable must match the layout of the 'objClass' type exactly
         if (varDsc->lvIsHfa()
 #if !defined(HOST_UNIX) && defined(TARGET_ARM64)
@@ -4413,6 +4686,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             }
         }
         else
+#endif
         {
 #if defined(TARGET_ARM64)
             // We must have a 16-byte struct (non-HFA)
@@ -4555,7 +4829,16 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             //
             lvaSetVarDoNotEnregister(varNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
         }
-#endif // TARGET_ARM
+#elif defined(TARGET_LOONGARCH64)
+        // Is this LclVar a promoted struct with exactly same size?
+        assert(!varDsc->lvPromoted);
+
+        assert(structSize >= TARGET_POINTER_SIZE);
+        {
+            // We will create a list of GT_LCL_FLDs nodes to pass this struct
+            lvaSetVarDoNotEnregister(varNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
+        }
+#endif // TARGET_LOONGARCH64
     }
 
     // If we didn't set newarg to a new List Node tree
@@ -4621,12 +4904,66 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             //
             unsigned offset = baseOffset;
             newArg          = new (this, GT_FIELD_LIST) GenTreeFieldList();
+#if defined(TARGET_LOONGARCH64)
+            DWORD numFloatFields = info.compCompHnd->getFieldTypeByHnd(objClass);
+            if ((numFloatFields & 0xe) /*&& (varDsc->lvSize() == TARGET_POINTER_SIZE)*/)
+            {
+                assert((numFloatFields & 0xf) > 1);
+                var_types tmp_type_1;
+                var_types tmp_type_2;
+
+                compFloatingPointUsed = true;
+                if (numFloatFields & 0x8)
+                {
+                    tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                }
+                else if (numFloatFields & 0x2)
+                {
+                    tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
+                    //tmp_type_2 = numFloatFields & 0x20 ? TYP_LONG: TYP_INT;type[0]
+                    tmp_type_2 = numFloatFields & 0x20 ? type[1] : TYP_INT;
+                }
+                else if (numFloatFields & 0x4)
+                {
+                    //tmp_type_1 = numFloatFields & 0x10 ? TYP_LONG: TYP_INT;
+                    tmp_type_1 = numFloatFields & 0x10 ? type[0] : TYP_INT;
+                    tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                }
+                else
+                {
+                    assert(!"----------------unimplemented type-case... on LOONGARCH");
+                    unreached();
+                }
+                elemSize = numFloatFields & 0x30 ? 8 : 4;;
+
+                GenTree* nextLclFld = gtNewLclFldNode(varNum, tmp_type_1, offset);
+                newArg->AddField(this, nextLclFld, offset, tmp_type_1);
+                offset += elemSize;
+                nextLclFld = gtNewLclFldNode(varNum, tmp_type_2, offset);
+                newArg->AddField(this, nextLclFld, offset, tmp_type_2);
+            }
+            else
+            {
+                GenTree* nextLclFld = gtNewLclFldNode(varNum, type[0], offset);
+                newArg->AddField(this, nextLclFld, offset, type[0]);
+
+                if (elemCount > 1)
+                {
+                    assert(elemCount == 2);
+                    elemSize = genTypeSize(type[1]);
+                    nextLclFld = gtNewLclFldNode(varNum, type[1], offset + elemSize);
+                    newArg->AddField(this, nextLclFld, offset + elemSize, type[1]);
+                }
+            }
+#else
             for (unsigned inx = 0; inx < elemCount; inx++)
             {
                 GenTree* nextLclFld = gtNewLclFldNode(varNum, type[inx], offset);
                 newArg->AddField(this, nextLclFld, offset, type[inx]);
                 offset += genTypeSize(type[inx]);
             }
+#endif
         }
         // Are we passing a GT_OBJ struct?
         //
@@ -4656,6 +4993,59 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 
             newArg          = new (this, GT_FIELD_LIST) GenTreeFieldList();
             unsigned offset = 0;
+#if defined(TARGET_LOONGARCH64)
+            DWORD numFloatFields = info.compCompHnd->getFieldTypeByHnd(objClass);
+            if (numFloatFields & 0xe)
+            {
+                assert((numFloatFields & 0xf) > 1);
+                var_types tmp_type_1;
+                var_types tmp_type_2;
+
+                compFloatingPointUsed = true;
+                if (numFloatFields & 0x8)
+                {
+                    tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                }
+                else if (numFloatFields & 0x2)
+                {
+                    tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
+                    //tmp_type_2 = numFloatFields & 0x20 ? TYP_LONG: TYP_INT;
+                    tmp_type_2 = numFloatFields & 0x20 ? type[1] : TYP_INT;
+                }
+                else if (numFloatFields & 0x4)
+                {
+                    //tmp_type_1 = numFloatFields & 0x10 ? TYP_LONG: TYP_INT;
+                    tmp_type_1 = numFloatFields & 0x10 ? type[0] : TYP_INT;
+                    tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                }
+                else
+                {
+                    assert(!"----------------unimplemented type-case... on LOONGARCH");
+                    unreached();
+                }
+                elemSize = numFloatFields & 0x30 ? 8 : 4;;
+
+                GenTree* curItem = gtNewIndir(tmp_type_1, baseAddr);
+                // For safety all GT_IND should have at least GT_GLOB_REF set.
+                curItem->gtFlags |= GTF_GLOB_REF;
+
+                newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
+                newArg->AddField(this, curItem, 0, tmp_type_1);
+
+                //GenTree* curAddr = baseAddr;
+                baseAddr = gtCloneExpr(baseAddr);
+                noway_assert(baseAddr != nullptr);
+                baseAddr = gtNewOperNode(GT_ADD, addrType, baseAddr, gtNewIconNode(elemSize, TYP_I_IMPL));
+
+                curItem = gtNewIndir(tmp_type_2, baseAddr);
+                // For safety all GT_IND should have at least GT_GLOB_REF set.
+                curItem->gtFlags |= GTF_GLOB_REF;
+
+                newArg->AddField(this, curItem, elemSize, tmp_type_2);
+            }
+            else
+#endif
             for (unsigned inx = 0; inx < elemCount; inx++)
             {
                 GenTree* curAddr = baseAddr;
@@ -5060,6 +5450,12 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
             noway_assert(op1->gtType == TYP_I_IMPL && ad1->gtType == TYP_I_IMPL);
             new_op1->gtType = TYP_I_IMPL;
         }
+#ifdef TARGET_LOONGARCH64
+        else if ((op1->TypeGet() == TYP_LONG) && (ad2->TypeGet() == TYP_INT))
+        {
+            new_op1->gtType = TYP_LONG;
+        }
+#endif
 
         // If new_op1 is a new expression. Assign it a new unique value number.
         // vnStore is null before the ValueNumber phase has run
@@ -5352,6 +5748,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             noway_assert(index2 != nullptr);
         }
 
+#ifndef TARGET_LOONGARCH64
         // Next introduce a GT_ARR_BOUNDS_CHECK node
         var_types bndsChkType = TYP_INT; // By default, try to use 32-bit comparison for array bounds check.
 
@@ -5371,6 +5768,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         {
             arrLen = gtNewCastNode(bndsChkType, arrLen, true, bndsChkType);
         }
+#else
+        GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)lenOffs, compCurBB);
+#endif
 
         GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
             GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, SCK_RNGCHK_FAIL);
@@ -5389,6 +5789,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* addr;
 
 #ifdef TARGET_64BIT
+#ifndef TARGET_LOONGARCH64
     // Widen 'index' on 64-bit targets
     if (index->TypeGet() != TYP_I_IMPL)
     {
@@ -5401,6 +5802,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
         }
     }
+#endif
 #endif // TARGET_64BIT
 
     /* Scale the index value if necessary */
@@ -12226,6 +12628,22 @@ DONE_MORPHING_CHILDREN:
             break;
 #endif
 
+#ifdef TARGET_LOONGARCH64
+        case GT_DIV:
+        case GT_MOD:
+            if (!varTypeIsFloating(tree->gtType))
+            {
+                // Codegen for this instruction needs to be able to throw two exceptions:
+                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+            }
+            break;
+        case GT_UDIV:
+        case GT_UMOD:
+            // Codegen for this instruction needs to be able to throw one exception:
+            fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+            break;
+#endif
         case GT_ADD:
 
         CM_OVF_OP:
@@ -13948,6 +14366,12 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             // be in a fully-interruptible code region.
             if (!varTypeIsGC(ad1->TypeGet()) && !varTypeIsGC(op2->TypeGet()))
             {
+#ifdef TARGET_LOONGARCH64
+                if ((op2->TypeGet() == TYP_LONG) /*&& (op1->TypeGet() == TYP_INT)*/)
+                {
+                    op1->gtType = TYP_LONG;
+                }
+#endif
                 tree->gtOp2 = ad2;
 
                 op1->AsOp()->gtOp2 = op2;
@@ -17139,7 +17563,7 @@ void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)
 
 void Compiler::fgResetImplicitByRefRefCount()
 {
-#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_ARM64)
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #ifdef DEBUG
     if (verbose)
     {
@@ -17162,7 +17586,7 @@ void Compiler::fgResetImplicitByRefRefCount()
         }
     }
 
-#endif // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64
+#endif // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64 || TARGET_LOONGARCH64
 }
 
 //------------------------------------------------------------------------
@@ -17176,7 +17600,7 @@ void Compiler::fgResetImplicitByRefRefCount()
 
 void Compiler::fgRetypeImplicitByRefArgs()
 {
-#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_ARM64)
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #ifdef DEBUG
     if (verbose)
     {
@@ -17375,7 +17799,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
         }
     }
 
-#endif // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64
+#endif // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64 || TARGET_LOONGARCH64
 }
 
 //------------------------------------------------------------------------
@@ -17388,7 +17812,7 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
 {
     JITDUMP("\n*************** In fgMarkDemotedImplicitByRefArgs()\n");
 
-#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_ARM64)
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
@@ -17449,7 +17873,7 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
         }
     }
 
-#endif // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64
+#endif // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64 || TARGET_LOONGARCH64
 }
 
 /*****************************************************************************
@@ -17459,11 +17883,11 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
  */
 bool Compiler::fgMorphImplicitByRefArgs(GenTree* tree)
 {
-#if (!defined(TARGET_AMD64) || defined(UNIX_AMD64_ABI)) && !defined(TARGET_ARM64)
+#if (!defined(TARGET_AMD64) || defined(UNIX_AMD64_ABI)) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
 
     return false;
 
-#else  // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64
+#else  // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64 || TARGET_LOONGARCH64
 
     bool changed = false;
 
@@ -17498,7 +17922,7 @@ bool Compiler::fgMorphImplicitByRefArgs(GenTree* tree)
     }
 
     return changed;
-#endif // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64
+#endif // (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64 || TARGET_LOONGARCH64
 }
 
 GenTree* Compiler::fgMorphImplicitByRefArgs(GenTree* tree, bool isAddr)
@@ -17647,7 +18071,11 @@ GenTree* Compiler::fgMorphImplicitByRefArgs(GenTree* tree, bool isAddr)
 void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZero)
 {
     // We expect 'addr' to be an address at this point.
+#ifdef TARGET_LOONGARCH64
+    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_INT || addr->TypeGet() == TYP_REF);
+#else
     assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
+#endif
 
     // Tunnel through any commas.
     const bool commaOnly = true;

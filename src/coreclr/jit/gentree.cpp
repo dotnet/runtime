@@ -3050,6 +3050,27 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 *pCostSz += 4;
             }
         }
+#elif defined(TARGET_LOONGARCH64)
+        if (base)
+        {
+            *pCostEx += base->GetCostEx();
+            *pCostSz += base->GetCostSz();
+        }
+
+        if (idx)
+        {
+            *pCostEx += idx->GetCostEx();
+            *pCostSz += idx->GetCostSz();
+        }
+        // TODO: workround, should amend for LoongArch64.
+        if (cns != 0)
+        {
+            if (cns >= (4096 * genTypeSize(type)))
+            {
+                *pCostEx += 1;
+                *pCostSz += 4;
+            }
+        }
 #else
 #error "Unknown TARGET"
 #endif
@@ -3464,13 +3485,20 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             }
                 goto COMMON_CNS;
 
+#elif defined(TARGET_LOONGARCH64)
+            case GT_CNS_STR:
+            case GT_CNS_LNG:
+            case GT_CNS_INT:
+            // TODO: workround, should amend for LoongArch64.
+                costEx = 4;
+                costSz = 4;
+            goto COMMON_CNS;
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
             case GT_CNS_INT:
 #error "Unknown TARGET"
 #endif
-
             COMMON_CNS:
                 /*
                     Note that some code below depends on constants always getting
@@ -3526,6 +3554,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = IND_COST_EX;
                     costSz = 4;
                 }
+#elif defined(TARGET_LOONGARCH64)
+                // TODO: workround, should amend for LoongArch64.
+                costEx = 2;
+                costSz = 8;
 #else
 #error "Unknown TARGET"
 #endif
@@ -3698,6 +3730,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         /* cast involving floats always go through memory */
                         costEx = IND_COST_EX * 2;
                         costSz = 6;
+                    }
+#elif defined(TARGET_LOONGARCH64)
+                    // TODO: workround, should amend for LoongArch64.
+                    costEx = 1;
+                    costSz = 2;
+                    if (isflt || varTypeIsFloating(op1->TypeGet()))
+                    {
+                        costEx = 2;
+                        costSz = 4;
                     }
 #else
 #error "Unknown TARGET"
@@ -5909,6 +5950,9 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
     switch (type)
     {
         case TYP_INT:
+#ifdef TARGET_LOONGARCH64
+        case TYP_UINT:
+#endif
             zero = gtNewIconNode(0);
             break;
 
@@ -6703,7 +6747,7 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
     }
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
     {
         // All checks pass we can perform the division operation using a reciprocal multiply.
@@ -13569,8 +13613,11 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
         case TYP_INT:
 
+#ifdef TARGET_LOONGARCH64
+            assert(tree->TypeIs(TYP_INT) || tree->TypeIs(TYP_LONG) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
+#else
             assert(tree->TypeIs(TYP_INT) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
-
+#endif
             // No GC pointer types should be folded here...
             assert(!varTypeIsGC(op1->TypeGet()) && !varTypeIsGC(op2->TypeGet()));
 
@@ -21353,6 +21400,42 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
+#elif defined(TARGET_LOONGARCH64)
+            assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
+
+            DWORD numFloatFields = comp->info.compCompHnd->getFieldTypeByHnd(retClsHnd);
+            BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+            comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
+
+            if (numFloatFields & 0x8)
+            {
+                assert((structSize > 8) == ((numFloatFields & 0x30) > 0));
+                m_regType[0] = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1] = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                comp->compFloatingPointUsed = true;
+            }
+            else if (numFloatFields & 0x2)
+            {
+                assert((structSize > 8) == ((numFloatFields & 0x30) > 0));
+                m_regType[0] = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1] = numFloatFields & 0x20 ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
+                comp->compFloatingPointUsed = true;
+            }
+            else if (numFloatFields & 0x4)
+            {
+                assert((structSize > 8) == ((numFloatFields & 0x30) > 0));
+                m_regType[0] = numFloatFields & 0x10 ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
+                m_regType[1] = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                comp->compFloatingPointUsed = true;
+            }
+            else
+            {
+                for (unsigned i = 0; i < 2; ++i)
+                {
+                    m_regType[i] = comp->getJitGCType(gcPtrs[i]);
+                }
+            }
+
 #elif defined(TARGET_X86)
 
             // an 8-byte struct returned using two registers
@@ -21541,6 +21624,21 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
     {
         noway_assert(idx < 4);                                   // Up to 4 return registers for HFA's
         resultReg = (regNumber)((unsigned)(REG_FLOATRET) + idx); // V0, V1, V2 or V3
+    }
+
+#elif defined(TARGET_LOONGARCH64)
+    var_types regType = GetReturnRegType(idx);
+    if (idx == 0)
+    {
+        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // V0 or F0
+    }
+    else
+    {
+        noway_assert(idx < 2);                                  // Up to 2 return registers for two-float-field structs
+        if (varTypeIsIntegralOrI(regType))
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_INTRET_1 : REG_INTRET; // V0 or V1
+        else //if (!varTypeIsIntegralOrI(regType))
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
     }
 
 #endif // TARGET_XXX

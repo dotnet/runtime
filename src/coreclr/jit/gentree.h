@@ -4487,12 +4487,17 @@ struct GenTreeCall final : public GenTree
         }
 #endif
 
+#if defined(TARGET_LOONGARCH64)
+        return (gtType == TYP_STRUCT) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
+#else
         if (!varTypeIsStruct(gtType) || HasRetBufArg())
         {
             return false;
         }
         // Now it is a struct that is returned in registers.
         return GetReturnTypeDesc()->IsMultiRegRetType();
+#endif
+
 #else  // !FEATURE_MULTIREG_RET
         return false;
 #endif // !FEATURE_MULTIREG_RET

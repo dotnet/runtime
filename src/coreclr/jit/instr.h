@@ -6,7 +6,11 @@
 #define _INSTR_H_
 /*****************************************************************************/
 
+#ifdef TARGET_LOONGARCH64
+#define BAD_CODE 0XFFFFFFFF
+#else
 #define BAD_CODE 0x0BADC0DE // better not match a real encoding!
+#endif
 
 /*****************************************************************************/
 
@@ -47,6 +51,14 @@ enum instruction : unsigned
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
+#elif defined(TARGET_LOONGARCH64)
+    #define INSTS(id, nm, fp, ldst, fmt, e1) INS_##id,
+    #include "instrs.h"
+
+    //INS_dneg,  // Not a real instruction. It will be translated to dsubu.
+    //INS_neg,   // Not a real instruction. It will be translated to subu.
+    //INS_not,   // Not a real instruction. It will be translated to nor.
+    INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #else
 #error Unsupported target architecture
 #endif
@@ -138,6 +150,13 @@ enum insFlags : uint32_t
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
+enum insFlags: unsigned
+{
+    INS_FLAGS_NOT_SET = 0x00,
+    INS_FLAGS_SET = 0x01,
+    INS_FLAGS_DONT_CARE = 0x02,
+};
+#elif defined(TARGET_LOONGARCH64)
 enum insFlags: unsigned
 {
     INS_FLAGS_NOT_SET = 0x00,
@@ -275,7 +294,6 @@ enum insBarrier : unsigned
     INS_BARRIER_OSHLD =  1,
     INS_BARRIER_OSHST =  2,
     INS_BARRIER_OSH   =  3,
-
     INS_BARRIER_NSHLD =  5,
     INS_BARRIER_NSHST =  6,
     INS_BARRIER_NSH   =  7,
@@ -287,6 +305,33 @@ enum insBarrier : unsigned
     INS_BARRIER_LD    = 13,
     INS_BARRIER_ST    = 14,
     INS_BARRIER_SY    = 15,
+};
+#elif defined(TARGET_LOONGARCH64)
+enum insOpts : unsigned
+{
+    INS_OPTS_NONE,
+
+    INS_OPTS_RC,     // see ::emitIns_R_C().
+    INS_OPTS_RL,     // see ::emitIns_R_L().
+    INS_OPTS_JIRL,     // see ::emitIns_J_R().
+    INS_OPTS_J,      // see ::emitIns_J().
+    INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_I,      // see ::emitIns_I_la().
+    //INS_OPTS_J2,   // see ::emitIns_J().
+    INS_OPTS_C,      // see ::emitIns_Call().
+    INS_OPTS_RELOC,  // see ::emitIns_R_AI().
+    //INS_OPTS_,     // see ::().
+    //INS_OPTS_,     // see ::().
+};
+
+enum insBarrier : unsigned
+{
+    INS_BARRIER_FULL  =  0,
+    INS_BARRIER_WMB   =  INS_BARRIER_FULL,//4,
+    INS_BARRIER_MB    =  INS_BARRIER_FULL,//16,
+    INS_BARRIER_ACQ   =  INS_BARRIER_FULL,//17,
+    INS_BARRIER_REL   =  INS_BARRIER_FULL,//18,
+    INS_BARRIER_RMB   =  INS_BARRIER_FULL,//19,
 };
 #endif
 

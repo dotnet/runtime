@@ -197,7 +197,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerCast(node);
             break;
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         case GT_ARR_BOUNDS_CHECK:
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
@@ -230,7 +230,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             LowerShift(node->AsOp());
 #else
             ContainCheckShiftRotate(node->AsOp());
@@ -310,7 +310,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerStoreLocCommon(node->AsLclVarCommon());
             break;
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         case GT_CMPXCHG:
             CheckImmedAndMakeContained(node, node->AsCmpXchg()->gtOpComparand);
             break;
@@ -338,7 +338,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif
 
-#ifndef TARGET_ARMARCH
+#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
         // TODO-ARMARCH-CQ: We should contain this as long as the offset fits.
         case GT_OBJ:
             if (node->AsObj()->Addr()->OperIsLocalAddr())
@@ -1040,6 +1040,15 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
             MakeSrcContained(arg, arg->AsObj()->Addr());
         }
     }
+#elif defined(TARGET_LOONGARCH64)
+    if (type == TYP_STRUCT)
+    {
+        arg->SetContained();
+        if ((arg->OperGet() == GT_OBJ) && (arg->AsObj()->Addr()->OperGet() == GT_LCL_VAR_ADDR))
+        {
+            MakeSrcContained(arg, arg->AsObj()->Addr());
+        }
+    }
 #endif
 
 #if FEATURE_ARG_SPLIT
@@ -1423,6 +1432,30 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
         }
 #endif // TARGET_ARMARCH
 
+#if defined(TARGET_LOONGARCH64)
+        if (call->IsVarargs() /*|| comp->opts.compUseSoftFP*/)
+        {
+            // For vararg call or on armel, reg args should be all integer.
+            // Insert copies as needed to move float value to integer register.
+            GenTree* newNode = LowerFloatArg(ppArg, info);
+            if (newNode != nullptr)
+            {
+                type = newNode->TypeGet();
+            }
+        }
+        else
+        {
+            GenTree* putArg = NewPutArg(call, arg, info, type);
+
+            // In the case of register passable struct (in one or two registers)
+            // the NewPutArg returns a new node (GT_PUTARG_REG or a GT_FIELD_LIST with two GT_PUTARG_REGs.)
+            // If an extra node is returned, splice it in the right place in the tree.
+            if (arg != putArg)
+            {
+                ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
+            }
+        }
+#else
         GenTree* putArg = NewPutArg(call, arg, info, type);
 
         // In the case of register passable struct (in one or two registers)
@@ -1432,10 +1465,11 @@ void Lowering::LowerArg(GenTreeCall* call, GenTree** ppArg)
         {
             ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
         }
+#endif
     }
 }
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 //------------------------------------------------------------------------
 // LowerFloatArg: Lower float call arguments on the arm platform.
 //
@@ -2498,7 +2532,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 {
     assert(cmp->gtGetOp2()->IsIntegralConst());
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)// || defined(TARGET_LOONGARCH64)
+    ////TODO: add optimize for LoongArch64.
     GenTree*       op1      = cmp->gtGetOp1();
     GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
     ssize_t        op2Value = op2->IconValue();
@@ -2867,7 +2902,53 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             return nullptr;
         }
     }
-#endif // TARGET_ARM64
+#elif defined(TARGET_LOONGARCH64)
+    GenTree* relop    = jtrue->gtGetOp1();
+    GenTree* relopOp1 = relop->AsOp()->gtGetOp1();
+    GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
+
+    if (relopOp1->IsCnsIntOrI() && relopOp2->IsCnsIntOrI())
+    {
+        relopOp1->SetContained();
+        relopOp2->SetContained();
+    }
+    else if (relop->gtNext == jtrue)
+    {
+        if (relopOp2->IsCnsIntOrI())
+        {
+            if (relop->OperIs(GT_EQ, GT_NE))
+            {
+
+                // Codegen will use beq or bne in codegen.
+                GenTreeFlags flags = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
+
+                relop->SetOper(GT_JCMP);
+                relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
+                relop->gtFlags |= flags;
+                relop->gtType = TYP_VOID;
+
+                relopOp2->SetContained();
+
+                BlockRange().Remove(jtrue);
+
+                assert(relop->gtNext == nullptr);
+                return nullptr;
+            }
+        }
+        else if (relopOp1->IsCnsIntOrI())
+        {
+            relopOp1->SetContained();
+        }
+    }
+    else if (relopOp1->IsCnsIntOrI())
+    {
+        relopOp1->SetContained();
+    }
+    else if (relopOp2->IsCnsIntOrI())
+    {
+        relopOp2->SetContained();
+    }
+#endif // TARGET_LOONGARCH64
 
     ContainCheckJTrue(jtrue);
 
@@ -5106,7 +5187,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
-#ifndef TARGET_ARMARCH
+#if !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
         if (BlockRange().TryGetUse(node, &use))
         {
             // If this is a child of an indir, let the parent handle it.
@@ -5117,7 +5198,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                 TryCreateAddrMode(node, false);
             }
         }
-#endif // !TARGET_ARMARCH
+#endif // !TARGET_ARMARCH && !TARGET_LOONGARCH64
     }
 
     if (node->OperIs(GT_ADD))
@@ -5283,7 +5364,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
     }
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     if (!comp->opts.MinOpts() && (divisorValue >= 3))
     {
         size_t magic;
@@ -5363,7 +5444,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         GenTree* firstNode        = nullptr;
         GenTree* adjustedDividend = dividend;
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // On ARM64 we will use a 32x32->64 bit multiply instead of a 64x64->64 one.
         bool widenToNativeIntForMul = (type != TYP_I_IMPL) && !simpleMul;
 #else
@@ -5417,7 +5498,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
         else
         {
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) //|| defined(TARGET_LOONGARCH64)
             // 64-bit MUL is more expensive than UMULL on ARM64.
             genTreeOps mulOper = simpleMul ? GT_MUL_LONG : GT_MULHI;
 #else
@@ -5509,7 +5590,11 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
 
+#if defined(TARGET_LOONGARCH64)
+    const var_types type = genActualType(divMod->TypeGet());
+#else
     const var_types type = divMod->TypeGet();
+#endif
     assert((type == TYP_INT) || (type == TYP_LONG));
 
 #if defined(USE_HELPERS_FOR_INT_DIV)
@@ -5571,7 +5656,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
             return nullptr;
         }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         ssize_t magic;
         int     shift;
 

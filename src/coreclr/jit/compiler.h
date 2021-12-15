@@ -475,7 +475,13 @@ public:
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
-#endif                                   // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_LOONGARCH64)
+    unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
+    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.
+    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for LA-ABI64.
+    unsigned char lvIsSplit : 1;   // Set if the argument is splited. also used the lvFldOffset.
+#endif  // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH)
+
 
 #if OPT_BOOL_OPS
     unsigned char lvIsBoolean : 1; // set if variable is boolean
@@ -674,6 +680,9 @@ public:
     {
         assert(lvIsHfa());
         assert(varTypeIsStruct(lvType));
+#if defined(TARGET_LOONGARCH64)
+        assert(!"lvHfaSlots called not support on LOONGARCH64!");
+#endif
         unsigned slots = 0;
 #ifdef TARGET_ARM
         slots = lvExactSize / sizeof(float);
@@ -990,7 +999,7 @@ public:
         }
 #endif
         assert(m_layout != nullptr);
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && (TypeGet() == TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
@@ -1614,7 +1623,7 @@ struct FuncInfoDsc
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
 
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
     UnwindInfo  uwi;     // Unwind information for this function/funclet's hot  section
     UnwindInfo* uwiCold; // Unwind information for this function/funclet's cold section
@@ -1629,7 +1638,7 @@ struct FuncInfoDsc
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
 
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 #if defined(FEATURE_CFI_SUPPORT)
     jitstd::vector<CFI_CODE>* cfiCodes;
@@ -2148,7 +2157,7 @@ public:
     // register numbers.
     void SetMultiRegNums()
     {
-#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI)
+#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
         if (numRegs == 1)
         {
             return;
@@ -2169,7 +2178,7 @@ public:
             argReg = (regNumber)(argReg + regSize);
             setRegNum(regIndex, argReg);
         }
-#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI)
+#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
     }
 
 #ifdef DEBUG
@@ -2286,6 +2295,20 @@ public:
                              const unsigned                                                   structFloatRegs,
                              const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr = nullptr);
 #endif // UNIX_AMD64_ABI
+
+#if defined(TARGET_LOONGARCH64)
+    fgArgTabEntry* AddRegArg(unsigned          argNum,
+                             GenTree*          node,
+                             GenTreeCall::Use* use,
+                             regNumber         regNum,
+                             unsigned          numRegs,
+                             unsigned          byteSize,
+                             unsigned          byteAlignment,
+                             bool              isStruct,
+                             bool              isFloatHfa, /* unused */
+                             bool              isVararg,
+                             const regNumber   nextOtherRegNum);
+#endif
 
     fgArgTabEntry* AddStkArg(unsigned          argNum,
                              GenTree*          node,
@@ -4037,7 +4060,7 @@ public:
     // For ARM64, this is structs larger than 16 bytes that are passed by reference.
     bool lvaIsImplicitByRefLocal(unsigned varNum)
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         LclVarDsc* varDsc = lvaGetDesc(varNum);
         if (varDsc->lvIsImplicitByRef)
         {
@@ -4046,7 +4069,7 @@ public:
             assert(varTypeIsStruct(varDsc) || (varDsc->lvType == TYP_BYREF));
             return true;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         return false;
     }
 
@@ -8019,9 +8042,14 @@ public:
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
-#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+#elif defined(TARGET_LOONGARCH64)
+    static bool varTypeNeedsPartialCalleeSave(var_types type)
+    {//TODO: supporting SIMD feature for LoongArch64.
+        return false;
+    }
+#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
 #error("Unknown target architecture for FEATURE_SIMD")
-#endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+#endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 protected:
@@ -8194,6 +8222,9 @@ public:
 #elif defined(TARGET_ARM64)
             reg     = REG_R11;
             regMask = RBM_R11;
+#elif defined(TARGET_LOONGARCH64)
+            reg     = REG_T8;
+            regMask = RBM_T8;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -8612,6 +8643,15 @@ public:
     void unwindReturn(regNumber reg);                                             // ret lr
 #endif                                                                            // defined(TARGET_ARM64)
 
+#if defined(TARGET_LOONGARCH64)
+    void unwindNop();
+    void unwindPadding(); // Generate a sequence of unwind NOP codes representing instructions between the last
+                          // instruction and the current location.
+    void unwindSaveReg(regNumber reg, int offset);
+    void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset);
+    void unwindReturn(regNumber reg);
+#endif // defined(TARGET_LOONGARCH64)
+
     //
     // Private "helper" functions for the unwind implementation.
     //
@@ -8697,9 +8737,13 @@ private:
         CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
 #elif defined(TARGET_ARM64)
         CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
+#elif defined(TARGET_LOONGARCH64)
+        //TODO: supporting SIMD feature for LoongArch64.
+        assert(!"unimplemented yet on LA");
+        CORINFO_InstructionSet minimumIsa = 0;
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_LOONGARCH64
 
         return compOpportunisticallyDependsOn(minimumIsa) && JitConfig.EnableHWIntrinsic();
 #else
@@ -9824,6 +9868,13 @@ public:
         int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif // defined(TARGET_ARM64)
 
+#if defined(TARGET_LOONGARCH64)
+        // Decision about whether to save FP/RA registers with callee-saved registers (see
+        // COMPlus_JitSaveFpRaWithCalleSavedRegisters).
+        // TODO: will delete this in future.
+        int compJitSaveFpRaWithCalleeSavedRegisters;
+#endif // defined(TARGET_LOONGARCH64)
+
 #ifdef CONFIGURABLE_ARM_ABI
         bool compUseSoftFP = false;
 #else
@@ -10131,6 +10182,8 @@ public:
 
 #define CPU_ARM 0x0300   // The generic ARM CPU
 #define CPU_ARM64 0x0400 // The generic ARM64 CPU
+
+#define CPU_LOONGARCH64 0x0800 // The generic LOONGARCH64 CPU
 
         unsigned genCPU; // What CPU are we running on
 
@@ -10654,7 +10707,7 @@ protected:
     void compSetProcessor();
     void compInitDebuggingInfo();
     void compSetOptimizationLevel();
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     bool compRsvdRegCheck(FrameLayoutState curState);
 #endif
     void compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags);
@@ -12086,6 +12139,13 @@ const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;
 
 #endif // TARGET_ARM64
+
+#ifdef TARGET_LOONGARCH64
+const instruction INS_BREAKPOINT = INS_break;
+const instruction INS_MULADD     = INS_fmadd_d;// NOTE: default is double.
+const instruction INS_ABS  = INS_fabs_d; // NOTE: default is double.
+const instruction INS_SQRT = INS_fsqrt_d;// NOTE: default is double.
+#endif // TARGET_LOONGARCH64
 
 /*****************************************************************************/
 

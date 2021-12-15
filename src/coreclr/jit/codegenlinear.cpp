@@ -1211,7 +1211,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(spillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // Load local variable from its home location.
             // In most cases the tree type will indicate the correct type to use for the load.
             // However, if it is NOT a normalizeOnLoad lclVar (i.e. NOT a small int that always gets
@@ -2515,7 +2515,12 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_checkKind = CHECK_NONE;
         }
 
+#ifdef TARGET_LOONGARCH64
+        m_extendKind    = castUnsigned ? ZERO_EXTEND_INT : SIGN_EXTEND_INT;
+        cast->gtFlags |=  castUnsigned ? GTF_UNSIGNED : GTF_EMPTY;
+#else
         m_extendKind    = COPY;
+#endif
         m_extendSrcSize = 4;
     }
 #endif
@@ -2592,6 +2597,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 }
 #endif // !defined(TARGET_64BIT)
 
+#ifndef TARGET_LOONGARCH64
 //------------------------------------------------------------------------
 // genCodeForJumpTrue: Generate code for a GT_JTRUE node.
 //
@@ -2637,6 +2643,7 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 
     inst_JCC(condition, compiler->compCurBB->bbJumpDest);
 }
+#endif // !TARGET_LOONGARCH64
 
 //------------------------------------------------------------------------
 // genCodeForJcc: Generate code for a GT_JCC node.

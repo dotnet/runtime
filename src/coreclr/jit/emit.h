@@ -304,7 +304,11 @@ struct insGroup
     unsigned igStkLvl; // stack level on entry
 #endif
     regMaskSmall  igGCregs; // set of registers with live GC refs
+#ifdef TARGET_LOONGARCH64
+    unsigned int igInsCnt; // # of instructions  in this group
+#else
     unsigned char igInsCnt; // # of instructions  in this group
+#endif
 
 #else // REGMASK_BITS
 
@@ -344,8 +348,11 @@ struct insGroup
             ptr -= sizeof(VARSET_TP);
         }
 
+#if defined(TARGET_LOONGARCH64)
+        ptr -= sizeof(VARSET_TP);
+#else
         ptr -= sizeof(unsigned);
-
+#endif
         return *(unsigned*)ptr;
     }
 
@@ -586,6 +593,10 @@ protected:
 #define INSTR_ENCODED_SIZE 4
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
+#elif defined(TARGET_LOONGARCH64)
+        /* TODO: not include SIMD-vector. */
+        static_assert_no_msg(INS_count <= 512);
+        instruction _idIns : 9;
 #else  // !(defined(TARGET_XARCH) || defined(TARGET_ARM64))
         static_assert_no_msg(INS_count <= 256);
         instruction _idIns : 8;
@@ -595,6 +606,10 @@ protected:
 #if defined(TARGET_XARCH)
         static_assert_no_msg(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
+#elif defined(TARGET_LOONGARCH64)
+        //insFormat _idInsFmt : 5;// NOTE: LOONGARCH64 does not used the _idInsFmt .
+        unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described. If not enough, please use the _idInsCount.
+        //unsigned _idInsCount : 5; // the instruction(s) count of this instrDesc described.
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -611,6 +626,15 @@ protected:
             _idIns = ins;
         }
 
+#if defined(TARGET_LOONGARCH64)
+        insFormat idInsFmt() const
+        {//not used for LOONGARCH64.
+            return (insFormat)0;
+        }
+        void idInsFmt(insFormat insFmt)
+        {
+        }
+#else
         insFormat idInsFmt() const
         {
             return _idInsFmt;
@@ -623,6 +647,7 @@ protected:
             assert(insFmt < IF_COUNT);
             _idInsFmt = insFmt;
         }
+#endif
 
         void idSetRelocFlags(emitAttr attr)
         {
@@ -636,6 +661,7 @@ protected:
         // amd64: 17 bits
         // arm:   16 bits
         // arm64: 17 bits
+        //loongarch64: 14 bits
 
     private:
 #if defined(TARGET_XARCH)
@@ -645,6 +671,8 @@ protected:
                                   // doesn't cross a byte boundary.
 #elif defined(TARGET_ARM64)
 // Moved the definition of '_idOpSize' later so that we don't cross a 32-bit boundary when laying out bitfields
+#elif defined(TARGET_LOONGARCH64)
+        /* _idOpSize defined bellow. */
 #else  // ARM
         opSize      _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // ARM
@@ -695,6 +723,13 @@ protected:
         unsigned _idLclVar : 1; // access a local on stack
 #endif
 
+#ifdef TARGET_LOONGARCH64
+        /* TODO: for LOONGARCH: maybe delete on future. */
+        opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts  _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the accessing a local on stack.
+        unsigned _idLclVar : 1; // access a local on stack.
+#endif
+
 #ifdef TARGET_ARM
         insSize  _idInsSize : 2;   // size of instruction: 16, 32 or 48 bits
         insFlags _idInsFlags : 1;  // will this instruction set the flags
@@ -711,6 +746,9 @@ protected:
 #elif defined(TARGET_XARCH)
                                    // For xarch, we have used 14 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (14)
+#elif defined(TARGET_LOONGARCH64)
+// For Loongarch64, we have used 14 bits from the second DWORD.
+#define ID_EXTRA_BITFIELD_BITS (14)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -721,6 +759,7 @@ protected:
         // amd64: 46 bits
         // arm:   48 bits
         // arm64: 49 bits
+        //loongarch64: 46 bits
 
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
@@ -733,6 +772,7 @@ protected:
         // amd64: 48 bits
         // arm:   50 bits
         // arm64: 51 bits
+        // loongarch64: 48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS)
@@ -810,7 +850,7 @@ protected:
 // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
 // about reading what we think is here, to avoid unexpected corruption issues.
 
-#ifndef TARGET_ARM64
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
             emitLclVarAddr iiaLclVar;
 #endif
             BasicBlock*  iiaBBlabel;
@@ -862,7 +902,38 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#endif // defined(TARGET_XARCH)
+#elif defined(TARGET_LOONGARCH64) // TARGET_XARCH
+            struct
+            {
+                unsigned int iiaEncodedInstr;//instruction's binary encoding.
+                regNumber _idReg3 : REGNUM_BITS;
+                regNumber _idReg4 : REGNUM_BITS;
+            };
+
+            struct
+            {
+                int iiaJmpOffset;//temporary saving the offset of jmp or data.
+                emitLclVarAddr iiaLclVar;
+            };
+
+            void iiaSetInstrEncode(unsigned int encode)
+            {
+                iiaEncodedInstr = encode;
+            }
+            unsigned int iiaGetInstrEncode() const
+            {
+                return iiaEncodedInstr;
+            }
+
+            void iiaSetJmpOffset(int offset)
+            {
+                iiaJmpOffset = offset;
+            }
+            int iiaGetJmpOffset() const
+            {
+                return iiaJmpOffset;
+            }
+#endif // defined(TARGET_LOONGARCH64)
 
         } _idAddrUnion;
 
@@ -962,10 +1033,21 @@ protected:
             _idInsFlags = sf;
             assert(sf == _idInsFlags);
         }
-#endif // TARGET_ARM
+
+#elif defined(TARGET_LOONGARCH64)
+        unsigned idCodeSize() const
+        {
+            return _idCodeSize;//_idInsCount;
+        }
+        void idCodeSize(unsigned sz)
+        {
+            assert(sz < 32);
+            _idCodeSize = sz;
+        }
+#endif // TARGET_LOONGARCH64
 
         emitAttr idOpSize()
-        {
+        {//NOTE: not used for LOONGARCH64.
             return emitDecodeSize(_idOpSize);
         }
         void idOpSize(emitAttr opsz)
@@ -1087,6 +1169,42 @@ protected:
 
 #endif // TARGET_ARMARCH
 
+#ifdef TARGET_LOONGARCH64
+        insOpts idInsOpt() const
+        {
+            return (insOpts)_idInsOpt;
+        }
+        void idInsOpt(insOpts opt)
+        {
+            _idInsOpt = opt;
+            assert(opt == _idInsOpt);
+        }
+
+        regNumber idReg3() const
+        {
+            assert(!idIsSmallDsc());
+            return idAddr()->_idReg3;
+        }
+        void idReg3(regNumber reg)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg3 = reg;
+            assert(reg == idAddr()->_idReg3);
+        }
+        regNumber idReg4() const
+        {
+            assert(!idIsSmallDsc());
+            return idAddr()->_idReg4;
+        }
+        void idReg4(regNumber reg)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg4 = reg;
+            assert(reg == idAddr()->_idReg4);
+        }
+
+#endif // TARGET_LOONGARCH64
+
         inline static bool fitsInSmallCns(ssize_t val)
         {
             return ((val >= ID_MIN_SMALL_CNS) && (val <= ID_MAX_SMALL_CNS));
@@ -1174,6 +1292,17 @@ protected:
             _idLclFPBase = 1;
         }
 #endif // defined(TARGET_ARM)
+
+#ifdef TARGET_LOONGARCH64
+        bool idIsLclVar() const
+        {
+            return _idLclVar != 0;
+        }
+        void idSetIsLclVar()
+        {
+            _idLclVar = 1;
+        }
+#endif // TARGET_LOONGARCH64
 
         bool idIsCnsReloc() const
         {
@@ -1309,6 +1438,23 @@ protected:
 
 #elif defined(TARGET_ARM64) || defined(TARGET_ARM)
 
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK PERFSCORE_LATENCY_3C
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
+
+#elif defined(TARGET_LOONGARCH64)
 // a read,write or modify from stack location, possible def to use latency from L0 cache
 #define PERFSCORE_LATENCY_RD_STACK PERFSCORE_LATENCY_3C
 #define PERFSCORE_LATENCY_WR_STACK PERFSCORE_LATENCY_1C
@@ -1735,6 +1881,10 @@ public:
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 
+#ifdef TARGET_LOONGARCH64
+    unsigned int emitCounts_INS_OPTS_J;//INS_OPTS_J
+#endif // defined(TARGET_LOONGARCH64)
+
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
@@ -1783,9 +1933,18 @@ private:
 // ugly code like "movw r10, 0x488; add r10, sp; vstr s0, [r10]" for each store, which
 // eats up our insGroup buffer.
 #define SC_IG_BUFFER_SIZE (100 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
-#else // !TARGET_ARMARCH
+
+#elif defined(TARGET_LOONGARCH64)
+
+#ifdef DEBUG
 #define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
-#endif // !TARGET_ARMARCH
+#else
+#define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 20 * SMALL_IDSC_SIZE)
+#endif
+
+#else // !TARGET_LOONGARCH64
+#define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
+#endif // !TARGET_LOONGARCH64
 
     size_t emitIGbuffSize;
 
@@ -1981,7 +2140,19 @@ private:
 
     static void emitGenerateUnwindNop(instrDesc* id, void* context);
 
-#endif // TARGET_ARMARCH
+#elif defined(TARGET_LOONGARCH64)
+    void emitGetInstrDescs(insGroup* ig, instrDesc** id, int* insCnt);
+    bool emitGetLocationInfo(emitLocation* emitLoc, insGroup** pig, instrDesc** pid, int* pinsRemaining = NULL);
+
+    bool emitNextID(insGroup*& ig, instrDesc*& id, int& insRemaining);
+
+    typedef void (*emitProcessInstrFunc_t)(instrDesc* id, void* context);
+
+    void emitWalkIDs(emitLocation* locFrom, emitProcessInstrFunc_t processFunc, void* context);
+
+    static void emitGenerateUnwindNop(instrDesc* id, void* context);
+
+#endif // TARGET_LOONGARCH64
 
 #ifdef TARGET_X86
     void emitMarkStackLvl(unsigned stackLevel);
@@ -2172,7 +2343,10 @@ public:
 
     // Returns "true" if instruction "id->idIns()" writes to a LclVar stack slot pair.
     bool emitInsWritesToLclVarStackLocPair(instrDesc* id);
-#endif // TARGET_ARMARCH
+#elif defined(TARGET_LOONGARCH64)
+    bool emitInsMayWriteToGCReg(instruction ins);
+    bool emitInsWritesToLclVarStackLoc(instrDesc* id);
+#endif // TARGET_LOONGARCH64
 
     /************************************************************************/
     /*    The following is used to distinguish helper vs non-helper calls   */

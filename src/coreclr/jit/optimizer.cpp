@@ -5114,7 +5114,9 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
     unsigned   kind;
 
     noway_assert(tree);
+#ifndef TARGET_LOONGARCH64
     noway_assert(genActualType(tree->gtType) == genActualType(srct));
+#endif
 
     /* Assume we're only handling integer types */
     noway_assert(varTypeIsIntegral(srct));
@@ -5282,8 +5284,13 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
         switch (tree->gtOper)
         {
             case GT_AND:
+#ifdef TARGET_LOONGARCH64
+                noway_assert(genTypeSize(genActualType(tree->gtType)) >= genTypeSize(genActualType(op1->gtType)));
+                noway_assert(genTypeSize(genActualType(tree->gtType)) >= genTypeSize(genActualType(op2->gtType)));
+#else
                 noway_assert(genActualType(tree->gtType) == genActualType(op1->gtType));
                 noway_assert(genActualType(tree->gtType) == genActualType(op2->gtType));
+#endif
 
                 GenTree* opToNarrow;
                 opToNarrow = nullptr;

@@ -125,6 +125,8 @@ private:
 
 #ifdef TARGET_ARMARCH
     regMaskTP rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
+#elif defined(TARGET_LOONGARCH64)
+    regMaskTP rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
 #endif                           // TARGET_ARM
 
 public:                    // TODO-Cleanup: Should be private, but Compiler uses it

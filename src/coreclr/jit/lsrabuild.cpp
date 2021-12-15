@@ -593,7 +593,9 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
         regNumber    physicalReg = genRegNumFromMask(mask);
         RefPosition* pos         = newRefPosition(physicalReg, theLocation, RefTypeFixedReg, nullptr, mask);
         assert(theInterval != nullptr);
+#ifndef TARGET_LOONGARCH64
         assert((allRegs(theInterval->registerType) & mask) != 0);
+#endif
     }
 
     RefPosition* newRP = newRefPositionRaw(theLocation, theTreeNode, theRefType);
@@ -3923,6 +3925,13 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 
     // the 'addr' goes into x14 (REG_WRITE_BARRIER_DST)
     // the 'src'  goes into x15 (REG_WRITE_BARRIER_SRC)
+    //
+    addrCandidates = RBM_WRITE_BARRIER_DST;
+    srcCandidates  = RBM_WRITE_BARRIER_SRC;
+
+#elif defined(TARGET_LOONGARCH64)
+    // the 'addr' goes into (REG_WRITE_BARRIER_DST)
+    // the 'src'  goes into (REG_WRITE_BARRIER_SRC)
     //
     addrCandidates = RBM_WRITE_BARRIER_DST;
     srcCandidates  = RBM_WRITE_BARRIER_SRC;

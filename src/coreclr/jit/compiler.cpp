@@ -538,12 +538,12 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_SHORT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
         case 3:
             useType = TYP_INT;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
 
 #ifdef TARGET_64BIT
         case 4:
@@ -551,14 +551,14 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_INT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
         case 5:
         case 6:
         case 7:
             useType = TYP_I_IMPL;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
 #endif // TARGET_64BIT
 
         case TARGET_POINTER_SIZE:
@@ -757,6 +757,27 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
+#elif defined(TARGET_LOONGARCH64)
+                // Structs that are pointer sized or smaller.
+                //assert(structSize > TARGET_POINTER_SIZE);
+
+                // On LOONGARCH64 structs that are 1-16 bytes are passed by value in one/multiple register(s)
+                if (structSize <= (TARGET_POINTER_SIZE * 2))
+                {
+                    // setup wbPassType and useType indicate that this is passed by value in multiple registers
+                    //  (when all of the parameters registers are used, then the stack will be used)
+                    howToPassStruct = SPK_ByValue;
+                    useType         = TYP_STRUCT;
+                }
+                else // a structSize that is 17-32 bytes in size
+                {
+                    // Otherwise we pass this struct by reference to a copy
+                    // setup wbPassType and useType indicate that this is passed using one register
+                    //  (by reference to a copy)
+                    howToPassStruct = SPK_ByReference;
+                    useType         = TYP_UNKNOWN;
+                }
+
 #else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getArgTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
@@ -777,7 +798,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             howToPassStruct = SPK_ByValue;
             useType         = TYP_STRUCT;
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)  || defined(TARGET_LOONGARCH64)
 
             // Otherwise we pass this struct by reference to a copy
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
@@ -911,6 +932,24 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         useType             = TYP_UNKNOWN;
     }
 
+#ifdef TARGET_LOONGARCH64
+    if (structSize <= (TARGET_POINTER_SIZE * 2))
+    {
+        DWORD numFloatFields = info.compCompHnd->getFieldTypeByHnd(clsHnd);
+
+        if (numFloatFields & 0x1)
+        {
+            howToReturnStruct = SPK_PrimitiveType;
+            useType           = structSize > 4 ? TYP_DOUBLE : TYP_FLOAT;
+        }
+        else if (numFloatFields & 0xE)
+        {
+            howToReturnStruct = SPK_ByValue;
+            useType           = TYP_STRUCT;
+        }
+    }
+#endif //TARGET_LOONGARCH64
+
     // Check for cases where a small struct is returned in a register
     // via a primitive type.
     //
@@ -1043,6 +1082,24 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 //  (reference to a return buffer)
                 howToReturnStruct = SPK_ByReference;
                 useType           = TYP_UNKNOWN;
+
+#elif defined(TARGET_LOONGARCH64)
+
+                // On LOONGARCH64 structs that are 1-16 bytes are returned by value in one/multiple register(s)
+                if (structSize <= (TARGET_POINTER_SIZE * 2))
+                {
+                    // setup wbPassType and useType indicate that this is return by value in multiple registers
+                    howToReturnStruct = SPK_ByValue;
+                    useType           = TYP_STRUCT;
+                }
+                else // a structSize that is 17-32 bytes in size
+                {
+                    // Otherwise we return this struct using a return buffer/byreference.
+                    // setup wbPassType and useType indicate that this is returned using a return buffer register
+                    //  (reference to a return buffer)
+                    howToReturnStruct = SPK_ByReference;
+                    useType           = TYP_UNKNOWN;
+                }
 
 #else //  TARGET_XXX
 
@@ -2222,6 +2279,8 @@ void Compiler::compSetProcessor()
         info.genCPU = CPU_X86_PENTIUM_4;
     else
         info.genCPU = CPU_X86;
+#elif defined(TARGET_LOONGARCH64)
+    info.genCPU = CPU_LOONGARCH64;
 #endif
 
     //
@@ -2402,6 +2461,10 @@ void Compiler::compSetProcessor()
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd);
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd_Arm64);
     }
+#endif
+
+#if defined(TARGET_LOONGARCH64)
+    //TODO: should add LOONGARCH64's features for LOONGARCH64.
 #endif
 
     instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
@@ -2588,6 +2651,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // For non-adaptive, padding limit is same as specified by the alignment.
         opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary;
     }
+#elif defined(TARGET_LOONGARCH64)
+    //TODO: should be adaptive on LoongArch64.
 #endif
 
     assert(isPow2(opts.compJitAlignLoopBoundary));
@@ -2933,6 +2998,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // 0 is default: use the appropriate frame type based on the function.
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
+
+#if defined(TARGET_LOONGARCH64)
+    // 0 is default: use the appropriate frame type based on the function.
+    opts.compJitSaveFpRaWithCalleeSavedRegisters = 0;
+#endif // defined(TARGET_LOONGARCH64)
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
@@ -3432,6 +3502,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
     }
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
+
+#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
+    if ((s_pJitMethodSet == nullptr) || s_pJitMethodSet->IsActiveMethod(info.compFullName, info.compMethodHash()))
+    {
+        opts.compJitSaveFpRaWithCalleeSavedRegisters = JitConfig.JitSaveFpRaWithCalleeSavedRegisters();
+    }
+#endif // defined(DEBUG) && defined(TARGET_LOONGARCH64)
 }
 
 #ifdef DEBUG
@@ -4030,7 +4107,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -4073,6 +4150,10 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     // TODO-ARM64-CQ: update this!
     JITDUMP(" Returning true (ARM64)\n\n");
+    return true; // just always assume we'll need it, for now
+
+#elif defined(TARGET_LOONGARCH64)
+    JITDUMP(" Returning true (LOONGARCH64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #else  // TARGET_ARM
@@ -4198,7 +4279,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return false;
 #endif // TARGET_ARM
 }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings

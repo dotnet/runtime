@@ -34,7 +34,7 @@ inline bool compMacOsArm64Abi()
 }
 inline bool compFeatureArgSplit()
 {
-    return TargetArchitecture::IsArm32 || (TargetOS::IsWindows && TargetArchitecture::IsArm64);
+    return TargetArchitecture::IsLoongArch64 || TargetArchitecture::IsArm32 || (TargetOS::IsWindows && TargetArchitecture::IsArm64);
 }
 inline bool compUnixX86Abi()
 {
@@ -51,6 +51,8 @@ inline bool compUnixX86Abi()
 #define TARGET_READABLE_NAME "ARM"
 #elif defined(TARGET_ARM64)
 #define TARGET_READABLE_NAME "ARM64"
+#elif defined(TARGET_LOONGARCH64)
+#define TARGET_READABLE_NAME "LOONGARCH64"
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -67,6 +69,10 @@ inline bool compUnixX86Abi()
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
+#define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 12
+
+#elif defined(TARGET_LOONGARCH64)
 #define REGMASK_BITS 64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
@@ -170,6 +176,27 @@ enum _regMask_enum : unsigned
 #include "register.h"
 };
 
+#elif defined(TARGET_LOONGARCH64)
+
+enum _regNumber_enum : unsigned
+{
+#define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
+#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#include "register.h"
+
+    REG_COUNT,
+    REG_NA           = REG_COUNT,
+    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
+};
+
+enum _regMask_enum : unsigned __int64
+{
+    RBM_NONE = 0,
+#define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
+#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#include "register.h"
+};
+
 #else
 #error Unsupported target architecture
 #endif
@@ -185,7 +212,7 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 typedef unsigned __int64 regMaskTP;
 #else
 typedef unsigned       regMaskTP;
@@ -237,6 +264,8 @@ typedef unsigned char   regNumberSmall;
 #include "targetarm.h"
 #elif defined(TARGET_ARM64)
 #include "targetarm64.h"
+#elif defined(TARGET_LOONGARCH64)
+#include "targetloongarch64.h"
 #else
   #error Unsupported or unset target architecture
 #endif
@@ -536,7 +565,7 @@ inline regMaskTP genRegMask(regNumber reg)
 
 inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE */)
 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64)
     assert(genIsValidFloatReg(reg));
     assert((unsigned)reg < ArrLen(regMasks));
     return regMasks[reg];
@@ -672,7 +701,7 @@ inline bool isFloatRegType(var_types type)
 C_ASSERT((RBM_ALLINT & RBM_SPBASE) == RBM_NONE);
 C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RBM_NONE);
 
-#if ETW_EBP_FRAMED
+#if ETW_EBP_FRAMED && !defined(TARGET_LOONGARCH64)
 // Frame pointer isn't either if we're supporting ETW frame chaining
 C_ASSERT((RBM_ALLINT & RBM_FPBASE) == RBM_NONE);
 C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);

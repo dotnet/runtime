@@ -46,6 +46,26 @@ JMP_SMALL(lt    , ge    , blt    )  // LT
 JMP_SMALL(gt    , le    , bgt    )  // GT
 JMP_SMALL(le    , gt    , ble    )  // LE
 
+#elif defined(TARGET_LOONGARCH64)
+
+/* TODO for LOONGARCH: should redesign!!! */
+//       jump   reverse instruction condcode
+JMP_SMALL(jmp   , jmp   , b      )  // AL always
+JMP_SMALL(eq    , ne    , beq    )  // EQ
+JMP_SMALL(ne    , eq    , bne    )  // NE
+//JMP_SMALL(hs    , lo    , bgez    )  // HS also CS
+//JMP_SMALL(lo    , hs    , bltz    )  // LO also CC
+//JMP_SMALL(mi    , pl    , bmi    )  // MI
+//JMP_SMALL(pl    , mi    , bpl    )  // PL
+//JMP_SMALL(vs    , vc    , bvs    )  // VS
+//JMP_SMALL(vc    , vs    , bvc    )  // VC
+//JMP_SMALL(hi    , ls    , bhi    )  // HI
+//JMP_SMALL(ls    , hi    , bls    )  // LS
+//JMP_SMALL(gez    , ltz    , bgez    )  // GE
+//JMP_SMALL(gtz    , lez    , bgtz    )  // GT
+//JMP_SMALL(ltz    , gez    , bltz    )  // LT
+//JMP_SMALL(lez    , gtz    , blez    )  // LE
+
 #else
   #error Unsupported or unset target architecture
 #endif // target type

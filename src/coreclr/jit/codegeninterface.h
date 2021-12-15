@@ -114,6 +114,8 @@ private:
     static const insFlags instInfo[INS_count];
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     static const BYTE instInfo[INS_count];
+#elif defined(TARGET_LOONGARCH64)
+    static const BYTE instInfo[INS_count];
 #else
 #error Unsupported target architecture
 #endif
@@ -195,6 +197,11 @@ public:
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value) = 0;
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const      = 0;
 #endif // TARGET_ARM64
+
+#ifdef TARGET_LOONGARCH64
+    virtual void SetSaveFpRaWithAllCalleeSavedRegisters(bool value) = 0;
+    virtual bool IsSaveFpRaWithAllCalleeSavedRegisters() const      = 0;
+#endif // TARGET_LOONGARCH64
 
     regNumber genGetThisArgReg(GenTreeCall* call) const;
 
@@ -305,7 +312,11 @@ public:
     bool validImmForAdd(target_ssize_t imm, insFlags flags);
     bool validImmForAlu(target_ssize_t imm);
     bool validImmForMov(target_ssize_t imm);
+#ifdef TARGET_LOONGARCH64
+    bool validImmForBAL(ssize_t addr);
+#else
     bool validImmForBL(ssize_t addr);
+#endif
 
     instruction ins_Load(var_types srcType, bool aligned = false);
     instruction ins_Store(var_types dstType, bool aligned = false);
@@ -360,7 +371,7 @@ public:
         m_cgInterruptible = value;
     }
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
     bool GetHasTailCalls()
     {
@@ -374,7 +385,7 @@ public:
 
 private:
     bool m_cgInterruptible;
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     bool m_cgHasTailCalls;
 #endif // TARGET_ARMARCH
 

@@ -132,6 +132,8 @@ const char* getRegName(regNumber reg)
     static const char* const regNames[] = {
 #if defined(TARGET_ARM64)
 #define REGDEF(name, rnum, mask, xname, wname) xname,
+#elif defined(TARGET_LOONGARCH64)
+#define REGDEF(name, rnum, mask, xname, wname) xname,
 #else
 #define REGDEF(name, rnum, mask, sname) sname,
 #endif
@@ -217,7 +219,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
         return regName;
     }
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     static const char* regNamesFloat[] = {
 #define REGDEF(name, rnum, mask, xname, wname) xname,
@@ -316,6 +318,14 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                 }
 #elif defined(TARGET_X86)
 // No register ranges
+
+#elif defined(TARGET_LOONGARCH64)
+                if (REG_A0 <= regNum && regNum <= REG_X0)
+                {
+                    regHead    = regNum;
+                    inRegRange = true;
+                    sep        = "-";
+                }
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
@@ -325,10 +335,12 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
             // We've already printed a register. Is this the end of a range?
             else if ((regNum == REG_INT_LAST) || (regNum == REG_R17) // last register before TEB
                      || (regNum == REG_R28))                         // last register before FP
-#else                                                                // TARGET_ARM64
+#elif defined(TARGET_LOONGARCH64)
+            else if ((regNum == REG_INT_LAST) || (regNum == REG_X0))
+#else                                                                // TARGET_LOONGARCH64
             // We've already printed a register. Is this the end of a range?
             else if (regNum == REG_INT_LAST)
-#endif                                                               // TARGET_ARM64
+#endif                                                               // TARGET_LOONGARCH64
             {
                 const char* nam = getRegName(regNum);
                 printf("%s%s", sep, nam);

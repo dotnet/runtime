@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 const regMaskSmall regMasks[] = {
 #define REGDEF(name, rnum, mask, xname, wname) mask,
 #include "register.h"
@@ -229,6 +229,8 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_r
     rsMaskResvd = RBM_NONE;
 
 #ifdef TARGET_ARMARCH
+    rsMaskCalleeSaved = RBM_NONE;
+#elif defined(TARGET_LOONGARCH64)
     rsMaskCalleeSaved = RBM_NONE;
 #endif // TARGET_ARMARCH
 
