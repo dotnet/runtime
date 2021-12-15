@@ -1132,12 +1132,12 @@ jobs:
       testGroup: innerloop
       nameSuffix: NativeAOT
       buildArgs: clr.jit+clr.tools+clr.nativeaotlibs+libs -rc $(_BuildConfig) -lc Release
-      extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml.yml
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+      extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+#      condition: >-
+#        or(
+#          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+#          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+#          eq(variables['isFullMatrix'], true))
 
 #
 # Libraries Release Test Execution against a release mono runtime.
