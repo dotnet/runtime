@@ -4806,7 +4806,8 @@ bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
     {
         return false;
     }
-    if ((funcAttr.m_func != VNF_GE_UN) && (funcAttr.m_func != VNF_GT_UN))
+    if ((funcAttr.m_func != VNF_GE_UN) && (funcAttr.m_func != VNF_GT_UN) && (funcAttr.m_func != VNF_LE_UN) &&
+        (funcAttr.m_func != VNF_LT_UN))
     {
         return false;
     }
@@ -4821,7 +4822,6 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
     assert(IsVNConstantBound(vn) || isUnsignedCnsBnd);
     assert(info);
 
-    // Do we have var < 100?
     VNFuncApp funcAttr;
     GetVNFunc(vn, &funcAttr);
 
@@ -4837,6 +4837,16 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
     {
         assert(isUnsignedCnsBnd);
         op = GT_GE;
+    }
+    else if (funcAttr.m_func == VNF_LT_UN)
+    {
+        assert(isUnsignedCnsBnd);
+        op = GT_LT;
+    }
+    else if (funcAttr.m_func == VNF_LE_UN)
+    {
+        assert(isUnsignedCnsBnd);
+        op = GT_LE;
     }
     else
     {

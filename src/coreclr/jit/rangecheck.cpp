@@ -846,7 +846,6 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             case GT_GT:
             case GT_GE:
                 pRange->lLimit = limit;
-                assert(!isUnsigned);
                 break;
 
             case GT_EQ:
