@@ -116,7 +116,7 @@ struct ifaddrs {
 #endif
 
 #if !HAVE_GETIFADDRS
-// we will try to load the getifaddrs and freeifaddrs functions dynamically (this is necessary on Android)
+// try to load the getifaddrs and freeifaddrs functions dynamically (this is necessary on Android)
 static int (*getifaddrs)(struct ifaddrs**) = NULL;
 static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
