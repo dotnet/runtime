@@ -14,13 +14,12 @@
 {
 }
 .assembly extern common{}
-.assembly testit
+.assembly 'branchoutoftryfinally'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module testit.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512

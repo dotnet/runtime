@@ -8713,7 +8713,7 @@ retry:
 					sregs [0] = sregs [1];
 
 					if (td->verbose_level) {
-						g_print ("Replace ldloca/stfld pair (off %p) :\n\t", ldloca->il_offset);
+						g_print ("Replace ldloca/stfld pair (off %p) :\n\t", (void *)(uintptr_t) ldloca->il_offset);
 						dump_interp_inst (ins);
 					}
 					needs_retry = TRUE;

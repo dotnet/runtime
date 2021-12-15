@@ -19,7 +19,7 @@
            
   
 }
-.assembly 'test'
+.assembly 'huge_r8'
 {
 
 
@@ -27,7 +27,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 .namespace JitTest
 {
   .class private auto ansi Test
