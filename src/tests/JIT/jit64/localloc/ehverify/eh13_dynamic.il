@@ -10,7 +10,7 @@
 
 .assembly extern mscorlib{}
 .assembly extern common{}
-.assembly eh13{}
+.assembly 'eh13_dynamic'{}
 
 .class private auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object

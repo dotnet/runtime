@@ -19,12 +19,11 @@
 }
 .assembly extern common{}
 
-.assembly Except
+.assembly 'throw1dimarray'
 {
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module Except.EXE
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512

@@ -1499,6 +1499,9 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 	cfg->cbb = (MonoBasicBlock *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 	first_bb = cfg->cbb;
 
+	// This code can't handle the creation of new basic blocks
+	cfg->disable_inline_rgctx_fetch = TRUE;
+
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
 		MonoInst *prev = NULL;
@@ -1592,6 +1595,8 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 
 		if (cfg->verbose_level > 3) mono_print_bb (bb, "AFTER DECOMPOSE-ARRAY-ACCESS-OPTS ");
 	}
+
+	cfg->disable_inline_rgctx_fetch = FALSE;
 }
 
 typedef union {

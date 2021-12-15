@@ -1,13 +1,5 @@
 include(FindPythonInterp)
 
-function(addprefix var prefix list)
-  set(f)
-  foreach(i ${list})
-    set(f ${f} ${prefix}/${i})
-  endforeach()
-  set(${var} ${f} PARENT_SCOPE)
-endfunction()
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(GENERATE_SCRIPT ${CLR_DIR}/scripts/genEventPipe.py)

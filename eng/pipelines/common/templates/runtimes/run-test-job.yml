@@ -104,7 +104,7 @@ jobs:
 
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
       - name: runtimeFlavorArgs
-        value: '-excludemonofailures'
+        value: '-mono'
 
     - name: runtimeVariantArg
       value: ''
@@ -299,15 +299,6 @@ jobs:
     # in ReadyToRun jobs.
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg)
       displayName: Generate CORE_ROOT
-
-    # Overwrite coreclr runtime binaries with mono ones
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      - script: $(_msbuildCommand)
-                $(Build.SourcesDirectory)/src/mono/mono.proj
-                /t:PatchCoreClrCoreRoot
-                /p:Configuration=$(buildConfigUpper)
-                /p:TargetArchitecture=$(archType)
-        displayName: "Patch dotnet with mono"
 
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:

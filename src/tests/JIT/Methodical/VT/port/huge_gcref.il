@@ -17,7 +17,7 @@
            
   
 }
-.assembly 'test' // as "test"
+.assembly 'huge_gcref' // as "test"
 {
 
 
@@ -25,7 +25,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 .namespace JitTest
 {
   .class value private auto ansi sealed TestStruct extends [mscorlib]System.ValueType

@@ -8,9 +8,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly switchdefaultonly1 {}
+.assembly 'test2' {}
 .assembly extern xunit.core {}
-.module switchdefaultonly3_il_d.exe
 
 .class private auto ansi beforefieldinit switchdefaultonly1
        extends [mscorlib]System.Object

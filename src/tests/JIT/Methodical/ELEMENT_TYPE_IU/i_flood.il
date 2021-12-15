@@ -13,11 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'avg'// as "avg"
+.assembly 'i_flood'// as "avg"
 {
 }
 .assembly extern xunit.core {}
-.module 'avg.exe'
 // MVID: {BCA6096F-DF11-4FA3-BF16-EEDA01729535}
 .namespace AvgTest {
   .class private auto ansi Test extends [mscorlib]System.Object {

@@ -12,7 +12,7 @@
 {
 }
 .assembly extern xunit.core {}
-.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
+.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .namespace JitTest
 {
   .class private sequential ansi sealed beforefieldinit SimpleStruct
@@ -99,7 +99,7 @@
       IL_0028:  call       void [System.Console]System.Console::WriteLine(string)
       IL_002d:  ldc.i4.s   102
       IL_002f:  stloc.0
-      IL_0030:  br.s       EXIT
+      IL_0030:  br       EXIT
       IL_0032:  sizeof     JitTest.ComplexStruct2
       IL_0038:  sizeof     JitTest.ComplexStruct
       IL_003e:  ldc.i4.s   18
@@ -110,38 +110,40 @@
       IL_004d:  ldc.i4.s   103
       IL_004f:  stloc.0
       IL_0050:  br.s       EXIT
-      			
+
       NEXT1:
       			sizeof     JitTest.RefComplexStruct
-      			ldc.i4.s   68
+      			ldc.i4.s   72
       			beq.s  NEXT2
-      			
+
       				ldstr      "sizeof(RefComplexStruct) failed."
       				call       void [System.Console]System.Console::WriteLine(string)
       				ldc.i4.s   104
       				stloc.0
       				br.s       EXIT
-      
-      NEXT2:			
+
+      NEXT2:
       			sizeof     JitTest.RefComplexStruct2
       			sizeof     JitTest.ComplexStruct2
       			ldc.i4.1
       			shl
-      			ldc.i4.4
+      			ldc.i4.4 // Add 4 for the AppDomain field
+      			add
+      			ldc.i4.4 // Add 4 to ensure alignment for ComplexStruct2 (which contains longs)
       			add
       			beq.s  OK
-      			
+
       				ldstr      "sizeof(RefComplexStruct2) failed."
       				call       void [System.Console]System.Console::WriteLine(string)
       				ldc.i4.s   105
       				stloc.0
       				br.s       EXIT
-      
+
       OK:  ldstr      "sizeof passed"
       IL_0057:  call       void [System.Console]System.Console::WriteLine(string)
       IL_005c:  ldc.i4 100
       IL_005d:  stloc.0
-      
+
       EXIT: ldloc.0
       			ret
     }

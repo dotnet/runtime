@@ -22,7 +22,14 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
 
   <Type Name="BasicBlock">
     <DisplayString Condition="bbJumpKind==BBJ_COND || bbJumpKind==BBJ_ALWAYS || bbJumpKind==BBJ_LEAVE || bbJumpKind==BBJ_EHCATCHRET || bbJumpKind==BBJ_CALLFINALLY">BB{bbNum,d}->BB{bbJumpDest->bbNum,d}; {bbJumpKind,en}</DisplayString>
+    <DisplayString Condition="bbJumpKind==BBJ_SWITCH">BB{bbNum,d}; {bbJumpKind,en}; {bbJumpSwt->bbsCount} cases</DisplayString>
     <DisplayString>BB{bbNum,d}; {bbJumpKind,en}</DisplayString>
+  </Type>
+
+  <Type Name="Compiler::LoopDsc">
+    <DisplayString Condition="lpFlags &amp; LPFLG_REMOVED">REMOVED</DisplayString>
+    <DisplayString Condition="lpFlags &amp; LPFLG_HAS_PREHEAD">BB{lpTop->bbNum,d}-BB{lpBottom->bbNum,d} pre-h:BB{lpHead->bbNum,d} e:BB{lpEntry->bbNum,d} {lpFlags,en}</DisplayString>
+    <DisplayString>BB{lpTop->bbNum,d}-BB{lpBottom->bbNum,d} h:BB{lpHead->bbNum,d} e:BB{lpEntry->bbNum,d} {lpFlags,en}</DisplayString>
   </Type>
 
   <Type Name="EHblkDsc">

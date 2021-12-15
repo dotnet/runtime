@@ -31,7 +31,6 @@ import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    mono_wasm_set_main_args,
     mono_wasm_pre_init,
     mono_wasm_runtime_is_initialized,
     mono_wasm_on_runtime_initialized
@@ -58,7 +57,6 @@ import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from ".
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
-import { ArgsMarshalString } from "./method-binding";
 import {
     setI8, setI16, setI32, setI64,
     setU8, setU16, setU32, setF32, setF64,
@@ -68,6 +66,7 @@ import {
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
+import { mono_on_abort, mono_run_main, mono_run_main_and_exit } from "./run";
 
 const MONO = {
     // current "public" MONO API
@@ -81,6 +80,8 @@ const MONO = {
     mono_wasm_new_root_buffer,
     mono_wasm_new_root,
     mono_wasm_release_roots,
+    mono_run_main,
+    mono_run_main_and_exit,
 
     // for Blazor's future!
     mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
@@ -132,9 +133,9 @@ let exportedAPI: DotnetPublicAPI;
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
+    imports: { isES6: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { scriptDirectory: any, fetch: any, readAsync: any },
+    replacements: { scriptDirectory: any, fetch: any, readAsync: any, require: any },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -157,6 +158,10 @@ function initializeImportsAndExports(
             Configuration
         }
     };
+    if (exports.module.__undefinedConfig) {
+        module.disableDotnet6Compatibility = true;
+        module.configSrc = "./mono-config.json";
+    }
 
     // these could be overriden on DotnetModuleConfig
     if (!module.preInit) {
@@ -171,20 +176,21 @@ function initializeImportsAndExports(
     }
 
     if (!module.print) {
-        module.print = console.log;
+        module.print = console.log.bind(console);
     }
     if (!module.printErr) {
-        module.printErr = console.error;
+        module.printErr = console.error.bind(console);
     }
     module.imports = module.imports || <DotnetModuleConfigImports>{};
     if (!module.imports.require) {
-        module.imports.require = globalThis.require;
-    }
-    if (!module.imports.require) {
+        const originalRequire = replacements.require;
         module.imports.require = (name) => {
             const resolve = (<any>module.imports)[name];
+            if (!resolve && originalRequire) {
+                return originalRequire(name);
+            }
             if (!resolve)
-                throw new Error(`Please provide Module.imports.${name}`);
+                throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
             return resolve;
         };
     }
@@ -200,7 +206,11 @@ function initializeImportsAndExports(
     }
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
+    replacements.require = module.imports.require;
 
+    if (typeof module.disableDotnet6Compatibility === "undefined") {
+        module.disableDotnet6Compatibility = imports.isES6;
+    }
     // here we expose objects global namespace for tests and backward compatibility
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
         Object.assign(module, exportedAPI);
@@ -208,7 +218,7 @@ function initializeImportsAndExports(
         // backward compatibility
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        module.mono_bind_static_method = (fqn: string, signature: ArgsMarshalString): Function => {
+        module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
             console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
             return mono_bind_static_method(fqn, signature);
         };
@@ -269,6 +279,10 @@ function initializeImportsAndExports(
             // execution order == [2] ==
             return exportedAPI;
         });
+    }
+
+    if (!module.onAbort) {
+        module.onAbort = () => mono_on_abort;
     }
 
     // this code makes it possible to find dotnet runtime on a page via global namespace, even when there are multiple runtimes at the same time
@@ -345,7 +359,6 @@ const INTERNAL: any = {
     mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
     mono_profiler_init_aot: cwraps.mono_profiler_init_aot,
     mono_wasm_set_runtime_options,
-    mono_wasm_set_main_args: mono_wasm_set_main_args,
     mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
     mono_method_resolve,//MarshalTests.cs
     mono_bind_static_method,// MarshalTests.cs
