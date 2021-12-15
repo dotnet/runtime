@@ -259,7 +259,7 @@ namespace Mono.Linker
 				else if (Origin?.Provider is MemberReference memberRef)
 					sb.Append (memberRef.GetDisplayName ());
 				else if (Origin?.Provider is IMemberDefinition member)
-					sb.Append(member.FullName);
+					sb.Append (member.FullName);
 				else if (Origin?.Provider is AssemblyDefinition assembly)
 					sb.Append (assembly.Name.Name);
 				else
