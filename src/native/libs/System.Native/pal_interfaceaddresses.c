@@ -118,16 +118,13 @@ struct ifaddrs {
 typedef int (*getifaddrs_fptr)(struct ifaddrs**);
 typedef void (*freeifaddrs_fptr)(struct ifaddrs*);
 
-#if HAVE_GETIFADDRS
-static const getifaddrs_fptr getifaddrs_impl = getifaddrs;
-static const freeifaddrs_fptr freeifaddrs_impl = freeifaddrs;
-#else
+#if !HAVE_GETIFADDRS
 // we will try to load the getifaddrs and freeifaddrs functions dynamically (this is necessary on Android)
 static bool loading_getifaddrs_already_attempted = false;
-static getifaddrs_fptr getifaddrs_impl = NULL;
-static freeifaddrs_fptr freeifaddrs_impl = NULL;
+static getifaddrs_fptr getifaddrs = NULL;
+static freeifaddrs_fptr freeifaddrs = NULL;
 
-static bool ensure_getifaddrs_impl_available() {
+static bool ensure_getifaddrs_available() {
     // there is no reason to call this function multiple times even if it fails
     if (!loading_getifaddrs_already_attempted)
     {
@@ -136,12 +133,12 @@ static bool ensure_getifaddrs_impl_available() {
         void *libc = dlopen(LIBC_FILENAME, RTLD_NOW);
         if (libc)
         {
-            getifaddrs_impl = (getifaddrs_fptr)dlsym(libc, "getifaddrs");
-            freeifaddrs_impl = (freeifaddrs_fptr)dlsym(libc, "freeifaddrs");
+            getifaddrs = (getifaddrs_fptr)dlsym(libc, "getifaddrs");
+            freeifaddrs = (freeifaddrs_fptr)dlsym(libc, "freeifaddrs");
         }
     }
 
-    return getifaddrs_impl != NULL && freeifaddrs_impl != NULL;
+    return getifaddrs != NULL && freeifaddrs != NULL;
 }
 #endif
 
@@ -151,7 +148,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
 #if !HAVE_GETIFADDRS
-    if (!ensure_getifaddrs_impl_available())
+    if (!ensure_getifaddrs_available())
     {
         errno = ENOTSUP;
         return -1;
@@ -159,7 +156,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 #endif
 
     struct ifaddrs* headAddr;
-    if ((*getifaddrs_impl)(&headAddr) == -1)
+    if (getifaddrs(&headAddr) == -1)
     {
         return -1;
     }
@@ -177,7 +174,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
         char* result = if_indextoname(interfaceIndex, actualName);
         if (result == NULL)
         {
-            (*freeifaddrs_impl)(headAddr);
+            freeifaddrs(headAddr);
             return -1;
         }
 
@@ -287,7 +284,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 #endif
     }
 
-    (*freeifaddrs_impl)(headAddr);
+    freeifaddrs(headAddr);
 
     return 0;
 }
@@ -295,7 +292,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
 #if !HAVE_GETIFADDRS
-    if (!ensure_getifaddrs_impl_available())
+    if (!ensure_getifaddrs_available())
     {
         errno = ENOTSUP;
         return -1;
@@ -314,7 +311,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
     NetworkInterfaceInfo *nii;
 
-    if ((*getifaddrs_impl)(&head) == -1)
+    if (getifaddrs(&head) == -1)
     {
         assert(errno != 0);
         return -1;
@@ -500,7 +497,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     *addressCount = ip4count + ip6count;
 
     // Cleanup.
-    (*freeifaddrs_impl)(head);
+    freeifaddrs(head);
     if (socketfd != -1)
     {
         close(socketfd);
