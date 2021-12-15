@@ -389,7 +389,13 @@
       <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
-      <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths)" />
+    </ItemGroup>
+    <!-- Remove the cmd/sh scripts for merged test runner app bundles from our list. -->
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+      <MergedRunnableTestAppBundleScriptPathsPattern>@(MergedAssemblyMarkerPaths->'%(RootDir)%(Directory)AppBundle/**/*.$(TestScriptExtension)')</MergedRunnableTestAppBundleScriptPathsPattern>
+    </PropertyGroup>
+    <ItemGroup>
+      <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
     </ItemGroup>
   </Target>
 
