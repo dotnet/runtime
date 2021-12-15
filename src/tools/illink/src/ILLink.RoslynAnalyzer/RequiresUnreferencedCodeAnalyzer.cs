@@ -38,7 +38,7 @@ namespace ILLink.RoslynAnalyzer
 			get {
 				return symbolAnalysisContext => {
 					if (symbolAnalysisContext.Symbol is INamedTypeSymbol typeSymbol && !typeSymbol.HasAttribute (RequiresUnreferencedCodeAttribute)
-						&& typeSymbol.BaseType is INamedTypeSymbol baseType 
+						&& typeSymbol.BaseType is INamedTypeSymbol baseType
 						&& baseType.TryGetAttribute (RequiresUnreferencedCodeAttribute, out var requiresUnreferencedCodeAttribute)) {
 						var diag = Diagnostic.Create (s_typeDerivesFromRucClassRule,
 							typeSymbol.Locations[0],
