@@ -621,7 +621,6 @@ enum CorInfoHelpSig
     CORINFO_HELP_SIG_8_STACK,
     CORINFO_HELP_SIG_12_STACK,
     CORINFO_HELP_SIG_16_STACK,
-    CORINFO_HELP_SIG_8_VA, //2 arguments plus varargs
 
     CORINFO_HELP_SIG_EBPCALL, //special calling convention that uses EDX and
                               //EBP as arguments
