@@ -1045,7 +1045,6 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void NoFuzzyEncryptedPkcs8()
         {
             using (RSA key = RSAFactory.Create())
