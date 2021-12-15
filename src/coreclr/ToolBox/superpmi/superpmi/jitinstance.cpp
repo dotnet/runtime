@@ -346,6 +346,10 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64);
                     break;
 
+                case IMAGE_FILE_MACHINE_LOONGARCH64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
+                    break;
+
                 default:
                     LogError("Unknown target architecture");
                 break;

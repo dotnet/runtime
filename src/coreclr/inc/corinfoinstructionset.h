@@ -114,6 +114,11 @@ enum CORINFO_InstructionSet
     InstructionSet_AVXVNNI_X64=36,
 #endif // TARGET_X86
 
+#ifdef TARGET_LOONGARCH64
+    InstructionSet_Base=1,      // Base instructions available on all LOONGARCH64 platforms
+    InstructionSet_Atomics=2,   // ll/sc
+#endif //TARGET_LOONGARCH64
+
 };
 
 struct CORINFO_InstructionSetFlags

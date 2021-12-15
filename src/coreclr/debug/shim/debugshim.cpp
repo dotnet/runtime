@@ -21,6 +21,10 @@
 #define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 #endif
 
+#ifndef IMAGE_FILE_MACHINE_LOONGARCH64
+#define IMAGE_FILE_MACHINE_LOONGARCH64             0xDD64  // LOONGARCH64 Little-Endian
+#endif
+
 //*****************************************************************************
 // CLRDebuggingImpl implementation (ICLRDebugging)
 //*****************************************************************************
@@ -648,6 +652,8 @@ HRESULT CLRDebuggingImpl::FormatLongDacModuleName(__out_z __inout_ecount(cchBuff
     const WCHAR* pHostArch = W("arm");
 #elif defined(HOST_ARM64)
     const WCHAR* pHostArch = W("arm64");
+#elif defined(HOST_LOONGARCH64)
+    const WCHAR* pHostArch = W("loongarch64");
 #else
     _ASSERTE(!"Unknown host arch");
     return E_NOTIMPL;
@@ -680,6 +686,10 @@ HRESULT CLRDebuggingImpl::FormatLongDacModuleName(__out_z __inout_ecount(cchBuff
     else if(targetImageFileMachine == IMAGE_FILE_MACHINE_ARM64)
     {
         pTargetArch = W("arm64");
+    }
+    else if(targetImageFileMachine == IMAGE_FILE_MACHINE_LOONGARCH64)
+    {
+        pTargetArch = W("loongarch64");
     }
     else
     {

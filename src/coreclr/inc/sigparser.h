@@ -544,7 +544,11 @@ class SigParser
             }
             if (pPtr != NULL)
             {
+#if defined(TARGET_LOONGARCH64)
+                memcpy(pPtr, m_ptr, sizeof(void*));
+#else
                 *pPtr = *(void * UNALIGNED *)m_ptr;
+#endif
             }
             SkipBytes(sizeof(void *));
 

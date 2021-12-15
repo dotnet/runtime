@@ -185,6 +185,22 @@ inline BOOL CORCOMPILE_IS_FIXUP_TAGGED(SIZE_T fixup, PTR_CORCOMPILE_IMPORT_SECTI
         PCODE                m_pTarget;
     };
 
+#elif defined(TARGET_LOONGARCH64)
+    struct  CORCOMPILE_EXTERNAL_METHOD_THUNK
+    {
+        // Array of words to do the following:
+        // pcaddi   $r21, 0          ; Save the current address relative to which we will get slot ID and address to patch.
+        // ld.d     $r21, $r21, 16   ; Load the target address.
+        // jirl     $r0,$r21,0       ; Jump to the target
+        DWORD m_rgCode[3];
+
+        DWORD m_padding; //aligning stack to 16 bytes
+
+        // The target address - initially, this will point to ExternalMethodFixupStub.
+        // Post patchup by the stub, it will point to the actual method body.
+        PCODE m_pTarget;
+    };
+
 #endif
 
 //

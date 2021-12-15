@@ -68,6 +68,7 @@ typedef enum __PEKIND
     peAMD64     = 0x00000004,
     peARM       = 0x00000005,
     peARM64     = 0x00000006,
+    peLOONGARCH64 = 0x00000007,
     peInvalid   = 0xffffffff,
 } PEKIND;
 

@@ -57,6 +57,8 @@ ThreadInfo::Initialize()
     TRACE("Thread %04x PC %08lx SP %08lx\n", m_tid, (unsigned long)m_gpRegisters.ARM_pc, (unsigned long)m_gpRegisters.ARM_sp);
 #elif defined(__x86_64__)
     TRACE("Thread %04x RIP %016llx RSP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.rip, (unsigned long long)m_gpRegisters.rsp);
+#elif defined(__loongarch64)
+    TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.pc, (unsigned long long)m_gpRegisters.gpr[3]);
 #else
 #error "Unsupported architecture"
 #endif
@@ -221,6 +223,9 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         memcpy(context->D, m_vfpRegisters.fpregs, sizeof(context->D));
 #endif
     }
+#elif defined(__loongarch64)
+    assert(!"Unimplemented yet on Loongarch64!");
+#pragma message("Unimplemented yet on Loongarch64.")
 #else
 #error Platform not supported
 #endif

@@ -73,6 +73,11 @@ else
                 __ClangMinorVersion=9
                 __ExportSymbolizerPath=0
                 ;;
+            clang8.0)
+                __ClangMajorVersion=8
+                __ClangMinorVersion=0
+                __ExportSymbolizerPath=0
+                ;;
             *)
                 echo "Unknown arg: $i"
                 return 1

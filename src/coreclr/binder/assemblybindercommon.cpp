@@ -215,6 +215,8 @@ namespace BINDER_SPACE
                     *PeKind = peARM64;
                 else if (dwImageType == IMAGE_FILE_MACHINE_AMD64)
                     *PeKind = peAMD64;
+                else if (dwImageType == IMAGE_FILE_MACHINE_LOONGARCH64)
+                    *PeKind = peLOONGARCH64;
                 else
                 {
                     // We don't support other architectures
@@ -1447,6 +1449,8 @@ BOOL AssemblyBinderCommon::IsValidArchitecture(PEKIND kArchitecture)
         peARM;
 #elif defined(TARGET_ARM64)
         peARM64;
+#elif defined(TARGET_LOONGARCH64)
+        peLOONGARCH64;
 #else
         PORTABILITY_ASSERT("processArchitecture");
 #endif
