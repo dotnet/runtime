@@ -1336,6 +1336,14 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a pie section defined by an ellipse and two radial lines.
         /// </summary>
+        public void FillPie(Brush brush, RectangleF rect, float startAngle, float sweepAngle)
+        {
+            FillPie(brush, rect.X, rect.Y, rect.Width, rect.Height, startAngle, sweepAngle);
+        }
+
+        /// <summary>
+        /// Fills the interior of a pie section defined by an ellipse and two radial lines.
+        /// </summary>
         public void FillPie(Brush brush, float x, float y, float width, float height, float startAngle, float sweepAngle)
         {
             if (brush == null)
