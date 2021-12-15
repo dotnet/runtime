@@ -107,6 +107,7 @@ CE5b4bVi7nbp+SyaseWurZ0pGmM35N6FveZ6DXK05Vrc8gf3paUiXhU=",
         }
 
         [Fact]
+        [ActiveIssue("TODO - create GH issue", TestPlatforms.Android)]
         public static void ReadWriteDiminishedDPPrivatePkcs1()
         {
             ReadWriteBase64PrivatePkcs1(
@@ -173,7 +174,6 @@ t4Ru7LOzqUULk+Y3+gSNHX34/+Jw+VCq5hHlolNkpw+thqvba8lMvzMCAwEAAQ==",
         }
 
         [ConditionalFact(nameof(SupportsLargeExponent))]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
