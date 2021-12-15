@@ -6,10 +6,11 @@ agent:
   flavor: b1.large
 
 commands:
-  - ./build.sh -subset clr+libs+libs.tests -test -a x64 -rc checked -lc release -ci -ninja
-  - command: ./src/tests/build.sh x64 checked ci
+  - ./build.sh -subset clr+libs+libs.tests -test -a x64 -c release -ci -ninja
+  - ./build.sh -subset host+packs -a x64 -c release
+  - command: ./src/tests/build.sh x64 release ci
     retries: 1
-  - ./src/tests/run.sh x64 checked
+  - ./src/tests/run.sh x64 release
   - ./build.sh clr.paltests
   - ./artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
 
@@ -22,5 +23,4 @@ triggers:
 artifacts: 
   linux64:
     paths:
-      - artifacts/bin/coreclr/**
-      - artifacts/repro/**
+      - artifacts/packages/Release/Shipping/dotnet-runtime-7.0.0-dev-linux-x64.tar.gz

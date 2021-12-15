@@ -6,9 +6,10 @@ agent:
   flavor: b1.xlarge
 
 commands:
-  - build.cmd -subset clr+libs+libs.tests -test -a x64 -rc checked -lc release -ci
-  - src\tests\build.cmd x64 checked ci
-  - src\tests\run.cmd x64 checked
+  - build.cmd -subset clr+libs+libs.tests -test -a x64 -c release -ci
+  - build.cmd -subset host+packs -a x64 -c release
+  - src\tests\build.cmd x64 release ci
+  - src\tests\run.cmd x64 release
 
 triggers:
   pull_requests:
@@ -19,5 +20,4 @@ triggers:
 artifacts: 
   win64:
     paths:
-      - artifacts\bin\coreclr\**
-      - artifacts\repro\**
+      - artifacts\packages\Release\Shipping\dotnet-runtime-7.0.0-dev-win-x64.zip
