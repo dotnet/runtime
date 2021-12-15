@@ -502,7 +502,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             base.Write(data);
         }
 
-        private void Write<T>(ElementType type, T value) where T : struct => Write((byte)type, value);
+        internal void Write<T>(ElementType type, T value) where T : struct => Write((byte)type, value);
 
         private void Write<T1, T2>(T1 type, T2 value) where T1 : struct where T2 : struct
         {
@@ -1535,6 +1535,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.InvokeMethod, commandParamsWriter, token);
             retDebuggerCmdReader.ReadByte(); //number of objects returned.
             return await CreateJObjectForVariableValue(retDebuggerCmdReader, varName, false, -1, false, token);
+        }
+
+        public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, string varName, CancellationToken token)
+        {
+            using var commandParamsObjWriter = new MonoBinaryWriter();
+            commandParamsObjWriter.Write(ElementType.Class, objectId);
+            return await InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, varName, token);
         }
 
         public async Task<int> GetPropertyMethodIdByName(int typeId, string propertyName, CancellationToken token)

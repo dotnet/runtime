@@ -347,9 +347,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "object":
                                 var typeIds = await context.SdbAgent.GetTypeIdFromObject(int.Parse(objectId.Value), true, token);
                                 int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], "ToArray", token);
-                                var commandParamsObjWriter = new MonoBinaryWriter();
-                                commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
-                                var toArrayRetMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, elementAccess.Expression.ToString(), token);
+                                var toArrayRetMethod = await context.SdbAgent.InvokeMethodInObject(int.Parse(objectId.Value), methodId, elementAccess.Expression.ToString(), token);
                                 rootObject = await GetValueFromObject(toArrayRetMethod, token);
                                 DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
                                 rootObject["value"] = await context.SdbAgent.GetArrayValues(int.Parse(arrayObjectId.Value), token);

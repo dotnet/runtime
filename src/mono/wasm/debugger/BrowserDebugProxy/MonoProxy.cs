@@ -688,7 +688,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "array":
                         return await context.SdbAgent.GetArrayValues(int.Parse(objectId.Value), token);
                     case "object":
+                    {
+                        if (objectId.SubScheme == "methodId") //getter
+                        {
+                            var objRet = await context.SdbAgent.InvokeMethodInObject(int.Parse(objectId.Value), int.Parse(objectId.SubValue), "", token);
+                            return new JArray(objRet);
+                        }
                         return await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), objectValuesOpt, token);
+                    }
                     case "pointer":
                         return new JArray{await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token)};
                     case "cfo_res":
