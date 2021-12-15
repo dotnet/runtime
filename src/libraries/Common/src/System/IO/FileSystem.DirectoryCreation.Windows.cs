@@ -104,7 +104,7 @@ namespace System.IO
                         else
                         {
                             // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
-                            if (FileExists(name) || (!DirectoryExists(name, out currentError) && currentError == Interop.Errors.ERROR_ACCESS_DENIED))
+                            if (FileExists(name) || !DirectoryExists(name, out currentError) && currentError == Interop.Errors.ERROR_ACCESS_DENIED)
                             {
                                 firstError = currentError;
                                 errorString = name;
