@@ -6393,7 +6393,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     // If are an altjit and have patchpoint info, we might need to tweak the frame size
     // so it's plausible for the altjit architecture.
     //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    if (!info.compMatchedVM && compileFlags->IsSet(JitFlags::JIT_FLAG_OSR))
     {
         assert(info.compLocalsCount == info.compPatchpointInfo->NumberOfLocals());
         const int totalFrameSize = info.compPatchpointInfo->TotalFrameSize();
