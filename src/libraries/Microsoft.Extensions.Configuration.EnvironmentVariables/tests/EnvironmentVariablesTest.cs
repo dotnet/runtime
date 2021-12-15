@@ -220,7 +220,6 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void AddEnvironmentVariables_Bind_PrefixShouldNormalize()
         {
             try
@@ -242,7 +241,6 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void AddEnvironmentVariables_UsingDoubleUnderscores_Bind_PrefixWontNormalize()
         {
             try
