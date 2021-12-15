@@ -176,12 +176,7 @@
       <AotCompilerCopyLocal Include="$(CoreCLRArtifactsPath)aotsdk/**/*" TargetDir="nativeaot/sdk/" />
       <AotCompilerCopyLocal Include="$(CoreCLRArtifactsPath)build/**/*" TargetDir="nativeaot/build/" />
       <AotCompilerCopyLocal Include="$(TargetingPackPath)/*" TargetDir="nativeaot/framework/" />
-
-      <!-- Works around https://github.com/dotnet/runtime/issues/62372 -->
-      <_FixedRuntimeCopyLocalItems Include="@(RuntimeCopyLocalItems)" />
-      <_FixedRuntimeCopyLocalItems Remove="@(_FixedRuntimeCopyLocalItems)" Condition="'%(Filename)' == 'Microsoft.Interop.DllImportGenerator'" />
-
-      <AotCompilerCopyLocal Include="@(_FixedRuntimeCopyLocalItems)" TargetDir="nativeaot/framework/" />
+      <AotCompilerCopyLocal Include="@(RuntimeCopyLocalItems)" TargetDir="nativeaot/framework/" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopOS)' == 'true' " >
