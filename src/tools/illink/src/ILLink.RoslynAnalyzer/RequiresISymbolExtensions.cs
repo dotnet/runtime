@@ -1,12 +1,33 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer
 {
 	public static class RequiresISymbolExtensions
 	{
+		// TODO: Consider sharing with linker DoesMethodRequireUnreferencedCode method
+		/// <summary>
+		/// True if the target of a call is considered to be annotated with the Requires... attribute
+		/// </summary>
+		public static bool TargetHasRequiresAttribute (this ISymbol member, string requiresAttribute, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttributeData)
+		{
+			requiresAttributeData = null;
+			if (member.IsStaticConstructor ())
+				return false;
+
+			if (member.TryGetAttribute (requiresAttribute, out requiresAttributeData))
+				return true;
+
+			// Also check the containing type
+			if (member.IsStatic || member.IsConstructor ())
+				return member.ContainingType.TryGetAttribute (requiresAttribute, out requiresAttributeData);
+
+			return false;
+		}
+
 		// TODO: Consider sharing with linker IsMethodInRequiresUnreferencedCodeScope method
 		/// <summary>
 		/// True if the source of a call is considered to be annotated with the Requires... attribute

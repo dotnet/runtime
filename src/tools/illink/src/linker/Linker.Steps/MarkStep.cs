@@ -1920,7 +1920,7 @@ namespace Mono.Linker.Steps
 				string formatString = SharedStrings.RequiresOnBaseClassMessage;
 				string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (effectiveRequiresUnreferencedCode.Message);
 				string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (effectiveRequiresUnreferencedCode.Url);
-				string message = string.Format (formatString, type, type.BaseType.GetDisplayName (), arg1, arg2);
+				string message = string.Format (formatString, type.GetDisplayName (), type.BaseType.GetDisplayName (), arg1, arg2);
 				Context.LogWarning (message, 2109, currentOrigin, MessageSubCategory.TrimAnalysis);
 			}
 

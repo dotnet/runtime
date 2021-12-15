@@ -162,7 +162,7 @@
   <data name="RequiresAssemblyFilesAttributeMismatchMessage" xml:space="preserve">
     <value>{0}. 'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
-	<data name="RequiresAssemblyFilesAttributeMismatchTitle" xml:space="preserve">
+  <data name="RequiresAssemblyFilesAttributeMismatchTitle" xml:space="preserve">
     <value>'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
   <data name="BaseRequiresMismatchMessage" xml:space="preserve">

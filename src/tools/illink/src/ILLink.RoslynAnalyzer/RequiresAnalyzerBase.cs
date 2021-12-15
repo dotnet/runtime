@@ -29,6 +29,7 @@ namespace ILLink.RoslynAnalyzer
 		private protected virtual ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions { get; } = ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)>.Empty;
 
 		private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
+		private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
 
 		public override void Initialize (AnalysisContext context)
 		{
@@ -197,6 +198,9 @@ namespace ILLink.RoslynAnalyzer
 				foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
 					context.RegisterSyntaxNodeAction (extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
 
+				foreach (var extraSymbolAction in ExtraSymbolActions)
+					context.RegisterSymbolAction (extraSymbolAction.Action, extraSymbolAction.SymbolKind);
+
 				void CheckAttributeInstantiation (
 					SymbolAnalysisContext symbolAnalysisContext,
 					ISymbol symbol)
@@ -230,7 +234,10 @@ namespace ILLink.RoslynAnalyzer
 					while (member is IMethodSymbol method && method.OverriddenMethod != null && SymbolEqualityComparer.Default.Equals (method.ReturnType, method.OverriddenMethod.ReturnType))
 						member = method.OverriddenMethod;
 
-					if (!TargetHasRequiresAttribute (member, out var requiresAttribute))
+					if (!member.TargetHasRequiresAttribute (RequiresAttributeName, out var requiresAttribute))
+						return;
+
+					if (!VerifyAttributeArguments (requiresAttribute))
 						return;
 
 					ReportRequiresDiagnostic (operationContext, member, requiresAttribute);
@@ -259,7 +266,6 @@ namespace ILLink.RoslynAnalyzer
 								ReportMismatchInAttributesDiagnostic (symbolAnalysisContext, implementation, member, isInterface: true);
 						}
 					}
-
 				}
 			});
 		}
@@ -340,28 +346,6 @@ namespace ILLink.RoslynAnalyzer
 			bool member1HasAttribute = member1.IsOverrideInRequiresScope (RequiresAttributeName);
 			bool member2HasAttribute = member2.IsOverrideInRequiresScope (RequiresAttributeName);
 			return member1HasAttribute ^ member2HasAttribute;
-		}
-
-		// TODO: Consider sharing with linker DoesMethodRequireUnreferencedCode method
-		/// <summary>
-		/// True if the target of a call is considered to be annotated with the Requires... attribute
-		/// </summary>
-		protected bool TargetHasRequiresAttribute (ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
-		{
-			requiresAttribute = null;
-			if (member.IsStaticConstructor ()) {
-				return false;
-			}
-
-			if (TryGetRequiresAttribute (member, out requiresAttribute)) {
-				return true;
-			}
-
-			// Also check the containing type
-			if (member.IsStatic || member.IsConstructor ()) {
-				return TryGetRequiresAttribute (member.ContainingType, out requiresAttribute);
-			}
-			return false;
 		}
 
 		protected abstract string GetMessageFromAttribute (AttributeData requiresAttribute);
