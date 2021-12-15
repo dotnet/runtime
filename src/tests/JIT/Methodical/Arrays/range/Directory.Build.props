@@ -6,6 +6,6 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
 
   <PropertyGroup>
-    <AssemblyName>$(MSBuildProjectName.Replace("_d", "").Replace("_r", ""))</AssemblyName>
+    <AssemblyName>$(MSBuildProjectName.Replace("_il_d", "").Replace("_il_r", ""))</AssemblyName>
   </PropertyGroup>
 </Project>
