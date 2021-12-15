@@ -199,7 +199,6 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==",
         }
 
         [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadWriteRsa16384SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
