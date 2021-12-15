@@ -97,11 +97,11 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
 
 
         [Fact]
-        public void AddUserSecrets_DoesNotThrowsIfOptional()
+        public void AddUserSecrets_DoesNotThrowsIfOptionalByDefault()
         {
             var config = new ConfigurationBuilder()
-                .AddUserSecrets<string>(optional: true)
-                .AddUserSecrets(typeof(List<>).Assembly, optional: true)
+                .AddUserSecrets<string>()
+                .AddUserSecrets(typeof(List<>).Assembly)
                 .Build();
 
             Assert.Empty(config.AsEnumerable());
