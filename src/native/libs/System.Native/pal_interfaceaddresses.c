@@ -125,7 +125,7 @@ static freeifaddrs_fptr freeifaddrs = NULL;
 
 static bool loading_getifaddrs_already_attempted = false;
 
-static bool ensure_getifaddrs_available() {
+static bool ensure_getifaddrs_is_loaded() {
     // there is no reason to call this function multiple times even if it fails
     if (!loading_getifaddrs_already_attempted)
     {
@@ -149,7 +149,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
 #if !HAVE_GETIFADDRS
-    if (!ensure_getifaddrs_available())
+    if (!ensure_getifaddrs_is_loaded())
     {
         errno = ENOTSUP;
         return -1;
@@ -293,7 +293,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
 #if !HAVE_GETIFADDRS
-    if (!ensure_getifaddrs_available())
+    if (!ensure_getifaddrs_is_loaded())
     {
         errno = ENOTSUP;
         return -1;
