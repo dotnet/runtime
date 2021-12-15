@@ -33,6 +33,9 @@
 #elif HAVE_IOS_NET_IFMEDIA_H
 #include "ios/net/if_media.h"
 #endif
+#if !HAVE_GETIFADDRS
+#include <dlfcn.h>
+#endif
 
 #if defined(AF_PACKET)
 #include <sys/ioctl.h>
