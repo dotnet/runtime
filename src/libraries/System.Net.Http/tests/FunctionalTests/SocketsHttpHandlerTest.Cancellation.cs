@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -102,6 +103,70 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, server => Task.CompletedTask, // doesn't actually connect to server
             options: new GenericLoopbackOptions() { UseSsl = false });
+        }
+
+        [OuterLoop]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(bool useSsl)
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                int connectCount = 0;
+
+                TaskCompletionSource tcsFirstRequestCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                using (var handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.ConnectCallback = async (context, token) =>
+                    {
+                        // Wait until first request is cancelled and has completed
+                        await tcsFirstRequestCanceled.Task;
+
+                        if (Interlocked.Increment(ref connectCount) == 1)
+                        {
+                            // Fail the first connection attempt
+                            throw new Exception("Connect failed");
+                        }
+                        else
+                        {
+                            // Succeed the second connection attempt
+                            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                            await socket.ConnectAsync(context.DnsEndPoint, token);
+                            return new NetworkStream(socket, ownsSocket: true);
+                        }
+                    };
+
+                    using CancellationTokenSource cts = new CancellationTokenSource();
+                    Task<HttpResponseMessage> t1 = client.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, cts.Token);
+                    Task<HttpResponseMessage> t2 = client.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, default);
+
+                    // Cancel the first message and wait for it to complete
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t1);
+
+                    // Signal connections to proceed
+                    tcsFirstRequestCanceled.SetResult();
+
+                    // Second request should succeed, even though the first connection failed
+                    HttpResponseMessage resp2 = await t2;
+                    Assert.Equal(HttpStatusCode.OK, resp2.StatusCode);
+                    Assert.Equal("Hello world", await resp2.Content.ReadAsStringAsync());
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: "Hello world");
+            },
+            options: new GenericLoopbackOptions() { UseSsl = useSsl });
         }
 
         [OuterLoop("Incurs significant delay")]
