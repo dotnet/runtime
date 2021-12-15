@@ -34,8 +34,8 @@ jobs:
 
     # Linux armv6
     - ${{ if eq(parameters.platform, 'Linux_armv6') }}:
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - (Raspbian.10.Armv6.Open)Raspbian.9.Arm32.IoT.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:raspbian-10-helix-arm32v6-20211215185610-60748cc
+#      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+      - (Raspbian.10.Armv6.Open)Raspbian.9.Arm32.IoT.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:raspbian-10-helix-arm32v6-20211215185610-60748cc
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
