@@ -115,14 +115,15 @@ struct ifaddrs {
 };
 #endif
 
+#if !HAVE_GETIFADDRS
+// we will try to load the getifaddrs and freeifaddrs functions dynamically (this is necessary on Android)
 typedef int (*getifaddrs_fptr)(struct ifaddrs**);
 typedef void (*freeifaddrs_fptr)(struct ifaddrs*);
 
-#if !HAVE_GETIFADDRS
-// we will try to load the getifaddrs and freeifaddrs functions dynamically (this is necessary on Android)
-static bool loading_getifaddrs_already_attempted = false;
 static getifaddrs_fptr getifaddrs = NULL;
 static freeifaddrs_fptr freeifaddrs = NULL;
+
+static bool loading_getifaddrs_already_attempted = false;
 
 static bool ensure_getifaddrs_available() {
     // there is no reason to call this function multiple times even if it fails
