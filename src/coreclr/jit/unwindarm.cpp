@@ -1628,7 +1628,8 @@ void UnwindFragmentInfo::Allocate(
         endOffset = ufiNext->GetStartOffset();
     }
 
-    assert(endOffset > startOffset);
+    // Either we have valid codeSize or the IG is empty.
+    assert((endOffset > startOffset) || (this->ufiEmitLoc->GetIG()->igSize == 0));
     codeSize = endOffset - startOffset;
 
     // Finalize the fragment unwind block to hand to the VM
