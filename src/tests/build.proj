@@ -214,7 +214,7 @@
     <MakeDir Directories="$(BuildDir)"/>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)"/>
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" Exclude="$(_CMDDIR)\**\AppBundle\*.$(TestScriptExtension)" />
       <TestAssemblies Include="@(AllCMDsPresent->'%(RelativeDir)%(Filename).dll')" />
       <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
@@ -290,7 +290,7 @@
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
     </PropertyGroup>
     <ItemGroup>
-      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" />
+      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" Exclude="$(_CMDDIR)\**\AppBundle\*.sh" />
     </ItemGroup>
     <ItemGroup>
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />

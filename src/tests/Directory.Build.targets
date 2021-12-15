@@ -16,6 +16,8 @@
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+    <!-- Merged test runner assemblies might not have any non-generated sources, and that's okay -->
+    <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
