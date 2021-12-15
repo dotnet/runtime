@@ -47,7 +47,7 @@ namespace System.IO
                 int i = length - 1;
                 while (i >= lengthRoot && !somePathExists)
                 {
-                    string dir = fullPath[..(i + 1)];
+                    string dir = fullPath[..length];
 
                     if (!DirectoryExists(dir)) // Create only the ones missing
                     {
