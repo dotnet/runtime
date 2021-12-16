@@ -9464,9 +9464,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
         excSetPair = ValueNumStore::VNPForEmptyExcSet();
         normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc);
     }
-    // TODO-List-Cleanup: the "tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN" case is a quirk
-    // to get zero diffs - Vector2(float, float) was imported with lists - remove it.
-    else if ((tree->GetOperandCount() > 2) || (tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN))
+    else if (tree->GetOperandCount() > 2)
     {
         // We have a SIMD node with 3 or more args. To retain the
         // previous behavior, we will generate a unique VN for this case.
