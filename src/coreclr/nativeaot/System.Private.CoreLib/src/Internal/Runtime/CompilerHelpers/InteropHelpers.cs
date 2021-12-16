@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -591,6 +592,22 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
         }
 
+        public static unsafe object InitializeCustomMarshaller(RuntimeTypeHandle pParameterType, RuntimeTypeHandle pMarshallerType, string cookie, delegate*<string, object> getInstanceMethod)
+        {
+            if (getInstanceMethod == null)
+            {
+                throw new ApplicationException();
+            }
+
+            var marshaller = CustomMarshallerTable.s_customMarshallersTable.GetOrAdd(new CustomMarshallerKey(pParameterType, pMarshallerType, cookie, getInstanceMethod));
+            if (marshaller == null)
+            {
+                throw new ApplicationException();
+            }
+
+            return marshaller;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct ModuleFixupCell
         {
@@ -607,6 +624,53 @@ namespace Internal.Runtime.CompilerHelpers
             public IntPtr MethodName;
             public ModuleFixupCell* Module;
             public CharSet CharSetMangling;
+        }
+
+        internal unsafe struct CustomMarshallerKey : IEquatable<CustomMarshallerKey>
+        {
+            public CustomMarshallerKey(RuntimeTypeHandle pParameterType, RuntimeTypeHandle pMarshallerType, string cookie, delegate*<string, object> getInstanceMethod)
+            {
+                ParameterType = pParameterType;
+                MarshallerType = pMarshallerType;
+                Cookie = cookie;
+                GetInstanceMethod = getInstanceMethod;
+            }
+
+            public RuntimeTypeHandle ParameterType { get; }
+            public RuntimeTypeHandle MarshallerType { get; }
+            public string Cookie { get; }
+            public delegate*<string, object> GetInstanceMethod { get; }
+
+            public override bool Equals(object obj)
+            {
+                if (!(obj is CustomMarshallerKey other))
+                    return false;
+                return Equals(other);
+            }
+
+            public bool Equals(CustomMarshallerKey other)
+            {
+                return ParameterType.Equals(other.ParameterType)
+                    && MarshallerType.Equals(other.MarshallerType)
+                    && Cookie.Equals(other.Cookie);
+            }
+
+            public override int GetHashCode()
+            {
+                return ParameterType.GetHashCode()
+                    ^ MarshallerType.GetHashCode()
+                    ^ Cookie.GetHashCode();
+            }
+        }
+
+        internal sealed class CustomMarshallerTable : ConcurrentUnifier<CustomMarshallerKey, object>
+        {
+            internal static CustomMarshallerTable s_customMarshallersTable = new CustomMarshallerTable();
+
+            protected unsafe override object Factory(CustomMarshallerKey key)
+            {
+                return key.GetInstanceMethod(key.Cookie);
+            }
         }
     }
 }
