@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Buffers;
+using System.ComponentModel;
 
 namespace System.IO
 {
@@ -446,10 +447,24 @@ namespace System.IO
             throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
         }
 
-        public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
+        public static unsafe void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
         {
-            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
-            SetAttributes(fileHandle.Path!, attributes);
+            var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO
+            {
+                FileAttributes = (uint)attributes
+            };
+
+            bool success = Interop.Kernel32.SetFileInformationByHandle(
+                fileHandle,
+                Interop.Kernel32.FileBasicInfo,
+                &basicInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)
+            );
+
+            if (!success)
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(fileHandle.Path);
+            }
         }
 
         // Default values indicate "no change". Use defaults so that we don't force callsites to be aware of the default values
@@ -474,7 +489,7 @@ namespace System.IO
             long changeTime = -1,
             uint fileAttributes = 0)
         {
-            var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO()
+            var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO
             {
                 CreationTime = creationTime,
                 LastAccessTime = lastAccessTime,
