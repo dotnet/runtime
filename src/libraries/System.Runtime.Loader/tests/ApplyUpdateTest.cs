@@ -303,6 +303,27 @@ namespace System.Reflection.Metadata
 	    });
 	}
 
+	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+	public static void TestAddNestedClass()
+	{
+	    ApplyUpdateUtil.TestCase(static () =>
+	    {
+		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass).Assembly;
+
+		var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass();
+
+		var r = x.TestMethod();
+
+		Assert.Equal ("123", r);
+
+		ApplyUpdateUtil.ApplyUpdate(assm);
+
+		r = x.TestMethod();
+
+		Assert.Equal("123456", r);
+	    });
+	}
+
 
         class NonRuntimeAssembly : Assembly
         {
