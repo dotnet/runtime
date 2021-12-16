@@ -1657,7 +1657,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 #ifdef FEATURE_SIMD
             // (In)Equality operation that produces bool result, when compared
             // against Vector zero, marks its Vector Zero operand as contained.
-            assert(tree->OperIsLeaf() || tree->IsSIMDZero());
+            assert(tree->OperIsLeaf() || tree->IsSIMDZero() || tree->IsIntegralConstVector(0));
 #else
             assert(tree->OperIsLeaf());
 #endif

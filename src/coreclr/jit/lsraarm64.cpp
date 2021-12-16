@@ -1103,7 +1103,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     }
     else
     {
-        if (intrin.op2 != nullptr)
+        if (intrin.op2 != nullptr &&
+            !(intrin.id == NI_AdvSimd_CompareEqual && intrin.op2->IsIntegralConstVector(0) && intrin.op2->isContained()))
         {
             // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
             // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.

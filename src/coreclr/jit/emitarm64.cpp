@@ -12979,6 +12979,11 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
+            if (ins == INS_cmeq)
+            {
+                printf(" ");
+                emitDispFloatZero();
+            }
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
