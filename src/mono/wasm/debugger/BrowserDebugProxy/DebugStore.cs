@@ -906,7 +906,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-
+            Console.WriteLine(SourceUri);
+            Console.WriteLine(SourceLinkUri);
             foreach (Uri url in new[] { SourceUri, SourceLinkUri })
             {
                 MemoryStream mem = await GetDataAsync(url, token).ConfigureAwait(false);

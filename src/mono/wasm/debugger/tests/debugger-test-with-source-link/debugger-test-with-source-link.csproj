@@ -17,6 +17,7 @@
         <DisableSourceLink>false</DisableSourceLink>
     </PropertyGroup>
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+        <DisableSourceLink>true</DisableSourceLink>
         <SourceLink>source-link.json</SourceLink>
         <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
         <PathMap>$(AppOutputBase)=/fakepath/$(MSBuildProjectDirectory)</PathMap>
