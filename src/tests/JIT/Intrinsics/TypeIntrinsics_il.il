@@ -5,7 +5,7 @@
 .assembly extern xunit.core {}
 .assembly extern System.Runtime { auto }
 
-.assembly TypeIntrinsicsTests { }
+.assembly 'TypeIntrinsics_il' { }
 
 .class private auto ansi beforefieldinit Test_TypeIntrinsics_il
        extends [mscorlib]System.Object

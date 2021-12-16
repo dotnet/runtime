@@ -94,7 +94,7 @@ jobs:
 
       - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
         - name: runtimeFlavorArgs
-          value: '-excludemonofailures'
+          value: '-mono'
 
     steps:
 

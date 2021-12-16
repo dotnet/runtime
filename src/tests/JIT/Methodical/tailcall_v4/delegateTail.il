@@ -13,7 +13,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
   .ver 4:0:0:0
 }
-.assembly repro
+.assembly 'delegateTail'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   
@@ -22,7 +22,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module repro.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000

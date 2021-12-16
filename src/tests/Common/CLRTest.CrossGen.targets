@@ -193,8 +193,8 @@ if defined RunCrossGen2 (
         call :CompileOneFileCrossgen2
         IF NOT !CrossGen2Status!==0 goto :DoneCrossgen2Operations
     ) else (
+        set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
         for %%I in (!scriptPath!\*.dll) do (
-            set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
             set __OutputFile=!scriptPath!\%%~nI.dll
             set __InputFile=!scriptPath!IL-CG2\%%~nI.dll
             call :CompileOneFileCrossgen2

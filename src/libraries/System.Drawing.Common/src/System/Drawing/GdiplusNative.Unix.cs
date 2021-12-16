@@ -67,334 +67,389 @@ namespace System.Drawing
 
             // Imported functions
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs
+            [DllImport(LibraryName)]
             internal static extern int GdiplusStartup(out IntPtr token, ref StartupInput input, out StartupOutput output);
+#pragma warning restore DLLIMPORTGENANALYZER015
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern void GdiplusShutdown(ref ulong token);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial void GdiplusShutdown(ref ulong token);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern IntPtr GdipAlloc(int size);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial IntPtr GdipAlloc(int size);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern void GdipFree(IntPtr ptr);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial void GdipFree(IntPtr ptr);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipDeleteBrush(HandleRef brush);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetBrushType(IntPtr brush, out BrushType type);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetBrushType(IntPtr brush, out BrushType type);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipDeleteGraphics(HandleRef graphics);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipRestoreGraphics(IntPtr graphics, uint graphicsState);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipRestoreGraphics(IntPtr graphics, uint graphicsState);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipReleaseDC(HandleRef graphics, HandleRef hdc);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipFillPath(IntPtr graphics, IntPtr brush, IntPtr path);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipFillPath(IntPtr graphics, IntPtr brush, IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetNearestColor(IntPtr graphics, out int argb);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetNearestColor(IntPtr graphics, out int argb);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
             internal static extern int GdipAddPathString(IntPtr path, string s, int lenght, IntPtr family, int style, float emSize, ref RectangleF layoutRect, IntPtr format);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            [DllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
             internal static extern int GdipAddPathStringI(IntPtr path, string s, int lenght, IntPtr family, int style, float emSize, ref Rectangle layoutRect, IntPtr format);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFromHWND(IntPtr hwnd, out IntPtr graphics);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipCreateFromHWND(IntPtr hwnd, out IntPtr graphics);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCloneImage(IntPtr image, out IntPtr imageclone);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipCloneImage(IntPtr image, out IntPtr imageclone);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImagePaletteSize(IntPtr image, out int size);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetImagePaletteSize(IntPtr image, out int size);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImagePalette(IntPtr image, IntPtr palette, int size);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetImagePalette(IntPtr image, IntPtr palette, int size);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipSetImagePalette(IntPtr image, IntPtr palette);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipSetImagePalette(IntPtr image, IntPtr palette);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipGetImageBounds(IntPtr image, out RectangleF source, ref GraphicsUnit unit);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageThumbnail(IntPtr image, uint width, uint height, out IntPtr thumbImage, IntPtr callback, IntPtr callBackData);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetImageThumbnail(IntPtr image, uint width, uint height, out IntPtr thumbImage, IntPtr callback, IntPtr callBackData);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in CoreLib (like Guid).
+            [DllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
             internal static extern int GdipSaveImageToFile(IntPtr image, string filename, ref Guid encoderClsID, IntPtr encoderParameters);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipSaveAdd(IntPtr image, IntPtr encoderParameters);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipSaveAdd(IntPtr image, IntPtr encoderParameters);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipSaveAddImage(IntPtr image, IntPtr imagenew, IntPtr encoderParameters);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipSaveAddImage(IntPtr image, IntPtr imagenew, IntPtr encoderParameters);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageGraphicsContext(IntPtr image, out IntPtr graphics);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetImageGraphicsContext(IntPtr image, out IntPtr graphics);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreatePath(FillMode brushMode, out IntPtr path);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipCreatePath(FillMode brushMode, out IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipCreatePath2(PointF[] points, byte[] types, int count, FillMode brushMode, out IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipCreatePath2I(Point[] points, byte[] types, int count, FillMode brushMode, out IntPtr path);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipClonePath(IntPtr path, out IntPtr clonePath);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipClonePath(IntPtr path, out IntPtr clonePath);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipDeletePath(HandleRef path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipResetPath(IntPtr path);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipResetPath(IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPointCount(IntPtr path, out int count);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetPointCount(IntPtr path, out int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPathTypes(IntPtr path, [Out] byte[] types, int count);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetPathTypes(IntPtr path, byte[] types, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipGetPathPoints(IntPtr path, [Out] PointF[] points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipGetPathPointsI(IntPtr path, [Out] Point[] points, int count);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPathFillMode(IntPtr path, out FillMode fillMode);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetPathFillMode(IntPtr path, out FillMode fillMode);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipSetPathFillMode(IntPtr path, FillMode fillMode);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipSetPathFillMode(IntPtr path, FillMode fillMode);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipStartPathFigure(IntPtr path);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipStartPathFigure(IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipClosePathFigure(IntPtr path);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipClosePathFigure(IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipClosePathFigures(IntPtr path);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipClosePathFigures(IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipSetPathMarker(IntPtr path);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipSetPathMarker(IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipClearPathMarkers(IntPtr path);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipClearPathMarkers(IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipReversePath(IntPtr path);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipReversePath(IntPtr path);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipGetPathLastPoint(IntPtr path, out PointF lastPoint);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathLine(IntPtr path, float x1, float y1, float x2, float y2);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathLine(IntPtr path, float x1, float y1, float x2, float y2);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathLine2(IntPtr path, PointF[] points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathLine2I(IntPtr path, Point[] points, int count);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathArc(IntPtr path, float x, float y, float width, float height, float startAngle, float sweepAngle);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathArc(IntPtr path, float x, float y, float width, float height, float startAngle, float sweepAngle);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathBezier(IntPtr path, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathBezier(IntPtr path, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathBeziers(IntPtr path, PointF[] points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathCurve(IntPtr path, PointF[] points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathCurveI(IntPtr path, Point[] points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathCurve2(IntPtr path, PointF[] points, int count, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathCurve2I(IntPtr path, Point[] points, int count, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathCurve3(IntPtr path, PointF[] points, int count, int offset, int numberOfSegments, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathCurve3I(IntPtr path, Point[] points, int count, int offset, int numberOfSegments, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathClosedCurve(IntPtr path, PointF[] points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathClosedCurveI(IntPtr path, Point[] points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathClosedCurve2(IntPtr path, PointF[] points, int count, float tension);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathClosedCurve2I(IntPtr path, Point[] points, int count, float tension);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathRectangle(IntPtr path, float x, float y, float width, float height);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathRectangle(IntPtr path, float x, float y, float width, float height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathRectangles(IntPtr path, RectangleF[] rects, int count);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathEllipse(IntPtr path, float x, float y, float width, float height);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathEllipse(IntPtr path, float x, float y, float width, float height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathEllipseI(IntPtr path, int x, int y, int width, int height);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathEllipseI(IntPtr path, int x, int y, int width, int height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathPie(IntPtr path, float x, float y, float width, float height, float startAngle, float sweepAngle);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathPie(IntPtr path, float x, float y, float width, float height, float startAngle, float sweepAngle);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathPieI(IntPtr path, int x, int y, int width, int height, float startAngle, float sweepAngle);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathPieI(IntPtr path, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathPolygon(IntPtr path, PointF[] points, int count);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathPath(IntPtr path, IntPtr addingPath, bool connect);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathPath(IntPtr path, IntPtr addingPath, bool connect);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathLineI(IntPtr path, int x1, int y1, int x2, int y2);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathLineI(IntPtr path, int x1, int y1, int x2, int y2);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathArcI(IntPtr path, int x, int y, int width, int height, float startAngle, float sweepAngle);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathArcI(IntPtr path, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathBezierI(IntPtr path, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathBezierI(IntPtr path, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathBeziersI(IntPtr path, Point[] points, int count);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathPolygonI(IntPtr path, Point[] points, int count);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipAddPathRectangleI(IntPtr path, int x, int y, int width, int height);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipAddPathRectangleI(IntPtr path, int x, int y, int width, int height);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipAddPathRectanglesI(IntPtr path, Rectangle[] rects, int count);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipFlattenPath(IntPtr path, IntPtr matrix, float floatness);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipFlattenPath(IntPtr path, IntPtr matrix, float floatness);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipTransformPath(IntPtr path, IntPtr matrix);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipTransformPath(IntPtr path, IntPtr matrix);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipWarpPath(IntPtr path, IntPtr matrix, PointF[] points, int count, float srcx, float srcy, float srcwidth, float srcheight, WarpMode mode, float flatness);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipWidenPath(IntPtr path, IntPtr pen, IntPtr matrix, float flatness);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipWidenPath(IntPtr path, IntPtr pen, IntPtr matrix, float flatness);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipGetPathWorldBounds(IntPtr path, out RectangleF bounds, IntPtr matrix, IntPtr pen);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+            [DllImport(LibraryName)]
             internal static extern int GdipGetPathWorldBoundsI(IntPtr path, out Rectangle bounds, IntPtr matrix, IntPtr pen);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipIsVisiblePathPoint(IntPtr path, float x, float y, IntPtr graphics, out bool result);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipIsVisiblePathPoint(IntPtr path, float x, float y, IntPtr graphics, out bool result);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipIsVisiblePathPointI(IntPtr path, int x, int y, IntPtr graphics, out bool result);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipIsVisiblePathPointI(IntPtr path, int x, int y, IntPtr graphics, out bool result);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipIsOutlineVisiblePathPoint(IntPtr path, float x, float y, IntPtr pen, IntPtr graphics, out bool result);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipIsOutlineVisiblePathPoint(IntPtr path, float x, float y, IntPtr pen, IntPtr graphics, out bool result);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipIsOutlineVisiblePathPointI(IntPtr path, int x, int y, IntPtr pen, IntPtr graphics, out bool result);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipIsOutlineVisiblePathPointI(IntPtr path, int x, int y, IntPtr pen, IntPtr graphics, out bool result);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFontFromLogfont(IntPtr hdc, ref Interop.User32.LOGFONT lf, out IntPtr ptr);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipCreateFontFromLogfont(IntPtr hdc, ref Interop.User32.LOGFONT lf, out IntPtr ptr);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFontFromHfont(IntPtr hdc, out IntPtr font, ref Interop.User32.LOGFONT lf);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipCreateFontFromHfont(IntPtr hdc, out IntPtr font, ref Interop.User32.LOGFONT lf);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
-            internal static extern int GdipGetMetafileHeaderFromFile(string filename, IntPtr header);
+            [GeneratedDllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            internal static partial int GdipGetMetafileHeaderFromFile(string filename, IntPtr header);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetMetafileHeaderFromMetafile(IntPtr metafile, IntPtr header);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetMetafileHeaderFromMetafile(IntPtr metafile, IntPtr header);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetMetafileHeaderFromEmf(IntPtr hEmf, IntPtr header);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetMetafileHeaderFromEmf(IntPtr hEmf, IntPtr header);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetMetafileHeaderFromWmf(IntPtr hWmf, IntPtr wmfPlaceableFileHeader, IntPtr header);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetMetafileHeaderFromWmf(IntPtr hWmf, IntPtr wmfPlaceableFileHeader, IntPtr header);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetHemfFromMetafile(IntPtr metafile, out IntPtr hEmf);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetHemfFromMetafile(IntPtr metafile, out IntPtr hEmf);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetMetafileDownLevelRasterizationLimit(IntPtr metafile, ref uint metafileRasterizationLimitDpi);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetMetafileDownLevelRasterizationLimit(IntPtr metafile, ref uint metafileRasterizationLimitDpi);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipSetMetafileDownLevelRasterizationLimit(IntPtr metafile, uint metafileRasterizationLimitDpi);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipSetMetafileDownLevelRasterizationLimit(IntPtr metafile, uint metafileRasterizationLimitDpi);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFromContext_macosx(IntPtr cgref, int width, int height, out IntPtr graphics);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipCreateFromContext_macosx(IntPtr cgref, int width, int height, out IntPtr graphics);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName)]
             internal static extern int GdipSetVisibleClip_linux(IntPtr graphics, ref Rectangle rect);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateFromXDrawable_linux(IntPtr drawable, IntPtr display, out IntPtr graphics);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipCreateFromXDrawable_linux(IntPtr drawable, IntPtr display, out IntPtr graphics);
 
             // Stream functions for non-Win32 (libgdiplus specific)
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipLoadImageFromDelegate_linux(StreamGetHeaderDelegate getHeader,
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipLoadImageFromDelegate_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, out IntPtr image);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in CoreLib (like Guid).
+            [DllImport(LibraryName)]
             internal static extern int GdipSaveImageToDelegate_linux(IntPtr image, StreamGetBytesDelegate getBytes,
                 StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek, StreamCloseDelegate close,
                 StreamSizeDelegate size, ref Guid encoderClsID, IntPtr encoderParameters);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipCreateMetafileFromDelegate_linux(StreamGetHeaderDelegate getHeader,
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipCreateMetafileFromDelegate_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, out IntPtr metafile);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetMetafileHeaderFromDelegate_linux(StreamGetHeaderDelegate getHeader,
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetMetafileHeaderFromDelegate_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr header);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
+            [DllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
             internal static extern int GdipRecordMetafileFromDelegate_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr hdc, EmfType type, ref RectangleF frameRect,
                 MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
-            [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            [DllImport(LibraryName, CharSet = CharSet.Unicode, ExactSpelling = true)]
             internal static extern int GdipRecordMetafileFromDelegateI_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr hdc, EmfType type, ref Rectangle frameRect,
                 MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPostScriptGraphicsContext(
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetPostScriptGraphicsContext(
                 [MarshalAs(UnmanagedType.LPStr)] string filename,
                 int width, int height, double dpix, double dpiy, ref IntPtr graphics);
 
-            [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetPostScriptSavePage(IntPtr graphics);
+            [GeneratedDllImport(LibraryName)]
+            internal static partial int GdipGetPostScriptSavePage(IntPtr graphics);
         }
     }
 

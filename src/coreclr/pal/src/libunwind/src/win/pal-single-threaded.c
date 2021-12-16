@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 // This is minimal implementation of posix functions files required to cross compile
 // libunwind on a Windows host for UNW_REMOTE_ONLY application.
@@ -12,10 +13,10 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include "libunwind_i.h"
 #include "compiler.h"
-
 
 int getpagesize(void)
 {
@@ -110,4 +111,14 @@ int close(int fd)
 unw_accessors_t * unw_get_accessors_int (unw_addr_space_t as)
 {
     return unw_get_accessors(as);
+}
+
+int stat(const char *path, struct stat *buf)
+{
+    return 0;
+}
+
+int fstat(int fd, struct stat *buf)
+{
+    return 0;
 }

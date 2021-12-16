@@ -1,4 +1,9 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+  <PropertyGroup>
+      <IncludeXHarnessCli>true</IncludeXHarnessCli>
+      <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.21566.2</MicrosoftDotNetXHarnessCLIVersion>
+      <XharnessPath>%HELIX_CORRELATION_PAYLOAD%\microsoft.dotnet.xharness.cli\$(MicrosoftDotNetXHarnessCLIVersion)\tools\net6.0\any\Microsoft.DotNet.XHarness.CLI.dll</XharnessPath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>python3</Python>
     <HelixPreCommands>$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
@@ -41,6 +46,12 @@
         <PreCommands>cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidDefault.apk .; $(Python) pre.py --unzip</PreCommands>
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <HelixWorkItem Include="Startup - Android HelloWorld">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroidWithDiag.apk .;$(Python) pre.py</PreCommands>
+      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroidWithDiag.apk --package-name net.dot.HelloAndroid --exit-code 42 --scenario-name &quot;%(Identity)&quot;</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
   </ItemGroup>
 </Project>

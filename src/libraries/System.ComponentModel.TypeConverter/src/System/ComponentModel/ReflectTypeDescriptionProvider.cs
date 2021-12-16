@@ -79,10 +79,8 @@ namespace System.ComponentModel
         {
             return new Type[]
             {
-#if FEATURE_SKIP_INTERFACE
                 typeof(System.Runtime.InteropServices.GuidAttribute),
-                typeof(System.Runtime.InteropServices.InterfaceTypeAttribute)
-#endif
+                typeof(System.Runtime.InteropServices.InterfaceTypeAttribute),
                 typeof(System.Runtime.InteropServices.ComVisibleAttribute),
             };
         }
@@ -649,16 +647,14 @@ namespace System.ComponentModel
                 {
                     return GetExtenders(extenderList.GetExtenderProviders(), instance, cache);
                 }
-#if FEATURE_COMPONENT_COLLECTION
                 else
                 {
-                    IContainer cont = component.Site.Container;
+                    IContainer? cont = component.Site.Container;
                     if (cont != null)
                     {
                         return GetExtenders(cont.Components, instance, cache);
                     }
                 }
-#endif
             }
             return Array.Empty<IExtenderProvider>();
         }

@@ -4284,11 +4284,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     var_types type[MAX_ARG_REG_COUNT] = {}; // TYP_UNDEF = 0
 
     hfaType = fgEntryPtr->GetHfaType();
-    if (varTypeIsValidHfaType(hfaType)
-#if !defined(HOST_UNIX) && defined(TARGET_ARM64)
-        && !fgEntryPtr->IsVararg()
-#endif // !defined(HOST_UNIX) && defined(TARGET_ARM64)
-            )
+    if (varTypeIsValidHfaType(hfaType) && fgEntryPtr->isPassedInFloatRegisters())
     {
         elemType  = hfaType;
         elemSize  = genTypeSize(elemType);
@@ -4395,11 +4391,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 
 #ifndef UNIX_AMD64_ABI
         // This local variable must match the layout of the 'objClass' type exactly
-        if (varDsc->lvIsHfa()
-#if !defined(HOST_UNIX) && defined(TARGET_ARM64)
-            && !fgEntryPtr->IsVararg()
-#endif // !defined(HOST_UNIX) && defined(TARGET_ARM64)
-                )
+        if (varDsc->lvIsHfa() && fgEntryPtr->isPassedInFloatRegisters())
         {
             // We have a HFA struct.
             noway_assert(elemType == varDsc->GetHfaType());
@@ -4440,16 +4432,32 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 }
             }
         }
-#endif // !UNIX_AMD64_ABI
 
+        if (varDsc->lvPromoted && varDsc->lvIsHfa() && fgEntryPtr->isPassedInFloatRegisters())
+        {
+            bool canMorphToFieldList = true;
+
+            for (unsigned fldOffset = 0; fldOffset < varDsc->lvExactSize; fldOffset += elemSize)
+            {
+                const unsigned fldVarNum = lvaGetFieldLocal(varDsc, fldOffset);
+
+                if ((fldVarNum == BAD_VAR_NUM) || !varTypeUsesFloatReg(lvaGetDesc(fldVarNum)))
+                {
+                    canMorphToFieldList = false;
+                    break;
+                }
+            }
+
+            if (canMorphToFieldList)
+            {
+                newArg = fgMorphLclArgToFieldlist(varNode);
+            }
+        }
+        else
+#endif // !UNIX_AMD64_ABI
 #if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI)
-        // Is this LclVar a promoted struct with exactly 2 fields?
-        // TODO-ARM64-CQ: Support struct promoted HFA types here
-        if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2) && (!varDsc->lvIsHfa()
-#if !defined(HOST_UNIX) && defined(TARGET_ARM64)
-                                                                && !fgEntryPtr->IsVararg()
-#endif // !defined(HOST_UNIX) && defined(TARGET_ARM64)
-                                                                    ))
+            // Is this LclVar a promoted struct with exactly 2 fields?
+            if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2) && !varDsc->lvIsHfa())
         {
             // See if we have two promoted fields that start at offset 0 and 8?
             unsigned loVarNum = lvaGetFieldLocal(varDsc, 0);
@@ -6272,13 +6280,25 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 // The address is not directly addressible, so force it into a
                 // constant, so we handle it properly
 
-                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, GTF_ICON_STATIC_HDL);
-                addr->gtType  = TYP_I_IMPL;
-                FieldSeqNode* fieldSeq =
-                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                addr->AsIntCon()->gtFieldSeq = fieldSeq;
-                // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
-                if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
+                bool         isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
+                GenTreeFlags handleKind    = GTF_EMPTY;
+                if (isBoxedStatic)
+                {
+                    handleKind = GTF_ICON_STATIC_BOX_PTR;
+                }
+                else if (isStaticReadOnlyInited)
+                {
+                    handleKind = GTF_ICON_CONST_PTR;
+                }
+                else
+                {
+                    handleKind = GTF_ICON_STATIC_HDL;
+                }
+                FieldSeqNode* fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd);
+                GenTree*      addr     = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+
+                // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
+                if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
                 {
                     tree->gtFlags &= ~GTF_FLD_INITCLASS;
                     addr->gtFlags |= GTF_ICON_INITCLASS;
@@ -6287,14 +6307,18 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 tree->SetOper(GT_IND);
                 tree->AsOp()->gtOp1 = addr;
 
-                if (isStaticReadOnlyInited)
+                if (isBoxedStatic)
+                {
+                    // The box for the static cannot be null, and is logically invariant, since it
+                    // represents (a base for) the static's address.
+                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+                }
+                else if (isStaticReadOnlyInited)
                 {
                     JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
 
                     // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
                     tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-                    tree->gtFlags &= ~GTF_ICON_INITCLASS;
-                    addr->gtFlags = GTF_ICON_CONST_PTR;
                 }
 
                 return fgMorphSmpOp(tree);
@@ -7726,6 +7750,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Avoid potential extra work for the return (for example, vzeroupper)
         call->gtType = TYP_VOID;
 
+        // The runtime requires that we perform a null check on the `this` argument before
+        // tail calling to a virtual dispatch stub. This requirement is a consequence of limitations
+        // in the runtime's ability to map an AV to a NullReferenceException if
+        // the AV occurs in a dispatch stub that has unmanaged caller.
+        if (call->IsVirtualStub())
+        {
+            call->gtFlags |= GTF_CALL_NULLCHECK;
+        }
+
         // Do some target-specific transformations (before we process the args,
         // etc.) for the JIT helper case.
         if (tailCallViaJitHelper)
@@ -8431,15 +8464,6 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 {
     JITDUMP("fgMorphTailCallViaJitHelper (before):\n");
     DISPTREE(call);
-
-    // The runtime requires that we perform a null check on the `this` argument before
-    // tail calling  to a virtual dispatch stub. This requirement is a consequence of limitations
-    // in the runtime's ability to map an AV to a NullReferenceException if
-    // the AV occurs in a dispatch stub that has unmanaged caller.
-    if (call->IsVirtualStub())
-    {
-        call->gtFlags |= GTF_CALL_NULLCHECK;
-    }
 
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning or end.
@@ -9555,17 +9579,23 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
     }
     else if (tree->gtOper == GT_FTN_ADDR)
     {
+        GenTreeFptrVal* fptrValTree = tree->AsFptrVal();
+
+        // A function pointer address is being used. Let the VM know if this is the
+        // target of a Delegate or a raw function pointer.
+        bool isUnsafeFunctionPointer = !fptrValTree->gtFptrDelegateTarget;
+
         CORINFO_CONST_LOOKUP addrInfo;
 
 #ifdef FEATURE_READYTORUN
-        if (tree->AsFptrVal()->gtEntryPoint.addr != nullptr)
+        if (fptrValTree->gtEntryPoint.addr != nullptr)
         {
-            addrInfo = tree->AsFptrVal()->gtEntryPoint;
+            addrInfo = fptrValTree->gtEntryPoint;
         }
         else
 #endif
         {
-            info.compCompHnd->getFunctionFixedEntryPoint(tree->AsFptrVal()->gtFptrMethod, &addrInfo);
+            info.compCompHnd->getFunctionFixedEntryPoint(fptrValTree->gtFptrMethod, isUnsafeFunctionPointer, &addrInfo);
         }
 
         GenTree* indNode = nullptr;
@@ -11446,6 +11476,37 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             if (optimizedTree != tree)
             {
                 return fgMorphTree(optimizedTree);
+            }
+
+            // Pattern-matching optimization:
+            //    (a % c) ==/!= 0
+            // for power-of-2 constant `c`
+            // =>
+            //    a & (c - 1) ==/!= 0
+            // For integer `a`, even if negative.
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase)
+            {
+                assert(tree->OperIs(GT_EQ, GT_NE));
+                if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
+                {
+                    GenTree* op1op2 = op1->AsOp()->gtOp2;
+                    if (op1op2->IsCnsIntOrI())
+                    {
+                        const ssize_t modValue = op1op2->AsIntCon()->IconValue();
+                        if (isPow2(modValue))
+                        {
+                            JITDUMP("\nTransforming:\n");
+                            DISPTREE(tree);
+
+                            op1->SetOper(GT_AND);                                 // Change % => &
+                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                            fgUpdateConstTreeValueNumber(op1op2);
+
+                            JITDUMP("\ninto:\n");
+                            DISPTREE(tree);
+                        }
+                    }
+                }
             }
         }
 
@@ -13355,30 +13416,6 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
     GenTree*             op1 = cmp->gtGetOp1();
     GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
 
-    // Pattern-matching optimization:
-    //    (a % c) ==/!= 0
-    // for power-of-2 constant `c`
-    // =>
-    //    a & (c - 1) ==/!= 0
-    // For integer `a`, even if negative.
-    if (opts.OptimizationEnabled())
-    {
-        if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
-        {
-            GenTree* op1op2 = op1->AsOp()->gtOp2;
-            if (op1op2->IsCnsIntOrI())
-            {
-                ssize_t modValue = op1op2->AsIntCon()->IconValue();
-                if (isPow2(modValue))
-                {
-                    op1->SetOper(GT_AND);                                 // Change % => &
-                    op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
-                    fgUpdateConstTreeValueNumber(op1op2);
-                }
-            }
-        }
-    }
-
     // Check for "(expr +/- icon1) ==/!= (non-zero-icon2)".
     if (op2->IsCnsIntOrI() && (op2->IconValue() != 0))
     {
@@ -15273,7 +15310,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                         /* This was a bogus loop (condition always false)
                          * Remove the loop from the table */
 
-                        optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
+                        optMarkLoopRemoved(loopNum);
 
                         optLoopTable[loopNum].lpTop->unmarkLoopAlign(this DEBUG_ARG("Bogus loop"));
 

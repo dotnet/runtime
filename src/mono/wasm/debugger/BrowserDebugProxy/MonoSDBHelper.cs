@@ -749,7 +749,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return null;
                 }
             }
-            asm.DebugId = assemblyId;
+            asm.SetDebugId(assemblyId);
             assemblies[assemblyId] = asm;
             return asm;
         }

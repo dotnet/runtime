@@ -318,6 +318,8 @@ static LLVMTypeRef sse_i1_t, sse_i2_t, sse_i4_t, sse_i8_t, sse_r4_t, sse_r8_t;
 static LLVMTypeRef v64_i1_t, v64_i2_t, v64_i4_t, v64_i8_t, v64_r4_t, v64_r8_t;
 static LLVMTypeRef v128_i1_t, v128_i2_t, v128_i4_t, v128_i8_t, v128_r4_t, v128_r8_t;
 
+static LLVMTypeRef void_func_t;
+
 static MonoLLVMModule *init_jit_module (void);
 
 static void emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil_code);
@@ -12403,6 +12405,8 @@ mono_llvm_init (gboolean enable_jit)
 	intrin_types [2][5] = v128_r8_t = sse_r8_t = type_to_sse_type (MONO_TYPE_R8);
 
 	intrins_id_to_intrins = g_hash_table_new (NULL, NULL);
+
+	void_func_t = LLVMFunctionType0 (LLVMVoidType (), FALSE);
 
 	if (enable_jit)
 		mono_llvm_jit_init ();

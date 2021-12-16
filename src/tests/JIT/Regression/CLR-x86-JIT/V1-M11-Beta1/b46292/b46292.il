@@ -14,11 +14,10 @@
 .assembly extern Microsoft.VisualBasic
 {
 }
-.assembly 'test'
+.assembly 'b46292'
 {
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 // MVID: {74C704CE-5E25-4072-A5C7-A9DD14614D82}
 .class private auto ansi Mod1
        extends [mscorlib]System.Object

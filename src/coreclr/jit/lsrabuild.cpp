@@ -1481,6 +1481,15 @@ Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 //
 void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet)
 {
+    if ((tree != nullptr) && tree->IsCall())
+    {
+        if (tree->AsCall()->IsNoReturn())
+        {
+            // No point in having vector save/restore if the call will not return.
+            return;
+        }
+    }
+
     if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
     {
         // We assume that the kill set includes at least some callee-trash registers, but

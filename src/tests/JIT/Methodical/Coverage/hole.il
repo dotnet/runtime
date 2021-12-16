@@ -14,7 +14,6 @@
 }
 .assembly hole {}
 .assembly extern xunit.core {}
-.module hole.exe
 // MVID: {972ABF67-C385-44E6-B525-571BCCECC13C}
 .imagebase 0x00400000
 .file alignment 0x00000200
