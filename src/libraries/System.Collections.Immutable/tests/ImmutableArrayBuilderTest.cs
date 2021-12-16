@@ -160,6 +160,22 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void AddRangeSpan()
+        {
+            var builder = new ImmutableArray<string>.Builder(2);
+            builder.AddRange(new ReadOnlySpan<string>(new[] { "a", "b", "c" }));
+            Assert.Equal(new[] { "a", "b", "c" }, builder);
+        }
+
+        [Fact]
+        public void AddRangeDerivedSpan()
+        {
+            var builder = new ImmutableArray<object>.Builder();
+            builder.AddRange(new ReadOnlySpan<string>(new[] { "a", "b" }));
+            Assert.Equal(new[] { "a", "b" }, builder);
+        }
+
+        [Fact]
         public void AddRangeDerivedImmutableArray()
         {
             var builder = new ImmutableArray<object>.Builder();
@@ -478,7 +494,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public void CopyTo()
+        public void CopyToArray()
         {
             var builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
             var target = new int[4];
@@ -489,6 +505,30 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("array", () => builder.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.CopyTo(target, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.CopyTo(target, 2));
+        }
+
+        [Fact]
+        public void CopyToSpan()
+        {
+            var builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
+            Span<int> span;
+            int[] target = new int[4];
+
+            // Span is longer than immutableArray
+            span = new Span<int>(target);
+            builder.CopyTo(span);
+            Assert.Equal(new[] { 1, 2, 3, 0 }, target);
+            span.Fill(0);
+
+            // Span has same length as immutableArray
+            span = new Span<int>(target, 0, 3);
+            builder.CopyTo(span);
+            Assert.Equal(new[] { 1, 2, 3, 0 }, target);
+            span.Fill(0);
+
+            // Span is shorter than immutableArray
+            span = new Span<int>(target, 0, 2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException, int>("destination", span, s => builder.CopyTo(s));
         }
 
         [Fact]
