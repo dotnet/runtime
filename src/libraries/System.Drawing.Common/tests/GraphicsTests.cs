@@ -2385,6 +2385,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             {
                 AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangle(null, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangle(null, new RectangleF(0f, 0f, 1f, 1f)));
                 AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangle(null, 0, 0, 1, 1));
                 AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangle(null, 0f, 0f, 1f, 1f));
             }
@@ -2401,6 +2402,7 @@ namespace System.Drawing.Tests
 
 
                 AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new RectangleF(0f, 0f, 1f, 1f)));
                 AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0, 0, 1, 1));
                 AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
             }
@@ -2418,6 +2420,7 @@ namespace System.Drawing.Tests
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangle(pen, new RectangleF(0f, 0f, 1f, 1f)));
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangle(pen, 0, 0, 1, 1));
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
                 }
@@ -2438,6 +2441,7 @@ namespace System.Drawing.Tests
                 graphics.Dispose();
 
                 AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new RectangleF(0f, 0f, 1f, 1f)));
                 AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0, 0, 1, 1));
                 AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
             }

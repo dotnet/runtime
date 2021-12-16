@@ -921,6 +921,7 @@ namespace MonoTests.System.Drawing
                 g.DrawRectangle(pen, 5, 5, -10, -10);
                 g.DrawRectangle(pen, 0.0f, 0.0f, 5.0f, -10.0f);
                 g.DrawRectangle(pen, new Rectangle(15, 0, -10, 5));
+                g.DrawRectangle(pen, new RectangleF(0.0f, 5.0f, -10.0f, -10.0f));
                 CheckForEmptyBitmap(bitmap);
                 pen.Dispose();
                 g.Dispose();
@@ -964,6 +965,7 @@ namespace MonoTests.System.Drawing
                 g.FillRectangle(brush, 5, 5, -10, -10);
                 g.FillRectangle(brush, 0.0f, 0.0f, 5.0f, -10.0f);
                 g.FillRectangle(brush, new Rectangle(15, 0, -10, 5));
+                g.FillRectangle(brush, new RectangleF(15.0f, 0.0f, -10.0f, 5.0f));
                 CheckForEmptyBitmap(bitmap);
                 brush.Dispose();
                 g.Dispose();
