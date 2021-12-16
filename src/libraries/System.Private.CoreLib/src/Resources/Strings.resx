@@ -1021,10 +1021,10 @@
     <value>Must complete Convert() operation or call Encoder.Reset() before calling GetBytes() or GetByteCount(). Encoder '{0}' fallback '{1}'.</value>
   </data>
   <data name="Argument_EncodingConversionOverflowBytes" xml:space="preserve">
-    <value>The output byte buffer is too small to contain the encoded data, encoding '{0}' fallback '{1}'.</value>
+    <value>The output byte buffer is too small to contain the encoded data, encoding '{0}' with codepage '{1}' and fallback '{1}'.</value>
   </data>
   <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
-    <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
+    <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' with codepage '{1}' and fallback '{2}'.</value>
   </data>
   <data name="Argument_EncodingNotSupported" xml:space="preserve">
     <value>'{0}' is not a supported encoding name. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
