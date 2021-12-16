@@ -2495,11 +2495,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
     if (dstLclNum != BAD_VAR_NUM)
     {
-        bool      FPbased;
-        const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &FPbased);
+        bool      fpBased;
+        const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg              = FPbased ? REG_FPBASE : REG_SPBASE;
-        dstRegAddrAlignment = FPbased ? (genSPtoFPdelta() % 16) : 0;
+        dstReg              = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment = fpBased ? (genSPtoFPdelta() % 16) : 0;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
@@ -2682,11 +2682,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (srcLclNum != BAD_VAR_NUM)
     {
-        bool      FPbased;
-        const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &FPbased);
+        bool      fpBased;
+        const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
-        srcReg              = FPbased ? REG_FPBASE : REG_SPBASE;
-        srcRegAddrAlignment = FPbased ? (genSPtoFPdelta() % 16) : 0;
+        srcReg              = fpBased ? REG_FPBASE : REG_SPBASE;
+        srcRegAddrAlignment = fpBased ? (genSPtoFPdelta() % 16) : 0;
 
         helper.SetSrcOffset(baseAddr + srcOffset);
     }
@@ -2696,11 +2696,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (dstLclNum != BAD_VAR_NUM)
     {
-        bool      FPbased;
-        const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &FPbased);
+        bool      fpBased;
+        const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg              = FPbased ? REG_FPBASE : REG_SPBASE;
-        dstRegAddrAlignment = FPbased ? (genSPtoFPdelta() % 16) : 0;
+        dstReg              = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment = fpBased ? (genSPtoFPdelta() % 16) : 0;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
