@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="punning.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="punninglib.ilproj" />
+  </ItemGroup>
+</Project>

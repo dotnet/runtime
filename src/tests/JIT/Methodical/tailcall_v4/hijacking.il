@@ -34,7 +34,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module hijacking.exe
 // MVID: {7A6D7819-76F7-4311-967C-7CC804775914}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x0000000000400000

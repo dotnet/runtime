@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly delegate26{}
+.assembly 'test_07'{}
 .assembly extern xunit.core {}
-.module delegate26.exe
 
 .class public auto ansi beforefieldinit Client extends [mscorlib]System.Object
 {

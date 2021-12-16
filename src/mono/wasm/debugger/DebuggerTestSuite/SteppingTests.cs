@@ -50,36 +50,39 @@ namespace DebuggerTests
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 debugger_test_loc, 10, 8, "IntAdd",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     CheckNumber(locals, "b", 20);
                     CheckNumber(locals, "c", 30);
                     CheckNumber(locals, "d", 0);
                     CheckNumber(locals, "e", 0);
+                    await Task.CompletedTask;
                 }
             );
 
             await StepAndCheck(StepKind.Over, debugger_test_loc, 11, 8, "IntAdd",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     CheckNumber(locals, "b", 20);
                     CheckNumber(locals, "c", 30);
                     CheckNumber(locals, "d", 50);
                     CheckNumber(locals, "e", 0);
+                    await Task.CompletedTask;
                 }
             );
 
             //step and get locals
             await StepAndCheck(StepKind.Over, debugger_test_loc, 12, 8, "IntAdd",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     CheckNumber(locals, "b", 20);
                     CheckNumber(locals, "c", 30);
                     CheckNumber(locals, "d", 50);
                     CheckNumber(locals, "e", 60);
+                    await Task.CompletedTask;
                 }
             );
         }
@@ -100,10 +103,11 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_use_complex (); }, 1);",
                 dep_cs_loc, 35, 8, "DoEvenMoreStuff",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Single(locals);
                     CheckObject(locals, "this", "Simple.Complex");
+                    await Task.CompletedTask;
                 }
             );
 
@@ -165,13 +169,14 @@ namespace DebuggerTests
             var wait_res = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_outer_method(); }, 1);",
                 debugger_test_loc, 111, 12, "InnerMethod",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(4, locals.Count());
                     CheckNumber(locals, "i", 5);
                     CheckNumber(locals, "j", 24);
                     CheckString(locals, "foo_str", "foo");
                     CheckObject(locals, "this", "Math.NestedInMath");
+                    await Task.CompletedTask;
                 }
             );
 
@@ -199,7 +204,7 @@ namespace DebuggerTests
 
             // step back into OuterMethod
             await StepAndCheck(StepKind.Over, debugger_test_loc, 91, 8, "OuterMethod", times: 6,
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
 
@@ -208,6 +213,7 @@ namespace DebuggerTests
                     // FIXME: Failing test CheckNumber (locals, "new_i", 24);
                     CheckNumber(locals, "k", 19);
                     CheckObject(locals, "nim", "Math.NestedInMath");
+                    await Task.CompletedTask;
                 }
             );
 
@@ -215,29 +221,31 @@ namespace DebuggerTests
 
             // step into InnerMethod2
             await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 96, 4, "InnerMethod2",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(3, locals.Count());
 
                     CheckString(locals, "s", "test string");
                     //out var: CheckNumber (locals, "k", 0);
                     CheckNumber(locals, "i", 24);
+                    await Task.CompletedTask;
                 }
             );
 
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 100, 4, "InnerMethod2", times: 4,
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(3, locals.Count());
 
                     CheckString(locals, "s", "test string");
                     // FIXME: Failing test CheckNumber (locals, "k", 34);
                     CheckNumber(locals, "i", 24);
+                    await Task.CompletedTask;
                 }
             );
 
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 92, 8, "OuterMethod", times: 1,
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
 
@@ -246,6 +254,7 @@ namespace DebuggerTests
                     CheckNumber(locals, "new_i", 22);
                     CheckNumber(locals, "k", 34);
                     CheckObject(locals, "nim", "Math.NestedInMath");
+                    await Task.CompletedTask;
                 }
             );
         }
@@ -257,7 +266,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck("window.setTimeout(function() { invoke_outer_method(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 86, 8, "OuterMethod",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
 
@@ -266,11 +275,12 @@ namespace DebuggerTests
                     CheckNumber(locals, "k", 0);
                     CheckNumber(locals, "new_i", 0);
                     CheckString(locals, "text", null);
+                    await Task.CompletedTask;
                 }
             );
 
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 87, 8, "OuterMethod",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
 
@@ -279,13 +289,14 @@ namespace DebuggerTests
                     CheckNumber(locals, "k", 0);
                     CheckNumber(locals, "new_i", 0);
                     CheckString(locals, "text", "Hello");
+                    await Task.CompletedTask;
                 }
             );
 
             // Step into InnerMethod
             await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 105, 8, "InnerMethod");
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 110, 12, "InnerMethod", times: 5,
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(4, locals.Count());
 
@@ -293,12 +304,13 @@ namespace DebuggerTests
                     CheckNumber(locals, "j", 15);
                     CheckString(locals, "foo_str", "foo");
                     CheckObject(locals, "this", "Math.NestedInMath");
+                    await Task.CompletedTask;
                 }
             );
 
             // Step back to OuterMethod
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 90, 8, "OuterMethod", times: 6,
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
 
@@ -307,6 +319,7 @@ namespace DebuggerTests
                     CheckNumber(locals, "k", 0);
                     CheckNumber(locals, "new_i", 24);
                     CheckString(locals, "text", "Hello");
+                    await Task.CompletedTask;
                 }
             );
         }
@@ -326,13 +339,14 @@ namespace DebuggerTests
             var wait_res = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_async_method_with_await(); }, 1);",
                 debugger_test_loc, 120, 12, "MoveNext", //FIXME:
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(4, locals.Count());
                     CheckString(locals, "s", "string from js");
                     CheckNumber(locals, "i", 42);
                     CheckString(locals, "local0", "value0");
                     CheckObject(locals, "this", "Math.NestedInMath");
+                    await Task.CompletedTask;
                 }
             );
             Console.WriteLine(wait_res);
@@ -347,7 +361,7 @@ namespace DebuggerTests
             // TODO: previous frames have async machinery details, so no point checking that right now
 
             var pause_loc = await SendCommandAndCheck(null, "Debugger.resume", debugger_test_loc, 135, 12, /*FIXME: "AsyncMethodNoReturn"*/ "MoveNext",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     Assert.Equal(4, locals.Count());
                     CheckString(locals, "str", "AsyncMethodNoReturn's local");
@@ -356,6 +370,7 @@ namespace DebuggerTests
                     CheckValueType(locals, "ss", "Math.SimpleStruct");
                     CheckArray(locals, "ss_arr", "Math.SimpleStruct[]", "Math.SimpleStruct[0]");
                     // TODO: struct fields
+                    await Task.CompletedTask;
                 }
             );
 
@@ -417,7 +432,7 @@ namespace DebuggerTests
             }
 
             pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 40, 8, "MethodWithStructArgs", times: 4,
-                locals_fn: (l) => { /* non-null to make sure that locals get fetched */ });
+                locals_fn: async (l) => { /* non-null to make sure that locals get fetched */ await Task.CompletedTask;  });
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             {
                 Assert.Equal(3, locals.Count());
@@ -469,7 +484,7 @@ namespace DebuggerTests
             // ----------- Step back to the caller ---------
 
             pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 30, 12, "TestStructsAsMethodArgs",
-                times: 1, locals_fn: (l) => { /* non-null to make sure that locals get fetched */ });
+                times: 1, locals_fn: async (l) => { /* non-null to make sure that locals get fetched */ await Task.CompletedTask;  });
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             await CheckProps(locals, new
             {
@@ -963,10 +978,10 @@ namespace DebuggerTests
             var step_into = await SendCommandAndCheck(null, $"Debugger.stepInto", null, -1, -1, null);
 
             Assert.Equal(
-                step_into["callFrames"][0]["location"]["lineNumber"].Value<int>(), 
+                step_into["callFrames"][0]["location"]["lineNumber"].Value<int>(),
                 pause_location.Value["locations"][0]["lineNumber"].Value<int>() + 1
                 );
-            
+
         }
 
         [Fact]
@@ -982,7 +997,7 @@ namespace DebuggerTests
             );
             var step_into1 = await SendCommandAndCheck(null, $"Debugger.stepInto", null, -1, -1, null);
 
-            Assert.Equal( 
+            Assert.Equal(
                 pause_location.Value["locations"][0]["lineNumber"].Value<int>(),
                 step_into1["callFrames"][0]["location"]["lineNumber"].Value<int>()
                 );
@@ -993,7 +1008,7 @@ namespace DebuggerTests
                 pause_location.Value["locations"][0]["lineNumber"].Value<int>() + 1,
                 step_into2["callFrames"][0]["location"]["lineNumber"].Value<int>()
                 );
-            
+
         }
 
         [Fact]

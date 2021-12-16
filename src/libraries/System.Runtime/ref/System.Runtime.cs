@@ -9041,6 +9041,12 @@ namespace System.Diagnostics.CodeAnalysis
     {
         public AllowNullAttribute() { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    public sealed class ConstantExpectedAttribute : Attribute
+    {
+        public object? Min { get { throw null; } set { } }
+        public object? Max { get { throw null; } set { } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited=false)]
     public sealed partial class DisallowNullAttribute : System.Attribute
     {

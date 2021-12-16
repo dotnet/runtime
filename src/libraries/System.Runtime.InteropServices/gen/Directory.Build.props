@@ -8,5 +8,6 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <CLSCompliant>false</CLSCompliant>
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
+    <IsGeneratorProject>true</IsGeneratorProject>
   </PropertyGroup>
 </Project>

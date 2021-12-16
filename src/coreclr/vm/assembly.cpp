@@ -189,11 +189,17 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
 
-    if (GetManifestFile()->IsDynamic())
+    PEAssembly* pPEAssembly = GetManifestFile();
+
+    // "Module::Create" will initialize R2R support, if there is an R2R header.
+    // make sure the PE is loaded or R2R will be disabled.
+    pPEAssembly->EnsureLoaded();
+
+    if (pPEAssembly->IsDynamic())
         // manifest modules of dynamic assemblies are always transient
-        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
+        m_pManifest = ReflectionModule::Create(this, pPEAssembly, pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
-        m_pManifest = Module::Create(this, mdFileNil, GetManifestFile(), pamTracker);
+        m_pManifest = Module::Create(this, mdFileNil, pPEAssembly, pamTracker);
 
     FastInterlockIncrement((LONG*)&g_cAssemblies);
 
@@ -208,15 +214,16 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
 
-    if (IsCollectible())
+    if (IsCollectible() && !pPEAssembly->IsDynamic())
     {
         COUNT_T size;
-        BYTE *start = (BYTE*)m_pManifest->GetPEAssembly()->GetLoadedImageContents(&size);
-        if (start != NULL)
-        {
-            GCX_COOP();
-            LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
-        }
+        BYTE* start = (BYTE*)pPEAssembly->GetLoadedImageContents(&size);
+
+        // We should have the content loaded at this time. There will be no other attempt to associate memory.
+        _ASSERTE(start != NULL);
+
+        GCX_COOP();
+        LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
     }
 
     {

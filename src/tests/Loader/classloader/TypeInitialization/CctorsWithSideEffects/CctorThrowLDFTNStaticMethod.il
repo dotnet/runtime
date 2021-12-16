@@ -25,7 +25,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module CctorThrowLDFTNStaticMethod.exe
 // MVID: {DFA6FFCF-599E-4DF2-8538-B842C6A0AD10}
 .imagebase 0x00400000
 .file alignment 0x00000200
