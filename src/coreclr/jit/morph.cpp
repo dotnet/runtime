@@ -12088,24 +12088,11 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
 
-            if (opts.OptimizationEnabled() && fgGlobalMorph && !tree->IsUnsigned() &&
-                tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) && op1->OperIs(GT_CAST) && varTypeIsLong(op1->CastToType()) &&
-                op1->gtGetOp1()->TypeIs(TYP_INT) && op1->IsUnsigned())
+            if (opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) && !gtIsActiveCSE_Candidate(op1) &&
+                !gtIsActiveCSE_Candidate(op2) && !tree->IsUnsigned() && tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) &&
+                op1->OperIs(GT_CAST) && varTypeIsLong(op1->CastToType()) && op1->gtGetOp1()->TypeIs(TYP_INT) &&
+                op1->IsUnsigned())
             {
-                bool op2IsCast           = false;
-                bool op2IsNotNegativeU32 = false;
-                if (op2->IsIntegralConst() && ((size_t)op2->AsIntCon()->IntegralValue() <= UINT_MAX))
-                {
-                    op2IsNotNegativeU32 = true;
-                }
-                else if (op2->OperIs(GT_CAST) && varTypeIsLong(op2->CastToType()) &&
-                         op2->gtGetOp1()->OperIs(GT_ARR_LENGTH))
-                {
-                    op2IsNotNegativeU32 = true;
-                    op2IsCast           = true;
-                    // TODO: we need to recognize Span._length here as well
-                }
-
                 // Transform
                 //
                 //   *  GE        int
@@ -12119,8 +12106,7 @@ DONE_MORPHING_CHILDREN:
                 //   +--*  X         int
                 //   \--*  CNS_INT   int
                 //
-                // TODO: handle small type casts. Also we can fold the whole condition
-                // if op2Value doesn't fit into CastToType.
+                // TODO: handle small type casts
                 //
                 // Same for:
                 //
@@ -12130,6 +12116,21 @@ DONE_MORPHING_CHILDREN:
                 //   \--*  CAST      long <- [u]long <- int
                 //      \--*  ARR_LEN   int
                 //
+                bool op2IsCast           = false;
+                bool op2IsNotNegativeU32 = false;
+                if (op2->IsIntegralConst() && ((size_t)op2->AsIntConCommon()->IntegralValue() <= UINT_MAX))
+                {
+                    // We can fold the whole condition if op2 doesn't fit into UINT_MAX.
+                    op2IsNotNegativeU32 = true;
+                }
+                else if (op2->OperIs(GT_CAST) && varTypeIsLong(op2->CastToType()) &&
+                         op2->gtGetOp1()->OperIs(GT_ARR_LENGTH))
+                {
+                    // ARR_LEN is known to be in [0..UINT_MAX] range.
+                    op2IsNotNegativeU32 = true;
+                    op2IsCast           = true;
+                    // TODO: we need to recognize Span._length here as well
+                }
 
                 if (op2IsNotNegativeU32)
                 {
