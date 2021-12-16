@@ -38,8 +38,8 @@
     manually enabled by updating the metadata.
   -->
   <ItemGroup>
-    <!-- Targeting packs are only patched in extreme cases. -->
-    <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="1" />
+    <!-- Targeting packs are only patched when we need to patch reference assemblies, intellisense, or source generators. -->
+    <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="2" />
   </ItemGroup>
   <PropertyGroup>
     <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
