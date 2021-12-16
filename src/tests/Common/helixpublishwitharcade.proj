@@ -283,7 +283,7 @@
 
   <Target Name="PrepareMergedTestPayloadDirectoryForDesktop"
       Condition="'$(TargetsMobile)' != 'true'"
-      Outputs="%(_MergedWrapperRunScript.FileName)"
+      Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers">
     <ItemGroup>
       <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
@@ -316,6 +316,7 @@
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAndroid"
       Condition="'$(TargetsAndroid)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers">
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
@@ -332,6 +333,7 @@
 
   <Target Name="PrepareMergedTestPayloadDirectoryForWasm"
       Condition="'$(TargetsBrowser)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers">
     <ItemGroup>
       <_MergedWrapperRunScript Include="@(_MergedWrapperMarker->'%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)')" />
@@ -358,6 +360,7 @@
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobile"
       Condition="'$(TargetsAppleMobile)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers">
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
