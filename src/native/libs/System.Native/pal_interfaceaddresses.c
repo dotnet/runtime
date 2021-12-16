@@ -11,7 +11,12 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <assert.h>
+#if HAVE_IFADDRS || HAVE_GETIFADDRS
 #include <ifaddrs.h>
+#endif
+#if !HAVE_GETIFADDRS
+#include <dlfcn.h>
+#endif
 #include <net/if.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -31,9 +36,6 @@
 #include <net/if_media.h>
 #elif HAVE_IOS_NET_IFMEDIA_H
 #include "ios/net/if_media.h"
-#endif
-#if !HAVE_GETIFADDRS
-#include <dlfcn.h>
 #endif
 
 #if defined(AF_PACKET)
