@@ -469,7 +469,6 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         }
 
         [Fact]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadEncryptedDiminishedDP()
         {
             // PBES1: PbeWithMD5AndDESCBC
