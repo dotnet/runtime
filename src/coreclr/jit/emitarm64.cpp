@@ -12981,7 +12981,7 @@ void emitter::emitDispIns(
             }
             if (ins == INS_cmeq)
             {
-                printf(" ");
+                printf(", ");
                 emitDispFloatZero();
             }
             break;
