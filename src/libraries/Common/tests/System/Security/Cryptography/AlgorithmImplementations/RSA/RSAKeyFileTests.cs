@@ -494,7 +494,6 @@ YMSYHxE=";
         }
 
         [Fact]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadEncryptedRsa1032()
         {
             // PBES2: PBKDF2 + aes192
