@@ -120,10 +120,10 @@ namespace Mono.Linker
 					return null;
 
 				return typeName switch {
-					ArrayTypeName _ => new ArrayType (elementType),
+					ArrayTypeName => new ArrayType (elementType),
 					MultiDimArrayTypeName multiDimArrayTypeName => new ArrayType (elementType, multiDimArrayTypeName.Rank),
-					ByRefTypeName _ => new ByReferenceType (elementType),
-					PointerTypeName _ => new PointerType (elementType),
+					ByRefTypeName => new ByReferenceType (elementType),
+					PointerTypeName => new PointerType (elementType),
 					_ => elementType
 				};
 			}
