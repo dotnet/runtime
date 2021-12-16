@@ -361,10 +361,19 @@ async function loadDotnet(file) {
             return require(file);
         };
     } else if (is_browser) { // vanila JS in browser
-        loadScript = async function (file) {
-            globalThis.exports = {}; // if we are loading cjs file
-            const createDotnetRuntime = await import(file);
-            return typeof createDotnetRuntime === "function" ? createDotnetRuntime : globalThis.exports.createDotnetRuntime;
+        loadScript = function (file) {
+            // this is callback we have in CJS version of the runtime
+            var loaded = new Promise((resolve, reject) => {
+                try {
+                    globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
+                        resolve(createDotnetRuntime);
+                    };
+                    import(file);
+                } catch (err) {
+                    reject(err);
+                }
+            });
+            return loaded;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {
