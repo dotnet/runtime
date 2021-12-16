@@ -19,7 +19,7 @@ class Program
         for (int i = 0; i < 50000000; i++)
         {
             x = 0;
-            if (p.IncrementField() != 10)
+            if (p.IncrementField() != 1)
                 throw new Exception();
         }
         return 100;
