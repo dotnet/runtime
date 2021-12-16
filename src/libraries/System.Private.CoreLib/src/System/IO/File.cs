@@ -293,14 +293,19 @@ namespace System.IO
 
         public static byte[] ReadAllBytes(string path)
         {
-            // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
+            // SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
+            FileOptions options = OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None;
+            using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options))
             {
                 long fileLength = 0;
                 if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
                 {
                     throw new IOException(SR.IO_FileTooLong2GB);
                 }
+
+#if DEBUG
+                fileLength = 0; // improve the test coverage for ReadAllBytesUnknownLength
+#endif
 
                 if (fileLength == 0)
                 {

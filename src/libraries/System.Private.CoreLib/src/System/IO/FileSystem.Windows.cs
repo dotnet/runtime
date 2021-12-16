@@ -462,7 +462,7 @@ namespace System.IO
             long changeTime = -1,
             uint fileAttributes = 0)
         {
-            using SafeFileHandle handle = OpenHandle(fullPath, asDirectory);
+            using SafeFileHandle handle = OpenHandleToWriteAttributes(fullPath, asDirectory);
             SetFileTime(handle, creationTime, lastAccessTime, lastWriteTime, changeTime, fileAttributes);
         }
 

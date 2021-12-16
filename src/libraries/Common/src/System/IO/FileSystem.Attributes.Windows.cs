@@ -116,7 +116,7 @@ namespace System.IO
         {
 
             if (!Interop.Kernel32.GetFileInformationByHandle(
-                fileHandle, 
+                fileHandle,
                 out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInformationData))
             {
                 return Marshal.GetLastWin32Error();
