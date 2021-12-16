@@ -7,6 +7,7 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 include(CheckLibraryExists)
+include(CheckFunctionExists)
 
 # CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
 if(POLICY CMP0075)
@@ -168,9 +169,8 @@ check_symbol_exists(
     fcntl.h
     HAVE_F_FULLFSYNC)
 
-check_symbol_exists(
+check_function_exists(
     getifaddrs
-    "sys/types.h;ifaddrs.h"
     HAVE_GETIFADDRS)
 
 check_symbol_exists(
