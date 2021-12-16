@@ -4147,12 +4147,6 @@ void emitter::emitIns_Mov(
         case INS_sxtw:
         {
             assert(size == EA_8BYTE);
-
-            if (IsRedundantSxtw(ins, size, dstReg, srcReg))
-            {
-                return;
-            }
-
             FALLTHROUGH;
         }
 
@@ -15715,43 +15709,6 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
-    return false;
-}
-
-//----------------------------------------------------------------------------------------
-// IsRedundantSxtw:
-//    Check if the current `sxtw` instruction is redundant and can be omitted.
-//
-// Arguments:
-//    ins  - The current instruction
-//    size - Operand size of current instruction
-//    dst  - The current destination
-//    src  - The current source
-//
-// Return Value:
-//    true if sign extension can be omitted.
-
-bool emitter::IsRedundantSxtw(instruction ins, emitAttr size, regNumber dst, regNumber src)
-{
-    assert(ins == INS_sxtw && size == EA_8BYTE);
-
-    if (!emitComp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    const bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
-    if ((dst == src) && (emitLastIns != nullptr) && !isFirstInstrInBlock)
-    {
-        // Check if the previous instruction has a side-effect to do sxtw's job
-        if (emitLastIns->idOpSize() == EA_4BYTE && emitLastIns->idInsIs(INS_ldrsw, INS_ldrsh, INS_ldrsb))
-        {
-            JITDUMP("\n -- suppressing sxtw because ldrs already cleared upper 4 bytes\n");
-            emitLastIns->idOpSize(size);
-            return true;
-        }
-    }
     return false;
 }
 
