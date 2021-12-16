@@ -585,12 +585,15 @@ mono_set_timeout_exec (int id)
 {
 	ERROR_DECL (error);
 
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
-	g_assert (klass);
+	static MonoMethod *method = NULL;
+	if (method == NULL) {
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
+		g_assert (klass);
 
-	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
-	mono_error_assert_ok (error);
-	g_assert (method);
+		method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (method);
+	}
 
 	gpointer params[1] = { &id };
 	MonoObject *exc = NULL;
@@ -626,12 +629,15 @@ tp_cb (void)
 {
 	ERROR_DECL (error);
 
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
-	g_assert (klass);
+	static MonoMethod *method = NULL;
+	if (method == NULL) {
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
+		g_assert (klass);
 
-	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
-	mono_error_assert_ok (error);
-	g_assert (method);
+		method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (method);
+	}
 
 	MonoObject *exc = NULL;
 
