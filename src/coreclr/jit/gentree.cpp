@@ -4083,6 +4083,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 }
                             }
                         }
+                        if (tree->gtFlags & GTF_IND_VOLATILE)
+                        {
+                            // For volatile store/loads when address is contained we always emit `dmb`
+                            // if it's not - we emit stlr/ldlr
+                            doAddrMode = false;
+                        }
                         if (doAddrMode && gtMarkAddrMode(addr, &costEx, &costSz, tree->TypeGet()))
                         {
                             goto DONE;
