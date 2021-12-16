@@ -2142,7 +2142,7 @@ public:
         return instrStream.CanEncodeAllStores();
     }
 
-    int InstructionCount(int regSizeBytes) const
+    unsigned InstructionCount(int regSizeBytes) const
     {
         CountingStream instrStream;
         UnrollInitBlock(instrStream, regSizeBytes);
@@ -2267,7 +2267,7 @@ public:
         dstStartOffset = dstOffset;
     }
 
-    int InstructionCount(int regSizeBytes) const
+    unsigned InstructionCount(int regSizeBytes) const
     {
         CountingStream instrStream;
         UnrollCopyBlock(instrStream, instrStream, regSizeBytes);
