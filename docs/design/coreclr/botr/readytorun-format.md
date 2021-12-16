@@ -721,56 +721,56 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_NewMultiDimArr            = 0x5C,
 
     // Helpers used with generic handle lookup cases
-    READYTORUN_HELPER_NewObject                 = 0x5F,
-    READYTORUN_HELPER_NewArray                  = 0x60,
-    READYTORUN_HELPER_CheckCastAny              = 0x61,
-    READYTORUN_HELPER_CheckInstanceAny          = 0x62,
-    READYTORUN_HELPER_GenericGcStaticBase       = 0x63,
-    READYTORUN_HELPER_GenericNonGcStaticBase    = 0x64,
-    READYTORUN_HELPER_GenericGcTlsBase          = 0x65,
-    READYTORUN_HELPER_GenericNonGcTlsBase       = 0x66,
-    READYTORUN_HELPER_VirtualFuncPtr            = 0x67,
+    READYTORUN_HELPER_NewObject                 = 0x60,
+    READYTORUN_HELPER_NewArray                  = 0x61,
+    READYTORUN_HELPER_CheckCastAny              = 0x62,
+    READYTORUN_HELPER_CheckInstanceAny          = 0x63,
+    READYTORUN_HELPER_GenericGcStaticBase       = 0x64,
+    READYTORUN_HELPER_GenericNonGcStaticBase    = 0x65,
+    READYTORUN_HELPER_GenericGcTlsBase          = 0x66,
+    READYTORUN_HELPER_GenericNonGcTlsBase       = 0x67,
+    READYTORUN_HELPER_VirtualFuncPtr            = 0x68,
 
     // Long mul/div/shift ops
-    READYTORUN_HELPER_LMul                      = 0xBF,
-    READYTORUN_HELPER_LMulOfv                   = 0xC0,
-    READYTORUN_HELPER_ULMulOvf                  = 0xC1,
-    READYTORUN_HELPER_LDiv                      = 0xC2,
-    READYTORUN_HELPER_LMod                      = 0xC3,
-    READYTORUN_HELPER_ULDiv                     = 0xC4,
-    READYTORUN_HELPER_ULMod                     = 0xC5,
-    READYTORUN_HELPER_LLsh                      = 0xC6,
-    READYTORUN_HELPER_LRsh                      = 0xC7,
-    READYTORUN_HELPER_LRsz                      = 0xC8,
-    READYTORUN_HELPER_Lng2Dbl                   = 0xC9,
-    READYTORUN_HELPER_ULng2Dbl                  = 0xCA,
+    READYTORUN_HELPER_LMul                      = 0xC0,
+    READYTORUN_HELPER_LMulOfv                   = 0xC1,
+    READYTORUN_HELPER_ULMulOvf                  = 0xC2,
+    READYTORUN_HELPER_LDiv                      = 0xC3,
+    READYTORUN_HELPER_LMod                      = 0xC4,
+    READYTORUN_HELPER_ULDiv                     = 0xC5,
+    READYTORUN_HELPER_ULMod                     = 0xC6,
+    READYTORUN_HELPER_LLsh                      = 0xC7,
+    READYTORUN_HELPER_LRsh                      = 0xC8,
+    READYTORUN_HELPER_LRsz                      = 0xC9,
+    READYTORUN_HELPER_Lng2Dbl                   = 0xCA,
+    READYTORUN_HELPER_ULng2Dbl                  = 0xCB,
 
     // 32-bit division helpers
-    READYTORUN_HELPER_Div                       = 0xCB,
-    READYTORUN_HELPER_Mod                       = 0xCC,
-    READYTORUN_HELPER_UDiv                      = 0xCD,
-    READYTORUN_HELPER_UMod                      = 0xCE,
+    READYTORUN_HELPER_Div                       = 0xCC,
+    READYTORUN_HELPER_Mod                       = 0xCD,
+    READYTORUN_HELPER_UDiv                      = 0xCE,
+    READYTORUN_HELPER_UMod                      = 0xCF,
 
     // Floating point conversions
-    READYTORUN_HELPER_Dbl2Int                   = 0xCF,
-    READYTORUN_HELPER_Dbl2IntOvf                = 0xD0,
-    READYTORUN_HELPER_Dbl2Lng                   = 0xD1,
-    READYTORUN_HELPER_Dbl2LngOvf                = 0xD2,
-    READYTORUN_HELPER_Dbl2UInt                  = 0xD3,
-    READYTORUN_HELPER_Dbl2UIntOvf               = 0xD4,
-    READYTORUN_HELPER_Dbl2ULng                  = 0xD5,
-    READYTORUN_HELPER_Dbl2ULngOvf               = 0xD6,
+    READYTORUN_HELPER_Dbl2Int                   = 0xD0,
+    READYTORUN_HELPER_Dbl2IntOvf                = 0xD1,
+    READYTORUN_HELPER_Dbl2Lng                   = 0xD2,
+    READYTORUN_HELPER_Dbl2LngOvf                = 0xD3,
+    READYTORUN_HELPER_Dbl2UInt                  = 0xD4,
+    READYTORUN_HELPER_Dbl2UIntOvf               = 0xD5,
+    READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
+    READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,
 
     // Floating point ops
-    READYTORUN_HELPER_DblRem                    = 0xDF,
-    READYTORUN_HELPER_FltRem                    = 0xE0,
-    READYTORUN_HELPER_DblRound                  = 0xE1,
-    READYTORUN_HELPER_FltRound                  = 0xE2,
+    READYTORUN_HELPER_DblRem                    = 0xE0,
+    READYTORUN_HELPER_FltRem                    = 0xE1,
+    READYTORUN_HELPER_DblRound                  = 0xE2,
+    READYTORUN_HELPER_FltRound                  = 0xE3,
 
 #ifndef _TARGET_X86_
     // Personality rountines
-    READYTORUN_HELPER_PersonalityRoutine        = 0xEF,
-    READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF0,
+    READYTORUN_HELPER_PersonalityRoutine        = 0xF0,
+    READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
 #endif
 
     //
@@ -778,21 +778,21 @@ enum ReadyToRunHelper
     //
 
     // JIT32 x86-specific write barriers
-    READYTORUN_HELPER_WriteBarrier_EAX          = 0xFF,
-    READYTORUN_HELPER_WriteBarrier_EBX          = 0x100,
-    READYTORUN_HELPER_WriteBarrier_ECX          = 0x101,
-    READYTORUN_HELPER_WriteBarrier_ESI          = 0x102,
-    READYTORUN_HELPER_WriteBarrier_EDI          = 0x103,
-    READYTORUN_HELPER_WriteBarrier_EBP          = 0x104,
-    READYTORUN_HELPER_CheckedWriteBarrier_EAX   = 0x105,
-    READYTORUN_HELPER_CheckedWriteBarrier_EBX   = 0x106,
-    READYTORUN_HELPER_CheckedWriteBarrier_ECX   = 0x107,
-    READYTORUN_HELPER_CheckedWriteBarrier_ESI   = 0x108,
-    READYTORUN_HELPER_CheckedWriteBarrier_EDI   = 0x109,
-    READYTORUN_HELPER_CheckedWriteBarrier_EBP   = 0x10A,
+    READYTORUN_HELPER_WriteBarrier_EAX          = 0x100,
+    READYTORUN_HELPER_WriteBarrier_EBX          = 0x101,
+    READYTORUN_HELPER_WriteBarrier_ECX          = 0x102,
+    READYTORUN_HELPER_WriteBarrier_ESI          = 0x103,
+    READYTORUN_HELPER_WriteBarrier_EDI          = 0x104,
+    READYTORUN_HELPER_WriteBarrier_EBP          = 0x105,
+    READYTORUN_HELPER_CheckedWriteBarrier_EAX   = 0x106,
+    READYTORUN_HELPER_CheckedWriteBarrier_EBX   = 0x107,
+    READYTORUN_HELPER_CheckedWriteBarrier_ECX   = 0x108,
+    READYTORUN_HELPER_CheckedWriteBarrier_ESI   = 0x109,
+    READYTORUN_HELPER_CheckedWriteBarrier_EDI   = 0x10A,
+    READYTORUN_HELPER_CheckedWriteBarrier_EBP   = 0x10B,
 
     // JIT32 x86-specific exception handling
-    READYTORUN_HELPER_EndCatch                  = 0x10F,
+    READYTORUN_HELPER_EndCatch                  = 0x110,
 };
 ```
 
