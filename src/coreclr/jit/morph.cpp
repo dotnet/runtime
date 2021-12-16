@@ -12148,7 +12148,7 @@ DONE_MORPHING_CHILDREN:
                         op2->ChangeType(TYP_INT);
 #ifndef TARGET_64BIT
                         assert(op2->OperIs(GT_CNS_LNG));
-                        op2->ChangeOper(GT_CNS_INT, GenTree::PRESERVE_VN);
+                        op2->ChangeOperUnchecked(GT_CNS_INT);
 #endif
                     }
                     DEBUG_DESTROY_NODE(op1);
