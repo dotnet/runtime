@@ -1984,6 +1984,18 @@
     "any",
     "base"
   ],
+  "centos-loongarch64": [
+    "centos-loongarch64",
+    "centos",
+    "rhel-loongarch64",
+    "rhel",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "centos.7": [
     "centos.7",
     "centos",
@@ -2052,6 +2064,22 @@
     "any",
     "base"
   ],
+  "centos.8-loongarch64": [
+    "centos.8-loongarch64",
+    "centos.8",
+    "centos-loongarch64",
+    "rhel.8-loongarch64",
+    "centos",
+    "rhel.8",
+    "rhel-loongarch64",
+    "rhel",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "centos.9": [
     "centos.9",
     "centos",
@@ -2090,6 +2118,22 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "centos.9-loongarch64": [
+    "centos.9-loongarch64",
+    "centos.9",
+    "centos-loongarch64",
+    "rhel.9-loongarch64",
+    "centos",
+    "rhel.9",
+    "rhel-loongarch64",
+    "rhel",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -2147,6 +2191,16 @@
     "linux-x86",
     "linux",
     "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
+  "debian-loongarch64": [
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -2219,6 +2273,18 @@
     "any",
     "base"
   ],
+  "debian.10-loongarch64": [
+    "debian.10-loongarch64",
+    "debian.10",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "debian.11": [
     "debian.11",
     "debian",
@@ -2283,6 +2349,18 @@
     "linux-x86",
     "linux",
     "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
+  "debian.11-loongarch64": [
+    "debian.11-loongarch64",
+    "debian.11",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -2467,6 +2545,16 @@
     "any",
     "base"
   ],
+  "fedora-loongarch64": [
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.23": [
     "fedora.23",
     "fedora",
@@ -2495,6 +2583,18 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.23-loongarch64": [
+    "fedora.23-loongarch64",
+    "fedora.23",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -2531,6 +2631,18 @@
     "any",
     "base"
   ],
+  "fedora.24-loongarch64": [
+    "fedora.24-loongarch64",
+    "fedora.24",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.25": [
     "fedora.25",
     "fedora",
@@ -2559,6 +2671,18 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.25-loongarch64": [
+    "fedora.25-loongarch64",
+    "fedora.25",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -2595,6 +2719,18 @@
     "any",
     "base"
   ],
+  "fedora.26-loongarch64": [
+    "fedora.26-loongarch64",
+    "fedora.26",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.27": [
     "fedora.27",
     "fedora",
@@ -2623,6 +2759,18 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.27-loongarch64": [
+    "fedora.27-loongarch64",
+    "fedora.27",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -2659,6 +2807,18 @@
     "any",
     "base"
   ],
+  "fedora.28-loongarch64": [
+    "fedora.28-loongarch64",
+    "fedora.28",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.29": [
     "fedora.29",
     "fedora",
@@ -2687,6 +2847,18 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.29-loongarch64": [
+    "fedora.29-loongarch64",
+    "fedora.29",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -2723,6 +2895,18 @@
     "any",
     "base"
   ],
+  "fedora.30-loongarch64": [
+    "fedora.30-loongarch64",
+    "fedora.30",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.31": [
     "fedora.31",
     "fedora",
@@ -2751,6 +2935,18 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.31-loongarch64": [
+    "fedora.31-loongarch64",
+    "fedora.31",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -2787,6 +2983,18 @@
     "any",
     "base"
   ],
+  "fedora.32-loongarch64": [
+    "fedora.32-loongarch64",
+    "fedora.32",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.33": [
     "fedora.33",
     "fedora",
@@ -2815,6 +3023,18 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.33-loongarch64": [
+    "fedora.33-loongarch64",
+    "fedora.33",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -2851,6 +3071,18 @@
     "any",
     "base"
   ],
+  "fedora.34-loongarch64": [
+    "fedora.34-loongarch64",
+    "fedora.34",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.35": [
     "fedora.35",
     "fedora",
@@ -2883,6 +3115,18 @@
     "any",
     "base"
   ],
+  "fedora.35-loongarch64": [
+    "fedora.35-loongarch64",
+    "fedora.35",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.36": [
     "fedora.36",
     "fedora",
@@ -2911,6 +3155,18 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.36-loongarch64": [
+    "fedora.36-loongarch64",
+    "fedora.36",
+    "fedora-loongarch64",
+    "fedora",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -3634,6 +3890,14 @@
     "linux-armel",
     "linux",
     "unix-armel",
+    "unix",
+    "any",
+    "base"
+  ],
+  "linux-loongarch64": [
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -5323,6 +5587,16 @@
     "any",
     "base"
   ],
+  "rhel-loongarch64": [
+    "rhel-loongarch64",
+    "rhel",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "rhel.6": [
     "rhel.6",
     "rhel",
@@ -5619,6 +5893,18 @@
     "any",
     "base"
   ],
+  "rhel.8-loongarch64": [
+    "rhel.8-loongarch64",
+    "rhel.8",
+    "rhel-loongarch64",
+    "rhel",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "rhel.8.0": [
     "rhel.8.0",
     "rhel.8",
@@ -5652,6 +5938,20 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.8.0-loongarch64": [
+    "rhel.8.0-loongarch64",
+    "rhel.8.0",
+    "rhel.8-loongarch64",
+    "rhel.8",
+    "rhel-loongarch64",
+    "rhel",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -5698,6 +5998,22 @@
     "any",
     "base"
   ],
+  "rhel.8.1-loongarch64": [
+    "rhel.8.1-loongarch64",
+    "rhel.8.1",
+    "rhel.8.0-loongarch64",
+    "rhel.8.0",
+    "rhel.8-loongarch64",
+    "rhel.8",
+    "rhel-loongarch64",
+    "rhel",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "rhel.9": [
     "rhel.9",
     "rhel",
@@ -5726,6 +6042,18 @@
     "linux-x64",
     "linux",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.9-loongarch64": [
+    "rhel.9-loongarch64",
+    "rhel.9",
+    "rhel-loongarch64",
+    "rhel",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -7093,6 +7421,18 @@
     "any",
     "base"
   ],
+  "ubuntu-loongarch64": [
+    "ubuntu-loongarch64",
+    "ubuntu",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "ubuntu.14.04": [
     "ubuntu.14.04",
     "ubuntu",
@@ -7687,6 +8027,20 @@
     "any",
     "base"
   ],
+  "ubuntu.18.10-loongarch64": [
+    "ubuntu.18.10-loongarch64",
+    "ubuntu.18.10",
+    "ubuntu-loongarch64",
+    "ubuntu",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "ubuntu.19.04": [
     "ubuntu.19.04",
     "ubuntu",
@@ -7748,6 +8102,20 @@
     "linux-x86",
     "linux",
     "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
+  "ubuntu.19.04-loongarch64": [
+    "ubuntu.19.04-loongarch64",
+    "ubuntu.19.04",
+    "ubuntu-loongarch64",
+    "ubuntu",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -7817,6 +8185,20 @@
     "any",
     "base"
   ],
+  "ubuntu.19.10-loongarch64": [
+    "ubuntu.19.10-loongarch64",
+    "ubuntu.19.10",
+    "ubuntu-loongarch64",
+    "ubuntu",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "ubuntu.20.04": [
     "ubuntu.20.04",
     "ubuntu",
@@ -7878,6 +8260,20 @@
     "linux-x86",
     "linux",
     "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
+  "ubuntu.20.04-loongarch64": [
+    "ubuntu.20.04-loongarch64",
+    "ubuntu.20.04",
+    "ubuntu-loongarch64",
+    "ubuntu",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -7947,6 +8343,20 @@
     "any",
     "base"
   ],
+  "ubuntu.20.10-loongarch64": [
+    "ubuntu.20.10-loongarch64",
+    "ubuntu.20.10",
+    "ubuntu-loongarch64",
+    "ubuntu",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "ubuntu.21.04": [
     "ubuntu.21.04",
     "ubuntu",
@@ -8008,6 +8418,20 @@
     "linux-x86",
     "linux",
     "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
+  "ubuntu.21.04-loongarch64": [
+    "ubuntu.21.04-loongarch64",
+    "ubuntu.21.04",
+    "ubuntu-loongarch64",
+    "ubuntu",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
     "unix",
     "any",
     "base"
@@ -8077,6 +8501,20 @@
     "any",
     "base"
   ],
+  "ubuntu.21.10-loongarch64": [
+    "ubuntu.21.10-loongarch64",
+    "ubuntu.21.10",
+    "ubuntu-loongarch64",
+    "ubuntu",
+    "debian-loongarch64",
+    "debian",
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "unix": [
     "unix",
     "any",
@@ -8096,6 +8534,12 @@
   ],
   "unix-armel": [
     "unix-armel",
+    "unix",
+    "any",
+    "base"
+  ],
+  "unix-loongarch64": [
+    "unix-loongarch64",
     "unix",
     "any",
     "base"

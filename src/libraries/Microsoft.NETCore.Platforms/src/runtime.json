@@ -1475,6 +1475,12 @@
         "unix-armel"
       ]
     },
+    "linux-loongarch64": {
+      "#import": [
+        "linux",
+        "unix-loongarch64"
+      ]
+    },
     "linux-mips64": {
       "#import": [
         "linux",
@@ -3415,6 +3421,11 @@
       ]
     },
     "unix-x86": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-loongarch64": {
       "#import": [
         "unix"
       ]

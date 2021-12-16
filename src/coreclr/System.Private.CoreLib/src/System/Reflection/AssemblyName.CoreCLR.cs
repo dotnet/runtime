@@ -103,6 +103,10 @@ namespace System.Reflection
                 {
                     return ProcessorArchitecture.Arm;
                 }
+                if (ifm == ImageFileMachine.LOONGARCH64)
+                {
+                    return ProcessorArchitecture.LoongArch64;
+                }
             }
             return ProcessorArchitecture.None;
         }

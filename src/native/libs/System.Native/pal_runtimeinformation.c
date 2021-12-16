@@ -58,7 +58,9 @@ int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
  1 - x64
  2 - ARM
  3 - ARM64
- 4 - WASM */
+ 4 - WASM
+ 5 - S390X
+ 6 - LOONGARCH64 */
 int32_t SystemNative_GetOSArchitecture()
 {
 #if defined(TARGET_ARM)
@@ -73,6 +75,8 @@ int32_t SystemNative_GetOSArchitecture()
     return ARCH_WASM;
 #elif defined(TARGET_S390X)
     return ARCH_S390X;
+#elif defined(TARGET_LOONGARCH64)
+    return ARCH_LOONGARCH64;
 #else
 #error Unidentified Architecture
 #endif
@@ -83,7 +87,9 @@ int32_t SystemNative_GetOSArchitecture()
 1 - x64
 2 - ARM
 3 - ARM64
-4 - WASM */
+4 - WASM
+5 - S390X
+6 - LOONGARCH64 */
 int32_t SystemNative_GetProcessArchitecture()
 {
 #if defined(TARGET_ARM)
@@ -98,6 +104,8 @@ int32_t SystemNative_GetProcessArchitecture()
     return ARCH_WASM;
 #elif defined(TARGET_S390X)
     return ARCH_S390X;
+#elif defined(TARGET_LOONGARCH64)
+    return ARCH_LOONGARCH64;
 #else
 #error Unidentified Architecture
 #endif

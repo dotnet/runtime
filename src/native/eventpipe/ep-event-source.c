@@ -40,6 +40,8 @@ const ep_char8_t* _ep_arch_info = "arm32";
 const ep_char8_t* _ep_arch_info = "arm64";
 #elif defined(TARGET_S390X)
 const ep_char8_t* _ep_arch_info = "s390x";
+#elif defined(TARGET_LOONGARCH64)
+const ep_char8_t* _ep_arch_info = "loongarch64";
 #else
 const ep_char8_t* _ep_arch_info = "Unknown";
 #endif

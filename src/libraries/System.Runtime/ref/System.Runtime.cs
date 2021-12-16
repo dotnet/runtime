@@ -11809,6 +11809,7 @@ namespace System.Reflection
         ARM = 452,
         IA64 = 512,
         AMD64 = 34404,
+        LOONGARCH64 = 25188,
     }
     public partial struct InterfaceMapping
     {
@@ -12237,6 +12238,7 @@ namespace System.Reflection
         IA64 = 3,
         Amd64 = 4,
         Arm = 5,
+        LoongArch64 = 6,
     }
     [System.FlagsAttribute]
     public enum PropertyAttributes
