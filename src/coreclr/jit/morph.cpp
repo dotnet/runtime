@@ -12180,30 +12180,12 @@ DONE_MORPHING_CHILDREN:
             if (!optValnumCSE_phase && op2->IsIntegralConst())
             {
                 tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
-                assert(tree->OperIsCompare());
 
                 oper = tree->OperGet();
                 op1  = tree->gtGetOp1();
                 op2  = tree->gtGetOp2();
             }
-
-            // Optimizes (X & 1) == 1 to (X & 1)
-            // GTF_RELOP_JMP_USED is used to make sure the optimization is used for return statements only.
-            if (tree->gtGetOp2()->IsIntegralConst(1) && tree->gtGetOp1()->OperIs(GT_AND) &&
-                !(tree->gtFlags & GTF_RELOP_JMP_USED))
-            {
-                GenTree* op1 = tree->gtGetOp1();
-
-                if (op1->gtGetOp2()->IsIntegralConst(1))
-                {
-                    DEBUG_DESTROY_NODE(tree->gtGetOp2());
-                    DEBUG_DESTROY_NODE(tree);
-
-                    return op1;
-                }
-            }
-
-            goto COMPARE;
+            break;
 
         case GT_LT:
         case GT_LE:
@@ -13387,6 +13369,26 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
             DEBUG_DESTROY_NODE(rshiftOp->gtGetOp2());
             DEBUG_DESTROY_NODE(rshiftOp);
+        }
+
+        // Optimizes (X & 1) == 1 to (X & 1)
+        // 
+        //                        EQ/NE                   AND
+        //                        /  \                   /  \.
+        //                      AND   CNS 1  ->         x   CNS 1
+        //                     /   \                  
+        //                    x   CNS 1
+        //           
+        // GTF_RELOP_JMP_USED is used to make sure the optimization is used for return statements only.
+        if (op1->OperIs(GT_AND) && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
+        {
+            if (op1->gtGetOp2()->IsIntegralConst(1))
+            {
+                DEBUG_DESTROY_NODE(cmp->gtGetOp2());
+                DEBUG_DESTROY_NODE(cmp);
+
+               return op1;
+            }
         }
     }
 
