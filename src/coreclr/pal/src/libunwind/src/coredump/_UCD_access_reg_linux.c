@@ -54,6 +54,10 @@ _UCD_access_reg (unw_addr_space_t as,
 #elif defined(UNW_TARGET_TILEGX)
   if (regnum > UNW_TILEGX_CFA)
     goto badreg;
+#elif defined(UNW_TARGET_LOONGARCH)
+  if (regnum >= 32)
+    goto badreg;
+
 #elif defined(UNW_TARGET_S390X)
   if (regnum > UNW_S390X_R15)
     goto badreg;

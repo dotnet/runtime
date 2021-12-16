@@ -20,6 +20,9 @@ endif
 if ARCH_HPPA
 include_HEADERS += include/libunwind-hppa.h
 endif
+if ARCH_LOONGARCH
+include_HEADERS += include/libunwind-loongarch.h
+endif
 if ARCH_MIPS
 include_HEADERS += include/libunwind-mips.h
 endif
@@ -79,6 +82,8 @@ noinst_HEADERS = include/dwarf.h include/dwarf_i.h include/dwarf-eh.h	\
 	include/tdep-ia64/libunwind_i.h	include/tdep-ia64/script.h	\
 	include/tdep-hppa/libunwind_i.h					\
 	include/tdep-hppa/jmpbuf.h include/tdep-hppa/dwarf-config.h	\
+	include/tdep-loongarch/libunwind_i.h				\
+	include/tdep-loongarch/jmpbuf.h include/tdep-loongarch/dwarf-config.h	\
 	include/tdep-mips/libunwind_i.h					\
 	include/tdep-mips/jmpbuf.h include/tdep-mips/dwarf-config.h	\
 	include/tdep-tilegx/libunwind_i.h				\

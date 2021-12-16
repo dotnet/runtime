@@ -111,7 +111,12 @@ struct JitInterfaceCallbacks
     void* (* allocateArray)(void * thisHandle, CorInfoExceptionClass** ppException, size_t cBytes);
     void (* freeArray)(void * thisHandle, CorInfoExceptionClass** ppException, void* array);
     CORINFO_ARG_LIST_HANDLE (* getArgNext)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ARG_LIST_HANDLE args);
+#if defined(TARGET_LOONGARCH64)
+    CorInfoTypeWithMod (* getArgType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet, int *flags);
+#else
     CorInfoTypeWithMod (* getArgType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet);
+#endif
+    uint32_t (* getFieldTypeByHnd)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_CLASS_HANDLE (* getArgClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     CorInfoHFAElemType (* getHFAType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE hClass);
     JITINTERFACE_HRESULT (* GetErrorHRESULT)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
@@ -1173,10 +1178,26 @@ public:
     virtual CorInfoTypeWithMod getArgType(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
-          CORINFO_CLASS_HANDLE* vcTypeRet)
+          CORINFO_CLASS_HANDLE* vcTypeRet
+#if defined(TARGET_LOONGARCH64)
+          ,int *flags = NULL
+#endif
+          )
 {
     CorInfoExceptionClass* pException = nullptr;
+#if defined(TARGET_LOONGARCH64)
+    CorInfoTypeWithMod temp = _callbacks->getArgType(_thisHandle, &pException, sig, args, vcTypeRet, flags);
+#else
     CorInfoTypeWithMod temp = _callbacks->getArgType(_thisHandle, &pException, sig, args, vcTypeRet);
+#endif
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual uint32_t getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    uint32_t temp = _callbacks->getFieldTypeByHnd(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

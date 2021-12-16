@@ -11,6 +11,8 @@
 # include "tdep-hppa/jmpbuf.h"
 #elif defined __ia64__
 # include "tdep-ia64/jmpbuf.h"
+#elif defined __loongarch__
+# include "tdep-loongarch/jmpbuf.h"
 #elif defined __mips__
 # include "tdep-mips/jmpbuf.h"
 #elif defined __powerpc__ && !defined __powerpc64__

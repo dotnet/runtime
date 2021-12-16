@@ -297,6 +297,27 @@ libunwind_hppa_la_SOURCES_hppa = $(libunwind_la_SOURCES_hppa_common)	\
 	hppa/Gis_signal_frame.c hppa/Gget_proc_info.c hppa/Gregs.c	\
 	hppa/Gresume.c hppa/Gstep.c
 
+# The list of files that go info libunwind and libunwind-loongarch:
+noinst_HEADERS += loongarch/init.h loongarch/offsets.h loongarch/unwind_i.h
+libunwind_la_SOURCES_loongarch_common = $(libunwind_la_SOURCES_common)	    \
+	loongarch/is_fpreg.c loongarch/regname.c
+
+# The list of files that go into libunwind:
+libunwind_la_SOURCES_loongarch = $(libunwind_la_SOURCES_loongarch_common)		    \
+	$(libunwind_la_SOURCES_local)					    \
+	loongarch/getcontext.S						    \
+	loongarch/Lapply_reg_state.c loongarch/Lreg_states_iterate.c		    \
+	loongarch/Lcreate_addr_space.c loongarch/Lget_proc_info.c loongarch/Lget_save_loc.c   \
+	loongarch/Lglobal.c loongarch/Linit.c loongarch/Linit_local.c loongarch/Linit_remote.c  \
+	loongarch/Lis_signal_frame.c loongarch/Lregs.c loongarch/Lresume.c loongarch/Lstep.c
+
+libunwind_loongarch_la_SOURCES_loongarch = $(libunwind_la_SOURCES_loongarch_common)	    \
+	$(libunwind_la_SOURCES_generic)					    \
+	loongarch/Gapply_reg_state.c loongarch/Greg_states_iterate.c		    \
+	loongarch/Gcreate_addr_space.c loongarch/Gget_proc_info.c loongarch/Gget_save_loc.c   \
+	loongarch/Gglobal.c loongarch/Ginit.c loongarch/Ginit_local.c loongarch/Ginit_remote.c	    \
+	loongarch/Gis_signal_frame.c loongarch/Gregs.c loongarch/Gresume.c loongarch/Gstep.c
+
 # The list of files that go info libunwind and libunwind-mips:
 noinst_HEADERS += mips/init.h mips/offsets.h mips/unwind_i.h
 libunwind_la_SOURCES_mips_common = $(libunwind_la_SOURCES_common)	    \
@@ -626,6 +647,18 @@ endif
  libunwind_setjmp_la_SOURCES += ia64/setjmp.S  ia64/sigsetjmp.S  \
 				ia64/longjmp.S ia64/siglongjmp.S
 else
+if ARCH_LOONGARCH
+ lib_LTLIBRARIES += libunwind-loongarch.la
+ libunwind_la_SOURCES = $(libunwind_la_SOURCES_loongarch)
+ libunwind_loongarch_la_SOURCES = $(libunwind_loongarch_la_SOURCES_loongarch)
+ libunwind_loongarch_la_LDFLAGS = $(COMMON_SO_LDFLAGS) -version-info $(SOVERSION)
+ libunwind_loongarch_la_LIBADD = libunwind-dwarf-generic.la
+ libunwind_loongarch_la_LIBADD += libunwind-elfxx.la
+if !REMOTE_ONLY
+ libunwind_loongarch_la_LIBADD += libunwind.la -lc
+endif
+ libunwind_setjmp_la_SOURCES += loongarch/siglongjmp.S
+else
 if ARCH_HPPA
  lib_LTLIBRARIES += libunwind-hppa.la
  libunwind_la_SOURCES = $(libunwind_la_SOURCES_hppa)
@@ -755,6 +788,7 @@ endif # ARCH_RISCV
 endif # ARCH_TILEGX
 endif # ARCH_MIPS
 endif # ARCH_HPPA
+endif # ARCH_LOONGARCH
 endif # ARCH_IA64
 endif # ARCH_ARM
 endif # ARCH_AARCH64
@@ -783,6 +817,7 @@ EXTRA_DIST =	$(libunwind_la_SOURCES_aarch64)			\
 		$(libunwind_la_SOURCES_hppa)			\
 		$(libunwind_la_SOURCES_ia64)			\
 		$(libunwind_la_EXTRAS_ia64)			\
+		$(libunwind_la_SOURCES_loongarch)		\
 		$(libunwind_la_SOURCES_mips)			\
 		$(libunwind_la_SOURCES_sh)			\
 		$(libunwind_la_SOURCES_x86)			\
@@ -798,6 +833,7 @@ EXTRA_DIST =	$(libunwind_la_SOURCES_aarch64)			\
 		$(libunwind_arm_la_SOURCES_arm)			\
 		$(libunwind_hppa_la_SOURCES_hppa)		\
 		$(libunwind_ia64_la_SOURCES_ia64)		\
+		$(libunwind_loongarch_la_SOURCES_loongarch)	\
 		$(libunwind_mips_la_SOURCES_mips)		\
 		$(libunwind_sh_la_SOURCES_sh)			\
 		$(libunwind_x86_la_SOURCES_x86)			\
