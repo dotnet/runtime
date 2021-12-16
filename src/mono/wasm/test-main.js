@@ -371,9 +371,7 @@ async function loadDotnet(file) {
                     if (createDotnetRuntime) {
                         resolve(createDotnetRuntime);
                     }
-                }).catch((err) => {
-                    reject(err);
-                });
+                }, reject);
             });
             return loaded;
         }
