@@ -44,11 +44,8 @@ namespace System.IO.Tests
             public DateTimeKind Kind => Item3;
         }
 
-        [Fact]
-        public void SettingUpdatesProperties()
+        private void SettingUpdatesPropertiesCore(T item)
         {
-            T item = GetExistingItem();
-
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
@@ -70,6 +67,13 @@ namespace System.IO.Tests
                     Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
                 }
             });
+        }
+
+        [Fact]
+        public void SettingUpdatesProperties()
+        {
+            T item = GetExistingItem();
+            SettingUpdatesPropertiesCore(item);
         }
 
         [Fact]
