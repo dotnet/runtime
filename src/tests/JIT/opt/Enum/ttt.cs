@@ -1,16 +1,15 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 
-struct MyStruct
+class Program
 {
-    int x;
+    static volatile int x;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    int IncrementAndReturn()
+    int IncrementField()
     {
-        int t = x;
+        int t = 0;
         Volatile.Write(ref x, Volatile.Read(ref x) + 1);
         t += x;
         Volatile.Write(ref x, Volatile.Read(ref x) + 1);
@@ -23,24 +22,15 @@ struct MyStruct
         return t;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test()
-    {
-        for (int i = 0; i < 10_000_000; i++)
-        {
-            if (new MyStruct().IncrementAndReturn() != 10)
-                throw new InvalidOperationException("oops");
-        }
-    }
-}
-
-class Program
-{
     static int Main()
     {
-        Console.WriteLine("Running...");
-        Parallel.For(0, 100, _ => MyStruct.Test());
-        Console.WriteLine("Done");
+        Program p = new Program();
+        for (int i = 0; i < 50000000; i++)
+        {
+            x = 0;
+            if (p.IncrementField() != 10)
+                throw new Exception();
+        }
         return 100;
     }
 }
