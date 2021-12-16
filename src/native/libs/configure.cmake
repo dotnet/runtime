@@ -169,7 +169,7 @@ check_symbol_exists(
 
 check_symbol_exists(
     getifaddrs
-    ifaddrs.h
+    "sys/types.h;ifaddrs.h"
     HAVE_GETIFADDRS)
 
 check_symbol_exists(
