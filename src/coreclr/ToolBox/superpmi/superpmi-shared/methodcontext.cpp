@@ -2638,6 +2638,9 @@ void MethodContext::recGetArgType(CORINFO_SIG_INFO*       sig,
                                   CORINFO_ARG_LIST_HANDLE args,
                                   CORINFO_CLASS_HANDLE*   vcTypeRet,
                                   CorInfoTypeWithMod      result,
+#if defined(TARGET_LOONGARCH64)
+                                    int flags,
+#endif
                                   DWORD                   exceptionCode)
 {
     if (GetArgType == nullptr)
@@ -2664,6 +2667,9 @@ void MethodContext::recGetArgType(CORINFO_SIG_INFO*       sig,
     Agnostic_GetArgType_Value value;
     value.vcTypeRet     = CastHandle(*vcTypeRet);
     value.result        = (DWORD)result;
+#if defined(TARGET_LOONGARCH64)
+    value.flags = flags;
+#endif
     value.exceptionCode = (DWORD)exceptionCode;
 
     GetArgType->Add(key, value);
@@ -2681,6 +2687,9 @@ void MethodContext::dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agno
 CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
                                                 CORINFO_ARG_LIST_HANDLE args,
                                                 CORINFO_CLASS_HANDLE*   vcTypeRet,
+#if defined(TARGET_LOONGARCH64)
+                                                int *flags,
+#endif
                                                 DWORD*                  exceptionCode)
 {
     AssertMapExists(GetArgType, ": key %016llX %016llX", CastHandle(sig->scope), CastHandle(args));
@@ -2701,12 +2710,37 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     AssertKeyExists(GetArgType, key, ": key %016llX %016llX", key.scope, key.args);
 
     Agnostic_GetArgType_Value value = GetArgType->Get(key);
+#if defined(TARGET_LOONGARCH64)
+    if (flags)
+        *flags                      = value.flags;
+#endif
     DEBUG_REP(dmpGetArgType(key, value));
 
     *vcTypeRet              = (CORINFO_CLASS_HANDLE)value.vcTypeRet;
     CorInfoTypeWithMod temp = (CorInfoTypeWithMod)value.result;
     *exceptionCode          = (DWORD)value.exceptionCode;
     return temp;
+}
+
+void MethodContext::recGetFieldTypeByHnd(CORINFO_CLASS_HANDLE cls, DWORD value)
+{
+    if (GetFieldTypeByHnd == nullptr)
+        GetFieldTypeByHnd = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = (DWORDLONG)cls;
+
+    GetFieldTypeByHnd->Add((DWORDLONG)cls, value);
+    //DEBUG_REC(dmpGetArgType(key, value));
+}
+
+void MethodContext::dmpGetFieldTypeByHnd(DWORDLONG key, DWORD value)
+{
+    printf("GetFieldTypeByHnd key %08X value-%X", key, value);
+}
+
+DWORD MethodContext::repGetFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
+{
+    return GetFieldTypeByHnd->Get((DWORDLONG)cls);
 }
 
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)

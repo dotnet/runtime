@@ -362,12 +362,22 @@ public:
                        CORINFO_ARG_LIST_HANDLE args,
                        CORINFO_CLASS_HANDLE*   vcTypeRet,
                        CorInfoTypeWithMod      result,
+#if defined(TARGET_LOONGARCH64)
+                       int flags,
+#endif
                        DWORD                   exception);
     void dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agnostic_GetArgType_Value& value);
     CorInfoTypeWithMod repGetArgType(CORINFO_SIG_INFO*       sig,
                                      CORINFO_ARG_LIST_HANDLE args,
                                      CORINFO_CLASS_HANDLE*   vcTypeRet,
+#if defined(TARGET_LOONGARCH64)
+                                     int *flags,
+#endif
                                      DWORD*                  exception);
+
+    void recGetFieldTypeByHnd(CORINFO_CLASS_HANDLE cls, DWORD value);
+    void dmpGetFieldTypeByHnd(DWORDLONG key, DWORD value);
+    DWORD repGetFieldTypeByHnd(CORINFO_CLASS_HANDLE cls);
 
     void recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result);
     void dmpGetArgNext(DWORDLONG key, DWORDLONG value);
@@ -1097,6 +1107,7 @@ enum mcPackets
     Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
+    Packet_GetFieldTypeByHnd = 194,
 };
 
 void SetDebugDumpVariables();
