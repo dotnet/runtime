@@ -11598,6 +11598,21 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     }
                 }
             }
+
+            // Optimizes (X & 1) == 1 to (X & 1)
+            // GTF_RELOP_JMP_USED is used to make sure the optimization is used for return statements only.
+            if (tree->gtGetOp2()->IsIntegralConst(1) &&  tree->gtGetOp1()->OperIs(GT_AND) && !(tree->gtFlags & GTF_RELOP_JMP_USED))
+            {
+                GenTree* op1 = tree->gtGetOp1();
+
+                if (op1->gtGetOp2()->IsIntegralConst(1))
+                {
+                    DEBUG_DESTROY_NODE(tree->gtGetOp2());
+                    DEBUG_DESTROY_NODE(tree);
+
+                    return fgMorphTree(op1);
+                }
+            }
         }
 
             FALLTHROUGH;

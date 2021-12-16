@@ -3123,22 +3123,6 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     }
 #endif
 
-    // Optimizes (X & 1) == 1 to (X & 1)
-    // GTF_RELOP_JMP_USED is used to make sure the optimization is used for return statements only.
-    if (cmp->gtGetOp2()->IsIntegralConst(1) && cmp->gtGetOp1()->gtOper == GT_AND)
-    {
-        GenTree* op1 = cmp->gtGetOp1();
-
-        if (op1->gtGetOp1()->gtOper == GT_LCL_VAR && op1->gtGetOp2()->IsIntegralConst(1) && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
-        {
-            GenTree* next = cmp->gtNext;
-            BlockRange().Remove(cmp->gtGetOp2());
-            BlockRange().Remove(cmp);
-            next->AsOp()->gtOp1 = op1;
-            return next;
-        }
-    }
-
     if (cmp->gtGetOp2()->IsIntegralConst() && !comp->opts.MinOpts())
     {
         GenTree* next = OptimizeConstCompare(cmp);
