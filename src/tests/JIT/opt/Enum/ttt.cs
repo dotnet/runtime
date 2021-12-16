@@ -1,6 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -13,12 +10,17 @@ struct MyStruct
     [MethodImpl(MethodImplOptions.NoInlining)]
     int IncrementAndReturn()
     {
+        int t = x;
         Volatile.Write(ref x, Volatile.Read(ref x) + 1);
+        t += x;
         Volatile.Write(ref x, Volatile.Read(ref x) + 1);
+        t += x;
         Volatile.Write(ref x, Volatile.Read(ref x) + 1);
+        t += x;
         Volatile.Write(ref x, Volatile.Read(ref x) + 1);
+        t += x;
         Volatile.Write(ref x, Volatile.Read(ref x) + 1);
-        return x;
+        return t;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -26,7 +28,7 @@ struct MyStruct
     {
         for (int i = 0; i < 10_000_000; i++)
         {
-            if (new MyStruct().IncrementAndReturn() != 5)
+            if (new MyStruct().IncrementAndReturn() != 10)
                 throw new InvalidOperationException("oops");
         }
     }
@@ -37,7 +39,7 @@ class Program
     static int Main()
     {
         Console.WriteLine("Running...");
-        Parallel.For(0, 200, _ => MyStruct.Test());
+        Parallel.For(0, 100, _ => MyStruct.Test());
         Console.WriteLine("Done");
         return 100;
     }
