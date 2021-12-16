@@ -1742,13 +1742,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitIns_Nop(1);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+        case GT_BOUNDS_CHECK:
             genRangeCheck(treeNode);
             break;
 
@@ -3864,7 +3858,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
 // generate code for BoundsCheck nodes
 void CodeGen::genRangeCheck(GenTree* oper)
 {
-    noway_assert(oper->OperIsBoundsCheck());
+    noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
     GenTree* arrIndex = bndsChk->GetIndex();

@@ -6159,13 +6159,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
-                                                 GT_ADDR, GT_ARR_BOUNDS_CHECK,
-#ifdef FEATURE_SIMD
-                                                 GT_SIMD_CHK,
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-                                                 GT_HW_INTRINSIC_CHK,
-#endif
+                                                 GT_ADDR, GT_BOUNDS_CHECK,
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
@@ -9224,13 +9218,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
-                    case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-                    case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-                    case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+                    case GT_BOUNDS_CHECK:
                     {
                         ValueNumPair vnpIndex  = tree->AsBoundsChk()->GetIndex()->gtVNPair;
                         ValueNumPair vnpArrLen = tree->AsBoundsChk()->GetArrayLength()->gtVNPair;
@@ -10972,13 +10960,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 fgValueNumberAddExceptionSetForDivision(tree);
                 break;
 
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            case GT_ARR_BOUNDS_CHECK:
+            case GT_BOUNDS_CHECK:
                 fgValueNumberAddExceptionSetForBoundsCheck(tree);
                 break;
 
