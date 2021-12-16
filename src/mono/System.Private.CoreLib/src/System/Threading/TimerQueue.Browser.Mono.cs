@@ -28,10 +28,9 @@ namespace System.Threading
         }
 
         [DynamicDependency("TimeoutCallback")]
-        // The id argument is unused in netcore
         // This replaces the current pending setTimeout with shorter one
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SetTimeout(int timeout, int id);
+        private static extern void SetTimeout(int timeout);
 
         // Called by mini-wasm.c:mono_set_timeout_exec
         private static void TimeoutCallback()
@@ -78,7 +77,7 @@ namespace System.Threading
                 int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
                 // this would cancel the previous schedule and create shorter one
                 // it is expensive call
-                SetTimeout(shortestWait, 0);
+                SetTimeout(shortestWait);
             }
         }
 

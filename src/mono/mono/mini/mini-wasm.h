@@ -100,7 +100,7 @@ typedef struct {
 // sdks/wasm/driver.c is C and uses this
 G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 
-void mono_wasm_set_timeout (int timeout, int id);
+void mono_wasm_set_timeout (int timeout);
 
 int mono_wasm_assembly_already_added (const char *assembly_name);
 void mono_wasm_print_stack_trace (void);
