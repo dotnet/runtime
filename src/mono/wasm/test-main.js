@@ -361,14 +361,19 @@ async function loadDotnet(file) {
             return require(file);
         };
     } else if (is_browser) { // vanila JS in browser
-        loadScript = function (file) {
-            // this is callback we have in CJS version of the runtime
+        loadScript = async function (file) {
             var loaded = new Promise((resolve, reject) => {
                 try {
                     globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
+                        // this is callback we have in CJS version of the runtime
                         resolve(createDotnetRuntime);
                     };
-                    import(file);
+                    import(file).then(({ default: createDotnetRuntime }) => {
+                        // this would work with ES6 default export
+                        if (createDotnetRuntime) {
+                            resolve(createDotnetRuntime);
+                        }
+                    });
                 } catch (err) {
                     reject(err);
                 }
