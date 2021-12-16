@@ -13217,7 +13217,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 //
 // Return Value:
 //    The optimized tree, "cmp" in case no optimizations were done.
-//    Currently only returns relop trees.
+//    Currently only returns GTK_SMPOP trees.
 //
 GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 {
@@ -13265,6 +13265,26 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
     if (op2->IsIntegralConst(0) || op2->IsIntegralConst(1))
     {
         ssize_t op2Value = static_cast<ssize_t>(op2->IntegralValue());
+
+        // Optimizes (X & 1) == 1 to (X & 1)
+        //
+        //                        EQ/NE                   AND
+        //                        /  \                   /  \.
+        //                      AND   CNS 1  ->         x   CNS 1
+        //                     /   \                  
+        //                    x   CNS 1
+        //
+        // The compiler requires jumps to have relop operands, so we do not fold that case.
+        if (op1->OperIs(GT_AND) && op2Value == 1 && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
+        {
+            if (op1->gtGetOp2()->IsIntegralConst(1))
+            {
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(cmp);
+
+                return op1;
+            }
+        }
 
         if (op1->OperIsCompare())
         {
@@ -13369,26 +13389,6 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
             DEBUG_DESTROY_NODE(rshiftOp->gtGetOp2());
             DEBUG_DESTROY_NODE(rshiftOp);
-        }
-
-        // Optimizes (X & 1) == 1 to (X & 1)
-        // 
-        //                        EQ/NE                   AND
-        //                        /  \                   /  \.
-        //                      AND   CNS 1  ->         x   CNS 1
-        //                     /   \                  
-        //                    x   CNS 1
-        //           
-        // GTF_RELOP_JMP_USED is used to make sure the optimization is used for return statements only.
-        if (op1->OperIs(GT_AND) && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
-        {
-            if (op1->gtGetOp2()->IsIntegralConst(1))
-            {
-                DEBUG_DESTROY_NODE(cmp->gtGetOp2());
-                DEBUG_DESTROY_NODE(cmp);
-
-               return op1;
-            }
         }
     }
 
