@@ -70,6 +70,7 @@
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or ('$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true')">true</NeedsEMSDK>
+    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
     <NeedsToRunOnBrowser Condition="'$(TargetOS)' == 'Browser' and ('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps')">true</NeedsToRunOnBrowser>
     <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
 
@@ -106,12 +107,14 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" Include="export JS_ENGINE=--engine=NodeJS" />
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test-browser" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" Include="set &quot;JS_ENGINE=--engine=NodeJS&quot;" />
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
@@ -137,6 +140,13 @@
     <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' == 'true'">
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\emsdk\node\14.15.5_64bit\bin%3B%PATH%" />
+  </ItemGroup>
+
   <Choose>
     <When Condition="'$(NeedsWorkload)' == 'true'">
       <PropertyGroup>
@@ -149,6 +159,12 @@
       <PropertyGroup>
         <NeedsDotNetSdk>true</NeedsDotNetSdk>
         <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+        <IncludeXHarnessCli>true</IncludeXHarnessCli>
+        <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(NeedsEMSDKNode)' == 'true'">
+      <PropertyGroup>
         <IncludeXHarnessCli>true</IncludeXHarnessCli>
         <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
       </PropertyGroup>
@@ -399,7 +415,7 @@
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
     </ItemGroup>
 
-    <Message Condition="'$(NeedsEMSDK)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
+    <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
       <HelixPostCommands Condition="'$(TargetsWindows)' == 'true'">
@@ -430,7 +446,7 @@
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())" />
-      <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"                   Destination="build/apple" />
+      <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"               Destination="build/apple" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
@@ -443,6 +459,10 @@
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true'">
+      <HelixCorrelationPayload Include="$(EmSdkDir)node"                         Destination="build/emsdk/node" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
@@ -520,7 +540,7 @@
       <XHarnessBrowserPathArg>--browser-path=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe</XHarnessBrowserPathArg>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps' and '$(Scenario)' != 'WasmDebuggerTests'">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'WasmTestOnNodeJs' and '$(Scenario)' != 'BuildWasmApps' and '$(Scenario)' != 'WasmDebuggerTests'">
       <!-- Create a work item for run-only WASM console app  -->
       <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Sample.zip" />
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
@@ -562,7 +582,7 @@
   <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
        attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation
        payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
-  <Target Name="StageEmSdkForHelix" Condition="'$(NeedsEMSDK)' == 'true' and !Exists($(EmSdkDirForHelixPayload))">
+  <Target Name="StageEmSdkForHelix" Condition="('$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true') and !Exists($(EmSdkDirForHelixPayload))">
     <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))"
            Text="Could not find emscripten sdk in EMSDK_PATH=$(EMSDK_PATH), needed to provision for running tests on helix" />
 

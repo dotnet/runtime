@@ -960,6 +960,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62901")]
         public static async Task MarshalFailedSynchronousTask()
         {
             bool success = await MarshalTask("FailedSynchronousTask");
@@ -967,6 +968,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62901")]
         public static async Task MarshalFailedAsynchronousTask()
         {
             bool success = await MarshalTask("FailedAsynchronousTask");
