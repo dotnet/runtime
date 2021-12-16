@@ -1909,13 +1909,13 @@ public:
         instrCount++;
     }
 
-    int InstructionCount() const
+    unsigned InstructionCount() const
     {
         return instrCount;
     }
 
 private:
-    int instrCount;
+    unsigned instrCount;
 };
 
 class StoreBlockUnrollHelper
