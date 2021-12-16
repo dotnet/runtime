@@ -141,8 +141,6 @@ namespace System.Net.Http.Functional.Tests
 
                         if (Interlocked.Increment(ref connectCount) == 1)
                         {
-                            Console.WriteLine("First connection failed");
-
                             // Fail the first connection attempt
                             throw new Exception("Failing first connection");
                         }
@@ -151,10 +149,6 @@ namespace System.Net.Http.Functional.Tests
                             // Succeed the second connection attempt
                             Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
                             await socket.ConnectAsync(context.DnsEndPoint, token);
-
-
-                            Console.WriteLine("Second connection succeeded");
-
                             return new NetworkStream(socket, ownsSocket: true);
                         }
                     };
@@ -166,8 +160,6 @@ namespace System.Net.Http.Functional.Tests
                     // Cancel the first message and wait for it to complete
                     cts.Cancel();
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t1);
-
-                    Console.WriteLine("First request canceled");
 
                     // Signal connections to proceed
                     tcsFirstRequestCanceled.SetResult();
