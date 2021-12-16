@@ -361,7 +361,7 @@ async function loadDotnet(file) {
             return require(file);
         };
     } else if (is_browser) { // vanila JS in browser
-        loadScript = async function (file) {
+        loadScript = function (file) {
             var loaded = new Promise((resolve, reject) => {
                 try {
                     globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
