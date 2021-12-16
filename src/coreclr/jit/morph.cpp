@@ -12147,7 +12147,7 @@ DONE_MORPHING_CHILDREN:
                     {
                         op2->ChangeType(TYP_INT);
 #ifndef TARGET_64BIT
-                        assert(op2->TypeIs(GT_CNS_LNG));
+                        assert(op2->OperIs(GT_CNS_LNG));
                         op2->ChangeOper(GT_CNS_INT, GenTree::PRESERVE_VN);
 #endif
                     }
