@@ -790,7 +790,6 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
         }
 
         [Fact]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void ReadEncryptedDiminishedDP_EmptyPassword()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
