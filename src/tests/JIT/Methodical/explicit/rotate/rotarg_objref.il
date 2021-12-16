@@ -18,7 +18,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'rotarg_objref.exe'
 // MVID: {163DF86C-2BE3-4ACE-B98C-6AF0382DBFD1}
 .namespace Rotate
 {

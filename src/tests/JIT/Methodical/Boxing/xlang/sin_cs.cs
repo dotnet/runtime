@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace SinCalc
+namespace SinCalc_against_sinlib_cs
 {
     using System;
     using SinCalcLib;

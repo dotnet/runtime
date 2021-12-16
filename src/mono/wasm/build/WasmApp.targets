@@ -207,9 +207,13 @@
       <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
-    <Warning Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_MainAssemblyPath) == ''" Text="Could not find %24(AssemblyName)=$(AssemblyName).dll in the assemblies to be bundled." />
-    <Warning Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_WasmRuntimeConfigFilePath) != '' and !Exists($(_WasmRuntimeConfigFilePath))"
-             Text="Could not find $(_WasmRuntimeConfigFilePath) for $(_MainAssemblyPath)." />
+    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_MainAssemblyPath) == ''"
+             Text="Could not find %24(AssemblyName)=$(AssemblyName).dll in the assemblies to be bundled."
+             Importance="Low" />
+
+    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_WasmRuntimeConfigFilePath) != '' and !Exists($(_WasmRuntimeConfigFilePath))"
+             Text="Could not find $(_WasmRuntimeConfigFilePath) for $(_MainAssemblyPath)."
+             Importance="Low" />
 
     <ItemGroup>
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
