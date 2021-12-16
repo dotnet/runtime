@@ -9,17 +9,8 @@ class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     int IncrementField()
     {
-        int t = 0;
         Volatile.Write(ref x, Volatile.Read(ref x) + 1);
-        t += x;
-        Volatile.Write(ref x, Volatile.Read(ref x) + 1);
-        t += x;
-        Volatile.Write(ref x, Volatile.Read(ref x) + 1);
-        t += x;
-        Volatile.Write(ref x, Volatile.Read(ref x) + 1);
-        t += x;
-        Volatile.Write(ref x, Volatile.Read(ref x) + 1);
-        return t;
+        return x;
     }
 
     static int Main()
