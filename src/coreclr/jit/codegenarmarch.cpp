@@ -2453,27 +2453,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
-    regNumber srcReg;
-    GenTree*  src = node->Data();
+    GenTree* src = node->Data();
 
     if (src->OperIs(GT_INIT_VAL))
     {
         assert(src->isContained());
         src = src->gtGetOp1();
-    }
-
-    if (!src->isContained())
-    {
-        srcReg = genConsumeReg(src);
-    }
-    else
-    {
-#ifdef TARGET_ARM64
-        assert(src->IsIntegralConst(0));
-        srcReg = REG_ZR;
-#else
-        unreached();
-#endif
     }
 
     if (node->IsVolatile())
@@ -2489,6 +2474,18 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
 #ifdef TARGET_ARM64
     InitBlockUnrollHelper helper(dstOffset, size);
+
+    regNumber srcReg;
+
+    if (!src->isContained())
+    {
+        srcReg = genConsumeReg(src);
+    }
+    else
+    {
+        assert(src->IsIntegralConst(0));
+        srcReg = REG_ZR;
+    }
 
     regNumber dstReg              = dstAddrBaseReg;
     int       dstRegAddrAlignment = -1;
@@ -2552,6 +2549,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif // TARGET_ARM64
 
 #ifdef TARGET_ARM
+    const regNumber srcReg = genConsumeReg(src);
+
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
     {
         while (regSize > size)
