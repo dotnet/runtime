@@ -1709,8 +1709,10 @@ namespace System.Net.Http
                 lock (SyncObj)
                 {
                     Debug.Assert(!_availableHttp11Connections.Contains(connection), $"Connection already in available list");
-                    Debug.Assert(_associatedHttp11ConnectionCount > 0, $"Expected {_associatedHttp11ConnectionCount} > 0");
-                    Debug.Assert(_associatedHttp11ConnectionCount <= _maxHttp11Connections, $"Expected {_associatedHttp11ConnectionCount} <= {_maxHttp11Connections}");
+                    Debug.Assert(_associatedHttp11ConnectionCount > _availableHttp11Connections.Count,
+                        $"Expected _associatedHttp11ConnectionCount={_associatedHttp11ConnectionCount} > _availableHttp11Connections.Count={_availableHttp11Connections.Count}");
+                    Debug.Assert(_associatedHttp11ConnectionCount <= _maxHttp11Connections,
+                        $"Expected _associatedHttp11ConnectionCount={_associatedHttp11ConnectionCount} <= _maxHttp11Connections={_maxHttp11Connections}");
 
                     if (isNewConnection)
                     {
@@ -1729,11 +1731,10 @@ namespace System.Net.Http
                         // Add connection to the pool.
                         added = true;
                         _availableHttp11Connections.Add(connection);
-                        Debug.Assert(_availableHttp11Connections.Count <= _associatedHttp11ConnectionCount, $"Expected {_availableHttp11Connections.Count} <= {_associatedHttp11ConnectionCount}");
                     }
 
                     // If the pool has been disposed of, we will dispose the connection below outside the lock.
-                    // We do this after processing the queue above so that any queued requests will be handled properly.
+                    // We do this after processing the queue above so that any queued requests will be handled by existing connections if possible.
                 }
 
                 if (waiter is not null)
@@ -1747,19 +1748,19 @@ namespace System.Net.Http
                     else
                     {
                         Debug.Assert(waiter.Task.IsCanceled);
-                        if (NetEventSource.Log.IsEnabled()) connection.Trace("Discarding canceled request from queue.");
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace("Discarding canceled HTTP/1.1 request from queue.");
                         // Loop and process the queue again
                     }
                 }
                 else if (added)
                 {
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Put connection in pool.");
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Put HTTP/1.1 connection in pool.");
                     return;
                 }
                 else
                 {
                     Debug.Assert(_disposed);
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing connection returned to pool. Pool was disposed.");
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing HTTP/1.1 connection returned to pool. Pool was disposed.");
                     connection.Dispose();
                     return;
                 }
@@ -1779,91 +1780,109 @@ namespace System.Net.Http
                     _associatedHttp2ConnectionCount--;
                 }
 
-                if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing HTTP/2 connection return to pool. Connection lifetime expired.");
+                if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing HTTP2 connection return to pool. Connection lifetime expired.");
                 connection.Dispose();
                 return;
             }
 
-            bool usable = true;
-            bool poolDisposed = false;
-            lock (SyncObj)
+            while (connection.TryReserveStream())
             {
-                Debug.Assert(_availableHttp2Connections is null || !_availableHttp2Connections.Contains(connection));
-                Debug.Assert(_associatedHttp2ConnectionCount > (_availableHttp2Connections?.Count ?? 0));
-
-                if (isNewConnection)
+                // Loop in case we get a cancelled request.
+                while (true)
                 {
-                    Debug.Assert(_pendingHttp2Connection);
-                    _pendingHttp2Connection = false;
-                }
-
-                while (!_http2RequestQueue.IsEmpty)
-                {
-                    Debug.Assert((_availableHttp2Connections?.Count ?? 0) == 0, $"With {_availableHttp11Connections.Count} available HTTP2 connections, we shouldn't have a waiter.");
-
-                    if (!connection.TryReserveStream())
+                    TaskCompletionSourceWithCancellation<Http2Connection?>? waiter = null;
+                    bool added = false;
+                    lock (SyncObj)
                     {
-                        usable = false;
+                        Debug.Assert(_availableHttp2Connections is null || !_availableHttp2Connections.Contains(connection), $"HTTP2 connection already in available list");
+                        Debug.Assert(_associatedHttp2ConnectionCount > (_availableHttp2Connections?.Count ?? 0),
+                            $"Expected _associatedHttp2ConnectionCount={_associatedHttp2ConnectionCount} > _availableHttp2Connections.Count={(_availableHttp2Connections?.Count ?? 0)}");
+                        // TODO: Update HTTP/1.1 assertion similarly
+
                         if (isNewConnection)
                         {
-                            // The new connection could not handle even one request, either because it shut down before we could use it for any requests,
-                            // or because it immediately set the max concurrent streams limit to 0.
-                            // We don't want to get stuck in a loop where we keep trying to create new connections for the same request.
-                            // Fail the next request, if any.
-                            HttpRequestException hre = new HttpRequestException(SR.net_http_http2_connection_not_established);
-                            ExceptionDispatchInfo.SetCurrentStackTrace(hre);
-                            _http2RequestQueue.TryFailNextRequest(hre);
+                            Debug.Assert(_pendingHttp2Connection);
+                            _pendingHttp2Connection = false;
+                            isNewConnection = false;
                         }
-                        break;
+
+                        if (_http2RequestQueue.TryDequeueRequest(out RequestQueue<Http2Connection?>.QueueItem item))
+                        {
+                            Debug.Assert((_availableHttp2Connections?.Count ?? 0) == 0, $"With {(_availableHttp2Connections?.Count ?? 0)} available HTTP2 connections, we shouldn't have a waiter.");
+                            waiter = item.Waiter;
+                        }
+                        else if (!_disposed)
+                        {
+                            // Add connection to the pool.
+                            added = true;
+                            _availableHttp2Connections ??= new List<Http2Connection>();
+                            _availableHttp2Connections.Add(connection);
+                        }
+
+                        // If the pool has been disposed of, we will dispose the connection below outside the lock.
+                        // We do this after processing the queue above so that any queued requests will be handled by existing connections if possible.
                     }
 
-                    isNewConnection = false;
-
-                    if (!_http2RequestQueue.TryDequeueNextRequest(connection))
+                    if (waiter is not null)
+                    {
+                        Debug.Assert(!added);
+                        if (waiter.TrySetResult(connection))
+                        {
+                            if (NetEventSource.Log.IsEnabled()) connection.Trace("Dequeued waiting HTTP2 request.");
+                            break;
+                        }
+                        else
+                        {
+                            Debug.Assert(waiter.Task.IsCanceled);
+                            if (NetEventSource.Log.IsEnabled()) connection.Trace("Discarding canceled HTTP2 request from queue.");
+                            // Loop and process the queue again
+                        }
+                    }
+                    else
                     {
                         connection.ReleaseStream();
-                        break;
+                        if (added)
+                        {
+                            if (NetEventSource.Log.IsEnabled()) connection.Trace("Put HTTP2 connection in pool.");
+                            return;
+                        }
+                        else
+                        {
+                            Debug.Assert(_disposed);
+                            if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing HTTP2 connection returned to pool. Pool was disposed.");
+                            connection.Dispose();
+                            return;
+                        }
                     }
-
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Dequeued waiting HTTP/2 request.");
-                }
-
-                // Since we only inject one connection at a time, we may want to inject another now.
-                CheckForHttp2ConnectionInjection();
-
-                if (_disposed)
-                {
-                    // If the pool has been disposed of, we want to dispose the connection being returned, as the pool is being deactivated.
-                    // We do this after the above in order to satisfy any requests that were queued before the pool was disposed of.
-                    Debug.Assert(_associatedHttp2ConnectionCount > (_availableHttp2Connections?.Count ?? 0));
-                    _associatedHttp2ConnectionCount--;
-                    poolDisposed = true;
-                }
-                else if (usable)
-                {
-                    if (_availableHttp2Connections is null)
-                    {
-                        _availableHttp2Connections = new List<Http2Connection>();
-                    }
-
-                    // Add connection to the pool.
-                    _availableHttp2Connections.Add(connection);
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Put HTTP/2 connection in pool.");
-                    return;
                 }
             }
 
-            if (poolDisposed)
+            if (isNewConnection)
             {
-                if (NetEventSource.Log.IsEnabled()) connection.Trace("Disposing HTTP/2 connection returned to pool. Pool was disposed.");
+                // The new connection could not handle even one request, either because it shut down before we could use it for any requests,
+                // or because it immediately set the max concurrent streams limit to 0.
+                // We don't want to get stuck in a loop where we keep trying to create new connections for the same request.
+                // So, treat this as a connection failure.
+                // TODO: Need to flow the request
+
+                if (NetEventSource.Log.IsEnabled()) connection.Trace("New HTTP2 connection is unusable due to no available streams.");
                 connection.Dispose();
-                return;
+
+                HttpRequestException hre = new HttpRequestException(SR.net_http_http2_connection_not_established);
+                ExceptionDispatchInfo.SetCurrentStackTrace(hre);
+                HandleHttp2ConnectionFailure(hre);
             }
+            else
+            {
+                // Since we only inject one connection at a time, we may want to inject another now.
+                lock (SyncObj)
+                {
+                    CheckForHttp2ConnectionInjection();
+                }
 
-            Debug.Assert(!usable);
-
-            // We need to wait until the connection is usable again.
-            DisableHttp2Connection(connection);
+                // We need to wait until the connection is usable again.
+                DisableHttp2Connection(connection);
+            }
         }
 
         /// <summary>
@@ -2250,6 +2269,7 @@ namespace System.Net.Http
                 return false;
             }
 
+            // TODO: Just return waiter?
             public bool TryDequeueRequest(out QueueItem item)
             {
                 if (_queue is not null)
