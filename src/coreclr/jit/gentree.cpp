@@ -2519,13 +2519,6 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                 bool canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
                                                       : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
 
-                // The InitN intrinsic for two operands used to be not reversible, so preserve this.
-                // TODO-List-Cleanup: delete this only-needed-for-zero-diffs quirk.
-                if (multiOp->OperIs(GT_SIMD) && (multiOp->AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInitN))
-                {
-                    canSwap = false;
-                }
-
                 if (canSwap)
                 {
                     if (multiOp->IsReverseOp())

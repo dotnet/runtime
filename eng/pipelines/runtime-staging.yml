@@ -481,7 +481,7 @@ jobs:
           eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
       # don't run tests on PRs until we can get significantly more devices
-      # Turn off the testing for now, until https://github.com/dotnet/xharness/issues/663 gets resolved
+      # Turn off the testing for now, until https://github.com/dotnet/runtime/issues/60128 gets resolved
       # ${{ if eq(variables['isFullMatrix'], true) }}:
       #   # extra steps, run tests
       #   extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
