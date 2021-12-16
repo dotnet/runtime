@@ -659,12 +659,12 @@ namespace System.Net.Http
                 }
                 catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
                 {
-                    HandleHttp2ConnectionFailure(CreateConnectTimeoutException(oce));
+                    HandleHttp2ConnectionFailure(request, CreateConnectTimeoutException(oce));
                     return;
                 }
                 catch (Exception e)
                 {
-                    HandleHttp2ConnectionFailure(e);
+                    HandleHttp2ConnectionFailure(request, e);
                     return;
                 }
             }
@@ -674,7 +674,7 @@ namespace System.Net.Http
             ValueTask shutdownTask = connection.WaitForShutdownAsync();
 
             // Add the new connection to the pool.
-            ReturnHttp2Connection(connection, isNewConnection: true);
+            ReturnHttp2Connection(connection, request, isNewConnection: true);
 
             // Wait for connection shutdown.
             await shutdownTask.ConfigureAwait(false);
@@ -1604,14 +1604,18 @@ namespace System.Net.Http
             if (failRequest)
             {
                 // This may fail if the request was already canceled, but we don't care.
-                waiter!.TrySetException(e);
+                Debug.Assert(waiter is not null);
+                bool succeeded = waiter.TrySetException(e);
+                Debug.Assert(succeeded || waiter.Task.IsCanceled);
             }
         }
 
-        private void HandleHttp2ConnectionFailure(Exception e)
+        private void HandleHttp2ConnectionFailure(HttpRequestMessage request, Exception e)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("HTTP2 connection failed");
 
+            bool failRequest;
+            TaskCompletionSourceWithCancellation<Http2Connection?>? waiter;
             lock (SyncObj)
             {
                 Debug.Assert(_associatedHttp2ConnectionCount > 0);
@@ -1620,10 +1624,19 @@ namespace System.Net.Http
                 _associatedHttp2ConnectionCount--;
                 _pendingHttp2Connection = false;
 
-                // Fail the next queued request (if any) with this error.
-                _http2RequestQueue.TryFailNextRequest(e);
+                // If the request that caused this connection attempt is still pending, fail it.
+                // Otherwise, the request must have been canceled or satisfied by another connection already.
+                failRequest = _http2RequestQueue.TryDequeueSpecificRequest(request, out waiter);
 
                 CheckForHttp2ConnectionInjection();
+            }
+
+            if (failRequest)
+            {
+                // This may fail if the request was already canceled, but we don't care.
+                Debug.Assert(waiter is not null);
+                bool succeeded = waiter.TrySetException(e);
+                Debug.Assert(succeeded || waiter.Task.IsCanceled);
             }
         }
 
@@ -1767,9 +1780,11 @@ namespace System.Net.Http
             }
         }
 
-        public void ReturnHttp2Connection(Http2Connection connection, bool isNewConnection)
+        public void ReturnHttp2Connection(Http2Connection connection, HttpRequestMessage? request = null, bool isNewConnection = false)
         {
             if (NetEventSource.Log.IsEnabled()) connection.Trace($"{nameof(isNewConnection)}={isNewConnection}");
+
+            Debug.Assert(isNewConnection || request is null, "Shouldn't have a request unless the connection is new");
 
             if (!isNewConnection && CheckExpirationOnReturn(connection))
             {
@@ -1859,6 +1874,8 @@ namespace System.Net.Http
 
             if (isNewConnection)
             {
+                Debug.Assert(request is not null, "Expect request for a new connection");
+
                 // The new connection could not handle even one request, either because it shut down before we could use it for any requests,
                 // or because it immediately set the max concurrent streams limit to 0.
                 // We don't want to get stuck in a loop where we keep trying to create new connections for the same request.
@@ -1870,7 +1887,7 @@ namespace System.Net.Http
 
                 HttpRequestException hre = new HttpRequestException(SR.net_http_http2_connection_not_established);
                 ExceptionDispatchInfo.SetCurrentStackTrace(hre);
-                HandleHttp2ConnectionFailure(hre);
+                HandleHttp2ConnectionFailure(request, hre);
             }
             else
             {
