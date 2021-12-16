@@ -219,6 +219,9 @@
     <type fullname="System.Runtime.Versioning.TargetPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.Versioning.TargetFrameworkAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
 
     <!-- System.ComponentModel -->
     <type fullname="System.ComponentModel.EditorBrowsableAttribute">
@@ -233,6 +236,9 @@
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
@@ -260,6 +266,9 @@
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.GeneratedDllImportAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
 
