@@ -2184,7 +2184,6 @@ namespace System.Net.Http
                 return waiter;
             }
 
-<<<<<<< HEAD
             public bool TryDequeueSpecificRequest(HttpRequestMessage request, [MaybeNullWhen(false)] out TaskCompletionSourceWithCancellation<T> waiter)
             {
                 if (_queue is not null && _queue.TryPeek(out QueueItem item) && item.Request == request)
@@ -2199,14 +2198,13 @@ namespace System.Net.Http
             }
 
             // TODO: Remove
-=======
+
             // TODO: TryDequeueNextRequest below was changed to not handle request cancellation.
             // TryFailNextRequest should probably be changed similarly -- or rather, callers should just use the new
             // TryDequeueRequest call below and then handle canceled requests themselves.
             // However, we should fix the issue re cancellation failure first because that will affect this code too.
             // TODO: Link cancellation failure issue here.
 
->>>>>>> b178c595973... add TryDequeueRequest
             public bool TryFailNextRequest(Exception e)
             {
                 Debug.Assert(e is HttpRequestException or OperationCanceledException, "Unexpected exception type for connection failure");
