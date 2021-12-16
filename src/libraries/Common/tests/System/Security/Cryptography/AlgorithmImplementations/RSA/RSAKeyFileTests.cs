@@ -864,7 +864,6 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
-        [ActiveIssue("TEMP", TestPlatforms.Android)]
         public static void NoFuzzyRSAPublicKey()
         {
             using (RSA key = RSAFactory.Create())
