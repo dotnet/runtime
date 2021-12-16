@@ -160,8 +160,8 @@ namespace System.Net.Http.Functional.Tests
                     };
 
                     using CancellationTokenSource cts = new CancellationTokenSource();
-                    Task<HttpResponseMessage> t1 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, cts.Token);
-                    Task<HttpResponseMessage> t2 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, default);
+                    Task<HttpResponseMessage> t1 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }, cts.Token);
+                    Task<HttpResponseMessage> t2 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }, default);
 
                     // Cancel the first message and wait for it to complete
                     cts.Cancel();
