@@ -7712,6 +7712,23 @@ inline bool GenTree::IsSIMDZero() const
     }
 #endif
 
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        const GenTreeHWIntrinsic* node = AsHWIntrinsic();
+
+        if (node->GetOperandCount() == 0)
+        {
+            const var_types simdBaseType = node->GetSimdBaseType();
+            if (varTypeIsIntegral(simdBaseType) || varTypeIsFloating(simdBaseType))
+            {
+                const NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+                return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+            }
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     return false;
 }
 

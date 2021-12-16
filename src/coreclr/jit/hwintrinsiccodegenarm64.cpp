@@ -377,9 +377,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        if (intrin.id == NI_AdvSimd_CompareEqual && intrin.op2->isContained() &&
-                            intrin.op2->IsIntegralConstVector(0))
+                        if (intrin.op2->isContained())
                         {
+                            assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+                            assert(intrin.op2->IsSIMDZero());
+
                             GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                         }
                         else

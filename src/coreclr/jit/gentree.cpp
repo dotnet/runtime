@@ -17859,6 +17859,7 @@ bool GenTree::isContainableHWIntrinsic() const
 #elif TARGET_ARM64
     switch (AsHWIntrinsic()->GetHWIntrinsicId())
     {
+        case NI_Vector64_get_Zero:
         case NI_Vector128_get_Zero:
         {
             return true;

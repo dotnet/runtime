@@ -312,8 +312,8 @@ INST4(neg,         "neg",          0,      IF_EN4G,   0x4B0003E0,  0x4B0003E0,  
 INST4(cmeq,        "cmeq",         0,      IF_EN4H,   0x7EE08C00,  0x2E208C00,  0x5E209800,  0x0E209800)
                                    //  cmeq    Vd,Vn,Vm             DV_3E  01111110111mmmmm 100011nnnnnddddd   7EE0 8C00   Vd,Vn,Vm   (scalar)
                                    //  cmeq    Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 100011nnnnnddddd   2E20 8C00   Vd,Vn,Vm   (vector)
-                                   //  cmeq    Vd,Vn                DV_2L  01011110XX100000 100110nnnnnddddd   5E20 9800   Vd,Vn      (scalar)
-                                   //  cmeq    Vd,Vn                DV_2M  0Q001110XX100000 100110nnnnnddddd   0E20 9800   Vd,Vn      (vector)
+                                   //  cmeq    Vd,Vn                DV_2L  01011110XX100000 100110nnnnnddddd   5E20 9800   Vd,Vn,#0   (scalar - with zero)
+                                   //  cmeq    Vd,Vn                DV_2M  0Q001110XX100000 100110nnnnnddddd   0E20 9800   Vd,Vn,#0   (vector - with zero)
 
 INST4(cmge,        "cmge",         0,      IF_EN4H,   0x5EE03C00,  0x0E203C00,  0x7E208800,  0x2E208800)
                                    //  cmge    Vd,Vn,Vm             DV_3E  01011110111mmmmm 001111nnnnnddddd   5EE0 3C00   Vd,Vn,Vm   (scalar)
