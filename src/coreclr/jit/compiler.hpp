@@ -2678,6 +2678,11 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
+    if (block->lastStmt() == nullptr)
+    {
+        return false;
+    }
+
     // Special check blocks will always end in a throw helper call.
     //
     GenTree* const call = block->lastNode();
