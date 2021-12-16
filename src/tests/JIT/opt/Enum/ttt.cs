@@ -24,7 +24,7 @@ struct MyStruct
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test()
     {
-        for (int i = 0; i < 100_000_000; i++)
+        for (int i = 0; i < 10_000_000; i++)
         {
             if (new MyStruct().IncrementAndReturn() != 5)
                 throw new InvalidOperationException("oops");
@@ -37,7 +37,7 @@ class Program
     static int Main()
     {
         Console.WriteLine("Running...");
-        Parallel.For(0, 500, _ => MyStruct.Test());
+        Parallel.For(0, 200, _ => MyStruct.Test());
         Console.WriteLine("Done");
         return 100;
     }
