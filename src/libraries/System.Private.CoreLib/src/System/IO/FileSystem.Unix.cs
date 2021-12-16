@@ -492,43 +492,45 @@ namespace System.IO
             if (Interop.Sys.RmDir(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                switch (errorInfo.Error)
-                {
-                    case Interop.Error.EACCES:
-                    case Interop.Error.EPERM:
-                    case Interop.Error.EROFS:
-                    case Interop.Error.EISDIR:
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath)); // match Win32 exception
-                    case Interop.Error.ENOENT:
-                        // When we're recursing, don't throw for items that go missing.
-                        if (!topLevel)
-                        {
-                            return true;
-                        }
-                        goto default;
-                    case Interop.Error.ENOTDIR:
-                        // When the top-level path is a symlink to a directory, delete the link.
-                        // In other cases, throw because we expect path to be a real directory.
-                        if (topLevel)
-                        {
-                            if (!DirectoryExists(fullPath))
-                            {
-                                throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
-                            }
 
-                            DeleteFile(fullPath);
-                            return true;
-                        }
-                        goto default;
-                    case Interop.Error.ENOTEMPTY:
-                        if (!throwWhenNotEmpty)
-                        {
-                            return false;
-                        }
-                        goto default;
-                    default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
+                if (errorInfo.Error == Interop.Error.ENOTEMPTY)
+                {
+                    if (!throwWhenNotEmpty)
+                    {
+                        return false;
+                    }
                 }
+                else if (errorInfo.Error == Interop.Error.ENOENT)
+                {
+                    // When we're recursing, don't throw for items that go missing.
+                    if (!topLevel)
+                    {
+                        return true;
+                    }
+                }
+                else if (DirectoryExists(fullPath, out Interop.ErrorInfo existErr))
+                {
+                    // Top-level path is a symlink to a directory, delete the link.
+                    if (topLevel && errorInfo.Error == Interop.Error.ENOTDIR)
+                    {
+                        DeleteFile(fullPath);
+                        return true;
+                    }
+                }
+                else if (existErr.Error == Interop.Error.ENOENT)
+                {
+                    // Prefer throwing DirectoryNotFoundException over other exceptions.
+                    errorInfo = existErr;
+                }
+
+                if (errorInfo.Error == Interop.Error.EACCES ||
+                    errorInfo.Error == Interop.Error.EPERM ||
+                    errorInfo.Error == Interop.Error.EROFS)
+                {
+                    throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
+                }
+
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
             }
 
             return true;
