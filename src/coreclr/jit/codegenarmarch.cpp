@@ -2571,65 +2571,67 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         srcReg = REG_ZR;
     }
 
-    regNumber dstReg              = dstAddrBaseReg;
-    int       dstRegAddrAlignment = -1;
+    regNumber dstReg                     = dstAddrBaseReg;
+    int       dstRegAddrAlignment        = 0;
+    bool      isDstRegAddrAlignmentKnown = false;
 
     if (dstLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg              = fpBased ? REG_FPBASE : REG_SPBASE;
-        dstRegAddrAlignment = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        isDstRegAddrAlignmentKnown = true;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
 
     if (!helper.CanEncodeAllOffsets(REGSIZE_BYTES))
     {
-        const regNumber tempReg = rsGetRsvdReg();
+        // If dstRegAddrAlignment is known and non-zero the following ensures that the adjusted value of dstReg is at
+        // 16-byte aligned boundary.
+        // This is done to potentially allow more cases where the JIT can use 16-byte stores.
+        const int dstOffsetAdjustment = helper.GetDstOffset() - dstRegAddrAlignment;
+        dstRegAddrAlignment           = 0;
 
-        int dstOffsetAdj = helper.GetDstOffset();
-
-        if (dstRegAddrAlignment != -1)
-        {
-            dstOffsetAdj        = helper.GetDstOffset() - dstRegAddrAlignment;
-            dstRegAddrAlignment = 0;
-        }
-
-        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdj, tempReg);
+        const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
         dstReg = tempReg;
 
-        helper.SetDstOffset(helper.GetDstOffset() - dstOffsetAdj);
+        helper.SetDstOffset(helper.GetDstOffset() - dstOffsetAdjustment);
     }
-
-    const bool hasAvailableSimdReg    = (node->AvailableTempRegCount(RBM_ALLFLOAT) != 0);
-    const bool canUse16ByteWideInstrs = hasAvailableSimdReg && helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES);
 
     bool shouldUse16ByteWideInstrs = false;
 
     // Store operations that cross a 16-byte boundary reduce bandwidth or incur additional latency.
-    if (canUse16ByteWideInstrs && (dstRegAddrAlignment != -1) &&
-        (((dstRegAddrAlignment + helper.GetDstOffset()) % 16) == 0))
-    {
-        shouldUse16ByteWideInstrs =
-            ((helper.InstructionCount(FP_REGSIZE_BYTES) + 1) < helper.InstructionCount(REGSIZE_BYTES));
-    }
+    // The following condition prevents using 16-byte stores when dstRegAddrAlignment is:
+    //   1) unknown (i.e. dstReg is neither FP nor SP) or
+    //   2) non-zero (i.e. dstRegAddr is not 16-byte aligned).
+    const bool hasAvailableSimdReg = isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES);
+    const bool canUse16ByteWideInstrs =
+        hasAvailableSimdReg && (dstRegAddrAlignment == 0) && helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES);
 
-    const regNumber intReg       = srcReg;
-    regNumber       simdReg      = REG_NA;
-    int             regSizeBytes = REGSIZE_BYTES;
+    if (canUse16ByteWideInstrs)
+    {
+        // The JIT would need to initialize a SIMD register with "movi simdReg.16B, #initValue".
+        const unsigned instrCount16ByteWide = helper.InstructionCount(FP_REGSIZE_BYTES) + 1;
+        shouldUse16ByteWideInstrs           = instrCount16ByteWide < helper.InstructionCount(REGSIZE_BYTES);
+    }
 
     if (shouldUse16ByteWideInstrs)
     {
-        simdReg      = node->GetSingleTempReg(RBM_ALLFLOAT);
-        regSizeBytes = FP_REGSIZE_BYTES;
+        const regNumber simdReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         const int initValue = (src->AsIntCon()->IconValue() & 0xFF);
         emit->emitIns_R_I(INS_movi, EA_16BYTE, simdReg, initValue, INS_OPTS_16B);
-    }
 
-    helper.Unroll(regSizeBytes, intReg, simdReg, dstReg, GetEmitter());
+        helper.Unroll(srcReg, simdReg, dstReg, GetEmitter());
+    }
+    else
+    {
+        helper.UnrollBaseInstrs(srcReg, dstReg, GetEmitter());
+    }
 #endif // TARGET_ARM64
 
 #ifdef TARGET_ARM
