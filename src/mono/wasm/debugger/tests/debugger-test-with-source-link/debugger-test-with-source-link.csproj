@@ -2,7 +2,9 @@
     <PropertyGroup>
         <PackageId>LibraryTest</PackageId>
         <Version>1.0.0</Version>
-        <DeterministicSourcePaths>true</DeterministicSourcePaths>    
+        <DeterministicSourcePaths>true</DeterministicSourcePaths>
+        <UsingToolPdbConverter>false</UsingToolPdbConverter>
+        <PublishWindowsPdb>false</PublishWindowsPdb>
     </PropertyGroup>
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
