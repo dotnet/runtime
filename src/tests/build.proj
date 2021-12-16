@@ -122,10 +122,7 @@
     </RemoveDuplicates>
     <ItemGroup>
       <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" />
-      <CoreRootDlls Include="$(CORE_ROOT)/*.dll"
-        Exclude="$(CORE_ROOT)/xunit.performance.api.dll;
-                 $(CORE_ROOT)/Microsoft.Interop.DllImportGenerator.dll;
-                 $(CORE_ROOT)/Microsoft.Interop.SourceGeneration.dll" />
+      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll" />
       <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
       <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestsAndAssociatedAssemblies)" />
     </ItemGroup>
