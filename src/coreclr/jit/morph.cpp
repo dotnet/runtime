@@ -12116,29 +12116,27 @@ DONE_MORPHING_CHILDREN:
                 //   \--*  CAST      long <- [u]long <- int
                 //      \--*  ARR_LEN   int
                 //
-                bool op2IsCast           = false;
-                bool op2IsNotNegativeU32 = false;
-                if (op2->IsIntegralConst() && ((size_t)op2->AsIntConCommon()->IntegralValue() <= UINT_MAX))
+                bool op2FitsIntoU32 = false;
+                if (op2->IsIntegralConst() && ((UINT64)op2->AsIntConCommon()->IntegralValue() <= UINT_MAX))
                 {
                     // We can fold the whole condition if op2 doesn't fit into UINT_MAX.
-                    op2IsNotNegativeU32 = true;
+                    op2FitsIntoU32 = true;
                 }
                 else if (op2->OperIs(GT_CAST) && varTypeIsLong(op2->CastToType()) &&
                          op2->gtGetOp1()->OperIs(GT_ARR_LENGTH))
                 {
                     // ARR_LEN is known to be in [0..UINT_MAX] range.
-                    op2IsNotNegativeU32 = true;
-                    op2IsCast           = true;
+                    op2FitsIntoU32 = true;
                     // TODO: we need to recognize Span._length here as well
                 }
 
-                if (op2IsNotNegativeU32)
+                if (op2FitsIntoU32)
                 {
                     assert(op1->TypeIs(TYP_LONG) && op2->TypeIs(TYP_LONG));
 
                     tree->AsOp()->gtOp1 = op1->gtGetOp1();
                     tree->gtFlags |= GTF_UNSIGNED;
-                    if (op2IsCast)
+                    if (op2->OperIs(GT_CAST))
                     {
                         tree->AsOp()->gtOp2 = op2->gtGetOp1();
                         DEBUG_DESTROY_NODE(op2);
@@ -12148,6 +12146,10 @@ DONE_MORPHING_CHILDREN:
                     else
                     {
                         op2->ChangeType(TYP_INT);
+#ifndef TARGET_64BIT
+                        assert(op2->TypeIs(GT_CNS_LNG));
+                        op2->ChangeOper(GT_CNS_INT, GenTree::PRESERVE_VN);
+#endif
                     }
                     DEBUG_DESTROY_NODE(op1);
                     op1 = tree->gtGetOp1();
