@@ -308,6 +308,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62713", TestPlatforms.Android)]
         public static void RemoveReadOnlyNonExistingDoesNotThrow()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))

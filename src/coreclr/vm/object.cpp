@@ -390,7 +390,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
 
     if (argDest->IsHFA())
     {
-        argDest->CopyHFAStructToRegister(src, pMT->GetAlignedNumInstanceFieldBytes());
+        argDest->CopyHFAStructToRegister(src, pMT->GetNumInstanceFieldBytes());
         return;
     }
 

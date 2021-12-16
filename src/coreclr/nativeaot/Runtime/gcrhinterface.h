@@ -158,7 +158,7 @@ private:
     // The MethodTable for the last allocation.  This value is used inside of the GC allocator
     // to emit allocation ETW events with type information.  We set this value unconditionally to avoid
     // race conditions where ETW is enabled after the value is set.
-    DECLSPEC_THREAD static MethodTable * tls_pLastAllocationEEType;
+    static DECLSPEC_THREAD MethodTable * tls_pLastAllocationEEType;
 
     // Tracks the amount of bytes that were reserved for threads in their gc_alloc_context and went unused when they died.
     // Used for GC.GetTotalAllocatedBytes

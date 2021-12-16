@@ -16,7 +16,7 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
@@ -73,9 +73,6 @@
     <Compile Include="..\..\Common\JitInterface\CorInfoImpl.cs">
       <Link>JitInterface\CorInfoImpl.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\CorInfoImpl.Intrinsics.cs">
-      <Link>JitInterface\CorInfoImpl.Intrinsics.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\JitInterface\MemoryHelper.cs">
       <Link>JitInterface\MemoryHelper.cs</Link>
     </Compile>
@@ -98,6 +95,6 @@
     <Compile Include="..\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="Pgo\MIbcProfileParser.cs" />
 
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="Pgo\ProfileData.cs" />
-    
+
   </ItemGroup>
 </Project>

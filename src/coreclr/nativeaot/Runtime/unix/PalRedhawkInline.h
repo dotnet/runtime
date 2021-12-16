@@ -27,12 +27,20 @@ FORCEINLINE uint32_t PalInterlockedAnd(_Inout_ uint32_t volatile *pDst, uint32_t
 
 FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32_t iValue)
 {
+#ifdef __clang__
     return __sync_swap(pDst, iValue);
+#else
+    return __atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
+#endif
 }
 
 FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
 {
+#ifdef __clang__
     return __sync_swap(pDst, iValue);
+#else
+    return __atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
+#endif
 }
 
 FORCEINLINE int32_t PalInterlockedCompareExchange(_Inout_ int32_t volatile *pDst, int32_t iValue, int32_t iComparand)

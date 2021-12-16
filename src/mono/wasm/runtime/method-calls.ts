@@ -12,7 +12,7 @@ import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from "./js-to-cs";
 import {
-    ArgsMarshalString, mono_bind_method,
+    mono_bind_method,
     Converter, _compile_converter_for_marshal_string,
     _decide_if_result_is_marshaled, find_method,
     BoundMethodToken
@@ -23,7 +23,7 @@ import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
 import { VoidPtr, Int32Ptr, EmscriptenModule } from "./types/emscripten";
 
-function _verify_args_for_method_call(args_marshal: ArgsMarshalString, args: any) {
+function _verify_args_for_method_call(args_marshal: string/*ArgsMarshalString*/, args: any) {
     const has_args = args && (typeof args === "object") && args.length > 0;
     const has_args_marshal = typeof args_marshal === "string";
 
@@ -140,7 +140,7 @@ m: raw mono object. Don't use it unless you know what you're doing
 
 to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
 */
-export function call_method(method: MonoMethod, this_arg: MonoObject | undefined, args_marshal: ArgsMarshalString, args: ArrayLike<any>): any {
+export function call_method(method: MonoMethod, this_arg: MonoObject | undefined, args_marshal: string/*ArgsMarshalString*/, args: ArrayLike<any>): any {
     // HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
     this_arg = coerceNull(this_arg);
 
@@ -239,7 +239,7 @@ function _call_method_with_converted_args(
     return _handle_exception_and_produce_result_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 }
 
-export function call_static_method(fqn: string, args: any[], signature: ArgsMarshalString): any {
+export function call_static_method(fqn: string, args: any[], signature: string/*ArgsMarshalString*/): any {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
     const method = mono_method_resolve(fqn);
@@ -250,7 +250,7 @@ export function call_static_method(fqn: string, args: any[], signature: ArgsMars
     return call_method(method, undefined, signature, args);
 }
 
-export function mono_bind_static_method(fqn: string, signature?: ArgsMarshalString): Function {
+export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMarshalString*/): Function {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
     const method = mono_method_resolve(fqn);
@@ -258,10 +258,10 @@ export function mono_bind_static_method(fqn: string, signature?: ArgsMarshalStri
     if (typeof signature === "undefined")
         signature = mono_method_get_call_signature(method);
 
-    return mono_bind_method(method, null, signature, fqn);
+    return mono_bind_method(method, null, signature!, fqn);
 }
 
-export function mono_bind_assembly_entry_point(assembly: string, signature?: ArgsMarshalString): Function {
+export function mono_bind_assembly_entry_point(assembly: string, signature?: string/*ArgsMarshalString*/): Function {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
     const asm = cwraps.mono_wasm_assembly_load(assembly);
@@ -282,7 +282,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: Arg
     };
 }
 
-export function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: ArgsMarshalString): number {
+export function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string/*ArgsMarshalString*/): number {
     if (!args) {
         args = [[]];
     }
@@ -471,7 +471,7 @@ export function wrap_error(is_exception: Int32Ptr | null, ex: any): MonoString {
     return js_string_to_mono_string(res)!;
 }
 
-export function mono_method_get_call_signature(method: MonoMethod, mono_obj?: MonoObject): ArgsMarshalString {
+export function mono_method_get_call_signature(method: MonoMethod, mono_obj?: MonoObject): string/*ArgsMarshalString*/ {
     const instanceRoot = mono_wasm_new_root(mono_obj);
     try {
         return call_method(runtimeHelpers.get_call_sig, undefined, "im", [method, instanceRoot.value]);
