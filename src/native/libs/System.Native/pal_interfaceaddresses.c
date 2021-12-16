@@ -124,7 +124,6 @@ struct ifaddrs {
 static int (*getifaddrs)(struct ifaddrs**) = NULL;
 static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
-
 static bool ensure_getifaddrs_is_loaded() {
     static bool loading_already_attempted = false;
 

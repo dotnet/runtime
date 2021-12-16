@@ -143,6 +143,7 @@ check_c_source_compiles(
 
 check_c_source_compiles(
     "
+    #include <sys/types.h>
     #include <ifaddrs.h>
     int main(void)
     {
