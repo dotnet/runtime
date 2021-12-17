@@ -62,18 +62,17 @@ add_dependencies(coreclrtraceptprovider generated_eventing_headers)
 
 find_library(LTTNG NAMES lttng-ust)
 
-if(NOT CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
-  target_link_libraries(coreclrtraceptprovider
-                        ${LTTNG}
-  )
-else()
+target_link_libraries(coreclrtraceptprovider
+                    ${LTTNG}
+)
+
+if(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
   target_link_libraries(coreclrtraceptprovider
                         lttng-ust-tracepoint
                         urcu
                         urcu-bp
                         urcu-cds
                         urcu-common
-                        ${LTTNG}
   )
 endif()
 
