@@ -13763,7 +13763,6 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
 {
-
     assert(tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
 
     GenTree* castedOp        = tree->gtGetOp1();
@@ -13802,14 +13801,13 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
     }
 
     if (castedOp->OperIs(GT_CAST) && varTypeIsLong(castedOp->CastToType()) && castedOp->gtGetOp1()->TypeIs(TYP_INT) &&
-        !castedOp->gtGetOp1()->OperIs(GT_ARR_LENGTH) && castedOp->IsUnsigned())
+        castedOp->IsUnsigned())
     {
         bool knownPositiveFitsIntoU32 = false;
         if (knownPositiveOp->IsIntegralConst() &&
             ((UINT64)knownPositiveOp->AsIntConCommon()->IntegralValue() <= UINT_MAX))
         {
-            // We can fold the whole condition if op2 doesn't fit into UINT_MAX.
-            // but let's not bother.
+            // BTW, we can fold the whole condition if op2 doesn't fit into UINT_MAX.
             knownPositiveFitsIntoU32 = true;
         }
         else if (knownPositiveOp->OperIs(GT_CAST) && varTypeIsLong(knownPositiveOp->CastToType()) &&
@@ -13859,8 +13857,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
             // Change type for constant from LONG to INT
             knownPositiveOp->ChangeType(TYP_INT);
 #ifndef TARGET_64BIT
-            assert(op2->OperIs(GT_CNS_LNG));
-            op2->ChangeOperUnchecked(GT_CNS_INT);
+            assert(knownPositiveOp->OperIs(GT_CNS_LNG));
+            knownPositiveOp->ChangeOperUnchecked(GT_CNS_INT);
 #endif
         }
         DISPTREE(tree)

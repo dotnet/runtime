@@ -846,6 +846,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             case GT_GT:
             case GT_GE:
                 pRange->lLimit = limit;
+                // it doesn't matter if it's isUnsigned or not here - it's not negative anyway.
                 break;
 
             case GT_EQ:
