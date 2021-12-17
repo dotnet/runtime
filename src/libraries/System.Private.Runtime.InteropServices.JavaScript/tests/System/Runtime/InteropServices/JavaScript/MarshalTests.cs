@@ -909,9 +909,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 @"globalThis.__test_promise_resolved = false; " +
                 @"globalThis.__test_promise_failed = false; " +
                 $@"var t = App.call_test_method ('{helperMethodName}', [ {helperMethodArgs} ], 'i'); " +
-                "t.finally(result => { globalThis.__test_promise_completed = true; }); " + 
-                "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " }); " + 
-                "t.catch(e => { globalThis.__test_promise_failed = true; }); "
+                "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " })" + 
+                " .catch(e => { globalThis.__test_promise_failed = true; })" +
+                " .finally(result => { globalThis.__test_promise_completed = true; }); " + 
+                ""
             );
 
             await Task.Delay(1);
@@ -960,7 +961,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/62901")]
         public static async Task MarshalFailedSynchronousTask()
         {
             bool success = await MarshalTask("FailedSynchronousTask");
@@ -968,7 +968,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/62901")]
         public static async Task MarshalFailedAsynchronousTask()
         {
             bool success = await MarshalTask("FailedAsynchronousTask");
