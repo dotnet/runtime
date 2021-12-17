@@ -83,14 +83,14 @@ namespace System.Reflection
             get
             {
                 int x = (((int)_flags) & 0x70) >> 4;
-                if (x > 6)
+                if (x > 5)
                     x = 0;
                 return (ProcessorArchitecture)x;
             }
             set
             {
                 int x = ((int)value) & 0x07;
-                if (x <= 6)
+                if (x <= 5)
                 {
                     _flags = (AssemblyNameFlags)((int)_flags & 0xFFFFFF0F);
                     _flags |= (AssemblyNameFlags)(x << 4);
