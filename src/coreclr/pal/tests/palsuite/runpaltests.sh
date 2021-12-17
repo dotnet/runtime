@@ -23,7 +23,7 @@ if [ ! -e "$1" ]; then
   echo "Core_Root not found at $1"
   exit 1
 fi
-BUILD_ROOT_DIR="$(pushd "$1"; pwd -P)"
+BUILD_ROOT_DIR="$(cd "$1"; pwd -P)"
 
 # Create path to the compiled PAL tets in the build directory
 PAL_TEST_BUILD=$BUILD_ROOT_DIR
