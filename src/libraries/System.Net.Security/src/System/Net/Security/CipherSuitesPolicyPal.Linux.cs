@@ -28,7 +28,7 @@ namespace System.Net.Security
 
         internal CipherSuitesPolicyPal(IEnumerable<TlsCipherSuite> allowedCipherSuites)
         {
-            if (!Interop.Ssl.Tls13Supported)
+            if (!Interop.Ssl.Capabilities.Tls13Supported)
             {
                 throw new PlatformNotSupportedException(SR.net_ssl_ciphersuites_policy_not_supported);
             }

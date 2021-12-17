@@ -80,7 +80,7 @@ internal static partial class Interop
         {
             SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
 
-            if (!Interop.Ssl.Tls13Supported)
+            if (!Interop.Ssl.Capabilities.Tls13Supported)
             {
                 if (protocols != SslProtocols.None &&
                     CipherSuitesPolicyPal.WantsTls13(protocols))
