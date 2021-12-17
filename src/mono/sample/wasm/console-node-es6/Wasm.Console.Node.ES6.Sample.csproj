@@ -2,19 +2,19 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>main.mjs</WasmMainJSPath>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>
-    <WasmDebugLevel>1</WasmDebugLevel>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     <WasmEnableES6>true</WasmEnableES6>
   </PropertyGroup>
 
+
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="package.json" />
   </ItemGroup>
 
   <PropertyGroup>
-    <_SampleProject>Wasm.Browser.ES6.Sample.csproj</_SampleProject>
+    <_SampleProject>Wasm.Console.Node.ES6.Sample.csproj</_SampleProject>
+    <_SampleAssembly>Wasm.Console.Node.ES6.Sample.dll</_SampleAssembly>
   </PropertyGroup>
 
-  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithNode" />
 </Project>

@@ -324,8 +324,12 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile\tests\System.IO.Compression.ZipFile.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console\Wasm.Console.Sample.csproj" />
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser\Wasm.Browser.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-v8-es6\Wasm.Console.V8.ES6.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-v8-cjs\Wasm.Console.V8.CJS.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-es6\Wasm.Console.Node.ES6.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-cjs\Wasm.Console.Node.CJS.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-es6\Wasm.Browser.ES6.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser\Wasm.Browser.CJS.Sample.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows' and '$(Scenario)' == 'WasmTestOnBrowser' and '$(RunDisabledWasmTestsOnWindows)' != 'true'">

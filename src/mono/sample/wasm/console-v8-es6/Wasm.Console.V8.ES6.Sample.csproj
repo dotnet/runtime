@@ -1,13 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
+    <WasmMainJSPath>v8shim.cjs</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    <WasmEnableES6>true</WasmEnableES6>
   </PropertyGroup>
 
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.mjs" />
+  </ItemGroup>
+
   <PropertyGroup>
-    <_SampleProject>Wasm.Console.Sample.csproj</_SampleProject>
-    <_SampleAssembly>Wasm.Console.Sample.dll</_SampleAssembly>
+    <_SampleProject>Wasm.Console.V8.ES6.Sample.csproj</_SampleProject>
+    <_SampleAssembly>Wasm.Console.V8.ES6.Sample.dll</_SampleAssembly>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
