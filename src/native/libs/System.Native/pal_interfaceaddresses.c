@@ -133,24 +133,21 @@ static bool ensure_getifaddrs_is_loaded()
     static bool loading_already_attempted = false;
     static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
-    if (!loading_already_attempted)
+    if (pthread_mutex_lock(&lock) == 0)
     {
-        if (pthread_mutex_lock(&lock) == 0)
+        if (!loading_already_attempted)
         {
-            if (!loading_already_attempted)
+            void *libc = dlopen("libc.so", RTLD_NOW);
+            if (libc)
             {
-                loading_already_attempted = true;
-
-                void *libc = dlopen("libc.so", RTLD_NOW);
-                if (libc)
-                {
-                    getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
-                    freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
-                }
+                getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
+                freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
             }
 
-            pthread_mutex_unlock(&lock);
+            loading_already_attempted = true;
         }
+
+        pthread_mutex_unlock(&lock);
     }
 
     return getifaddrs != NULL && freeifaddrs != NULL;
