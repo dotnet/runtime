@@ -4083,12 +4083,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 }
                             }
                         }
+#ifdef TARGET_ARM64
                         if (tree->gtFlags & GTF_IND_VOLATILE)
                         {
                             // For volatile store/loads when address is contained we always emit `dmb`
-                            // if it's not - we emit stlr/ldlr
+                            // if it's not - we emit one-way barriers i.e. ldar/stlr
                             doAddrMode = false;
                         }
+#endif // TARGET_ARM64
                         if (doAddrMode && gtMarkAddrMode(addr, &costEx, &costSz, tree->TypeGet()))
                         {
                             goto DONE;
