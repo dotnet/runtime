@@ -1103,10 +1103,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     }
     else if (intrin.op2 != nullptr)
     {
-        if (intrin.op2->isContained())
+        // Do not give a register to the second operand if it is contained.
+        if (!hasImmediateOperand && intrin.op2->isContained())
         {
             assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
-            assert(intrin.op2->IsSIMDZero());
+            assert(intrin.op2->IsVectorZero());
         }
         else
         {

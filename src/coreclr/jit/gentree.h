@@ -1758,6 +1758,8 @@ public:
     inline bool IsIntegralConst(ssize_t constVal) const;
     inline bool IsIntegralConstVector(ssize_t constVal) const;
     inline bool IsSIMDZero() const;
+    inline bool IsFloatPositiveZero() const;
+    inline bool IsVectorZero() const;
 
     inline bool IsBoxedValue();
 
@@ -2160,7 +2162,7 @@ public:
 
     inline bool IsCnsFltOrDbl() const;
 
-    inline bool IsCnsNonZeroFltOrDbl();
+    inline bool IsCnsNonZeroFltOrDbl() const;
 
     bool IsIconHandle() const
     {
@@ -7712,21 +7714,72 @@ inline bool GenTree::IsSIMDZero() const
     }
 #endif
 
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsFloatPositiveZero: returns true if this is exactly a const float value of postive zero (+0.0)
+//
+// Returns:
+//     True if this represents a const floating-point value of exactly positive zero (+0.0).
+//     Will return false if the value is negative zero (-0.0).
+//
+inline bool GenTree::IsFloatPositiveZero() const
+{
+    return !(IsCnsNonZeroFltOrDbl());
+}
+
+//-------------------------------------------------------------------
+// IsVectorZero: returns true if this is a SIMD vector
+// with all its elements equal to zero.
+//
+// TODO: We already have IsSIMDZero() and IsIntegralConstVector(0),
+//       however, IsSIMDZero() does not cover hardware intrinsics, and IsIntegralConstVector(0) does not cover floating point.
+//       In order to not risk adverse behaviour by modifying those, this function 'IsVectorZero' was introduced.
+//       At some point, it makes sense to normalize this logic to be a single function call rather than have several separate ones;
+//       preferably this one.
+//
+// Returns:
+//     True if this represents an integral or floating-point const SIMD vector with all its elements equal to zero.
+//
+inline bool GenTree::IsVectorZero() const
+{
+#ifdef FEATURE_SIMD
+    if (gtOper == GT_SIMD)
+    {
+        const GenTreeSIMD* node = AsSIMD();
+
+        if (node->GetSIMDIntrinsicId() == SIMDIntrinsicInit)
+        {
+            return (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero());
+        }
+    }
+#endif
+
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
         const GenTreeHWIntrinsic* node = AsHWIntrinsic();
+        const var_types simdBaseType = node->GetSimdBaseType();
 
-        if (node->GetOperandCount() == 0)
+        if (varTypeIsIntegral(simdBaseType) || varTypeIsFloating(simdBaseType))
         {
-            const var_types simdBaseType = node->GetSimdBaseType();
-            if (varTypeIsIntegral(simdBaseType) || varTypeIsFloating(simdBaseType))
+            const NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+
+            if (node->GetOperandCount() == 0)
             {
-                const NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 #if defined(TARGET_XARCH)
                 return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
 #elif defined(TARGET_ARM64)
                 return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+            }
+            else if ((node->GetOperandCount() == 1) && (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
+            {
+#if defined(TARGET_XARCH)
+                return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
+#elif defined(TARGET_ARM64)
+                return (intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create);
 #endif // !TARGET_XARCH && !TARGET_ARM64
             }
         }
@@ -8400,7 +8453,7 @@ inline bool GenTree::IsCnsFltOrDbl() const
     return OperGet() == GT_CNS_DBL;
 }
 
-inline bool GenTree::IsCnsNonZeroFltOrDbl()
+inline bool GenTree::IsCnsNonZeroFltOrDbl() const
 {
     if (OperGet() == GT_CNS_DBL)
     {

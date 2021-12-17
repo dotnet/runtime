@@ -1871,7 +1871,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_AdvSimd_CompareEqual:
             {
-                if (intrin.op2->IsSIMDZero())
+                if (intrin.op2->IsVectorZero())
                 {
                     MakeSrcContained(node, intrin.op2);
                 }
