@@ -1883,7 +1883,6 @@ namespace System.Net.Http
                 // or because it immediately set the max concurrent streams limit to 0.
                 // We don't want to get stuck in a loop where we keep trying to create new connections for the same request.
                 // So, treat this as a connection failure.
-                // TODO: Need to flow the request
 
                 if (NetEventSource.Log.IsEnabled()) connection.Trace("New HTTP2 connection is unusable due to no available streams.");
                 connection.Dispose();
@@ -2202,7 +2201,7 @@ namespace System.Net.Http
 
         private struct RequestQueue<T>
         {
-            public struct QueueItem
+            private struct QueueItem
             {
                 public HttpRequestMessage Request;
                 public TaskCompletionSourceWithCancellation<T> Waiter;
