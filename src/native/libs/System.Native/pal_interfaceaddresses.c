@@ -60,13 +60,6 @@
 #endif
 #endif
 
-#if !HAVE_GETIFADDRS
-#include <dlfcn.h>
-#if HAVE_GNU_LIBNAMES_H
-#include <gnu/lib-names.h>
-#endif
-#endif
-
 // Convert mask to prefix length e.g. 255.255.255.0 -> 24
 // mask parameter is pointer to buffer where address starts and length is
 // buffer length e.g. 4 for IPv4 and 16 for IPv6.
@@ -139,17 +132,7 @@ static bool ensure_getifaddrs_is_loaded() {
     {
         loading_already_attempted = true;
 
-#if defined(__APPLE__)
-        const char *libc_path = "/usr/lib/libc.dylib";
-#elif defined(__FreeBSD__)
-        const char *libc_path = "libc.so.7";
-#elif defined(LIBC_SO)
-        const char *libc_path = LIBC_SO;
-#else
-        const char *libc_path = "libc.so";
-#endif
-
-        void *libc = dlopen(libc_path, RTLD_NOW);
+        void *libc = dlopen("libc.so", RTLD_NOW);
         if (libc)
         {
             getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
