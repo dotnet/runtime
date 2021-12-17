@@ -7,7 +7,6 @@
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
 #include "pal_networking.h"
-#include "pal_dynamicload.h"
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -58,6 +57,13 @@
 #include "ios/net/route.h"
 #else
 #include <net/route.h>
+#endif
+#endif
+
+#if !HAVE_GETIFADDRS
+#include <dlfcn.h>
+#if HAVE_GNU_LIBNAMES_H
+#include <gnu/lib-names.h>
 #endif
 #endif
 
@@ -133,7 +139,17 @@ static bool ensure_getifaddrs_is_loaded() {
     {
         loading_already_attempted = true;
 
-        void *libc = dlopen(LIBC_FILENAME, RTLD_NOW);
+#if defined(__APPLE__)
+        const char *libc_path = "/usr/lib/libc.dylib";
+#elif defined(__FreeBSD__)
+        const char *libc_path = "libc.so.7";
+#elif defined(LIBC_SO)
+        const char *libc_path = LIBC_SO;
+#else
+        const char *libc_path = "libc.so";
+#endif
+
+        void *libc = dlopen(libc_path, RTLD_NOW);
         if (libc)
         {
             getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
