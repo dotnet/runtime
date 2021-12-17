@@ -19,16 +19,15 @@ echo "***** Testing PAL *****"
 echo
 
 # Store the location of the root of build directory
-BUILD_ROOT_DIR=$1
-if [ -d "$(pwd)/$BUILD_ROOT_DIR" ]; then
-  BUILD_ROOT_DIR="$(pwd)/$BUILD_ROOT_DIR"
+if [ ! -e "$1" ]; then
+  echo "Core_Root not found at $1"
+  exit 1
 fi
+BUILD_ROOT_DIR="$(pushd "$1"; pwd -P)"
 
 # Create path to the compiled PAL tets in the build directory
 PAL_TEST_BUILD=$BUILD_ROOT_DIR
 echo Running PAL tests from $PAL_TEST_BUILD
-
-pushd $BUILD_ROOT_DIR
 
 export LD_LIBRARY_PATH=$BUILD_ROOT_DIR:$LD_LIBRARY_PATH
 
@@ -106,7 +105,6 @@ else
     COPY_TO_TEST_OUTPUT_DIR=$PAL_TEST_OUTPUT_DIR
   fi
 fi
-cd $PAL_TEST_OUTPUT_DIR
 
 echo
 echo "Running tests..."
@@ -124,12 +122,12 @@ do
   # Create a folder with the test name, and use that as the working directory for the test. Many PAL tests don't clean up after
   # themselves and may leave files/directories around, but even to handle test failures that result in a dirty state, run each
   # test in its own folder.
-  TEST_WORKING_DIR=$(basename $TEST_NAME)
+  TEST_WORKING_DIR=$PAL_TEST_OUTPUT_DIR/$(basename $TEST_NAME)
   if [ -e $TEST_WORKING_DIR ]; then
     rm -f -r $TEST_WORKING_DIR
   fi
   mkdir $TEST_WORKING_DIR
-  cd $TEST_WORKING_DIR
+  pushd $TEST_WORKING_DIR
 
   # Create path to a test executable to run
   TEST_COMMAND="$PAL_TEST_BUILD/$TEST_NAME"
@@ -147,7 +145,7 @@ do
   ENDTIME=$(date +%s)
 
   # Change back to the output directory, and remove the test's working directory if it's empty
-  cd $PAL_TEST_OUTPUT_DIR
+  popd
   rmdir $TEST_WORKING_DIR 2>/dev/null
 
   TEST_XUNIT_NAME=$(dirname $TEST_NAME)
@@ -223,8 +221,6 @@ if [ "$COPY_TO_TEST_OUTPUT_DIR" != "$PAL_TEST_OUTPUT_DIR" ]; then
   rm -f -r $PAL_TEST_OUTPUT_DIR
   echo Copied PAL test output files to $COPY_TO_TEST_OUTPUT_DIR.
 fi
-
-popd
 
 # Set exit code to be equal to the number PAL tests that have failed.
 # Exit code 0 indicates success.
