@@ -149,14 +149,13 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
         internal static partial int SslSetData(IntPtr ssl, IntPtr data);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool Tls13SupportedImpl();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
+        private static partial int Tls13SupportedImpl();
 
         internal static class Capabilities
         {
             // needs separate type to be sure OpenSSL is initialized.
-            internal static readonly bool Tls13Supported = Tls13SupportedImpl();
+            internal static readonly bool Tls13Supported = Tls13SupportedImpl() != 0;
         }
 
         internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> protocols)
