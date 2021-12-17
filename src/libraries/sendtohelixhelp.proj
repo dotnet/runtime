@@ -114,7 +114,7 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test-browser" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" Include="set &quot;JS_ENGINE=--engine=NodeJS&quot;" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" Include="set &quot;JS_ENGINE=--engine^=NodeJS&quot;" />
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
