@@ -30,8 +30,9 @@
 
 #include <mono/utils/mono-compiler.h>
 
+#define ALLOW_CLASS_ADD
 #define ALLOW_METHOD_ADD
-#undef ALLOW_FIELD_ADD
+#define ALLOW_FIELD_ADD
 
 typedef struct _DeltaInfo DeltaInfo;
 
@@ -1270,7 +1271,10 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		int token_table = mono_metadata_token_table (log_token);
 		int token_index = mono_metadata_token_index (log_token);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows)\tfunc=0x%02x (\"%s\")\n", i, log_token, mono_meta_table_name (token_table), token_index, table_info_get_rows (&image_base->tables [token_table]), func_code, funccode_to_str (func_code));
+		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
+
+
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows; prev gen had 0x%04x rows)\t%s\tfunc=0x%02x (\"%s\")\n", i, log_token, mono_meta_table_name (token_table), token_index, table_info_get_rows (&image_base->tables [token_table]), delta_info->count[token_table].prev_gen_rows, (is_addition ? "ADD" : "UPDATE"), func_code, funccode_to_str (func_code));
 
 
 		if (token_table != MONO_TABLE_METHOD)
@@ -1278,7 +1282,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 
 #ifndef ALLOW_METHOD_ADD
 
-		if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
+		if (is_addition) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "\tcannot add new method with token 0x%08x", log_token);
 			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: cannot add new method with token 0x%08x", log_token);
 			unsupported_edits = TRUE;
@@ -1288,8 +1292,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 
 #ifdef ALLOW_METHOD_ADD
 		/* adding a new parameter to a new method is ok */
-		/* FIXME: total rows, not just the baseline rows */
-		if (func_code == ENC_FUNC_ADD_PARAM && token_index > table_info_get_rows (&image_base->tables [token_table]))
+		if (func_code == ENC_FUNC_ADD_PARAM && is_addition)
 			continue;
 #endif
 
@@ -1306,6 +1309,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 		int token_table = mono_metadata_token_table (log_token);
 		int token_index = mono_metadata_token_index (log_token);
 
+		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
+
 		switch (token_table) {
 		case MONO_TABLE_ASSEMBLYREF:
 			/* okay, supported */
@@ -1317,8 +1322,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 #endif
 			/* handled above */
 			break;
-#ifdef ALLOW_FIELD_ADD
 		case MONO_TABLE_FIELD:
+#ifdef ALLOW_FIELD_ADD
 			if (func_code == ENC_FUNC_DEFAULT)
 				continue; /* ok, allowed */
 #else
@@ -1330,7 +1335,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 #endif
 		case MONO_TABLE_PROPERTY: {
 			/* modifying a property, ok */
-			if (token_index <= table_info_get_rows (&image_base->tables [token_table]))
+			if (!is_addition)
 				break;
 			/* adding a property */
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support adding new properties.", i, log_token);
@@ -1339,8 +1344,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			continue;
 		}
 		case MONO_TABLE_METHODSEMANTICS: {
-			/* FIXME: this should get the current table size, not the base stable size */
-			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
+			if (is_addition) {
 				/* new rows are fine, as long as they point at existing methods */
 				guint32 sema_cols [MONO_METHOD_SEMA_SIZE];
 				int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
@@ -1352,7 +1356,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				case METHOD_SEMANTIC_SETTER: {
 					int prop_method_index = sema_cols [MONO_METHOD_SEMA_METHOD];
 					/* ok, if it's pointing to an existing getter/setter */
-					if (prop_method_index < table_info_get_rows (&image_base->tables [MONO_TABLE_METHOD]))
+					gboolean is_prop_method_add = prop_method_index-1 >= delta_info->count[MONO_TABLE_METHOD].prev_gen_rows;
+					if (!is_prop_method_add)
 						break;
 					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x adding new getter/setter method 0x%08x to a property is not supported", i, log_token, prop_method_index);
 					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support adding a new getter or setter to a property, token=0x%08x", log_token);
@@ -1373,8 +1378,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			}
 		}
 		case MONO_TABLE_CUSTOMATTRIBUTE: {
-			/* FIXME: this should get the current table size, not the base stable size */
-			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
+			if (!is_addition) {
 				/* modifying existing rows is ok, as long as the parent and ctor are the same */
 				guint32 ca_upd_cols [MONO_CUSTOM_ATTR_SIZE];
 				guint32 ca_base_cols [MONO_CUSTOM_ATTR_SIZE];
@@ -1408,8 +1412,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			}
 		}
 		case MONO_TABLE_PARAM: {
-			/* FIXME: this should get the current table size, not the base stable size */
-			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
+			if (!is_addition) {
 				/* We only allow modifications where the parameter name doesn't change. */
 				uint32_t base_param [MONO_PARAM_SIZE];
 				uint32_t upd_param [MONO_PARAM_SIZE];
@@ -1434,11 +1437,14 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				break; /* added a row. ok */
 		}
 		case MONO_TABLE_TYPEDEF: {
+			gboolean new_class = is_addition;
 #ifdef ALLOW_METHOD_ADD
-			/* FIXME: wrong for cumulative updates - need to look at DeltaInfo:count.prev_gen_rows */
-			gboolean new_class = token_index > table_info_get_rows (&image_base->tables [token_table]);
 			/* only allow adding methods to existing classes for now */
-			if (!new_class && func_code == ENC_FUNC_ADD_METHOD) {
+			if (
+#ifndef ALLOW_CLASS_ADD
+				!new_class &&
+#endif
+				func_code == ENC_FUNC_ADD_METHOD) {
 				/* next record should be a MONO_TABLE_METHOD addition (func == default) */
 				g_assert (i + 1 < rows);
 				guint32 next_cols [MONO_ENCLOG_SIZE];
@@ -1448,13 +1454,18 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				int next_table = mono_metadata_token_table (next_token);
 				int next_index = mono_metadata_token_index (next_token);
 				g_assert (next_table == MONO_TABLE_METHOD);
-				g_assert (next_index > table_info_get_rows (&image_base->tables [next_table]));
+				/* expecting an added method */
+				g_assert (next_index-1 >= delta_info->count[next_table].prev_gen_rows);
 				i++; /* skip the next record */
 				continue;
 			}
 #endif
 #ifdef ALLOW_FIELD_ADD
-			if (!new_class && func_code == ENC_FUNC_ADD_FIELD) {
+			if (
+#ifndef ALLOW_CLASS_ADD
+				!new_class &&
+#endif
+				func_code == ENC_FUNC_ADD_FIELD) {
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x AddField to klass 0x%08x, skipping next EnClog record", i, log_token, token_index);
 				g_assert (i + 1 < rows);
 				guint32 next_cols [MONO_ENCLOG_SIZE];
@@ -1464,7 +1475,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				int next_table = mono_metadata_token_table (next_token);
 				int next_index = mono_metadata_token_index (next_token);
 				g_assert (next_table == MONO_TABLE_FIELD);
-				g_assert (next_index > table_info_get_rows (&image_base->tables [next_table]));
+				/* expecting an added field */
+				g_assert (next_index-1 >= delta_info->count[next_table].prev_gen_rows);
 				i++; /* skip the next record */
 				continue;
 			}
@@ -1472,8 +1484,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 			/* fallthru */
 		}
 		default:
-			/* FIXME: this bounds check is wrong for cumulative updates - need to look at the DeltaInfo:count.prev_gen_rows */
-			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
+			if (!is_addition) {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
 				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
 				unsupported_edits = TRUE;
