@@ -12088,72 +12088,12 @@ DONE_MORPHING_CHILDREN:
         case GT_GE:
         case GT_GT:
 
-            if (opts.OptimizationEnabled() && !gtIsActiveCSE_Candidate(tree) && !gtIsActiveCSE_Candidate(op1) &&
-                !gtIsActiveCSE_Candidate(op2) && !tree->IsUnsigned() && tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) &&
-                op1->OperIs(GT_CAST) && varTypeIsLong(op1->CastToType()) && op1->gtGetOp1()->TypeIs(TYP_INT) &&
-                op1->IsUnsigned())
+            if (opts.OptimizationEnabled() && (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST)))
             {
-                // Transform
-                //
-                //   *  GE        int
-                //   +--*  CAST      long <- ulong <- uint
-                //   |  \--*  X         int
-                //   \--*  CNS_INT   long
-                //
-                // to
-                //
-                //   *  GE_un     int
-                //   +--*  X         int
-                //   \--*  CNS_INT   int
-                //
-                // TODO: handle small type casts
-                //
-                // Same for:
-                //
-                //   *  GE        int
-                //   +--*  CAST      long <- ulong <- uint
-                //   |  \--*  X         int
-                //   \--*  CAST      long <- [u]long <- int
-                //      \--*  ARR_LEN   int
-                //
-                bool op2FitsIntoU32 = false;
-                if (op2->IsIntegralConst() && ((UINT64)op2->AsIntConCommon()->IntegralValue() <= UINT_MAX))
-                {
-                    // We can fold the whole condition if op2 doesn't fit into UINT_MAX.
-                    op2FitsIntoU32 = true;
-                }
-                else if (op2->OperIs(GT_CAST) && varTypeIsLong(op2->CastToType()) &&
-                         op2->gtGetOp1()->OperIs(GT_ARR_LENGTH))
-                {
-                    // ARR_LEN is known to be in [0..UINT_MAX] range.
-                    op2FitsIntoU32 = true;
-                    // TODO: we need to recognize Span._length here as well
-                }
-
-                if (op2FitsIntoU32)
-                {
-                    assert(op1->TypeIs(TYP_LONG) && op2->TypeIs(TYP_LONG));
-
-                    tree->AsOp()->gtOp1 = op1->gtGetOp1();
-                    tree->gtFlags |= GTF_UNSIGNED;
-                    if (op2->OperIs(GT_CAST))
-                    {
-                        tree->AsOp()->gtOp2 = op2->gtGetOp1();
-                        DEBUG_DESTROY_NODE(op2);
-                        op2 = tree->gtGetOp2();
-                        assert(op2->TypeIs(TYP_INT));
-                    }
-                    else
-                    {
-                        op2->ChangeType(TYP_INT);
-#ifndef TARGET_64BIT
-                        assert(op2->OperIs(GT_CNS_LNG));
-                        op2->ChangeOperUnchecked(GT_CNS_INT);
-#endif
-                    }
-                    DEBUG_DESTROY_NODE(op1);
-                    op1 = tree->gtGetOp1();
-                }
+                tree = fgOptimizeRelationalComparisonWithCasts(tree->AsOp());
+                oper = tree->OperGet();
+                op1  = tree->gtGetOp1();
+                op2  = tree->gtGetOp2();
             }
 
             // op2's value may be changed, so it cannot be a CSE candidate.
@@ -13789,6 +13729,144 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
     }
 
     return cmp;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeRelationalComparisonWithCasts: optimizes a comparison operation.
+//   Recognizes comparisons against various cast operands and tries to remove
+//   them. E.g.:
+//
+//   *  GE        int
+//   +--*  CAST      long <- ulong <- uint
+//   |  \--*  X         int
+//   \--*  CNS_INT   long
+//
+//   to:
+//
+//   *  GE_un     int
+//   +--*  X         int
+//   \--*  CNS_INT   int
+//
+//   same for:
+//
+//   *  GE        int
+//   +--*  CAST      long <- ulong <- uint
+//   |  \--*  X         int
+//   \--*  CAST      long <- [u]long <- int
+//      \--*  ARR_LEN   int
+//
+// Arguments:
+//   tree - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
+//
+// Return Value:
+//   Returns the same tree where operands might have narrower types
+//
+GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
+{
+
+    assert(tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
+
+    GenTree* castedOp        = tree->gtGetOp1();
+    GenTree* knownPositiveOp = tree->gtGetOp2();
+
+    // Caller is expected to call this function only if we have CAST nodes
+    assert(castedOp->OperIs(GT_CAST) || knownPositiveOp->OperIs(GT_CAST));
+
+    if (gtIsActiveCSE_Candidate(tree) || gtIsActiveCSE_Candidate(castedOp) || gtIsActiveCSE_Candidate(knownPositiveOp))
+    {
+        // We're going to modify all of them
+        return tree;
+    }
+
+    if (!castedOp->TypeIs(TYP_LONG))
+    {
+        // We can extend this logic to handle small types as well, but currently it's done mostly to
+        // assist range check elimination
+        return tree;
+    }
+
+    bool knownPositiveIsOp2;
+    if (knownPositiveOp->IsIntegralConst() ||
+        ((knownPositiveOp->OperIs(GT_CAST) && knownPositiveOp->gtGetOp1()->OperIs(GT_ARR_LENGTH))))
+    {
+        // op2 is either a LONG constant or (T)ARR_LENGTH
+        knownPositiveIsOp2 = true;
+    }
+    else
+    {
+        // op1 is either a LONG constant (yes, it's pretty normal for relops)
+        // or (T)ARR_LENGTH
+        castedOp           = tree->gtGetOp2();
+        knownPositiveOp    = tree->gtGetOp1();
+        knownPositiveIsOp2 = false;
+    }
+
+    if (castedOp->OperIs(GT_CAST) && varTypeIsLong(castedOp->CastToType()) && castedOp->gtGetOp1()->TypeIs(TYP_INT) &&
+        !castedOp->gtGetOp1()->OperIs(GT_ARR_LENGTH) && castedOp->IsUnsigned())
+    {
+        bool knownPositiveFitsIntoU32 = false;
+        if (knownPositiveOp->IsIntegralConst() &&
+            ((UINT64)knownPositiveOp->AsIntConCommon()->IntegralValue() <= UINT_MAX))
+        {
+            // We can fold the whole condition if op2 doesn't fit into UINT_MAX.
+            // but let's not bother.
+            knownPositiveFitsIntoU32 = true;
+        }
+        else if (knownPositiveOp->OperIs(GT_CAST) && varTypeIsLong(knownPositiveOp->CastToType()) &&
+                 knownPositiveOp->gtGetOp1()->OperIs(GT_ARR_LENGTH))
+        {
+            knownPositiveFitsIntoU32 = true;
+            // TODO: we need to recognize Span._length here as well
+        }
+
+        if (!knownPositiveFitsIntoU32)
+        {
+            return tree;
+        }
+
+        JITDUMP("Removing redundant cast(s) for:\n")
+        DISPTREE(tree)
+        JITDUMP("\n\nto:\n\n")
+
+        tree->SetUnsigned();
+
+        // Drop cast from castedOp
+        if (knownPositiveIsOp2)
+        {
+            tree->gtOp1 = castedOp->gtGetOp1();
+        }
+        else
+        {
+            tree->gtOp2 = castedOp->gtGetOp1();
+        }
+        DEBUG_DESTROY_NODE(castedOp);
+
+        if (knownPositiveOp->OperIs(GT_CAST))
+        {
+            // Drop cast from knownPositiveOp too
+            if (knownPositiveIsOp2)
+            {
+                tree->gtOp2 = knownPositiveOp->gtGetOp1();
+            }
+            else
+            {
+                tree->gtOp1 = knownPositiveOp->gtGetOp1();
+            }
+            DEBUG_DESTROY_NODE(knownPositiveOp);
+        }
+        else
+        {
+            // Change type for constant from LONG to INT
+            knownPositiveOp->ChangeType(TYP_INT);
+#ifndef TARGET_64BIT
+            assert(op2->OperIs(GT_CNS_LNG));
+            op2->ChangeOperUnchecked(GT_CNS_INT);
+#endif
+        }
+        DISPTREE(tree)
+        JITDUMP("\n")
+    }
+    return tree;
 }
 
 //------------------------------------------------------------------------
