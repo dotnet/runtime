@@ -654,6 +654,7 @@ namespace DebuggerTests
                 var this_props = await GetObjectOnLocals(frame_locals, "this");
                 await CheckProps(this_props, new
                 {
+                    TestEvent = TSymbol("System.EventHandler<string>"),
                     Delegate = TSymbol("System.MulticastDelegate")
                 }, "this_props");
             });
