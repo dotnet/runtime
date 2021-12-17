@@ -11159,13 +11159,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 }
             }
 
-            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
-            // if op2 is a positive cns
-            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
-                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UDIV or DIV
+            // Convert DIV to UDIV if boths op1 and op2 are known to be never negative
+            if (!gtIsActiveCSE_Candidate(tree) && varTypeIsIntegral(tree) && op1->IsNeverNegative(this) &&
+                op2->IsNeverNegative(this))
             {
                 assert(tree->OperIs(GT_DIV));
-                tree->ChangeOper(GT_UDIV);
+                tree->ChangeOper(GT_UDIV, GenTree::PRESERVE_VN);
                 return fgMorphSmpOp(tree, mac);
             }
 
@@ -11228,13 +11227,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 goto USE_HELPER_FOR_ARITH;
             }
 
-            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
-            // if op2 is a positive cns
-            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
-                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UMOD or MOD
+            // Convert MOD to UMOD if boths op1 and op2 are known to be never negative
+            if (!gtIsActiveCSE_Candidate(tree) && varTypeIsIntegral(tree) && op1->IsNeverNegative(this) &&
+                op2->IsNeverNegative(this))
             {
                 assert(tree->OperIs(GT_MOD));
-                tree->ChangeOper(GT_UMOD);
+                tree->ChangeOper(GT_UMOD, GenTree::PRESERVE_VN);
                 return fgMorphSmpOp(tree, mac);
             }
 
