@@ -14,7 +14,7 @@
 #if HAVE_IFADDRS || HAVE_GETIFADDRS
 #include <ifaddrs.h>
 #endif
-#if !HAVE_GETIFADDRS
+#if !HAVE_GETIFADDRS && TARGET_ANDROID
 #include <dlfcn.h>
 #endif
 #include <net/if.h>
@@ -100,11 +100,10 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
     return len;
 }
 
-#if !HAVE_IFADDRS
-/* This structure is exactly the same as struct ifaddrs defined in ifaddrs.h but since the header
- * might not be available (e.g., in bionics used in Android before API 24) we need to mirror it here
- * so that we can dynamically load the getifaddrs function and use it.
- */
+#if !HAVE_IFADDRS && TARGET_ANDROID
+// This structure is exactly the same as struct ifaddrs defined in ifaddrs.h but since the header
+// might not be available (e.g., in bionics used in Android before API 24) we need to mirror it here
+// so that we can dynamically load the getifaddrs function and use it.
 struct ifaddrs {
 	struct ifaddrs *ifa_next;
 	char *ifa_name;
@@ -119,8 +118,10 @@ struct ifaddrs {
 };
 #endif
 
-#if !HAVE_GETIFADDRS
-// try to load the getifaddrs and freeifaddrs functions manually (this is necessary on Android prior to API 24)
+#if !HAVE_GETIFADDRS && TARGET_ANDROID
+// Try to load the getifaddrs and freeifaddrs functions manually.
+// This workaround is necessary on Android prior to API 24 and it can be removed once
+// we drop support for earlier Android versions.
 static int (*getifaddrs)(struct ifaddrs**) = NULL;
 static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
@@ -148,7 +149,8 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
-#if !HAVE_GETIFADDRS
+#if !HAVE_GETIFADDRS && TARGET_ANDROID
+    // Workaround for Android API < 24
     if (!ensure_getifaddrs_is_loaded())
     {
         errno = ENOTSUP;
@@ -156,6 +158,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
     }
 #endif
 
+#if HAVE_GETIFADDRS || TARGET_ANDROID
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -287,11 +290,21 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 
     freeifaddrs(headAddr);
     return 0;
+#else
+    // Not supported. Also, prevent a compiler error because parameters are unused
+    (void)context;
+    (void)onIpv4Found;
+    (void)onIpv6Found;
+    (void)onLinkLayerFound;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
-#if !HAVE_GETIFADDRS
+#if !HAVE_GETIFADDRS && TARGET_ANDROID
+    // Workaround for Android API < 24
     if (!ensure_getifaddrs_is_loaded())
     {
         errno = ENOTSUP;
@@ -299,6 +312,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     }
 #endif
 
+#if HAVE_GETIFADDRS || TARGET_ANDROID
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;
@@ -504,6 +518,15 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     }
 
     return 0;
+#else
+    // Not supported. Also, prevent a compiler error because parameters are unused
+    (void)interfaceCount;
+    (void)interfaceList;
+    (void)addressCount;
+    (void)addressList;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 #if HAVE_RT_MSGHDR && defined(CTL_NET)
