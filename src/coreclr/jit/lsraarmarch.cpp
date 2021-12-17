@@ -691,19 +691,60 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             switch (blkNode->gtBlkOpKind)
             {
                 case GenTreeBlk::BlkOpKindUnroll:
+                {
                     buildInternalIntRegisterDefForNode(blkNode);
 #ifdef TARGET_ARM64
-                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                    const bool isSrcRegAddrAlignmentKnown =
+                        src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
+                        ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIsLocalAddr());
+                    const bool isDstRegAddrAlignmentKnown = dstAddr->OperIsLocalAddr();
 
-                    if (size >= 2 * REGSIZE_BYTES)
+                    bool willUseSimdInstrs = false;
+
+                    if (isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown)
                     {
-                        // We will use ldp/stp to reduce code size and improve performance
-                        // so we need to reserve an extra internal register
+                        // The following allocates an additional integer register in a case
+                        // when neither loads nor stores can be encoded using unsigned instruction offsets.
                         buildInternalIntRegisterDefForNode(blkNode);
+
+                        if (size >= FP_REGSIZE_BYTES)
+                        {
+                            willUseSimdInstrs = true;
+                        }
+                    }
+                    else if (dstAddr->isContained() && (src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
+                                                        (srcAddrOrFill != nullptr) && srcAddrOrFill->isContained()))
+                    {
+                        // Both srcAddr and dstAddr are contained - the addresses will be computed in CodeGen.
+                        // This might take up to two integer registers to store both values.
+                        // The following allocates an additional integer register to store an address.
+                        buildInternalIntRegisterDefForNode(blkNode);
+                    }
+
+                    // The following allocates temporary register(s) for copying from source to destination.
+
+                    if (willUseSimdInstrs)
+                    {
+                        // Note that the following allocates a pair of SIMD registers.
+                        // CodeGen might end up needing both when two integer registers (allocated above)
+                        // are occupied with source and destination addresses.
+                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                         buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                     }
+                    else
+                    {
+                        buildInternalIntRegisterDefForNode(blkNode);
+
+                        // CodeGen will use load-pair/store-pair instructions to reduce code size
+                        // and improve performance. LSRA needs to reserve an extra internal register for these.
+                        if (size >= 2 * REGSIZE_BYTES)
+                        {
+                            buildInternalIntRegisterDefForNode(blkNode);
+                        }
+                    }
 #endif
-                    break;
+                }
+                break;
 
                 case GenTreeBlk::BlkOpKindHelper:
                     dstAddrRegMask = RBM_ARG_0;
