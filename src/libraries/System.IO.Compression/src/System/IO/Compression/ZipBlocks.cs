@@ -96,7 +96,7 @@ namespace System.IO.Compression
         private long? _uncompressedSize;
         private long? _compressedSize;
         private long? _localHeaderOffset;
-        private int? _startDiskNumber;
+        private uint? _startDiskNumber;
 
         public ushort TotalSize => (ushort)(_size + 4);
 
@@ -115,7 +115,7 @@ namespace System.IO.Compression
             get { return _localHeaderOffset; }
             set { _localHeaderOffset = value; UpdateSize(); }
         }
-        public int? StartDiskNumber => _startDiskNumber;
+        public uint? StartDiskNumber => _startDiskNumber;
 
         private void UpdateSize()
         {
@@ -208,13 +208,12 @@ namespace System.IO.Compression
                     if (readUncompressedSize) zip64Block._uncompressedSize = reader.ReadInt64();
                     if (readCompressedSize) zip64Block._compressedSize = reader.ReadInt64();
                     if (readLocalHeaderOffset) zip64Block._localHeaderOffset = reader.ReadInt64();
-                    if (readStartDiskNumber) zip64Block._startDiskNumber = reader.ReadInt32();
+                    if (readStartDiskNumber) zip64Block._startDiskNumber = reader.ReadUInt32();
 
                     // original values are unsigned, so implies value is too big to fit in signed integer
                     if (zip64Block._uncompressedSize < 0) throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
                     if (zip64Block._compressedSize < 0) throw new InvalidDataException(SR.FieldTooBigCompressedSize);
                     if (zip64Block._localHeaderOffset < 0) throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
-                    if (zip64Block._startDiskNumber < 0) throw new InvalidDataException(SR.FieldTooBigStartDiskNumber);
 
                     return true;
                 }
@@ -447,7 +446,7 @@ namespace System.IO.Compression
         public ushort FilenameLength;
         public ushort ExtraFieldLength;
         public ushort FileCommentLength;
-        public int DiskNumberStart;
+        public uint DiskNumberStart;
         public ushort InternalFileAttributes;
         public uint ExternalFileAttributes;
         public long RelativeOffsetOfLocalHeader;
