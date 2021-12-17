@@ -191,8 +191,8 @@ void SetContains256bitAVX(bool value)
 
 bool IsDstDstSrcAVXInstruction(instruction ins);
 bool IsDstSrcSrcAVXInstruction(instruction ins);
-bool HasWBit(instruction ins);
-bool HasSBit(instruction ins);
+bool HasRegularWideForm(instruction ins);
+bool HasRegularWideImmediateForm(instruction ins);
 bool DoesWriteZeroFlag(instruction ins);
 bool DoesWriteSignFlag(instruction ins);
 bool DoesResetOverflowAndCarryFlags(instruction ins);

@@ -150,28 +150,34 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// HasSBit: check if the instruction has the 's' (sign extend) bit.
+// HasRegularWideImmediateForm: check if the instruction has a regular wide immediate 
+//          form where the 's' bit needs to be set to sign extend the immediate.  See Section B.2
+//          of Volume 2 of Intel Architecture Software Developer Manual to cross reference 
+//          instruction form with 's' bit requirements.
 //
 // Arguments:
 //    ins - instruction to test
 //
 // Return Value:
-//    true if instruction has the 's' bit, false otherwise
-bool emitter::HasSBit(instruction ins)
+//    true if instruction has a regular wide immediate form where the 's' bit needs to set.
+bool emitter::HasRegularWideImmediateForm(instruction ins)
 {
     return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Sbit) != 0);
 }
 
 //------------------------------------------------------------------------
-// HasWBit: check if the instruction has the 'w' bit required to use the
-//          full operand size.
+// HasRegularWideForm: check if the instruction has a regular wide form where the 'w'
+//          bit needs to be set to use the full operand size.  See Section B.2
+//          of Volume 2 of Intel Architecture Software Developer Manual to cross reference 
+//          instruction form with 'w' bit requirements.
+//
 //
 // Arguments:
 //    ins - instruction to test
 //
 // Return Value:
-//    true if instruction has the 'w' bit, false otherwise
-bool emitter::HasWBit(instruction ins)
+//    true if instruction has a regular wide form where the 'w' bit needs to be set.
+bool emitter::HasRegularWideForm(instruction ins)
 {
     return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Wbit) != 0);
 }
@@ -10363,7 +10369,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Use the large version if this is not a byte. This trick will not
         // work in case of SSE2 and AVX instructions.
-        if ((size != EA_1BYTE) && HasWBit(ins))
+        if ((size != EA_1BYTE) && HasRegularWideForm(ins))
         {
             code |= 0x1;
         }
@@ -11129,7 +11135,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Use the large version if this is not a byte
-        if ((size != EA_1BYTE) && HasWBit(ins))
+        if ((size != EA_1BYTE) && HasRegularWideForm(ins))
         {
             code |= 0x1;
         }
@@ -11592,7 +11598,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             code &= 0x0000FFFF;
         }
 
-        if (size != EA_1BYTE && HasWBit(ins))
+        if (size != EA_1BYTE && HasRegularWideForm(ins))
         {
             code |= 0x1;
         }
@@ -12761,7 +12767,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     }
 
     // "test" has no 's' bit
-    if (!HasSBit(ins))
+    if (!HasRegularWideImmediateForm(ins))
     {
         useSigned = false;
     }
