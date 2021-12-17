@@ -22,7 +22,7 @@ namespace ILCompiler
     public sealed class AnalysisBasedMetadataManager : GeneratingMetadataManager, ICompilationRootProvider
     {
         private readonly List<ModuleDesc> _modulesWithMetadata;
-        private readonly List<MetadataType> _typesWithRootedCctorContext = new List<MetadataType>();
+        private readonly List<MetadataType> _typesWithRootedCctorContext;
 
         private readonly Dictionary<TypeDesc, MetadataCategory> _reflectableTypes = new Dictionary<TypeDesc, MetadataCategory>();
         private readonly Dictionary<MethodDesc, MetadataCategory> _reflectableMethods = new Dictionary<MethodDesc, MetadataCategory>();
