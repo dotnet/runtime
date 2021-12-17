@@ -7723,7 +7723,11 @@ inline bool GenTree::IsSIMDZero() const
             if (varTypeIsIntegral(simdBaseType) || varTypeIsFloating(simdBaseType))
             {
                 const NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+#if defined(TARGET_XARCH)
+                return (intrinsicId == NI_Vector128_get_Zero) || (intrinsicId == NI_Vector256_get_Zero);
+#elif defined(TARGET_ARM64)
                 return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
+#endif // !TARGET_XARCH && !TARGET_ARM64
             }
         }
     }
