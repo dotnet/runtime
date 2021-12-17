@@ -16,6 +16,7 @@
 #endif
 #if !HAVE_GETIFADDRS && TARGET_ANDROID
 #include <dlfcn.h>
+#include <pthread.h>
 #endif
 #include <net/if.h>
 #include <netinet/in.h>
@@ -130,16 +131,25 @@ static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 static bool ensure_getifaddrs_is_loaded()
 {
     static bool loading_already_attempted = false;
+    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
     if (!loading_already_attempted)
     {
-        loading_already_attempted = true;
-
-        void *libc = dlopen("libc.so", RTLD_NOW);
-        if (libc)
+        if (pthread_mutex_lock(&lock) == 0)
         {
-            getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
-            freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
+            if (!loading_already_attempted)
+            {
+                loading_already_attempted = true;
+
+                void *libc = dlopen("libc.so", RTLD_NOW);
+                if (libc)
+                {
+                    getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
+                    freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
+                }
+            }
+
+            pthread_mutex_unlock(&lock);
         }
     }
 
