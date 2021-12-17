@@ -1817,7 +1817,6 @@ namespace System.Net.Http
                         Debug.Assert(_availableHttp2Connections is null || !_availableHttp2Connections.Contains(connection), $"HTTP2 connection already in available list");
                         Debug.Assert(_associatedHttp2ConnectionCount > (_availableHttp2Connections?.Count ?? 0),
                             $"Expected _associatedHttp2ConnectionCount={_associatedHttp2ConnectionCount} > _availableHttp2Connections.Count={(_availableHttp2Connections?.Count ?? 0)}");
-                        // TODO: Update HTTP/1.1 assertion similarly
 
                         if (isNewConnection)
                         {
@@ -2027,6 +2026,7 @@ namespace System.Net.Http
         {
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
             TimeSpan pooledConnectionIdleTimeout = _poolManager.Settings._pooledConnectionIdleTimeout;
+            long nowTicks = Environment.TickCount64;
 
             List<HttpConnectionBase>? toDispose = null;
 
@@ -2046,8 +2046,6 @@ namespace System.Net.Http
                 // Reset the cleanup flag.  Any pools that are empty and not used since the last cleanup
                 // will be purged next time around.
                 _usedSinceLastCleanup = false;
-
-                long nowTicks = Environment.TickCount64;
 
                 ScavengeConnectionList(_availableHttp11Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
                 if (_availableHttp2Connections is not null)
