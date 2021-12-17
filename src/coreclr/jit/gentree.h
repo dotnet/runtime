@@ -7730,18 +7730,17 @@ inline bool GenTree::IsFloatPositiveZero() const
 }
 
 //-------------------------------------------------------------------
-// IsVectorZero: returns true if this is a SIMD vector
+// IsVectorZero: returns true if this is an integral or floating-point SIMD vector
 // with all its elements equal to zero.
-//
-// TODO: We already have IsSIMDZero() and IsIntegralConstVector(0),
-//       however, IsSIMDZero() does not cover hardware intrinsics, and IsIntegralConstVector(0) does not cover floating point.
-//       In order to not risk adverse behaviour by modifying those, this function 'IsVectorZero' was introduced.
-//       At some point, it makes sense to normalize this logic to be a single function call rather than have several separate ones;
-//       preferably this one.
 //
 // Returns:
 //     True if this represents an integral or floating-point const SIMD vector with all its elements equal to zero.
 //
+// TODO: We already have IsSIMDZero() and IsIntegralConstVector(0),
+//       however, IsSIMDZero() does not cover hardware intrinsics, and IsIntegralConstVector(0) does not cover floating
+//       point. In order to not risk adverse behaviour by modifying those, this function 'IsVectorZero' was introduced.
+//       At some point, it makes sense to normalize this logic to be a single function call rather than have several
+//       separate ones; preferably this one.
 inline bool GenTree::IsVectorZero() const
 {
 #ifdef FEATURE_SIMD
