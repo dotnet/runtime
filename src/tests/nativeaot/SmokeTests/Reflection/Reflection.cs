@@ -59,6 +59,7 @@ internal class ReflectionTest
         TestGetUninitializedObject.Run();
         TestInstanceFields.Run();
         TestReflectionInvoke.Run();
+        TestInvokeMemberParamsCornerCase.Run();
         TestDefaultInterfaceInvoke.Run();
         TestCovariantReturnInvoke.Run();
 #if !CODEGEN_CPP
@@ -261,6 +262,26 @@ internal class ReflectionTest
                     throw new Exception();
             }
 #endif
+        }
+    }
+
+    class TestInvokeMemberParamsCornerCase
+    {
+        public struct MyStruct { }
+
+        public static int Count(params MyStruct[] myStructs)
+        {
+            return myStructs.Length;
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestInvokeMemberParamsCornerCase));
+
+            // Needs MethodTable for MyStruct[] and the compiler should have created it.
+            typeof(TestInvokeMemberParamsCornerCase).InvokeMember(nameof(Count),
+                BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static,
+                null, null, new object[] { default(MyStruct) });
         }
     }
 

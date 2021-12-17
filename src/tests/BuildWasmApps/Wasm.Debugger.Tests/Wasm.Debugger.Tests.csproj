@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <!-- This is a wrapper project for wasm debugger tests, to enable use of the library test infrastructure -->
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
+    <IsPublishable>false</IsPublishable>
+    <EnableCoverageSupport>false</EnableCoverageSupport>
+    <EnableRunSettingsSupport>false</EnableRunSettingsSupport>
+    <IsWasmProject>false</IsWasmProject>
+    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+    <BundleXunitRunner>true</BundleXunitRunner>
+    <TestFramework>xunit</TestFramework>
+
+    <CoreBuildDependsOn />
+    <BundleTestWasmAppDependsOn>BundleDebuggerTestsForHelix</BundleTestWasmAppDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RunScriptInputName Condition="'$(OS)' != 'Windows_NT'">RunScriptTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
+
+    <RunScriptInputPath>$(MSBuildThisFileDirectory)data\$(RunScriptInputName)</RunScriptInputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)src/mono/wasm/debugger/DebuggerTestSuite/DebuggerTestSuite.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      GlobalPropertiesToRemove="TargetFramework;TargetFrameworks;Configuration;TargetOS;TargetArchitecture"
+                      AdditionalProperties="RuntimeConfiguration=$(Configuration);ArchiveTests=$(ArchiveTests);ArchiveDirForHelix=$(TargetDir)" />
+  </ItemGroup>
+
+  <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
+    <ItemGroup>
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export DEBUGGER_TEST_PATH=$PWD/debugger-test" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set DEBUGGER_TEST_PATH=%25cd%25/debugger-test" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'"
+                         Include="export CHROME_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
+      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'"
+                         Include="set CHROME_PATH_FOR_DEBUGGER_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_DotnetCommand Condition="'$(OS)' != 'Windows_NT'">dotnet</_DotnetCommand>
+      <_DotnetCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</_DotnetCommand>
+
+      <RunScriptCommand>$(_DotnetCommand) test DebuggerTestSuite/DebuggerTestSuite.dll</RunScriptCommand>
+      <RunScriptCommand>$(RunScriptCommand) &quot;-l:trx%3BLogFileName=testResults.trx&quot;</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) --results-directory &quot;$TEST_LOG_PATH&quot;</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) --results-directory &quot;%TEST_LOG_PATH%&quot;</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24TEST_ARGS</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %TEST_ARGS%</RunScriptCommand>
+
+      <!--<RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -v normal</RunScriptCommand>-->
+      <RunScriptCommand>$(RunScriptCommand) -v diag</RunScriptCommand>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="BundleDebuggerTestsForHelix" />
+</Project>
