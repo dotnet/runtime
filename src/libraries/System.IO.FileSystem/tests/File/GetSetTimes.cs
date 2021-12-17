@@ -266,8 +266,8 @@ namespace System.IO.Tests
             File.WriteAllText(firstFilePath, "");
             File.WriteAllText(secondFilePath, "");
 
-            using var secondFileHandle = File.OpenHandle(secondFilePath);
-            using var firstFileHandle = File.OpenHandle(firstFilePath);
+            using var secondFileHandle = File.OpenHandle(secondFilePath, access: FileAccess.ReadWrite);
+            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
 
             File.SetLastAccessTimeUtc(secondFileHandle, DateTime.UtcNow);
             long firstFileTicks = File.GetLastWriteTimeUtc(firstFileHandle).Ticks;
@@ -313,7 +313,7 @@ namespace System.IO.Tests
             string file = GetTestFilePath();
             File.WriteAllText(file, "");
 
-            using var fileHandle = File.OpenHandle(file);
+            using var fileHandle = File.OpenHandle(file, access: FileAccess.ReadWrite);
             DateTime dateTime = new(9999, 4, 11, 23, 47, 17, 21, DateTimeKind.Utc);
             File.SetLastWriteTimeUtc(fileHandle, dateTime);
             long ticks = File.GetLastWriteTimeUtc(fileHandle).Ticks;
@@ -347,8 +347,8 @@ namespace System.IO.Tests
             File.WriteAllText(firstFilePath, "");
             File.WriteAllText(secondFilePath, "");
 
-            using var firstFileHandle = File.OpenHandle(firstFilePath);
-            using var secondFileHandle = File.OpenHandle(secondFilePath);
+            using var firstFileHandle = File.OpenHandle(firstFilePath, access: FileAccess.ReadWrite);
+            using var secondFileHandle = File.OpenHandle(secondFilePath, access: FileAccess.ReadWrite);
 
             File.SetLastWriteTimeUtc(secondFileHandle, DateTime.UtcNow);
             long firstFileTicks = File.GetLastAccessTimeUtc(firstFileHandle).Ticks;
