@@ -14932,18 +14932,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // At present this can only be String
                 else if (clsFlags & CORINFO_FLG_VAROBJSIZE)
                 {
-                    if (IsTargetAbi(CORINFO_CORERT_ABI))
-                    {
-                        // The dummy argument does not exist in CoreRT
-                        newObjThisPtr = nullptr;
-                    }
-                    else
-                    {
-                        // This is the case for variable-sized objects that are not
-                        // arrays.  In this case, call the constructor with a null 'this'
-                        // pointer
-                        newObjThisPtr = gtNewIconNode(0, TYP_REF);
-                    }
+                    // Skip this thisPtr argument
+                    newObjThisPtr = nullptr;
 
                     /* Remember that this basic block contains 'new' of an object */
                     block->bbFlags |= BBF_HAS_NEWOBJ;

@@ -1635,7 +1635,6 @@ void ILVBByValStrWMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
-    pslILEmit->EmitLDNULL();            // this
     EmitLoadNativeValue(pslILEmit);     // ptr
     pslILEmit->EmitLDC(0);              // startIndex
     pslILEmit->EmitLDLOC(m_dwCCHLocal); // length
