@@ -36,9 +36,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <SetScriptCommands Condition="'$(Scenario)' != ''" Include="set &quot;SCENARIO=$(Scenario)&quot;" />
-    <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="set &quot;JS_ENGINE=--engine=$(JSEngine)&quot;" />
+    <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="set &quot;JS_ENGINE=--engine^=$(JSEngine)&quot;" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="set &quot;JS_ENGINE_ARGS=$(JSEngineArgs)&quot;" />
-    <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="set &quot;MAIN_JS=--js-file=$(_WasmMainJSFileName)&quot;" />
+    <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="set &quot;MAIN_JS=--js-file^=$(_WasmMainJSFileName)&quot;" />
   </ItemGroup>
   <PropertyGroup Condition="'$(RunScriptCommand)' == ''">
     <_XHarnessArgs Condition="'$(OS)' != 'Windows_NT'">wasm $XHARNESS_COMMAND --app=. --output-directory=$XHARNESS_OUT</_XHarnessArgs>
