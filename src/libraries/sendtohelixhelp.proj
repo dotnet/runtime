@@ -540,7 +540,6 @@
       <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
       <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output</XHarnessOutput>
       <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
-      <XHarnessBrowserPathArg Condition="'$(Scenario)' == 'WasmTestOnBrowser'">--browser-path=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe</XHarnessBrowserPathArg>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'WasmTestOnNodeJs' and '$(Scenario)' != 'BuildWasmApps' and '$(Scenario)' != 'WasmDebuggerTests'">
