@@ -2678,7 +2678,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    if (block->lastStmt() == nullptr)
+    if (!block->IsLIR() && (block->lastStmt() == nullptr))
     {
         return false;
     }
