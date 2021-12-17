@@ -371,7 +371,7 @@
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
     </ItemGroup>
     <PropertyGroup>
-      <_MergedPayloadFilesPatterns>@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(Identity).app/**')</_MergedPayloadFilesPatterns>
+      <_MergedPayloadFilesPatterns>@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(TargetOS.ToLowerInvariant())/%(Identity).app/**')</_MergedPayloadFilesPatterns>
     </PropertyGroup>
     <ItemGroup>
       <_MergedPayloadFiles Include="$(_MergedPayloadFilesPatterns)" />
