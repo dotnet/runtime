@@ -561,6 +561,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace("Server does not support HTTP2; disabling HTTP2 use and proceeding with HTTP/1.1 connection");
 
             bool canUse = true;
+            TaskCompletionSourceWithCancellation<Http2Connection?>? waiter = null;
             lock (SyncObj)
             {
                 Debug.Assert(_pendingHttp2Connection);
@@ -571,14 +572,6 @@ namespace System.Net.Http
                 _associatedHttp2ConnectionCount--;
                 _pendingHttp2Connection = false;
 
-                // Signal to any queued HTTP2 requests that they must downgrade.
-                while (_http2RequestQueue.TryDequeueWaiter(out TaskCompletionSourceWithCancellation<Http2Connection?>? waiter))
-                {
-                    // We don't care if this fails; that means the request was previously canceled.
-                    bool success = waiter.TrySetResult(null);
-                    Debug.Assert(success || waiter.Task.IsCanceled);
-                }
-
                 if (_associatedHttp11ConnectionCount < _maxHttp11Connections)
                 {
                     _associatedHttp11ConnectionCount++;
@@ -588,6 +581,23 @@ namespace System.Net.Http
                 {
                     // We are already at the limit for HTTP/1.1 connections, so do not proceed with this connection.
                     canUse = false;
+                }
+
+                _http2RequestQueue.TryDequeueWaiter(out waiter);
+            }
+
+            // Signal to any queued HTTP2 requests that they must downgrade.
+            while (waiter is not null)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace("Downgrading queued HTTP2 request to HTTP/1.1");
+
+                // We don't care if this fails; that means the request was previously canceled.
+                bool success = waiter.TrySetResult(null);
+                Debug.Assert(success || waiter.Task.IsCanceled);
+
+                lock (SyncObj)
+                {
+                    _http2RequestQueue.TryDequeueWaiter(out waiter);
                 }
             }
 
