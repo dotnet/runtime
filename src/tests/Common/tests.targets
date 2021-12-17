@@ -100,7 +100,7 @@
 
   <Target Name="RunLegacyTests" DependsOnTargets="PrepareTestsToRun">
     <PropertyGroup>
-      <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
+      <XunitCommandLine>$(DotNetCli) --roll-forward latestmajor $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
     </PropertyGroup>
 
     <Exec Command="$(XunitCommandLine)"
