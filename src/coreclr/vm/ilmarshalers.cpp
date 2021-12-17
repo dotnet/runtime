@@ -1641,7 +1641,7 @@ void ILVBByValStrWMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
 
     // String CtorCharPtrStartLength(char *ptr, int startIndex, int length)
     // TODO Phase5: Why do we call this weirdo?
-    pslILEmit->EmitCALL(METHOD__STRING__CTORF_CHARPTR_START_LEN, 4, 1);
+    pslILEmit->EmitCALL(METHOD__STRING__CTORF_CHARPTR_START_LEN, 3, 1);
 
     EmitStoreManagedValue(pslILEmit);
     pslILEmit->EmitLabel(pNullRefLabel);
