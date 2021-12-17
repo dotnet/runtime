@@ -540,20 +540,24 @@ namespace Internal.TypeSystem.Interop
 
     abstract class ByValStringMarshaller : ByValArrayMarshaller
     {
-        protected virtual bool IsAnsi
+        protected override void EmitElementCount(ILCodeStream codeStream, MarshalDirection direction)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+            if (MarshalAsDescriptor == null || !MarshalAsDescriptor.SizeConst.HasValue)
+            {
+                throw new InvalidProgramException("SizeConst is required for ByValString.");
+            }
+            codeStream.EmitLdc((int)MarshalAsDescriptor.SizeConst.Value);
+        }
+
+        protected abstract bool IsAnsi
         {
             get;
         }
 
-        protected virtual MethodDesc GetManagedToNativeHelper()
-        {
-            return null;
-        }
+        protected abstract MethodDesc GetManagedToNativeHelper();
 
-        protected virtual MethodDesc GetNativeToManagedHelper()
-        {
-            return null;
-        }
+        protected abstract MethodDesc GetNativeToManagedHelper();
 
         protected override void EmitMarshalFieldManagedToNative()
         {
