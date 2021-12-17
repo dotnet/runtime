@@ -175,6 +175,7 @@ public class WasmAppBuilder : Task
                 return false;
         }
         var mainFileName=Path.GetFileName(MainJS);
+        Log.LogMessage(MessageImportance.Low, $"MainJS path: '{MainJS}', fileName : '{mainFileName}', destination: '{Path.Combine(AppDir, mainFileName)}'");
         FileCopyChecked(MainJS!, Path.Combine(AppDir, mainFileName), string.Empty);
 
         string indexHtmlPath = Path.Combine(AppDir, "index.html");
