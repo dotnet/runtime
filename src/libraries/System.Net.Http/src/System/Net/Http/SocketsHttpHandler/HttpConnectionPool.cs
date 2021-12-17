@@ -473,7 +473,7 @@ namespace System.Net.Http
         {
             Debug.Assert(HasSyncObjLock);
 
-            if (!_http11RequestQueue.TryPeekNextRequest(out HttpRequestMessage? request))
+            if (!_http11RequestQueue.TryPeekRequest(out HttpRequestMessage? request))
             {
                 return;
             }
@@ -483,8 +483,6 @@ namespace System.Net.Http
                 _http11RequestQueue.Count > _pendingHttp11ConnectionCount &&        // More requests queued than pending connections
                 _associatedHttp11ConnectionCount < _maxHttp11Connections)           // Under the connection limit
             {
-//                Console.WriteLine($"Adding new HTTP/1.1 connection. _http11RequestQueue.Count={_http11RequestQueue.Count}, _pendingHttp11ConnectionCount={_pendingHttp11ConnectionCount}");
-
                 _associatedHttp11ConnectionCount++;
                 _pendingHttp11ConnectionCount++;
 
@@ -574,10 +572,11 @@ namespace System.Net.Http
                 _pendingHttp2Connection = false;
 
                 // Signal to any queued HTTP2 requests that they must downgrade.
-                while (_http2RequestQueue.TryDequeueRequest(out RequestQueue<Http2Connection?>.QueueItem item))
+                while (_http2RequestQueue.TryDequeueWaiter(out TaskCompletionSourceWithCancellation<Http2Connection?>? waiter))
                 {
                     // We don't care if this fails; that means the request was previously canceled.
-                    item.Waiter.TrySetResult(null);
+                    bool success = waiter.TrySetResult(null);
+                    Debug.Assert(success || waiter.Task.IsCanceled);
                 }
 
                 if (_associatedHttp11ConnectionCount < _maxHttp11Connections)
@@ -686,7 +685,7 @@ namespace System.Net.Http
         {
             Debug.Assert(HasSyncObjLock);
 
-            if (!_http2RequestQueue.TryPeekNextRequest(out HttpRequestMessage? request))
+            if (!_http2RequestQueue.TryPeekRequest(out HttpRequestMessage? request))
             {
                 return;
             }
@@ -1594,10 +1593,8 @@ namespace System.Net.Http
 
                 // If the request that caused this connection attempt is still pending, fail it.
                 // Otherwise, the request must have been canceled or satisfied by another connection already.
-                failRequest = _http11RequestQueue.TryDequeueSpecificRequest(request, out waiter);
+                failRequest = _http11RequestQueue.TryDequeueWaiterForSpecificRequest(request, out waiter);
 
-//                Console.WriteLine($"HandleHttp11ConnectionFailure: failRequest={failRequest}, e={e}");
-//                Console.WriteLine("CheckForHttp11ConnectionInjection() from InvalidateHttp11Connection");
                 CheckForHttp11ConnectionInjection();
             }
 
@@ -1626,7 +1623,7 @@ namespace System.Net.Http
 
                 // If the request that caused this connection attempt is still pending, fail it.
                 // Otherwise, the request must have been canceled or satisfied by another connection already.
-                failRequest = _http2RequestQueue.TryDequeueSpecificRequest(request, out waiter);
+                failRequest = _http2RequestQueue.TryDequeueWaiterForSpecificRequest(request, out waiter);
 
                 CheckForHttp2ConnectionInjection();
             }
@@ -1653,7 +1650,6 @@ namespace System.Net.Http
 
                 _associatedHttp11ConnectionCount--;
 
-//                Console.WriteLine("CheckForHttp11ConnectionInjection() from InvalidateHttp11Connection");
                 CheckForHttp11ConnectionInjection();
             }
         }
@@ -1734,10 +1730,9 @@ namespace System.Net.Http
                         isNewConnection = false;
                     }
 
-                    if (_http11RequestQueue.TryDequeueRequest(out RequestQueue<HttpConnection>.QueueItem item))
+                    if (_http11RequestQueue.TryDequeueWaiter(out waiter))
                     {
                         Debug.Assert(_availableHttp11Connections.Count == 0, $"With {_availableHttp11Connections.Count} available HTTP/1.1 connections, we shouldn't have a waiter.");
-                        waiter = item.Waiter;
                     }
                     else if (!_disposed)
                     {
@@ -1821,10 +1816,9 @@ namespace System.Net.Http
                             isNewConnection = false;
                         }
 
-                        if (_http2RequestQueue.TryDequeueRequest(out RequestQueue<Http2Connection?>.QueueItem item))
+                        if (_http2RequestQueue.TryDequeueWaiter(out waiter))
                         {
                             Debug.Assert((_availableHttp2Connections?.Count ?? 0) == 0, $"With {(_availableHttp2Connections?.Count ?? 0)} available HTTP2 connections, we shouldn't have a waiter.");
-                            waiter = item.Waiter;
                         }
                         else if (!_disposed)
                         {
@@ -2220,7 +2214,7 @@ namespace System.Net.Http
                 return waiter;
             }
 
-            public bool TryDequeueSpecificRequest(HttpRequestMessage request, [MaybeNullWhen(false)] out TaskCompletionSourceWithCancellation<T> waiter)
+            public bool TryDequeueWaiterForSpecificRequest(HttpRequestMessage request, [MaybeNullWhen(false)] out TaskCompletionSourceWithCancellation<T> waiter)
             {
                 if (_queue is not null && _queue.TryPeek(out QueueItem item) && item.Request == request)
                 {
@@ -2233,87 +2227,29 @@ namespace System.Net.Http
                 return false;
             }
 
-            // TODO: Remove
-
-            // TODO: TryDequeueNextRequest below was changed to not handle request cancellation.
-            // TryFailNextRequest should probably be changed similarly -- or rather, callers should just use the new
-            // TryDequeueRequest call below and then handle canceled requests themselves.
-            // However, we should fix the issue re cancellation failure first because that will affect this code too.
-            // TODO: Link cancellation failure issue here.
-
-            public bool TryFailNextRequest(Exception e)
+            public bool TryDequeueWaiter([MaybeNullWhen(false)] out TaskCompletionSourceWithCancellation<T> waiter)
             {
-                Debug.Assert(e is HttpRequestException or OperationCanceledException, "Unexpected exception type for connection failure");
-
-                if (_queue is not null)
+                if (_queue is not null && _queue.TryDequeue(out QueueItem item))
                 {
-                    // Fail the next queued request (if any) with this error.
-                    while (_queue.TryDequeue(out QueueItem item))
-                    {
-                        // Try to complete the waiter task. If it's been cancelled already, this will fail.
-                        if (item.Waiter.TrySetException(e))
-                        {
-                            return true;
-                        }
-
-                        // Couldn't transfer to that waiter because it was cancelled. Try again.
-                        Debug.Assert(item.Waiter.Task.IsCanceled);
-                    }
+                    waiter = item.Waiter;
+                    return true;
                 }
 
+                waiter = null;
                 return false;
             }
 
-            // TODO: Remove this in favor of TryDequeueNextRequest below
-
-            public bool TryDequeueNextRequest(T connection)
+            public bool TryPeekRequest([MaybeNullWhen(false)] out HttpRequestMessage request)
             {
-                if (_queue is not null)
+                if (_queue is not null && _queue.TryPeek(out QueueItem item))
                 {
-                    while (_queue.TryDequeue(out QueueItem item))
-                    {
-                        // Try to complete the task. If it's been cancelled already, this will return false.
-                        if (item.Waiter.TrySetResult(connection))
-                        {
-                            return true;
-                        }
-
-                        // Couldn't transfer to that waiter because it was cancelled. Try again.
-                        Debug.Assert(item.Waiter.Task.IsCanceled);
-                    }
-                }
-
-                return false;
-            }
-
-            // TODO: Just return waiter?
-            public bool TryDequeueRequest(out QueueItem item)
-            {
-                if (_queue is not null)
-                {
-                    return _queue.TryDequeue(out item);
-                }
-
-                item = default;
-                return false;
-            }
-
-            public bool TryPeekNextRequest([NotNullWhen(true)] out HttpRequestMessage? request)
-            {
-                if (_queue is not null)
-                {
-                    if (_queue.TryPeek(out QueueItem item))
-                    {
-                        request = item.Request;
-                        return true;
-                    }
+                    request = item.Request;
+                    return true;
                 }
 
                 request = null;
                 return false;
             }
-
-            public bool IsEmpty => Count == 0;
 
             public int Count => (_queue?.Count ?? 0);
         }
