@@ -808,18 +808,20 @@ CORINFO_ARG_LIST_HANDLE interceptor_ICJI::getArgNext(
 CorInfoTypeWithMod interceptor_ICJI::getArgType(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
-          CORINFO_CLASS_HANDLE* vcTypeRet
-#if defined(TARGET_LOONGARCH64)
-         ,int *flags
-#endif
-                                                )
+          CORINFO_CLASS_HANDLE* vcTypeRet)
 {
     mcs->AddCall("getArgType");
-#if defined(TARGET_LOONGARCH64)
-    return original_ICorJitInfo->getArgType(sig, args, vcTypeRet, flags);
-#else
     return original_ICorJitInfo->getArgType(sig, args, vcTypeRet);
-#endif
+}
+
+CorInfoTypeWithMod interceptor_ICJI::getArgType(
+          CORINFO_SIG_INFO* sig,
+          CORINFO_ARG_LIST_HANDLE args,
+          CORINFO_CLASS_HANDLE* vcTypeRet,
+          int *flags)
+{
+    mcs->AddCall("getArgType");
+    return original_ICorJitInfo->getArgType(sig, args, vcTypeRet, flags);
 }
 
 uint32_t interceptor_ICJI::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)

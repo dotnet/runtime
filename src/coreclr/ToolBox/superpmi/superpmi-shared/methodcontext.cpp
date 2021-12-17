@@ -2638,9 +2638,6 @@ void MethodContext::recGetArgType(CORINFO_SIG_INFO*       sig,
                                   CORINFO_ARG_LIST_HANDLE args,
                                   CORINFO_CLASS_HANDLE*   vcTypeRet,
                                   CorInfoTypeWithMod      result,
-#if defined(TARGET_LOONGARCH64)
-                                    int flags,
-#endif
                                   DWORD                   exceptionCode)
 {
     if (GetArgType == nullptr)
@@ -2667,14 +2664,50 @@ void MethodContext::recGetArgType(CORINFO_SIG_INFO*       sig,
     Agnostic_GetArgType_Value value;
     value.vcTypeRet     = CastHandle(*vcTypeRet);
     value.result        = (DWORD)result;
-#if defined(TARGET_LOONGARCH64)
-    value.flags = flags;
-#endif
     value.exceptionCode = (DWORD)exceptionCode;
 
     GetArgType->Add(key, value);
     DEBUG_REC(dmpGetArgType(key, value));
 }
+
+void MethodContext::recGetArgType(CORINFO_SIG_INFO*       sig,
+                                  CORINFO_ARG_LIST_HANDLE args,
+                                  CORINFO_CLASS_HANDLE*   vcTypeRet,
+                                  CorInfoTypeWithMod      result,
+                                  int                     flags,
+                                  DWORD                   exceptionCode)
+{
+    if (GetArgType == nullptr)
+        GetArgType = new LightWeightMap<Agnostic_GetArgType_Key, Agnostic_GetArgType_Value>();
+
+    Agnostic_GetArgType_Key key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+
+    // Only setting values for CORINFO_SIG_INFO things the EE seems to pay attention to... this is necessary since some of the values
+    // are unset and fail our precise comparisons ...
+    // TODO: verify that the above comment is still true (that some of the fields of incoming argument `sig` contain garbage), or
+    // can we store the whole thing and use StoreAgnostic_CORINFO_SIG_INFO()?
+
+    key.flags           = (DWORD)sig->flags;
+    key.numArgs         = (DWORD)sig->numArgs;
+
+    SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap, &key.sigInst_classInstCount, &key.sigInst_classInst_Index);
+    SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap, &key.sigInst_methInstCount, &key.sigInst_methInst_Index);
+
+    key.methodSignature = CastPointer(sig->methodSignature);
+    key.scope           = CastHandle(sig->scope);
+    key.args            = CastHandle(args);
+
+    Agnostic_GetArgType_Value value;
+    value.vcTypeRet     = CastHandle(*vcTypeRet);
+    value.result        = (DWORD)result;
+    value.flags = flags;
+    value.exceptionCode = (DWORD)exceptionCode;
+
+    GetArgType->Add(key, value);
+    DEBUG_REC(dmpGetArgType(key, value));
+}
+
 void MethodContext::dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agnostic_GetArgType_Value& value)
 {
     printf("GetArgType key flg-%08X na-%u %s %s msig-%016llX scp-%016llX arg-%016llX",
@@ -2684,12 +2717,10 @@ void MethodContext::dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agno
         key.methodSignature, key.scope, key.args);
     printf(", value result(cit)-%u(%s) vcType-%016llX excp-%08X", value.result, toString((CorInfoTypeWithMod)value.result), value.vcTypeRet, value.exceptionCode);
 }
+
 CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
                                                 CORINFO_ARG_LIST_HANDLE args,
                                                 CORINFO_CLASS_HANDLE*   vcTypeRet,
-#if defined(TARGET_LOONGARCH64)
-                                                int *flags,
-#endif
                                                 DWORD*                  exceptionCode)
 {
     AssertMapExists(GetArgType, ": key %016llX %016llX", CastHandle(sig->scope), CastHandle(args));
@@ -2710,10 +2741,40 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     AssertKeyExists(GetArgType, key, ": key %016llX %016llX", key.scope, key.args);
 
     Agnostic_GetArgType_Value value = GetArgType->Get(key);
-#if defined(TARGET_LOONGARCH64)
+    DEBUG_REP(dmpGetArgType(key, value));
+
+    *vcTypeRet              = (CORINFO_CLASS_HANDLE)value.vcTypeRet;
+    CorInfoTypeWithMod temp = (CorInfoTypeWithMod)value.result;
+    *exceptionCode          = (DWORD)value.exceptionCode;
+    return temp;
+}
+
+CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
+                                                CORINFO_ARG_LIST_HANDLE args,
+                                                CORINFO_CLASS_HANDLE*   vcTypeRet,
+                                                int*                    flags,
+                                                DWORD*                  exceptionCode)
+{
+    AssertMapExists(GetArgType, ": key %016llX %016llX", CastHandle(sig->scope), CastHandle(args));
+
+    Agnostic_GetArgType_Key key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.flags                  = (DWORD)sig->flags;
+    key.numArgs                = (DWORD)sig->numArgs;
+    key.sigInst_classInstCount = (DWORD)sig->sigInst.classInstCount;
+    key.sigInst_methInstCount  = (DWORD)sig->sigInst.methInstCount;
+    key.methodSignature        = CastPointer(sig->methodSignature);
+    key.scope                  = CastHandle(sig->scope);
+    key.args                   = CastHandle(args);
+
+    key.sigInst_classInst_Index = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap);
+    key.sigInst_methInst_Index  = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap);
+
+    AssertKeyExists(GetArgType, key, ": key %016llX %016llX", key.scope, key.args);
+
+    Agnostic_GetArgType_Value value = GetArgType->Get(key);
     if (flags)
         *flags                      = value.flags;
-#endif
     DEBUG_REP(dmpGetArgType(key, value));
 
     *vcTypeRet              = (CORINFO_CLASS_HANDLE)value.vcTypeRet;

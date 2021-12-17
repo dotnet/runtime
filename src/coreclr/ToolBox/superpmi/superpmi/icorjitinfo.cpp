@@ -1050,18 +1050,25 @@ CORINFO_ARG_LIST_HANDLE MyICJI::getArgNext(CORINFO_ARG_LIST_HANDLE args /* IN */
 CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
                                       CORINFO_ARG_LIST_HANDLE args,     /* IN */
                                       CORINFO_CLASS_HANDLE*   vcTypeRet /* OUT */
-#if defined(TARGET_LOONGARCH64)
-                                    ,int *flags
-#endif
                                       )
 {
     DWORD exceptionCode = 0;
     jitInstance->mc->cr->AddCall("getArgType");
-#if defined(TARGET_LOONGARCH64)
-    CorInfoTypeWithMod value = jitInstance->mc->repGetArgType(sig, args, vcTypeRet, flags, &exceptionCode);
-#else
     CorInfoTypeWithMod value = jitInstance->mc->repGetArgType(sig, args, vcTypeRet, &exceptionCode);
-#endif
+    if (exceptionCode != 0)
+        ThrowException(exceptionCode);
+    return value;
+}
+
+CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
+                                      CORINFO_ARG_LIST_HANDLE args,     /* IN */
+                                      CORINFO_CLASS_HANDLE*   vcTypeRet,/* OUT */
+                                      int*                    flags     /* OUT */
+                                      )
+{
+    DWORD exceptionCode = 0;
+    jitInstance->mc->cr->AddCall("getArgType");
+    CorInfoTypeWithMod value = jitInstance->mc->repGetArgType(sig, args, vcTypeRet, flags, &exceptionCode);
     if (exceptionCode != 0)
         ThrowException(exceptionCode);
     return value;
@@ -1070,7 +1077,7 @@ CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
 uint32_t MyICJI::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getFieldTypeByHnd");
-    return 0;//jitInstance->mc->repGetFieldTypeByHnd(cls);
+    return jitInstance->mc->repGetFieldTypeByHnd(cls);
 }
 
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it

@@ -9293,9 +9293,6 @@ CorInfoTypeWithMod CEEInfo::getArgType (
         CORINFO_SIG_INFO*       sig,
         CORINFO_ARG_LIST_HANDLE args,
         CORINFO_CLASS_HANDLE*   vcTypeRet
-#if defined(TARGET_LOONGARCH64)
-            ,int *flags
-#endif
         )
 {
     CONTRACTL {
@@ -9349,12 +9346,6 @@ CorInfoTypeWithMod CEEInfo::getArgType (
             {
                 type = normType;
             }
-#if defined(TARGET_LOONGARCH64)
-            if ((flags != NULL) && (type == ELEMENT_TYPE_VALUETYPE))
-            {
-                *flags = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)typeHnd.AsTAddr());
-            }
-#endif
         }
         break;
 
@@ -9393,7 +9384,109 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     return result;
 }
 
-//Only used for LoongArch64-ABI.
+CorInfoTypeWithMod CEEInfo::getArgType (
+        CORINFO_SIG_INFO*       sig,
+        CORINFO_ARG_LIST_HANDLE args,
+        CORINFO_CLASS_HANDLE*   vcTypeRet,
+        int *flags
+        )
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CorInfoTypeWithMod result = CorInfoTypeWithMod(CORINFO_TYPE_UNDEF);
+
+    JIT_TO_EE_TRANSITION();
+
+   _ASSERTE((BYTE*) sig->pSig <= (BYTE*) sig->args && (BYTE*) args < (BYTE*) sig->pSig + sig->cbSig);
+   _ASSERTE((BYTE*) sig->args <= (BYTE*) args);
+    INDEBUG(*vcTypeRet = CORINFO_CLASS_HANDLE((size_t)INVALID_POINTER_CC));
+
+    SigPointer ptr((unsigned __int8*) args);
+    CorElementType eType;
+    IfFailThrow(ptr.PeekElemType(&eType));
+    while (eType == ELEMENT_TYPE_PINNED)
+    {
+        result = CORINFO_TYPE_MOD_PINNED;
+        IfFailThrow(ptr.GetElemType(NULL));
+        IfFailThrow(ptr.PeekElemType(&eType));
+    }
+
+    // Now read off the "real" element type after taking any instantiations into consideration
+    SigTypeContext typeContext;
+    GetTypeContext(&sig->sigInst,&typeContext);
+
+    Module* pModule = GetModule(sig->scope);
+
+    CorElementType type = ptr.PeekElemTypeClosed(pModule, &typeContext);
+
+    TypeHandle typeHnd = TypeHandle();
+    switch (type) {
+      case ELEMENT_TYPE_VAR :
+      case ELEMENT_TYPE_MVAR :
+      case ELEMENT_TYPE_VALUETYPE :
+      case ELEMENT_TYPE_TYPEDBYREF :
+      case ELEMENT_TYPE_INTERNAL :
+      {
+            typeHnd = ptr.GetTypeHandleThrowing(pModule, &typeContext);
+            _ASSERTE(!typeHnd.IsNull());
+
+            CorElementType normType = typeHnd.GetInternalCorElementType();
+
+            // if we are looking up a value class, don't morph it to a refernece type
+            // (This can only happen in illegal IL)
+            if (!CorTypeInfo::IsObjRef(normType) || type != ELEMENT_TYPE_VALUETYPE)
+            {
+                type = normType;
+            }
+            if ((flags != NULL) && (type == ELEMENT_TYPE_VALUETYPE))
+            {
+                *flags = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)typeHnd.AsTAddr());
+            }
+        }
+        break;
+
+    case ELEMENT_TYPE_PTR:
+        // Load the type eagerly under debugger to make the eval work
+        if (!isVerifyOnly() && CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+        {
+            // NOTE: in some IJW cases, when the type pointed at is unmanaged,
+            // the GetTypeHandle may fail, because there is no TypeDef for such type.
+            // Usage of GetTypeHandleThrowing would lead to class load exception
+            TypeHandle thPtr = ptr.GetTypeHandleNT(pModule, &typeContext);
+            if(!thPtr.IsNull())
+            {
+                m_pOverride->classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
+            }
+        }
+        break;
+
+    case ELEMENT_TYPE_VOID:
+        // void is not valid in local sigs
+        if (sig->flags & CORINFO_SIGFLAG_IS_LOCAL_SIG)
+            COMPlusThrowHR(COR_E_INVALIDPROGRAM);
+        break;
+
+    case ELEMENT_TYPE_END:
+           COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        break;
+
+    default:
+        break;
+    }
+
+    result = CorInfoTypeWithMod(result | CEEInfo::asCorInfoType(type, typeHnd, vcTypeRet));
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+// Although this is only used for LoongArch64-ABI now,
+// maybe it can be used for other architecture for getting ABI-info
+// between JIT/EE if the ABI is similar.
 uint32_t CEEInfo::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
