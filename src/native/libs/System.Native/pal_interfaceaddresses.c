@@ -104,13 +104,15 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 // This structure is exactly the same as struct ifaddrs defined in ifaddrs.h but since the header
 // might not be available (e.g., in bionics used in Android before API 24) we need to mirror it here
 // so that we can dynamically load the getifaddrs function and use it.
-struct ifaddrs {
+struct ifaddrs
+{
 	struct ifaddrs *ifa_next;
 	char *ifa_name;
 	unsigned int ifa_flags;
 	struct sockaddr *ifa_addr;
 	struct sockaddr *ifa_netmask;
-	union {
+	union
+	{
 		struct sockaddr *ifu_broadaddr;
 		struct sockaddr *ifu_dstaddr;
 	} ifa_ifu;
@@ -125,7 +127,8 @@ struct ifaddrs {
 static int (*getifaddrs)(struct ifaddrs**) = NULL;
 static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
-static bool ensure_getifaddrs_is_loaded() {
+static bool ensure_getifaddrs_is_loaded()
+{
     static bool loading_already_attempted = false;
 
     if (!loading_already_attempted)
