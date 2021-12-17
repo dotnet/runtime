@@ -620,12 +620,24 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             case GenTreeBlk::BlkOpKindUnroll:
 #ifdef TARGET_ARM64
-                if (size > 2 * FP_REGSIZE_BYTES)
+            {
+                if (dstAddr->isContained())
                 {
+                    // Since the dstAddr is contained the address will be computed in CodeGen.
+                    // This might require an integer register to store the value.
+                    buildInternalIntRegisterDefForNode(blkNode);
+                }
+
+                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIsLocalAddr();
+
+                if (isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES))
+                {
+                    // For larger block sizes CodeGen can choose to use 16-byte SIMD instructions.
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                 }
+            }
 #endif // TARGET_ARM64
-                break;
+            break;
 
             case GenTreeBlk::BlkOpKindHelper:
                 assert(!src->isContained());
