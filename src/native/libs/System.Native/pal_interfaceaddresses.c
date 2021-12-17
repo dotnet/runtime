@@ -7,6 +7,7 @@
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
 #include "pal_networking.h"
+#include "pal_dynamicload.h"
 
 #include <stdlib.h>
 #include <sys/types.h>

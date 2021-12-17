@@ -3,7 +3,6 @@
 
 #include "pal_config.h"
 #include "pal_dynamicload.h"
-#include "pal_utilities.h"
 
 #include <dlfcn.h>
 #include <string.h>
