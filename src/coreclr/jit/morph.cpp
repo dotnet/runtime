@@ -13271,7 +13271,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
         //                        EQ/NE                   AND
         //                        /  \                   /  \.
         //                      AND   CNS 1  ->         x   CNS 1
-        //                     /   \                  
+        //                     /   \.
         //                    x   CNS 1
         //
         // The compiler requires jumps to have relop operands, so we do not fold that case.
