@@ -1550,7 +1550,7 @@
     <value>The buffer is not associated with this pool and may not be returned to it.</value>
   </data>
   <data name="ArgumentException_OtherNotArrayOfCorrectLength" xml:space="preserve">
-    <value>Object is not a array with the same number of elements as the array to compare it to.</value>
+    <value>The object is not an array with the same number of elements as the array to compare it to.</value>
   </data>
   <data name="ArgumentException_NotIsomorphic" xml:space="preserve">
     <value>Object contains non-primitive or non-blittable data.</value>

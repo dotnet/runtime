@@ -21681,3 +21681,26 @@ bool GenTree::IsInvariant() const
     GenTree* lclVarTree = nullptr;
     return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree);
 }
+
+//------------------------------------------------------------------------
+// IsNeverNegative: returns true if the given tree is known to be never
+//                  negative, i. e. the upper bit will always be zero.
+//                  Only valid for integral types.
+//
+// Arguments:
+//    comp - Compiler object, needed for IntegralRange::ForNode
+//
+// Return Value:
+//    true if the given tree is known to be never negative
+//
+bool GenTree::IsNeverNegative(Compiler* comp) const
+{
+    assert(varTypeIsIntegral(this));
+
+    if (IsIntegralConst())
+    {
+        return AsIntConCommon()->IntegralValue() >= 0;
+    }
+    // TODO-Casts: extend IntegralRange to handle constants
+    return IntegralRange::ForNode((GenTree*)this, comp).IsPositive();
+}

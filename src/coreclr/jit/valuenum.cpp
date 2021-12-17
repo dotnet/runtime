@@ -9802,6 +9802,12 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         }
         break;
 
+        case VNF_JitNewMdArr:
+        {
+            generateUniqueVN = true;
+        }
+        break;
+
         case VNF_Box:
         case VNF_BoxNullable:
         {
@@ -10207,6 +10213,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_JitNewArr;
             break;
 
+        case CORINFO_HELP_NEW_MDARR:
+            vnf = VNF_JitNewMdArr;
+            break;
+
         case CORINFO_HELP_READYTORUN_NEWARR_1:
             vnf = VNF_JitReadyToRunNewArr;
             break;
@@ -10433,20 +10443,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
     }
     else
     {
-        // TODO-CQ: this is a list of helpers we're going to treat as non-pure,
-        // because they raise complications.  Eventually, we need to handle those complications...
-        bool needsFurtherWork = false;
-        switch (helpFunc)
-        {
-            case CORINFO_HELP_NEW_MDARR:
-                // This is a varargs helper.  We need to represent the array shape in the VN world somehow.
-                needsFurtherWork = true;
-                break;
-            default:
-                break;
-        }
-
-        if (!needsFurtherWork && (pure || isAlloc))
+        if (pure || isAlloc)
         {
             VNFunc vnf = fgValueNumberJitHelperMethodVNFunc(helpFunc);
 

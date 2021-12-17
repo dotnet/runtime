@@ -3364,7 +3364,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 #endif
             )
     {
-        if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR_NONVARARG))
+        if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR))
         {
             return nullptr;
         }
@@ -7427,107 +7427,59 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     GenTree* node;
 
-    //
-    // There are two different JIT helpers that can be used to allocate
-    // multi-dimensional arrays:
-    //
-    // - CORINFO_HELP_NEW_MDARR - takes the array dimensions as varargs.
-    //      This variant is deprecated. It should be eventually removed.
-    //
-    // - CORINFO_HELP_NEW_MDARR_NONVARARG - takes the array dimensions as
-    //      pointer to block of int32s. This variant is more portable.
-    //
-    // The non-varargs helper is enabled for CoreRT only for now. Enabling this
-    // unconditionally would require ReadyToRun version bump.
-    //
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-    if (!opts.IsReadyToRun() || IsTargetAbi(CORINFO_CORERT_ABI))
+    // Reuse the temp used to pass the array dimensions to avoid bloating
+    // the stack frame in case there are multiple calls to multi-dim array
+    // constructors within a single method.
+    if (lvaNewObjArrayArgs == BAD_VAR_NUM)
     {
-
-        // Reuse the temp used to pass the array dimensions to avoid bloating
-        // the stack frame in case there are multiple calls to multi-dim array
-        // constructors within a single method.
-        if (lvaNewObjArrayArgs == BAD_VAR_NUM)
-        {
-            lvaNewObjArrayArgs                       = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
-            lvaTable[lvaNewObjArrayArgs].lvType      = TYP_BLK;
-            lvaTable[lvaNewObjArrayArgs].lvExactSize = 0;
-        }
-
-        // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
-        // for our call to CORINFO_HELP_NEW_MDARR_NONVARARG.
-        lvaTable[lvaNewObjArrayArgs].lvExactSize =
-            max(lvaTable[lvaNewObjArrayArgs].lvExactSize, pCallInfo->sig.numArgs * sizeof(INT32));
-
-        // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
-        // to ensure that the shared lvaNewObjArrayArgs local variable is only ever used to pass arguments
-        // to one allocation at a time.
-        impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("impImportNewObjArray"));
-
-        //
-        // The arguments of the CORINFO_HELP_NEW_MDARR_NONVARARG helper are:
-        //  - Array class handle
-        //  - Number of dimension arguments
-        //  - Pointer to block of int32 dimensions - address  of lvaNewObjArrayArgs temp.
-        //
-
-        node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-        node = gtNewOperNode(GT_ADDR, TYP_I_IMPL, node);
-
-        // Pop dimension arguments from the stack one at a time and store it
-        // into lvaNewObjArrayArgs temp.
-        for (int i = pCallInfo->sig.numArgs - 1; i >= 0; i--)
-        {
-            GenTree* arg = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
-
-            GenTree* dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-            dest          = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
-            dest          = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest,
-                                 new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
-            dest = gtNewOperNode(GT_IND, TYP_INT, dest);
-
-            node = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
-        }
-
-        GenTreeCall::Use* args = gtNewCallArgs(node);
-
-        // pass number of arguments to the helper
-        args = gtPrependNewCallArg(gtNewIconNode(pCallInfo->sig.numArgs), args);
-
-        args = gtPrependNewCallArg(classHandle, args);
-
-        node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR_NONVARARG, TYP_REF, args);
+        lvaNewObjArrayArgs                       = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+        lvaTable[lvaNewObjArrayArgs].lvType      = TYP_BLK;
+        lvaTable[lvaNewObjArrayArgs].lvExactSize = 0;
     }
-    else
+
+    // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
+    // for our call to CORINFO_HELP_NEW_MDARR.
+    lvaTable[lvaNewObjArrayArgs].lvExactSize =
+        max(lvaTable[lvaNewObjArrayArgs].lvExactSize, pCallInfo->sig.numArgs * sizeof(INT32));
+
+    // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
+    // to ensure that the shared lvaNewObjArrayArgs local variable is only ever used to pass arguments
+    // to one allocation at a time.
+    impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("impImportNewObjArray"));
+
+    //
+    // The arguments of the CORINFO_HELP_NEW_MDARR helper are:
+    //  - Array class handle
+    //  - Number of dimension arguments
+    //  - Pointer to block of int32 dimensions - address  of lvaNewObjArrayArgs temp.
+    //
+
+    node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
+    node = gtNewOperNode(GT_ADDR, TYP_I_IMPL, node);
+
+    // Pop dimension arguments from the stack one at a time and store it
+    // into lvaNewObjArrayArgs temp.
+    for (int i = pCallInfo->sig.numArgs - 1; i >= 0; i--)
     {
-        //
-        // The varargs helper needs the type and method handles as last
-        // and  last-1 param (this is a cdecl call, so args will be
-        // pushed in reverse order on the CPU stack)
-        //
+        GenTree* arg = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
 
-        GenTreeCall::Use* args = gtNewCallArgs(classHandle);
+        GenTree* dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
+        dest          = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
+        dest          = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest,
+                             new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
+        dest = gtNewOperNode(GT_IND, TYP_INT, dest);
 
-        // pass number of arguments to the helper
-        args = gtPrependNewCallArg(gtNewIconNode(pCallInfo->sig.numArgs), args);
-
-        args = impPopCallArgs(pCallInfo->sig.numArgs, &pCallInfo->sig, args);
-
-        node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR, TYP_REF, args);
-
-        // varargs, so we pop the arguments
-        node->gtFlags |= GTF_CALL_POP_ARGS;
-
-#ifdef DEBUG
-        // At the present time we don't track Caller pop arguments
-        // that have GC references in them
-        for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
-        {
-            assert(use.GetNode()->TypeGet() != TYP_REF);
-        }
-#endif
+        node = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
     }
+
+    GenTreeCall::Use* args = gtNewCallArgs(node);
+
+    // pass number of arguments to the helper
+    args = gtPrependNewCallArg(gtNewIconNode(pCallInfo->sig.numArgs), args);
+
+    args = gtPrependNewCallArg(classHandle, args);
+
+    node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR, TYP_REF, args);
 
     for (GenTreeCall::Use& use : node->AsCall()->Args())
     {
@@ -14931,18 +14883,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // At present this can only be String
                 else if (clsFlags & CORINFO_FLG_VAROBJSIZE)
                 {
-                    if (IsTargetAbi(CORINFO_CORERT_ABI))
-                    {
-                        // The dummy argument does not exist in CoreRT
-                        newObjThisPtr = nullptr;
-                    }
-                    else
-                    {
-                        // This is the case for variable-sized objects that are not
-                        // arrays.  In this case, call the constructor with a null 'this'
-                        // pointer
-                        newObjThisPtr = gtNewIconNode(0, TYP_REF);
-                    }
+                    // Skip this thisPtr argument
+                    newObjThisPtr = nullptr;
 
                     /* Remember that this basic block contains 'new' of an object */
                     block->bbFlags |= BBF_HAS_NEWOBJ;
@@ -20837,33 +20779,8 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
             // TODO-1stClassStructs: We currently do not reuse an existing lclVar
             // if it is a struct, because it requires some additional handling.
 
-            bool substitute = false;
-            switch (argNode->OperGet())
-            {
-#ifdef FEATURE_HW_INTRINSICS
-                case GT_HWINTRINSIC:
-                {
-                    // Enable for all parameterless (=invariant) hw intrinsics such as
-                    // Vector128<>.Zero and Vector256<>.AllBitSets. We might consider
-                    // doing that for Vector.Create(cns) as well.
-                    if (argNode->AsHWIntrinsic()->GetOperandCount() == 0)
-                    {
-                        substitute = true;
-                    }
-                    break;
-                }
-#endif
-
-                // TODO: Enable substitution for CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE (typeof(T))
-                // but in order to benefit from that, we need to move various "typeof + IsValueType"
-                // optimizations from importer to morph.
-
-                default:
-                    break;
-            }
-
-            if (substitute || (!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
-                               !argInfo.argHasCallerLocalRef))
+            if ((!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
+                 !argInfo.argHasCallerLocalRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp) DEBUGARG(lclNum));
