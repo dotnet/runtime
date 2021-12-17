@@ -150,10 +150,33 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// HasRegularWideImmediateForm: check if the instruction has a regular wide immediate 
-//          form where the 's' bit needs to be set to sign extend the immediate.  See Section B.2
-//          of Volume 2 of Intel Architecture Software Developer Manual to cross reference 
-//          instruction form with 's' bit requirements.
+// HasRegularWideForm: Many x86/x64 instructions follow a regular encoding scheme where the
+// byte-sized version of an instruction has the lowest bit of the opcode cleared
+// while the 32-bit version of the instruction (taking potential prefixes to
+// override operand size) has the lowest bit set. This function returns true if
+// the instruction follows this format.
+//
+// Note that this bit is called `w` in the encoding table in Section B.2 of
+// Volume 2 of the Intel Architecture Software Developer Manual.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction has a regular form where the 'w' bit needs to be set.
+bool emitter::HasRegularWideForm(instruction ins)
+{
+    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Wbit) != 0);
+}
+
+//------------------------------------------------------------------------
+// HasRegularWideImmediateForm: As above in HasRegularWideForm, many instructions taking
+// immediates have a regular form used to encode whether the instruction takes a sign-extended
+// 1-byte immediate or a (in 64-bit sign-extended) 4-byte immediate, by respectively setting and
+// clearing the second lowest bit.
+//
+// Note that this bit is called `s` in the encoding table in Section B.2 of
+// Volume 2 of the Intel Architecture Software Developer Manual.
 //
 // Arguments:
 //    ins - instruction to test
@@ -163,23 +186,6 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 bool emitter::HasRegularWideImmediateForm(instruction ins)
 {
     return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Sbit) != 0);
-}
-
-//------------------------------------------------------------------------
-// HasRegularWideForm: check if the instruction has a regular wide form where the 'w'
-//          bit needs to be set to use the full operand size.  See Section B.2
-//          of Volume 2 of Intel Architecture Software Developer Manual to cross reference 
-//          instruction form with 'w' bit requirements.
-//
-//
-// Arguments:
-//    ins - instruction to test
-//
-// Return Value:
-//    true if instruction has a regular wide form where the 'w' bit needs to be set.
-bool emitter::HasRegularWideForm(instruction ins)
-{
-    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Wbit) != 0);
 }
 
 //------------------------------------------------------------------------
