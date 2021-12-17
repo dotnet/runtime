@@ -81,7 +81,7 @@ namespace ILLink.RoslynAnalyzer
 				ImmutableArray.Create ((s_dynamicTypeInvocation, new OperationKind[] { OperationKind.DynamicInvocation }));
 
 		protected override bool VerifyAttributeArguments (AttributeData attribute) =>
-			attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments[0] is { Type: { SpecialType: SpecialType.System_String } } ctorArg;
+			RequiresUnreferencedCodeUtils.VerifyRequiresUnreferencedCodeAttributeArguments (attribute);
 
 		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
 		{
