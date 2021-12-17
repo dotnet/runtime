@@ -666,7 +666,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             }
         }
         // Current assertion is of the form (i < 100) != 0
-        else if (curAssertion->IsConstantBound() || curAssertion->IsConstantBoundUnsigned())
+        else if (curAssertion->IsConstantBound())
         {
             ValueNumStore::ConstantBoundInfo info;
 

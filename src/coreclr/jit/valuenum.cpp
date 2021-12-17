@@ -4793,33 +4793,10 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn)
     return IsVNInt32Constant(funcAttr.m_args[0]) != IsVNInt32Constant(funcAttr.m_args[1]);
 }
 
-bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
-{
-    // Do we have "(unsigned type)var < 100"? which is an equivalent for "var >= 0 && var < 100"
-    if (vn == NoVN)
-    {
-        return false;
-    }
-
-    VNFuncApp funcAttr;
-    if (!GetVNFunc(vn, &funcAttr))
-    {
-        return false;
-    }
-    if ((funcAttr.m_func != VNF_GE_UN) && (funcAttr.m_func != VNF_GT_UN) && (funcAttr.m_func != VNF_LE_UN) &&
-        (funcAttr.m_func != VNF_LT_UN))
-    {
-        return false;
-    }
-
-    // check IsVNPositiveInt32Constant ?
-    return IsVNInt32Constant(funcAttr.m_args[0]) != IsVNInt32Constant(funcAttr.m_args[1]);
-}
-
 void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 {
-    bool isUnsignedCnsBnd = IsVNConstantBoundUnsigned(vn);
-    assert(IsVNConstantBound(vn) || isUnsignedCnsBnd);
+    bool isUnsignedBound = IsVNConstantBoundUnsigned(vn);
+    assert(IsVNConstantBound(vn) || isUnsignedBound);
     assert(info);
 
     VNFuncApp funcAttr;
@@ -4830,27 +4807,22 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
     genTreeOps op;
     if (funcAttr.m_func == VNF_GT_UN)
     {
-        assert(isUnsignedCnsBnd);
         op = GT_GT;
     }
     else if (funcAttr.m_func == VNF_GE_UN)
     {
-        assert(isUnsignedCnsBnd);
         op = GT_GE;
     }
     else if (funcAttr.m_func == VNF_LT_UN)
     {
-        assert(isUnsignedCnsBnd);
         op = GT_LT;
     }
     else if (funcAttr.m_func == VNF_LE_UN)
     {
-        assert(isUnsignedCnsBnd);
         op = GT_LE;
     }
     else
     {
-        assert(!isUnsignedCnsBnd);
         op = (genTreeOps)funcAttr.m_func;
     }
 
@@ -4866,7 +4838,7 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
         info->cmpOpVN  = funcAttr.m_args[1];
         info->constVal = GetConstantInt32(funcAttr.m_args[0]);
     }
-    info->isUnsigned = isUnsignedCnsBnd;
+    info->isUnsigned = isUnsignedBound;
 }
 
 //------------------------------------------------------------------------
@@ -4877,6 +4849,31 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 bool ValueNumStore::IsVNPositiveInt32Constant(ValueNum vn)
 {
     return IsVNInt32Constant(vn) && (ConstantValue<INT32>(vn) > 0);
+}
+
+bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
+{
+    VNFuncApp funcApp;
+    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
+    {
+        const bool op1IsConst = IsVNPositiveInt32Constant(funcApp.m_args[0]);
+        const bool op2IsConst = IsVNPositiveInt32Constant(funcApp.m_args[1]);
+
+        if (!op1IsConst && op2IsConst)
+        {
+            // (uint)index < CNS
+            // (uint)index >= CNS
+            return (funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN);
+        }
+        else if (op1IsConst && !op2IsConst)
+        {
+            // CNS > (uint)index
+            // CNS <= (uint)index
+            assert(op1IsConst);
+            return (funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN);
+        }
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------

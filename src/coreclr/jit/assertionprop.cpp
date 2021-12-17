@@ -2332,7 +2332,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    else if (vnStore->IsVNConstantBoundUnsigned(relopVN))
+    else if (!hasTestAgainstZero && vnStore->IsVNConstantBoundUnsigned(relopVN))
     {
         AssertionDsc dsc;
         dsc.assertionKind    = OAK_NOT_EQUAL;
