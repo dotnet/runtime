@@ -657,8 +657,6 @@ struct BasicBlock : private LIR::Range
         return ((bbFlags & BBF_LOOP_ALIGN) != 0);
     }
 
-    void unmarkLoopAlign(Compiler* comp DEBUG_ARG(const char* reason));
-
     bool hasAlign() const
     {
         return ((bbFlags & BBF_HAS_ALIGN) != 0);

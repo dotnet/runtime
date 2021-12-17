@@ -382,8 +382,6 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     }
 
     JITDUMP("\n");
-
-    begBlk->unmarkLoopAlign(this DEBUG_ARG("Removed loop"));
 }
 
 /*****************************************************************************************************
@@ -589,6 +587,27 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         fgReachable(block->bbJumpDest, block))
     {
         optUnmarkLoopBlocks(block->bbJumpDest, block);
+    }
+}
+
+//------------------------------------------------------------------------
+// optClearLoopIterInfo: Clear the info related to LPFLG_ITER loops in the loop table.
+// The various fields related to iterators is known to be valid for loop cloning and unrolling,
+// but becomes invalid afterwards. Clear the info that might be used incorrectly afterwards
+// in JitDump or by subsequent phases.
+//
+void Compiler::optClearLoopIterInfo()
+{
+    for (unsigned lnum = 0; lnum < optLoopCount; lnum++)
+    {
+        LoopDsc& loop = optLoopTable[lnum];
+        loop.lpFlags &= ~(LPFLG_ITER | LPFLG_VAR_INIT | LPFLG_CONST_INIT | LPFLG_SIMD_LIMIT | LPFLG_VAR_LIMIT |
+                          LPFLG_CONST_LIMIT | LPFLG_ARRLEN_LIMIT);
+
+        loop.lpIterTree  = nullptr;
+        loop.lpInitBlock = nullptr;
+        loop.lpConstInit = -1; // union with loop.lpVarInit
+        loop.lpTestTree  = nullptr;
     }
 }
 
@@ -2599,50 +2618,6 @@ NO_MORE_LOOPS:
 }
 
 //------------------------------------------------------------------------
-// optIdentifyLoopsForAlignment: Determine which loops should be considered for alignment.
-//
-// All innermost loops whose block weight meets a threshold are candidates for alignment.
-// The `first` block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
-// (the loop table itself is not changed).
-//
-// Depends on the loop table, and on block weights being set.
-//
-void Compiler::optIdentifyLoopsForAlignment()
-{
-#if FEATURE_LOOP_ALIGN
-    if (codeGen->ShouldAlignLoops())
-    {
-        for (BasicBlock::loopNumber loopInd = 0; loopInd < optLoopCount; loopInd++)
-        {
-            // An innerloop candidate that might need alignment
-            if (optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP)
-            {
-                BasicBlock* top       = optLoopTable[loopInd].lpTop;
-                weight_t    topWeight = top->getBBWeight(this);
-                if (topWeight >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
-                {
-                    // Sometimes with JitOptRepeat > 1, we might end up finding the loops twice. In such
-                    // cases, make sure to count them just once.
-                    if (!top->isLoopAlign())
-                    {
-                        loopAlignCandidates++;
-                        top->bbFlags |= BBF_LOOP_ALIGN;
-                        JITDUMP(FMT_LP " that starts at " FMT_BB " needs alignment, weight=" FMT_WT ".\n", loopInd,
-                                top->bbNum, top->getBBWeight(this));
-                    }
-                }
-                else
-                {
-                    JITDUMP("Skip alignment for " FMT_LP " that starts at " FMT_BB " weight=" FMT_WT ".\n", loopInd,
-                            top->bbNum, topWeight);
-                }
-            }
-        }
-    }
-#endif
-}
-
-//------------------------------------------------------------------------
 // optRedirectBlock: Replace the branch successors of a block based on a block map.
 //
 // Updates the successors of `blk`: if `blk2` is a branch successor of `blk`, and there is a mapping
@@ -3912,13 +3887,6 @@ PhaseStatus Compiler::optUnrollLoops()
 #endif
         }
 
-#if FEATURE_LOOP_ALIGN
-        for (BasicBlock* const block : loop.LoopBlocks())
-        {
-            block->unmarkLoopAlign(this DEBUG_ARG("Unrolled loop"));
-        }
-#endif
-
         // Create the unrolled loop statement list.
         {
             // When unrolling a loop, that loop disappears (and will be removed from the loop table). Each unrolled
@@ -5031,7 +4999,6 @@ void Compiler::optFindLoops()
     {
         optFindNaturalLoops();
         optFindAndScaleGeneralLoopBlocks();
-        optIdentifyLoopsForAlignment(); // Check if any of the loops need alignment
     }
 
 #ifdef DEBUG
@@ -8023,19 +7990,6 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 // Marks the containsCall information to "lnum" and any parent loops.
 void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
 {
-
-#if FEATURE_LOOP_ALIGN
-    // If this is the inner most loop, reset the LOOP_ALIGN flag
-    // because a loop having call will not likely to benefit from
-    // alignment
-    if (optLoopTable[lnum].lpChild == BasicBlock::NOT_IN_LOOP)
-    {
-        BasicBlock* top = optLoopTable[lnum].lpTop;
-
-        top->unmarkLoopAlign(this DEBUG_ARG("Loop with call"));
-    }
-#endif
-
     assert(0 <= lnum && lnum < optLoopCount);
     while (lnum != BasicBlock::NOT_IN_LOOP)
     {

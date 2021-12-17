@@ -1956,18 +1956,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         newBlk->scaleBBWeight(slowPathWeightScaleFactor);
         blk->scaleBBWeight(fastPathWeightScaleFactor);
 
-// TODO: scale the pred edges of `blk`?
-
-#if FEATURE_LOOP_ALIGN
-        // If the original loop is aligned, do not align the cloned loop because cloned loop will be executed in
-        // rare scenario. Additionally, having to align cloned loop will force us to disable some VEX prefix encoding
-        // and adding compensation for over-estimated instructions.
-        if (blk->isLoopAlign())
-        {
-            newBlk->bbFlags &= ~BBF_LOOP_ALIGN;
-            JITDUMP("Removing LOOP_ALIGN flag from cloned loop in " FMT_BB "\n", newBlk->bbNum);
-        }
-#endif
+        // TODO: scale the pred edges of `blk`?
 
         // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert
         // the cloned loop in the loop table.  For now, however, we'll just make these blocks be part of the surrounding

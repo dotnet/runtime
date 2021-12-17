@@ -3670,6 +3670,8 @@ public:
 #endif
 
     BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
+
+    void optIdentifyLoopsForAlignment();
     void placeLoopAlignInstructions();
 
     /*
@@ -6987,6 +6989,8 @@ public:
                        BasicBlock*   exit,
                        unsigned char exitCnt);
 
+    void optClearLoopIterInfo();
+
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
     void optPrintLoopInfo(const LoopDsc* loop, bool printVerbose = false);
@@ -7024,8 +7028,6 @@ protected:
         BasicBlock* head, BasicBlock* bottom, BasicBlock* exit, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
 
     void optFindNaturalLoops();
-
-    void optIdentifyLoopsForAlignment();
 
     // Ensures that all the loops in the loop nest rooted at "loopInd" (an index into the loop table) are 'canonical' --
     // each loop has a unique "top."  Returns "true" iff the flowgraph has been modified.
@@ -9754,7 +9756,7 @@ public:
 // based on experimenting with various benchmarks.
 
 // Default minimum loop block weight required to enable loop alignment.
-#define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 4
+#define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 3
 
 // By default a loop will be aligned at 32B address boundary to get better
 // performance as per architecture manuals.

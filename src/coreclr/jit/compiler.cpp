@@ -4776,6 +4776,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Unroll loops
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
+
+        // Clear loop table info that is not used after this point, and might become invalid.
+        //
+        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
     }
 
 #ifdef DEBUG
@@ -5089,6 +5093,77 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if FEATURE_LOOP_ALIGN
 
 //------------------------------------------------------------------------
+// optIdentifyLoopsForAlignment: Determine which loops should be considered for alignment.
+//
+// All innermost loops whose block weight meets a threshold are candidates for alignment.
+// The `top` block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
+// (the loop table itself is not changed).
+//
+// Depends on the loop table, and on block weights being set.
+//
+// Sets `loopAlignCandidates` to the number of loop candidates for alignment.
+//
+void Compiler::optIdentifyLoopsForAlignment()
+{
+    assert(codeGen->ShouldAlignLoops());
+
+    loopAlignCandidates = 0;
+
+    for (BasicBlock::loopNumber loopInd = 0; loopInd < optLoopCount; loopInd++)
+    {
+        const LoopDsc& loop = optLoopTable[loopInd];
+
+        if (loop.lpFlags & LPFLG_REMOVED)
+        {
+            // Don't need JitDump output for this common case.
+            continue;
+        }
+
+        if (loop.lpChild != BasicBlock::NOT_IN_LOOP)
+        {
+            JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loopInd);
+            continue;
+        }
+
+        if (loop.lpTop == fgFirstBB)
+        {
+            // Adding align instruction in prolog is not supported. (This currently seems unlikely since
+            // loops normally (always?) have a predecessor `head` block.)
+            // TODO: Insert an empty block before the loop, if want to align it, so we have a place to put
+            // the align instruction.
+            JITDUMP("Skipping alignment for " FMT_LP "; loop starts in first block\n", loopInd);
+            continue;
+        }
+
+        if (loop.lpFlags & LPFLG_CONTAINS_CALL)
+        {
+            // Heuristic: it is not valuable to align loops with calls.
+            JITDUMP("Skipping alignment for " FMT_LP "; loop contains call\n", loopInd);
+            continue;
+        }
+
+        // Now we have an innerloop candidate that might need alignment
+
+        BasicBlock* top           = loop.lpTop;
+        weight_t    topWeight     = top->getBBWeight(this);
+        weight_t    compareWeight = opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT;
+        if (topWeight >= compareWeight)
+        {
+            loopAlignCandidates++;
+            assert(!top->isLoopAlign());
+            top->bbFlags |= BBF_LOOP_ALIGN;
+            JITDUMP("Aligning " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " >= " FMT_WT ".\n", loopInd,
+                    top->bbNum, topWeight, compareWeight);
+        }
+        else
+        {
+            JITDUMP("Skipping alignment for " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " < " FMT_WT ".\n",
+                    loopInd, top->bbNum, topWeight, compareWeight);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // placeLoopAlignInstructions: Iterate over all the blocks and determine
 //      the best position to place the 'align' instruction. Inserting 'align'
 //      instructions after an unconditional branch is preferred over inserting
@@ -5100,25 +5175,38 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 void Compiler::placeLoopAlignInstructions()
 {
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In placeLoopAlignInstructions()\n");
+    }
+#endif
+
+    if (!codeGen->ShouldAlignLoops())
+    {
+        JITDUMP("Not aligning loops; ShouldAlignLoops is false\n");
+        return;
+    }
+
+    // Print out the current loop table that we're working on.
+    DBEXEC(verbose, optPrintLoopTable());
+
+    assert(loopAlignCandidates == 0); // We currently expect nobody has touched this yet.
+    optIdentifyLoopsForAlignment();
+
     if (loopAlignCandidates == 0)
     {
+        JITDUMP("No loop candidates\n");
         return;
     }
 
     int loopsToProcess = loopAlignCandidates;
-    JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
+    JITDUMP("Considering %d loops\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
     weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
     BasicBlock*            bbHavingAlign         = nullptr;
     BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
-
-    if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
-    {
-        // Adding align instruction in prolog is not supported
-        // hence just remove that loop from our list.
-        loopsToProcess--;
-    }
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5178,7 +5266,8 @@ void Compiler::placeLoopAlignInstructions()
 
     assert(loopsToProcess == 0);
 }
-#endif
+
+#endif // FEATURE_LOOP_ALIGN
 
 //------------------------------------------------------------------------
 // generatePatchpointInfo: allocate and fill in patchpoint info data,

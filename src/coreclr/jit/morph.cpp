@@ -15366,8 +15366,6 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
                         optMarkLoopRemoved(loopNum);
 
-                        optLoopTable[loopNum].lpTop->unmarkLoopAlign(this DEBUG_ARG("Bogus loop"));
-
 #ifdef DEBUG
                         if (verbose)
                         {

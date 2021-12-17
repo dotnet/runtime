@@ -2147,13 +2147,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
-    if (bNext->isLoopAlign())
-    {
-        block->bbFlags |= BBF_LOOP_ALIGN;
-        JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " during compacting.\n", bNext->bbNum,
-                block->bbNum);
-    }
-
     // If we're collapsing a block created after the dominators are
     // computed, copy block number the block and reuse dominator
     // information from bNext to block.
@@ -5992,9 +5985,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
                         // Update the loop table if we removed the bottom of a loop, for example.
                         fgUpdateLoopsAfterCompacting(block, bNext);
-
-                        // If this block was aligned, unmark it
-                        bNext->unmarkLoopAlign(this DEBUG_ARG("Optimized jump"));
 
                         // If this is the first Cold basic block update fgFirstColdBlock
                         if (bNext == fgFirstColdBlock)
