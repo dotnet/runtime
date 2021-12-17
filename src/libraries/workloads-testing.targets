@@ -1,8 +1,6 @@
 <Project>
   <PropertyGroup>
     <_NuGetConfigForWorkloadInstall>$(ArtifactsBinDir)workload-nuget.config</_NuGetConfigForWorkloadInstall>
-    <_PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_PackageVersion>
-    <_PackageVersion Condition="'$(_PackageVersion)' == ''">$(PackageVersion)</_PackageVersion>
   </PropertyGroup>
 
   <Target Name="ProvisionSdkForWorkloadTesting"
@@ -93,6 +91,8 @@
     </ItemGroup>
 
     <PropertyGroup>
+      <_PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_PackageVersion>
+      <_PackageVersion Condition="'$(_PackageVersion)' == ''">$(PackageVersion)</_PackageVersion>
       <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
       <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(_PackageVersion).nupkg</_AOTCrossNuGetPath>
     </PropertyGroup>
