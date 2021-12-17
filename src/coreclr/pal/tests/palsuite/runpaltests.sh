@@ -127,7 +127,7 @@ do
     rm -f -r $TEST_WORKING_DIR
   fi
   mkdir $TEST_WORKING_DIR
-  pushd $TEST_WORKING_DIR
+  cd $TEST_WORKING_DIR
 
   # Create path to a test executable to run
   TEST_COMMAND="$PAL_TEST_BUILD/$TEST_NAME"
@@ -145,7 +145,7 @@ do
   ENDTIME=$(date +%s)
 
   # Change back to the output directory, and remove the test's working directory if it's empty
-  popd
+  cd $PAL_TEST_OUTPUT_DIR
   rmdir $TEST_WORKING_DIR 2>/dev/null
 
   TEST_XUNIT_NAME=$(dirname $TEST_NAME)
