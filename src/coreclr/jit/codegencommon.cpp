@@ -7542,6 +7542,15 @@ void CodeGen::genFnProlog()
 
 #endif // PROFILING_SUPPORTED
 
+    // For OSR we may have a zero-length prolog. That's not supported,
+    // so add a nop if so.
+    //
+    if (compiler->opts.IsOSR() && (GetEmitter()->emitGetPrologOffsetEstimate() == 0))
+    {
+        JITDUMP("OSR: prolog was zero length: adding nop to pad it\n");
+        instGen(INS_nop);
+    }
+
     if (!GetInterruptible())
     {
         // The 'real' prolog ends here for non-interruptible methods.
