@@ -15,15 +15,17 @@
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
-#define READYTORUN_MAJOR_VERSION 0x0005
-#define READYTORUN_MINOR_VERSION 0x0004
+#define READYTORUN_MAJOR_VERSION 0x0006
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 0x003
+#define MINIMUM_READYTORUN_MAJOR_VERSION 0x006
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
 // R2R Version 3.0 changes calling conventions to correctly handle explicit structures to spec.
 //     R2R 3.0 is not backward compatible with 2.x.
+// R2R Version 6.0 changes managed layout for sequential types with any unmanaged non-blittable fields.
+//     R2R 6.0 is not backward compatible with 5.x or earlier.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -295,7 +297,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Unbox                     = 0x5A,
     READYTORUN_HELPER_Unbox_Nullable            = 0x5B,
     READYTORUN_HELPER_NewMultiDimArr            = 0x5C,
-    READYTORUN_HELPER_NewMultiDimArr_NonVarArg  = 0x5D,
 
     // Helpers used with generic handle lookup cases
     READYTORUN_HELPER_NewObject                 = 0x60,

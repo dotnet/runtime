@@ -462,7 +462,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
 }
 
 //------------------------------------------------------------------------
-// addRangeCheckIfNeeded: add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic
+// addRangeCheckIfNeeded: add a GT_BOUNDS_CHECK node for non-full-range imm-intrinsic
 //
 // Arguments:
 //    intrinsic     -- intrinsic ID
@@ -472,7 +472,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
 //    immUpperBound -- upper incl. bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
 //
 // Return Value:
-//     add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
+//     add a GT_BOUNDS_CHECK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
 //     when the imm-argument is not in the valid range
 //
 GenTree* Compiler::addRangeCheckIfNeeded(
@@ -501,7 +501,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(
 }
 
 //------------------------------------------------------------------------
-// addRangeCheckForHWIntrinsic: add a GT_HW_INTRINSIC_CHK node for an intrinsic
+// addRangeCheckForHWIntrinsic: add a GT_BOUNDS_CHECK node for an intrinsic
 //
 // Arguments:
 //    immOp         -- the immediate operand of the intrinsic
@@ -509,7 +509,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(
 //    immUpperBound -- upper incl. bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
 //
 // Return Value:
-//     add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
+//     add a GT_BOUNDS_CHECK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
 //     when the imm-argument is not in the valid range
 //
 GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound)
@@ -539,8 +539,8 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
         immOpDup = gtNewOperNode(GT_SUB, TYP_INT, immOpDup, gtNewIconNode(immLowerBound, TYP_INT));
     }
 
-    GenTreeBoundsChk* hwIntrinsicChk = new (this, GT_HW_INTRINSIC_CHK)
-        GenTreeBoundsChk(GT_HW_INTRINSIC_CHK, TYP_VOID, immOpDup, adjustedUpperBoundNode, SCK_ARG_RNG_EXCPN);
+    GenTreeBoundsChk* hwIntrinsicChk =
+        new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(immOpDup, adjustedUpperBoundNode, SCK_ARG_RNG_EXCPN);
 
     return gtNewOperNode(GT_COMMA, immOp->TypeGet(), hwIntrinsicChk, immOp);
 }

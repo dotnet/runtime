@@ -24,11 +24,11 @@ ICorJitInfo* InitICorJitInfo(JitInstance* jitInstance)
 /**********************************************************************************/
 
 // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
-// CORINFO_FLG_JIT_INTRINSIC, except faster.
-bool MyICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+// CORINFO_FLG_INTRINSIC, except faster.
+bool MyICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
-    jitInstance->mc->cr->AddCall("isJitIntrinsic");
-    return jitInstance->mc->repIsJitIntrinsic(ftn);
+    jitInstance->mc->cr->AddCall("isIntrinsic");
+    return jitInstance->mc->repIsIntrinsic(ftn);
 }
 
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
@@ -215,15 +215,6 @@ void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CO
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
     LogError("Hit unimplemented expandRawHandleIntrinsic");
     DebugBreakorAV(129);
-}
-
-// If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
-// getIntrinsicID() returns the intrinsic ID.
-CorInfoIntrinsics MyICJI::getIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand /* OUT */
-                                         )
-{
-    jitInstance->mc->cr->AddCall("getIntrinsicID");
-    return jitInstance->mc->repGetIntrinsicID(method, pMustExpand);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -821,6 +812,13 @@ unsigned MyICJI::getArrayRank(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getArrayRank");
     return jitInstance->mc->repGetArrayRank(cls);
+}
+
+// Get the index of runtime provided array method
+CorInfoArrayIntrinsic MyICJI::getArrayIntrinsicID(CORINFO_METHOD_HANDLE hMethod)
+{
+    jitInstance->mc->cr->AddCall("getArrayIntrinsicID");
+    return jitInstance->mc->repGetArrayIntrinsicID(hMethod);
 }
 
 // Get static field data for an array

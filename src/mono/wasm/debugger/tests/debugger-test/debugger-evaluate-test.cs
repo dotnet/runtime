@@ -43,6 +43,14 @@ namespace DebuggerTests
             f_g_s.EvaluateTestsGenericStructInstanceMethod(100, 200, "test");
         }
 
+        public static void EvaluateLocalsFromAnotherAssembly()
+        {
+            var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-source-link.dll");
+            var myType = asm.GetType("DebuggerTests.ClassToCheckFieldValue");
+            var myMethod = myType.GetConstructor(new Type[] { });
+            var a = myMethod.Invoke(new object[]{});
+        }
+
     }
 
     public struct EvaluateTestsGenericStruct<T>

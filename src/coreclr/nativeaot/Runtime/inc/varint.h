@@ -95,8 +95,14 @@ private:
     static uint8_t s_shiftTab[16];
 };
 
+#ifndef __GNUC__
 __declspec(selectany)
-int8_t VarInt::s_negLengthTab[16] =
+#endif
+int8_t
+#ifdef __GNUC__
+__attribute__((weak))
+#endif
+VarInt::s_negLengthTab[16] =
 {
     -1,    // 0
     -2,    // 1
@@ -119,8 +125,14 @@ int8_t VarInt::s_negLengthTab[16] =
     -5,    // 15
 };
 
+#ifndef __GNUC__
 __declspec(selectany)
-uint8_t VarInt::s_shiftTab[16] =
+#endif
+uint8_t
+#ifdef __GNUC__
+__attribute__((weak))
+#endif
+VarInt::s_shiftTab[16] =
 {
     32-7*1,    // 0
     32-7*2,    // 1

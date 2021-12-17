@@ -21,7 +21,7 @@
 
 public:
 
-bool isJitIntrinsic(
+bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
 uint32_t getMethodAttribs(
@@ -97,10 +97,6 @@ CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
-
-CorInfoIntrinsics getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand) override;
 
 bool isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd) override;
@@ -350,6 +346,9 @@ bool isSDArray(
 
 unsigned getArrayRank(
           CORINFO_CLASS_HANDLE cls) override;
+
+CorInfoArrayIntrinsic getArrayIntrinsicID(
+          CORINFO_METHOD_HANDLE ftn) override;
 
 void* getArrayInitializationData(
           CORINFO_FIELD_HANDLE field,

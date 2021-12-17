@@ -10,7 +10,7 @@
 }
  .assembly extern mscorlib {}
  .assembly extern common{}
- .assembly test {}
+ .assembly 'nonlocalexittonestedsibling' {}
 .assembly extern xunit.core {}
  
  

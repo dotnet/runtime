@@ -1447,7 +1447,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                     }
 #endif // DEBUG
 
-                    if (bndsChkNode->gtGetOp1()->OperIsBoundsCheck())
+                    if (bndsChkNode->gtGetOp1()->OperIs(GT_BOUNDS_CHECK))
                     {
                         // This COMMA node will only represent a bounds check if we've haven't already removed this
                         // bounds check in some other nesting cloned loop. For example, consider:
@@ -1592,17 +1592,16 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    BasicBlock* head = loop.lpHead;
-    BasicBlock* end  = loop.lpBottom;
-    BasicBlock* beg  = head->bbNext;
+    BasicBlock* top    = loop.lpTop;
+    BasicBlock* bottom = loop.lpBottom;
 
-    if (end->bbJumpKind != BBJ_COND)
+    if (bottom->bbJumpKind != BBJ_COND)
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Couldn't find termination test.\n", loopInd);
         return false;
     }
 
-    if (end->bbJumpDest != beg)
+    if (bottom->bbJumpDest != top)
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'bottom' not looping to 'top'.\n", loopInd);
         return false;
@@ -2175,7 +2174,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //  Example tree to pattern match:
 //
 // *  COMMA     int
-// +--*  ARR_BOUNDS_CHECK_Rng void
+// +--*  BOUNDS_CHECK_Rng void
 // |  +--*  LCL_VAR   int    V02 loc1
 // |  \--*  ARR_LENGTH int
 // |     \--*  LCL_VAR   ref    V00 arg0
@@ -2192,7 +2191,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 // Note that byte arrays don't require the LSH to scale the index, so look like this:
 //
 // *  COMMA     ubyte
-// +--*  ARR_BOUNDS_CHECK_Rng void
+// +--*  BOUNDS_CHECK_Rng void
 // |  +--*  LCL_VAR   int    V03 loc2
 // |  \--*  ARR_LENGTH int
 // |     \--*  LCL_VAR   ref    V00 arg0
@@ -2217,7 +2216,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
         return false;
     }
     GenTree* before = tree->gtGetOp1();
-    if (before->gtOper != GT_ARR_BOUNDS_CHECK)
+    if (!before->OperIs(GT_BOUNDS_CHECK))
     {
         return false;
     }
@@ -2622,6 +2621,7 @@ PhaseStatus Compiler::optCloneLoops()
     {
         JITDUMP("Recompute reachability and dominators after loop cloning\n");
         constexpr bool computePreds = false;
+        // TODO: recompute the loop table, to include the slow loop path in the table?
         fgUpdateChangedFlowGraph(computePreds);
     }
 

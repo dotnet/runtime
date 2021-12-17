@@ -15,7 +15,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'ldsfld_mulovf.exe'
 // MVID: {F167E31C-7032-4D75-B802-EE8B8384CBD2}
 .namespace JitTest
 {

@@ -116,6 +116,11 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/mono/*
+    - subset: wasmdebuggertests
+      include:
+      - src/mono/wasm/debugger/*
+      - src/mono/wasm/runtime/*
+      - src/mono/mono/*
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}

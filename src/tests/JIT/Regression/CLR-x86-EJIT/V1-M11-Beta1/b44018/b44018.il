@@ -9,10 +9,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'c'// as "c"
+.assembly 'b44018'// as "c"
 { }
 .assembly extern xunit.core {}
-.module 'c.exe'
 .namespace JitTest
 {
   .class private auto ansi Test
