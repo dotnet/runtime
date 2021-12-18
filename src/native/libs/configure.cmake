@@ -61,7 +61,7 @@ endif()
 # which are not distinguished from the test failing. So no error for that one.
 # For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-error=builtin-requires-header")
 endif()
 
