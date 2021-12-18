@@ -5,3 +5,6 @@ Replace CMakeLists.txt, src/CMakeLists.txt, configure.cmake with .NET custom ver
 Keep .NET oop directory
 Reapply changes from https://github.com/dotnet/runtime/commit/1b5719c2e3dde393531eaeb5b5cde05dabeef5b8
 Apply https://github.com/libunwind/libunwind/pull/317
+
+For LoongArch64:
+Apply https://github.com/libunwind/libunwind/pull/316
