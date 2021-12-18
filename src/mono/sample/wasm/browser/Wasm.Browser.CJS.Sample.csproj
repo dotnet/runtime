@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.cjs</WasmMainJSPath>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
     <WasmDebugLevel>1</WasmDebugLevel>
