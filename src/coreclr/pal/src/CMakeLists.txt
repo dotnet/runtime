@@ -47,8 +47,6 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM)
   set(PAL_ARCH_SOURCES_DIR arm)
 elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
-elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
-  set(PAL_ARCH_SOURCES_DIR loongarch64)
 elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
 elseif(CLR_CMAKE_HOST_ARCH_S390X)
@@ -304,11 +302,6 @@ if(CLR_CMAKE_TARGET_LINUX)
       pthread
       rt
     )
-    if(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
-      find_library(LZMA NAMES lzma)
-      target_link_libraries(coreclrpal
-        lzma)
-    endif()
   else(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
       ${ANDROID_GLOB}

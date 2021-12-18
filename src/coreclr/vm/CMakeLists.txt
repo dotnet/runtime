@@ -759,13 +759,6 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/crthelpers.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
         )
-    elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
-        set(VM_SOURCES_WKS_ARCH_ASM
-            ${ARCH_SOURCES_DIR}/asmhelpers.S
-            ${ARCH_SOURCES_DIR}/calldescrworkerloongarch64.S
-            ${ARCH_SOURCES_DIR}/crthelpers.S
-            ${ARCH_SOURCES_DIR}/pinvokestubs.S
-        )
     endif()
 
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -868,21 +861,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
             ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp
         )
     endif(CLR_CMAKE_HOST_UNIX)
-elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
-    set(VM_SOURCES_DAC_AND_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/stubs.cpp
-        exceptionhandling.cpp
-    )
-
-    set(VM_HEADERS_DAC_AND_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/virtualcallstubcpu.hpp
-        exceptionhandling.h
-    )
-
-    set(VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/profiler.cpp
-        gcinfodecoder.cpp
-    )
 endif()
 
 if(CLR_CMAKE_HOST_UNIX)

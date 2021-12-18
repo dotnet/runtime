@@ -63,18 +63,8 @@ add_dependencies(coreclrtraceptprovider generated_eventing_headers)
 find_library(LTTNG NAMES lttng-ust)
 
 target_link_libraries(coreclrtraceptprovider
-                    ${LTTNG}
+                      ${LTTNG}
 )
-
-if(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
-  target_link_libraries(coreclrtraceptprovider
-                        lttng-ust-tracepoint
-                        urcu
-                        urcu-bp
-                        urcu-cds
-                        urcu-common
-  )
-endif()
 
 set_target_properties(coreclrtraceptprovider PROPERTIES LINKER_LANGUAGE CXX)
 
