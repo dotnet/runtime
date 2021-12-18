@@ -24,12 +24,12 @@ namespace System.Net.Http.Tests
             byte[] encoded = Encoding.UTF8.GetBytes(input);
 
             Assert.True(HeaderDescriptor.TryGet("custom-header", out HeaderDescriptor descriptor));
-            Assert.Null(descriptor.KnownHeader);
+            Assert.IsType<string>(descriptor.Descriptor);
             string roundtrip = descriptor.GetHeaderValue(encoded, Encoding.UTF8);
             Assert.Equal(input, roundtrip);
 
             Assert.True(HeaderDescriptor.TryGet("Cache-Control", out descriptor));
-            Assert.NotNull(descriptor.KnownHeader);
+            Assert.IsType<KnownHeader>(descriptor.Descriptor);
             roundtrip = descriptor.GetHeaderValue(encoded, Encoding.UTF8);
             Assert.Equal(input, roundtrip);
         }

@@ -118,7 +118,7 @@ namespace System.Net.Http.Tests
                 Assert.NotNull(h);
                 Assert.Same(h, KnownHeaders.TryGetKnownHeader(name));
 
-                Assert.Same(h, h.Descriptor.KnownHeader);
+                Assert.Same(h, h.Descriptor.Descriptor);
                 Assert.Equal(name, h.Name, StringComparer.OrdinalIgnoreCase);
                 Assert.Equal(name, h.Descriptor.Name, StringComparer.OrdinalIgnoreCase);
             }

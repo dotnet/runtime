@@ -60,30 +60,23 @@ namespace System.Net.Http.Unit.Tests.HPack
             FillAvailableSpaceWithOnes(buffer);
             string[] headerValues = Array.Empty<string>();
 
-            foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
+            foreach (HeaderEntry header in headers.Entries)
             {
+                if (header.Key.Descriptor is null)
+                {
+                    break;
+                }
+
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref headerValues);
                 Assert.InRange(headerValuesCount, 0, int.MaxValue);
                 ReadOnlySpan<string> headerValuesSpan = headerValues.AsSpan(0, headerValuesCount);
 
-                KnownHeader knownHeader = header.Key.KnownHeader;
-                if (knownHeader != null)
+                if (header.Key.Descriptor is KnownHeader knownHeader)
                 {
                     // For all other known headers, send them via their pre-encoded name and the associated value.
                     WriteBytes(knownHeader.Http2EncodedName);
-                    string separator = null;
-                    if (headerValuesSpan.Length > 1)
-                    {
-                        HttpHeaderParser parser = header.Key.Parser;
-                        if (parser != null && parser.SupportsMultipleValues)
-                        {
-                            separator = parser.Separator;
-                        }
-                        else
-                        {
-                            separator = HttpHeaderParser.DefaultSeparator;
-                        }
-                    }
+
+                    string? separator = headerValuesSpan.Length > 1 ? knownHeader.Separator : null;
 
                     WriteLiteralHeaderValues(headerValuesSpan, separator);
                 }

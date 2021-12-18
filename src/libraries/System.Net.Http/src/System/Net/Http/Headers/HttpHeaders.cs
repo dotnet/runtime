@@ -644,37 +644,29 @@ namespace System.Net.Http.Headers
 
         private HeaderStoreItemInfo GetOrCreateHeaderInfo(HeaderDescriptor descriptor, bool parseRawValues)
         {
-            HeaderStoreItemInfo? result = null;
-            bool found;
             if (parseRawValues)
             {
-                found = TryGetAndParseHeaderInfo(descriptor, out result);
+                if (TryGetAndParseHeaderInfo(descriptor, out HeaderStoreItemInfo? info))
+                {
+                    return info;
+                }
             }
             else
             {
-                found = TryGetHeaderValue(descriptor, out object? value);
-                if (found)
+                ref object valueRef = ref _headerStore.GetValueRefOrNullRef(descriptor);
+                if (!Unsafe.IsNullRef(ref valueRef))
                 {
-                    if (value is HeaderStoreItemInfo hsti)
-                    {
-                        result = hsti;
-                    }
-                    else
+                    object value = valueRef;
+                    if (value is not HeaderStoreItemInfo info)
                     {
                         Debug.Assert(value is string);
-                        result = new HeaderStoreItemInfo { RawValue = value };
-                        AddHeaderToStore(descriptor, result);
+                        valueRef = info = new HeaderStoreItemInfo { RawValue = value };
                     }
+                    return info;
                 }
             }
 
-            if (!found)
-            {
-                result = CreateAndAddHeaderToStore(descriptor);
-            }
-
-            Debug.Assert(result != null);
-            return result;
+            return CreateAndAddHeaderToStore(descriptor);
         }
 
         private HeaderStoreItemInfo CreateAndAddHeaderToStore(HeaderDescriptor descriptor)
@@ -692,7 +684,7 @@ namespace System.Net.Http.Headers
 
         private void AddHeaderToStore(HeaderDescriptor descriptor, object value)
         {
-            Debug.Assert(value is string || value is HeaderStoreItemInfo);
+            Debug.Assert(value is string or HeaderStoreItemInfo);
             Debug.Assert(Unsafe.IsNullRef(ref _headerStore.GetValueRefOrNullRef(descriptor)));
             _headerStore.GetValueRefOrAddDefault(descriptor) = value;
         }
