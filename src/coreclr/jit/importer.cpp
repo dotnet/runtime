@@ -11848,7 +11848,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             // Note m_inlineStrategy is always created, even if we're not inlining.
             //
             CLRRandom* const random      = impInlineRoot()->m_inlineStrategy->GetRandom(doRandomOSR);
-            const int        randomValue = (int)random->Next(101);
+            const int        randomValue = (int)random->Next(100);
             if (randomValue < doRandomOSR)
             {
                 JITDUMP("Random patchpoint added to " FMT_BB "\n", block->bbNum);
