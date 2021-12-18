@@ -299,21 +299,11 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 if(CLR_CMAKE_TARGET_LINUX)
   # On Android, we don't need to link with gcc_s, pthread and rt
   if(NOT CLR_CMAKE_TARGET_ANDROID)
-    if(NOT CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
     target_link_libraries(coreclrpal
       gcc_s
       pthread
       rt
     )
-    else()
-    find_library(LZMA NAMES lzma)
-    target_link_libraries(coreclrpal
-      gcc_s
-      pthread
-      rt
-      lzma
-    )
-    endif()
   else(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
       ${ANDROID_GLOB}
