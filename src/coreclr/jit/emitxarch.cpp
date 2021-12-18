@@ -150,6 +150,45 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// HasRegularWideForm: Many x86/x64 instructions follow a regular encoding scheme where the
+// byte-sized version of an instruction has the lowest bit of the opcode cleared
+// while the 32-bit version of the instruction (taking potential prefixes to
+// override operand size) has the lowest bit set. This function returns true if
+// the instruction follows this format.
+//
+// Note that this bit is called `w` in the encoding table in Section B.2 of
+// Volume 2 of the Intel Architecture Software Developer Manual.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction has a regular form where the 'w' bit needs to be set.
+bool emitter::HasRegularWideForm(instruction ins)
+{
+    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Wbit) != 0);
+}
+
+//------------------------------------------------------------------------
+// HasRegularWideImmediateForm: As above in HasRegularWideForm, many instructions taking
+// immediates have a regular form used to encode whether the instruction takes a sign-extended
+// 1-byte immediate or a (in 64-bit sign-extended) 4-byte immediate, by respectively setting and
+// clearing the second lowest bit.
+//
+// Note that this bit is called `s` in the encoding table in Section B.2 of
+// Volume 2 of the Intel Architecture Software Developer Manual.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction has a regular wide immediate form where the 's' bit needs to set.
+bool emitter::HasRegularWideImmediateForm(instruction ins)
+{
+    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Sbit) != 0);
+}
+
+//------------------------------------------------------------------------
 // DoesWriteZeroFlag: check if the instruction write the
 //     ZF flag.
 //
@@ -10336,10 +10375,9 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Use the large version if this is not a byte. This trick will not
         // work in case of SSE2 and AVX instructions.
-        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && !IsSSEInstruction(ins) &&
-            !IsAVXInstruction(ins))
+        if ((size != EA_1BYTE) && HasRegularWideForm(ins))
         {
-            code++;
+            code |= 0x1;
         }
     }
     else if (CodeGen::instIsFP(ins))
@@ -11103,9 +11141,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Use the large version if this is not a byte
-        // TODO-XArch-Cleanup Can the need for the 'w' size bit be encoded in the instruction flags?
-        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && (!insIsCMOV(ins)) &&
-            !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
+        if ((size != EA_1BYTE) && HasRegularWideForm(ins))
         {
             code |= 0x1;
         }
@@ -11568,12 +11604,9 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             code &= 0x0000FFFF;
         }
 
-        if ((ins == INS_movsx || ins == INS_movzx || ins == INS_cmpxchg || ins == INS_xchg || ins == INS_xadd ||
-             insIsCMOV(ins)) &&
-            size != EA_1BYTE)
+        if (size != EA_1BYTE && HasRegularWideForm(ins))
         {
-            // movsx and movzx are 'big' opcodes but also have the 'w' bit
-            code++;
+            code |= 0x1;
         }
     }
     else if (CodeGen::instIsFP(ins))
@@ -12740,7 +12773,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     }
 
     // "test" has no 's' bit
-    if (ins == INS_test)
+    if (!HasRegularWideImmediateForm(ins))
     {
         useSigned = false;
     }
