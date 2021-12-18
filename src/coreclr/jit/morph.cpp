@@ -13771,7 +13771,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
     // Caller is expected to call this function only if we have CAST nodes
     assert(castedOp->OperIs(GT_CAST) || knownPositiveOp->OperIs(GT_CAST));
 
-    if (gtIsActiveCSE_Candidate(tree) || gtIsActiveCSE_Candidate(castedOp) || gtIsActiveCSE_Candidate(knownPositiveOp))
+    if (optValnumCSE_phase || gtIsActiveCSE_Candidate(tree) || gtIsActiveCSE_Candidate(castedOp) ||
+        gtIsActiveCSE_Candidate(knownPositiveOp))
     {
         // We're going to modify all of them
         return tree;
@@ -13801,7 +13802,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
     }
 
     if (castedOp->OperIs(GT_CAST) && varTypeIsLong(castedOp->CastToType()) && castedOp->gtGetOp1()->TypeIs(TYP_INT) &&
-        castedOp->IsUnsigned())
+        castedOp->IsUnsigned() && !castedOp->gtOverflow())
     {
         bool knownPositiveFitsIntoU32 = false;
         if (knownPositiveOp->IsIntegralConst() &&
@@ -13860,7 +13861,12 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
             assert(knownPositiveOp->OperIs(GT_CNS_LNG));
             knownPositiveOp->ChangeOperUnchecked(GT_CNS_INT);
 #endif
+            fgUpdateConstTreeValueNumber(knownPositiveOp);
         }
+
+        tree->gtGetOp1()->SetAllEffectsFlags(tree);
+        tree->gtGetOp2()->SetAllEffectsFlags(tree);
+
         DISPTREE(tree)
         JITDUMP("\n")
     }
