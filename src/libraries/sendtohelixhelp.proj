@@ -543,7 +543,7 @@
     </PropertyGroup>
 
     <!-- Create a work item for run-only WASM console V8 apps  -->
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and ('$(Scenario)' == 'normal' or '$(Scenario)' != '')">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and ('$(Scenario)' == 'normal' or '$(Scenario)' == '')">
       <_RunOnlyWorkItemCJS Include="$(TestArchiveRoot)runonly/**/*.Console.V8.CJS.Sample.zip" />
       <HelixWorkItem Include="@(_RunOnlyWorkItemCJS -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>

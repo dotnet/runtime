@@ -463,6 +463,7 @@ jobs:
         extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true /p:RunSmokeTestsOnly=false
         scenarios:
         - normal
+        - wasmtestonnodejs
 
 #
 # Build for Browser/wasm and test it on NodeJS
@@ -499,11 +500,6 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         scenarios:
         - wasmtestonnodejs
-        condition: >-
-          or(
-          eq(variables['librariesContainsChange'], true),
-          eq(variables['monoContainsChange'], true),
-          eq(variables['isFullMatrix'], true))
 
 #
 # Build the whole product using Mono and run runtime tests
