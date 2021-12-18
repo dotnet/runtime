@@ -130,6 +130,14 @@ namespace System.Text.Json.Tests
             p2.Spouse = p1;
             Assert.Throws<JsonException> (() => JsonSerializer.Serialize(p1));
         }
+
+        [Fact]
+        public void DeserializeStructsWithParameterlessCtors()
+        {
+            StructWithFieldInit t1 = JsonSerializer.Deserialize<StructWithFieldInit>("{}");
+            Assert.Equal(1, t1.A);
+            Assert.Equal(0, t1.B);
+        }
     }
 
     public class PersonReference
@@ -162,5 +170,11 @@ namespace System.Text.Json.Tests
     public class ChildClass : BaseClass
     {
         public new bool IsTransient { get; set; }
+    }
+
+    public struct StructWithFieldInit
+    {
+        public long A = 1; // C# 10 feature
+        public long B;
     }
 }
