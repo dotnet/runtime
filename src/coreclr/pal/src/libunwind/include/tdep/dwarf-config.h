@@ -9,8 +9,6 @@
 # include "tdep-hppa/dwarf-config.h"
 #elif defined __ia64__
 # include "tdep-ia64/dwarf-config.h"
-#elif defined __loongarch__
-# include "tdep-loongarch/dwarf-config.h"
 #elif defined __mips__
 # include "tdep-mips/dwarf-config.h"
 #elif defined __powerpc__ && !defined __powerpc64__

@@ -11,8 +11,6 @@
 # include "libunwind-hppa.h"
 #elif defined __ia64__
 # include "libunwind-ia64.h"
-#elif defined __loongarch__
-# include "libunwind-loongarch.h"
 #elif defined __mips__
 # include "libunwind-mips.h"
 #elif defined __powerpc__ && !defined __powerpc64__
