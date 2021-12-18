@@ -86,6 +86,13 @@ filter_misc () {
 	ignore _gp
     fi
 
+    if [ ${plat} = "loongarch64" ]; then
+	ignore _fbss
+	ignore _fdata
+	ignore _ftext
+	ignore _gp
+    fi
+
     if [ ${os} == "solaris2.11" ]; then
         ignore _PROCEDURE_LINKAGE_TABLE_
         ignore _etext
@@ -197,7 +204,13 @@ check_local_unw_abi () {
 	    match _UL${plat}_dwarf_find_unwind_table
 	    match _U${plat}_setcontext
 	    ;;
-
+	loongarch64)
+	    match _U${plat}_get_elf_image
+	    match _U${plat}_get_exe_image_path
+	    match _U${plat}_is_fpreg
+	    match _UL${plat}_dwarf_search_unwind_table
+	    match _UL${plat}_dwarf_find_unwind_table
+	    ;;
 	*)
 	    match _U${plat}_is_fpreg
 	    match _UL${plat}_dwarf_search_unwind_table
@@ -305,6 +318,13 @@ check_generic_unw_abi () {
 	    match _U${plat}_dwarf_find_unwind_table
 	    ;;
 	riscv)
+	    match _U${plat}_get_elf_image
+	    match _U${plat}_get_exe_image_path
+	    match _U${plat}_is_fpreg
+	    match _U${plat}_dwarf_search_unwind_table
+	    match _U${plat}_dwarf_find_unwind_table
+	    ;;
+	loongarch64)
 	    match _U${plat}_get_elf_image
 	    match _U${plat}_get_exe_image_path
 	    match _U${plat}_is_fpreg

@@ -29,6 +29,8 @@
 # include "libunwind-s390x.h"
 #elif defined __riscv || defined __riscv__
 # include "libunwind-riscv.h"
+#elif defined __loongarch64
+# include "libunwind-loongarch64.h"
 #else
 # error "Unsupported arch"
 #endif

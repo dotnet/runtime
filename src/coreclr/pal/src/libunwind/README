@@ -18,6 +18,7 @@ This library supports several architecture/operating-system combinations:
 | Linux   | Tilegx       | 64-bit mode only |
 | Linux   | MIPS         | Newly added |
 | Linux   | RISC-V       | 64-bit only |
+| Linux   | LoongArch    | 64-bit only |
 | HP-UX   | IA-64        | Mostly works, but known to have serious limitations |
 | FreeBSD | x86-64       | ✓      |
 | FreeBSD | x86          | ✓      |
@@ -41,6 +42,7 @@ such dependencies
 |    arm       |     p      |            |
 |    hppa      |     p      |      p     |
 |    ia64      |     p      |      r     |
+|    loongarch |     p      |            |
 |    mips      |     p      |            |
 |    ppc32     |     r      |            |
 |    ppc64     |     r      |      r     |
