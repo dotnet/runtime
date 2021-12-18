@@ -1337,7 +1337,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
-            if (headers.HeaderStore is null)
+            if (headers.Entries is null)
             {
                 return;
             }
@@ -1345,8 +1345,13 @@ namespace System.Net.Http
             HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
 
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
-            foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
+            foreach (HeaderEntry header in headers.Entries)
             {
+                if (header.Value is null)
+                {
+                    break;
+                }
+
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref tmpHeaderValuesArray);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = tmpHeaderValuesArray.AsSpan(0, headerValuesCount);

@@ -258,10 +258,15 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest != null);
 
-            if (headers.HeaderStore != null)
+            if (headers.Entries != null)
             {
-                foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
+                foreach (HeaderEntry header in headers.Entries)
                 {
+                    if (header.Value is null)
+                    {
+                        break;
+                    }
+
                     if (header.Key.KnownHeader != null)
                     {
                         await WriteBytesAsync(header.Key.KnownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
