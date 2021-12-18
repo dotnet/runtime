@@ -898,11 +898,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         // x8 through x15 are scratch registers on ARM64.
         IntReg x8 = IntReg(8);
         IntReg x9 = IntReg(9);
-#elif defined(HOST_LOONGARCH64)
-        //// TODO: t8 and r21 are scratch registers on LOONGARCH64?
-        //IntReg t8 = IntReg(20);//unused code.
-        //IntReg r21 = IntReg(21);
-#else
 #error unsupported platform
 #endif
     }

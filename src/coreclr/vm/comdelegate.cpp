@@ -404,22 +404,6 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
 
                 assert(!"---------No this stack case.--------------");
             }
-            //else if (sArgSrc.m_cGenReg > 0)
-            //{
-            //    assert(!"---------No this GenReg case.--------------");
-            //    if ((8 - sArgSrc.m_idxGenReg) < sArgSrc.m_cGenReg)
-            //    {//reg & stack.
-            //        assert(!sArgSrc.m_cGenReg);
-            //    }
-
-            //    //assert(entry.srcofs != entry.dstofs);
-            //    entry.delay = true;
-            //    entry.stackofs = sArgSrc.m_offs;
-            //    pShuffleEntryArray->Append(entry);
-
-            //    entry.delay = true;
-            //    entry.stackofs = sArgSrc.m_offs;
-            //}
         }
 #endif
 
