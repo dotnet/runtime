@@ -1347,7 +1347,7 @@ namespace System.Net.Http
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
             foreach (HeaderEntry header in headers.Entries)
             {
-                if (header.Value is null)
+                if (header.Key.Descriptor is null)
                 {
                     break;
                 }
@@ -1358,15 +1358,14 @@ namespace System.Net.Http
 
                 Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, request);
 
-                KnownHeader? knownHeader = header.Key.KnownHeader;
-                if (knownHeader != null)
+                if (header.Key.Descriptor is KnownHeader knownHeader)
                 {
                     // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
                     // (see pseudo-header handling below in WriteHeaders).
                     // The Connection, Upgrade and ProxyConnection headers are also not supported in HTTP2.
                     if (knownHeader != KnownHeaders.Host && knownHeader != KnownHeaders.Connection && knownHeader != KnownHeaders.Upgrade && knownHeader != KnownHeaders.ProxyConnection)
                     {
-                        if (header.Key.KnownHeader == KnownHeaders.TE)
+                        if (knownHeader == KnownHeaders.TE)
                         {
                             // HTTP/2 allows only 'trailers' TE header. rfc7540 8.1.2.2
                             foreach (string value in headerValues)
@@ -1383,19 +1382,8 @@ namespace System.Net.Http
 
                         // For all other known headers, send them via their pre-encoded name and the associated value.
                         WriteBytes(knownHeader.Http2EncodedName, ref headerBuffer);
-                        string? separator = null;
-                        if (headerValues.Length > 1)
-                        {
-                            HttpHeaderParser? parser = header.Key.Parser;
-                            if (parser != null && parser.SupportsMultipleValues)
-                            {
-                                separator = parser.Separator;
-                            }
-                            else
-                            {
-                                separator = HttpHeaderParser.DefaultSeparator;
-                            }
-                        }
+
+                        string? separator = headerValues.Length > 1 ? knownHeader.Separator : null;
 
                         WriteLiteralHeaderValues(headerValues, separator, valueEncoding, ref headerBuffer);
                     }
@@ -1403,7 +1391,7 @@ namespace System.Net.Http
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    WriteLiteralHeader(header.Key.Name, headerValues, valueEncoding, ref headerBuffer);
+                    WriteLiteralHeader(Unsafe.As<string>(header.Key.Descriptor), headerValues, valueEncoding, ref headerBuffer);
                 }
             }
         }

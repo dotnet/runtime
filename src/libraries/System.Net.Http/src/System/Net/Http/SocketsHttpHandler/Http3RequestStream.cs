@@ -631,7 +631,7 @@ namespace System.Net.Http
 
             foreach (HeaderEntry header in headers.Entries)
             {
-                if (header.Value is null)
+                if (header.Key.Descriptor is null)
                 {
                     break;
                 }
@@ -642,15 +642,14 @@ namespace System.Net.Http
 
                 Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, _request);
 
-                KnownHeader? knownHeader = header.Key.KnownHeader;
-                if (knownHeader != null)
+                if (header.Key.Descriptor is KnownHeader knownHeader)
                 {
                     // The Host header is not sent for HTTP/3 because we send the ":authority" pseudo-header instead
                     // (see pseudo-header handling below in WriteHeaders).
                     // The Connection, Upgrade and ProxyConnection headers are also not supported in HTTP/3.
                     if (knownHeader != KnownHeaders.Host && knownHeader != KnownHeaders.Connection && knownHeader != KnownHeaders.Upgrade && knownHeader != KnownHeaders.ProxyConnection)
                     {
-                        if (header.Key.KnownHeader == KnownHeaders.TE)
+                        if (knownHeader == KnownHeaders.TE)
                         {
                             // HTTP/2 allows only 'trailers' TE header. rfc7540 8.1.2.2
                             // HTTP/3 does not mention this one way or another; assume it has the same rule.
@@ -667,19 +666,8 @@ namespace System.Net.Http
 
                         // For all other known headers, send them via their pre-encoded name and the associated value.
                         BufferBytes(knownHeader.Http3EncodedName);
-                        string? separator = null;
-                        if (headerValues.Length > 1)
-                        {
-                            HttpHeaderParser? parser = header.Key.Parser;
-                            if (parser != null && parser.SupportsMultipleValues)
-                            {
-                                separator = parser.Separator;
-                            }
-                            else
-                            {
-                                separator = HttpHeaderParser.DefaultSeparator;
-                            }
-                        }
+
+                        string? separator = headerValues.Length > 1 ? knownHeader.Separator : null;
 
                         BufferLiteralHeaderValues(headerValues, separator, valueEncoding);
                     }
@@ -687,7 +675,7 @@ namespace System.Net.Http
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
+                    BufferLiteralHeaderWithoutNameReference(Unsafe.As<string>(header.Key.Descriptor), headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
                 }
             }
         }
@@ -910,7 +898,7 @@ namespace System.Net.Http
         {
             if (descriptor.Name[0] == ':')
             {
-                if (descriptor.KnownHeader != KnownHeaders.PseudoStatus)
+                if (descriptor.Descriptor != KnownHeaders.PseudoStatus)
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);

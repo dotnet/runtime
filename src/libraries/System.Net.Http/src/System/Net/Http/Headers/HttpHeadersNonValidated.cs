@@ -142,7 +142,7 @@ namespace System.Net.Http.Headers
                     HeaderEntry entry = entries[index];
                     _index++;
 
-                    if (entry.Value is not null)
+                    if (entry.Key.Descriptor is not null)
                     {
                         HttpHeaders.GetStoreValuesAsStringOrStringArray(entry.Key, entry.Value, out string? singleValue, out string[]? multiValue);
                         Debug.Assert(singleValue is not null ^ multiValue is not null);

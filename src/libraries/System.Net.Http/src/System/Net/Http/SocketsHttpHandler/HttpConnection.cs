@@ -262,18 +262,18 @@ namespace System.Net.Http
             {
                 foreach (HeaderEntry header in headers.Entries)
                 {
-                    if (header.Value is null)
+                    if (header.Key.Descriptor is null)
                     {
                         break;
                     }
 
-                    if (header.Key.KnownHeader != null)
+                    if (header.Key.Descriptor is KnownHeader)
                     {
-                        await WriteBytesAsync(header.Key.KnownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
+                        await WriteBytesAsync(Unsafe.As<KnownHeader>(header.Key.Descriptor).AsciiBytesWithColonSpace, async).ConfigureAwait(false);
                     }
                     else
                     {
-                        await WriteAsciiStringAsync(header.Key.Name, async).ConfigureAwait(false);
+                        await WriteAsciiStringAsync(Unsafe.As<string>(header.Key.Descriptor), async).ConfigureAwait(false);
                         await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
                     }
 
@@ -285,7 +285,7 @@ namespace System.Net.Http
 
                         await WriteStringAsync(_headerValues[0], async, valueEncoding).ConfigureAwait(false);
 
-                        if (cookiesFromContainer != null && header.Key.KnownHeader == KnownHeaders.Cookie)
+                        if (cookiesFromContainer != null && header.Key.Descriptor == KnownHeaders.Cookie)
                         {
                             await WriteTwoBytesAsync((byte)';', (byte)' ', async).ConfigureAwait(false);
                             await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
@@ -296,12 +296,7 @@ namespace System.Net.Http
                         // Some headers such as User-Agent and Server use space as a separator (see: ProductInfoHeaderParser)
                         if (headerValuesCount > 1)
                         {
-                            HttpHeaderParser? parser = header.Key.Parser;
-                            string separator = HttpHeaderParser.DefaultSeparator;
-                            if (parser != null && parser.SupportsMultipleValues)
-                            {
-                                separator = parser.Separator!;
-                            }
+                            string separator = header.Key.Separator;
 
                             for (int i = 1; i < headerValuesCount; i++)
                             {
@@ -1059,7 +1054,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(line.Slice(0, pos))));
             }
 
-            if (isFromTrailer && descriptor.KnownHeader != null && (descriptor.KnownHeader.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
+            if (isFromTrailer && (descriptor.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
             {
                 // Disallowed trailer fields.
                 // A recipient MUST ignore fields that are forbidden to be sent in a trailer.
