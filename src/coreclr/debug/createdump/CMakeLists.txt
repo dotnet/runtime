@@ -81,7 +81,6 @@ else()
     add_dependencies(createdump pal_redefines_file)
 endif(CLR_CMAKE_HOST_OSX)
 
-if(NOT CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
     target_link_libraries(createdump
         corguids
         dbgutil
@@ -89,18 +88,6 @@ if(NOT CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
         mscordaccore
         dl
     )
-else(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
-    target_link_libraries(createdump
-        corguids
-        dbgutil
-        # share the PAL in the dac module
-        pthread
-        rt
-        lzma
-        mscordaccore
-        dl
-    )
-endif()
 
     add_dependencies(createdump mscordaccore)
 
