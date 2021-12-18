@@ -501,8 +501,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE:
                     id = ReadyToRunHelper.Unbox_Nullable;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_NONVARARG:
-                    id = ReadyToRunHelper.NewMultiDimArr_NonVarArg;
+                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR:
+                    id = ReadyToRunHelper.NewMultiDimArr;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWFAST:
                     id = ReadyToRunHelper.NewObject;

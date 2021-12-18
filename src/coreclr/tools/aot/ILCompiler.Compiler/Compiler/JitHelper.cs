@@ -94,7 +94,7 @@ namespace ILCompiler
                     mangledName = "RhUnboxNullable";
                     break;
 
-                case ReadyToRunHelper.NewMultiDimArr_NonVarArg:
+                case ReadyToRunHelper.NewMultiDimArr:
                     methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
                     break;
 

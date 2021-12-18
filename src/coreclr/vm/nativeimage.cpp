@@ -150,11 +150,11 @@ NativeImage *NativeImage::Open(
         // Composite r2r PE image is not a part of anyone's identity.
         // We only need it to obtain the native image, which will be cached at AppDomain level.
         PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, bundleFileLocation);
-        PEImageLayout* mapped = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_MAPPED);
+        PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
         // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
         // thus the layout needs an AddRef, or it will be gone together with pImage.
-        mapped->AddRef();
-        peLoadedImage = mapped;
+        loaded->AddRef();
+        peLoadedImage = loaded;
     }
 
     if (peLoadedImage.IsNull())

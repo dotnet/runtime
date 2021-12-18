@@ -829,7 +829,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
 {
     static void* pBuffer;
-    return _InterlockedExchangePointer(&pBuffer, pNewBuffer);
+    return PalInterlockedExchangePointer(&pBuffer, pNewBuffer);
 }
 
 extern "C" HANDLE GetCurrentProcess()

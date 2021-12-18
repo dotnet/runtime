@@ -13,7 +13,7 @@ namespace System.Drawing.Imaging
         /// structures to minimize the risk of buffer overruns.  The affected managed classes
         /// are the following: ENHMETAHEADER, MetaHeader, MetafileHeaderWmf, MetafileHeaderEmf.
         public MetafileType type = MetafileType.Invalid;
-        public int size = Marshal.SizeOf(typeof(MetafileHeaderWmf));
+        public int size = Marshal.SizeOf<MetafileHeaderWmf>();
         public int version;
         public EmfPlusFlags emfPlusFlags;
         public float dpiX;

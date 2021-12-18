@@ -5,6 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
+    <IsPackable>true</IsPackable>
     <PackageDescription>Abstractions for reading `.deps` files.
 
 Commonly Used Types:

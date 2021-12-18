@@ -611,7 +611,6 @@ public:
             || mcArray == GetClassification();
     }
 
-
     inline DWORD IsArray() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -710,8 +709,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return mcFCall == GetClassification();
     }
-
-    BOOL IsFCallOrIntrinsic();
 
     BOOL IsQCall();
 
@@ -1694,7 +1691,7 @@ protected:
         enum_flag2_IsUnboxingStub                       = 0x04,
         // unused                                       = 0x08,
 
-        enum_flag2_IsJitIntrinsic                       = 0x10,   // Jit may expand method as an intrinsic
+        enum_flag2_IsIntrinsic                          = 0x10,   // Jit may expand method as an intrinsic
 
         enum_flag2_IsEligibleForTieredCompilation       = 0x20,
 
@@ -1750,16 +1747,16 @@ public:
         m_wFlags |= mdcHasNativeCodeSlot;
     }
 
-    inline BOOL IsJitIntrinsic()
+    inline BOOL IsIntrinsic()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_bFlags2 & enum_flag2_IsJitIntrinsic) != 0;
+        return (m_bFlags2 & enum_flag2_IsIntrinsic) != 0;
     }
 
-    inline void SetIsJitIntrinsic()
+    inline void SetIsIntrinsic()
     {
         LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_IsJitIntrinsic;
+        m_bFlags2 |= enum_flag2_IsIntrinsic;
     }
 
     BOOL RequiresCovariantReturnTypeChecking()
@@ -2641,7 +2638,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // The ru
         DWORD dwSlot = GetSlot();
         DWORD dwVirtuals = GetMethodTable()->GetNumVirtuals();
         _ASSERTE(dwSlot >= dwVirtuals);
@@ -2650,7 +2646,6 @@ public:
 
     LPCUTF8 GetMethodName();
     DWORD GetAttrs();
-    CorInfoIntrinsics GetIntrinsicID();
 };
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE

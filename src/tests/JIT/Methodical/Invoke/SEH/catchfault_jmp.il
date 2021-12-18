@@ -11,11 +11,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'catchfault_tail'// as "catchfault_tail"
+.assembly 'catchfault_jmp'// as "catchfault_tail"
 {
 }
 .assembly extern xunit.core {}
-.module 'catchfault_tail.exe'
 // MVID: {7D0BA0DB-DCB6-4997-83C9-9F31894A25EF}
 .namespace JitTest
 {

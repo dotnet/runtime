@@ -886,7 +886,7 @@
     <value>The name can be no more than {0} characters in length.</value>
   </data>
   <data name="ArgumentException_OtherNotArrayOfCorrectLength" xml:space="preserve">
-    <value>Object is not a array with the same number of elements as the array to compare it to.</value>
+    <value>The object is not an array with the same number of elements as the array to compare it to.</value>
   </data>
   <data name="ArgumentException_TupleIncorrectType" xml:space="preserve">
     <value>Argument must be of type {0}.</value>
