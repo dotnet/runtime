@@ -175,6 +175,8 @@ if defined RunNativeAot (
   <!-- We don't do anything in the Compile step since the test is already compiled to IL - the AOT compiler hooks up after this -->
   <Target Name="CoreCompile" />
 
+  <Target Name="CreateManifestResourceNames" />
+
   <Import Project="%24(IlcPath)\build\Microsoft.NETCore.Native.targets" />
 
 </Project>
