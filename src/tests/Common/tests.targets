@@ -69,7 +69,14 @@
 
       <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
       <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
-      <CorerunExecutable Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator'"> $(DotnetRoot)/dotnet</CorerunExecutable>
+
+      <!-- Some configurations might not build a corerun.exe. In those cases, run xunit with dotnet.
+           We set roll-forward LatestMajor so that dotnet doesn't choose some old runtime that comes from
+           the era when xunit.console.dll was built. -->
+      <DotnetExecutable>dotnet --roll-forward LatestMajor</DotnetExecutable>
+      <DotnetExecutable Condition="'$(DotnetRoot)' != ''">$(DotnetRoot)/dotnet</DotnetExecutable>
+      <RunXunitWithDotnet Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(RunNativeAot)' == 'true'">true</RunXunitWithDotnet>
+      <CorerunExecutable Condition="'$(RunXunitWithDotnet)' == 'true'">$(DotnetExecutable)</CorerunExecutable>
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths

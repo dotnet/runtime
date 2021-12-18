@@ -3914,12 +3914,19 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         {
             // Sanity check the offset vs saved patchpoint info.
             //
+            const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
+#if defined(TARGET_AMD64)
             // PP info has FP relative offset, to get to caller SP we need to
             // subtract off 2 register slots (saved FP, saved RA).
             //
-            const PatchpointInfo* const ppInfo    = compiler->info.compPatchpointInfo;
-            const int                   osrOffset = ppInfo->GenericContextArgOffset() - 2 * REGSIZE_BYTES;
+            const int osrOffset = ppInfo->GenericContextArgOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
+#elif defined(TARGET_ARM64)
+            // PP info has virtual offset. This is also the caller SP offset.
+            //
+            const int osrOffset = ppInfo->GenericContextArgOffset();
+            assert(offset == osrOffset);
+#endif
         }
 #endif
 
@@ -3950,12 +3957,19 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         {
             // Sanity check the offset vs saved patchpoint info.
             //
+            const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
+#if defined(TARGET_AMD64)
             // PP info has FP relative offset, to get to caller SP we need to
             // subtract off 2 register slots (saved FP, saved RA).
             //
-            const PatchpointInfo* const ppInfo    = compiler->info.compPatchpointInfo;
-            const int                   osrOffset = ppInfo->KeptAliveThisOffset() - 2 * REGSIZE_BYTES;
+            const int osrOffset = ppInfo->KeptAliveThisOffset() - 2 * REGSIZE_BYTES;
             assert(offset == osrOffset);
+#elif defined(TARGET_ARM64)
+            // PP info has virtual offset. This is also the caller SP offset.
+            //
+            const int osrOffset = ppInfo->KeptAliveThisOffset();
+            assert(offset == osrOffset);
+#endif
         }
 #endif
 

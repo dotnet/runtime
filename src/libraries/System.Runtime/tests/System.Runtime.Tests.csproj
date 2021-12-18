@@ -154,6 +154,7 @@
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.cs" />
     <Compile Include="System\ComponentModel\EditorBrowsableAttributeTests.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\ConstantExpectedAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicDependencyAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttributeTests.cs" />

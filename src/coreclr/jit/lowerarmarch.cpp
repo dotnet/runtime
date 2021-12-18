@@ -104,13 +104,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
-            case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif
+            case GT_BOUNDS_CHECK:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
             case GT_AND:
             case GT_OR:
@@ -1722,7 +1716,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
-    assert(node->OperIsBoundsCheck());
+    assert(node->OperIs(GT_BOUNDS_CHECK));
     if (!CheckImmedAndMakeContained(node, node->GetIndex()))
     {
         CheckImmedAndMakeContained(node, node->GetArrayLength());
