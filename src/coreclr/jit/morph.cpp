@@ -13863,10 +13863,6 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* tree)
 #endif
             fgUpdateConstTreeValueNumber(knownPositiveOp);
         }
-
-        tree->gtGetOp1()->SetAllEffectsFlags(tree);
-        tree->gtGetOp2()->SetAllEffectsFlags(tree);
-
         DISPTREE(tree)
         JITDUMP("\n")
     }
