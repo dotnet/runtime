@@ -247,7 +247,7 @@ def process_git_hash_arg(coreclr_args):
             raise RuntimeError("Couldn't determine baseline git hash")
 
         # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-        command = [ "git", "log", "--pretty=format:%H", base_git_hash, "-20", "--", "src/coreclr/jit/*" ]
+        command = [ "git", "log", "--pretty=format:%H", base_git_hash, "-20", "--", "src/coreclr/jit/* src/coreclr/inc/jiteeversionguid.h" ]
         print("Invoking: {}".format(" ".join(command)))
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
         stdout_change_list, _ = proc.communicate()

@@ -2700,7 +2700,7 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
-            command = [ "git", "merge-base", current_hash, "main" ]
+            command = [ "git", "merge-base", current_hash, "origin/main" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
@@ -2715,7 +2715,7 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
+            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/* src/coreclr/inc/jiteeversionguid.h" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()
