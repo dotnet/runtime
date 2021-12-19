@@ -733,10 +733,42 @@ namespace System.IO
             info.LastAccessTimeCore = time;
         }
 
-        public static void SetLastAccessTime(SafeFileHandle fileHandle, DateTimeOffset time)
+        public static unsafe void SetLastAccessTime(SafeFileHandle fileHandle, DateTimeOffset time)
         {
-            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
-            SetLastAccessTime(fileHandle.Path!, time, false);
+            int result = Interop.Sys.FStat(fileHandle, out Interop.Sys.FileStatus fileStatus);
+            if (result != 0)
+            {
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), fileHandle.Path);
+            }
+
+            // we use futimens() to set the accessTime and writeTime
+            Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
+
+            long seconds = time.ToUnixTimeSeconds();
+            long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
+
+#if TARGET_BROWSER
+            buf[0].TvSec = seconds;
+            buf[0].TvNsec = nanoseconds;
+            buf[1].TvSec = seconds;
+            buf[1].TvNsec = nanoseconds;
+#else
+            buf[0].TvSec = seconds;
+            buf[0].TvNsec = nanoseconds;
+            buf[1].TvSec = fileStatus.MTime;
+            buf[1].TvNsec = fileStatus.MTimeNsec;
+#endif
+            int timensResult = Interop.Sys.FUTimens(fileHandle, buf);
+            if (timensResult != 0)
+            {
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), fileHandle.Path);
+            }
+        }
+        private static long UnixTimeSecondsToNanoseconds(DateTimeOffset time, long seconds)
+        {
+            const long TicksPerMillisecond = 10000;
+            const long TicksPerSecond = TicksPerMillisecond * 1000;
+            return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * 100;
         }
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
@@ -763,10 +795,37 @@ namespace System.IO
             info.LastWriteTimeCore = time;
         }
 
-        public static void SetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset time)
+        public static unsafe void SetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset time)
         {
-            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
-            SetLastWriteTime(fileHandle.Path!, time, false);
+            int result = Interop.Sys.FStat(fileHandle, out Interop.Sys.FileStatus fileStatus);
+            if (result != 0)
+            {
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), fileHandle.Path);
+            }
+
+            // we use futimens() to set the accessTime and writeTime
+            Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
+
+            long seconds = time.ToUnixTimeSeconds();
+            long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
+
+#if TARGET_BROWSER
+            buf[0].TvSec = seconds;
+            buf[0].TvNsec = nanoseconds;
+            buf[1].TvSec = seconds;
+            buf[1].TvNsec = nanoseconds;
+#else
+            buf[0].TvSec = fileStatus.ATime;
+            buf[0].TvNsec = fileStatus.ATimeNsec;
+            buf[1].TvSec = seconds;
+            buf[1].TvNsec = nanoseconds;
+#endif
+
+           int timensResult = Interop.Sys.FUTimens(fileHandle, buf);
+           if (timensResult != 0)
+           {
+               throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), fileHandle.Path);
+           }
         }
 
         public static string[] GetLogicalDrives()

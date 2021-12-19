@@ -10,7 +10,7 @@ using System.ComponentModel;
 namespace System.IO
 {
     internal static partial class FileSystem
-    {
+    {/*
         public static void Encrypt(string path)
         {
             string fullPath = Path.GetFullPath(path);
@@ -773,6 +773,6 @@ namespace System.IO
                 hTemplateFile: IntPtr.Zero);
 
             return handle;
-        }
+        }*/
     }
 }
