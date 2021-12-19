@@ -1446,8 +1446,10 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 						src->dreg = ins->sreg1;
 					}
 
+					cfg->disable_inline_rgctx_fetch = TRUE;
 					MonoInst *tmp = mini_emit_box (cfg, src, ins->klass, mini_class_check_context_used (cfg, ins->klass));
 					g_assert (tmp);
+					cfg->disable_inline_rgctx_fetch = FALSE;
 
 					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, tmp->dreg);
 
