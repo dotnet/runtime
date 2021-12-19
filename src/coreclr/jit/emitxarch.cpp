@@ -10153,6 +10153,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     ssize_t   dsp;
     bool      dspInByte;
     bool      dspIsZero;
+    bool      isMoffset = false;
 
     instruction ins  = id->idIns();
     emitAttr    size = id->idOpSize();
@@ -10229,6 +10230,41 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             opsz = 1;
         }
     }
+#ifdef TARGET_X86
+    else
+    {
+        // Special case: "mov eax, [addr]" and "mov [addr], eax"
+        // Amd64: this is one case where addr can be 64-bit in size.  This is
+        // currently unused or not enabled on amd64 as it always uses RIP
+        // relative addressing which results in smaller instruction size.
+        if ((ins == INS_mov) && (id->idReg1() == REG_EAX) && (reg == REG_NA) && (rgx == REG_NA))
+        {
+            switch (id->idInsFmt())
+            {
+                case IF_RWR_ARD:
+
+                    assert(code == (insCodeRM(ins) | (insEncodeReg345(ins, REG_EAX, EA_PTRSIZE, NULL) << 8)));
+
+                    code &= ~((code_t)0xFFFFFFFF);
+                    code |= 0xA0;
+                    isMoffset = true;
+                    break;
+
+                case IF_AWR_RRD:
+
+                    assert(code == (insCodeMR(ins) | (insEncodeReg345(ins, REG_EAX, EA_PTRSIZE, NULL) << 8)));
+
+                    code &= ~((code_t)0xFFFFFFFF);
+                    code |= 0xA2;
+                    isMoffset = true;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+#endif // TARGET_X86
 
     // Emit VEX prefix if required
     // There are some callers who already add VEX prefix and call this routine.
@@ -10447,8 +10483,27 @@ GOT_DSP:
         dspInByte = false; // relocs can't be placed in a byte
     }
 
+    if (isMoffset)
+    {
+#ifdef TARGET_AMD64
+        // This code path should never be hit on amd64 since it always uses RIP relative addressing.
+        // In future if ever there is a need to enable this special case, also enable the logic
+        // that sets isMoffset to true on amd64.
+        unreached();
+#else // TARGET_X86
+
+        dst += emitOutputByte(dst, code);
+        dst += emitOutputSizeT(dst, dsp);
+
+        if (id->idIsDspReloc())
+        {
+            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), (void*)dsp, IMAGE_REL_BASED_MOFFSET);
+        }
+
+#endif // TARGET_X86
+    }
     // Is there a [scaled] index component?
-    if (rgx == REG_NA)
+    else if (rgx == REG_NA)
     {
         // The address is of the form "[reg+disp]"
         switch (reg)
