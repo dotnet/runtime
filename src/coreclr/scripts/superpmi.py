@@ -2635,6 +2635,21 @@ def get_mch_files_for_replay(local_mch_paths, filters):
     return mch_files
 
 
+# Tries to determinate remote name for 'dotnet/runtime' upstream
+def get_upstream_name():
+    command = ["git", "remote", "-v"]
+    logging.debug("Invoking: %s", " ".join(command))
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+    if proc.returncode != 0:
+        raise RuntimeError("'git remote -v' failed")
+    stdout_remotes, _ = proc.communicate()
+    upstream_name = "main"
+    for remote in stdout_remotes.decode('utf-8').strip().splitlines():
+        if "(fetch)" in remote and "dotnet/runtime" in remote:
+            return re.split('\s+', remote)[0]
+    return None
+
+
 def process_base_jit_path_arg(coreclr_args):
     """ Process the -base_jit_path argument.
 
@@ -2700,7 +2715,9 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
-            command = [ "git", "merge-base", current_hash, "origin/main" ]
+            upstream_name = get_upstream_name()
+            remote_main = "main" if not upstream_name else f"{upstream_name}/main"
+            command = [ "git", "merge-base", current_hash, remote_main ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
