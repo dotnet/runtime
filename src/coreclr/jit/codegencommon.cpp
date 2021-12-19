@@ -6235,15 +6235,9 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
         // This local was part of the live tier0 state and is enregistered in the
         // OSR method. Initialize the register from the right frame slot.
         //
-        // We currently don't expect to see enregistered multi-reg args in OSR methods,
-        // as struct promotion is disabled. So any struct arg just uses the location
-        // on the tier0 frame.
-        //
         // If we ever enable promotion we'll need to generalize what follows to copy each
         // field from the tier0 frame to its OSR home.
         //
-        assert(!varDsc->lvIsMultiRegArg);
-
         if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             // This arg or local is not live at entry to the OSR method.
