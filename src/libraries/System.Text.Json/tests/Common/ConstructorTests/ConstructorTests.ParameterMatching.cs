@@ -1322,5 +1322,49 @@ namespace System.Text.Json.Serialization.Tests
 
             public ClassWithIgnoredSameType(ClassWithIgnoredSameType prop) { }
         }
+
+        [Fact]
+        public async Task StructWithPropertyInit_DeseralizeEmptyObject()
+        {
+            string json = @"{}";
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertyInit>(json);
+            Assert.Equal(42, obj.A);
+            Assert.Equal(0, obj.B);
+        }
+
+        public struct StructWithPropertyInit
+        {
+            public long A { get; set; } = 42;
+            public long B { get; set; }
+        }
+
+        [Fact]
+        public async Task StructWithFieldInit_DeseralizeEmptyObject()
+        {
+            string json = @"{}";
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithFieldInit>(json);
+            Assert.Equal(0, obj.A);
+            Assert.Equal(42, obj.B);
+        }
+
+        public struct StructWithFieldInit
+        {
+            public long A;
+            public long B = 42;
+        }
+
+        [Fact]
+        public async Task StructWithExplicitParameterlessCtor_DeseralizeEmptyObject()
+        {
+            string json = @"{}";
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithExplicitParameterlessCtor>(json);
+            Assert.Equal(42, obj.A);
+        }
+
+        public struct StructWithExplicitParameterlessCtor
+        {
+            public long A;
+            public StructWithExplicitParameterlessCtor() => A = 42;
+        }
     }
 }
