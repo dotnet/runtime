@@ -4771,36 +4771,39 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
     }
 }
 
-bool ValueNumStore::IsVNConstantBound(ValueNum vn, bool* viaUnsigned)
+bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 {
-    assert(viaUnsigned);
-
     VNFuncApp funcApp;
     if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
     {
         if ((funcApp.m_func == (VNFunc)GT_LE) || (funcApp.m_func == (VNFunc)GT_GE) ||
             (funcApp.m_func == (VNFunc)GT_LT) || (funcApp.m_func == (VNFunc)GT_GT))
         {
-            *viaUnsigned          = false;
             const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
             const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
             return op1IsConst != op2IsConst;
         }
+    }
+    return false;
+}
 
+bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
+{
+    VNFuncApp funcApp;
+    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
+    {
         const bool op1IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[0]);
         const bool op2IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[1]);
         if (!op1IsPositiveConst && op2IsPositiveConst)
         {
             // (uint)index < CNS
             // (uint)index >= CNS
-            *viaUnsigned = true;
             return (funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN);
         }
         else if (op1IsPositiveConst && !op2IsPositiveConst)
         {
             // CNS > (uint)index
             // CNS <= (uint)index
-            *viaUnsigned = true;
             return (funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN);
         }
     }
@@ -4809,8 +4812,7 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn, bool* viaUnsigned)
 
 void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 {
-    bool viaUnsigned = false;
-    assert(IsVNConstantBound(vn, &viaUnsigned));
+    assert(IsVNConstantBound(vn) || IsVNConstantBoundUnsigned(vn));
     assert(info);
 
     VNFuncApp funcAttr;
