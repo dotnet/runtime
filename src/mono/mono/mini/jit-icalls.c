@@ -1622,3 +1622,8 @@ void
 mono_dummy_jit_icall (void)
 {
 }
+
+void
+mono_dummy_jit_icall_val (gpointer val)
+{
+}
