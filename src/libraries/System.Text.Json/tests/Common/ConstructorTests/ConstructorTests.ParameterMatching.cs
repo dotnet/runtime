@@ -1324,10 +1324,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task StructWithPropertyInit_DeseralizeEmptyObject()
+        public void StructWithPropertyInit_DeseralizeEmptyObject()
         {
             string json = @"{}";
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertyInit>(json);
+            var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
             Assert.Equal(42, obj.A);
             Assert.Equal(0, obj.B);
         }
@@ -1339,10 +1339,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task StructWithFieldInit_DeseralizeEmptyObject()
+        public void StructWithFieldInit_DeseralizeEmptyObject()
         {
             string json = @"{}";
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithFieldInit>(json);
+            var obj = JsonSerializer.Deserialize<StructWithFieldInit>(json);
             Assert.Equal(0, obj.A);
             Assert.Equal(42, obj.B);
         }
@@ -1354,10 +1354,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task StructWithExplicitParameterlessCtor_DeseralizeEmptyObject()
+        public void StructWithExplicitParameterlessCtor_DeseralizeEmptyObject()
         {
             string json = @"{}";
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithExplicitParameterlessCtor>(json);
+            var obj = JsonSerializer.Deserialize<StructWithExplicitParameterlessCtor>(json);
             Assert.Equal(42, obj.A);
         }
 
