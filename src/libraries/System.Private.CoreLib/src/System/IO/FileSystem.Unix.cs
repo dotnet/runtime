@@ -556,8 +556,70 @@ namespace System.IO
 
         public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
         {
-            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
-            return GetAttributes(fileHandle.Path!);
+            int result = Interop.Sys.FStat(fileHandle, out Interop.Sys.FileStatus fileStatus);
+            if (result != 0)
+            {
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), fileHandle.Path);
+            }
+
+            FileAttributes attributes = default;
+
+            if (IsModeReadOnly(fileStatus))
+                attributes |= FileAttributes.ReadOnly;
+
+            if ((fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
+                attributes |= FileAttributes.ReparsePoint;
+
+            if ((fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+                attributes |= FileAttributes.Directory;
+
+            if (fileHandle.Path != null && IsNameHidden(fileHandle.Path) || (fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN)
+                attributes |= FileAttributes.Hidden;
+
+            return attributes != default ? attributes : FileAttributes.Normal;
+        }
+
+        private static bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
+
+        private static bool IsModeReadOnly(Interop.Sys.FileStatus status)
+        {
+            var mode = (Interop.Sys.Permissions)(status.Mode & (int)Interop.Sys.Permissions.Mask);
+
+            bool isUserReadOnly = (mode & Interop.Sys.Permissions.S_IRUSR) != 0 && // has read permission
+                                  (mode & Interop.Sys.Permissions.S_IWUSR) == 0;   // but not write permission
+            bool isGroupReadOnly = (mode & Interop.Sys.Permissions.S_IRGRP) != 0 && // has read permission
+                                   (mode & Interop.Sys.Permissions.S_IWGRP) == 0;   // but not write permission
+            bool isOtherReadOnly = (mode & Interop.Sys.Permissions.S_IROTH) != 0 && // has read permission
+                                   (mode & Interop.Sys.Permissions.S_IWOTH) == 0;   // but not write permission
+
+            // If they are all the same, no need to check user/group.
+            if ((isUserReadOnly == isGroupReadOnly) && (isGroupReadOnly == isOtherReadOnly))
+            {
+                return isUserReadOnly;
+            }
+
+            if (status.Uid == Interop.Sys.GetEUid())
+            {
+                // User owns the file.
+                return isUserReadOnly;
+            }
+
+            // System files often have the same permissions for group and other (umask 022).
+            if (isGroupReadOnly == isUserReadOnly)
+            {
+                return isGroupReadOnly;
+            }
+
+            if (Interop.Sys.IsMemberOfGroup(status.Gid))
+            {
+                // User belongs to group that owns the file.
+                return isGroupReadOnly;
+            }
+            else
+            {
+                // Other permissions.
+                return isOtherReadOnly;
+            }
         }
 
         public static void SetAttributes(string fullPath, FileAttributes attributes)
@@ -567,8 +629,54 @@ namespace System.IO
 
         public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
         {
-            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
-            SetAttributes(fileHandle.Path!, attributes);
+            int result = Interop.Sys.FStat(fileHandle, out Interop.Sys.FileStatus output);
+            if (result != 0)
+            {
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), fileHandle.Path);
+            }
+
+            // Validate that only flags from the attribute are being provided.  This is an
+                // approximation for the validation done by the Win32 function.
+                const FileAttributes allValidFlags =
+                FileAttributes.Archive | FileAttributes.Compressed | FileAttributes.Device |
+                FileAttributes.Directory | FileAttributes.Encrypted | FileAttributes.Hidden |
+                FileAttributes.IntegrityStream | FileAttributes.Normal | FileAttributes.NoScrubData |
+                FileAttributes.NotContentIndexed | FileAttributes.Offline | FileAttributes.ReadOnly |
+                FileAttributes.ReparsePoint | FileAttributes.SparseFile | FileAttributes.System |
+                FileAttributes.Temporary;
+            if ((attributes & ~allValidFlags) != 0)
+            {
+                // Using constant string for argument to match historical throw
+                throw new ArgumentException(SR.Arg_InvalidFileAttrs, "Attributes");
+            }
+
+            if (Interop.Sys.CanSetHiddenFlag)
+            {
+                if ((attributes & FileAttributes.Hidden) != 0 && (output.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == 0)
+                {
+                    Interop.Sys.FChflags(fileHandle, (output.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN));
+                }
+            }
+
+            // The only thing we can reasonably change is whether the file object is readonly by changing permissions.
+
+            int newMode = output.Mode;
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                // Take away all write permissions from user/group/everyone
+                newMode &= ~(int)(Interop.Sys.Permissions.S_IWUSR | Interop.Sys.Permissions.S_IWGRP | Interop.Sys.Permissions.S_IWOTH);
+            }
+            else if ((newMode & (int)Interop.Sys.Permissions.S_IRUSR) != 0)
+            {
+                // Give write permission to the owner if the owner has read permission
+                newMode |= (int)Interop.Sys.Permissions.S_IWUSR;
+            }
+
+            // Change the permissions on the file
+            if (newMode != output.Mode)
+            {
+                Interop.Sys.FChMod(fileHandle, newMode);
+            }
         }
 
         public static DateTimeOffset GetCreationTime(string fullPath)
@@ -578,8 +686,12 @@ namespace System.IO
 
         public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle)
         {
-            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
-            return GetCreationTime(fileHandle.Path!);
+            int result = Interop.Sys.FStat(fileHandle, out Interop.Sys.FileStatus output);
+            if (result == 0)
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(output.CTime);
+            }
+            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), fileHandle.Path);
         }
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -604,8 +716,12 @@ namespace System.IO
 
         public static DateTimeOffset GetLastAccessTime(SafeFileHandle fileHandle)
         {
-            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
-            return GetLastAccessTime(fileHandle.Path!);
+            int result = Interop.Sys.FStat(fileHandle, out Interop.Sys.FileStatus output);
+            if (result == 0)
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(output.ATime);
+            }
+            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), fileHandle.Path);
         }
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -630,8 +746,12 @@ namespace System.IO
 
         public static DateTimeOffset GetLastWriteTime(SafeFileHandle fileHandle)
         {
-            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
-            return GetLastWriteTime(fileHandle.Path!);
+            int result = Interop.Sys.FStat(fileHandle, out Interop.Sys.FileStatus output);
+            if (result == 0)
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(output.MTime);
+            }
+            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(result), fileHandle.Path);
         }
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
