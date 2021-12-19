@@ -4081,9 +4081,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             break;
 
         case GT_STORE_DYN_BLK:
-            fgSetTreeSeqHelper(tree->AsDynBlk()->Addr(), isLIR);
-            fgSetTreeSeqHelper(tree->AsDynBlk()->Data(), isLIR);
-            fgSetTreeSeqHelper(tree->AsDynBlk()->gtDynamicSize, isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Addr(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Data(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->gtDynamicSize, isLIR);
             break;
 
         default:

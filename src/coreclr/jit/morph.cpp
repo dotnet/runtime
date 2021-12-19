@@ -14933,7 +14933,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             break;
 
         case GT_STORE_DYN_BLK:
-            tree = fgMorphStoreDynBlock(tree->AsDynBlk());
+            tree = fgMorphStoreDynBlock(tree->AsStoreDynBlk());
             break;
 
         default:

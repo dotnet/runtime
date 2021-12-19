@@ -17084,7 +17084,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
                     }
 
-                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeDynBlk(op1, op2, op3);
+                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
                     size = 0;
 
                     if ((prefixFlags & PREFIX_VOLATILE) != 0)
@@ -17122,7 +17122,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeDynBlk(op1, op2, op3);
+                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
                     size = 0;
 
                     if ((prefixFlags & PREFIX_VOLATILE) != 0)

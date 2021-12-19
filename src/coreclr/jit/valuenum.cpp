@@ -9303,8 +9303,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // Likewise, any locals possibly defined by them we mark as address-exposed.
                 fgMutateGcHeap(tree DEBUGARG("dynamic block store"));
 
-                GenTreeDynBlk* store     = tree->AsDynBlk();
-                ValueNumPair   vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+                GenTreeStoreDynBlk* store     = tree->AsStoreDynBlk();
+                ValueNumPair        vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
                 // Propagate the exceptions...
                 vnpExcSet = vnStore->VNPUnionExcSet(store->Addr()->gtVNPair, vnpExcSet);

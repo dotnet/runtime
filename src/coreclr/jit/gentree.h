@@ -6160,7 +6160,7 @@ struct GenTreeObj : public GenTreeBlk
 #endif
 };
 
-// GenTreeDynBlk  -- 'dynamic block store' (GT_STORE_DYN_BLK).
+// GenTreeStoreDynBlk  -- 'dynamic block store' (GT_STORE_DYN_BLK).
 //
 // This node is used to represent stores that have a dynamic size - the "cpblk" and "initblk"
 // IL instructions are implemented with it. Note that such stores assume the input has no GC
@@ -6169,12 +6169,12 @@ struct GenTreeObj : public GenTreeBlk
 // The "Data()" member of this node will either be a "dummy" IND(struct) node, for "cpblk", or
 // the zero constant/INIT_VAL for "initblk".
 //
-struct GenTreeDynBlk : public GenTreeBlk
+struct GenTreeStoreDynBlk : public GenTreeBlk
 {
 public:
     GenTree* gtDynamicSize;
 
-    GenTreeDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
+    GenTreeStoreDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
         : GenTreeBlk(GT_STORE_DYN_BLK, TYP_VOID, dstAddr, data, nullptr), gtDynamicSize(dynamicSize)
     {
         // Conservatively the 'dstAddr' could be null or point into the global heap.
@@ -6186,7 +6186,7 @@ public:
 #if DEBUGGABLE_GENTREE
 protected:
     friend GenTree;
-    GenTreeDynBlk() : GenTreeBlk()
+    GenTreeStoreDynBlk() : GenTreeBlk()
     {
     }
 #endif // DEBUGGABLE_GENTREE

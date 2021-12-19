@@ -4349,7 +4349,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 
         case GT_STORE_DYN_BLK:
         {
-            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            GenTreeStoreDynBlk* const dynBlock = this->AsStoreDynBlk();
             if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
             {
                 return;

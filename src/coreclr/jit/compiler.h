@@ -6404,7 +6404,7 @@ private:
     GenTree* fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE clsHnd, bool isRValue = false);
     GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigned blockWidth, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
-    GenTree* fgMorphStoreDynBlock(GenTreeDynBlk* tree);
+    GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
@@ -11503,7 +11503,7 @@ public:
 
             case GT_STORE_DYN_BLK:
             {
-                GenTreeDynBlk* const dynBlock = node->AsDynBlk();
+                GenTreeStoreDynBlk* const dynBlock = node->AsStoreDynBlk();
 
                 GenTree** op1Use = &dynBlock->gtOp1;
                 GenTree** op2Use = &dynBlock->gtOp2;

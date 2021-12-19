@@ -1513,7 +1513,7 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
 //    "fgMorphInitBlock"/"fgMorphCopyBlock". Otherwise, the original
 //    tree (fully morphed).
 //
-GenTree* Compiler::fgMorphStoreDynBlock(GenTreeDynBlk* tree)
+GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
 {
     tree->Addr()        = fgMorphTree(tree->Addr());
     tree->Data()        = fgMorphTree(tree->Data());
