@@ -757,6 +757,7 @@ struct MonoInst {
 			int *phi_args;
 			MonoCallInst *call_inst;
 			GList *exception_clauses;
+			const char *exc_name;
 		} op [2];
 		gint64 i8const;
 		double r8const;
@@ -907,6 +908,9 @@ enum {
 
 #define inst_newa_len   data.op[0].src
 #define inst_newa_class data.op[1].klass
+
+/* In _OVF opcodes */
+#define inst_exc_name  data.op[0].exc_name
 
 #define inst_var    data.op[0].var
 #define inst_vtype  data.op[1].vtype
@@ -1991,6 +1995,7 @@ enum {
 	MONO_EXC_ARRAY_TYPE_MISMATCH,
 	MONO_EXC_ARGUMENT,
 	MONO_EXC_ARGUMENT_OUT_OF_RANGE,
+	MONO_EXC_ARGUMENT_OUT_OF_MEMORY,
 	MONO_EXC_INTRINS_NUM
 };
 
