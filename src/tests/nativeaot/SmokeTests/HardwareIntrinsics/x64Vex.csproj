@@ -32,10 +32,7 @@ $(BashCLRTestPreCommands)
         fi
     fi
     if [[ "$OSTYPE" == "linux"* ]]; then
-        more /proc/cpuinfo
-
-        grep avx2 /proc/cpuinfo >/dev/null
-        if [ $? -ne 0 ]; then
+        if ! grep -q '^flags.*avx2' /proc/cpuinfo 2>/dev/null; then
           echo No support for AVX2, test not applicable.
           exit 0
         fi
