@@ -675,7 +675,11 @@ namespace System.IO
             // Change the permissions on the file
             if (newMode != output.Mode)
             {
-                Interop.Sys.FChMod(fileHandle, newMode);
+                int chModResult = Interop.Sys.FChMod(fileHandle, newMode);
+                if (chModResult != 0)
+                {
+                    throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(chModResult), fileHandle.Path);
+                }
             }
         }
 
