@@ -1259,9 +1259,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     }
                     else
                     {
-                        if (i == 0)
+                        if (i == (fieldCnt - 1))
                         {
-                            // Use the orginal m_dstAddr tree when i == 0
+                            // Reuse the orginal m_dstAddr tree for the last field.
                             dstAddrClone = m_dstAddr;
                         }
                         else
@@ -1381,9 +1381,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     }
                     else
                     {
-                        if (i == 0)
+                        if (i == (fieldCnt - 1))
                         {
-                            // Use the orginal m_srcAddr tree when i == 0
+                            // Reuse the orginal m_srcAddr tree for the last field.
                             srcAddrClone = m_srcAddr;
                         }
                         else

@@ -10,8 +10,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern common {}
-.assembly test {}
-.module throw.exe
+.assembly 'throwisfirstinstruction' {}
 
 .class private auto ansi beforefieldinit test
        extends [mscorlib]System.Object

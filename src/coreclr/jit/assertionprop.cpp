@@ -1253,7 +1253,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     AssertionDsc assertion = {OAK_INVALID};
     assert(assertion.assertionKind == OAK_INVALID);
 
-    if (op1->gtOper == GT_ARR_BOUNDS_CHECK)
+    if (op1->OperIs(GT_BOUNDS_CHECK))
     {
         if (assertionKind == OAK_NO_THROW)
         {
@@ -2574,7 +2574,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             assertionInfo = optCreateAssertion(tree->AsArrLen()->ArrRef(), nullptr, OAK_NOT_EQUAL);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
+        case GT_BOUNDS_CHECK:
             if (!optLocalAssertionProp)
             {
                 assertionInfo = optCreateAssertion(tree, nullptr, OAK_NO_THROW);
@@ -4044,8 +4044,7 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
 {
     // Remove the bounds check as part of the GT_COMMA node since we need parent pointer to remove nodes.
     // When processing visits the bounds check, it sets the throw kind to None if the check is redundant.
-    if ((tree->gtGetOp1()->OperGet() == GT_ARR_BOUNDS_CHECK) &&
-        ((tree->gtGetOp1()->gtFlags & GTF_ARR_BOUND_INBND) != 0))
+    if (tree->gtGetOp1()->OperIs(GT_BOUNDS_CHECK) && ((tree->gtGetOp1()->gtFlags & GTF_CHK_INDEX_INBND) != 0))
     {
         optRemoveCommaBasedRangeCheck(tree, stmt);
         return optAssertionProp_Update(tree, tree, stmt);
@@ -4382,7 +4381,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         return nullptr;
     }
 
-    assert(tree->gtOper == GT_ARR_BOUNDS_CHECK);
+    assert(tree->OperIs(GT_BOUNDS_CHECK));
 
 #ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
     if (JitConfig.JitNoRangeChks())
@@ -4394,7 +4393,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif // DEBUG
-        tree->gtFlags |= GTF_ARR_BOUND_INBND;
+        tree->gtFlags |= GTF_CHK_INDEX_INBND;
         return nullptr;
     }
 #endif // FEATURE_ENABLE_NO_RANGE_CHECKS
@@ -4505,7 +4504,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 
         // Defer actually removing the tree until processing reaches its parent comma, since
         // optRemoveCommaBasedRangeCheck needs to rewrite the whole comma tree.
-        arrBndsChk->gtFlags |= GTF_ARR_BOUND_INBND;
+        arrBndsChk->gtFlags |= GTF_CHK_INDEX_INBND;
 
         return nullptr;
     }
@@ -4601,7 +4600,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_NULLCHECK:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
-        case GT_ARR_BOUNDS_CHECK:
+        case GT_BOUNDS_CHECK:
             return optAssertionProp_BndsChk(assertions, tree, stmt);
 
         case GT_COMMA:

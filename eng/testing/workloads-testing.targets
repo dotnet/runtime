@@ -36,9 +36,16 @@
     <MakeDir Directories="$(SdkWithNoWorkloadForTestingPath)" />
 
     <PropertyGroup>
-      <_DotNetInstallScriptPath Condition="!$([MSBuild]::IsOSPlatform('windows'))">$(DOTNET_INSTALL_DIR)/dotnet-install.sh</_DotNetInstallScriptPath>
-      <_DotNetInstallScriptPath Condition=" $([MSBuild]::IsOSPlatform('windows'))">$(RepoRoot).dotnet\dotnet-install.ps1</_DotNetInstallScriptPath>
+      <_DotNetInstallScriptName Condition="!$([MSBuild]::IsOSPlatform('windows'))">dotnet-install.sh</_DotNetInstallScriptName>
+      <_DotNetInstallScriptName Condition=" $([MSBuild]::IsOSPlatform('windows'))">dotnet-install.ps1</_DotNetInstallScriptName>
+
+      <_DotNetInstallScriptPath>$(ArtifactsObjDir)$(_DotNetInstallScriptName)</_DotNetInstallScriptPath>
     </PropertyGroup>
+
+    <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
+                  DestinationFolder="$(ArtifactsObjDir)"
+                  Retries="3"
+                  Condition="!Exists($(_DotNetInstallScriptPath))"/>
 
     <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
           Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallScriptPath) -i $(SdkWithNoWorkloadForTestingPath) -v $(SdkVersionForWorkloadTesting)" />

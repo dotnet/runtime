@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly convr4a {}
+.assembly 'b59678' {}
 .assembly extern xunit.core {}
 .class public bug1 extends [mscorlib]System.Object
 {

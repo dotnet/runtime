@@ -107,13 +107,13 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cat $__ResponseFile
 
         # Suppress some COMPlus variables for the duration of Crossgen2 execution
-        export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+        export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
 
         echo "Running CrossGen2: $__Command"
         $__Command
         __cg2ExitCode=$?
 
-        export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+        export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
       }
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
@@ -245,6 +245,9 @@ if defined RunCrossGen2 (
     set "COMPlus_GCStress="
     set "COMPlus_HeapVerify="
     set "COMPlus_ReadyToRun="
+    REM work around problems in 6.0 OSR
+    set "COMPlus_TC_OnStackReplacement="
+    set "COMPlus_TC_PartialCompilation="
 
     echo "!__Command!"
     call !__Command!

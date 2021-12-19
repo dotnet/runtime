@@ -18,7 +18,6 @@
    .ver 0:0:0:0
  }
 .assembly extern xunit.core {}
- .module catchrettoinnertry.exe
  .imagebase 0x00400000
  .subsystem 0x00000003
  .file alignment 512

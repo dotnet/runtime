@@ -12,6 +12,9 @@ namespace Microsoft.DotNet.Build.Tasks
     public class GenerateRunScript : Task
     {
         [Required]
+        public string[] SetCommands { get; set; }
+
+        [Required]
         public string[] RunCommands { get; set; }
 
         [Required]
@@ -60,6 +63,17 @@ namespace Microsoft.DotNet.Build.Tasks
             bool isUnix = extension == ".sh";
             string lineFeed = isUnix ? "\n" : "\r\n";
 
+            var setCommandsBuilder = new StringBuilder();
+            for (int i = 0; i < SetCommands.Length; i++)
+            {
+                setCommandsBuilder.Append(SetCommands[i]);
+                if (i < SetCommands.Length - 1)
+                {
+                    setCommandsBuilder.Append(lineFeed);
+                }
+            }
+            templateContent = templateContent.Replace("[[SetCommands]]", setCommandsBuilder.ToString());
+
             var runCommandsBuilder = new StringBuilder();
             for (int i = 0; i < RunCommands.Length; i++)
             {
@@ -71,28 +85,21 @@ namespace Microsoft.DotNet.Build.Tasks
             }
             templateContent = templateContent.Replace("[[RunCommands]]", runCommandsBuilder.ToString());
 
+
+            var setCommandEchoesBuilder = new StringBuilder();
+            foreach (string setCommand in SetCommands)
+            {
+                setCommandEchoesBuilder.Append($"echo {SanitizeEcho(setCommand,isUnix)}{lineFeed}");
+            }
+            templateContent = templateContent.Replace("[[SetCommandsEcho]]", setCommandEchoesBuilder.ToString());
+
             var runCommandEchoesBuilder = new StringBuilder();
             foreach (string runCommand in RunCommands)
             {
-                // Escape backtick and question mark characters to avoid running commands instead of echo'ing them.
-                string sanitizedRunCommand = runCommand.Replace("`", "\\`")
-                                                        .Replace("?", "\\")
-                                                        .Replace("\r","")
-                                                        .Replace("\n"," ")
-                                                        .Replace("&", "^&")
-                                                        .Replace(">", "^>");
-
-                if (isUnix)
-                {
-                    // Remove parentheses and quotes from echo command before wrapping it in quotes to avoid errors on Linux.
-                    sanitizedRunCommand = "\"" + sanitizedRunCommand.Replace("\"", "")
-                                        .Replace("(", "")
-                                        .Replace(")", "") + "\"";
-                }
-
-                runCommandEchoesBuilder.Append($"echo {sanitizedRunCommand}{lineFeed}");
+                runCommandEchoesBuilder.Append($"echo {SanitizeEcho(runCommand,isUnix)}{lineFeed}");
             }
             templateContent = templateContent.Replace("[[RunCommandsEcho]]", runCommandEchoesBuilder.ToString());
+
 
             if (isUnix)
             {
@@ -108,6 +115,27 @@ namespace Microsoft.DotNet.Build.Tasks
             }
 
             Log.LogMessage($"Wrote {extension} run script to {OutputPath}");
+        }
+
+        private static string SanitizeEcho(string command, bool isUnix){
+            // Escape backtick and question mark characters to avoid running commands instead of echo'ing them.
+            string sanitizedRunCommand = command.Replace("`", "\\`")
+                                                    .Replace("?", "\\")
+                                                    .Replace("$", "")
+                                                    .Replace("%", "")
+                                                    .Replace("\r","")
+                                                    .Replace("\n"," ")
+                                                    .Replace("&", "^&")
+                                                    .Replace(">", "^>");
+
+            if (isUnix)
+            {
+                // Remove parentheses and quotes from echo command before wrapping it in quotes to avoid errors on Linux.
+                sanitizedRunCommand = "\"" + sanitizedRunCommand.Replace("\"", "")
+                                    .Replace("(", "")
+                                    .Replace(")", "") + "\"";
+            }
+            return sanitizedRunCommand;
         }
     }
 }

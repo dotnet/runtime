@@ -147,8 +147,9 @@ namespace Wasm.Build.Tests
             string bundleDir = Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config), "AppBundle");
             (string testCommand, string extraXHarnessArgs) = host switch
             {
-                RunHost.V8 => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),
-                _          => ("wasm test-browser", $"-v trace -b {host}")
+                RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace"),
+                RunHost.NodeJS => ("wasm test", "--js-file=test-main.js --engine=NodeJS -v trace"),
+                _              => ("wasm test-browser", $"-v trace -b {host}")
             };
 
             string testLogPath = Path.Combine(_logPath, host.ToString());

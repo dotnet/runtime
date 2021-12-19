@@ -18,7 +18,6 @@
 .assembly 'nested'
 {
 }
-.module nested.exe
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 
 .file alignment 512

@@ -25,7 +25,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module sharedgenerics.exe
 // MVID: {0DEEC74C-30FE-495C-9653-12BE5220327A}
 .imagebase 0x00400000
 .file alignment 0x00000200
