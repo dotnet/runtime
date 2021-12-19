@@ -798,7 +798,7 @@ public:
     ValueNum GetArrForLenVn(ValueNum vn);
 
     // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
-    bool IsVNConstantBound(ValueNum vn);
+    bool IsVNConstantBound(ValueNum vn, bool* viaUnsigned);
 
     // If "vn" is constant bound, then populate the "info" fields for constVal, cmpOp, cmpOper.
     void GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info);

@@ -4771,14 +4771,17 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
     }
 }
 
-bool ValueNumStore::IsVNConstantBound(ValueNum vn)
+bool ValueNumStore::IsVNConstantBound(ValueNum vn, bool* viaUnsigned)
 {
+    assert(viaUnsigned);
+
     VNFuncApp funcApp;
     if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
     {
         if ((funcApp.m_func == (VNFunc)GT_LE) || (funcApp.m_func == (VNFunc)GT_GE) ||
             (funcApp.m_func == (VNFunc)GT_LT) || (funcApp.m_func == (VNFunc)GT_GT))
         {
+            *viaUnsigned          = false;
             const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
             const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
             return op1IsConst != op2IsConst;
@@ -4790,12 +4793,14 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn)
         {
             // (uint)index < CNS
             // (uint)index >= CNS
+            *viaUnsigned = true;
             return (funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN);
         }
         else if (op1IsPositiveConst && !op2IsPositiveConst)
         {
             // CNS > (uint)index
             // CNS <= (uint)index
+            *viaUnsigned = true;
             return (funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN);
         }
     }
@@ -4804,42 +4809,36 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 
 void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 {
-    assert(IsVNConstantBound(vn));
+    bool viaUnsigned = false;
+    assert(IsVNConstantBound(vn, &viaUnsigned));
     assert(info);
 
     VNFuncApp funcAttr;
     GetVNFunc(vn, &funcAttr);
 
-    bool isOp1Const = IsVNInt32Constant(funcAttr.m_args[1]);
-
+    bool       isUnsigned = true;
     genTreeOps op;
-    if (funcAttr.m_func == VNF_GT_UN)
+    switch (funcAttr.m_func)
     {
-        op               = GT_GT;
-        info->isUnsigned = true;
-    }
-    else if (funcAttr.m_func == VNF_GE_UN)
-    {
-        op               = GT_GE;
-        info->isUnsigned = true;
-    }
-    else if (funcAttr.m_func == VNF_LT_UN)
-    {
-        op               = GT_LT;
-        info->isUnsigned = true;
-    }
-    else if (funcAttr.m_func == VNF_LE_UN)
-    {
-        op               = GT_LE;
-        info->isUnsigned = true;
-    }
-    else
-    {
-        op               = (genTreeOps)funcAttr.m_func;
-        info->isUnsigned = false;
+        case VNF_GT_UN:
+            op = GT_GT;
+            break;
+        case VNF_GE_UN:
+            op = GT_GE;
+            break;
+        case VNF_LT_UN:
+            op = GT_LT;
+            break;
+        case VNF_LE_UN:
+            op = GT_LE;
+            break;
+        default:
+            op         = (genTreeOps)funcAttr.m_func;
+            isUnsigned = false;
+            break;
     }
 
-    if (isOp1Const)
+    if (IsVNInt32Constant(funcAttr.m_args[1]))
     {
         info->cmpOper  = op;
         info->cmpOpVN  = funcAttr.m_args[0];
@@ -4851,6 +4850,7 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
         info->cmpOpVN  = funcAttr.m_args[1];
         info->constVal = GetConstantInt32(funcAttr.m_args[0]);
     }
+    info->isUnsigned = isUnsigned;
 }
 
 //------------------------------------------------------------------------

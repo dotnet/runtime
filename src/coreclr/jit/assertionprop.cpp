@@ -2195,6 +2195,8 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     bool hasTestAgainstZero =
         (relop->gtOper == GT_EQ || relop->gtOper == GT_NE) && (op2VN == vnStore->VNZeroForType(op2->TypeGet()));
 
+    bool isUnsignedRelop = false;
+
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
     // Cases where op1 holds the upper bound arithmetic and op2 is 0.
     // Loop condition like: "i < bnd +/-k == 0"
@@ -2293,7 +2295,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Cases where op1 holds the condition bound check and op2 is 0.
     // Loop condition like: "i < 100 == 0"
     // Assertion: "i < 100 == false"
-    else if (hasTestAgainstZero && vnStore->IsVNConstantBound(op1VN))
+    else if (hasTestAgainstZero && vnStore->IsVNConstantBound(op1VN, &isUnsignedRelop) && !isUnsignedRelop)
     {
         AssertionDsc dsc;
         dsc.assertionKind    = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
@@ -2310,7 +2312,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Cases where op1 holds the lhs of the condition op2 holds rhs.
     // Loop condition like "i < 100"
     // Assertion: "i < 100 != 0"
-    else if (vnStore->IsVNConstantBound(relopVN))
+    else if (vnStore->IsVNConstantBound(relopVN, &isUnsignedRelop))
     {
         AssertionDsc dsc;
         dsc.assertionKind    = OAK_NOT_EQUAL;
