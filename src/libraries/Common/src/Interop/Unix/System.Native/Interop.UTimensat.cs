@@ -24,8 +24,5 @@ internal static partial class Interop
         /// </returns>
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UTimensat", CharSet = CharSet.Ansi, SetLastError = true)]
         internal static unsafe partial int UTimensat(string path, TimeSpec* times);
-
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FUTimens", CharSet = CharSet.Ansi, SetLastError = true)]
-        internal static unsafe partial int FUTimens(SafeHandle fd, TimeSpec* times);
     }
 }
