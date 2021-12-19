@@ -35,6 +35,7 @@
     <Compile Include="System\ActivatorTests.cs" />
     <Compile Include="System\ActivatorTests.Generic.cs" />
     <Compile Include="System\AmbiguousImplementationExceptionTests.cs" />
+    <Compile Include="System\AppContext\AppContext.cs" />
     <Compile Include="System\ArgumentExceptionTests.cs" />
     <Compile Include="System\ArgumentNullExceptionTests.cs" />
     <Compile Include="System\ArgumentOutOfRangeExceptionTests.cs" />
