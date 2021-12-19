@@ -3837,6 +3837,15 @@ namespace System.Runtime.Intrinsics.X86
             public static ulong PopCount(ulong value) { throw null; }
         }
     }
+	[System.CLSCompliantAttribute(false)]
+	public abstract partial class Sha1 : System.Runtime.X86.X86Base {
+		internal Sha1() { }
+		public static new bool IsSupported { get { throw null; } }
+		public static System.Runtime.Intrinsics.Vector128<byte> MessageSchedule1(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
+		public static System.Runtime.Intrinsics.Vector128<byte> MessageSchedule2(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
+		public static System.Runtime.Intrinsics.Vector128<byte> NextE(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
+		public static System.Runtime.Intrinsics.Vector128<byte> FourRounds(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b, byte func) { throw null; }
+	}
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Sse : System.Runtime.Intrinsics.X86.X86Base
     {
