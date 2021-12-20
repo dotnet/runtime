@@ -17,6 +17,7 @@ namespace System.Reflection.Metadata
     [Collection(nameof(DisableParallelization))]
     public class ApplyUpdateTest
     {
+#if false
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void StaticMethodBodyUpdate()
@@ -302,6 +303,7 @@ namespace System.Reflection.Metadata
 		Assert.Equal("4567", result);
 	    });
 	}
+#endif
 
 	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
 	public static void TestAddNestedClass()
