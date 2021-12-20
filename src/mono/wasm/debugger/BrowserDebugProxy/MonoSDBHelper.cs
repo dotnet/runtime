@@ -503,7 +503,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             base.Write(data);
         }
 
-        private void Write<T>(ElementType type, T value) where T : struct => Write((byte)type, value);
+        internal void Write<T>(ElementType type, T value) where T : struct => Write((byte)type, value);
 
         private void Write<T1, T2>(T1 type, T2 value) where T1 : struct where T2 : struct
         {
@@ -1538,6 +1538,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return await CreateJObjectForVariableValue(retDebuggerCmdReader, varName, false, -1, false, token);
         }
 
+        public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, string varName, CancellationToken token)
+        {
+            using var commandParamsObjWriter = new MonoBinaryWriter();
+            commandParamsObjWriter.Write(ElementType.Class, objectId);
+            return await InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, varName, token);
+        }
+
         public async Task<int> GetPropertyMethodIdByName(int typeId, string propertyName, CancellationToken token)
         {
             using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
@@ -2407,6 +2414,33 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return objectValues;
 
+            async Task AppendRootHiddenChildren(JObject root, JArray expandedCollection)
+            {
+                if (!DotnetObjectId.TryParse(root?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId rootHiddenObjectId))
+                    return;
+                if (!int.TryParse(rootHiddenObjectId?.Value, out int rootHiddenObjectIdInt))
+                    return;
+
+                var resultValue = new JArray();
+                // collections require extracting items to get inner values; items are of array type
+                // arrays have "subtype": "array" field, collections don't
+                var subtype = root?["value"]?["subtype"];
+                if (subtype == null || subtype?.Value<string>() != "array")
+                {
+                    resultValue = await GetObjectValues(rootHiddenObjectIdInt, getCommandType, token);
+                    DotnetObjectId.TryParse(resultValue[0]?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId2);
+                    int.TryParse(objectId2.Value, out rootHiddenObjectIdInt);
+                }
+                resultValue = await GetArrayValues(rootHiddenObjectIdInt, token);
+
+                // root hidden item name has to be unique, so we concatenate the root's name to it
+                foreach (var item in resultValue)
+                {
+                    item["name"] = string.Concat(root["name"], "[", item["name"], "]");
+                    expandedCollection.Add(item);
+                }
+            }
+
             async Task<JArray> GetFieldsValues(List<FieldTypeClass> fields, bool isOwn, bool isRootHidden = false)
             {
                 JArray objFields = new JArray();
@@ -2453,29 +2487,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         objFields.Add(fieldValue);
                         continue;
                     }
-                    if (!DotnetObjectId.TryParse(fieldValue?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId rootHiddenObjectId))
-                        continue;
-                    if (!int.TryParse(rootHiddenObjectId?.Value, out int rootHiddenObjectIdInt))
-                        continue;
-
-                    var resultValue = new JArray();
-                    // collections require extracting items to get inner values; items are of array type
-                    // arrays have "subtype": "array" field, collections don't
-                    var subtype = fieldValue?["value"]?["subtype"];
-                    if (subtype == null || subtype?.Value<string>() != "array")
-                    {
-                        resultValue = await GetObjectValues(rootHiddenObjectIdInt, getCommandType, token);
-                        DotnetObjectId.TryParse(resultValue[0]?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId2);
-                        int.TryParse(objectId2.Value, out rootHiddenObjectIdInt);
-                    }
-                    resultValue = await GetArrayValues(rootHiddenObjectIdInt, token);
-
-                    // root hidden item name has to be unique, so we concatenate the root's name to it
-                    foreach (var item in resultValue)
-                    {
-                        item["name"] = string.Concat(fieldValue["name"], "[", item["name"], "]");
-                        objFields.Add(item);
-                    }
+                    await AppendRootHiddenChildren(fieldValue, objFields);
                 }
                 return objFields;
             }
@@ -2541,6 +2553,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         case DebuggerBrowsableState.Never:
                             break;
                         case DebuggerBrowsableState.RootHidden:
+                            DotnetObjectId rootObjId;
+                            DotnetObjectId.TryParse(p["get"]["objectId"].Value<string>(), out rootObjId);
+                            var rootObject = await InvokeMethodInObject(int.Parse(rootObjId.Value), int.Parse(rootObjId.SubValue), p["name"].Value<string>(), token);
+                            Console.WriteLine(p);
+                            await AppendRootHiddenChildren(rootObject, regularProps);
                             break;
                         case DebuggerBrowsableState.Collapsed:
                             regularProps.Add(p);

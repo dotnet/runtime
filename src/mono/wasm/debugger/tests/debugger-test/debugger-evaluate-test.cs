@@ -763,6 +763,60 @@ namespace DebuggerTests
             var testPropertiesRootHidden = new TestEvaluatePropertiesRootHidden();
         }
     }
+
+    public static class EvaluateBrowsableCustomProperties
+    {
+        public class TestEvaluatePropertiesNone
+        {
+            public List<int> list { get { return new List<int>() { 1, 2 }; } }
+            public int[] array { get { return new int[] { 11, 22 }; } }
+            public string text { get { return "text"; } }
+        }
+
+        public class TestEvaluatePropertiesNever
+        {
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public List<int> listNever { get { return new List<int>() { 1, 2 }; } }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public int[] arrayNever { get { return new int[] { 11, 22 }; } }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public string textNever { get { return "textNever"; } }
+        }
+
+        public class TestEvaluatePropertiesCollapsed
+        {
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public List<int> listCollapsed { get { return new List<int>() { 1, 2 }; } }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public int[] arrayCollapsed { get { return new int[] { 11, 22 }; } }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Collapsed)]
+            public string textCollapsed { get { return "textCollapsed"; } }
+        }
+
+        public class TestEvaluatePropertiesRootHidden
+        {
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public List<int> listRootHidden { get { return new List<int>() { 1, 2 }; } }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public int[] arrayRootHidden { get { return new int[] { 11, 22 }; } }
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public string textRootHidden { get { return "textRootHidden"; } }
+        }
+
+        public static void Evaluate()
+        {
+            var testPropertiesNone = new TestEvaluatePropertiesNone();
+            var testPropertiesNever = new TestEvaluatePropertiesNever();
+            var testPropertiesCollapsed = new TestEvaluatePropertiesCollapsed();
+            var testPropertiesRootHidden = new TestEvaluatePropertiesRootHidden();
+        }
+    }
 }
 
 namespace DebuggerTestsV2

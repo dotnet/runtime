@@ -350,9 +350,9 @@ namespace DebuggerTests
                 j = TNumber(20),
                 i = TNumber(50),
                 k = TNumber(30),
-                GetJ = TGetter("GetJ"),
-                GetI = TGetter("GetI"),
-                GetK = TGetter("GetK")
+                GetJ = TGetter("GetJ", TNumber(20)),
+                GetI = TGetter("GetI", TNumber(50)),
+                GetK = TGetter("GetK", TNumber(30))
             }, "test_props");
             await EvaluateOnCallFrameAndCheck(frame_id,
                 ($"test.GetJ", TNumber(20)),

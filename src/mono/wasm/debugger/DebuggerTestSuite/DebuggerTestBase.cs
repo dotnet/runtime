@@ -623,7 +623,12 @@ namespace DebuggerTests
                         AssertEqual("Function", get["className"]?.Value<string>(), $"{label}-className");
                         AssertStartsWith($"get {exp_val["type_name"]?.Value<string>()} ()", get["description"]?.Value<string>(), $"{label}-description");
                         AssertEqual("function", get["type"]?.Value<string>(), $"{label}-type");
-
+                        var expectedValue = exp_val["value"];
+                        if (expectedValue.Type != JTokenType.Null)
+                        {
+                            var valueAfterRunGet = await GetProperties(get["objectId"]?.Value<string>());
+                            await CheckValue(valueAfterRunGet[0]?["value"], expectedValue, exp_val["type_name"]?.Value<string>());
+                        }
                         break;
                     }
 
@@ -668,7 +673,7 @@ namespace DebuggerTests
 
                 return;
             }
-
+            
             // Not an array
             var exp = exp_o as JObject;
             if (exp == null)
@@ -797,7 +802,7 @@ namespace DebuggerTests
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
         internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
-            if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
+            if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:")) //FALSE
             {
                 var fn_decl = "function () { return this; }";
                 var cfo_args = JObject.FromObject(new
@@ -1059,7 +1064,7 @@ namespace DebuggerTests
 
         internal static JObject TIgnore() => JObject.FromObject(new { __custom_type = "ignore_me" });
 
-        internal static JObject TGetter(string type) => JObject.FromObject(new { __custom_type = "getter", type_name = type });
+        internal static JObject TGetter(string type, JObject value = null) => JObject.FromObject(new { __custom_type = "getter", type_name = type, value = value});
 
         internal static JObject TDateTime(DateTime dt) => JObject.FromObject(new
         {

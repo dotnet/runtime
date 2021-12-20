@@ -61,6 +61,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public string Scheme { get; }
         public string Value { get; }
+        public string SubScheme { get; }
+        public string SubValue { get; }
 
         public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
 
@@ -73,20 +75,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!id.StartsWith("dotnet:"))
                 return false;
 
-            string[] parts = id.Split(":", 3);
+            string[] parts = id.Split(":", 5);
 
-            if (parts.Length < 3)
+            if (parts.Length < 3 || parts.Length == 4)
                 return false;
 
-            objectId = new DotnetObjectId(parts[1], parts[2]);
+            objectId = new DotnetObjectId(parts[1], parts[2], parts.Length > 3 ? parts[3] : "", parts.Length > 3 ? parts[4] : "");
 
             return true;
         }
 
-        public DotnetObjectId(string scheme, string value)
+        public DotnetObjectId(string scheme, string value, string subscheme = "", string subvalue = "")
         {
             Scheme = scheme;
             Value = value;
+            SubScheme = subscheme;
+            SubValue = subvalue;
         }
 
         public override string ToString() => $"dotnet:{Scheme}:{Value}";
