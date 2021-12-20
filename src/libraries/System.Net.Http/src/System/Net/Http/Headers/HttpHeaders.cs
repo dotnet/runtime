@@ -302,7 +302,7 @@ namespace System.Net.Http.Headers
 
         private IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumeratorCore()
         {
-            HeaderEntry[]? entries = GetEntries()!;
+            HeaderEntry[] entries = GetEntries()!;
 
             for (int i = 0; i < entries.Length; i++)
             {

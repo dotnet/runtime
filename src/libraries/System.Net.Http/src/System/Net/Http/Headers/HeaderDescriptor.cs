@@ -19,7 +19,7 @@ namespace System.Net.Http.Headers
         /// <summary>
         /// Either a <see cref="KnownHeader"/> or <see cref="string"/>
         /// </summary>
-        private readonly object _descriptor;
+        private readonly object? _descriptor;
 
         public HeaderDescriptor(KnownHeader knownHeader)
         {
@@ -36,14 +36,15 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                object? descriptor = _descriptor;
+                Debug.Assert(_descriptor is not null);
+                object descriptor = _descriptor;
                 return descriptor is KnownHeader knownHeader ?
                     knownHeader.Name :
                     Unsafe.As<string>(descriptor);
             }
         }
 
-        public object Descriptor => _descriptor;
+        public object? Descriptor => _descriptor;
 
         public HttpHeaderParser? Parser => _descriptor is KnownHeader knownHeader ? knownHeader.Parser : null;
         public HttpHeaderType HeaderType => _descriptor is KnownHeader knownHeader ? knownHeader.HeaderType : HttpHeaderType.Custom;
@@ -66,7 +67,8 @@ namespace System.Net.Http.Headers
 
         public override int GetHashCode()
         {
-            object? descriptor = _descriptor;
+            Debug.Assert(_descriptor is not null);
+            object descriptor = _descriptor;
             if (descriptor is string headerName)
             {
                 return StringComparer.OrdinalIgnoreCase.GetHashCode(headerName);
