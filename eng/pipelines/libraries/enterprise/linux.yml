@@ -51,7 +51,7 @@ steps:
   displayName: Test linuxclient connection to web server
 
 - bash: |
-    docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NoPgoOptimize=false'
+    docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NoPgoOptimize=true'
   displayName: Build product sources
 
 - bash: |
