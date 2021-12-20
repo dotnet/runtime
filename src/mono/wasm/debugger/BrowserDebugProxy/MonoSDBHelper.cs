@@ -2366,7 +2366,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     $"dotnet:object:{objectId}",
                     i == 0,
                     token);
-                objectValues.AddRange(await GetRegularProperties(props, typeId, token));
+                var properties = await GetRegularProperties(props, typeId, token);
+                foreach (var p in properties)
+                {
+                    if (objectValues.Any(x => x["name"].Value<string>().Equals(p["name"].Value<string>())))
+                        continue;
+                    objectValues.Add(p);
+                }
 
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,
@@ -2556,7 +2562,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             DotnetObjectId rootObjId;
                             DotnetObjectId.TryParse(p["get"]["objectId"].Value<string>(), out rootObjId);
                             var rootObject = await InvokeMethodInObject(int.Parse(rootObjId.Value), int.Parse(rootObjId.SubValue), p["name"].Value<string>(), token);
-                            Console.WriteLine(p);
                             await AppendRootHiddenChildren(rootObject, regularProps);
                             break;
                         case DebuggerBrowsableState.Collapsed:
