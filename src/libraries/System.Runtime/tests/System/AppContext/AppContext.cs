@@ -24,7 +24,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void AppContext_ThrowTest()
+        public void SetData_ThrowTest()
         {
             ArgumentNullException exception = Assert.Throws<ArgumentNullException>(() => AppContext.SetData(null, 123));
             Assert.Contains("name", exception.Message);
