@@ -150,7 +150,7 @@ load_simd_vreg_class (MonoCompile *cfg, MonoClass *klass, MonoInst *src, gboolea
 	} else if (src->opcode == OP_LDADDR) {
 		int res = ((MonoInst*)src->inst_p0)->dreg;
 		return res;
-	} else if (spec [MONO_INST_DEST] == 'x') {
+	} else if (spec [MONO_INST_DEST] == 'x' || spec [MONO_INST_DEST] == 'z') {
 		return src->dreg;
 	} else if (src->type == STACK_PTR || src->type == STACK_MP) {
 		MonoInst *ins;

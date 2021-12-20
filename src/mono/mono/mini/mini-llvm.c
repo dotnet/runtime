@@ -221,6 +221,7 @@ typedef struct {
 #define FREG 'f'
 #define VREG 'v'
 #define XREG 'x'
+//#define ZREG 'z'
 #define LREG 'l'
 /* keep in sync with the enum in mini.h */
 const char

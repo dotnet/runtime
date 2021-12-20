@@ -205,6 +205,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic",
 #define FREG 'f'
 #define VREG 'v'
 #define XREG 'x'
+//#define ZREG 'z'
 #if SIZEOF_REGISTER == 8 && SIZEOF_REGISTER == TARGET_SIZEOF_VOID_P
 #define LREG IREG
 #else
