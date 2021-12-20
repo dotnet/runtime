@@ -25,5 +25,12 @@ namespace System.Tests
             // Validate instance equality
             Assert.Same(value, actual);
         }
+
+        [Fact]
+        public void AppContext_ThrowTest()
+        {
+            ArgumentNullException exception = Assert.Throws<ArgumentNullException>(() => AppContext.SetData(null, 123));
+            Assert.Contains("name", exception.Message);
+        }
     }
 }
