@@ -3566,7 +3566,7 @@ Assert.False(true);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/62965", TestPlatforms.Browser)] // fails on NodeJS on windows
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/62965", TestPlatforms.Browser)] // fails on NodeJS on windows
         public void Bug55978()
         {
             DataTable dt = new DataTable();
@@ -3577,16 +3577,22 @@ Assert.False(true);
 
             for (int i = 0; i < 10; i++)
             {
+                var item = date.AddDays(i);
+                Console.WriteLine($"Add date '{item}'");
+
                 dr = dt.NewRow();
-                dr["StartDate"] = date.AddDays(i);
+                dr["StartDate"] = item;
                 dt.Rows.Add(dr);
             }
 
             DataView dv = dt.DefaultView;
-            dv.RowFilter = string.Format(CultureInfo.InvariantCulture,
+            string rowFilter = string.Format(CultureInfo.InvariantCulture,
                                 "StartDate >= #{0}# and StartDate <= #{1}#",
                                 DateTime.Now.AddDays(2),
                                 DateTime.Now.AddDays(4));
+                                
+            Console.WriteLine($"Row filter '{rowFilter}'");
+            dv.RowFilter = rowFilter;
             Assert.Equal(10, dt.Rows.Count);
 
             int expectedRowCount = 2;
