@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization
         /// Strings that have escaped characters will be unescaped before reading.
         /// Leading or trailing trivia within the string token, including whitespace, is not allowed.
         /// <remarks>
-        /// This field is not defined by the JSON specification. Altering the default number handling can potentially produce JSON that cannot be parsed by other JSON implementations.
+        /// This behavior is not defined by the JSON specification. Altering the default number handling can potentially produce JSON that cannot be parsed by other JSON implementations.
         /// </remarks>
         /// </summary>
         AllowNamedFloatingPointLiterals = 0x4
