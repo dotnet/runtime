@@ -147,3 +147,9 @@ mono_metadata_table_num_rows_slow (MonoImage *base_image, int table_index)
 {
 	return mono_component_hot_reload()->table_num_rows_slow (base_image, table_index);
 }
+
+void*
+mono_metadata_update_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer)
+{
+	return mono_component_hot_reload()->metadata_linear_search (base_image, base_table, key, comparer);
+}

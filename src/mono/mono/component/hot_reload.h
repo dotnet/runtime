@@ -9,6 +9,7 @@
 #include "mono/metadata/object-forward.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/metadata-update.h"
+#include "mono/utils/bsearch.h"
 #include "mono/utils/mono-error.h"
 #include "mono/utils/mono-compiler.h"
 #include "mono/component/component.h"
@@ -33,6 +34,7 @@ typedef struct _MonoComponentHotReload {
 	gboolean (*table_num_rows_slow) (MonoImage *base_image, int table_index);
 	GArray* (*get_added_methods) (MonoClass *klass);
 	uint32_t (*method_parent) (MonoImage *base_image, uint32_t method_index);
+	void* (*metadata_linear_search) (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

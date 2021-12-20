@@ -434,7 +434,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	error_init (error);
 
 	/* FIXME: metadata-update - this function needs extensive work */
-	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > table_info_get_rows (tt)) {
+	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEDEF, tidx)) {
 		mono_error_set_bad_image (error, image, "Invalid typedef token %x", type_token);
 		return NULL;
 	}

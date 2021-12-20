@@ -24,6 +24,7 @@
 #include "mono/metadata/debug-internals.h"
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/debug-mono-ppdb.h"
+#include "mono/utils/bsearch.h"
 
 
 #include <mono/component/hot_reload.h>
@@ -99,6 +100,9 @@ hot_reload_get_added_methods (MonoClass *klass);
 static uint32_t
 hot_reload_method_parent  (MonoImage *base, uint32_t method_token);
 
+static void*
+hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer);
+
 
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
@@ -120,6 +124,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_table_num_rows_slow,
 	&hot_reload_get_added_methods,
 	&hot_reload_method_parent,
+	&hot_reload_metadata_linear_search,
 };
 
 MonoComponentHotReload *
@@ -665,7 +670,7 @@ hot_reload_update_cancel (uint32_t generation)
 	publish_unlock ();
 }
 
-MonoClassMetadataUpdateInfo *
+static MonoClassMetadataUpdateInfo *
 mono_class_get_or_add_metadata_update_info (MonoClass *klass)
 {
 	MonoClassMetadataUpdateInfo *info = NULL;
@@ -900,8 +905,13 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 
 }
 
+/*
+ * Finds the latest mutated version of the table given by tbl_index
+ *
+ * On success returns TRUE, modifies *t and optionally updates *delta_out
+ */
 static gboolean
-effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, const MonoTableInfo **t, int idx)
+effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, const MonoTableInfo **t, DeltaInfo **delta_out)
 {
 	GList *ptr =info->delta_info_last;
 	uint32_t exposed_gen = hot_reload_get_thread_generation ();
@@ -922,6 +932,8 @@ effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, cons
 	g_assert (delta_info != NULL);
 
 	*t = &delta_info->mutants [tbl_index];
+	if (delta_out)
+		*delta_out = delta_info;
 	return TRUE;
 }
 
@@ -940,7 +952,7 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, int idx)
 	if (!info)
 		return;
 
-	gboolean success = effective_table_mutant (base, info, tbl_index, t, idx);
+	gboolean success = effective_table_mutant (base, info, tbl_index, t, NULL);
 
 	g_assert (success);
 }
@@ -1437,7 +1449,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 				break; /* added a row. ok */
 		}
 		case MONO_TABLE_TYPEDEF: {
-			gboolean new_class = is_addition;
+			gboolean new_class G_GNUC_UNUSED = is_addition;
 #ifdef ALLOW_METHOD_ADD
 			/* only allow adding methods to existing classes for now */
 			if (
@@ -1604,6 +1616,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 	 * have it in writable memory (and not mmap-ed pages), so we can rewrite the table values.
 	 */
 
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Pass 2 begin: base '%s' delta image=%p", image_base->name, image_dmeta);
 
 #ifdef ALLOW_METHOD_ADD
 	MonoClass *add_method_klass = NULL;
@@ -1620,7 +1633,11 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 
 		int token_table = mono_metadata_token_table (log_token);
 		int token_index = mono_metadata_token_index (log_token);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enclog i=%d: token=0x%08x (table=%s): %d", i, log_token, mono_meta_table_name (token_table), func_code);
+
+		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
+		
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enclog i=%d: token=0x%08x (table=%s): %d:\t%s", i, log_token, mono_meta_table_name (token_table), func_code, (is_addition ? "ADD" : "UPDATE"));
+
 
 		/* TODO: See CMiniMdRW::ApplyDelta for how to drive this.
 		 */
@@ -1697,7 +1714,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			if (func_code == ENC_FUNC_ADD_PARAM)
 				break;
 
-			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
+			if (is_addition) {
 				if (!add_method_klass)
 					g_error ("EnC: new method added but I don't know the class, should be caught by pass1");
 				g_assert (add_method_klass);
@@ -1732,11 +1749,38 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			break;
 		}
 		case MONO_TABLE_TYPEDEF: {
-			/* TODO: throw? */
-			/* TODO: happens changing the class (adding field or method). we ignore it, but dragons are here */
-
-			/* existing entries are supposed to be patched */
-			g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
+#ifdef ALLOW_CLASS_ADD			
+			if (is_addition) {
+				/* Adding a new class. ok */
+				switch (func_code) {
+				case ENC_FUNC_DEFAULT:
+					/* ok, added a new class */
+					/* TODO: do things here */
+					break;
+				case ENC_FUNC_ADD_METHOD:
+				case ENC_FUNC_ADD_FIELD:
+					/* ok, adding a new field or method to a new class */
+					/* TODO: do we need to do anything special?  Conceptually
+					 * this is the same as modifying an existing class -
+					 * especially since from the next generation's point of view
+					 * that's what adding a field/method will be. */
+					break;
+				case ENC_FUNC_ADD_PROPERTY:
+				case ENC_FUNC_ADD_EVENT:
+					g_assert_not_reached (); /* FIXME: implement me */
+				default:
+					g_assert_not_reached (); /* unknown func_code */
+				}
+				break;
+			}
+#endif
+			/* modifying an existing class by adding a method or field, etc. */
+			g_assert (!is_addition);
+#if !defined(ALLOW_METHOD_ADD) && !defined(ALLOW_FIELD_ADD)
+			g_assert_not_reached ();
+#else
+			g_assert (func_code != ENC_FUNC_DEFAULT);
+#endif
 			break;
 		}
 		case MONO_TABLE_PROPERTY: {
@@ -2158,4 +2202,45 @@ hot_reload_method_parent  (MonoImage *base_image, uint32_t method_token)
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "method_parent lookup: 0x%08x returned 0x%08x\n", method_token, res);
 
 	return res;
+}
+
+/* XXX HACK - keep in sync with locator_t in metadata/metadata.c */
+typedef struct {
+	int idx;			/* The index that we are trying to locate */
+	int col_idx;		/* The index in the row where idx may be stored */
+	MonoTableInfo *t;	/* pointer to the table */
+	guint32 result;
+} upd_locator_t;
+
+void*
+hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer)
+{
+	BaselineInfo *base_info = baseline_info_lookup (base_image);
+	g_assert (base_info);
+
+	g_assert (base_image->tables < base_table && base_table < &base_image->tables [MONO_TABLE_LAST]);
+
+	int tbl_index;
+	{
+		size_t s = ALIGN_TO (sizeof (MonoTableInfo), sizeof (gpointer));
+		tbl_index = ((intptr_t) base_table - (intptr_t) base_image->tables) / s;
+	}
+
+	DeltaInfo *delta_info = NULL;
+	const MonoTableInfo *latest_mod_table = base_table;
+	gboolean success = effective_table_mutant (base_image, base_info, tbl_index, &latest_mod_table, &delta_info);
+	g_assert (success);
+	uint32_t rows = table_info_get_rows (latest_mod_table);
+
+	upd_locator_t *loc = (upd_locator_t*)key;
+	g_assert (loc);
+	loc->result = 0;
+	/* HACK: this is so that the locator can compute the row index of the given row. but passing the mutant table to other metadata functions could backfire. */
+	loc->t = (MonoTableInfo*)latest_mod_table;
+	for (uint32_t idx = 0; idx < table_info_get_rows (latest_mod_table); ++idx) {
+		const char *row = latest_mod_table->base + idx * latest_mod_table->row_size;
+		if (!comparer (loc, row))
+			return (void*)row;
+	}
+	return NULL;
 }
