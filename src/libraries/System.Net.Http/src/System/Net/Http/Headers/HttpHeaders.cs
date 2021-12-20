@@ -660,14 +660,14 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                ref object valueRef = ref _headerStore.GetValueRefOrNullRef(descriptor);
-                if (!Unsafe.IsNullRef(ref valueRef))
+                ref object storeValueRef = ref _headerStore.GetValueRefOrNullRef(descriptor);
+                if (!Unsafe.IsNullRef(ref storeValueRef))
                 {
-                    object value = valueRef;
+                    object value = storeValueRef;
                     if (value is not HeaderStoreItemInfo info)
                     {
                         Debug.Assert(value is string);
-                        valueRef = info = new HeaderStoreItemInfo { RawValue = value };
+                        storeValueRef = info = new HeaderStoreItemInfo { RawValue = value };
                     }
                     return info;
                 }
@@ -698,25 +698,25 @@ namespace System.Net.Http.Headers
 
         internal bool TryGetHeaderValue(HeaderDescriptor descriptor, [NotNullWhen(true)] out object? value)
         {
-            ref object valueRef = ref _headerStore.GetValueRefOrNullRef(descriptor);
-            if (Unsafe.IsNullRef(ref valueRef))
+            ref object storeValueRef = ref _headerStore.GetValueRefOrNullRef(descriptor);
+            if (Unsafe.IsNullRef(ref storeValueRef))
             {
                 value = null;
                 return false;
             }
             else
             {
-                value = valueRef;
+                value = storeValueRef;
                 return true;
             }
         }
 
         private bool TryGetAndParseHeaderInfo(HeaderDescriptor key, [NotNullWhen(true)] out HeaderStoreItemInfo? info)
         {
-            ref object valueRef = ref _headerStore.GetValueRefOrNullRef(key);
-            if (!Unsafe.IsNullRef(ref valueRef))
+            ref object storeValueRef = ref _headerStore.GetValueRefOrNullRef(key);
+            if (!Unsafe.IsNullRef(ref storeValueRef))
             {
-                object value = valueRef;
+                object value = storeValueRef;
                 if (value is HeaderStoreItemInfo hsi)
                 {
                     info = hsi;
@@ -724,7 +724,7 @@ namespace System.Net.Http.Headers
                 else
                 {
                     Debug.Assert(value is string);
-                    valueRef = info = new HeaderStoreItemInfo() { RawValue = value };
+                    storeValueRef = info = new HeaderStoreItemInfo() { RawValue = value };
                 }
 
                 return ParseRawHeaderValues(key, info);
