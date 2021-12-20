@@ -40,17 +40,30 @@ namespace DebuggerTests
 
         static protected string FindTestPath()
         {
-            var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string test_app_path = Environment.GetEnvironmentVariable("DEBUGGER_TEST_PATH");
+
+            if (string.IsNullOrEmpty(test_app_path))
+            {
+                var asm_dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 #if DEBUG
-            var config="Debug";
+                var config="Debug";
 #else
-            var config="Release";
-#endif            
-            var test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", config, "publish");
+                var config="Release";
+#endif
+                test_app_path = Path.Combine(asm_dir, "..", "..", "..", "debugger-test", config);
+
+                if (string.IsNullOrEmpty(test_app_path))
+                    throw new Exception("Could not figure out debugger-test app path from the 'DEBUGGER_TEST_PATH' " +
+                                       $"environment variable, or based on the test suite location ({asm_dir})");
+            }
+
+            if (!string.IsNullOrEmpty(test_app_path))
+                test_app_path = Path.Combine(test_app_path, "AppBundle");
+
             if (File.Exists(Path.Combine(test_app_path, "debugger-driver.html")))
                 return test_app_path;
 
-            throw new Exception($"Could not figure out debugger-test app path ({test_app_path}) based on the test suite location ({asm_dir})");
+            throw new Exception($"Cannot find 'debugger-driver.html' in {test_app_path}");
         }
 
         static string[] PROBE_LIST = {
@@ -63,21 +76,32 @@ namespace DebuggerTests
         };
         static string chrome_path;
 
-        static string FindChromePath()
+        static string GetChromePath()
         {
-            if (chrome_path != null)
-                return chrome_path;
-
-            foreach (var s in PROBE_LIST)
+            if (string.IsNullOrEmpty(chrome_path))
             {
-                if (File.Exists(s))
-                {
-                    chrome_path = s;
-                    Console.WriteLine($"Using chrome path: ${s}");
-                    return s;
-                }
+                chrome_path = FindChromePath();
+                if (!string.IsNullOrEmpty(chrome_path))
+                    Console.WriteLine ($"** Using chrome from {chrome_path}");
+                else
+                    throw new Exception("Could not find an installed Chrome to use");
             }
-            throw new Exception("Could not find an installed Chrome to use");
+
+            return chrome_path;
+
+            string FindChromePath()
+            {
+                string chrome_path_env_var = Environment.GetEnvironmentVariable("CHROME_PATH_FOR_DEBUGGER_TESTS");
+                if (!string.IsNullOrEmpty(chrome_path_env_var))
+                {
+                    if (File.Exists(chrome_path_env_var))
+                        return chrome_path_env_var;
+
+                    Console.WriteLine ($"warning: Could not find CHROME_PATH_FOR_DEBUGGER_TESTS={chrome_path_env_var}");
+                }
+
+                return PROBE_LIST.FirstOrDefault(p => File.Exists(p));
+            }
         }
 
         public DebuggerTestBase(string driver = "debugger-driver.html")
@@ -90,7 +114,7 @@ namespace DebuggerTests
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
 
-            startTask = TestHarnessProxy.Start(FindChromePath(), DebuggerTestAppPath, driver);
+            startTask = TestHarnessProxy.Start(GetChromePath(), DebuggerTestAppPath, driver);
         }
 
         public virtual async Task InitializeAsync()
@@ -148,7 +172,7 @@ namespace DebuggerTests
         }
 
         internal async Task CheckInspectLocalsAtBreakpointSite(string url_key, int line, int column, string function_name, string eval_expression,
-            Action<JToken> test_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false)
+            Func<JToken, Task> test_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false)
         {
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -171,10 +195,10 @@ namespace DebuggerTests
                    else
                        await Task.CompletedTask;
                },
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     if (test_fn != null)
-                        test_fn(locals);
+                        await test_fn(locals);
                 }
             );
         }
@@ -436,7 +460,7 @@ namespace DebuggerTests
         }
 
         internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, int times = 1)
+            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, int times = 1)
         {
             string method = (kind == StepKind.Resume ? "Debugger.resume" : $"Debugger.step{kind}");
             for (int i = 0; i < times - 1; i++)
@@ -451,15 +475,17 @@ namespace DebuggerTests
                 locals_fn: locals_fn);
         }
 
-        internal async Task<JObject> EvaluateAndCheck(string expression, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null) => await SendCommandAndCheck(
-            JObject.FromObject(new { expression = expression }),
-            "Runtime.evaluate", script_loc, line, column, function_name,
-            wait_for_event_fn: wait_for_event_fn,
-            locals_fn: locals_fn);
+        internal async Task<JObject> EvaluateAndCheck(
+                                        string expression, string script_loc, int line, int column, string function_name,
+                                        Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
+            => await SendCommandAndCheck(
+                        JObject.FromObject(new { expression = expression }),
+                        "Runtime.evaluate", script_loc, line, column, function_name,
+                        wait_for_event_fn: wait_for_event_fn,
+                        locals_fn: locals_fn);
 
         internal async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
-            Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, string waitForEvent = Inspector.PAUSE)
+            Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null, string waitForEvent = Inspector.PAUSE)
         {
             var res = await cli.SendCommand(method, args, token);
             if (!res.IsOk)
@@ -486,7 +512,7 @@ namespace DebuggerTests
                 var locals = await GetProperties(wait_res["callFrames"][0]["callFrameId"].Value<string>());
                 try
                 {
-                    locals_fn(locals);
+                    await locals_fn(locals);
                 }
                 catch (System.AggregateException ex)
                 {

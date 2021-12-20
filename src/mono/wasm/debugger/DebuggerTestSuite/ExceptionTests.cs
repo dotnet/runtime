@@ -235,6 +235,7 @@ namespace DebuggerTests
         [Theory]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76)]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28)]
+        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62666
         public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number)
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-exception-test.cs";

@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets<T>(this IConfigurationBuilder configuration)
             where T : class
-            => configuration.AddUserSecrets(typeof(T).Assembly, optional: false, reloadOnChange: false);
+            => configuration.AddUserSecrets(typeof(T).Assembly, optional: true, reloadOnChange: false);
 
         /// <summary>
         /// <para>
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Configuration
         /// <exception cref="InvalidOperationException">Thrown when <paramref name="assembly"/> does not have a valid <see cref="UserSecretsIdAttribute"/></exception>
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, Assembly assembly)
-            => configuration.AddUserSecrets(assembly, optional: false, reloadOnChange: false);
+            => configuration.AddUserSecrets(assembly, optional: true, reloadOnChange: false);
 
         /// <summary>
         /// <para>
