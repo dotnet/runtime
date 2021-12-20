@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Tells the service task to stop but does not wait for it to stop.
         /// </summary>
-60
+
         public virtual void Dispose()
         {
             _stoppingCts?.Cancel();
