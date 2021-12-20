@@ -1337,7 +1337,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
-            if (headers.Entries is null)
+            if (headers.GetEntries() is not HeaderEntry[] entries)
             {
                 return;
             }
@@ -1345,7 +1345,7 @@ namespace System.Net.Http
             HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
 
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
-            foreach (HeaderEntry header in headers.Entries)
+            foreach (HeaderEntry header in entries)
             {
                 if (header.Key.Descriptor is null)
                 {

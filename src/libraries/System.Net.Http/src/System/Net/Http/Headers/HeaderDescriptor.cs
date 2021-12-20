@@ -64,7 +64,19 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public override int GetHashCode() => throw new InvalidOperationException(); // We don't expect this to be called
+        public override int GetHashCode()
+        {
+            object? descriptor = _descriptor;
+            if (descriptor is string headerName)
+            {
+                return StringComparer.OrdinalIgnoreCase.GetHashCode(headerName);
+            }
+            else
+            {
+                return descriptor.GetHashCode();
+            }
+        }
+
         public override bool Equals(object? obj) => throw new InvalidOperationException();   // Ensure this is never called, to avoid boxing
 
         // Returns false for invalid header name.

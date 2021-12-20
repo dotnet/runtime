@@ -60,7 +60,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             FillAvailableSpaceWithOnes(buffer);
             string[] headerValues = Array.Empty<string>();
 
-            foreach (HeaderEntry header in headers.Entries)
+            foreach (HeaderEntry header in headers.GetEntries())
             {
                 if (header.Key.Descriptor is null)
                 {

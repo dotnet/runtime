@@ -258,9 +258,9 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest != null);
 
-            if (headers.Entries != null)
+            if (headers.GetEntries() is HeaderEntry[] entries)
             {
-                foreach (HeaderEntry header in headers.Entries)
+                foreach (HeaderEntry header in entries)
                 {
                     if (header.Key.Descriptor is null)
                     {
