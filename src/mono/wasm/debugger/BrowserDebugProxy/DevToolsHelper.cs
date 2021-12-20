@@ -60,40 +60,59 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class DotnetObjectId
     {
         public string Scheme { get; }
-        public string Value { get; }
-        public string SubScheme { get; }
-        public string SubValue { get; }
+        public int Value { get; }
+        public int SubValue { get; set; }
 
         public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
 
         public static bool TryParse(string id, out DotnetObjectId objectId)
         {
             objectId = null;
-            if (id == null)
+            try {
+                if (id == null)
+                    return false;
+
+                if (!id.StartsWith("dotnet:"))
+                    return false;
+
+                string[] parts = id.Split(":");
+
+                if (parts.Length < 3)
+                    return false;
+
+                objectId = new DotnetObjectId(parts[1], int.Parse(parts[2]));
+                switch (objectId.Scheme)
+                {
+                    case "methodId":
+                    {
+                        parts = id.Split(":");
+                        objectId.SubValue = int.Parse(parts[3]);
+                        break;
+                    }
+                }
+                return true;
+            }
+            catch (Exception)
+            {
                 return false;
-
-            if (!id.StartsWith("dotnet:"))
-                return false;
-
-            string[] parts = id.Split(":", 5);
-
-            if (parts.Length < 3)
-                return false;
-
-            objectId = new DotnetObjectId(parts[1], parts[2], parts.Length > 3 ? parts[3] : "", parts.Length > 3 ? parts[4] : "");
-
-            return true;
+            }
         }
 
-        public DotnetObjectId(string scheme, string value, string subscheme = "", string subvalue = "")
+        public DotnetObjectId(string scheme, int value)
         {
             Scheme = scheme;
             Value = value;
-            SubScheme = subscheme;
-            SubValue = subvalue;
         }
 
-        public override string ToString() => $"dotnet:{Scheme}:{Value}";
+        public override string ToString()
+        {
+            switch (Scheme)
+            {
+                case "methodId":
+                    return $"dotnet:{Scheme}:{Value}:{SubValue}";
+            }
+            return $"dotnet:{Scheme}:{Value}";
+        }
     }
 
     public struct Result
