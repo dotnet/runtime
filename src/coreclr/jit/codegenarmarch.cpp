@@ -1889,22 +1889,22 @@ public:
         instrCount = 0;
     }
 
-    void LoadPairRegs(int offset, int regSizeBytes)
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
     {
         instrCount++;
     }
 
-    void StorePairRegs(int offset, int regSizeBytes)
+    void StorePairRegs(int offset, unsigned regSizeBytes)
     {
         instrCount++;
     }
 
-    void LoadReg(int offset, int regSizeBytes)
+    void LoadReg(int offset, unsigned regSizeBytes)
     {
         instrCount++;
     }
 
-    void StoreReg(int offset, int regSizeBytes)
+    void StoreReg(int offset, unsigned regSizeBytes)
     {
         instrCount++;
     }
@@ -1960,22 +1960,22 @@ public:
         canEncodeAllStores = true;
     }
 
-    void LoadPairRegs(int offset, int regSizeBytes)
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
     {
         canEncodeAllLoads = canEncodeAllLoads && CanEncodeLoadOrStorePairRegs(offset, regSizeBytes);
     }
 
-    void StorePairRegs(int offset, int regSizeBytes)
+    void StorePairRegs(int offset, unsigned regSizeBytes)
     {
         canEncodeAllStores = canEncodeAllStores && CanEncodeLoadOrStorePairRegs(offset, regSizeBytes);
     }
 
-    void LoadReg(int offset, int regSizeBytes)
+    void LoadReg(int offset, unsigned regSizeBytes)
     {
         canEncodeAllLoads = canEncodeAllLoads && CanEncodeLoadOrStoreReg(offset, regSizeBytes);
     }
 
-    void StoreReg(int offset, int regSizeBytes)
+    void StoreReg(int offset, unsigned regSizeBytes)
     {
         canEncodeAllStores = canEncodeAllStores && CanEncodeLoadOrStoreReg(offset, regSizeBytes);
     }
@@ -1991,17 +1991,17 @@ public:
     }
 
 private:
-    static bool CanEncodeLoadOrStorePairRegs(int offset, int regSizeBytes)
+    static bool CanEncodeLoadOrStorePairRegs(int offset, unsigned regSizeBytes)
     {
         const bool canEncodeWithSignedOffset =
-            (offset % regSizeBytes == 0) && (offset >= -64 * regSizeBytes) && (offset < 64 * regSizeBytes);
+            (offset % regSizeBytes == 0) && (offset >= -64 * (int)regSizeBytes) && (offset < 64 * (int)regSizeBytes);
         return canEncodeWithSignedOffset;
     }
 
-    static bool CanEncodeLoadOrStoreReg(int offset, int regSizeBytes)
+    static bool CanEncodeLoadOrStoreReg(int offset, unsigned regSizeBytes)
     {
         const bool canEncodeWithUnsignedOffset =
-            (offset % regSizeBytes == 0) && (offset >= 0) && (offset < regSizeBytes * 4096);
+            (offset % regSizeBytes == 0) && (offset >= 0) && (offset < (int)regSizeBytes * 4096);
         const bool canEncodeWithUnscaledOffset = (offset >= -256) && (offset <= 255);
 
         return canEncodeWithUnsignedOffset || canEncodeWithUnscaledOffset;
@@ -2024,7 +2024,7 @@ public:
     {
     }
 
-    void LoadPairRegs(int offset, int regSizeBytes)
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
     {
         assert((regSizeBytes == 8) || (regSizeBytes == 16));
 
@@ -2045,7 +2045,7 @@ public:
         emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), tempReg1, tempReg2, addrReg, offset);
     }
 
-    void StorePairRegs(int offset, int regSizeBytes)
+    void StorePairRegs(int offset, unsigned regSizeBytes)
     {
         assert((regSizeBytes == 8) || (regSizeBytes == 16));
 
@@ -2066,7 +2066,7 @@ public:
         emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), tempReg1, tempReg2, addrReg, offset);
     }
 
-    void LoadReg(int offset, int regSizeBytes)
+    void LoadReg(int offset, unsigned regSizeBytes)
     {
         instruction ins     = INS_ldr;
         regNumber   tempReg = intReg1;
@@ -2087,7 +2087,7 @@ public:
         emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), tempReg, addrReg, offset);
     }
 
-    void StoreReg(int offset, int regSizeBytes)
+    void StoreReg(int offset, unsigned regSizeBytes)
     {
         instruction ins     = INS_str;
         regNumber   tempReg = intReg1;
