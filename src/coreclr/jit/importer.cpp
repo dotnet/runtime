@@ -9766,52 +9766,6 @@ DONE:
         }
     }
 
-    // A tail recursive call is a potential loop from the current block to the start of the method.
-    if ((tailCallFlags != 0) && canTailCall)
-    {
-        // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
-        // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
-        // instrumentation.
-        //
-        if (!compIsForInlining() && (compCurBB->bbJumpKind != BBJ_RETURN))
-        {
-            BasicBlock* const successor = compCurBB->GetUniqueSucc();
-            assert(successor->bbJumpKind == BBJ_RETURN);
-            successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
-            optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
-        }
-
-        if (gtIsRecursiveCall(methHnd))
-        {
-            assert(verCurrentState.esStackDepth == 0);
-            BasicBlock* loopHead = nullptr;
-            if (opts.IsOSR())
-            {
-                // We might not have been planning on importing the method
-                // entry block, but now we must.
-
-                // We should have remembered the real method entry block.
-                assert(fgEntryBB != nullptr);
-
-                JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
-                        fgEntryBB->bbNum);
-                impImportBlockPending(fgEntryBB);
-                loopHead = fgEntryBB;
-            }
-            else
-            {
-                // For normal jitting we'll branch back to the firstBB; this
-                // should already be imported.
-                loopHead = fgFirstBB;
-            }
-
-            JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
-                    " as having a backward branch.\n",
-                    loopHead->bbNum, compCurBB->bbNum);
-            fgMarkBackwardJump(loopHead, compCurBB);
-        }
-    }
-
     // Note: we assume that small return types are already normalized by the managed callee
     // or by the pinvoke stub for calls to unmanaged code.
 
@@ -9845,6 +9799,86 @@ DONE:
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
+    }
+
+    // Extra checks for tail calls and tail recursion.
+    //
+    // A tail recursive call is a potential loop from the current block to the start of the root method.
+    // If we see a tail recursive call, mark the blocks from the call site back to the entry as potentially
+    // being in a loop.
+    //
+    // Note: if we're importing an inlinee we don't mark the right set of blocks, but by then it's too
+    // late. Currently this doesn't lead to problems. See GitHub issue 33529.
+    //
+    // OSR also needs to handle tail calls specially:
+    // * block profiling in OSR methods needs to ensure probes happen before tail calls, not after.
+    // * the root method entry must be imported if there's a recursive tail call or a potentially
+    //   inlineable tail call.
+    //
+    if ((tailCallFlags != 0) && canTailCall)
+    {
+        if (gtIsRecursiveCall(methHnd))
+        {
+            assert(verCurrentState.esStackDepth == 0);
+            BasicBlock* loopHead = nullptr;
+            if (!compIsForInlining() && opts.IsOSR())
+            {
+                // For root method OSR we may branch back to the actual method entry,
+                // which is not fgFirstBB, and which we will need to import.
+                assert(fgEntryBB != nullptr);
+                loopHead = fgEntryBB;
+            }
+            else
+            {
+                // For normal jitting we may branch back to the firstBB; this
+                // should already be imported.
+                loopHead = fgFirstBB;
+            }
+
+            JITDUMP("\nTail recursive call [%06u] in the method. Mark " FMT_BB " to " FMT_BB
+                    " as having a backward branch.\n",
+                    dspTreeID(call), loopHead->bbNum, compCurBB->bbNum);
+            fgMarkBackwardJump(loopHead, compCurBB);
+        }
+
+        // We only do these OSR checks in the root method because:
+        // * If we fail to import the root method entry when importing the root method, we can't go back
+        //    and import it during inlining. So instead of checking jsut for recursive tail calls we also
+        //    have to check for anything that might introduce a recursive tail call.
+        // * We only instrument root method blocks in OSR methods,
+        //
+        if (opts.IsOSR() && !compIsForInlining())
+        {
+            // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
+            // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
+            // instrumentation.
+            //
+            if (compCurBB->bbJumpKind != BBJ_RETURN)
+            {
+                BasicBlock* const successor = compCurBB->GetUniqueSucc();
+                assert(successor->bbJumpKind == BBJ_RETURN);
+                successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
+                optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
+            }
+
+            // If this call might eventually turn into a loop back to method entry, make sure we
+            // import the method entry.
+            //
+            assert(call->IsCall());
+            GenTreeCall* const actualCall           = call->AsCall();
+            const bool         mustImportEntryBlock = gtIsRecursiveCall(methHnd) || actualCall->IsInlineCandidate() ||
+                                              actualCall->IsGuardedDevirtualizationCandidate();
+
+            // Only schedule importation if we're not currently importing.
+            //
+            if (mustImportEntryBlock && (compCurBB != fgEntryBB))
+            {
+                JITDUMP("\nOSR: inlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
+                        " for importation\n",
+                        dspTreeID(call), fgEntryBB->bbNum);
+                impImportBlockPending(fgEntryBB);
+            }
+        }
     }
 
     if ((sig->flags & CORINFO_SIGFLAG_FAT_CALL) != 0)
