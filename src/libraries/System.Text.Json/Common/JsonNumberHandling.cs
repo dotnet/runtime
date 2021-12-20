@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Numbers will be written as JSON strings (with quotes), not as JSON numbers.
         /// <remarks>
-        /// This field is not defined by the JSON specification. Altering the default number handling can potentially produce JSON that cannot be parsed by other JSON implementations.
+        /// This behavior is not defined by the JSON specification. Altering the default number handling can potentially produce JSON that cannot be parsed by other JSON implementations.
         /// </remarks>
         /// </summary>
         WriteAsString = 0x2,
