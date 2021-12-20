@@ -122,7 +122,7 @@ internal static partial class Interop
         }
 
         // This essentially wraps SSL_CTX* aka SSL_CTX_new + setting
-        internal static SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions, SslProtocols protocols)
+        internal static SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions, SslProtocols protocols, bool enableResume)
         {
             SafeX509Handle? certHandle = credential.CertHandle;
             SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
@@ -181,6 +181,8 @@ internal static partial class Interop
                 // https://www.openssl.org/docs/manmaster/ssl/SSL_shutdown.html
                 Ssl.SslCtxSetQuietShutdown(sslCtx);
 
+                Ssl.SslCtxSetCaching(sslCtx, enableResume ? 1 : 0);
+
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
                     unsafe
@@ -222,24 +224,24 @@ internal static partial class Interop
             SafeSslContextHandle? sslCtxHandle = null;
             SafeSslContextHandle? newCtxHandle = null;
             SslProtocols protocols = CalculateEffectiveProtocols(sslAuthenticationOptions);
+            bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
             bool cacheSslContext = !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption &&
+                    sslAuthenticationOptions.IsServer &&
                     sslAuthenticationOptions.CertificateContext != null &&
                     sslAuthenticationOptions.CertificateContext.SslContexts != null &&
-                    sslAuthenticationOptions.CipherSuitesPolicy == null &&
-                    (!sslAuthenticationOptions.IsServer ||
-                    (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0));
+                    sslAuthenticationOptions.CipherSuitesPolicy == null;
 
             if (cacheSslContext)
             {
-               sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols, out sslCtxHandle);
+               sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols | (SslProtocols)(hasAlpn ? 1 : 0), out sslCtxHandle);
             }
 
             if (sslCtxHandle == null)
             {
                 // We did not get SslContext from cache
-                sslCtxHandle = newCtxHandle = AllocateSslContext(credential, sslAuthenticationOptions, protocols);
+                sslCtxHandle = newCtxHandle = AllocateSslContext(credential, sslAuthenticationOptions, protocols, cacheSslContext);
 
-                if (cacheSslContext && sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols, newCtxHandle))
+                if (cacheSslContext && sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols | (SslProtocols)(hasAlpn ? 1 : 0), newCtxHandle))
                 {
                     newCtxHandle = null;
                 }

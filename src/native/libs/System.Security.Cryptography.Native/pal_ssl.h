@@ -145,6 +145,11 @@ Sets the specified protocols in the SSL_CTX options.
 PALEXPORT void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols);
 
 /*
+Sets session caching. 0 is disabled.
+*/
+PALEXPORT void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode);
+
+/*
 Shims the SSL_new method.
 
 Returns the new SSL instance.
