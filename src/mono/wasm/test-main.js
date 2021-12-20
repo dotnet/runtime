@@ -160,8 +160,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
     }))
 }).catch(function (err) {
     console.error(err);
-    set_exit_code(1, "failed to load the dotnet.js file");
-    throw err;
+    set_exit_code(1, "failed to load the dotnet.js file.\n" + err);
 });
 
 const App = {
@@ -361,10 +360,20 @@ async function loadDotnet(file) {
             return require(file);
         };
     } else if (is_browser) { // vanila JS in browser
-        loadScript = async function (file) {
-            globalThis.exports = {}; // if we are loading cjs file
-            const createDotnetRuntime = await import(file);
-            return typeof createDotnetRuntime === "function" ? createDotnetRuntime : globalThis.exports.createDotnetRuntime;
+        loadScript = function (file) {
+            var loaded = new Promise((resolve, reject) => {
+                globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
+                    // this is callback we have in CJS version of the runtime
+                    resolve(createDotnetRuntime);
+                };
+                import(file).then(({ default: createDotnetRuntime }) => {
+                    // this would work with ES6 default export
+                    if (createDotnetRuntime) {
+                        resolve(createDotnetRuntime);
+                    }
+                }, reject);
+            });
+            return loaded;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {
