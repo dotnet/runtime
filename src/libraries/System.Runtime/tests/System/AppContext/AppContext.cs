@@ -11,7 +11,7 @@ namespace System.Tests
         [InlineData("AppContext_Case1", 123)]
         [InlineData("AppContext_Case2", "")]
         [InlineData("AppContext_Case3", null)]
-        public void GetSetDataTest(string dataKey, object value)
+        public void AppContext_GetSetDataTest(string dataKey, object value)
         {
             // Set data
             AppContext.SetData(dataKey, value);
@@ -24,10 +24,9 @@ namespace System.Tests
         }
 
         [Fact]
-        public void SetData_ThrowTest()
+        public void AppContext_ThrowTest()
         {
-            ArgumentNullException exception = Assert.Throws<ArgumentNullException>(() => AppContext.SetData(null, 123));
-            Assert.Contains("name", exception.Message);
+            AssertExtensions.Throws<ArgumentNullException>("name", () => AppContext.SetData(null, 123));
         }
     }
 }
