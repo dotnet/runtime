@@ -713,6 +713,21 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(
     return original_ICorJitInfo->getArgType(sig, args, vcTypeRet);
 }
 
+CorInfoTypeWithMod interceptor_ICJI::getArgType2(
+          CORINFO_SIG_INFO* sig,
+          CORINFO_ARG_LIST_HANDLE args,
+          CORINFO_CLASS_HANDLE* vcTypeRet,
+          int* flags)
+{
+    return original_ICorJitInfo->getArgType2(sig, args, vcTypeRet, flags);
+}
+
+uint32_t interceptor_ICJI::getFieldTypeByHnd(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->getFieldTypeByHnd(cls);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args)

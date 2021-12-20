@@ -9384,7 +9384,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     return result;
 }
 
-CorInfoTypeWithMod CEEInfo::getArgType (
+CorInfoTypeWithMod CEEInfo::getArgType2 (
         CORINFO_SIG_INFO*       sig,
         CORINFO_ARG_LIST_HANDLE args,
         CORINFO_CLASS_HANDLE*   vcTypeRet,

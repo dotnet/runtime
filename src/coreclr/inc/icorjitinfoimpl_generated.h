@@ -419,6 +419,15 @@ CorInfoTypeWithMod getArgType(
           CORINFO_ARG_LIST_HANDLE args,
           CORINFO_CLASS_HANDLE* vcTypeRet) override;
 
+CorInfoTypeWithMod getArgType2(
+          CORINFO_SIG_INFO* sig,
+          CORINFO_ARG_LIST_HANDLE args,
+          CORINFO_CLASS_HANDLE* vcTypeRet,
+          int* flags) override;
+
+uint32_t getFieldTypeByHnd(
+          CORINFO_CLASS_HANDLE cls) override;
+
 CORINFO_CLASS_HANDLE getArgClass(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args) override;

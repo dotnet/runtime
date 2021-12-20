@@ -2714,7 +2714,7 @@ public:
             CORINFO_CLASS_HANDLE       *vcTypeRet       /* OUT */
             ) = 0;
 
-    virtual CorInfoTypeWithMod getArgType (
+    virtual CorInfoTypeWithMod getArgType2 (
             CORINFO_SIG_INFO*           sig,            /* IN */
             CORINFO_ARG_LIST_HANDLE     args,           /* IN */
             CORINFO_CLASS_HANDLE       *vcTypeRet,      /* OUT */

@@ -529,6 +529,9 @@ struct Agnostic_GetArgType_Value
     DWORDLONG vcTypeRet;
     DWORD     result;
     DWORD     exceptionCode;
+//#if defined(TARGET_LOONGARCH64)
+    int       flags;
+//#endif
 };
 
 // Agnostic_ConfigIntInfo combines as a single key the name

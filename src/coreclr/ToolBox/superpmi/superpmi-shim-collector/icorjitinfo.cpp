@@ -1203,7 +1203,54 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,    
     },
     [&](DWORD exceptionCode)
     {
+
         this->mc->recGetArgType(sig, args, vcTypeRet, temp, exceptionCode);
+    });
+
+    return temp;
+}
+
+CorInfoTypeWithMod interceptor_ICJI::getArgType2(CORINFO_SIG_INFO*       sig,      /* IN */
+                                                CORINFO_ARG_LIST_HANDLE args,     /* IN */
+                                                CORINFO_CLASS_HANDLE*   vcTypeRet, /* OUT */
+                                                int*                    flags      /* OUT */
+                                                )
+{
+    CorInfoTypeWithMod      temp      = (CorInfoTypeWithMod)CORINFO_TYPE_UNDEF;
+
+    RunWithErrorExceptionCodeCaptureAndContinue(
+    [&]()
+    {
+        mc->cr->AddCall("getArgType2");
+        temp =
+            original_ICorJitInfo->getArgType2(sig, args, vcTypeRet, flags);
+
+#ifdef fatMC
+        CORINFO_CLASS_HANDLE temp3 = getArgClass(sig, args);
+#endif
+    },
+    [&](DWORD exceptionCode)
+    {
+
+        this->mc->recGetArgType(sig, args, vcTypeRet, temp, flags ? *flags : 0, exceptionCode);
+    });
+
+    return temp;
+}
+
+uint32_t interceptor_ICJI::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
+{
+
+    uint32_t temp = 0;
+    RunWithErrorExceptionCodeCaptureAndContinue(
+    [&]()
+    {
+        mc->cr->AddCall("getFieldTypeByHnd");
+        temp = original_ICorJitInfo->getFieldTypeByHnd(cls);
+    },
+    [&](DWORD exceptionCode)
+    {
+        this->mc->recGetFieldTypeByHnd(cls, temp);
     });
 
     return temp;
