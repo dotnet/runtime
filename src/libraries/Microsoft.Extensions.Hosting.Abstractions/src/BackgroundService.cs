@@ -19,22 +19,29 @@ namespace Microsoft.Extensions.Hosting
         /// Gets the Task that executes the background operation.
         /// </summary>
         /// <remarks>
-        /// Will return <see langword="null"/> if the background operation hasn't started.
+        /// Will return <see langword="null" /> if the background operation hasn't started.
         /// </remarks>
         public virtual Task ExecuteTask => _executeTask;
 
         /// <summary>
-        /// This method is called when the <see cref="IHostedService"/> starts. The implementation should return a task that represents
+        /// This method is called when the <see cref="IHostedService" /> starts. The implementation should return a task that represents
         /// the lifetime of the long running operation(s) being performed.
         /// </summary>
-        /// <param name="stoppingToken">Triggered when <see cref="IHostedService.StopAsync(CancellationToken)"/> is called.</param>
-        /// <returns>A <see cref="Task"/> that represents the long running operations.</returns>
+        /// <param name="stoppingToken">
+        /// Triggered when <see cref="IHostedService.StopAsync(CancellationToken)" /> is called.
+        /// The service task should interpret and handle cancellation requests appearing on this token.
+        /// </param>
+        /// <returns>A <see cref="Task" /> that represents the long running service.</returns>
         protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
 
         /// <summary>
         /// Triggered when the application host is ready to start the service.
         /// </summary>
-        /// <param name="cancellationToken">Indicates that the start process has been aborted.</param>
+        /// <param name="cancellationToken">
+        /// A <see cref="T:System.Threading.CancellationToken" /> that can be used to cancel the running task from outside.
+        /// </param>
+        /// <returns>A completed <see cref="Task" /> indicating that the service task has started.</returns>
+
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
             // Create linked token to allow cancelling executing task from provided token
@@ -54,9 +61,15 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Triggered when the application host is performing a graceful shutdown.
+        /// Triggered when the application host is performing a graceful shutdown.  
+        /// The stop task normally waits for the service task to finish. 
         /// </summary>
-        /// <param name="cancellationToken">Indicates that the shutdown process should no longer be graceful.</param>
+        /// <param name="cancellationToken">
+        /// Allows the application host to interrupt the wait.
+        /// Note that this has no effect on the service task.
+        /// </param>
+        /// <returns>A <see cref="Task" /> that represents the long wait.</returns>
+
         public virtual async Task StopAsync(CancellationToken cancellationToken)
         {
             // Stop called without start
@@ -78,6 +91,10 @@ namespace Microsoft.Extensions.Hosting
 
         }
 
+        /// <summary>
+        /// Tells the service task to stop but does not wait for it to stop.
+        /// </summary>
+60
         public virtual void Dispose()
         {
             _stoppingCts?.Cancel();
