@@ -23,7 +23,9 @@ namespace System.Reflection.Emit
 
             m_methodBuilder.GetMethodSignature().InternalGetSignature(out _);
 
+#pragma warning disable IDE0059
             int dummy = m_methodBuilder.MetadataToken;
+#pragma warning restore IDE0059
         }
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,

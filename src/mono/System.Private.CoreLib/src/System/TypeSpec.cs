@@ -347,7 +347,7 @@ namespace System
                 }
             }
 
-            Type? type = null;
+            Type? type;
             if (typeResolver != null)
                 type = typeResolver(asm!, name!.DisplayName, ignoreCase);
             else

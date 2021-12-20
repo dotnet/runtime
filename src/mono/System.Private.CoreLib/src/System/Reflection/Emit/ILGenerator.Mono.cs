@@ -754,7 +754,6 @@ namespace System.Reflection.Emit
             int token = token_gen.GetToken(meth, true);
             make_room(6);
             ll_emit(opcode);
-            Type? declaringType = meth.DeclaringType;
             emit_int(token);
             if (meth.ReturnType != typeof(void))
                 cur_stack++;

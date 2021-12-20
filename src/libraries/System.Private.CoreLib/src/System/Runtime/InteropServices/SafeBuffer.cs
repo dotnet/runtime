@@ -153,8 +153,6 @@ namespace System.Runtime.InteropServices
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
-            pointer = null;
-
             bool junk = false;
             DangerousAddRef(ref junk);
             pointer = (byte*)handle;

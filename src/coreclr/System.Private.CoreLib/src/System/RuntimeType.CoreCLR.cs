@@ -1288,8 +1288,6 @@ namespace System
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
-                    RuntimeModule declaringModuleHandle = RuntimeTypeHandle.GetModule(declaringType);
-
                     int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
                     Debug.Assert((declaringType.IsInterface && usedSlots == null && csPropertyInfos == null) ||
