@@ -19,9 +19,6 @@ namespace System.Tests
             // Get previously set data
             object actual = AppContext.GetData(dataKey);
 
-            // Validate data equality
-            Assert.Equal(value, actual);
-
             // Validate instance equality
             Assert.Same(value, actual);
         }
