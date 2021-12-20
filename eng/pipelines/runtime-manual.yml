@@ -500,6 +500,12 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         scenarios:
         - wasmtestonnodejs
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Build the whole product using Mono and run runtime tests
