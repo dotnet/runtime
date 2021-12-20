@@ -2203,8 +2203,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     bool hasTestAgainstZero =
         (relop->gtOper == GT_EQ || relop->gtOper == GT_NE) && (op2VN == vnStore->VNZeroForType(op2->TypeGet()));
 
-    bool isUnsignedRelop = false;
-
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
     // Cases where op1 holds the upper bound arithmetic and op2 is 0.
     // Loop condition like: "i < bnd +/-k == 0"
