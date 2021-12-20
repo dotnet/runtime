@@ -2714,6 +2714,13 @@ public:
             CORINFO_CLASS_HANDLE       *vcTypeRet       /* OUT */
             ) = 0;
 
+    virtual CorInfoTypeWithMod getArgType (
+            CORINFO_SIG_INFO*           sig,            /* IN */
+            CORINFO_ARG_LIST_HANDLE     args,           /* IN */
+            CORINFO_CLASS_HANDLE       *vcTypeRet,      /* OUT */
+            int *flags = NULL
+            ) = 0;
+
     // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
     virtual CORINFO_CLASS_HANDLE getArgClass (
             CORINFO_SIG_INFO*           sig,            /* IN */
@@ -2848,6 +2855,7 @@ public:
         /* OUT */   SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr
         ) = 0;
 
+    virtual uint32_t getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls) = 0;
 };
 
 /*****************************************************************************
