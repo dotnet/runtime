@@ -1774,8 +1774,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
         structPromotionInfo.fields[ordinal] = GetFieldInfo(fieldHnd, ordinal);
         const lvaStructFieldInfo& fieldInfo = structPromotionInfo.fields[ordinal];
 
-        INDEBUG(compiler->RecordStructFieldInfo(fieldHnd));
-
         noway_assert(fieldInfo.fldOffset < structSize);
 
         if (fieldInfo.fldSize == 0)
@@ -2204,9 +2202,6 @@ bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& 
     // the struct field.
     CORINFO_FIELD_HANDLE innerFieldHndl   = compHandle->getFieldInClass(fieldInfo.fldTypeHnd, 0);
     unsigned             innerFieldOffset = compHandle->getFieldOffset(innerFieldHndl);
-
-    INDEBUG(compiler->RecordStructFieldInfo(innerFieldHndl));
-
     if (innerFieldOffset != 0)
     {
         return false;
@@ -2844,9 +2839,6 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
         CORINFO_CLASS_HANDLE fieldClassHandle = NO_CLASS_HANDLE;
         CorInfoType          fieldCorType     = info.compCompHnd->getFieldType(fieldHandle, &fieldClassHandle);
         var_types            fieldVarType     = JITtype2varType(fieldCorType);
-
-        INDEBUG(RecordStructFieldInfo(fieldHandle));
-
         if (fieldClassHandle != NO_CLASS_HANDLE)
         {
             if (varTypeIsStruct(fieldVarType))

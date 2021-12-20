@@ -1304,8 +1304,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     m_comp->info.compCompHnd->getFieldInClass(classHnd, srcFieldVarDsc->lvFldOrdinal);
                 FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd);
 
-                INDEBUG(m_comp->RecordStructFieldInfo(fieldHnd));
-
                 unsigned  srcFieldOffset = m_comp->lvaGetDesc(srcFieldLclNum)->lvFldOffset;
                 var_types srcType        = srcFieldVarDsc->TypeGet();
 
@@ -1411,8 +1409,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                                                               m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOrdinal);
                 FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd);
                 var_types     destType    = m_comp->lvaGetDesc(dstFieldLclNum)->lvType;
-
-                INDEBUG(m_comp->RecordStructFieldInfo(fieldHnd));
 
                 bool done = false;
                 if (m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset == 0)

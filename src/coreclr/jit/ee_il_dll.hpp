@@ -42,7 +42,6 @@ void Compiler::eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                               CORINFO_FIELD_INFO*     pResult)
 {
     info.compCompHnd->getFieldInfo(pResolvedToken, info.compMethodHnd, accessFlags, pResult);
-    INDEBUG(RecordFieldInfo(pResolvedToken->hField, pResult));
 }
 
 /*****************************************************************************
@@ -65,11 +64,7 @@ bool Compiler::eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 FORCEINLINE
 bool Compiler::eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
-#ifdef DEBUG
-    return GetFieldInfo(fldHnd)->IsStatic();
-#else
     return info.compCompHnd->isFieldStatic(fldHnd);
-#endif
 }
 
 FORCEINLINE

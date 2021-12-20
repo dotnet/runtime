@@ -390,7 +390,7 @@ var_types Compiler::getJitGCType(BYTE gcType)
 //    true if the given struct type contains only one pointer-sized integer value type,
 //    false otherwise.
 //
-bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd)
+bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const
 {
     assert(info.compCompHnd->isValueClass(clsHnd));
     if (info.compCompHnd->getClassSize(clsHnd) != TARGET_POINTER_SIZE)
@@ -408,8 +408,6 @@ bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd)
         CORINFO_CLASS_HANDLE* pClsHnd   = &clsHnd;
         CORINFO_FIELD_HANDLE  fldHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
         CorInfoType           fieldType = info.compCompHnd->getFieldType(fldHnd, pClsHnd);
-
-        INDEBUG(RecordStructFieldInfo(fldHnd));
 
         var_types vt = JITtype2varType(fieldType);
 
@@ -1917,11 +1915,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeTestData      = nullptr;
     m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
 #endif
-    m_switchDescMap  = nullptr;
-    m_blockToEHPreds = nullptr;
-#ifdef DEBUG
-    m_fieldInfoMap = nullptr;
-#endif // DEBUG
+    m_switchDescMap      = nullptr;
+    m_blockToEHPreds     = nullptr;
     m_fieldSeqStore      = nullptr;
     m_zeroOffsetFieldMap = nullptr;
     m_arrayInfoMap       = nullptr;

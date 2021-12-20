@@ -2642,7 +2642,7 @@ public:
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef TARGET_X86
-    bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd);
+    bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
 #endif // TARGET_X86
 
     //-------------------------------------------------------------------------
@@ -11016,64 +11016,20 @@ public:
     void JitTestCheckVN();  // Value numbering tests.
 #endif                      // DEBUG
 
-#ifdef DEBUG
-    FieldInfoMap* m_fieldInfoMap;
-
-    FieldInfoMap* GetFieldInfoMap()
-    {
-        Compiler* rootCompiler = impInlineRoot();
-        if (rootCompiler->m_fieldInfoMap == nullptr)
-        {
-            CompAllocator allocator      = rootCompiler->getAllocator(CMK_DebugOnly);
-            rootCompiler->m_fieldInfoMap = new (allocator) FieldInfoMap(allocator);
-        }
-
-        return rootCompiler->m_fieldInfoMap;
-    }
-
-    void RecordFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, CORINFO_FIELD_INFO* eeFieldInfo)
-    {
-        FieldInfoMap* map = GetFieldInfoMap();
-
-        if (!map->Lookup(fieldHnd))
-        {
-            map->Set(fieldHnd, new (map->GetAllocator()) FieldInfo(eeFieldInfo));
-        }
-    }
-
-    void RecordStructFieldInfo(CORINFO_FIELD_HANDLE fieldHnd)
-    {
-        FieldInfoMap* map = GetFieldInfoMap();
-
-        if (!map->Lookup(fieldHnd))
-        {
-            map->Set(fieldHnd, new (map->GetAllocator()) FieldInfo());
-        }
-    }
-
-    const FieldInfo* GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd)
-    {
-        const FieldInfo* fieldInfo      = nullptr;
-        bool             fieldInfoFound = GetFieldInfoMap()->Lookup(fieldHnd, &fieldInfo);
-        assert(fieldInfoFound);
-
-        return fieldInfo;
-    }
-#endif // DEBUG
-
     // The "FieldSeqStore", for canonicalizing field sequences.  See the definition of FieldSeqStore for
     // operations.
     FieldSeqStore* m_fieldSeqStore;
 
     FieldSeqStore* GetFieldSeqStore()
     {
-        Compiler* rootCompiler = impInlineRoot();
-        if (rootCompiler->m_fieldSeqStore == nullptr)
+        Compiler* compRoot = impInlineRoot();
+        if (compRoot->m_fieldSeqStore == nullptr)
         {
-            CompAllocator allocator       = getAllocator(CMK_FieldSeqStore);
-            rootCompiler->m_fieldSeqStore = new (allocator) FieldSeqStore(allocator);
+            // Create a CompAllocator that labels sub-structure with CMK_FieldSeqStore, and use that for allocation.
+            CompAllocator ialloc(getAllocator(CMK_FieldSeqStore));
+            compRoot->m_fieldSeqStore = new (ialloc) FieldSeqStore(ialloc);
         }
-        return rootCompiler->m_fieldSeqStore;
+        return compRoot->m_fieldSeqStore;
     }
 
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, FieldSeqNode*> NodeToFieldSeqMap;
@@ -11187,11 +11143,7 @@ public:
         {
             m_refAnyClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF);
         }
-
-        CORINFO_FIELD_HANDLE dataFieldHnd = info.compCompHnd->getFieldInClass(m_refAnyClass, 0);
-        INDEBUG(RecordStructFieldInfo(dataFieldHnd));
-
-        return dataFieldHnd;
+        return info.compCompHnd->getFieldInClass(m_refAnyClass, 0);
     }
     CORINFO_FIELD_HANDLE GetRefanyTypeField()
     {
@@ -11199,11 +11151,7 @@ public:
         {
             m_refAnyClass = info.compCompHnd->getBuiltinClass(CLASSID_TYPED_BYREF);
         }
-
-        CORINFO_FIELD_HANDLE typeFieldHnd = info.compCompHnd->getFieldInClass(m_refAnyClass, 1);
-        INDEBUG(RecordStructFieldInfo(typeFieldHnd));
-
-        return typeFieldHnd;
+        return info.compCompHnd->getFieldInClass(m_refAnyClass, 1);
     }
 
 #if VARSET_COUNTOPS
