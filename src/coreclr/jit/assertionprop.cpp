@@ -2583,6 +2583,13 @@ void Compiler::optAssertionGen(GenTree* tree)
             assertionInfo = optCreateAssertion(tree->AsArrLen()->ArrRef(), nullptr, OAK_NOT_EQUAL);
             break;
 
+        case GT_INTRINSIC:
+            if (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
+            {
+                assertionInfo = optCreateAssertion(tree->AsIntrinsic()->gtGetOp1(), nullptr, OAK_NOT_EQUAL);
+            }
+            break;
+
         case GT_BOUNDS_CHECK:
             if (!optLocalAssertionProp)
             {
