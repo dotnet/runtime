@@ -327,7 +327,17 @@ namespace System.Net.Http.Headers
                     // during enumeration so that we can parse the raw value in order to a) return
                     // the correct set of parsed values, and b) update the instance for subsequent enumerations
                     // to reflect that parsing.
-                    entries[i].Value = info = new HeaderStoreItemInfo() { RawValue = value };
+                    info = new HeaderStoreItemInfo() { RawValue = value };
+
+                    if (_headerStore.EntriesAreLiveView)
+                    {
+                        entries[i].Value = info;
+                    }
+                    else
+                    {
+                        Debug.Assert(_headerStore.GetValueRefOrAddDefault(descriptor) is not null);
+                        _headerStore.GetValueRefOrAddDefault(descriptor) = info;
+                    }
                 }
 
                 // Make sure we parse all raw values before returning the result. Note that this has to be
@@ -338,7 +348,7 @@ namespace System.Net.Http.Headers
                     // We saw an invalid header value (contains newline chars) and deleted it.
 
                     // If the HeaderEntry[] we are enumerating is the live header store, the entries have shifted.
-                    if (_headerStore.RemoveShiftsEntries)
+                    if (_headerStore.EntriesAreLiveView)
                     {
                         i--;
                     }
@@ -1274,7 +1284,7 @@ namespace System.Net.Http.Headers
 #pragma warning restore IDE0052 // Remove unread private members
 
             private const int InitialCapacity = 4;
-            private const int ArrayThreshold = 64; // Above this threshold, header ordering will not be preserved
+            internal const int ArrayThreshold = 64; // Above this threshold, header ordering will not be preserved
 
             private object? _store;
 
@@ -1325,12 +1335,12 @@ namespace System.Net.Http.Headers
                     }
                     else
                     {
-                        return Unsafe.As<Dictionary<HeaderDescriptor, object>>(store).Count != 0;
+                        return Unsafe.As<Dictionary<HeaderDescriptor, object>>(store).Count == 0;
                     }
                 }
             }
 
-            public bool RemoveShiftsEntries => _store is HeaderEntry[];
+            public bool EntriesAreLiveView => _store is HeaderEntry[];
 
             public int Count
             {
