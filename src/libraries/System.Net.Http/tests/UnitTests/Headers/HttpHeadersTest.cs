@@ -2284,13 +2284,13 @@ namespace System.Net.Http.Tests
         [InlineData(3)]
         [InlineData(4)]
         [InlineData(5)]
-        [InlineData(HttpHeaders.HeaderStore.ArrayThreshold / 4)]
-        [InlineData(HttpHeaders.HeaderStore.ArrayThreshold / 2)]
-        [InlineData(HttpHeaders.HeaderStore.ArrayThreshold - 1)]
-        [InlineData(HttpHeaders.HeaderStore.ArrayThreshold)]
-        [InlineData(HttpHeaders.HeaderStore.ArrayThreshold + 1)]
-        [InlineData(HttpHeaders.HeaderStore.ArrayThreshold * 2)]
-        [InlineData(HttpHeaders.HeaderStore.ArrayThreshold * 4)]
+        [InlineData(HttpHeaders.ArrayThreshold / 4)]
+        [InlineData(HttpHeaders.ArrayThreshold / 2)]
+        [InlineData(HttpHeaders.ArrayThreshold - 1)]
+        [InlineData(HttpHeaders.ArrayThreshold)]
+        [InlineData(HttpHeaders.ArrayThreshold + 1)]
+        [InlineData(HttpHeaders.ArrayThreshold * 2)]
+        [InlineData(HttpHeaders.ArrayThreshold * 4)]
         public void Add_LargeNumberOfHeaders_OperationsStillSupported(int numberOfHeaders)
         {
             string[] keys = Enumerable.Range(1, numberOfHeaders).Select(i => i.ToString()).ToArray();
@@ -2312,7 +2312,7 @@ namespace System.Net.Http.Tests
             string[] nonValidatedKeysAfterValidation = headers.NonValidated.Select(pair => pair.Key).ToArray();
             Assert.Equal(numberOfHeaders, nonValidatedKeysAfterValidation.Length);
 
-            if (numberOfHeaders > HttpHeaders.HeaderStore.ArrayThreshold)
+            if (numberOfHeaders > HttpHeaders.ArrayThreshold)
             {
                 // Ordering is lost when adding more than ArrayThreshold headers
                 Array.Sort(nonValidatedKeys, (a, b) => int.Parse(a).CompareTo(int.Parse(b)));
@@ -2361,7 +2361,7 @@ namespace System.Net.Http.Tests
 
         public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
         {
-            for (int i = 0; i <= HttpHeaders.HeaderStore.ArrayThreshold; i++)
+            for (int i = 0; i <= HttpHeaders.ArrayThreshold; i++)
             {
                 yield return new object[] { i, false, false };
                 yield return new object[] { i, false, true };
