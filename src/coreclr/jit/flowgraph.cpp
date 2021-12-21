@@ -920,7 +920,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
     // intrinsics, flag the helper call. Later during inlining, we can
     // remove the helper call if the associated field lookup is unused.
-    if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
+    if ((info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
         NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
         if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
@@ -1084,7 +1084,9 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     GenTree*              qmarkNode       = nullptr;
     if (oper == GT_FTN_ADDR)
     {
-        targetMethodHnd = targetMethod->AsFptrVal()->gtFptrMethod;
+        GenTreeFptrVal* fptrValTree       = targetMethod->AsFptrVal();
+        fptrValTree->gtFptrDelegateTarget = true;
+        targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
     else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
@@ -1392,14 +1394,13 @@ void Compiler::fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB)
     }
 }
 
-/*****************************************************************************
- *
- *  Mark which loops are guaranteed to execute a call.
- */
-
+//------------------------------------------------------------------------
+// fgLoopCallMark: Mark which loops are guaranteed to execute a call by setting the
+// block BBF_LOOP_CALL0 and BBF_LOOP_CALL1 flags, as appropriate.
+//
 void Compiler::fgLoopCallMark()
 {
-    /* If we've already marked all the block, bail */
+    // If we've already marked all the blocks, bail.
 
     if (fgLoopCallMarked)
     {
@@ -1408,7 +1409,12 @@ void Compiler::fgLoopCallMark()
 
     fgLoopCallMarked = true;
 
-    /* Walk the blocks, looking for backward edges */
+#ifdef DEBUG
+    // This code depends on properly ordered bbNum, so check that.
+    fgDebugCheckBBNumIncreasing();
+#endif // DEBUG
+
+    // Walk the blocks, looking for backward edges.
 
     for (BasicBlock* const block : Blocks())
     {
@@ -2938,7 +2944,7 @@ void Compiler::fgFindOperOrder()
 // and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
-//    Lowers GT_ARR_LENGTH, GT_ARR_BOUNDS_CHECK, and GT_SIMD_CHK.
+//    Lowers GT_ARR_LENGTH, GT_BOUNDS_CHECK.
 //
 //    For target ABIs with fixed out args area, computes upper bound on
 //    the size of this area from the calls in the IR.
@@ -3001,13 +3007,7 @@ void Compiler::fgSimpleLowering()
                     break;
                 }
 
-                case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-                case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-                case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+                case GT_BOUNDS_CHECK:
                 {
                     // Add in a call to an error routine.
                     fgSetRngChkTarget(tree, false);
@@ -3933,11 +3933,7 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         GenTree*       sizeNode  = dynBlk->gtDynamicSize;
         GenTree*       dstAddr   = dynBlk->Addr();
         GenTree*       src       = dynBlk->Data();
-        bool           isReverse = ((dynBlk->gtFlags & GTF_REVERSE_OPS) != 0);
-        if (dynBlk->gtEvalSizeFirst)
-        {
-            fgSetTreeSeqHelper(sizeNode, isLIR);
-        }
+        bool           isReverse = dynBlk->IsReverseOp();
 
         // We either have a DYN_BLK or a STORE_DYN_BLK. If the latter, we have a
         // src (the Data to be stored), and isReverse tells us whether to evaluate
@@ -3951,10 +3947,8 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         {
             fgSetTreeSeqHelper(src, isLIR);
         }
-        if (!dynBlk->gtEvalSizeFirst)
-        {
-            fgSetTreeSeqHelper(sizeNode, isLIR);
-        }
+        fgSetTreeSeqHelper(sizeNode, isLIR);
+
         fgSetTreeSeqFinish(dynBlk, isLIR);
         return;
     }
@@ -4483,7 +4477,7 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
             }
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
+        case GT_BOUNDS_CHECK:
             return Compiler::WALK_ABORT;
 
         default:

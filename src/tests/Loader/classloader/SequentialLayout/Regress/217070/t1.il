@@ -4,7 +4,7 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { } 
-.assembly typeload { }
+.assembly 't1' { }
 
 .class public main extends [mscorlib]System.Object 
 { 

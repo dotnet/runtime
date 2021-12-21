@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 7:0:0:0
 }
-.assembly CreateSpan_ro
+.assembly 'CreateSpan_il'
 {
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -25,7 +25,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module CreateSpan_ro.dll
 // MVID: {E6E30CA2-CC29-4014-B26A-79C94A13BF58}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000

@@ -35,7 +35,8 @@ const terserConfig = {
     },
     mangle: {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
-        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message)/,
+        // and unit test at src\libraries\System.Private.Runtime.InteropServices.JavaScript\tests\timers.js
+        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message|mono_wasm_set_timeout_exec)/,
     },
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
@@ -64,6 +65,13 @@ const iffeConfig = {
             plugins,
         }
     ],
+    onwarn: (warning, handler) => {
+        if (warning.code === "EVAL" && warning.loc.file.indexOf("method-calls.ts") != -1) {
+            return;
+        }
+
+        handler(warning);
+    },
     plugins: [consts({ productVersion, configuration }), typescript()]
 };
 const typesConfig = {

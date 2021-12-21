@@ -2443,7 +2443,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 	if (mono_thread_internal_is_current (thread) || tls->terminated)
 		return;
 
-	PRINT_DEBUG_MSG (1, "[%p] Interrupting %p...\n", (gpointer) (gsize) mono_native_thread_id_get (), (gpointer)(gsize)tid);
+	PRINT_DEBUG_MSG (1, "[%p] Interrupting %p...\n", (gpointer)(gsize) mono_native_thread_id_get (), (gpointer)(gsize) tid);
 
 	/* This is _not_ equivalent to mono_thread_internal_abort () */
 	InterruptData interrupt_data = { 0 };
@@ -2451,7 +2451,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 	mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gsize)thread->tid, FALSE, debugger_interrupt_critical, &interrupt_data);
 	if (!interrupt_data.valid_info) {
-		PRINT_DEBUG_MSG (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer) (gsize) mono_native_thread_id_get (), (gpointer)tid);
+		PRINT_DEBUG_MSG (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer)(gsize) mono_native_thread_id_get (), (gpointer)(gsize) tid);
 		/*
 		 * Attached thread which died without detaching.
 		 */
@@ -10034,7 +10034,7 @@ wait_for_attach (void)
 	MONO_ENTER_GC_SAFE;
 	conn_fd = socket_transport_accept (listen_fd);
 	MONO_EXIT_GC_SAFE;
-	
+
 	PRINT_DEBUG_MSG (1, "Accepted connection on %d\n", conn_fd);
 	if (conn_fd == -1) {
 		PRINT_DEBUG_MSG (1, "[dbg] Bad client connection\n");

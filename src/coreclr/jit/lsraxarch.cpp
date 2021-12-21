@@ -524,14 +524,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildLclHeap(tree);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-
+        case GT_BOUNDS_CHECK:
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
             srcCount = BuildOperandUses(tree->AsBoundsChk()->GetIndex());
@@ -2305,6 +2298,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 // Intrinsics with CopyUpperBits semantics must have op1 as target
                 assert(containedOpNum != 1 || !copiesUpperBits);
 
+                // We need to keep this in sync with hwintrinsiccodegenxarch.cpp
+                // Ideally we'd actually swap the operands here and simplify codegen
+                // but its a bit more complicated to do so for many operands as well
+                // as being complicated to tell codegen how to pick the right instruction
+
                 if (containedOpNum == 1)
                 {
                     // https://github.com/dotnet/runtime/issues/62215
@@ -2316,7 +2314,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     if (resultOpNum == 2)
                     {
                         // op2 = ([op1] * op2) + op3
-                        std::swap(emitOp2, emitOp3);
+                        std::swap(emitOp1, emitOp2);
                     }
                 }
                 else if (containedOpNum == 3)

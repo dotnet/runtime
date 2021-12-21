@@ -4530,11 +4530,9 @@ void CodeGen::genEnregisterIncomingStackArgs()
     }
 #endif
 
-    // OSR handles this specially
-    if (compiler->opts.IsOSR())
-    {
-        return;
-    }
+    // OSR handles this specially -- see genEnregisterOSRArgsAndLocals
+    //
+    assert(!compiler->opts.IsOSR());
 
     assert(compiler->compGeneratingProlog);
 
@@ -5194,22 +5192,22 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     regMaskTP regsToRestoreMask = rsRestoreRegs;
 
-    int totalFrameSize = genTotalFrameSize();
+    const int totalFrameSize = genTotalFrameSize();
 
-    int calleeSaveSPOffset = 0; // This will be the starting place for restoring the callee-saved registers, in
-                                // decreasing order.
-    int frameType         = 0;  // An indicator of what type of frame we are popping.
-    int calleeSaveSPDelta = 0;  // Amount to add to SP after callee-saved registers have been restored.
+    // Fetch info about the frame we saved when creating the prolog.
+    //
+    const int frameType          = compiler->compFrameInfo.frameType;
+    const int calleeSaveSpOffset = compiler->compFrameInfo.calleeSaveSpOffset;
+    const int calleeSaveSpDelta  = compiler->compFrameInfo.calleeSaveSpDelta;
+    const int offsetSpToSavedFp  = compiler->compFrameInfo.offsetSpToSavedFp;
 
-    if (isFramePointerUsed())
+    switch (frameType)
     {
-        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize <= 504) &&
-            !genSaveFpLrWithAllCalleeSavedRegisters)
+        case 1:
         {
             JITDUMP("Frame type 1. #outsz=0; #framesz=%d; localloc? %s\n", totalFrameSize,
                     dspBool(compiler->compLocallocUsed));
 
-            frameType = 1;
             if (compiler->compLocallocUsed)
             {
                 // Restore sp from fp
@@ -5219,13 +5217,16 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             }
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
-
-            // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the
-            // bottom of stack.
-            calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
+            break;
         }
-        else if (totalFrameSize <= 512)
+
+        case 2:
         {
+            JITDUMP("Frame type 2 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
+
+            assert(!genSaveFpLrWithAllCalleeSavedRegisters);
+
             if (compiler->compLocallocUsed)
             {
                 // Restore sp from fp
@@ -5235,52 +5236,22 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
             }
 
-            if (genSaveFpLrWithAllCalleeSavedRegisters)
-            {
-                JITDUMP("Frame type 4 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
-                        dspBool(compiler->compLocallocUsed));
-
-                frameType = 4;
-
-                calleeSaveSPOffset = compiler->compLclFrameSize;
-
-                // Remove the frame after we're done restoring the callee-saved registers.
-                calleeSaveSPDelta = totalFrameSize;
-            }
-            else
-            {
-                JITDUMP("Frame type 2 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
-                        dspBool(compiler->compLocallocUsed));
-
-                frameType = 2;
-
-                regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
-
-                // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the
-                // bottom of stack.
-                calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
-            }
+            regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
+            break;
         }
-        else if (!genSaveFpLrWithAllCalleeSavedRegisters)
+
+        case 3:
         {
             JITDUMP("Frame type 3 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
                     unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
 
-            frameType = 3;
+            assert(!genSaveFpLrWithAllCalleeSavedRegisters);
 
-            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize -
-                                             2 * REGSIZE_BYTES; // 2 for FP, LR which we'll restore later.
-            assert(calleeSaveSPDeltaUnaligned >= 0);
-            assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
-            calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
-
-            JITDUMP("    calleeSaveSPDelta=%d\n", calleeSaveSPDelta);
+            JITDUMP("    calleeSaveSpDelta=%d\n", calleeSaveSpDelta);
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and (hopefully) post-index SP.
 
-            int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
+            int remainingFrameSz = totalFrameSize - calleeSaveSpDelta;
             assert(remainingFrameSz > 0);
 
             if (compiler->lvaOutgoingArgSpaceSize > 504)
@@ -5332,83 +5303,117 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             // Unlike frameType=1 or frameType=2 that restore SP at the end,
             // frameType=3 already adjusted SP above to delete local frame.
             // There is at most one alignment slot between SP and where we store the callee-saved registers.
-            calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
-            assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
+            assert((calleeSaveSpOffset == 0) || (calleeSaveSpOffset == REGSIZE_BYTES));
+
+            break;
         }
-        else
+
+        case 4:
+        {
+            JITDUMP("Frame type 4 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
+
+            assert(genSaveFpLrWithAllCalleeSavedRegisters);
+
+            if (compiler->compLocallocUsed)
+            {
+                // Restore sp from fp
+                //      sub sp, fp, #outsz // Uses #outsz if FP/LR stored at bottom
+                int SPtoFPdelta = genSPtoFPdelta();
+                GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, SPtoFPdelta);
+                compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
+            }
+            break;
+        }
+
+        case 5:
         {
             JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
                     unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
 
-            frameType = 5;
-
-            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize;
-            assert(calleeSaveSPDeltaUnaligned >= 0);
-            assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
-            calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
-
-            calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
-            assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
+            assert((calleeSaveSpOffset == 0) || (calleeSaveSpOffset == REGSIZE_BYTES));
 
             // Restore sp from fp:
             //      sub sp, fp, #sp-to-fp-delta
             // This is the same whether there is localloc or not. Note that we don't need to do anything to remove the
             // "remainingFrameSz" to reverse the SUB of that amount in the prolog.
-
-            int offsetSpToSavedFp = calleeSaveSPDelta -
-                                    (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
-                                    2 * REGSIZE_BYTES; // -2 for FP, LR
             GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, offsetSpToSavedFp);
             compiler->unwindSetFrameReg(REG_FPBASE, offsetSpToSavedFp);
+            break;
+        }
+
+        default:
+            unreached();
+    }
+
+    JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset, calleeSaveSpDelta);
+
+    switch (frameType)
+    {
+        case 1:
+        {
+            // Generate:
+            //      ldp fp,lr,[sp],#framesz
+
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, totalFrameSize,
+                                          INS_OPTS_POST_INDEX);
+            compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
+            break;
+        }
+
+        case 2:
+        {
+            // Generate:
+            //      ldr fp,lr,[sp,#outsz]
+            //      add sp,sp,#framesz
+
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                                          compiler->lvaOutgoingArgSpaceSize);
+            compiler->unwindSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize);
+
+            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
+            compiler->unwindAllocStack(totalFrameSize);
+            break;
+        }
+        case 3:
+        case 4:
+        case 5:
+        {
+            // Nothing to do after restoring callee-saved registers.
+            break;
+        }
+
+        default:
+        {
+            unreached();
         }
     }
-    else
-    {
-        // No frame pointer (no chaining).
-        NYI("Frame without frame pointer");
-        calleeSaveSPOffset = 0;
-    }
 
-    JITDUMP("    calleeSaveSPOffset=%d, calleeSaveSPDelta=%d\n", calleeSaveSPOffset, calleeSaveSPDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSPOffset, calleeSaveSPDelta);
+    // For OSR, we must also adjust the SP to remove the Tier0 frame.
+    //
+    if (compiler->opts.IsOSR())
+    {
+        PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
+        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
 
-    if (frameType == 1)
-    {
-        // Generate:
-        //      ldp fp,lr,[sp],#framesz
-
-        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, totalFrameSize,
-                                      INS_OPTS_POST_INDEX);
-        compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
-    }
-    else if (frameType == 2)
-    {
-        // Generate:
-        //      ldr fp,lr,[sp,#outsz]
-        //      add sp,sp,#framesz
-
-        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
-                                      compiler->lvaOutgoingArgSpaceSize);
-        compiler->unwindSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize);
-
-        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
-        compiler->unwindAllocStack(totalFrameSize);
-    }
-    else if (frameType == 3)
-    {
-        // Nothing to do after restoring callee-saved registers.
-    }
-    else if (frameType == 4)
-    {
-        // Nothing to do after restoring callee-saved registers.
-    }
-    else if (frameType == 5)
-    {
-        // Nothing to do after restoring callee-saved registers.
-    }
-    else
-    {
-        unreached();
+        // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
+        // use a scratch reg. So just do two subtracts if necessary.
+        //
+        int spAdjust = tier0FrameSize;
+        if (!GetEmitter()->emitIns_valid_imm_for_add(tier0FrameSize, EA_PTRSIZE))
+        {
+            const int lowPart  = spAdjust & 0xFFF;
+            const int highPart = spAdjust - lowPart;
+            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+            compiler->unwindAllocStack(highPart);
+            spAdjust = lowPart;
+        }
+        assert(GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE));
+        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
+        compiler->unwindAllocStack(spAdjust);
     }
 }
 
@@ -6181,136 +6186,196 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             inst_ST_RV(ins_Store(TYP_I_IMPL), tempThis, 0, genGetZeroReg(initReg, pInitRegZeroed), TYP_I_IMPL);
         }
     }
+}
 
-    // Initialize args and locals for OSR. Note this may include promoted fields.
-    if (compiler->opts.IsOSR())
+//-----------------------------------------------------------------------------
+// genEnregisterOSRArgsAndLocals: Initialize any enregistered args or locals
+//   that get values from the tier0 frame.
+//
+// Arguments:
+//    initReg -- scratch register to use if needed
+//    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
+//
+#if defined(TARGET_ARM64)
+void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
+#else
+void CodeGen::genEnregisterOSRArgsAndLocals()
+#endif
+{
+    assert(compiler->opts.IsOSR());
+    PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+
+    // basic sanity checks (make sure we're OSRing the right method)
+    assert(patchpointInfo->NumberOfLocals() == compiler->info.compLocalsCount);
+
+    const int      originalFrameSize = patchpointInfo->TotalFrameSize();
+    const unsigned patchpointInfoLen = patchpointInfo->NumberOfLocals();
+
+    for (unsigned varNum = 0; varNum < compiler->lvaCount; varNum++)
     {
-        PatchpointInfo* patchpointInfo = compiler->info.compPatchpointInfo;
-
-        // basic sanity checks (make sure we're OSRing the right method)
-        assert(patchpointInfo->NumberOfLocals() == compiler->info.compLocalsCount);
-
-        const int      originalFrameSize = patchpointInfo->FpToSpDelta();
-        const unsigned patchpointInfoLen = patchpointInfo->NumberOfLocals();
-
-        for (unsigned varNum = 0; varNum < compiler->lvaCount; varNum++)
+        if (!compiler->lvaIsOSRLocal(varNum))
         {
-            if (!compiler->lvaIsOSRLocal(varNum))
-            {
-                continue;
-            }
-
-            LclVarDsc* const varDsc = compiler->lvaGetDesc(varNum);
-
-            if (!varDsc->lvIsInReg())
-            {
-                JITDUMP("---OSR--- V%02u in memory\n", varNum);
-                continue;
-            }
-
-            // We currently don't expect to see multi-reg args in OSR methods, as struct
-            // promotion is disabled and so any struct arg just uses the spilled location
-            // on the original frame.
+            // This local was not part of the tier0 method's state.
+            // No work required.
             //
-            // If we ever enable promotion we'll need to generalize what follows to copy each
-            // field from the original frame to its OSR home.
-            //
-            assert(!varDsc->lvIsMultiRegArg);
-
-            if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
-            {
-                JITDUMP("---OSR--- V%02u (reg) not live at entry\n", varNum);
-                continue;
-            }
-
-            int      fieldOffset = 0;
-            unsigned lclNum      = varNum;
-
-            if (varDsc->lvIsStructField)
-            {
-                lclNum = varDsc->lvParentLcl;
-                assert(lclNum < patchpointInfoLen);
-
-                fieldOffset = varDsc->lvFldOffset;
-                JITDUMP("---OSR--- V%02u is promoted field of V%02u at offset %d\n", varNum, lclNum, fieldOffset);
-            }
-
-            // Note we are always reading from the original frame here
-            //
-            const var_types lclTyp  = varDsc->GetActualRegisterType();
-            const emitAttr  size    = emitTypeSize(lclTyp);
-            const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
-
-            // Original frames always use frame pointers, so
-            // stkOffs is the original frame-relative offset
-            // to the variable.
-            //
-            // We need to determine the stack or frame-pointer relative
-            // offset for this variable in the current frame.
-            //
-            // If current frame does not use a frame pointer, we need to
-            // add the SP-to-FP delta of this frame and the SP-to-FP delta
-            // of the original frame; that translates from this frame's
-            // stack pointer the old frame frame pointer.
-            //
-            // We then add the original frame's frame-pointer relative
-            // offset (note this offset is usually negative -- the stack
-            // grows down, so locals are below the frame pointer).
-            //
-            // /-----original frame-----/
-            // / return address         /
-            // / saved RBP   --+        /  <--- Original frame ptr   --+
-            // / ...           |        /                              |
-            // / ...       (stkOffs)    /                              |
-            // / ...           |        /                              |
-            // / variable    --+        /                              |
-            // / ...                    /                (original frame sp-fp delta)
-            // / ...                    /                              |
-            // /-----OSR frame ---------/                              |
-            // / pseudo return address  /                            --+
-            // / ...                    /                              |
-            // / ...                    /                    (this frame sp-fp delta)
-            // / ...                    /                              |
-            // /------------------------/  <--- Stack ptr            --+
-            //
-            // If the current frame is using a frame pointer, we need to
-            // add the SP-to-FP delta of/ the original frame and then add
-            // the original frame's frame-pointer relative offset.
-            //
-            // /-----original frame-----/
-            // / return address         /
-            // / saved RBP   --+        /  <--- Original frame ptr   --+
-            // / ...           |        /                              |
-            // / ...       (stkOffs)    /                              |
-            // / ...           |        /                              |
-            // / variable    --+        /                              |
-            // / ...                    /                (original frame sp-fp delta)
-            // / ...                    /                              |
-            // /-----OSR frame ---------/                              |
-            // / pseudo return address  /                            --+
-            // / saved RBP              /  <--- Frame ptr            --+
-            // / ...                    /
-            // / ...                    /
-            // / ...                    /
-            // /------------------------/
-
-            int offset = originalFrameSize + stkOffs;
-
-            if (isFramePointerUsed())
-            {
-                // also adjust for saved RPB on this frame
-                offset += TARGET_POINTER_SIZE;
-            }
-            else
-            {
-                offset += genSPtoFPdelta();
-            }
-
-            JITDUMP("---OSR--- V%02u (reg) old rbp offset %d old frame %d this frame sp-fp %d new offset %d (%02xH)\n",
-                    varNum, stkOffs, originalFrameSize, genSPtoFPdelta(), offset, offset);
-
-            GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
+            continue;
         }
+
+        LclVarDsc* const varDsc = compiler->lvaGetDesc(varNum);
+
+        if (!varDsc->lvIsInReg())
+        {
+            // For args/locals in memory, the OSR frame will continue to access
+            // that memory location. No work required.
+            //
+            JITDUMP("---OSR--- V%02u in memory\n", varNum);
+            continue;
+        }
+
+        // This local was part of the live tier0 state and is enregistered in the
+        // OSR method. Initialize the register from the right frame slot.
+        //
+        // We currently don't expect to see enregistered multi-reg args in OSR methods,
+        // as struct promotion is disabled. So any struct arg just uses the location
+        // on the tier0 frame.
+        //
+        // If we ever enable promotion we'll need to generalize what follows to copy each
+        // field from the tier0 frame to its OSR home.
+        //
+        assert(!varDsc->lvIsMultiRegArg);
+
+        if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+        {
+            // This arg or local is not live at entry to the OSR method.
+            // No work required.
+            //
+            JITDUMP("---OSR--- V%02u (reg) not live at entry\n", varNum);
+            continue;
+        }
+
+        int      fieldOffset = 0;
+        unsigned lclNum      = varNum;
+
+        if (varDsc->lvIsStructField)
+        {
+            lclNum = varDsc->lvParentLcl;
+            assert(lclNum < patchpointInfoLen);
+
+            fieldOffset = varDsc->lvFldOffset;
+            JITDUMP("---OSR--- V%02u is promoted field of V%02u at offset %d\n", varNum, lclNum, fieldOffset);
+        }
+
+        // Note we are always reading from the tier0 frame here
+        //
+        const var_types lclTyp  = varDsc->GetActualRegisterType();
+        const emitAttr  size    = emitTypeSize(lclTyp);
+        const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
+
+#if defined(TARGET_AMD64)
+
+        // Original frames always use frame pointers, so
+        // stkOffs is the tier0 frame's frame-relative offset
+        // to the variable.
+        //
+        // We need to determine the stack or frame-pointer relative
+        // offset for this variable in the current frame.
+        //
+        // If current frame does not use a frame pointer, we need to
+        // add the SP-to-FP delta of this frame and the SP-to-FP delta
+        // of the original frame; that translates from this frame's
+        // stack pointer the old frame frame pointer.
+        //
+        // We then add the original frame's frame-pointer relative
+        // offset (note this offset is usually negative -- the stack
+        // grows down, so locals are below the frame pointer).
+        //
+        // /-----original frame-----/
+        // / return address         /
+        // / saved RBP   --+        /  <--- Original frame ptr   --+
+        // / ...           |        /                              |
+        // / ...       (stkOffs)    /                              |
+        // / ...           |        /                              |
+        // / variable    --+        /                              |
+        // / ...                    /                (original frame sp-fp delta)
+        // / ...                    /                              |
+        // /-----OSR frame ---------/                              |
+        // / pseudo return address  /                            --+
+        // / ...                    /                              |
+        // / ...                    /                    (this frame sp-fp delta)
+        // / ...                    /                              |
+        // /------------------------/  <--- Stack ptr            --+
+        //
+        // If the current frame is using a frame pointer, we need to
+        // add the SP-to-FP delta of/ the original frame and then add
+        // the original frame's frame-pointer relative offset.
+        //
+        // /-----original frame-----/
+        // / return address         /
+        // / saved RBP   --+        /  <--- Original frame ptr   --+
+        // / ...           |        /                              |
+        // / ...       (stkOffs)    /                              |
+        // / ...           |        /                              |
+        // / variable    --+        /                              |
+        // / ...                    /                (original frame sp-fp delta)
+        // / ...                    /                              |
+        // /-----OSR frame ---------/                              |
+        // / pseudo return address  /                            --+
+        // / saved RBP              /  <--- Frame ptr            --+
+        // / ...                    /
+        // / ...                    /
+        // / ...                    /
+        // /------------------------/
+        //
+        int offset = originalFrameSize + stkOffs;
+
+        if (isFramePointerUsed())
+        {
+            // also adjust for saved RPB on this frame
+            offset += TARGET_POINTER_SIZE;
+        }
+        else
+        {
+            offset += genSPtoFPdelta();
+        }
+
+        JITDUMP("---OSR--- V%02u (reg) old rbp offset %d old frame %d this frame sp-fp %d new offset %d (%02xH)\n",
+                varNum, stkOffs, originalFrameSize, genSPtoFPdelta(), offset, offset);
+
+        GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
+
+#elif defined(TARGET_ARM64)
+
+        // Patchpoint offset is from top of Tier0 frame
+        //
+        // We need to determine the frame-pointer relative
+        // offset for this variable in the osr frame.
+        //
+        // First add the Tier0 frame size
+        //
+        const int tier0FrameSize = compiler->info.compPatchpointInfo->TotalFrameSize();
+
+        // then add the OSR frame size
+        //
+        const int osrFrameSize = genTotalFrameSize();
+
+        // then subtract OSR SP-FP delta
+        //
+        const int osrSpToFpDelta = genSPtoFPdelta();
+
+        //               | => tier0 top of frame relative
+        //               |         + => tier0 bottom of frame relative
+        //               |         |                + => osr bottom of frame (sp) relative
+        //               |         |                |              - => osr fp relative
+        //               |         |                |              |
+        const int offset = stkOffs + tier0FrameSize + osrFrameSize - osrSpToFpDelta;
+
+        JITDUMP("---OSR--- V%02u (reg) Tier0 virtual offset %d OSR frame size %d OSR sp-fp "
+                "delta %d total offset %d (0x%x)\n",
+                varNum, stkOffs, osrFrameSize, osrSpToFpDelta, offset, offset);
+
+        genInstrWithConstant(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset, initReg);
+        *pInitRegZeroed = false;
+#endif
     }
 }
 
@@ -6949,18 +7014,22 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     // For OSR there is a "phantom prolog" to account for the actions taken
-    // in the original frame that impact RBP and RSP on entry to the OSR method.
+    // in the tier0 frame that impact FP and SP on entry to the OSR method.
     if (compiler->opts.IsOSR())
     {
-        PatchpointInfo* patchpointInfo    = compiler->info.compPatchpointInfo;
-        const int       originalFrameSize = patchpointInfo->FpToSpDelta();
+        PatchpointInfo* patchpointInfo = compiler->info.compPatchpointInfo;
+        const int       tier0FrameSize = patchpointInfo->TotalFrameSize();
 
+#if defined(TARGET_AMD64)
+        // FP is tier0 method's FP.
         compiler->unwindPush(REG_FPBASE);
-        compiler->unwindAllocStack(originalFrameSize);
-    }
 #endif
+        // SP is tier0 method's SP.
+        compiler->unwindAllocStack(tier0FrameSize);
+    }
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 #ifdef DEBUG
 
@@ -7496,14 +7565,30 @@ void CodeGen::genFnProlog()
      * Take care of register arguments first
      */
 
-    // Update the arg initial register locations.
-    compiler->lvaUpdateArgsWithInitialReg();
-
     // Home incoming arguments and generate any required inits.
     // OSR handles this by moving the values from the original frame.
     //
-    if (!compiler->opts.IsOSR())
+    // Update the arg initial register locations.
+    //
+    if (compiler->opts.IsOSR())
     {
+        // For OSR  we defer updating "initial reg" for args until
+        // we've set the live-in regs with values from the Tier0 frame.
+        //
+        // Otherwise we'll do some of these fetches twice.
+        //
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_ARM64)
+        genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
+#else
+        genEnregisterOSRArgsAndLocals();
+#endif
+        compiler->lvaUpdateArgsWithInitialReg();
+    }
+    else
+    {
+        compiler->lvaUpdateArgsWithInitialReg();
+
         auto assignIncomingRegisterArgs = [this, initReg, &initRegZeroed](RegState* regState) {
             if (regState->rsCalleeRegArgMaskLiveIn)
             {
@@ -7539,10 +7624,10 @@ void CodeGen::genFnProlog()
 #else
         assignIncomingRegisterArgs(&intRegState);
 #endif
-    }
 
-    // Home the incoming arguments.
-    genEnregisterIncomingStackArgs();
+        // Home the incoming arguments.
+        genEnregisterIncomingStackArgs();
+    }
 
     /* Initialize any must-init registers variables now */
 
@@ -8185,21 +8270,21 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         }
 #endif // TARGET_AMD64
 
-        // Extra OSR adjust to get to where RBP was saved by the original frame, and
-        // restore RBP.
+        // Extra OSR adjust to get to where RBP was saved by the tier0 frame to restore RBP.
         //
         // Note the other callee saves made in that frame are dead, the OSR method
         // will save and restore what it needs.
         if (compiler->opts.IsOSR())
         {
-            PatchpointInfo* patchpointInfo    = compiler->info.compPatchpointInfo;
-            const int       originalFrameSize = patchpointInfo->FpToSpDelta();
+            PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+            const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
 
-            // Use add since we know the SP-to-FP delta of the original method.
+            // Simply add since we know frame size is the SP-to-FP delta of the tier0 method plus
+            // the extra slot pushed by the runtime when we simulate calling the OSR method.
             //
-            // If we ever allow the original method to have localloc this will
-            // need to change.
-            inst_RV_IV(INS_add, REG_SPBASE, originalFrameSize, EA_PTRSIZE);
+            // If we ever support OSR from tier0 methods with localloc, this will need to change.
+            //
+            inst_RV_IV(INS_add, REG_SPBASE, tier0FrameSize, EA_PTRSIZE);
             inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
         }
     }
@@ -8310,21 +8395,21 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         genPopCalleeSavedRegisters();
 
 #ifdef TARGET_AMD64
-        // Extra OSR adjust to get to where RBP was saved by the original frame.
+        // Extra OSR adjust to get to where RBP was saved by the tier0 frame.
         //
         // Note the other callee saves made in that frame are dead, the current method
         // will save and restore what it needs.
         if (compiler->opts.IsOSR())
         {
-            PatchpointInfo* patchpointInfo    = compiler->info.compPatchpointInfo;
-            const int       originalFrameSize = patchpointInfo->FpToSpDelta();
+            PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+            const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
 
             // Use add since we know the SP-to-FP delta of the original method.
             // We also need to skip over the slot where we pushed RBP.
             //
             // If we ever allow the original method to have localloc this will
             // need to change.
-            inst_RV_IV(INS_add, REG_SPBASE, originalFrameSize + TARGET_POINTER_SIZE, EA_PTRSIZE);
+            inst_RV_IV(INS_add, REG_SPBASE, tier0FrameSize + TARGET_POINTER_SIZE, EA_PTRSIZE);
         }
 
         assert(!needMovEspEbp); // "mov esp, ebp" is not allowed in AMD64 epilogs
@@ -9328,6 +9413,11 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 #elif defined(TARGET_ARM64)
 
     int SPtoCallerSPdelta = -genCallerSPtoInitialSPdelta();
+
+    if (compiler->opts.IsOSR())
+    {
+        SPtoCallerSPdelta += compiler->info.compPatchpointInfo->TotalFrameSize();
+    }
 
     // We will just use the initReg since it is an available register
     // and we are probably done using it anyway...

@@ -11,12 +11,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly funcptr_gc
+.assembly 'seq_funcptr_gc'
 {
 
 }
 .assembly extern xunit.core {}
-.module test.exe
 // MVID: {CF23CD68-3FF2-4D1F-B49B-866DA656D91D}
 
 

@@ -4,7 +4,7 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 // non-blittable by objref field, really large offset, and force GC collect
-.assembly test10{}
+.assembly 'test11'{}
 .assembly extern mscorlib{}
 
 .class public explicit Class1 extends [mscorlib]System.Object{

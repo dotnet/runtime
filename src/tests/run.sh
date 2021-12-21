@@ -18,6 +18,7 @@ function print_usage {
     echo '  --disableEventLogging            : Disable the events logged by both VM and Managed Code'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
+    echo '  --runnativeaottests              : Runs the ready to run tests compiled with Native AOT'
     echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
     echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
@@ -167,6 +168,9 @@ do
         --runcrossgen2tests)
             export RunCrossGen2=1
             ;;
+        --runnativeaottests)
+            export RunNativeAot=1
+            ;;
         --sequential)
             runSequential=1
             ;;
@@ -279,6 +283,10 @@ fi
 
 if [[ -n "$RunCrossGen2" ]]; then
     runtestPyArguments+=("--run_crossgen2_tests")
+fi
+
+if [[ -n "$RunNativeAot" ]]; then
+    runtestPyArguments+=("--run_nativeaot_tests")
 fi
 
 if [[ "$limitedCoreDumps" == "ON" ]]; then

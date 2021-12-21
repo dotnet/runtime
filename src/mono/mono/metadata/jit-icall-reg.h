@@ -135,10 +135,11 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_generic_virtual_call) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_generic_virtual_iface_call) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_iface_call_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
+MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt_fast) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
 MONO_JIT_ICALL (mini_llvmonly_throw_aot_failed_exception) \
 MONO_JIT_ICALL (mini_llvmonly_pop_lmf) \
-MONO_JIT_ICALL (mini_llvmonly_get_interp_entry) \
+MONO_JIT_ICALL (mini_llvmonly_interp_entry_gsharedvt) \
 MONO_JIT_ICALL (mono_amd64_resume_unwind)	\
 MONO_JIT_ICALL (mono_amd64_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_amd64_throw_corlib_exception)	\
@@ -180,6 +181,7 @@ MONO_JIT_ICALL (mono_delegate_end_invoke) \
 MONO_JIT_ICALL (mono_delegate_to_ftnptr) \
 MONO_JIT_ICALL (mono_domain_get) \
 MONO_JIT_ICALL (mono_dummy_jit_icall) \
+MONO_JIT_ICALL (mono_dummy_jit_icall_val) \
 MONO_JIT_ICALL (mono_exception_from_token) \
 MONO_JIT_ICALL (mono_fill_class_rgctx) \
 MONO_JIT_ICALL (mono_fill_method_rgctx) \

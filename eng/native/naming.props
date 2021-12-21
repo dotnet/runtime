@@ -1,21 +1,21 @@
 <Project>
   <PropertyGroup>
     <StaticLibPrefix>lib</StaticLibPrefix>
+    <ExeSuffix Condition="'$(HostOS)' == 'windows'">.exe</ExeSuffix>
   </PropertyGroup>
 
   <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
   <Choose>
     <When Condition="$(PackageRID.StartsWith('win'))">
       <PropertyGroup>
-        <ExeSuffix>.exe</ExeSuffix>
         <LibSuffix>.dll</LibSuffix>
         <StaticLibSuffix>.lib</StaticLibSuffix>
         <SymbolsSuffix>.pdb</SymbolsSuffix>
       </PropertyGroup>
     </When>
-    <When Condition="$(PackageRID.StartsWith('osx'))">
+    <When Condition="$(PackageRID.StartsWith('osx')) or $(PackageRID.StartsWith('maccatalyst')) or $(PackageRID.StartsWith('ios')) or $(PackageRID.StartsWith('tvos'))">
       <PropertyGroup>
-        <LibPrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibPrefix>
+        <LibPrefix>lib</LibPrefix>
         <LibSuffix>.dylib</LibSuffix>
         <StaticLibSuffix>.a</StaticLibSuffix>
         <SymbolsSuffix>.dwarf</SymbolsSuffix>
@@ -23,7 +23,7 @@
     </When>
     <When Condition="$(PackageRID.StartsWith('android'))">
       <PropertyGroup>
-        <LibPrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibPrefix>
+        <LibPrefix>lib</LibPrefix>
         <LibSuffix>.so</LibSuffix>
         <StaticLibSuffix>.a</StaticLibSuffix>
         <!--symbols included in .so, like Linux, but can be generated externally and if so, uses .debug ext-->
@@ -32,7 +32,7 @@
     </When>
     <Otherwise>
       <PropertyGroup>
-        <LibPrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibPrefix>
+        <LibPrefix>lib</LibPrefix>
         <LibSuffix>.so</LibSuffix>
         <StaticLibSuffix>.a</StaticLibSuffix>
         <SymbolsSuffix>.dbg</SymbolsSuffix>

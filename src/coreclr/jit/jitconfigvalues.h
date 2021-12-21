@@ -231,6 +231,8 @@ CONFIG_INTEGER(JitDumpFgConstrained, W("JitDumpFgConstrained"), 1) // 0 == don't
                                                                    // linear layout
 CONFIG_INTEGER(JitDumpFgBlockID, W("JitDumpFgBlockID"), 0) // 0 == display block with bbNum; 1 == display with both
                                                            // bbNum and bbID
+CONFIG_INTEGER(JitDumpFgBlockFlags, W("JitDumpFgBlockFlags"), 0) // 0 == don't display block flags; 1 == display flags
+CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't display loop flags; 1 == display flags
 
 CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
 CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)
@@ -519,6 +521,10 @@ CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
 CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
+
+#if defined(DEBUG)
+CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange")) // Enable osr for only some methods
+#endif                                                   // debug
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)

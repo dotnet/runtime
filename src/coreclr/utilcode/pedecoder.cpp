@@ -372,7 +372,13 @@ CHECK PEDecoder::CheckSection(COUNT_T previousAddressEnd, COUNT_T addressStart, 
         CHECK(alignedSize >= VAL32(pNT->OptionalHeader.SizeOfImage));
 
     // Check expected alignments
+#if TARGET_WINDOWS
+    // On Windows we expect section starts to be a multiple of SectionAlignment.
+    // That is not an explicit requirement in the documentation, but it looks like OS loader expects it.
+    // In contrast to this, in Unix R2R files we keep lower 16bits of sections RVA and
+    // this condition does not hold.
     CHECK(CheckAligned(addressStart, VAL32(pNT->OptionalHeader.SectionAlignment)));
+#endif
     CHECK(CheckAligned(offsetStart, VAL32(pNT->OptionalHeader.FileAlignment)));
     CHECK(CheckAligned(offsetSize, VAL32(pNT->OptionalHeader.FileAlignment)));
 
@@ -1659,86 +1665,6 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
 }
 #endif // TARGET_X86
 
-#ifndef DACCESS_COMPILE
-
-void PEDecoder::LayoutILOnly(void *base, bool enableExecution) const
-{
-    CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckZeroedMemory(base, VAL32(FindNTHeaders()->OptionalHeader.SizeOfImage)));
-        // Ideally we would require the layout address to honor the section alignment constraints.
-        // However, we do have 8K aligned IL only images which we load on 32 bit platforms. In this
-        // case, we can only guarantee OS page alignment (which after all, is good enough.)
-        PRECONDITION(CheckAligned((SIZE_T)base, GetOsPageSize()));
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    // We're going to copy everything first, and write protect what we need to later.
-
-    // First, copy headers
-    CopyMemory(base, (void *)m_base, VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders));
-
-    // Now, copy all sections to appropriate virtual address
-
-    IMAGE_SECTION_HEADER *sectionStart = IMAGE_FIRST_SECTION(FindNTHeaders());
-    IMAGE_SECTION_HEADER *sectionEnd = sectionStart + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
-
-    IMAGE_SECTION_HEADER *section = sectionStart;
-    while (section < sectionEnd)
-    {
-        // Raw data may be less than section size if tail is zero, but may be more since VirtualSize is
-        // not padded.
-        DWORD size = min(VAL32(section->SizeOfRawData), VAL32(section->Misc.VirtualSize));
-
-        CopyMemory((BYTE *) base + VAL32(section->VirtualAddress), (BYTE *) m_base + VAL32(section->PointerToRawData), size);
-
-        // Note that our memory is zeroed already, so no need to initialize any tail.
-
-        section++;
-    }
-
-    // Apply write protection to copied headers
-    DWORD oldProtection;
-    if (!ClrVirtualProtect((void *) base, VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders),
-                           PAGE_READONLY, &oldProtection))
-        ThrowLastError();
-
-    // Finally, apply proper protection to copied sections
-    for (section = sectionStart; section < sectionEnd; section++)
-    {
-        // Add appropriate page protection.
-        DWORD newProtection;
-        if (!enableExecution)
-        {
-            if (section->Characteristics & IMAGE_SCN_MEM_WRITE)
-                continue;
-
-            newProtection = PAGE_READONLY;
-        }
-        else
-        {
-            newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-                PAGE_EXECUTE_READ :
-                section->Characteristics & IMAGE_SCN_MEM_WRITE ?
-                    PAGE_READWRITE :
-                    PAGE_READONLY;
-        }
-
-        if (!ClrVirtualProtect((void*)((BYTE*)base + VAL32(section->VirtualAddress)),
-            VAL32(section->Misc.VirtualSize),
-            newProtection, &oldProtection))
-        {
-            ThrowLastError();
-        }
-    }
-
-    RETURN;
-}
-
-#endif // #ifndef DACCESS_COMPILE
 
 bool ReadResourceDirectoryHeader(const PEDecoder *pDecoder, DWORD rvaOfResourceSection, DWORD rva, IMAGE_RESOURCE_DIRECTORY_ENTRY** ppDirectoryEntries, IMAGE_RESOURCE_DIRECTORY **ppResourceDirectory)
 {

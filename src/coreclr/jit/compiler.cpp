@@ -4898,10 +4898,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
+        // Scale block weights and mark run rarely blocks.
+        //
+        DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
+
         // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels.
         //
-        DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
+        DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
         // Clone loops with optimization opportunities, and choose one based on dynamic condition evaluation.
         //
@@ -5245,26 +5249,42 @@ void Compiler::placeLoopAlignInstructions()
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
-    weight_t    minBlockSoFar = BB_MAX_WEIGHT;
-    BasicBlock* bbHavingAlign = nullptr;
+    weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
+    BasicBlock*            bbHavingAlign         = nullptr;
+    BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+
+    if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
+    {
+        // Adding align instruction in prolog is not supported
+        // hence just remove that loop from our list.
+        loopsToProcess--;
+    }
+
     for (BasicBlock* const block : Blocks())
     {
-        if ((block == fgFirstBB) && block->isLoopAlign())
+        if (currentAlignedLoopNum != BasicBlock::NOT_IN_LOOP)
         {
-            // Adding align instruction in prolog is not supported
-            // hence skip the align block if it is the first block.
-            loopsToProcess--;
-            continue;
+            // We've been processing blocks within an aligned loop. Are we out of that loop now?
+            if (currentAlignedLoopNum != block->bbNatLoopNum)
+            {
+                currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+            }
         }
 
-        // If there is a unconditional jump
-        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
+        // If there is a unconditional jump (which is not part of callf/always pair)
+        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
+            // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
             {
-                minBlockSoFar = block->bbWeight;
-                bbHavingAlign = block;
-                JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
+                if (currentAlignedLoopNum == BasicBlock::NOT_IN_LOOP)
+                {
+                    // Ok to insert align instruction in this block because it is not part of any aligned loop.
+                    minBlockSoFar = block->bbWeight;
+                    bbHavingAlign = block;
+                    JITDUMP(FMT_BB ", bbWeight=" FMT_WT " ends with unconditional 'jmp' \n", block->bbNum,
+                            block->bbWeight);
+                }
             }
         }
 
@@ -5285,8 +5305,9 @@ void Compiler::placeLoopAlignInstructions()
             }
 
             bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
-            minBlockSoFar = BB_MAX_WEIGHT;
-            bbHavingAlign = nullptr;
+            minBlockSoFar         = BB_MAX_WEIGHT;
+            bbHavingAlign         = nullptr;
+            currentAlignedLoopNum = block->bbNext->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {
@@ -5319,11 +5340,38 @@ void Compiler::generatePatchpointInfo()
     const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
     PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)info.compCompHnd->allocateArray(patchpointInfoSize);
 
-    // The +TARGET_POINTER_SIZE here is to account for the extra slot the runtime
-    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
-    patchpointInfo->Initialize(info.compLocalsCount, codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
+    // Patchpoint offsets always refer to "virtual frame offsets".
+    //
+    // For x64 this falls out because Tier0 frames are always FP frames, and so the FP-relative
+    // offset is what we want.
+    //
+    // For arm64, if the frame pointer is not at the top of the frame, we need to adjust the
+    // offset.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
-    JITDUMP("--OSR--- FP-SP delta is %d\n", patchpointInfo->FpToSpDelta());
+#if defined(TARGET_AMD64)
+    // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
+    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    // This is effectively a new slot at the bottom of the Tier0 frame.
+    //
+    const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
+    const int offsetAdjust   = 0;
+#elif defined(TARGET_ARM64)
+    // SP is not manipulated by calls so no frame size adjustment needed.
+    // Local Offsets may need adjusting, if FP is at bottom of frame.
+    //
+    const int totalFrameSize = codeGen->genTotalFrameSize();
+    const int offsetAdjust   = codeGen->genSPtoFPdelta() - totalFrameSize;
+#else
+    NYI("patchpoint info generation");
+    const int offsetAdjust   = 0;
+    const int totalFrameSize = 0;
+#endif
+
+    patchpointInfo->Initialize(info.compLocalsCount, totalFrameSize);
+
+    JITDUMP("--OSR--- Total Frame Size %d, local offset adjust is %d\n", patchpointInfo->TotalFrameSize(),
+            offsetAdjust);
 
     // We record offsets for all the "locals" here. Could restrict
     // this to just the IL locals with some extra logic, and save a bit of space,
@@ -5337,7 +5385,7 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset());
+        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset() + offsetAdjust);
 
         // Note if IL stream contained an address-of that potentially leads to exposure.
         // This bit of IL may be skipped by OSR partial importation.
@@ -5346,7 +5394,7 @@ void Compiler::generatePatchpointInfo()
             patchpointInfo->SetIsExposed(lclNum);
         }
 
-        JITDUMP("--OSR-- V%02u is at offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
+        JITDUMP("--OSR-- V%02u is at virtual offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
                 patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "");
     }
 
@@ -5355,31 +5403,31 @@ void Compiler::generatePatchpointInfo()
     if (lvaReportParamTypeArg())
     {
         const int offset = lvaCachedGenericContextArgOffset();
-        patchpointInfo->SetGenericContextArgOffset(offset);
-        JITDUMP("--OSR-- cached generic context offset is FP %d\n", patchpointInfo->GenericContextArgOffset());
+        patchpointInfo->SetGenericContextArgOffset(offset + offsetAdjust);
+        JITDUMP("--OSR-- cached generic context virtual offset is %d\n", patchpointInfo->GenericContextArgOffset());
     }
 
     if (lvaKeepAliveAndReportThis())
     {
         const int offset = lvaCachedGenericContextArgOffset();
-        patchpointInfo->SetKeptAliveThisOffset(offset);
-        JITDUMP("--OSR-- kept-alive this offset is FP %d\n", patchpointInfo->KeptAliveThisOffset());
+        patchpointInfo->SetKeptAliveThisOffset(offset + offsetAdjust);
+        JITDUMP("--OSR-- kept-alive this virtual offset is %d\n", patchpointInfo->KeptAliveThisOffset());
     }
 
     if (compGSReorderStackLayout)
     {
         assert(lvaGSSecurityCookie != BAD_VAR_NUM);
         LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
-        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
-        JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
+        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- security cookie V%02u virtual offset is %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
     }
 
     if (lvaMonAcquired != BAD_VAR_NUM)
     {
         LclVarDsc* const varDsc = lvaGetDesc(lvaMonAcquired);
-        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset());
-        JITDUMP("--OSR-- monitor acquired V%02u offset is FP %d\n", lvaMonAcquired,
+        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
     }
 
@@ -5427,20 +5475,16 @@ void Compiler::ResetOptAnnotations()
 //    The intent of this method is to update loop structure annotations, and those
 //    they depend on; these annotations may have become stale during optimization,
 //    and need to be up-to-date before running another iteration of optimizations.
-
+//
 void Compiler::RecomputeLoopInfo()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     // Recompute reachability sets, dominators, and loops.
-    optLoopCount   = 0;
+    optResetLoopInfo();
     fgDomsComputed = false;
-    for (BasicBlock* const block : Blocks())
-    {
-        block->bbFlags &= ~BBF_LOOP_FLAGS;
-        block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
-    }
     fgComputeReachability();
+    optSetBlockWeights();
     // Rebuild the loop tree annotations themselves
     optFindLoops();
 }
@@ -5566,6 +5610,10 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         info.compPatchpointInfo = info.compCompHnd->getOSRInfo(&info.compILEntry);
         assert(info.compPatchpointInfo != nullptr);
     }
+
+#if defined(TARGET_ARM64)
+    compFrameInfo = {0};
+#endif
 
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
@@ -6342,6 +6390,47 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compInitDebuggingInfo();
 
+    // If are an altjit and have patchpoint info, we might need to tweak the frame size
+    // so it's plausible for the altjit architecture.
+    //
+    if (!info.compMatchedVM && compileFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        assert(info.compLocalsCount == info.compPatchpointInfo->NumberOfLocals());
+        const int totalFrameSize = info.compPatchpointInfo->TotalFrameSize();
+
+        int frameSizeUpdate = 0;
+
+#if defined(TARGET_AMD64)
+        if ((totalFrameSize % 16) != 8)
+        {
+            frameSizeUpdate = 8;
+        }
+#elif defined(TARGET_ARM64)
+        if ((totalFrameSize % 16) != 0)
+        {
+            frameSizeUpdate = 8;
+        }
+#endif
+        if (frameSizeUpdate != 0)
+        {
+            JITDUMP("Mismatched altjit + OSR -- updating tier0 frame size from %d to %d\n", totalFrameSize,
+                    totalFrameSize + frameSizeUpdate);
+
+            // Allocate a local copy with altered frame size.
+            //
+            const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
+            PatchpointInfo* const newInfo =
+                (PatchpointInfo*)getAllocator(CMK_Unknown).allocate<char>(patchpointInfoSize);
+
+            newInfo->Initialize(info.compLocalsCount, totalFrameSize + frameSizeUpdate);
+            newInfo->Copy(info.compPatchpointInfo);
+
+            // Swap it in place.
+            //
+            info.compPatchpointInfo = newInfo;
+        }
+    }
+
 #ifdef DEBUG
     if (compIsForInlining())
     {
@@ -6473,6 +6562,24 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             const bool patchpointsOK = compCanHavePatchpoints(&reason);
             assert(patchpointsOK || (reason != nullptr));
+
+#ifdef DEBUG
+            // Optionally disable OSR by method hash.
+            //
+            if (patchpointsOK && compHasBackwardJump)
+            {
+                static ConfigMethodRange JitEnableOsrRange;
+                JitEnableOsrRange.EnsureInit(JitConfig.JitEnableOsrRange());
+                const unsigned hash = impInlineRoot()->info.compMethodHash();
+                if (!JitEnableOsrRange.Contains(hash))
+                {
+                    JITDUMP("Disabling OSR -- Method hash 0x%08x not within range ", hash);
+                    JITDUMPEXEC(JitEnableOsrRange.Dump());
+                    JITDUMP("\n");
+                    reason = "OSR disabled by JitEnableOsrRange";
+                }
+            }
+#endif
         }
 
         if (reason != nullptr)
@@ -8828,29 +8935,32 @@ void cLiveness(Compiler* comp)
 void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== dCVarSet %u\n", sequenceNumber++);
+    printf("===================================================================== *CVarSet %u\n", sequenceNumber++);
     dumpConvertedVarSet(comp, vars);
     printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
 }
 
-void cLoop(Compiler* comp, Compiler::LoopDsc* loop)
+void cLoop(Compiler* comp, unsigned loopNum)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== Loop %u\n", sequenceNumber++);
-    printf("HEAD   " FMT_BB "\n", loop->lpHead->bbNum);
-    printf("TOP    " FMT_BB "\n", loop->lpTop->bbNum);
-    printf("ENTRY  " FMT_BB "\n", loop->lpEntry->bbNum);
-    if (loop->lpExitCnt == 1)
-    {
-        printf("EXIT   " FMT_BB "\n", loop->lpExit->bbNum);
-    }
-    else
-    {
-        printf("EXITS  %u\n", loop->lpExitCnt);
-    }
-    printf("BOTTOM " FMT_BB "\n", loop->lpBottom->bbNum);
+    printf("===================================================================== *Loop %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loopNum, /* verbose */ true);
+    printf("\n");
+}
 
-    comp->fgDispBasicBlocks(loop->lpHead, loop->lpBottom, true);
+void cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loop, /* verbose */ true);
+    printf("\n");
+}
+
+void cLoops(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Loops %u\n", sequenceNumber++);
+    comp->optPrintLoopTable();
 }
 
 void dBlock(BasicBlock* block)
@@ -8948,9 +9058,19 @@ void dCVarSet(VARSET_VALARG_TP vars)
     cCVarSet(JitTls::GetCompiler(), vars);
 }
 
-void dLoop(Compiler::LoopDsc* loop)
+void dLoop(unsigned loopNum)
 {
-    cLoop(JitTls::GetCompiler(), loop);
+    cLoop(JitTls::GetCompiler(), loopNum);
+}
+
+void dLoopPtr(const Compiler::LoopDsc* loop)
+{
+    cLoopPtr(JitTls::GetCompiler(), loop);
+}
+
+void dLoops()
+{
+    cLoops(JitTls::GetCompiler());
 }
 
 void dRegMask(regMaskTP mask)
@@ -9381,6 +9501,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_BBC_PTR:
 
                         chars += printf("[ICON_BBC_PTR]");
+                        break;
+
+                    case GTF_ICON_STATIC_BOX_PTR:
+
+                        chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
                         break;
 
                     case GTF_ICON_FIELD_OFF:
