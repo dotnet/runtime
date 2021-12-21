@@ -723,12 +723,6 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 
 		guint32 rows = count->prev_gen_rows + count->inserted_rows;
 
-		MonoTableInfo *tbl = &delta->mutants [i];
-		tbl->row_size = base->tables[i].row_size;
-		tbl->size_bitfield = base->tables[i].size_bitfield;
-		tbl->rows_ = rows;
-
-		tbl->base = mono_mempool_alloc (delta->pool, tbl->row_size * rows);
 		const MonoTableInfo *prev_table;
 		if (!prev_delta || prev_delta->mutants [i].base == NULL)
 			prev_table = &base->tables [i];
@@ -736,6 +730,21 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 			prev_table = &prev_delta->mutants [i];
 
 		g_assert (prev_table != NULL);
+
+		MonoTableInfo *tbl = &delta->mutants [i];
+		if (prev_table->rows_ == 0) {
+			/* table was empty in the baseline and it was empty in the prior generation, but now we have some rows. Use the format of the mutant table. */
+			g_assert (prev_table->row_size == 0);
+			tbl->row_size = delta->delta_image->tables [i].row_size;
+			tbl->size_bitfield = delta->delta_image->tables [i].size_bitfield;
+		} else {
+			tbl->row_size = prev_table->row_size;
+			tbl->size_bitfield = prev_table->size_bitfield;
+		}
+		tbl->rows_ = rows;
+		g_assert (tbl->rows_ > 0 && tbl->row_size != 0);
+
+		tbl->base = mono_mempool_alloc (delta->pool, tbl->row_size * rows);
 		g_assert (table_info_get_rows (prev_table) == count->prev_gen_rows);
 
 		/* copy the old rows  and zero out the new ones */
@@ -1164,7 +1173,7 @@ funccode_to_str (int func_code)
  *
  */
 static void
-delta_info_mutate_row (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log_token)
+delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log_token)
 {
 	int token_table = mono_metadata_token_table (log_token);
 	int token_index = mono_metadata_token_index (log_token); /* 1-based */
@@ -1174,16 +1183,16 @@ delta_info_mutate_row (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo 
 	int delta_index = hot_reload_relative_delta_index (image_dmeta, cur_delta, log_token);
 
 	/* The complication here is that we want the mutant table to look like the table in
-	 * image_base with respect to column widths, but the delta tables are generally coming in
+	 * the baseline image with respect to column widths, but the delta tables are generally coming in
 	 * uncompressed (4-byte columns).  So we have to copy one column at a time and adjust the
 	 * widths as we go.
 	 */
 
-	guint32 dst_bitfield = image_base->tables [token_table].size_bitfield;
+	guint32 dst_bitfield = cur_delta->mutants [token_table].size_bitfield;
 	guint32 src_bitfield = image_dmeta->tables [token_table].size_bitfield;
 
 	const char *src_base = image_dmeta->tables [token_table].base + (delta_index - 1) * image_dmeta->tables [token_table].row_size;
-	char *dst_base = (char*)cur_delta->mutants [token_table].base + (token_index - 1) * image_base->tables [token_table].row_size;
+	char *dst_base = (char*)cur_delta->mutants [token_table].base + (token_index - 1) * cur_delta->mutants [token_table].row_size;
 
 	guint32 src_offset = 0, dst_offset = 0;
 	for (int col = 0; col < mono_metadata_table_count (dst_bitfield); ++col) {
@@ -1225,12 +1234,11 @@ delta_info_mutate_row (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo 
 			default:
 				g_assert_not_reached ();
 			}
-
 		}
 		src_offset += src_col_size;
 		dst_offset += dst_col_size;
 	}
-	g_assert (dst_offset == image_base->tables [token_table].row_size);
+	g_assert (dst_offset == cur_delta->mutants [token_table].row_size);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "mutate: table=0x%02x row=0x%04x delta row=0x%04x %s", token_table, token_index, delta_index, modified ? "Mod" : "Add");
 }
@@ -1250,7 +1258,7 @@ prepare_mutated_rows (const MonoTableInfo *table_enclog, MonoImage *image_base, 
 		if (func_code != ENC_FUNC_DEFAULT)
 			continue;
 
-		delta_info_mutate_row (image_base, image_dmeta, delta_info, log_token);
+		delta_info_mutate_row (image_dmeta, delta_info, log_token);
 	}
 }
 
