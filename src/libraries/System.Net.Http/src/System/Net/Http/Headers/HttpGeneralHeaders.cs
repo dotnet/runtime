@@ -99,25 +99,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncoding
-        {
-            get { return TransferEncodingCore; }
-        }
-
         internal static bool? GetTransferEncodingChunked(HttpHeaders parent, HttpGeneralHeaders? headers)
         {
-            // If we've already initialized the transfer encoding header value collection
-            // and it contains the special value, or if we haven't and the headers contain
-            // the parsed special value, return true.  We don't just access TransferEncodingCore,
-            // as doing so will unnecessarily initialize the collection even if it's not needed.
-            if (headers?._transferEncoding != null)
-            {
-                if (headers._transferEncoding.IsSpecialValueSet)
-                {
-                    return true;
-                }
-            }
-            else if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+            if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
             {
                 return true;
             }
@@ -142,12 +126,16 @@ namespace System.Net.Http.Headers
                 if (value == true)
                 {
                     _transferEncodingChunkedSet = true;
-                    TransferEncodingCore.SetSpecialValue();
+                    if (!_parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+                    {
+                        _parent.AddParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked);
+                    }
                 }
                 else
                 {
                     _transferEncodingChunkedSet = value != null;
-                    TransferEncodingCore.RemoveSpecialValue();
+                    // We intentionally ignore in the return value. It's OK if "chunked" wasn't in the store.
+                    _parent.RemoveParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked);
                 }
             }
         }
@@ -201,7 +189,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncodingCore
+        public HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncoding
         {
             get
             {
