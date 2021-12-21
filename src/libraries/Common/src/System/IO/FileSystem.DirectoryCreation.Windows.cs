@@ -108,13 +108,10 @@ namespace System.IO
                     else
                     {
                         Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = GetAttributeData(name, out currentError);
-                        bool fileExists = currentError == 0 &&
-                                          data.dwFileAttributes != -1 &&
-                                          (data.dwFileAttributes & Interop.Kernel32.FileAttributes
-                                              .FILE_ATTRIBUTE_DIRECTORY) == 0;
 
                         // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
-                        if (!fileExists && currentError != Interop.Errors.ERROR_ACCESS_DENIED)
+                        if (!FileExists(name) && (DirectoryExists(name, out currentError) ||
+                                                  currentError != Interop.Errors.ERROR_ACCESS_DENIED))
                         {
                             continue;
                         }
