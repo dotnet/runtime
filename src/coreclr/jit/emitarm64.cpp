@@ -2359,6 +2359,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     return false; // not encodable
 }
 
+// true if 'imm' can be encoded as an offset in a ldp/stp instruction
+/*static*/ bool emitter::canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr attr)
+{
+    assert((attr == EA_4BYTE) || (attr == EA_8BYTE) || (attr == EA_16BYTE));
+    const int size = EA_SIZE_IN_BYTES(attr);
+    return (imm % size == 0) && (imm >= -64 * size) && (imm < 64 * size);
+}
+
 /************************************************************************
  *
  *   A helper method to return the natural scale for an EA 'size'
