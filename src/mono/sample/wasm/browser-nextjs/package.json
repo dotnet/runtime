@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "dotnet": "file:../../../../../artifacts/bin/native/net7.0-Browser-Debug-wasm/",
+    "next": "^11.1.3",
+    "react": "17.0.2",
+    "react-dom": "17.0.2"
+  },
+  "devDependencies": {
+    "file-loader": "^6.2.0",
+    "ignore-loader": "^0.1.2"
+  }
+}

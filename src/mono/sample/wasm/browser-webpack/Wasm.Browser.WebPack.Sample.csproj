@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmMainJSPath>index.html</WasmMainJSPath>
+  </PropertyGroup>
+</Project>
