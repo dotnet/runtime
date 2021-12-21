@@ -142,7 +142,7 @@ namespace System.Net.Http.Headers
                     HeaderEntry entry = entries[index];
                     _index++;
 
-                    if (entry.Key.HasValue)
+                    if (entry.Key.HasValue) // An entry without a value indicates the end of the header collection
                     {
                         HttpHeaders.GetStoreValuesAsStringOrStringArray(entry.Key, entry.Value, out string? singleValue, out string[]? multiValue);
                         Debug.Assert(singleValue is not null ^ multiValue is not null);

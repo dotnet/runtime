@@ -1349,6 +1349,7 @@ namespace System.Net.Http
             {
                 if (!header.Key.HasValue)
                 {
+                    // An entry without a value indicates the end of the header collection
                     break;
                 }
 

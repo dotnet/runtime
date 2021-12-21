@@ -241,6 +241,7 @@ namespace System.Net.Http.Headers
                 {
                     if (!entry.Key.HasValue)
                     {
+                        // An entry without a value indicates the end of the header collection
                         break;
                     }
 
@@ -310,6 +311,7 @@ namespace System.Net.Http.Headers
                 HeaderDescriptor descriptor = entry.Key;
                 if (!descriptor.HasValue)
                 {
+                    // An entry without a value indicates the end of the header collection
                     break;
                 }
 
@@ -537,6 +539,7 @@ namespace System.Net.Http.Headers
                 {
                     if (!entry.Key.HasValue)
                     {
+                        // An entry without a value indicates the end of the header collection
                         break;
                     }
 

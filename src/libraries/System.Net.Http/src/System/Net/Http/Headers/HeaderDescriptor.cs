@@ -17,7 +17,9 @@ namespace System.Net.Http.Headers
     internal readonly struct HeaderDescriptor : IEquatable<HeaderDescriptor>
     {
         /// <summary>
-        /// Either a <see cref="KnownHeader"/> or <see cref="string"/>
+        /// Either a <see cref="KnownHeader"/> or <see cref="string"/>.
+        /// Marked as nullable since a default (uninitialized) instance of this struct is also used in practice
+        /// to indicate the end of the header collection.
         /// </summary>
         private readonly object? _descriptor;
 
