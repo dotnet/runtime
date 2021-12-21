@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.IO
@@ -31,7 +32,7 @@ namespace System.IO
             bool somePathExists = false;
             int length = fullPath.Length;
 
-            ReadOnlySpan<char> fullPathSpan = fullPath;
+            ReadOnlySpan<char> fullPathSpan = AsSpanNonNullable(fullPath);
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
             if (length >= 2 && PathInternal.EndsInDirectorySeparator(fullPathSpan))
@@ -86,38 +87,40 @@ namespace System.IO
                     stackDir.RemoveAt(stackDir.Count - 1);
 
                     r = Interop.Kernel32.CreateDirectory(name, ref secAttrs);
-                    if (!r && firstError == 0)
+                    if (r || firstError != 0)
                     {
-                        int currentError = Marshal.GetLastWin32Error();
-                        // While we tried to avoid creating directories that don't
-                        // exist above, there are at least two cases that will
-                        // cause us to see ERROR_ALREADY_EXISTS here.  FileExists
-                        // can fail because we didn't have permission to the
-                        // directory.  Secondly, another thread or process could
-                        // create the directory between the time we check and the
-                        // time we try using the directory.  Thirdly, it could
-                        // fail because the target does exist, but is a file.
-                        if (currentError != Interop.Errors.ERROR_ALREADY_EXISTS)
-                        {
-                            firstError = currentError;
-                        }
-                        else
-                        {
-                            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = GetAttributeData(name, out currentError);
-                            bool fileExists = currentError == 0 &&
-                                              data.dwFileAttributes != -1 &&
-                                              (data.dwFileAttributes & Interop.Kernel32.FileAttributes
-                                                  .FILE_ATTRIBUTE_DIRECTORY) == 0;
+                        continue;
+                    }
 
-                            // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
-                            if (!fileExists && currentError != Interop.Errors.ERROR_ACCESS_DENIED)
-                            {
-                                continue;
-                            }
+                    int currentError = Marshal.GetLastWin32Error();
+                    // While we tried to avoid creating directories that don't
+                    // exist above, there are at least two cases that will
+                    // cause us to see ERROR_ALREADY_EXISTS here.  FileExists
+                    // can fail because we didn't have permission to the
+                    // directory.  Secondly, another thread or process could
+                    // create the directory between the time we check and the
+                    // time we try using the directory.  Thirdly, it could
+                    // fail because the target does exist, but is a file.
+                    if (currentError != Interop.Errors.ERROR_ALREADY_EXISTS)
+                    {
+                        firstError = currentError;
+                    }
+                    else
+                    {
+                        Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = GetAttributeData(name, out currentError);
+                        bool fileExists = currentError == 0 &&
+                                          data.dwFileAttributes != -1 &&
+                                          (data.dwFileAttributes & Interop.Kernel32.FileAttributes
+                                              .FILE_ATTRIBUTE_DIRECTORY) == 0;
 
-                            firstError = currentError;
-                            errorString = name;
+                        // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
+                        if (!fileExists && currentError != Interop.Errors.ERROR_ACCESS_DENIED)
+                        {
+                            continue;
                         }
+
+                        firstError = currentError;
+                        errorString = name;
                     }
                 }
             }
@@ -142,6 +145,12 @@ namespace System.IO
             {
                 throw Win32Marshal.GetExceptionForWin32Error(firstError, errorString);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ReadOnlySpan<char> AsSpanNonNullable(string text)
+        {
+            return new ReadOnlySpan<char>(ref text.GetRawStringData(), text.Length);
         }
     }
 }
