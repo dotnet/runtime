@@ -35,6 +35,7 @@ typedef struct _MonoComponentHotReload {
 	GArray* (*get_added_methods) (MonoClass *klass);
 	uint32_t (*method_parent) (MonoImage *base_image, uint32_t method_index);
 	void* (*metadata_linear_search) (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer);
+	uint32_t (*field_parent) (MonoImage *base_image, uint32_t method_index);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

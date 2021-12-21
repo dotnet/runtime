@@ -74,6 +74,9 @@ hot_reload_stub_method_parent (MonoImage *image, uint32_t method_index);
 static void*
 hot_reload_stub_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer);
 
+static uint32_t
+hot_reload_stub_field_parent (MonoImage *image, uint32_t field_index);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_set_fastpath_data,
@@ -95,6 +98,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_added_methods,
 	&hot_reload_stub_method_parent,
 	&hot_reload_stub_metadata_linear_search,
+	&hot_reload_stub_field_parent,
 };
 
 static bool
@@ -221,6 +225,12 @@ static void*
 hot_reload_stub_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer)
 {
 	return NULL;
+}
+
+static uint32_t
+hot_reload_stub_field_parent (MonoImage *image, uint32_t field_index)
+{
+	return 0;
 }
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
