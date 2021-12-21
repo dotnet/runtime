@@ -49,7 +49,7 @@ namespace System.Net.Http.Headers
                 else
                 {
                     _connectionCloseSet = value != null;
-                    // We intentionally ignore in the return value. It's OK if "close" wasn't in the store.
+                    // We intentionally ignore the return value. It's OK if "close" wasn't in the store.
                     _parent.RemoveParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose);
                 }
             }
@@ -134,7 +134,7 @@ namespace System.Net.Http.Headers
                 else
                 {
                     _transferEncodingChunkedSet = value != null;
-                    // We intentionally ignore in the return value. It's OK if "chunked" wasn't in the store.
+                    // We intentionally ignore the return value. It's OK if "chunked" wasn't in the store.
                     _parent.RemoveParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked);
                 }
             }

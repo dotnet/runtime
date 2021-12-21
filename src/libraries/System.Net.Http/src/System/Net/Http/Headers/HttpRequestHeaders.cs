@@ -79,7 +79,7 @@ namespace System.Net.Http.Headers
                 else
                 {
                     _expectContinueSet = value != null;
-                    // We intentionally ignore in the return value. It's OK if "100-continue" wasn't in the store.
+                    // We intentionally ignore the return value. It's OK if "100-continue" wasn't in the store.
                     RemoveParsedValue(KnownHeaders.Expect.Descriptor, HeaderUtilities.ExpectContinue);
                 }
             }
