@@ -46,6 +46,20 @@ namespace System.Drawing
         /// </summary>
         internal IntPtr NativeGraphics { get; private set; }
 
+        /// <summary>
+        /// Handle to the underlying GDI+ graphics object.
+        /// </summary>
+        public IntPtr Handle => NativeGraphics;
+
+        /// <summary>
+        /// Creates a new instance of the <see cref='Graphics'/> class by <paramref name="handle"/>.
+        /// <param name="handle">The handle-pointer</param>
+        /// </summary>
+        public static Graphics FromHandle(IntPtr handle)
+        {
+            return new Graphics(handle);
+        }
+
         public Region Clip
         {
             get

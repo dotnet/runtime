@@ -402,6 +402,7 @@ namespace System.Drawing
     public sealed partial class Graphics : System.MarshalByRefObject, System.Drawing.IDeviceContext, System.IDisposable
     {
         internal Graphics() { }
+        public System.IntPtr Handle { get { throw null;  } }
         public System.Drawing.Region Clip { get { throw null; } set { } }
         public System.Drawing.RectangleF ClipBounds { get { throw null; } }
         public System.Drawing.Drawing2D.CompositingMode CompositingMode { get { throw null; } set { } }
@@ -583,6 +584,7 @@ namespace System.Drawing
         ~Graphics() { }
         public void Flush() { }
         public void Flush(System.Drawing.Drawing2D.FlushIntention intention) { }
+        public static System.Drawing.Graphics FromHandle(System.IntPtr handle) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHdc(System.IntPtr hdc) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
