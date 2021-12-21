@@ -31,7 +31,7 @@ namespace System.IO
 
             bool somePathExists = false;
 
-            ReadOnlySpan<char> fullPathSpan = AsSpanNonNullable(fullPath);
+            ReadOnlySpan<char> fullPathSpan = fullPath.AsSpan();
             int length = fullPathSpan.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
@@ -150,12 +150,6 @@ namespace System.IO
             {
                 throw Win32Marshal.GetExceptionForWin32Error(firstError, errorString);
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<char> AsSpanNonNullable(string text)
-        {
-            return new ReadOnlySpan<char>(ref text.GetRawStringData(), text.Length);
         }
     }
 }
