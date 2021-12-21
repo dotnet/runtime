@@ -14883,18 +14883,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // At present this can only be String
                 else if (clsFlags & CORINFO_FLG_VAROBJSIZE)
                 {
-                    if (IsTargetAbi(CORINFO_CORERT_ABI))
-                    {
-                        // The dummy argument does not exist in CoreRT
-                        newObjThisPtr = nullptr;
-                    }
-                    else
-                    {
-                        // This is the case for variable-sized objects that are not
-                        // arrays.  In this case, call the constructor with a null 'this'
-                        // pointer
-                        newObjThisPtr = gtNewIconNode(0, TYP_REF);
-                    }
+                    // Skip this thisPtr argument
+                    newObjThisPtr = nullptr;
 
                     /* Remember that this basic block contains 'new' of an object */
                     block->bbFlags |= BBF_HAS_NEWOBJ;
@@ -20789,33 +20779,8 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
             // TODO-1stClassStructs: We currently do not reuse an existing lclVar
             // if it is a struct, because it requires some additional handling.
 
-            bool substitute = false;
-            switch (argNode->OperGet())
-            {
-#ifdef FEATURE_HW_INTRINSICS
-                case GT_HWINTRINSIC:
-                {
-                    // Enable for all parameterless (=invariant) hw intrinsics such as
-                    // Vector128<>.Zero and Vector256<>.AllBitSets. We might consider
-                    // doing that for Vector.Create(cns) as well.
-                    if (argNode->AsHWIntrinsic()->GetOperandCount() == 0)
-                    {
-                        substitute = true;
-                    }
-                    break;
-                }
-#endif
-
-                // TODO: Enable substitution for CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE (typeof(T))
-                // but in order to benefit from that, we need to move various "typeof + IsValueType"
-                // optimizations from importer to morph.
-
-                default:
-                    break;
-            }
-
-            if (substitute || (!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
-                               !argInfo.argHasCallerLocalRef))
+            if ((!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
+                 !argInfo.argHasCallerLocalRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp) DEBUGARG(lclNum));

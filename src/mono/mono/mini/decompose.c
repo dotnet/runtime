@@ -81,7 +81,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		else
 			opcode = OP_ADDCC;
 		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, OV, ins->inst_exc_name);
 		NULLIFY_INS (ins);
 		break;
 	}
@@ -95,7 +95,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		else
 			opcode = OP_ADDCC;
 		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, C, ins->inst_exc_name);
 		NULLIFY_INS (ins);
 		break;
 	}
@@ -110,7 +110,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		else
 			opcode = OP_SUBCC;
 		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, OV, ins->inst_exc_name);
 		NULLIFY_INS (ins);
 		break;
 	}
@@ -124,7 +124,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		else
 			opcode = OP_SUBCC;
 		EMIT_NEW_BIALU (cfg, repl, opcode, ins->dreg, ins->sreg1, ins->sreg2);
-		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, C, ins->inst_exc_name);
 		NULLIFY_INS (ins);
 		break;
 	}
@@ -327,7 +327,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		if (COMPILE_LLVM (cfg))
 			break;
 		ins->opcode = OP_IADDCC;
-		MONO_EMIT_NEW_COND_EXC (cfg, IC, "OverflowException");
+		MONO_EMIT_NEW_COND_EXC (cfg, IC, ins->inst_exc_name);
 		break;
 	case OP_ISUB_OVF:
 		if (COMPILE_LLVM (cfg))
@@ -859,25 +859,25 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				/* ADC sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
-				MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
+				MONO_EMIT_NEW_COND_EXC (cfg, OV, tree->inst_exc_name);
 				break;
 			case OP_LADD_OVF_UN:
 				/* ADC sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
-				MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
+				MONO_EMIT_NEW_COND_EXC (cfg, C, tree->inst_exc_name);
 				break;
 			case OP_LSUB_OVF:
 				/* SBB sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
-				MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
+				MONO_EMIT_NEW_COND_EXC (cfg, OV, tree->inst_exc_name);
 				break;
 			case OP_LSUB_OVF_UN:
 				/* SBB sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, MONO_LVREG_MS (tree->dreg), MONO_LVREG_MS (tree->sreg1), MONO_LVREG_MS (tree->sreg2));
-				MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
+				MONO_EMIT_NEW_COND_EXC (cfg, C, tree->inst_exc_name);
 				break;
 			case OP_LAND:
 				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, MONO_LVREG_LS (tree->dreg), MONO_LVREG_LS (tree->sreg1), MONO_LVREG_LS (tree->sreg2));
@@ -1445,8 +1445,11 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 						src->klass = ins->klass;
 						src->dreg = ins->sreg1;
 					}
+
+					cfg->disable_inline_rgctx_fetch = TRUE;
 					MonoInst *tmp = mini_emit_box (cfg, src, ins->klass, mini_class_check_context_used (cfg, ins->klass));
 					g_assert (tmp);
+					cfg->disable_inline_rgctx_fetch = FALSE;
 
 					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, tmp->dreg);
 

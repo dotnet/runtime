@@ -5116,7 +5116,10 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 #endif
 
     SetSP(&frameContext, currentSP);
+
+#if defined(TARGET_AMD64)
     frameContext.Rbp = currentFP;
+#endif
 
     // Note we can get here w/o triggering, if there is an existing OSR method and
     // we hit the patchpoint.
@@ -5279,7 +5282,10 @@ void JIT_PartialCompilationPatchpoint(int ilOffset)
 #endif
 
     SetSP(&frameContext, currentSP);
+
+#if defined(TARGET_AMD64)
     frameContext.Rbp = currentFP;
+#endif
 
     // Note we can get here w/o triggering, if there is an existing OSR method and
     // we hit the patchpoint.

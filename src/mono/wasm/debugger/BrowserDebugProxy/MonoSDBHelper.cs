@@ -515,11 +515,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             if (objectId.Scheme == "object")
             {
-                Write(ElementType.Class, int.Parse(objectId.Value));
+                Write(ElementType.Class, objectId.Value);
             }
             else if (objectId.Scheme == "valuetype")
             {
-                Write(SdbHelper.valueTypes[int.Parse(objectId.Value)].valueTypeBuffer);
+                Write(SdbHelper.valueTypes[objectId.Value].valueTypeBuffer);
             }
         }
         public async Task<bool> WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)
@@ -1567,13 +1567,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return -1;
         }
 
-        public async Task<JArray> CreateJArrayForProperties(int typeId, ArraySegment<byte> object_buffer, JArray attributes, bool isAutoExpandable, string objectId, bool isOwn, CancellationToken token)
+        public async Task<JArray> CreateJArrayForProperties(int typeId, ArraySegment<byte> object_buffer, JArray attributes, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token)
         {
             JArray ret = new JArray();
             using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
             if (retDebuggerCmdReader == null)
                 return null;
-
+            if (!DotnetObjectId.TryParse(objectIdStr, out DotnetObjectId objectId))
+                return null;
             var nProperties = retDebuggerCmdReader.ReadInt32();
             for (int i = 0 ; i < nProperties; i++)
             {
@@ -1603,11 +1604,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                             get = new
                             {
                                 type = "function",
-                                objectId = $"{objectId}:methodId:{getMethodId}",
+                                objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}",
                                 className = "Function",
                                 description = "get " + propertyNameStr + " ()",
                                 methodId = getMethodId,
-                                objectIdValue = objectId
+                                objectIdValue = objectIdStr
                             },
                             name = propertyNameStr
                         });
@@ -2062,10 +2063,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     if (DotnetObjectId.TryParse(asyncLocal?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
                     {
-                        if (int.TryParse(dotnetObjectId.Value, out int objectIdToGetInfo) && !objectsAlreadyRead.Contains(objectIdToGetInfo))
+                        if (!objectsAlreadyRead.Contains(dotnetObjectId.Value))
                         {
-                            var asyncLocalsFromObject = await GetObjectValues(objectIdToGetInfo, GetObjectCommandOptions.WithProperties, token);
-                            var hoistedLocalVariable = await GetHoistedLocalVariables(objectIdToGetInfo, asyncLocalsFromObject, token);
+                            var asyncLocalsFromObject = await GetObjectValues(dotnetObjectId.Value, GetObjectCommandOptions.WithProperties, token);
+                            var hoistedLocalVariable = await GetHoistedLocalVariables(dotnetObjectId.Value, asyncLocalsFromObject, token);
                             asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
                         }
                     }
@@ -2303,7 +2304,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     var retMethod = await InvokeMethod(invokeParamsWriter.GetParameterBuffer(), methodId, "methodRet", token);
                     DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId);
-                    var displayAttrs = await GetObjectValues(int.Parse(dotnetObjectId.Value), GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerProxyAttribute, token);
+                    var displayAttrs = await GetObjectValues(dotnetObjectId.Value, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerProxyAttribute, token);
                     return displayAttrs;
                 }
             }
@@ -2360,7 +2361,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
                     return new JArray(objects.Values);
                 using var commandParamsObjWriter = new MonoBinaryWriter();
-                commandParamsObjWriter.WriteObj(new DotnetObjectId("object", $"{objectId}"), this);
+                commandParamsObjWriter.WriteObj(new DotnetObjectId("object", objectId), this);
                 var props = await CreateJArrayForProperties(
                     typeId,
                     commandParamsObjWriter.GetParameterBuffer(),
@@ -2412,18 +2413,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (!DotnetObjectId.TryParse(root?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId rootHiddenObjectId))
                     return;
-                if (!int.TryParse(rootHiddenObjectId?.Value, out int rootHiddenObjectIdInt))
-                    return;
 
                 var resultValue = new JArray();
                 // collections require extracting items to get inner values; items are of array type
                 // arrays have "subtype": "array" field, collections don't
                 var subtype = root?["value"]?["subtype"];
+                var rootHiddenObjectIdInt = rootHiddenObjectId.Value;
                 if (subtype == null || subtype?.Value<string>() != "array")
                 {
                     resultValue = await GetObjectValues(rootHiddenObjectIdInt, getCommandType, token);
                     DotnetObjectId.TryParse(resultValue[0]?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId2);
-                    int.TryParse(objectId2.Value, out rootHiddenObjectIdInt);
+                    rootHiddenObjectIdInt = objectId2.Value;
                 }
                 resultValue = await GetArrayValues(rootHiddenObjectIdInt, token);
 
@@ -2549,7 +2549,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         case DebuggerBrowsableState.RootHidden:
                             DotnetObjectId rootObjId;
                             DotnetObjectId.TryParse(p["get"]["objectId"].Value<string>(), out rootObjId);
-                            var rootObject = await InvokeMethodInObject(int.Parse(rootObjId.Value), int.Parse(rootObjId.SubValue), p["name"].Value<string>(), token);
+                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, p["name"].Value<string>(), token);
                             await AppendRootHiddenChildren(rootObject, regularProps);
                             break;
                         case DebuggerBrowsableState.Collapsed:
