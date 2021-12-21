@@ -139,13 +139,12 @@ namespace Microsoft.Extensions.Logging
                 MachineName = "blah",
                 EventLog = null,
             };
-            serviceCollection.AddLogging(builder => builder.AddEventLog());
 
             // Act
             serviceCollection.AddLogging(builder => builder.AddEventLog(eventLogSettings));
 
             // Assert
-            var services = serviceCollection.BuildServiceProvider();
+            IServiceProvider services = serviceCollection.BuildServiceProvider();
             var providers = services.GetRequiredService<IEnumerable<ILoggerProvider>>();
             var provider = (EventLogLoggerProvider)providers.Last();
             var settings = provider._settings;
