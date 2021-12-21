@@ -19,7 +19,7 @@ namespace System.IO
         {
             _changeType = changeType;
             _name = name;
-            _fullPath = Combine(directory, name);
+            _fullPath = Path.GetFullPath(Combine(directory, name));
         }
 
         /// <summary>Combines a directory path and a relative file name into a single path.</summary>
