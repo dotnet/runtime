@@ -839,6 +839,8 @@ namespace System.Drawing
         public void SetLineCap(System.Drawing.Drawing2D.LineCap startCap, System.Drawing.Drawing2D.LineCap endCap, System.Drawing.Drawing2D.DashCap dashCap) { }
         public void TranslateTransform(float dx, float dy) { }
         public void TranslateTransform(float dx, float dy, System.Drawing.Drawing2D.MatrixOrder order) { }
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Pen FromHandle(System.IntPtr handle) { throw null; }
     }
     public static partial class Pens
     {

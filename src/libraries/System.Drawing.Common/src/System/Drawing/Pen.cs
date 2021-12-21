@@ -111,6 +111,21 @@ namespace System.Drawing
         internal IntPtr NativePen => _nativePen;
 
         /// <summary>
+        /// The underlying handle of the pen
+        /// </summary>
+        public IntPtr Handle => NativePen;
+
+        /// <summary>
+        /// Creates a new <see cref="Pen"/> instance referring to a underlying GDI+ pen handle.
+        /// </summary>
+        /// <param name="handle">The GDI+ handle</param>
+        /// <returns>Brush instance</returns>
+        public static Pen FromHandle(IntPtr handle)
+        {
+            return new Pen(handle);
+        }
+
+        /// <summary>
         /// Creates an exact copy of this <see cref='System.Drawing.Pen'/>.
         /// </summary>
         public object Clone()
