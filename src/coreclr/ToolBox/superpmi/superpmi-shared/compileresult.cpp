@@ -861,10 +861,12 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             }
         }
 
+#ifdef HOST_UNIX
         if (targetArch == SPMI_TARGET_ARCHITECTURE_LOONGARCH64)
         {
             assert(!"FIXME: Not Implements on loongarch64");
         }
+#endif
 
         if (IsSpmiTarget64Bit())
         {
