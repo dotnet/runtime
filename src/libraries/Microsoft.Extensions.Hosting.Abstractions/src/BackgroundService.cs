@@ -61,8 +61,8 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Triggered when the application host is performing a graceful shutdown.  
-        /// The stop task normally waits for the service task to finish. 
+        /// Triggered when the application host is performing a graceful shutdown.
+        /// The stop task normally waits for the service task to finish.
         /// </summary>
         /// <param name="cancellationToken">
         /// Allows the application host to interrupt the wait.
