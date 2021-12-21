@@ -59,6 +59,6 @@ namespace System.IO.FileSystem.Tests
         }
     }
 
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    [CollectionDefinition(nameof(NoParallelTests), DisableParallelization = true)]
     public partial class NoParallelTests { }
 }
