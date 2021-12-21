@@ -335,6 +335,13 @@ namespace System.Drawing.Drawing2D
             return isEqual != 0;
         }
 
+        public IntPtr Handle => NativeMatrix;
+
+        public static Matrix FromHandle(IntPtr handle)
+        {
+            return new Matrix(handle);
+        }
+
         public override int GetHashCode() => base.GetHashCode();
     }
 }

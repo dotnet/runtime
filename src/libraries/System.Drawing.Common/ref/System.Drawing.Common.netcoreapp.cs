@@ -25,5 +25,7 @@ namespace System.Drawing.Drawing2D
     {
         public Matrix(System.Numerics.Matrix3x2 matrix) { }
         public System.Numerics.Matrix3x2 MatrixElements { get { throw null; } set { } }
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Drawing2D.Matrix FromHandle(System.IntPtr handle) { throw null; }
     }
 }
