@@ -1016,10 +1016,6 @@ RtlVirtualUnwind(
 #define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 #endif
 
-#ifndef IMAGE_FILE_MACHINE_LOONGARCH64
-#define IMAGE_FILE_MACHINE_LOONGARCH64             0xDD64  // LOONGARCH64 Little-Endian
-#endif
-
 #ifndef IMAGE_REL_ARM64_BRANCH26
 #define IMAGE_REL_ARM64_BRANCH26        0x0003  // 26 bit offset << 2 & sign ext. for B & BL
 #endif
@@ -1090,7 +1086,7 @@ RtlVirtualUnwind(
     );
 
 #ifndef IMAGE_FILE_MACHINE_LOONGARCH64
-#define IMAGE_FILE_MACHINE_LOONGARCH64             0xDD64  // LOONGARCH64 Little-Endian
+#define IMAGE_FILE_MACHINE_LOONGARCH64      0x6264  // LOONGARCH64 Little-Endian
 #endif
 
 #ifndef IMAGE_REL_LOONGARCH64_PC

@@ -22,7 +22,7 @@
 #endif
 
 #ifndef IMAGE_FILE_MACHINE_LOONGARCH64
-#define IMAGE_FILE_MACHINE_LOONGARCH64             0xDD64  // LOONGARCH64 Little-Endian
+#define IMAGE_FILE_MACHINE_LOONGARCH64       0x6264  // LOONGARCH64 Little-Endian
 #endif
 
 //*****************************************************************************

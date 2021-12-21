@@ -73,7 +73,6 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARG
   create_gcinfo_lib(TARGET gcinfo_universal_arm64 OS universal ARCH arm64)
   create_gcinfo_lib(TARGET gcinfo_unix_x64 OS unix ARCH x64)
   create_gcinfo_lib(TARGET gcinfo_win_x64 OS win ARCH x64)
-  create_gcinfo_lib(TARGET gcinfo_unix_loongarch64 OS unix ARCH loongarch64)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 
 create_gcinfo_lib(TARGET gcinfo_universal_arm OS universal ARCH arm)
