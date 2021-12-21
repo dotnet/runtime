@@ -2796,7 +2796,7 @@ void MethodContext::recGetFieldTypeByHnd(CORINFO_CLASS_HANDLE cls, DWORD value)
 
 void MethodContext::dmpGetFieldTypeByHnd(DWORDLONG key, DWORD value)
 {
-    printf("GetFieldTypeByHnd key %08X value-%X", key, value);
+    printf("GetFieldTypeByHnd key %016llX value-%08X", key, value);
 }
 
 DWORD MethodContext::repGetFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
