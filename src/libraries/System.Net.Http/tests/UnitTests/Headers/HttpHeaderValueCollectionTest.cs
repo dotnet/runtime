@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -18,7 +16,6 @@ namespace System.Net.Http.Tests
         private static readonly HeaderDescriptor knownStringHeader = (new KnownHeader("known-string-header", HttpHeaderType.General, new MockHeaderParser(typeof(string)))).Descriptor;
         private static readonly HeaderDescriptor knownUriHeader = (new KnownHeader("known-uri-header", HttpHeaderType.General, new MockHeaderParser(typeof(Uri)))).Descriptor;
 
-        private static readonly Uri invalidValue = new Uri("http://invalid/");
         private static readonly TransferCodingHeaderValue specialChunked = new TransferCodingHeaderValue("chunked");
 
         // Note that this type just forwards calls to HttpHeaders. So this test method focuses on making sure
