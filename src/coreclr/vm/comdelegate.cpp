@@ -186,8 +186,8 @@ public:
             {
                 m_currentGenRegIndex++;
                 index = m_currentByteStackIndex;
-                m_currentByteStackIndex++;
-                return (UINT16)index;
+                m_currentByteStackIndex += TARGET_POINTER_SIZE;
+                return index;
             }
 #endif
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
