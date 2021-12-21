@@ -4974,7 +4974,7 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_NESTEDCLASS];
 	locator_t loc;
 
-	if (!tdef->base)
+	if (!tdef->base && !meta->has_updates)
 		return 0;
 
 	loc.idx = mono_metadata_token_index (index);
@@ -4983,7 +4983,7 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 
 	/* FIXME: metadata-update */
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) && !meta->has_updates)
+	if (tdef->base && !mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) && !meta->has_updates)
 		return 0;
 
 	if (G_UNLIKELY (meta->has_updates))

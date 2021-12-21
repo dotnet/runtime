@@ -614,27 +614,33 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	/*
 	 * Compute the field and method lists
 	 */
-	int first_field_idx;
-	first_field_idx = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
-	mono_class_set_first_field_idx (klass, first_field_idx);
-	int first_method_idx;
-	first_method_idx = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
-	mono_class_set_first_method_idx (klass, first_method_idx);
+	/*
+	 * EnC metadata-update: new classes are added with method and field indices set to 0, new
+	 * methods are added using the EnCLog AddMethod or AddField functions that will be added to
+	 * MonoClassMetadataUpdateInfo
+	 */
+	if (G_LIKELY (cols [MONO_TYPEDEF_FIELD_LIST] != 0 || cols [MONO_TYPEDEF_METHOD_LIST] != 0)) {
+		int first_field_idx;
+		first_field_idx = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
+		mono_class_set_first_field_idx (klass, first_field_idx);
+		int first_method_idx;
+		first_method_idx = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
+		mono_class_set_first_method_idx (klass, first_method_idx);
+		if (table_info_get_rows (tt) > tidx) {
+			mono_metadata_decode_row (tt, tidx, cols_next, MONO_TYPEDEF_SIZE);
+			field_last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
+			method_last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
+		} else {
+			field_last  = table_info_get_rows (&image->tables [MONO_TABLE_FIELD]);
+			method_last = table_info_get_rows (&image->tables [MONO_TABLE_METHOD]);
+		}
 
-	if (table_info_get_rows (tt) > tidx){		
-		mono_metadata_decode_row (tt, tidx, cols_next, MONO_TYPEDEF_SIZE);
-		field_last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
-		method_last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
-	} else {
-		field_last  = table_info_get_rows (&image->tables [MONO_TABLE_FIELD]);
-		method_last = table_info_get_rows (&image->tables [MONO_TABLE_METHOD]);
+		if (cols [MONO_TYPEDEF_FIELD_LIST] &&
+		    cols [MONO_TYPEDEF_FIELD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_FIELD]))
+			mono_class_set_field_count (klass, field_last - first_field_idx);
+		if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
+			mono_class_set_method_count (klass, method_last - first_method_idx);
 	}
-
-	if (cols [MONO_TYPEDEF_FIELD_LIST] && 
-	    cols [MONO_TYPEDEF_FIELD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_FIELD]))
-		mono_class_set_field_count (klass, field_last - first_field_idx);
-	if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
-		mono_class_set_method_count (klass, method_last - first_method_idx);
 
 	/* reserve space to store vector pointer in arrays */
 	if (mono_is_corlib_image (image) && !strcmp (nspace, "System") && !strcmp (name, "Array")) {

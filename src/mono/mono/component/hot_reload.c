@@ -2245,7 +2245,7 @@ hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_ta
 	loc->result = 0;
 	/* HACK: this is so that the locator can compute the row index of the given row. but passing the mutant table to other metadata functions could backfire. */
 	loc->t = (MonoTableInfo*)latest_mod_table;
-	for (uint32_t idx = 0; idx < table_info_get_rows (latest_mod_table); ++idx) {
+	for (uint32_t idx = 0; idx < rows; ++idx) {
 		const char *row = latest_mod_table->base + idx * latest_mod_table->row_size;
 		if (!comparer (loc, row))
 			return (void*)row;
