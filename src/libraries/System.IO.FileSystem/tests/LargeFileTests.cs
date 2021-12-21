@@ -9,7 +9,7 @@ namespace System.IO.FileSystem.Tests
 {
     [OuterLoop]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-    [Collection(nameof(DisableParallelization))] // don't create multiple large files at the same time
+    [Collection("NoParallelTests")] // don't create multiple large files at the same time
     public class LargeFileTests : FileSystemTest
     {
         [Fact]
@@ -58,4 +58,7 @@ namespace System.IO.FileSystem.Tests
             }
         }
     }
+
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
 }
