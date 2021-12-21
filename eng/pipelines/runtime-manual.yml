@@ -463,7 +463,6 @@ jobs:
         extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true /p:RunSmokeTestsOnly=false
         scenarios:
         - normal
-        - wasmtestonnodejs
 
 #
 # Build for Browser/wasm and test it on NodeJS
