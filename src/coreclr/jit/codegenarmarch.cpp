@@ -2757,35 +2757,37 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     assert(srcOffset < INT32_MAX - static_cast<int>(size));
     assert(dstOffset < INT32_MAX - static_cast<int>(size));
 
-    regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
-
 #ifdef TARGET_ARM64
     CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
 
-    regNumber srcReg              = srcAddrBaseReg;
-    int       srcRegAddrAlignment = -1;
+    regNumber srcReg                     = srcAddrBaseReg;
+    int       srcRegAddrAlignment        = 0;
+    bool      isSrcRegAddrAlignmentKnown = false;
 
     if (srcLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
-        srcReg              = fpBased ? REG_FPBASE : REG_SPBASE;
-        srcRegAddrAlignment = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        srcReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        srcRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        isSrcRegAddrAlignmentKnown = true;
 
         helper.SetSrcOffset(baseAddr + srcOffset);
     }
 
-    regNumber dstReg              = dstAddrBaseReg;
-    int       dstRegAddrAlignment = -1;
+    regNumber dstReg                     = dstAddrBaseReg;
+    int       dstRegAddrAlignment        = 0;
+    bool      isDstRegAddrAlignmentKnown = false;
 
     if (dstLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg              = fpBased ? REG_FPBASE : REG_SPBASE;
-        dstRegAddrAlignment = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        isDstRegAddrAlignmentKnown = true;
 
         helper.SetDstOffset(baseAddr + dstOffset);
     }
@@ -2797,27 +2799,25 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     srcOffset = helper.GetSrcOffset();
     dstOffset = helper.GetDstOffset();
 
-    int srcOffsetAdj = 0;
-    int dstOffsetAdj = 0;
+    int srcOffsetAdjustment = 0;
+    int dstOffsetAdjustment = 0;
 
     if (!canEncodeAllLoads && !canEncodeAllStores)
     {
-        srcOffsetAdj = srcOffset;
-        dstOffsetAdj = dstOffset;
+        srcOffsetAdjustment = srcOffset;
+        dstOffsetAdjustment = dstOffset;
     }
     else if (!canEncodeAllLoads)
     {
-        srcOffsetAdj = srcOffset - dstOffset;
+        srcOffsetAdjustment = srcOffset - dstOffset;
     }
     else if (!canEncodeAllStores)
     {
-        dstOffsetAdj = dstOffset - srcOffset;
+        dstOffsetAdjustment = dstOffset - srcOffset;
     }
 
-    helper.SetSrcOffset(srcOffset - srcOffsetAdj);
-    helper.SetDstOffset(dstOffset - dstOffsetAdj);
-
-    bool shouldUse16ByteWideInstrs = false;
+    helper.SetSrcOffset(srcOffset - srcOffsetAdjustment);
+    helper.SetDstOffset(dstOffset - dstOffsetAdjustment);
 
     // Quad-word load operations that are not 16-byte aligned, and store operations that cross a 16-byte boundary
     // can reduce bandwidth or incur additional latency.
@@ -2844,7 +2844,17 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset+40]
     // ...
 
-    if ((dstRegAddrAlignment != -1) && (srcRegAddrAlignment == dstRegAddrAlignment))
+    // LSRA allocates a pair of SIMD registers when alignments of both source and destination base addresses are
+    // known and the block size is larger than a single SIMD register size (i.e. when using SIMD instructions can
+    // be profitable).
+    const bool hasAvailableSimdRegs =
+        isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown && (size >= FP_REGSIZE_BYTES);
+
+    const bool canUse16ByteWideInstrs = hasAvailableSimdRegs && (srcRegAddrAlignment == dstRegAddrAlignment);
+
+    bool shouldUse16ByteWideInstrs = false;
+
+    if (canUse16ByteWideInstrs)
     {
         bool canEncodeAll16ByteWideLoads  = false;
         bool canEncodeAll16ByteWideStores = false;
@@ -2872,15 +2882,15 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
                 if (!canEncodeAll16ByteWideLoads)
                 {
-                    srcOffsetAdj = srcOffset - dstOffset;
+                    srcOffsetAdjustment = srcOffset - dstOffset;
                 }
                 else
                 {
-                    dstOffsetAdj = dstOffset - srcOffset;
+                    dstOffsetAdjustment = dstOffset - srcOffset;
                 }
 
-                helper.SetSrcOffset(srcOffset - srcOffsetAdj);
-                helper.SetDstOffset(dstOffset - dstOffsetAdj);
+                helper.SetSrcOffset(srcOffset - srcOffsetAdjustment);
+                helper.SetDstOffset(dstOffset - dstOffsetAdjustment);
             }
         }
     }
@@ -2896,66 +2906,79 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
 #endif
 
+    if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
+    {
+        const regNumber tempReg1 = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdjustment, tempReg1);
+        srcReg = tempReg1;
+
+        const regNumber tempReg2 = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg2, dstReg, dstOffsetAdjustment, tempReg2);
+        dstReg = tempReg2;
+    }
+    else if (srcOffsetAdjustment != 0)
+    {
+        const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, srcReg, srcOffsetAdjustment, tempReg);
+        srcReg = tempReg;
+    }
+    else if (dstOffsetAdjustment != 0)
+    {
+        const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
+        dstReg = tempReg;
+    }
+
+    regNumber simdReg1 = REG_NA;
+    regNumber simdReg2 = REG_NA;
+
     regNumber intReg1 = REG_NA;
     regNumber intReg2 = REG_NA;
 
-    // On Arm64 an internal integer register is always allocated for a CopyBlock node
-    // in addition to a reserved register.
-    // However, if it is determined that both srcOffset and dstOffset need adjustments
-    // than both registers will be used for storing the adjusted addresses.
-    // In that case, the JIT uses SIMD register(s) and instructions for copying.
-
-    const regNumber tempReg1 = rsGetRsvdReg();
-    const regNumber tempReg2 = tempReg;
-
-    if ((srcOffsetAdj != 0) && (dstOffsetAdj != 0))
+    if (hasAvailableSimdRegs)
     {
-        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdj, tempReg1);
-        srcReg = tempReg1;
+        simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
+        simdReg2 = node->GetSingleTempReg(RBM_ALLFLOAT);
 
-        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg2, dstReg, dstOffsetAdj, tempReg2);
-        dstReg = tempReg2;
-
-        if (size >= 2 * REGSIZE_BYTES)
+        if ((srcOffsetAdjustment == 0) || (dstOffsetAdjustment == 0))
         {
             intReg1 = node->ExtractTempReg(RBM_ALLINT);
+
+            if ((srcOffsetAdjustment == 0) && (dstOffsetAdjustment == 0))
+            {
+                intReg2 = node->GetSingleTempReg(RBM_ALLINT);
+            }
+        }
+
+        if (shouldUse16ByteWideInstrs || (intReg2 == REG_NA))
+        {
+            const unsigned initialRegSizeBytes = shouldUse16ByteWideInstrs ? FP_REGSIZE_BYTES : REGSIZE_BYTES;
+
+            helper.Unroll(initialRegSizeBytes, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
+        }
+        else
+        {
+            assert(intReg1 != REG_NA);
+
+            helper.UnrollBaseInstrs(intReg1, intReg2, srcReg, dstReg, GetEmitter());
         }
     }
     else
     {
-        if (srcOffsetAdj != 0)
-        {
-            genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdj, tempReg1);
-            srcReg = tempReg1;
-        }
-        else if (dstOffsetAdj != 0)
-        {
-            genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, dstReg, dstOffsetAdj, tempReg1);
-            dstReg = tempReg1;
-        }
-
-        intReg1 = tempReg2;
+        intReg1 = node->ExtractTempReg(RBM_ALLINT);
 
         if (size >= 2 * REGSIZE_BYTES)
         {
             intReg2 = node->ExtractTempReg(RBM_ALLINT);
         }
+
+        helper.UnrollBaseInstrs(intReg1, intReg2, srcReg, dstReg, GetEmitter());
     }
-
-    const regNumber simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
-    regNumber       simdReg2 = REG_NA;
-
-    if (size >= FP_REGSIZE_BYTES)
-    {
-        simdReg2 = node->ExtractTempReg(RBM_ALLFLOAT);
-    }
-
-    const int regSizeBytes = shouldUse16ByteWideInstrs ? FP_REGSIZE_BYTES : REGSIZE_BYTES;
-
-    helper.Unroll(regSizeBytes, intReg1, intReg2, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
 #endif // TARGET_ARM64
 
 #ifdef TARGET_ARM
+    const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
     {
         while (regSize > size)
