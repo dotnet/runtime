@@ -49,6 +49,16 @@ namespace System.Drawing
             set => _userData = value;
         }
 
+        /// <summary>
+        /// The underlying handle
+        /// </summary>
+        public IntPtr Handle => nativeImage;
+
+        public static Image FromHandle(IntPtr handle)
+        {
+            return new Bitmap(handle);
+        }
+
         private protected Image() { }
 
 #pragma warning disable CA2229 // Implement Serialization constructor

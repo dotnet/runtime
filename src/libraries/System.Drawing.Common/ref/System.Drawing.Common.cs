@@ -772,6 +772,8 @@ namespace System.Drawing
         public void SetPropertyItem(System.Drawing.Imaging.PropertyItem propitem) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public delegate bool GetThumbnailImageAbort();
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Image FromHandle(System.IntPtr handle) { throw null; }
     }
     public sealed partial class ImageAnimator
     {
