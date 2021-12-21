@@ -62,6 +62,11 @@ namespace System.Drawing.Drawing2D
             }
         }
 
+        private GraphicsPath(IntPtr ptr)
+        {
+            _nativePath = ptr;
+        }
+
         public object Clone()
         {
             Gdip.CheckStatus(Gdip.GdipClonePath(new HandleRef(this, _nativePath), out IntPtr clonedPath));
@@ -793,6 +798,13 @@ namespace System.Drawing.Drawing2D
                 }
                 return points;
             }
+        }
+
+        public IntPtr Handle => _nativePath;
+
+        public static GraphicsPath FromHandle(IntPtr handle)
+        {
+            return new GraphicsPath(handle);
         }
     }
 }

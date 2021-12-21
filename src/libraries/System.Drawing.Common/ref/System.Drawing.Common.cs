@@ -1495,6 +1495,8 @@ namespace System.Drawing.Drawing2D
         public void Widen(System.Drawing.Pen pen) { }
         public void Widen(System.Drawing.Pen pen, System.Drawing.Drawing2D.Matrix? matrix) { }
         public void Widen(System.Drawing.Pen pen, System.Drawing.Drawing2D.Matrix? matrix, float flatness) { }
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Drawing2D.GraphicsPath FromHandle(System.IntPtr handle) { throw null; }
     }
     public sealed partial class GraphicsPathIterator : System.MarshalByRefObject, System.IDisposable
     {

@@ -901,5 +901,11 @@ namespace System.Drawing.Drawing2D
             int s = Gdip.GdipWidenPath(_nativePath, pen.NativePen, m, flatness);
             Gdip.CheckStatus(s);
         }
+        public IntPtr Handle => _nativePath;
+
+        public static GraphicsPath FromHandle(IntPtr handle)
+        {
+            return new GraphicsPath(handle);
+        }
     }
 }
