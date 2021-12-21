@@ -30,9 +30,9 @@ namespace System.IO
             // isn't threadsafe.
 
             bool somePathExists = false;
-            int length = fullPath.Length;
 
             ReadOnlySpan<char> fullPathSpan = AsSpanNonNullable(fullPath);
+            int length = fullPathSpan.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
             if (length >= 2 && PathInternal.EndsInDirectorySeparator(fullPathSpan))
