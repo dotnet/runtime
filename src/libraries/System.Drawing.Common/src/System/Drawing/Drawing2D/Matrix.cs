@@ -335,8 +335,15 @@ namespace System.Drawing.Drawing2D
             return isEqual != 0;
         }
 
+        /// <summary>
+        /// The underlying matrix handle
+        /// </summary>
         public IntPtr Handle => NativeMatrix;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref='Matrix'/> class by <paramref name="handle"/>.
+        /// <param name="handle">The handle-pointer</param>
+        /// </summary>
         public static Matrix FromHandle(IntPtr handle)
         {
             return new Matrix(handle);

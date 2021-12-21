@@ -31,6 +31,9 @@ namespace System.Drawing
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Underlying GDI+ brush handle
+        /// </summary>
         public IntPtr Handle => NativeBrush;
 
         protected virtual void Dispose(bool disposing)

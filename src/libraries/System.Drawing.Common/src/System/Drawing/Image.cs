@@ -50,10 +50,14 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// The underlying handle
+        /// The underlying image handle
         /// </summary>
         public IntPtr Handle => nativeImage;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref='Image'/> class by <paramref name="handle"/>.
+        /// <param name="handle">The handle-pointer</param>
+        /// </summary>
         public static Image FromHandle(IntPtr handle)
         {
             return new Bitmap(handle);

@@ -60,8 +60,15 @@ namespace System.Drawing
 
         internal Region(IntPtr nativeRegion) => SetNativeRegion(nativeRegion);
 
+        /// <summary>
+        /// The underlying region handle
+        /// </summary>
         public IntPtr Handle => NativeRegion;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref='Region'/> class by <paramref name="handle"/>.
+        /// <param name="handle">The handle-pointer</param>
+        /// </summary>
         public static Region FromHandle(IntPtr handle)
         {
             return new Region(handle);

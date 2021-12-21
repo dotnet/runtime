@@ -800,8 +800,15 @@ namespace System.Drawing.Drawing2D
             }
         }
 
+        /// <summary>
+        /// The underlying graphics path handle
+        /// </summary>
         public IntPtr Handle => _nativePath;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref='GraphicsPath'/> class by <paramref name="handle"/>.
+        /// <param name="handle">The handle-pointer</param>
+        /// </summary>
         public static GraphicsPath FromHandle(IntPtr handle)
         {
             return new GraphicsPath(handle);
