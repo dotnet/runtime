@@ -2369,7 +2369,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     $"dotnet:object:{objectId}",
                     i == 0,
                     token);
-                var properties = await GetRegularProperties(props, typeId, token);
+                var properties = await GetProperties(props, typeId, token);
                 objects.TryAddRange(properties);
 
                 // ownProperties
@@ -2401,10 +2401,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         (obj.Value["isOwn"] == null ||
                         !obj.Value["isOwn"].Value<bool>())));
 
-                foreach (var d in ownDuplicatedFields)
-                    objects.Remove(d.Name);
-                foreach (var d in parentDuplicatedFields)
-                    objects.Remove(d.Name);
+                foreach (var duplicate in ownDuplicatedFields)
+                    objects.Remove(duplicate.Name);
+                foreach (var duplicate in parentDuplicatedFields)
+                    objects.Remove(duplicate.Name);
             }
             return new JArray(objects.Values);
 
@@ -2497,7 +2497,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (typeFieldsBrowsableInfo == null || typeFieldsBrowsableInfo.Count == 0)
                     return (fields, new List<FieldTypeClass>());
 
-                var regularFields = new List<FieldTypeClass>();
+                var collapsedFields = new List<FieldTypeClass>();
                 var rootHiddenFields = new List<FieldTypeClass>();
                 foreach (var field in fields)
                 {
@@ -2505,7 +2505,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (!typeProperitesBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? propState))
                         {
-                            regularFields.Add(field);
+                            collapsedFields.Add(field);
                             continue;
                         }
                         state = propState;
@@ -2521,16 +2521,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 rootHiddenFields.Add(field);
                             break;
                         case DebuggerBrowsableState.Collapsed:
-                            regularFields.Add(field);
+                            collapsedFields.Add(field);
                             break;
                         default:
                             throw new NotImplementedException($"DebuggerBrowsableState: {state}");
                     }
                 }
-                return (regularFields, rootHiddenFields);
+                return (collapsedFields, rootHiddenFields);
             }
 
-            async Task<JArray> GetRegularProperties(JArray props, int typeId, CancellationToken token)
+            async Task<JArray> GetProperties(JArray props, int typeId, CancellationToken token)
             {
                 var typeInfo = await GetTypeInfo(typeId, token);
                 var typeProperitesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
