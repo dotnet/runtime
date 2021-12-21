@@ -2323,23 +2323,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (debuggerProxy != null)
                     return debuggerProxy;
             }
-            JArray objectValues = new JArray();
             if (await IsDelegate(objectId, token))
             {
                 var description = await GetDelegateMethodDescription(objectId, token);
-
-                var obj = JObject.FromObject(new {
-                            value = new
-                            {
-                                type = "symbol",
-                                value = description,
-                                description
-                            },
-                            name = "Target"
-                        });
-                objectValues.Add(obj);
-                return objectValues;
+                return new JArray(
+                    JObject.FromObject(new
+                    {
+                        value = new
+                        {
+                            type = "symbol",
+                            value = description,
+                            description
+                        },
+                        name = "Target"
+                    }));
             }
+
+            var objects = new Dictionary<string, JToken>();
             for (int i = 0; i < typeIdsIncludingParents.Count; i++)
             {
                 int typeId = typeIdsIncludingParents[i];
@@ -2349,30 +2349,28 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                 {
                     var fields = await GetTypeFields(typeId, token);
-                    var (regularFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeId, token);
+                    var (collapsedFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeId, token);
 
-                    objectValues.AddRange(await GetFieldsValues(regularFields, isOwn));
-                    objectValues.AddRange(await GetFieldsValues(rootHiddenFields, isOwn, isRootHidden: true));
+                    var collapsedFieldsValues = await GetFieldsValues(collapsedFields, isOwn);
+                    var hiddenFieldsValues = await GetFieldsValues(rootHiddenFields, isOwn, isRootHidden: true);
+
+                    objects.TryAddRange(collapsedFieldsValues);
+                    objects.TryAddRange(hiddenFieldsValues);
                 }
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
-                    return objectValues;
+                    return new JArray(objects.Values);
                 using var commandParamsObjWriter = new MonoBinaryWriter();
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", $"{objectId}"), this);
                 var props = await CreateJArrayForProperties(
                     typeId,
                     commandParamsObjWriter.GetParameterBuffer(),
-                    objectValues,
+                    new JArray(objects.Values),
                     getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute),
                     $"dotnet:object:{objectId}",
                     i == 0,
                     token);
                 var properties = await GetRegularProperties(props, typeId, token);
-                foreach (var p in properties)
-                {
-                    if (objectValues.Any(x => x["name"].Value<string>().Equals(p["name"].Value<string>())))
-                        continue;
-                    objectValues.Add(p);
-                }
+                objects.TryAddRange(properties);
 
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,
@@ -2385,40 +2383,30 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
             {
-                List<List<FieldTypeClass>> allFields = new List<List<FieldTypeClass>>();
-                for (int i = 0; i < typeIdsIncludingParents.Count; i++)
-                {
-                    var fields = await GetTypeFields(typeIdsIncludingParents[i], token);
-                    var (regularFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeIdsIncludingParents[i], token);
-                    allFields.Add(regularFields);
-                    allFields.Add(rootHiddenFields);
-                }
-                var retAfterRemove = new JArray();
-                foreach (var item in objectValues)
-                {
-                    bool foundField = false;
-                    for (int j = 0; j < allFields.Count; j++)
-                    {
-                        foreach (var field in allFields[j])
-                        {
-                            if (field.Name.Equals(item["name"].Value<string>()))
-                            {
-                                if (item["isOwn"] == null || (item["isOwn"].Value<bool>() && j == 0) || !item["isOwn"].Value<bool>())
-                                    foundField = true;
-                                break;
-                            }
-                        }
-                        if (foundField)
-                            break;
-                    }
-                    if (!foundField)
-                    {
-                        retAfterRemove.Add(item);
-                    }
-                }
-                objectValues = retAfterRemove;
+                var ownId = typeIdsIncludingParents[0];
+                var ownFields = await GetTypeFields(ownId, token);
+
+                var parentFields = new List<FieldTypeClass>();
+                for (int i = 1; i < typeIdsIncludingParents.Count; i++)
+                    parentFields.AddRange(await GetTypeFields(typeIdsIncludingParents[i], token));
+
+                var ownDuplicatedFields = ownFields.Where(field => objects.Any(obj =>
+                        field.Name.Equals(obj.Key) &&
+                        (obj.Value["isOwn"] == null ||
+                        obj.Value["isOwn"].Value<bool>() ||
+                        !obj.Value["isOwn"].Value<bool>())));
+
+                var parentDuplicatedFields = parentFields.Where(field => objects.Any(obj =>
+                        field.Name.Equals(obj.Key) &&
+                        (obj.Value["isOwn"] == null ||
+                        !obj.Value["isOwn"].Value<bool>())));
+
+                foreach (var d in ownDuplicatedFields)
+                    objects.Remove(d.Name);
+                foreach (var d in parentDuplicatedFields)
+                    objects.Remove(d.Name);
             }
-            return objectValues;
+            return new JArray(objects.Values);
 
             async Task AppendRootHiddenChildren(JObject root, JArray expandedCollection)
             {
@@ -2469,7 +2457,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     int valtype = retDebuggerCmdReader.ReadByte();
                     retDebuggerCmdReader.BaseStream.Position = initialPos;
                     var fieldValue = await CreateJObjectForVariableValue(retDebuggerCmdReader, field.Name, isOwn: isOwn, field.TypeId, getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute), token);
-                    if (objectValues.Where(attribute => attribute["name"].Value<string>().Equals(fieldValue["name"].Value<string>())).Any())
+                    if (objects.Where((k, v) => k.Equals(fieldValue["name"].Value<string>())).Any())
                         continue;
                     if (getCommandType.HasFlag(GetObjectCommandOptions.WithSetter))
                     {
@@ -2666,6 +2654,17 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             foreach (var item in addedArr)
                 arr.Add(item);
+        }
+
+        public static void TryAddRange(this Dictionary<string, JToken> dict, JArray addedArr)
+        {
+            foreach (var item in addedArr)
+            {
+                var key = item["name"]?.Value<string>();
+                if (key == null)
+                    continue;
+                dict.TryAdd(key, item);
+            }
         }
     }
 }
