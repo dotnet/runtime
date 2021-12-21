@@ -1881,6 +1881,45 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 
 #ifdef TARGET_ARM64
 
+// The following classes
+//   - InitBlockUnrollHelper
+//   - CopyBlockUnrollHelper
+// encapsulate algorithms that produce instruction sequences for inlined equivalents of memset() and memcpy() functions.
+//
+// Each class has a private template function that accepts an "InstructionStream" as a template class argument:
+//   - InitBlockUnrollHelper::UnrollInitBlock<InstructionStream>(startDstOffset, byteCount, initValue)
+//   - CopyBlockUnrollHelper::UnrollCopyBlock<InstructionStream>(startSrcOffset, startDstOffset, byteCount)
+//
+// The design goal is to separate optimization approaches implemented by the algorithms
+// from the target platform specific details.
+//
+// InstructionStream is a "stream" of load/store instructions (i.e. ldr/ldp/str/stp) that represents an instruction
+// sequence that will initialize a memory region with some value or copy values from one memory region to another.
+//
+// As far as UnrollInitBlock and UnrollCopyBlock concerned, InstructionStream implements the following class member
+// functions:
+//   - LoadPairRegs(offset, regSizeBytes)
+//   - StorePairRegs(offset, regSizeBytes)
+//   - LoadReg(offset, regSizeBytes)
+//   - StoreReg(offset, regSizeBytes)
+//
+// There are three implementations of InstructionStream:
+//   - CountingStream that counts how many instructions were pushed out of the stream
+//   - VerifyingStream that validates that all the instructions in the stream are encodable on Arm64
+//   - ProducingStream that maps the function to corresponding emitter functions
+//
+// The idea behind the design is that decision regarding what instruction sequence to emit
+// (scalar instructions vs. SIMD instructions) is made by execution an algorithm producing an instruction sequence
+// while counting the number of produced instructions and verifying that all the instructions are encodable.
+//
+// For example, using SIMD instructions might produce a shorter sequence but require "spilling" a value of a starting
+// address
+// to an integer register (due to stricter offset alignment rules for 16-byte wide SIMD instructions).
+// This the CodeGen can take this fact into account before emitting an instruction sequence.
+//
+// Alternative design might have had VerifyingStream and ProducingStream fused into one class
+// that would allow to undo an instruction if the sequence is not fully encodable.
+
 class CountingStream
 {
 public:
@@ -1918,21 +1957,220 @@ private:
     unsigned instrCount;
 };
 
-class StoreBlockUnrollHelper
+class VerifyingStream
 {
 public:
-    static int AlignUp(int offset, int alignment)
+    VerifyingStream()
     {
-        assert(((alignment - 1) & alignment) == 0);
-        return (offset + alignment - 1) & (-alignment);
+        canEncodeAllLoads  = true;
+        canEncodeAllStores = true;
     }
 
-    static int GetRegSizeAtLeastBytes(int byteCount)
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
     {
-        assert(byteCount > 0);
+        canEncodeAllLoads = canEncodeAllLoads && emitter::canEncodeLoadOrStorePairOffset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    void StorePairRegs(int offset, unsigned regSizeBytes)
+    {
+        canEncodeAllStores =
+            canEncodeAllStores && emitter::canEncodeLoadOrStorePairOffset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    void LoadReg(int offset, unsigned regSizeBytes)
+    {
+        canEncodeAllLoads =
+            canEncodeAllLoads && emitter::emitIns_valid_imm_for_ldst_offset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    void StoreReg(int offset, unsigned regSizeBytes)
+    {
+        canEncodeAllStores =
+            canEncodeAllStores && emitter::emitIns_valid_imm_for_ldst_offset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    bool CanEncodeAllLoads() const
+    {
+        return canEncodeAllLoads;
+    }
+
+    bool CanEncodeAllStores() const
+    {
+        return canEncodeAllStores;
+    }
+
+private:
+    bool canEncodeAllLoads;
+    bool canEncodeAllStores;
+};
+
+class ProducingStreamBaseInstrs
+{
+public:
+    ProducingStreamBaseInstrs(regNumber intReg1, regNumber intReg2, regNumber addrReg, emitter* emitter)
+        : intReg1(intReg1), intReg2(intReg2), addrReg(addrReg), emitter(emitter)
+    {
+    }
+
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
+    {
+        assert(regSizeBytes == 8);
+
+        emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), intReg1, intReg2, addrReg, offset);
+    }
+
+    void StorePairRegs(int offset, unsigned regSizeBytes)
+    {
+        assert(regSizeBytes == 8);
+
+        emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), intReg1, intReg2, addrReg, offset);
+    }
+
+    void LoadReg(int offset, unsigned regSizeBytes)
+    {
+        instruction ins = INS_ldr;
+
+        if (regSizeBytes == 1)
+        {
+            ins = INS_ldrb;
+        }
+        else if (regSizeBytes == 2)
+        {
+            ins = INS_ldrh;
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), intReg1, addrReg, offset);
+    }
+
+    void StoreReg(int offset, unsigned regSizeBytes)
+    {
+        instruction ins = INS_str;
+
+        if (regSizeBytes == 1)
+        {
+            ins = INS_strb;
+        }
+        else if (regSizeBytes == 2)
+        {
+            ins = INS_strh;
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), intReg1, addrReg, offset);
+    }
+
+private:
+    const regNumber intReg1;
+    const regNumber intReg2;
+    const regNumber addrReg;
+    emitter* const  emitter;
+};
+
+class ProducingStream
+{
+public:
+    ProducingStream(regNumber intReg1, regNumber simdReg1, regNumber simdReg2, regNumber addrReg, emitter* emitter)
+        : intReg1(intReg1), simdReg1(simdReg1), simdReg2(simdReg2), addrReg(addrReg), emitter(emitter)
+    {
+    }
+
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
+    {
+        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+
+        emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), simdReg1, simdReg2, addrReg, offset);
+    }
+
+    void StorePairRegs(int offset, unsigned regSizeBytes)
+    {
+        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+
+        emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), simdReg1, simdReg2, addrReg, offset);
+    }
+
+    void LoadReg(int offset, unsigned regSizeBytes)
+    {
+        instruction ins = INS_ldr;
+
+        // Note that 'intReg1' can be unavailable.
+        // If that is the case, then use SIMD instruction ldr and
+        // 'simdReg1' as a temporary register.
+        regNumber tempReg;
+
+        if ((regSizeBytes == 16) || (intReg1 == REG_NA))
+        {
+            tempReg = simdReg1;
+        }
+        else
+        {
+            tempReg = intReg1;
+
+            if (regSizeBytes == 1)
+            {
+                ins = INS_ldrb;
+            }
+            else if (regSizeBytes == 2)
+            {
+                ins = INS_ldrh;
+            }
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), tempReg, addrReg, offset);
+    }
+
+    void StoreReg(int offset, unsigned regSizeBytes)
+    {
+        instruction ins = INS_str;
+
+        // Note that 'intReg1' can be unavailable.
+        // If that is the case, then use SIMD instruction ldr and
+        // 'simdReg1' as a temporary register.
+        regNumber tempReg;
+
+        if ((regSizeBytes == 16) || (intReg1 == REG_NA))
+        {
+            tempReg = simdReg1;
+        }
+        else
+        {
+            tempReg = intReg1;
+
+            if (regSizeBytes == 1)
+            {
+                ins = INS_strb;
+            }
+            else if (regSizeBytes == 2)
+            {
+                ins = INS_strh;
+            }
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), tempReg, addrReg, offset);
+    }
+
+private:
+    const regNumber intReg1;
+    const regNumber simdReg1;
+    const regNumber simdReg2;
+    const regNumber addrReg;
+    emitter* const  emitter;
+};
+
+class BlockUnrollHelper
+{
+public:
+    // The following function returns a 'size' bytes that
+    //   1) is greater or equal to 'byteCount' and
+    //   2) can be read or written by a single instruction on Arm64.
+    // For example, Arm64 ISA has ldrb/strb and ldrh/strh that
+    // load/store 1 or 2 bytes, correspondingly.
+    // However, there are no instructions that can load/store 3 bytes and
+    // the next "smallest" instruction is ldr/str that operates on 4 byte granularity.
+    static unsigned GetRegSizeAtLeastBytes(unsigned byteCount)
+    {
+        assert(byteCount != 0);
         assert(byteCount < 16);
 
-        int regSizeBytes = byteCount;
+        unsigned regSizeBytes = byteCount;
 
         if (byteCount > 8)
         {
@@ -1951,176 +2189,10 @@ public:
     }
 };
 
-class VerifyingStream
-{
-public:
-    VerifyingStream()
-    {
-        canEncodeAllLoads  = true;
-        canEncodeAllStores = true;
-    }
-
-    void LoadPairRegs(int offset, unsigned regSizeBytes)
-    {
-        canEncodeAllLoads = canEncodeAllLoads && CanEncodeLoadOrStorePairRegs(offset, regSizeBytes);
-    }
-
-    void StorePairRegs(int offset, unsigned regSizeBytes)
-    {
-        canEncodeAllStores = canEncodeAllStores && CanEncodeLoadOrStorePairRegs(offset, regSizeBytes);
-    }
-
-    void LoadReg(int offset, unsigned regSizeBytes)
-    {
-        canEncodeAllLoads = canEncodeAllLoads && CanEncodeLoadOrStoreReg(offset, regSizeBytes);
-    }
-
-    void StoreReg(int offset, unsigned regSizeBytes)
-    {
-        canEncodeAllStores = canEncodeAllStores && CanEncodeLoadOrStoreReg(offset, regSizeBytes);
-    }
-
-    bool CanEncodeAllLoads() const
-    {
-        return canEncodeAllLoads;
-    }
-
-    bool CanEncodeAllStores() const
-    {
-        return canEncodeAllStores;
-    }
-
-private:
-    static bool CanEncodeLoadOrStorePairRegs(int offset, unsigned regSizeBytes)
-    {
-        const bool canEncodeWithSignedOffset =
-            (offset % regSizeBytes == 0) && (offset >= -64 * (int)regSizeBytes) && (offset < 64 * (int)regSizeBytes);
-        return canEncodeWithSignedOffset;
-    }
-
-    static bool CanEncodeLoadOrStoreReg(int offset, unsigned regSizeBytes)
-    {
-        const bool canEncodeWithUnsignedOffset =
-            (offset % regSizeBytes == 0) && (offset >= 0) && (offset < (int)regSizeBytes * 4096);
-        const bool canEncodeWithUnscaledOffset = (offset >= -256) && (offset <= 255);
-
-        return canEncodeWithUnsignedOffset || canEncodeWithUnscaledOffset;
-    }
-
-    bool canEncodeAllLoads;
-    bool canEncodeAllStores;
-};
-
-class ProducingStream
-{
-public:
-    ProducingStream(regNumber intReg1,
-                    regNumber intReg2,
-                    regNumber simdReg1,
-                    regNumber simdReg2,
-                    regNumber addrReg,
-                    emitter*  emitter)
-        : intReg1(intReg1), intReg2(intReg2), simdReg1(simdReg1), simdReg2(simdReg2), addrReg(addrReg), emitter(emitter)
-    {
-    }
-
-    void LoadPairRegs(int offset, unsigned regSizeBytes)
-    {
-        assert((regSizeBytes == 8) || (regSizeBytes == 16));
-
-        regNumber tempReg1;
-        regNumber tempReg2;
-
-        if ((regSizeBytes == 16) || (intReg2 == REG_NA))
-        {
-            tempReg1 = simdReg1;
-            tempReg2 = simdReg2;
-        }
-        else
-        {
-            tempReg1 = intReg1;
-            tempReg2 = intReg2;
-        }
-
-        emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), tempReg1, tempReg2, addrReg, offset);
-    }
-
-    void StorePairRegs(int offset, unsigned regSizeBytes)
-    {
-        assert((regSizeBytes == 8) || (regSizeBytes == 16));
-
-        regNumber tempReg1;
-        regNumber tempReg2;
-
-        if ((regSizeBytes == 16) || (intReg2 == REG_NA))
-        {
-            tempReg1 = simdReg1;
-            tempReg2 = simdReg2;
-        }
-        else
-        {
-            tempReg1 = intReg1;
-            tempReg2 = intReg2;
-        }
-
-        emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), tempReg1, tempReg2, addrReg, offset);
-    }
-
-    void LoadReg(int offset, unsigned regSizeBytes)
-    {
-        instruction ins     = INS_ldr;
-        regNumber   tempReg = intReg1;
-
-        if ((intReg1 == REG_NA) || (regSizeBytes == 16))
-        {
-            tempReg = simdReg1;
-        }
-        else if (regSizeBytes == 1)
-        {
-            ins = INS_ldrb;
-        }
-        else if (regSizeBytes == 2)
-        {
-            ins = INS_ldrh;
-        }
-
-        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), tempReg, addrReg, offset);
-    }
-
-    void StoreReg(int offset, unsigned regSizeBytes)
-    {
-        instruction ins     = INS_str;
-        regNumber   tempReg = intReg1;
-
-        if ((intReg1 == REG_NA) || (regSizeBytes == 16))
-        {
-            tempReg = simdReg1;
-        }
-        else if (regSizeBytes == 1)
-        {
-            ins = INS_strb;
-        }
-        else if (regSizeBytes == 2)
-        {
-            ins = INS_strh;
-        }
-
-        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), tempReg, addrReg, offset);
-    }
-
-private:
-    const regNumber intReg1;
-    const regNumber intReg2;
-    const regNumber simdReg1;
-    const regNumber simdReg2;
-    const regNumber addrReg;
-    emitter* const  emitter;
-};
-
 class InitBlockUnrollHelper
 {
 public:
-    InitBlockUnrollHelper(int dstOffset, int byteCount) : dstStartOffset(dstOffset), byteCount(byteCount)
+    InitBlockUnrollHelper(int dstOffset, unsigned byteCount) : dstStartOffset(dstOffset), byteCount(byteCount)
     {
     }
 
@@ -2150,51 +2222,57 @@ public:
         return instrStream.InstructionCount();
     }
 
-    void Unroll(int regSizeBytes, regNumber intReg, regNumber simdReg, regNumber addrReg, emitter* emitter) const
+    void Unroll(regNumber intReg, regNumber simdReg, regNumber addrReg, emitter* emitter) const
     {
-        ProducingStream instrStream(intReg, intReg, simdReg, simdReg, addrReg, emitter);
-        UnrollInitBlock(instrStream, regSizeBytes);
+        ProducingStream instrStream(intReg, simdReg, simdReg, addrReg, emitter);
+        UnrollInitBlock(instrStream, FP_REGSIZE_BYTES);
+    }
+
+    void UnrollBaseInstrs(regNumber intReg, regNumber addrReg, emitter* emitter) const
+    {
+        ProducingStreamBaseInstrs instrStream(intReg, intReg, addrReg, emitter);
+        UnrollInitBlock(instrStream, REGSIZE_BYTES);
     }
 
 private:
     template <class InstructionStream>
-    void UnrollInitBlock(InstructionStream& instrStream, int regSizeBytes) const
+    void UnrollInitBlock(InstructionStream& instrStream, int initialRegSizeBytes) const
     {
-        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+        assert((initialRegSizeBytes == 8) || (initialRegSizeBytes == 16));
 
         int       offset    = dstStartOffset;
         const int endOffset = offset + byteCount;
 
-        const int storePairRegsAlignment   = regSizeBytes;
-        const int storePairRegsWritesBytes = 2 * regSizeBytes;
+        const int storePairRegsAlignment   = initialRegSizeBytes;
+        const int storePairRegsWritesBytes = 2 * initialRegSizeBytes;
 
-        const int offsetAligned           = StoreBlockUnrollHelper::AlignUp(offset, storePairRegsAlignment);
+        const int offsetAligned           = AlignUp((UINT)offset, storePairRegsAlignment);
         const int storePairRegsInstrCount = (endOffset - offsetAligned) / storePairRegsWritesBytes;
 
         if (storePairRegsInstrCount > 0)
         {
             if (offset != offsetAligned)
             {
-                const int firstRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(offsetAligned - offset);
+                const int firstRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(offsetAligned - offset);
                 instrStream.StoreReg(offset, firstRegSizeBytes);
                 offset = offsetAligned;
             }
 
             while (endOffset - offset >= storePairRegsWritesBytes)
             {
-                instrStream.StorePairRegs(offset, regSizeBytes);
+                instrStream.StorePairRegs(offset, initialRegSizeBytes);
                 offset += storePairRegsWritesBytes;
             }
 
-            if (endOffset - offset >= regSizeBytes)
+            if (endOffset - offset >= initialRegSizeBytes)
             {
-                instrStream.StoreReg(offset, regSizeBytes);
-                offset += regSizeBytes;
+                instrStream.StoreReg(offset, initialRegSizeBytes);
+                offset += initialRegSizeBytes;
             }
 
             if (offset != endOffset)
             {
-                const int lastRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(endOffset - offset);
+                const int lastRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(endOffset - offset);
                 instrStream.StoreReg(endOffset - lastRegSizeBytes, lastRegSizeBytes);
             }
         }
@@ -2202,47 +2280,47 @@ private:
         {
             bool isSafeToWriteBehind = false;
 
-            while (endOffset - offset >= regSizeBytes)
+            while (endOffset - offset >= initialRegSizeBytes)
             {
-                instrStream.StoreReg(offset, regSizeBytes);
-                offset += regSizeBytes;
+                instrStream.StoreReg(offset, initialRegSizeBytes);
+                offset += initialRegSizeBytes;
                 isSafeToWriteBehind = true;
             }
 
-            assert(endOffset - offset < regSizeBytes);
+            assert(endOffset - offset < initialRegSizeBytes);
 
             while (offset != endOffset)
             {
                 if (isSafeToWriteBehind)
                 {
-                    assert(endOffset - offset < regSizeBytes);
-                    const int lastRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(endOffset - offset);
+                    assert(endOffset - offset < initialRegSizeBytes);
+                    const int lastRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(endOffset - offset);
                     instrStream.StoreReg(endOffset - lastRegSizeBytes, lastRegSizeBytes);
                     break;
                 }
 
-                if (offset + regSizeBytes > endOffset)
+                if (offset + initialRegSizeBytes > endOffset)
                 {
-                    regSizeBytes = regSizeBytes / 2;
+                    initialRegSizeBytes = initialRegSizeBytes / 2;
                 }
                 else
                 {
-                    instrStream.StoreReg(offset, regSizeBytes);
-                    offset += regSizeBytes;
+                    instrStream.StoreReg(offset, initialRegSizeBytes);
+                    offset += initialRegSizeBytes;
                     isSafeToWriteBehind = true;
                 }
             }
         }
     }
 
-    int       dstStartOffset;
-    const int byteCount;
+    int            dstStartOffset;
+    const unsigned byteCount;
 };
 
 class CopyBlockUnrollHelper
 {
 public:
-    CopyBlockUnrollHelper(int srcOffset, int dstOffset, int byteCount)
+    CopyBlockUnrollHelper(int srcOffset, int dstOffset, unsigned byteCount)
         : srcStartOffset(srcOffset), dstStartOffset(dstOffset), byteCount(byteCount)
     {
     }
@@ -2296,25 +2374,32 @@ public:
         *pCanEncodeAllStores = instrStream.CanEncodeAllStores();
     }
 
-    void Unroll(int       regSizeBytes,
-                regNumber intReg1,
-                regNumber intReg2,
+    void Unroll(unsigned  initialRegSizeBytes,
+                regNumber intReg,
                 regNumber simdReg1,
                 regNumber simdReg2,
                 regNumber srcAddrReg,
                 regNumber dstAddrReg,
                 emitter*  emitter) const
     {
-        ProducingStream loadStream(intReg1, intReg2, simdReg1, simdReg2, srcAddrReg, emitter);
-        ProducingStream storeStream(intReg1, intReg2, simdReg1, simdReg2, dstAddrReg, emitter);
-        UnrollCopyBlock(loadStream, storeStream, regSizeBytes);
+        ProducingStream loadStream(intReg, simdReg1, simdReg2, srcAddrReg, emitter);
+        ProducingStream storeStream(intReg, simdReg1, simdReg2, dstAddrReg, emitter);
+        UnrollCopyBlock(loadStream, storeStream, initialRegSizeBytes);
+    }
+
+    void UnrollBaseInstrs(
+        regNumber intReg1, regNumber intReg2, regNumber srcAddrReg, regNumber dstAddrReg, emitter* emitter) const
+    {
+        ProducingStreamBaseInstrs loadStream(intReg1, intReg2, srcAddrReg, emitter);
+        ProducingStreamBaseInstrs storeStream(intReg1, intReg2, dstAddrReg, emitter);
+        UnrollCopyBlock(loadStream, storeStream, REGSIZE_BYTES);
     }
 
 private:
     template <class InstructionStream>
-    void UnrollCopyBlock(InstructionStream& loadStream, InstructionStream& storeStream, int regSizeBytes) const
+    void UnrollCopyBlock(InstructionStream& loadStream, InstructionStream& storeStream, int initialRegSizeBytes) const
     {
-        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+        assert((initialRegSizeBytes == 8) || (initialRegSizeBytes == 16));
 
         int srcOffset = srcStartOffset;
         int dstOffset = dstStartOffset;
@@ -2322,10 +2407,10 @@ private:
         const int endSrcOffset = srcOffset + byteCount;
         const int endDstOffset = dstOffset + byteCount;
 
-        const int storePairRegsAlignment   = regSizeBytes;
-        const int storePairRegsWritesBytes = 2 * regSizeBytes;
+        const int storePairRegsAlignment   = initialRegSizeBytes;
+        const int storePairRegsWritesBytes = 2 * initialRegSizeBytes;
 
-        const int dstOffsetAligned = StoreBlockUnrollHelper::AlignUp(dstOffset, storePairRegsAlignment);
+        const int dstOffsetAligned = AlignUp((UINT)dstOffset, storePairRegsAlignment);
 
         if (endDstOffset - dstOffsetAligned >= storePairRegsWritesBytes)
         {
@@ -2333,7 +2418,7 @@ private:
 
             if (dstBytesToAlign != 0)
             {
-                const int firstRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(dstBytesToAlign);
+                const int firstRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(dstBytesToAlign);
 
                 loadStream.LoadReg(srcOffset, firstRegSizeBytes);
                 storeStream.StoreReg(dstOffset, firstRegSizeBytes);
@@ -2344,25 +2429,25 @@ private:
 
             while (endDstOffset - dstOffset >= storePairRegsWritesBytes)
             {
-                loadStream.LoadPairRegs(srcOffset, regSizeBytes);
-                storeStream.StorePairRegs(dstOffset, regSizeBytes);
+                loadStream.LoadPairRegs(srcOffset, initialRegSizeBytes);
+                storeStream.StorePairRegs(dstOffset, initialRegSizeBytes);
 
                 srcOffset += storePairRegsWritesBytes;
                 dstOffset += storePairRegsWritesBytes;
             }
 
-            if (endDstOffset - dstOffset >= regSizeBytes)
+            if (endDstOffset - dstOffset >= initialRegSizeBytes)
             {
-                loadStream.LoadReg(srcOffset, regSizeBytes);
-                storeStream.StoreReg(dstOffset, regSizeBytes);
+                loadStream.LoadReg(srcOffset, initialRegSizeBytes);
+                storeStream.StoreReg(dstOffset, initialRegSizeBytes);
 
-                srcOffset += regSizeBytes;
-                dstOffset += regSizeBytes;
+                srcOffset += initialRegSizeBytes;
+                dstOffset += initialRegSizeBytes;
             }
 
             if (dstOffset != endDstOffset)
             {
-                const int lastRegSizeBytes = StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(endDstOffset - dstOffset);
+                const int lastRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(endDstOffset - dstOffset);
 
                 loadStream.LoadReg(endSrcOffset - lastRegSizeBytes, lastRegSizeBytes);
                 storeStream.StoreReg(endDstOffset - lastRegSizeBytes, lastRegSizeBytes);
@@ -2372,50 +2457,49 @@ private:
         {
             bool isSafeToWriteBehind = false;
 
-            while (endDstOffset - dstOffset >= regSizeBytes)
+            while (endDstOffset - dstOffset >= initialRegSizeBytes)
             {
-                loadStream.LoadReg(srcOffset, regSizeBytes);
-                storeStream.StoreReg(dstOffset, regSizeBytes);
+                loadStream.LoadReg(srcOffset, initialRegSizeBytes);
+                storeStream.StoreReg(dstOffset, initialRegSizeBytes);
 
-                srcOffset += regSizeBytes;
-                dstOffset += regSizeBytes;
+                srcOffset += initialRegSizeBytes;
+                dstOffset += initialRegSizeBytes;
                 isSafeToWriteBehind = true;
             }
 
-            assert(endSrcOffset - srcOffset < regSizeBytes);
+            assert(endSrcOffset - srcOffset < initialRegSizeBytes);
 
             while (dstOffset != endDstOffset)
             {
                 if (isSafeToWriteBehind)
                 {
-                    const int lastRegSizeBytes =
-                        StoreBlockUnrollHelper::GetRegSizeAtLeastBytes(endDstOffset - dstOffset);
+                    const int lastRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(endDstOffset - dstOffset);
 
                     loadStream.LoadReg(endSrcOffset - lastRegSizeBytes, lastRegSizeBytes);
                     storeStream.StoreReg(endDstOffset - lastRegSizeBytes, lastRegSizeBytes);
                     break;
                 }
 
-                if (dstOffset + regSizeBytes > endDstOffset)
+                if (dstOffset + initialRegSizeBytes > endDstOffset)
                 {
-                    regSizeBytes = regSizeBytes / 2;
+                    initialRegSizeBytes = initialRegSizeBytes / 2;
                 }
                 else
                 {
-                    loadStream.LoadReg(srcOffset, regSizeBytes);
-                    storeStream.StoreReg(dstOffset, regSizeBytes);
+                    loadStream.LoadReg(srcOffset, initialRegSizeBytes);
+                    storeStream.StoreReg(dstOffset, initialRegSizeBytes);
 
-                    srcOffset += regSizeBytes;
-                    dstOffset += regSizeBytes;
+                    srcOffset += initialRegSizeBytes;
+                    dstOffset += initialRegSizeBytes;
                     isSafeToWriteBehind = true;
                 }
             }
         }
     }
 
-    int       srcStartOffset;
-    int       dstStartOffset;
-    const int byteCount;
+    int            srcStartOffset;
+    int            dstStartOffset;
+    const unsigned byteCount;
 };
 
 #endif // TARGET_ARM64
