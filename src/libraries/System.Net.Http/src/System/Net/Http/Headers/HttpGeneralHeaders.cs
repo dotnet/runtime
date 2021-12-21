@@ -92,8 +92,7 @@ namespace System.Net.Http.Headers
             {
                 if (_trailer == null)
                 {
-                    _trailer = new HttpHeaderValueCollection<string>(KnownHeaders.Trailer.Descriptor,
-                        _parent, HeaderUtilities.TokenValidator);
+                    _trailer = new HttpHeaderValueCollection<string>(KnownHeaders.Trailer.Descriptor, _parent);
                 }
                 return _trailer;
             }
@@ -182,7 +181,7 @@ namespace System.Net.Http.Headers
             {
                 if (_connection == null)
                 {
-                    _connection = new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor, _parent, HeaderUtilities.TokenValidator);
+                    _connection = new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor, _parent);
                 }
                 return _connection;
             }

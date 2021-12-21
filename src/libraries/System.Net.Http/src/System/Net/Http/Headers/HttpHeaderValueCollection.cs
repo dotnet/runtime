@@ -34,7 +34,6 @@ namespace System.Net.Http.Headers
     {
         private readonly HeaderDescriptor _descriptor;
         private readonly HttpHeaders _store;
-        private readonly Action<HttpHeaderValueCollection<T>, T>? _validator;
 
         public int Count
         {
@@ -46,17 +45,10 @@ namespace System.Net.Http.Headers
             get { return false; }
         }
 
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, Action<HttpHeaderValueCollection<T>, T>? validator = null)
+        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store)
         {
-#pragma warning disable CS0252 // Possible unintended reference comparison; left hand side needs cast
-            Debug.Assert(validator is null || validator == HeaderUtilities.TokenValidator, "non token validator??");
-#pragma warning restore CS0252 // Possible unintended reference comparison; left hand side needs cast
-
-            Debug.Assert(validator is not null == (descriptor.Parser == GenericHeaderParser.TokenListParser), "non token list parser??");
-
             _store = store;
             _descriptor = descriptor;
-            _validator = validator;
         }
 
         public void Add(T item)
@@ -181,10 +173,13 @@ namespace System.Net.Http.Headers
                 throw new ArgumentNullException(nameof(item));
             }
 
-            // If this instance has a custom validator for validating arguments, call it now.
-            if (_validator != null)
+            if (_descriptor.Parser == GenericHeaderParser.TokenListParser)
             {
-                _validator(this, item);
+                // The collection expects valid HTTP tokens, which are typed as string.
+                // Unlike other parsed values (which are always valid by construction),
+                // we can't assume the provided string is a valid token. So validate it before we use it.
+                Debug.Assert(typeof(T) == typeof(string));
+                HeaderUtilities.CheckValidToken((string)(object)item, nameof(item));
             }
         }
 

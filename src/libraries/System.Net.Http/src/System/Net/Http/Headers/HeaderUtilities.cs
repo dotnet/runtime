@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -21,9 +20,6 @@ namespace System.Net.Http.Headers
             new NameValueWithParametersHeaderValue("100-continue");
 
         internal const string BytesUnit = "bytes";
-
-        // Validator
-        internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
 
         internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
@@ -370,11 +366,6 @@ namespace System.Net.Http.Headers
             }
 
             sb.Append('}');
-        }
-
-        private static void ValidateToken(HttpHeaderValueCollection<string> collection, string value)
-        {
-            CheckValidToken(value, "item");
         }
 
         internal static UnvalidatedObjectCollection<NameValueHeaderValue>? Clone(this UnvalidatedObjectCollection<NameValueHeaderValue>? source)
