@@ -35,7 +35,6 @@ namespace System.Net.Http.Headers
     {
         private readonly HeaderDescriptor _descriptor;
         private readonly HttpHeaders _store;
-        private readonly T? _specialValue;
         private readonly Action<HttpHeaderValueCollection<T>, T>? _validator;
 
         public int Count
@@ -48,44 +47,10 @@ namespace System.Net.Http.Headers
             get { return false; }
         }
 
-        internal bool IsSpecialValueSet
+        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, Action<HttpHeaderValueCollection<T>, T>? validator = null)
         {
-            get
-            {
-                // If this collection instance has a "special value", then check whether that value was already set.
-                if (_specialValue == null)
-                {
-                    return false;
-                }
-                return _store.ContainsParsedValue(_descriptor, _specialValue);
-            }
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store)
-            : this(descriptor, store, null, null)
-        {
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store,
-            Action<HttpHeaderValueCollection<T>, T> validator)
-            : this(descriptor, store, null, validator)
-        {
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T specialValue)
-            : this(descriptor, store, specialValue, null)
-        {
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T? specialValue,
-            Action<HttpHeaderValueCollection<T>, T>? validator)
-        {
-            Debug.Assert(descriptor.Name != null);
-            Debug.Assert(store != null);
-
             _store = store;
             _descriptor = descriptor;
-            _specialValue = specialValue;
             _validator = validator;
         }
 
@@ -202,27 +167,6 @@ namespace System.Net.Http.Headers
         public override string ToString()
         {
             return _store.GetHeaderString(_descriptor);
-        }
-
-        internal void SetSpecialValue()
-        {
-            Debug.Assert(_specialValue != null,
-                "This method can only be used if the collection has a 'special value' set.");
-
-            if (!_store.ContainsParsedValue(_descriptor, _specialValue))
-            {
-                _store.AddParsedValue(_descriptor, _specialValue);
-            }
-        }
-
-        internal void RemoveSpecialValue()
-        {
-            Debug.Assert(_specialValue != null,
-                "This method can only be used if the collection has a 'special value' set.");
-
-            // We're not interested in the return value. It's OK if the "special value" wasn't in the store
-            // before calling RemoveParsedValue().
-            _store.RemoveParsedValue(_descriptor, _specialValue);
         }
 
         private void CheckValue(T item)

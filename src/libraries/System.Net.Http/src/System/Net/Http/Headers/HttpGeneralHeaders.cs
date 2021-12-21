@@ -182,8 +182,7 @@ namespace System.Net.Http.Headers
             {
                 if (_connection == null)
                 {
-                    _connection = new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor,
-                        _parent, HeaderUtilities.ConnectionClose, HeaderUtilities.TokenValidator);
+                    _connection = new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor, _parent, HeaderUtilities.TokenValidator);
                 }
                 return _connection;
             }
@@ -195,8 +194,7 @@ namespace System.Net.Http.Headers
             {
                 if (_transferEncoding == null)
                 {
-                    _transferEncoding = new HttpHeaderValueCollection<TransferCodingHeaderValue>(
-                        KnownHeaders.TransferEncoding.Descriptor, _parent, HeaderUtilities.TransferEncodingChunked);
+                    _transferEncoding = new HttpHeaderValueCollection<TransferCodingHeaderValue>(KnownHeaders.TransferEncoding.Descriptor, _parent);
                 }
                 return _transferEncoding;
             }

@@ -185,7 +185,7 @@ namespace System.Net.Http.Headers
             GetSpecializedCollection(UserAgentSlot, static thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(KnownHeaders.UserAgent.Descriptor, thisRef));
 
         public HttpHeaderValueCollection<NameValueWithParametersHeaderValue> Expect =>
-            _expect ??= new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(KnownHeaders.Expect.Descriptor, this, HeaderUtilities.ExpectContinue);
+            _expect ??= new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(KnownHeaders.Expect.Descriptor, this);
 
         #endregion
 
