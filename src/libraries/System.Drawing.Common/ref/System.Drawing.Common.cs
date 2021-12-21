@@ -1047,6 +1047,8 @@ namespace System.Drawing
         public void Xor(System.Drawing.Rectangle rect) { }
         public void Xor(System.Drawing.RectangleF rect) { }
         public void Xor(System.Drawing.Region region) { }
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Region FromHandle(System.IntPtr handle) { throw null; }
     }
     public enum RotateFlipType
     {

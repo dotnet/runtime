@@ -60,6 +60,13 @@ namespace System.Drawing
 
         internal Region(IntPtr nativeRegion) => SetNativeRegion(nativeRegion);
 
+        public IntPtr Handle => NativeRegion;
+
+        public static Region FromHandle(IntPtr handle)
+        {
+            return new Region(handle);
+        }
+
         public static Region FromHrgn(IntPtr hrgn)
         {
             Gdip.CheckStatus(Gdip.GdipCreateRegionHrgn(hrgn, out IntPtr region));
