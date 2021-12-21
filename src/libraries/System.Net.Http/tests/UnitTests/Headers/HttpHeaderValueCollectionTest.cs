@@ -498,32 +498,6 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void Ctor_ProvideValidator_ValidatorIsUsedWhenAddingValues()
-        {
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                MockValidator);
-
-            // Adding an arbitrary Uri should not throw.
-            collection.Add(new Uri("http://some/"));
-
-            // When we add 'invalidValue' our MockValidator will throw.
-            Assert.Throws<MockException>(() => { collection.Add(invalidValue); });
-        }
-
-        [Fact]
-        public void Ctor_ProvideValidator_ValidatorIsUsedWhenRemovingValues()
-        {
-            // Use different ctor overload than in previous test to make sure all ctor overloads work correctly.
-            MockHeaders headers = new MockHeaders();
-            HttpHeaderValueCollection<Uri> collection = new HttpHeaderValueCollection<Uri>(knownUriHeader, headers,
-                MockValidator);
-
-            // When we remove 'invalidValue' our MockValidator will throw.
-            Assert.Throws<MockException>(() => { collection.Remove(invalidValue); });
-        }
-
-        [Fact]
         public void ToString_SpecialValues_Success()
         {
             HttpRequestMessage request = new HttpRequestMessage();
@@ -588,14 +562,6 @@ namespace System.Net.Http.Tests
         }
 
         #region Helper methods
-
-        private static void MockValidator(HttpHeaderValueCollection<Uri> collection, Uri value)
-        {
-            if (value == invalidValue)
-            {
-                throw new MockException();
-            }
-        }
 
         public class MockException : Exception
         {

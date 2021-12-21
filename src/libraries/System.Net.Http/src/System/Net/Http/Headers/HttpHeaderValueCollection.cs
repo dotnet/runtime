@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -49,6 +48,12 @@ namespace System.Net.Http.Headers
 
         internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, Action<HttpHeaderValueCollection<T>, T>? validator = null)
         {
+#pragma warning disable CS0252 // Possible unintended reference comparison; left hand side needs cast
+            Debug.Assert(validator is null || validator == HeaderUtilities.TokenValidator, "non token validator??");
+#pragma warning restore CS0252 // Possible unintended reference comparison; left hand side needs cast
+
+            Debug.Assert(validator is not null == (descriptor.Parser == GenericHeaderParser.TokenListParser), "non token list parser??");
+
             _store = store;
             _descriptor = descriptor;
             _validator = validator;
