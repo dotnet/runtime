@@ -154,7 +154,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the component name from the site.
             /// </summary>
-            internal string? GetComponentName(object? instance)
+            internal static string? GetComponentName(object? instance)
             {
                 IComponent? comp = instance as IComponent;
                 ISite? site = comp?.Site;
