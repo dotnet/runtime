@@ -27,11 +27,6 @@ namespace System.Net.Http.Headers
             set { _parent.SetOrRemoveParsedValue(KnownHeaders.CacheControl.Descriptor, value); }
         }
 
-        public HttpHeaderValueCollection<string> Connection
-        {
-            get { return ConnectionCore; }
-        }
-
         public bool? ConnectionClose
         {
             get
@@ -46,30 +41,23 @@ namespace System.Net.Http.Headers
                 if (value == true)
                 {
                     _connectionCloseSet = true;
-                    ConnectionCore.SetSpecialValue();
+                    if (!_parent.ContainsParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose))
+                    {
+                        _parent.AddParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose);
+                    }
                 }
                 else
                 {
                     _connectionCloseSet = value != null;
-                    ConnectionCore.RemoveSpecialValue();
+                    // We intentionally ignore in the return value. It's OK if "close" wasn't in the store.
+                    _parent.RemoveParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose);
                 }
             }
         }
 
         internal static bool? GetConnectionClose(HttpHeaders parent, HttpGeneralHeaders? headers)
         {
-            // If we've already initialized the connection header value collection
-            // and it contains the special value, or if we haven't and the headers contain
-            // the parsed special value, return true.  We don't just access ConnectionCore,
-            // as doing so will unnecessarily initialize the collection even if it's not needed.
-            if (headers?._connection != null)
-            {
-                if (headers._connection.IsSpecialValueSet)
-                {
-                    return true;
-                }
-            }
-            else if (parent.ContainsParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose))
+            if (parent.ContainsParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose))
             {
                 return true;
             }
@@ -200,7 +188,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private HttpHeaderValueCollection<string> ConnectionCore
+        public HttpHeaderValueCollection<string> Connection
         {
             get
             {
