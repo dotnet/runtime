@@ -6,6 +6,43 @@
 
 namespace System.Runtime.Intrinsics
 {
+    public static partial class Vector512
+    {
+        public static bool IsHardwareAccelerated { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<TTo> As<TFrom, TTo>(this System.Runtime.Intrinsics.Vector512<TFrom> vector) where TFrom : struct where TTo : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> Create(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> Create(double value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> Create(short value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> Create(int value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> Create(long value) { throw null; }
+
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> Create(sbyte value) { throw null; }
+
+        public static System.Runtime.Intrinsics.Vector512<System.Single> Create(float value) { throw null; }
+
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> Create(ushort value) { throw null; }
+
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> Create(uint value) { throw null; }
+
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> Create(ulong value) { throw null; }
+
+        public static System.Runtime.Intrinsics.Vector512<T> Create<T>(T value) where T : struct { throw null; }
+    }
+    public readonly partial struct Vector512<T> : System.IEquatable<System.Runtime.Intrinsics.Vector512<T>> where T : struct
+    {
+        private readonly int _dummyPrimitive;
+        public static System.Runtime.Intrinsics.Vector512<T> AllBitsSet { get { throw null; } }
+        public static int Count { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<T> Zero { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(System.Runtime.Intrinsics.Vector512<T> other) { throw null; }
+        public override int GetHashCode() { throw null; }
+	}
+
     public static partial class Vector128
     {
         public static bool IsHardwareAccelerated { get { throw null; } }
@@ -3654,6 +3691,23 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
+
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Avx512 : System.Runtime.Intrinsics.X86.Avx
+    {
+        internal Avx512() { }
+        public static new bool IsSupported { get { throw null; } }
+
+        public static System.Runtime.Intrinsics.Vector512<int> Add(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
+
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+
+
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("AvxVnni is in preview.")]
     public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
