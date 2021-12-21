@@ -440,6 +440,7 @@ namespace System.Runtime.InteropServices.JavaScript
             output.AppendLine( "  let argsRootBuffer = _get_args_root_buffer_for_method_call(converter, token);");
             output.AppendLine( "  let scratchBuffer = _get_buffer_for_method_call(converter, token);");
             output.AppendLine( "  let buffer = 0;");
+            output.AppendLine( "  let abnormalExit = true;");
             output.AppendLine( "  try {");
             output.AppendLine($"    buffer = converter_{state.MarshalString.Key}(");
             output.AppendLine( "      scratchBuffer, argsRootBuffer, method,");
@@ -454,6 +455,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             output.AppendLine("    resultRoot.value = invoke_method(method, 0, buffer, exceptionRoot.get_address());");
             output.AppendLine("    _handle_exception_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);");
+            output.AppendLine("    abnormalExit = false;");
             output.AppendLine();
 
             if (state.MarshalString.RawReturnValue)
@@ -464,7 +466,17 @@ namespace System.Runtime.InteropServices.JavaScript
                 GenerateFastUnboxBlock(state);
 
             output.AppendLine("  } finally {");
-            output.AppendLine("    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);");
+            // An error can occur during a managed method call, in which case we will hit the finally block without having fully
+            //  cleaned up from the call. In this case, allowing _teardown_after_call to throw a new exception (due to corrupt
+            //  state, etc) would silence the original exception that caused the failure, so we turn it into a log message
+            output.AppendLine("    if (abnormalExit) {");
+            output.AppendLine("      try {");
+            output.AppendLine("        _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);");
+            output.AppendLine("      } catch (exc) {");
+            output.AppendLine("        console.error(`Unhandled error while tearing down after failed managed method call: ${exc}`);");
+            output.AppendLine("      }");
+            output.AppendLine("    } else ");
+            output.AppendLine("      _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);");
             output.AppendLine("  }");
             output.AppendLine("};");
             output.AppendLine();

@@ -187,7 +187,6 @@ export function _handle_exception_for_call(
     if (!exc)
         return;
 
-    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
     throw exc;
 }
 
@@ -197,15 +196,18 @@ function _handle_exception_and_produce_result_for_call(
     exceptionRoot: WasmRoot<MonoObject>, argsRootBuffer: WasmRootBuffer | undefined,
     is_result_marshaled: boolean
 ): any {
-    _handle_exception_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
+    try {
+        _handle_exception_for_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
-    let result: any = resultRoot.value;
+        let result: any = resultRoot.value;
 
-    if (is_result_marshaled)
-        result = _unbox_mono_obj_root(resultRoot);
+        if (is_result_marshaled)
+            result = _unbox_mono_obj_root(resultRoot);
 
-    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
-    return result;
+        return result;
+    } finally {
+        _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, argsRootBuffer);
+    }
 }
 
 export function _teardown_after_call(
