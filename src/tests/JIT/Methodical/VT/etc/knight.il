@@ -16,7 +16,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module knight.exe
 
 .file alignment 512
 

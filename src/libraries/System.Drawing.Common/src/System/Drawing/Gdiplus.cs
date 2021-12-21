@@ -367,14 +367,14 @@ namespace System.Drawing
         public const int ERROR_CANCELLED = 1223;
 
         [StructLayout(LayoutKind.Sequential)]
-        public class ENHMETAHEADER
+        public struct ENHMETAHEADER
         {
             /// The ENHMETAHEADER structure is defined natively as a union with WmfHeader.
             /// Extreme care should be taken if changing the layout of the corresponding managed
             /// structures to minimize the risk of buffer overruns.  The affected managed classes
             /// are the following: ENHMETAHEADER, MetaHeader, MetafileHeaderWmf, MetafileHeaderEmf.
             public int iType;
-            public int nSize = 40; // ndirect.DllLib.sizeOf( this )
+            public int nSize;
             // rclBounds was a by-value RECTL structure
             public int rclBounds_left;
             public int rclBounds_top;

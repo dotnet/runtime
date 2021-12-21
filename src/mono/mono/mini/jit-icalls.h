@@ -229,4 +229,6 @@ ICALL_EXPORT void mono_throw_invalid_program (const char *msg);
 
 ICALL_EXPORT void mono_dummy_jit_icall (void);
 
+ICALL_EXPORT void mono_dummy_jit_icall_val (gpointer ptr);
+
 #endif /* __MONO_JIT_ICALLS_H__ */

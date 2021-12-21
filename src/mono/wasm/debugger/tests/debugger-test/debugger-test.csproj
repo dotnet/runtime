@@ -6,13 +6,13 @@
     <RunAnalyzers>false</RunAnalyzers>
     <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
+    <OutputType>library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="debugger-driver.html" />
     <WasmExtraFilesToDeploy Include="non-wasm-page.html" />
     <WasmExtraFilesToDeploy Include="other.js" />
-    <WasmExtraFilesToDeploy Include="debugger-main.js" />
     <WasmExtraFilesToDeploy Include="weather.json" />
 
     <!-- We want to bundle these assemblies, so build them first -->
@@ -22,13 +22,17 @@
     <ProjectReference Include="..\library-dependency-debugger-test2\library-dependency-debugger-test2.csproj" Private="true"/>
     <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" Private="true"/>
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
+    <ProjectReference Include="..\debugger-test-with-full-debug-type\debugger-test-with-full-debug-type.csproj" Private="true"/>
   </ItemGroup>
 
-  <Target Name="PrepareForWasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+  <Target Name="PrepareForWasmBuildApp" DependsOnTargets="Build">
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)native')"
+           Text="Cannot find %24(MicrosoftNetCoreAppRuntimePackRidDir)=$(MicrosoftNetCoreAppRuntimePackRidDir)native. Make sure to set the runtime configuration with %24(RuntimeConfiguration). Current value: $(RuntimeConfiguration)" />
+
     <PropertyGroup>
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>    
       <WasmAppDir>$(AppDir)</WasmAppDir>
-      <WasmMainJSPath>$(MonoProjectRoot)wasm\test-main.js</WasmMainJSPath>
+      <WasmMainJSPath>debugger-main.js</WasmMainJSPath>
       <!-- like is used on blazor -->
       <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">-1</WasmDebugLevel>
 
@@ -38,6 +42,7 @@
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-full-debug-type.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 

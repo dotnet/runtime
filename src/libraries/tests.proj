@@ -46,6 +46,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetArchitecture)' == 'armel'">
+    <!-- DllImportGenerator runtime tests depend on DNNE, which does not support armel as we don't officially support it. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetArchitecture)' == 'arm'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/60705 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
@@ -230,6 +235,15 @@
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/XmlFormatWriterGeneratorAOT/iOS.Simulator.XmlFormatWriterGeneratorAot.Test.csproj" />
   </ItemGroup>
 
+  <!-- Run only explicitly selected tests for Mac Catalyst in App Sandbox -->
+  <ItemGroup Condition="'$(TargetOS)' == 'MacCatalyst' and '$(EnableAppSandbox)' == 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/tests/**/*.Tests.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/**/*.Test.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/pull/61507 -->
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Diagnostics.Process/tests/System.Diagnostics.Process.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst') and '$(RunDisablediOSTests)' != 'true'">
     <!-- PNSE -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" />
@@ -359,10 +373,17 @@
     <ProjectReference Include="@(TrimmingTestProjects)" />
 
     <!-- wasm.build.tests are run on _WasmBuildTests job on CI, and with library tests locally. -->
-    <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\**\*.Tests.csproj"
+    <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Build.Tests\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TargetOS)' == 'Browser' and
                                     (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
+                                     ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
+                      BuildInParallel="false" />
+
+    <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Debugger.Tests\*.Tests.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TargetOS)' == 'Browser' and
+                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmDebuggerTests)' == 'true') or
                                      ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
                       BuildInParallel="false" />
   </ItemGroup>

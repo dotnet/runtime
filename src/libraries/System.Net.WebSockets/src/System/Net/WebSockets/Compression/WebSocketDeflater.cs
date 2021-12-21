@@ -144,7 +144,13 @@ namespace System.Net.WebSockets.Compression
                 consumed = input.Length - (int)_stream.AvailIn;
                 written = output.Length - (int)_stream.AvailOut;
 
-                needsMoreBuffer = errorCode == ErrorCode.BufError || _stream.AvailIn > 0;
+                // It is important here to also check that we haven't
+                // exhausted the output buffer because after deflating we're
+                // always going to issue a flush and a flush with empty output
+                // is going to throw.
+                needsMoreBuffer = errorCode == ErrorCode.BufError
+                    || _stream.AvailIn > 0
+                    || written == output.Length;
             }
         }
 
@@ -152,6 +158,7 @@ namespace System.Net.WebSockets.Compression
         {
             Debug.Assert(_stream is not null);
             Debug.Assert(_stream.AvailIn == 0);
+            Debug.Assert(output.Length > 0);
 
             fixed (byte* fixedOutput = output)
             {

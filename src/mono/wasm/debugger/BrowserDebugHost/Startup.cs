@@ -160,7 +160,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
-                            builder.AddSimpleConsole(options => options.SingleLine = true)
+                            builder.AddSimpleConsole(options =>
+                                    {
+                                        options.SingleLine = true;
+                                        options.TimestampFormat = "[HH:mm:ss] ";
+                                    })
                                    .AddFilter(null, LogLevel.Information)
                         );
 

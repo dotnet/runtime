@@ -1,8 +1,8 @@
 define(pkg_major, 1)
-define(pkg_minor, 5)
-define(pkg_extra, -rc1)
+define(pkg_minor, 6)
+define(pkg_extra, 2)
 define(pkg_maintainer, libunwind-devel@nongnu.org)
-define(mkvers, $1.$2$3)
+define(mkvers, $1.$2.$3)
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT([libunwind],[mkvers(pkg_major, pkg_minor, pkg_extra)],[pkg_maintainer])
 AC_CONFIG_SRCDIR(src/mi/backtrace.c)
@@ -34,9 +34,10 @@ esac
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(asm/ptrace_offsets.h endian.h sys/endian.h execinfo.h \
-		ia64intrin.h sys/uc_access.h unistd.h signal.h sys/types.h \
-		sys/procfs.h sys/ptrace.h byteswap.h elf.h sys/elf.h link.h sys/link.h)
+AC_CHECK_HEADERS(asm/ptrace_offsets.h asm/ptrace.h endian.h sys/endian.h sys/param.h \
+		execinfo.h ia64intrin.h sys/uc_access.h unistd.h signal.h sys/types.h \
+		sys/procfs.h sys/ptrace.h sys/syscall.h byteswap.h elf.h sys/elf.h \
+		link.h sys/link.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -96,6 +97,7 @@ AC_DEFUN([SET_ARCH],[
         [sh*],[$2=sh],
         [amd64],[$2=x86_64],
         [tile*],[$2=tilegx],
+        [riscv*],[$2=riscv],
         [$2=$1])
 ]) dnl SET_ARCH
 
@@ -118,7 +120,7 @@ esac
 
 AC_ARG_ENABLE(coredump,
 	AS_HELP_STRING([--enable-coredump],[building libunwind-coredump library]),,
-        [AS_CASE([$host_arch], [aarch64*|arm*|mips*|sh*|x86*|tile*], [enable_coredump=yes], [enable_coredump=no])]
+        [AS_CASE([$host_arch], [aarch64*|arm*|mips*|sh*|x86*|tile*|riscv*], [enable_coredump=yes], [enable_coredump=no])]
 )
 
 AC_MSG_CHECKING([if we should build libunwind-coredump])
@@ -134,7 +136,7 @@ AC_MSG_RESULT([$enable_ptrace])
 
 AC_ARG_ENABLE(setjmp,
 	AS_HELP_STRING([--enable-setjmp],[building libunwind-setjmp library]),,
-        [AS_IF([test x$target_arch == x$host_arch], [enable_setjmp=yes], [enable_setjmp=no])]
+        [AS_IF([test x$target_arch = x$host_arch], [enable_setjmp=yes], [enable_setjmp=no])]
 )
 
 AC_ARG_ENABLE(documentation,
@@ -148,6 +150,13 @@ AC_ARG_ENABLE(tests,
 AC_ARG_ENABLE(weak-backtrace,
  AS_HELP_STRING([--disable-weak-backtrace],[Do not provide the weak 'backtrace' symbol.]),,
  [enable_weak_backtrace=yes])
+
+AC_ARG_ENABLE(unwind-header,
+ AS_HELP_STRING([--disable-unwind-header],[Do not export the 'unwind.h' header]),,
+ [enable_unwind_header=yes])
+
+AC_MSG_CHECKING([if we should export unwind.h])
+AC_MSG_RESULT([$enable_unwind_header])
 
 AC_MSG_CHECKING([if we should build libunwind-setjmp])
 AC_MSG_RESULT([$enable_setjmp])
@@ -164,6 +173,7 @@ AC_MSG_RESULT([$target_os])
 AM_CONDITIONAL(BUILD_COREDUMP, test x$enable_coredump = xyes)
 AM_CONDITIONAL(BUILD_PTRACE, test x$enable_ptrace = xyes)
 AM_CONDITIONAL(BUILD_SETJMP, test x$enable_setjmp = xyes)
+AM_CONDITIONAL(BUILD_UNWIND_HEADER, test "x$enable_unwind_header" = xyes)
 AM_CONDITIONAL(NO_PTRACE_TEST, test x$build_arch != x$host_arch)
 AM_CONDITIONAL(REMOTE_ONLY, test x$target_arch != x$host_arch)
 AM_CONDITIONAL(ARCH_AARCH64, test x$target_arch = xaarch64)
@@ -178,6 +188,7 @@ AM_CONDITIONAL(ARCH_PPC64, test x$target_arch = xppc64)
 AM_CONDITIONAL(ARCH_SH, test x$target_arch = xsh)
 AM_CONDITIONAL(ARCH_TILEGX, test x$target_arch = xtilegx)
 AM_CONDITIONAL(ARCH_S390X, test x$target_arch = xs390x)
+AM_CONDITIONAL(ARCH_RISCV, test x$target_arch = xriscv)
 AM_CONDITIONAL(OS_LINUX, expr x$target_os : xlinux >/dev/null)
 AM_CONDITIONAL(OS_HPUX, expr x$target_os : xhpux >/dev/null)
 AM_CONDITIONAL(OS_FREEBSD, expr x$target_os : xfreebsd >/dev/null)
@@ -188,7 +199,7 @@ AC_MSG_CHECKING([for ELF helper width])
 case "${target_arch}" in
 (arm|hppa|ppc32|x86|sh) use_elf32=yes; AC_MSG_RESULT([32]);;
 (aarch64|ia64|ppc64|x86_64|s390x|tilegx)  use_elf64=yes; AC_MSG_RESULT([64]);;
-(mips)                 use_elfxx=yes; AC_MSG_RESULT([xx]);;
+(mips|riscv)                 use_elfxx=yes; AC_MSG_RESULT([xx]);;
 *)                     AC_MSG_ERROR([Unknown ELF target: ${target_arch}])
 esac
 AM_CONDITIONAL(USE_ELF32, [test x$use_elf32 = xyes])
@@ -203,12 +214,6 @@ else
 fi
 AM_CONDITIONAL(USE_DWARF, [test x$use_dwarf = xyes])
 AC_MSG_RESULT([$use_dwarf])
-
-if test x$target_arch = xppc64; then
-        libdir='${exec_prefix}/lib64'
-        AC_MSG_NOTICE([PowerPC64 detected, lib will be installed ${libdir}]);
-        AC_SUBST([libdir])
-fi
 
 AC_MSG_CHECKING([whether to restrict build to remote support])
 if test x$target_arch != x$host_arch; then
@@ -240,6 +245,7 @@ case $target_arch in
   arm*) enable_cxx_exceptions=no;;
   mips*) enable_cxx_exceptions=no;;
   tile*) enable_cxx_exceptions=no;;
+  s390x*) enable_cxx_exceptions=no;;
   *) enable_cxx_exceptions=yes;;
 esac
 ])
@@ -255,6 +261,9 @@ case "${target_arch}" in
   (aarch64) enable_debug_frame=yes;;
   (*)   enable_debug_frame=no;;
 esac])
+if test x$remote_only = xyes; then
+  enable_debug_frame=no
+fi
 if test x$enable_debug_frame = xyes; then
   AC_DEFINE([CONFIG_DEBUG_FRAME], [], [Enable Debug Frame])
 fi

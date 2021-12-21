@@ -20,6 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "gcinfo.h"
 #include "emit.h"
+#include "patchpointinfo.h"
 
 //------------------------------------------------------------------------
 // genStackPointerConstantAdjustment: add a specified constant value to the stack pointer.
@@ -462,13 +463,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             instGen(INS_nop);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+        case GT_BOUNDS_CHECK:
             genRangeCheck(treeNode);
             break;
 
@@ -581,6 +576,12 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 
     if (!compiler->getNeedsGSSecurityCookie())
     {
+        return;
+    }
+
+    if (compiler->opts.IsOSR() && compiler->info.compPatchpointInfo->HasSecurityCookie())
+    {
+        // Security cookie is on original frame and was initialized there.
         return;
     }
 
@@ -1418,11 +1419,11 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 #endif // FEATURE_SIMD
 
 //------------------------------------------------------------------------
-// genRangeCheck: generate code for GT_ARR_BOUNDS_CHECK node.
+// genRangeCheck: generate code for GT_BOUNDS_CHECK node.
 //
 void CodeGen::genRangeCheck(GenTree* oper)
 {
-    noway_assert(oper->OperIsBoundsCheck());
+    noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
     GenTree* arrLen    = bndsChk->GetArrayLength();
@@ -3838,7 +3839,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     // The amount to subtract from SP before starting to store the callee-saved registers. It might be folded into the
     // first save instruction as a "predecrement" amount, if possible.
-    int calleeSaveSPDelta = 0;
+    int calleeSaveSpDelta = 0;
 
     if (isFramePointerUsed())
     {
@@ -3920,7 +3921,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                 // separate SUB instruction or the SP adjustment might be folded in to the first STP if there is
                 // no outgoing argument space AND no local frame space, that is, if the only thing the frame does
                 // is save callee-saved registers (and possibly varargs argument registers).
-                calleeSaveSPDelta = totalFrameSize;
+                calleeSaveSpDelta = totalFrameSize;
 
                 offset = (int)compiler->compLclFrameSize;
             }
@@ -4015,7 +4016,7 @@ void CodeGen::genPushCalleeSavedRegisters()
             // slots. In fact, we are not; any empty alignment slots were calculated in
             // Compiler::lvaAssignFrameOffsets() and its callees.
 
-            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize;
+            int calleeSaveSpDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize;
             if (genSaveFpLrWithAllCalleeSavedRegisters)
             {
                 JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
@@ -4035,19 +4036,19 @@ void CodeGen::genPushCalleeSavedRegisters()
 
                 frameType = 3;
 
-                calleeSaveSPDeltaUnaligned -= 2 * REGSIZE_BYTES; // 2 for FP, LR which we'll save later.
+                calleeSaveSpDeltaUnaligned -= 2 * REGSIZE_BYTES; // 2 for FP, LR which we'll save later.
 
                 // We'll take care of these later, but callee-saved regs code shouldn't see them.
                 maskSaveRegsInt &= ~(RBM_FP | RBM_LR);
             }
 
-            assert(calleeSaveSPDeltaUnaligned >= 0);
-            assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
-            calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
+            assert(calleeSaveSpDeltaUnaligned >= 0);
+            assert((calleeSaveSpDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
+            calleeSaveSpDelta = AlignUp((UINT)calleeSaveSpDeltaUnaligned, STACK_ALIGN);
 
-            offset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
+            offset = calleeSaveSpDelta - calleeSaveSpDeltaUnaligned;
 
-            JITDUMP("    calleeSaveSPDelta=%d, offset=%d\n", calleeSaveSPDelta, offset);
+            JITDUMP("    calleeSaveSpDelta=%d, offset=%d\n", calleeSaveSpDelta, offset);
 
             // At most one alignment slot between SP and where we store the callee-saved registers.
             assert((offset == 0) || (offset == REGSIZE_BYTES));
@@ -4068,8 +4069,10 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     assert(frameType != 0);
 
-    JITDUMP("    offset=%d, calleeSaveSPDelta=%d\n", offset, calleeSaveSPDelta);
-    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSPDelta);
+    const int calleeSaveSpOffset = offset;
+
+    JITDUMP("    offset=%d, calleeSaveSpDelta=%d\n", offset, calleeSaveSpDelta);
+    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSpDelta);
 
     offset += genCountBits(maskSaveRegsInt | maskSaveRegsFloat) * REGSIZE_BYTES;
 
@@ -4114,10 +4117,10 @@ void CodeGen::genPushCalleeSavedRegisters()
     {
         assert(!genSaveFpLrWithAllCalleeSavedRegisters);
 
-        int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
+        int remainingFrameSz = totalFrameSize - calleeSaveSpDelta;
         assert(remainingFrameSz > 0);
         assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
-                                              // totalFrameSize and calleeSaveSPDelta -- is 16-byte aligned.
+                                              // totalFrameSize and calleeSaveSpDelta -- is 16-byte aligned.
 
         if (compiler->lvaOutgoingArgSpaceSize > 504)
         {
@@ -4166,14 +4169,14 @@ void CodeGen::genPushCalleeSavedRegisters()
     else if (frameType == 4)
     {
         assert(genSaveFpLrWithAllCalleeSavedRegisters);
-        offsetSpToSavedFp = calleeSaveSPDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
+        offsetSpToSavedFp = calleeSaveSpDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
                             2 * REGSIZE_BYTES; // -2 for FP, LR
     }
     else if (frameType == 5)
     {
         assert(genSaveFpLrWithAllCalleeSavedRegisters);
 
-        offsetSpToSavedFp = calleeSaveSPDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
+        offsetSpToSavedFp = calleeSaveSpDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
                             2 * REGSIZE_BYTES; // -2 for FP, LR
         JITDUMP("    offsetSpToSavedFp=%d\n", offsetSpToSavedFp);
         genEstablishFramePointer(offsetSpToSavedFp, /* reportUnwindData */ true);
@@ -4181,10 +4184,10 @@ void CodeGen::genPushCalleeSavedRegisters()
         // We just established the frame pointer chain; don't do it again.
         establishFramePointer = false;
 
-        int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
+        int remainingFrameSz = totalFrameSize - calleeSaveSpDelta;
         assert(remainingFrameSz > 0);
         assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
-                                              // totalFrameSize and calleeSaveSPDelta -- is 16-byte aligned.
+                                              // totalFrameSize and calleeSaveSpDelta -- is 16-byte aligned.
 
         JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
@@ -4204,6 +4207,13 @@ void CodeGen::genPushCalleeSavedRegisters()
     }
 
     assert(offset == totalFrameSize);
+
+    // Save off information about the frame for later use
+    //
+    compiler->compFrameInfo.frameType          = frameType;
+    compiler->compFrameInfo.calleeSaveSpOffset = calleeSaveSpOffset;
+    compiler->compFrameInfo.calleeSaveSpDelta  = calleeSaveSpDelta;
+    compiler->compFrameInfo.offsetSpToSavedFp  = offsetSpToSavedFp;
 #endif // TARGET_ARM64
 }
 

@@ -1183,7 +1183,6 @@ public:
     }
 
     BOOL HasSameTypeDefAs(MethodTable *pMT);
-    BOOL HasSameTypeDefAs_NoLogging(MethodTable *pMT);
 
     //-------------------------------------------------------------------
     // GENERICS & CODE SHARING
@@ -1601,11 +1600,9 @@ public:
     //
     inline DWORD GetNumInstanceFieldBytes();
 
+    int GetFieldAlignmentRequirement();
+
     inline WORD GetNumIntroducedInstanceFields();
-
-    // <TODO> Does this always return the same (or related) size as GetBaseSize()? </TODO>
-    inline DWORD GetAlignedNumInstanceFieldBytes();
-
 
     // Note: This flag MUST be available even from an unrestored MethodTable - see GcScanRoots in siginfo.cpp.
     DWORD           ContainsPointers()

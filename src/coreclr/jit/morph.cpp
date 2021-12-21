@@ -4284,11 +4284,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     var_types type[MAX_ARG_REG_COUNT] = {}; // TYP_UNDEF = 0
 
     hfaType = fgEntryPtr->GetHfaType();
-    if (varTypeIsValidHfaType(hfaType)
-#if !defined(HOST_UNIX) && defined(TARGET_ARM64)
-        && !fgEntryPtr->IsVararg()
-#endif // !defined(HOST_UNIX) && defined(TARGET_ARM64)
-            )
+    if (varTypeIsValidHfaType(hfaType) && fgEntryPtr->isPassedInFloatRegisters())
     {
         elemType  = hfaType;
         elemSize  = genTypeSize(elemType);
@@ -4395,11 +4391,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 
 #ifndef UNIX_AMD64_ABI
         // This local variable must match the layout of the 'objClass' type exactly
-        if (varDsc->lvIsHfa()
-#if !defined(HOST_UNIX) && defined(TARGET_ARM64)
-            && !fgEntryPtr->IsVararg()
-#endif // !defined(HOST_UNIX) && defined(TARGET_ARM64)
-                )
+        if (varDsc->lvIsHfa() && fgEntryPtr->isPassedInFloatRegisters())
         {
             // We have a HFA struct.
             noway_assert(elemType == varDsc->GetHfaType());
@@ -4440,16 +4432,32 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 }
             }
         }
-#endif // !UNIX_AMD64_ABI
 
+        if (varDsc->lvPromoted && varDsc->lvIsHfa() && fgEntryPtr->isPassedInFloatRegisters())
+        {
+            bool canMorphToFieldList = true;
+
+            for (unsigned fldOffset = 0; fldOffset < varDsc->lvExactSize; fldOffset += elemSize)
+            {
+                const unsigned fldVarNum = lvaGetFieldLocal(varDsc, fldOffset);
+
+                if ((fldVarNum == BAD_VAR_NUM) || !varTypeUsesFloatReg(lvaGetDesc(fldVarNum)))
+                {
+                    canMorphToFieldList = false;
+                    break;
+                }
+            }
+
+            if (canMorphToFieldList)
+            {
+                newArg = fgMorphLclArgToFieldlist(varNode);
+            }
+        }
+        else
+#endif // !UNIX_AMD64_ABI
 #if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI)
-        // Is this LclVar a promoted struct with exactly 2 fields?
-        // TODO-ARM64-CQ: Support struct promoted HFA types here
-        if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2) && (!varDsc->lvIsHfa()
-#if !defined(HOST_UNIX) && defined(TARGET_ARM64)
-                                                                && !fgEntryPtr->IsVararg()
-#endif // !defined(HOST_UNIX) && defined(TARGET_ARM64)
-                                                                    ))
+            // Is this LclVar a promoted struct with exactly 2 fields?
+            if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2) && !varDsc->lvIsHfa())
         {
             // See if we have two promoted fields that start at offset 0 and 8?
             unsigned loVarNum = lvaGetFieldLocal(varDsc, 0);
@@ -5103,7 +5111,7 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 
 void Compiler::fgSetRngChkTarget(GenTree* tree, bool delay)
 {
-    if (tree->OperIsBoundsCheck())
+    if (tree->OperIs(GT_BOUNDS_CHECK))
     {
         GenTreeBoundsChk* const boundsChk = tree->AsBoundsChk();
         BasicBlock* const       failBlock = fgSetRngChkTargetInner(boundsChk->gtThrowKind, delay);
@@ -5154,7 +5162,7 @@ BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay)
  *  The orginal GT_INDEX node is bashed into the GT_IND node that accesses
  *  the array element.  We expand the GT_INDEX node into a larger tree that
  *  evaluates the array base and index.  The simplest expansion is a GT_COMMA
- *  with a GT_ARR_BOUNDS_CHECK and a GT_IND with a GTF_INX_RNGCHK flag.
+ *  with a GT_BOUNDS_CHECK and a GT_IND with a GTF_INX_RNGCHK flag.
  *  For complex array or index expressions one or more GT_COMMA assignments
  *  are inserted so that we only evaluate the array or index expressions once.
  *
@@ -5244,7 +5252,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     //    side-effecting.
     // 2. Evaluate the array index expression and store the result in a temp if the expression is complex or
     //    side-effecting.
-    // 3. Perform an explicit bounds check: GT_ARR_BOUNDS_CHECK(index, GT_ARR_LENGTH(array))
+    // 3. Perform an explicit bounds check: GT_BOUNDS_CHECK(index, GT_ARR_LENGTH(array))
     // 4. Compute the address of the element that will be accessed:
     //    GT_ADD(GT_ADD(array, firstElementOffset), GT_MUL(index, elementSize))
     // 5. Dereference the address with a GT_IND.
@@ -5303,7 +5311,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* indexDefn  = nullptr; // non-NULL if we need to allocate a temp for the index expression
     GenTree* bndsChk    = nullptr;
 
-    // If we're doing range checking, introduce a GT_ARR_BOUNDS_CHECK node for the address.
+    // If we're doing range checking, introduce a GT_BOUNDS_CHECK node for the address.
     if (chkd)
     {
         GenTree* arrRef2 = nullptr; // The second copy will be used in array address expression
@@ -5352,7 +5360,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             noway_assert(index2 != nullptr);
         }
 
-        // Next introduce a GT_ARR_BOUNDS_CHECK node
+        // Next introduce a GT_BOUNDS_CHECK node
         var_types bndsChkType = TYP_INT; // By default, try to use 32-bit comparison for array bounds check.
 
 #ifdef TARGET_64BIT
@@ -5372,8 +5380,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             arrLen = gtNewCastNode(bndsChkType, arrLen, true, bndsChkType);
         }
 
-        GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
-            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, SCK_RNGCHK_FAIL);
+        GenTreeBoundsChk* arrBndsChk = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, arrLen, SCK_RNGCHK_FAIL);
 
         bndsChk = arrBndsChk;
 
@@ -6272,13 +6279,25 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 // The address is not directly addressible, so force it into a
                 // constant, so we handle it properly
 
-                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, GTF_ICON_STATIC_HDL);
-                addr->gtType  = TYP_I_IMPL;
-                FieldSeqNode* fieldSeq =
-                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                addr->AsIntCon()->gtFieldSeq = fieldSeq;
-                // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
-                if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
+                bool         isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
+                GenTreeFlags handleKind    = GTF_EMPTY;
+                if (isBoxedStatic)
+                {
+                    handleKind = GTF_ICON_STATIC_BOX_PTR;
+                }
+                else if (isStaticReadOnlyInited)
+                {
+                    handleKind = GTF_ICON_CONST_PTR;
+                }
+                else
+                {
+                    handleKind = GTF_ICON_STATIC_HDL;
+                }
+                FieldSeqNode* fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd);
+                GenTree*      addr     = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+
+                // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
+                if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
                 {
                     tree->gtFlags &= ~GTF_FLD_INITCLASS;
                     addr->gtFlags |= GTF_ICON_INITCLASS;
@@ -6287,14 +6306,18 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 tree->SetOper(GT_IND);
                 tree->AsOp()->gtOp1 = addr;
 
-                if (isStaticReadOnlyInited)
+                if (isBoxedStatic)
+                {
+                    // The box for the static cannot be null, and is logically invariant, since it
+                    // represents (a base for) the static's address.
+                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+                }
+                else if (isStaticReadOnlyInited)
                 {
                     JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
 
                     // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
                     tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-                    tree->gtFlags &= ~GTF_ICON_INITCLASS;
-                    addr->gtFlags = GTF_ICON_CONST_PTR;
                 }
 
                 return fgMorphSmpOp(tree);
@@ -7726,6 +7749,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Avoid potential extra work for the return (for example, vzeroupper)
         call->gtType = TYP_VOID;
 
+        // The runtime requires that we perform a null check on the `this` argument before
+        // tail calling to a virtual dispatch stub. This requirement is a consequence of limitations
+        // in the runtime's ability to map an AV to a NullReferenceException if
+        // the AV occurs in a dispatch stub that has unmanaged caller.
+        if (call->IsVirtualStub())
+        {
+            call->gtFlags |= GTF_CALL_NULLCHECK;
+        }
+
         // Do some target-specific transformations (before we process the args,
         // etc.) for the JIT helper case.
         if (tailCallViaJitHelper)
@@ -8431,15 +8463,6 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 {
     JITDUMP("fgMorphTailCallViaJitHelper (before):\n");
     DISPTREE(call);
-
-    // The runtime requires that we perform a null check on the `this` argument before
-    // tail calling  to a virtual dispatch stub. This requirement is a consequence of limitations
-    // in the runtime's ability to map an AV to a NullReferenceException if
-    // the AV occurs in a dispatch stub that has unmanaged caller.
-    if (call->IsVirtualStub())
-    {
-        call->gtFlags |= GTF_CALL_NULLCHECK;
-    }
 
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning or end.
@@ -11136,13 +11159,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 }
             }
 
-            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
-            // if op2 is a positive cns
-            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
-                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UDIV or DIV
+            // Convert DIV to UDIV if boths op1 and op2 are known to be never negative
+            if (!gtIsActiveCSE_Candidate(tree) && varTypeIsIntegral(tree) && op1->IsNeverNegative(this) &&
+                op2->IsNeverNegative(this))
             {
                 assert(tree->OperIs(GT_DIV));
-                tree->ChangeOper(GT_UDIV);
+                tree->ChangeOper(GT_UDIV, GenTree::PRESERVE_VN);
                 return fgMorphSmpOp(tree, mac);
             }
 
@@ -11205,13 +11227,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 goto USE_HELPER_FOR_ARITH;
             }
 
-            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
-            // if op2 is a positive cns
-            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
-                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UMOD or MOD
+            // Convert MOD to UMOD if boths op1 and op2 are known to be never negative
+            if (!gtIsActiveCSE_Candidate(tree) && varTypeIsIntegral(tree) && op1->IsNeverNegative(this) &&
+                op2->IsNeverNegative(this))
             {
                 assert(tree->OperIs(GT_MOD));
-                tree->ChangeOper(GT_UMOD);
+                tree->ChangeOper(GT_UMOD, GenTree::PRESERVE_VN);
                 return fgMorphSmpOp(tree, mac);
             }
 
@@ -12008,7 +12029,7 @@ DONE_MORPHING_CHILDREN:
             effectiveOp1 = op1->gtEffectiveVal();
 
             // If we are storing a small type, we might be able to omit a cast.
-            if (effectiveOp1->OperIs(GT_IND) && varTypeIsSmall(effectiveOp1))
+            if (effectiveOp1->OperIs(GT_IND, GT_CLS_VAR) && varTypeIsSmall(effectiveOp1))
             {
                 if (!gtIsActiveCSE_Candidate(op2) && op2->OperIs(GT_CAST) &&
                     varTypeIsIntegral(op2->AsCast()->CastOp()) && !op2->gtOverflow())
@@ -12622,13 +12643,7 @@ DONE_MORPHING_CHILDREN:
             fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_ARITH_EXCPN);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif
+        case GT_BOUNDS_CHECK:
             fgSetRngChkTarget(tree);
             break;
 
@@ -15286,7 +15301,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                         /* This was a bogus loop (condition always false)
                          * Remove the loop from the table */
 
-                        optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
+                        optMarkLoopRemoved(loopNum);
 
                         optLoopTable[loopNum].lpTop->unmarkLoopAlign(this DEBUG_ARG("Bogus loop"));
 

@@ -35,7 +35,8 @@ void Compiler::fgInit()
     fgCalledCount            = BB_ZERO_WEIGHT;
 
     /* We haven't yet computed the dominator sets */
-    fgDomsComputed = false;
+    fgDomsComputed         = false;
+    fgReturnBlocksComputed = false;
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
@@ -1097,18 +1098,18 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     break;
                 }
 
-                CORINFO_METHOD_HANDLE methodHnd      = nullptr;
-                bool                  isJitIntrinsic = false;
-                NamedIntrinsic        ni             = NI_Illegal;
+                CORINFO_METHOD_HANDLE methodHnd   = nullptr;
+                bool                  isIntrinsic = false;
+                NamedIntrinsic        ni          = NI_Illegal;
 
                 if (resolveTokens)
                 {
                     impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Method);
-                    methodHnd      = resolvedToken.hMethod;
-                    isJitIntrinsic = eeIsJitIntrinsic(methodHnd);
+                    methodHnd   = resolvedToken.hMethod;
+                    isIntrinsic = eeIsIntrinsic(methodHnd);
                 }
 
-                if (isJitIntrinsic)
+                if (isIntrinsic)
                 {
                     ni = lookupNamedIntrinsic(methodHnd);
 
@@ -1244,7 +1245,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
 
-                if (!isJitIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()))
+                if (!isIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()))
                 {
                     // Optimistically assume that "call(arg)" returns something arg-dependent.
                     // However, we don't know how many args it expects and its return type.
@@ -4701,7 +4702,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             {
                 loopAlignCandidates++;
                 succBlock->bbFlags |= BBF_LOOP_ALIGN;
-                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for loop# %d.", block->bbNum,
+                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for " FMT_LP "\n ", block->bbNum,
                         succBlock->bbNum, block->bbNatLoopNum);
             }
 

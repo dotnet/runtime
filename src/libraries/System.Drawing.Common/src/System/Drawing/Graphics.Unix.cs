@@ -167,7 +167,7 @@ namespace System.Drawing
             /* Get XVisualInfo for this visual */
             visual.visualid = LibX11Functions.XVisualIDFromVisual(defvisual);
             vPtr = LibX11Functions.XGetVisualInfo(Gdip.Display, 0x1 /* VisualIDMask */, ref visual, ref nitems);
-            visual = (XVisualInfo)Marshal.PtrToStructure(vPtr, typeof(XVisualInfo))!;
+            visual = Marshal.PtrToStructure<XVisualInfo>(vPtr)!;
             image = LibX11Functions.XGetImage(Gdip.Display, window, sourceX, sourceY, blockRegionSize.Width,
                 blockRegionSize.Height, AllPlanes, 2 /* ZPixmap*/);
             if (image == IntPtr.Zero)

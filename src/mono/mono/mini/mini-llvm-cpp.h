@@ -220,6 +220,17 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 unsigned int
 mono_llvm_get_prim_size_bits (LLVMTypeRef type);
 
+typedef enum {
+	LLVM_ASM_SIDE_EFFECT = 1 << 0,
+	LLVM_ASM_ALIGN_STACK = 1 << 1,
+} MonoLLVMAsmFlags;
+
+LLVMValueRef
+mono_llvm_inline_asm (LLVMBuilderRef builder, LLVMTypeRef type,
+	const char *asmstr, const char *constraints,
+	MonoLLVMAsmFlags flags, LLVMValueRef *args, unsigned num_args,
+	const char *name);
+
 G_END_DECLS
 
 #endif /* __MONO_MINI_LLVM_CPP_H__ */  

@@ -41,9 +41,6 @@ namespace System.Text.RegularExpressions
         private const short SpaceConst = 100;
         private const short NotSpaceConst = -100;
 
-        private const char ZeroWidthJoiner = '\u200D';
-        private const char ZeroWidthNonJoiner = '\u200C';
-
         private const string InternalRegexIgnoreCase = "__InternalRegexIgnoreCase__";
         private const string Space = "\x64";
         private const string NotSpace = "\uFF9C";
@@ -975,25 +972,24 @@ namespace System.Text.RegularExpressions
             ch == '_' || // underscore
             ch == '\u0130'; // latin capital letter I with dot above
 
+        /// <summary>16 bytes, representing the chars 0 through 127, with a 1 for a bit where that char is a word char.</summary>
+        private static ReadOnlySpan<byte> WordCharAsciiLookup => new byte[]
+        {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
+            0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
+        };
+
+        /// <summary>Determines whether a character is considered a word character for the purposes of testing the \w set.</summary>
         public static bool IsWordChar(char ch)
         {
-            // According to UTS#18 Unicode Regular Expressions (http://www.unicode.org/reports/tr18/)
-            // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
-            // values from the Unicode character database, from UnicodeData.txt [UData], plus the U+200C
-            // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
-
-            // 16 bytes, representing the chars 0 through 127, with a 1 for a bit where that char is a word char
-            static ReadOnlySpan<byte> AsciiLookup() => new byte[]
-            {
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
-                0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
-            };
+            // This is the same as IsBoundaryWordChar, except that IsBoundaryWordChar also
+            // returns true for \u200c and \u200d.
 
             // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
             // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
-            ReadOnlySpan<byte> asciiLookup = AsciiLookup();
+            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
             int chDiv8 = ch >> 3;
-            if ((uint)chDiv8 < asciiLookup.Length)
+            if ((uint)chDiv8 < (uint)asciiLookup.Length)
             {
                 return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
             }
@@ -1012,7 +1008,43 @@ namespace System.Text.RegularExpressions
                     return true;
 
                 default:
-                    return ch == ZeroWidthJoiner || ch == ZeroWidthNonJoiner;
+                    return false;
+            }
+        }
+
+        /// <summary>Determines whether a character is considered a word character for the purposes of testing a word character boundary.</summary>
+        public static bool IsBoundaryWordChar(char ch)
+        {
+            // According to UTS#18 Unicode Regular Expressions (http://www.unicode.org/reports/tr18/)
+            // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
+            // values from the Unicode character database, from UnicodeData.txt [UData], plus the U+200C
+            // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
+
+            // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
+            // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
+            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
+            int chDiv8 = ch >> 3;
+            if ((uint)chDiv8 < (uint)asciiLookup.Length)
+            {
+                return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
+            }
+
+            // For non-ASCII, fall back to checking the Unicode category.
+            switch (CharUnicodeInfo.GetUnicodeCategory(ch))
+            {
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.ModifierLetter:
+                case UnicodeCategory.OtherLetter:
+                case UnicodeCategory.NonSpacingMark:
+                case UnicodeCategory.DecimalDigitNumber:
+                case UnicodeCategory.ConnectorPunctuation:
+                    return true;
+
+                default:
+                    const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';
+                    return ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner;
             }
         }
 
@@ -1892,25 +1924,16 @@ namespace System.Text.RegularExpressions
             };
 
         [ExcludeFromCodeCoverage]
-        private static string CategoryDescription(char ch)
-        {
-            if (ch == SpaceConst)
+        private static string CategoryDescription(char ch) =>
+            (short)ch switch
             {
-                return "\\s";
-            }
-
-            if ((short)ch == NotSpaceConst)
-            {
-                return "\\S";
-            }
-
-            if ((short)ch < 0)
-            {
-                return "\\P{" + CategoryIdToName[(-((short)ch) - 1)] + "}";
-            }
-
-            return "\\p{" + CategoryIdToName[(ch - 1)] + "}";
-        }
+                SpaceConst => @"\s",
+                NotSpaceConst => @"\S",
+                (short)(UnicodeCategory.DecimalDigitNumber + 1) => @"\d",
+                -(short)(UnicodeCategory.DecimalDigitNumber + 1) => @"\D",
+                < 0 => $"\\P{{{CategoryIdToName[-(short)ch - 1]}}}",
+                _ => $"\\p{{{CategoryIdToName[ch - 1]}}}",
+            };
 
         /// <summary>
         /// A first/last pair representing a single range of characters.

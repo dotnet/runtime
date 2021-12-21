@@ -10,8 +10,12 @@
 /src/coreclr/inc/corinfo.h @dotnet/jit-contrib
 /src/coreclr/inc/corjit.h @dotnet/jit-contrib
 /src/coreclr/jit/ @dotnet/jit-contrib
+/src/coreclr/nativeaot @MichalStrehovsky
 /src/coreclr/tools/Common @dotnet/crossgen-contrib @MichalStrehovsky
 /src/coreclr/tools/aot @dotnet/crossgen-contrib
+/src/coreclr/tools/aot/ILCompiler.Compiler @MichalStrehovsky
+/src/coreclr/tools/aot/ILCompiler.RyuJit @MichalStrehovsky
+/src/coreclr/tools/aot/ILCompiler.MetadataTransform @MichalStrehovsky
 
 # Mono Code Owners
 
