@@ -239,7 +239,6 @@ typedef struct _IMAGE_FILE_HEADER {
 #define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
 #define IMAGE_FILE_MACHINE_M32R              0x9041  // M32R little-endian
 #define IMAGE_FILE_MACHINE_CEE               0xC0EE
-#define IMAGE_FILE_MACHINE_LOONGARCH64       0xDD64  // LOONGARCH64.
 
 //
 // Directory format.
@@ -1025,11 +1024,6 @@ typedef IMAGE_RELOCATION UNALIGNED *PIMAGE_RELOCATION;
 #define IMAGE_REL_IA64_TOKEN            0x001B  // clr token
 #define IMAGE_REL_IA64_GPREL32          0x001C
 #define IMAGE_REL_IA64_ADDEND           0x001F
-
-//
-// LOONGARCH64 relocation types
-//
-#define IMAGE_REL_LOONGARCH64_PC        0x0004
 
 //
 // CEF relocation types.
