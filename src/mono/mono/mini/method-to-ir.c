@@ -524,6 +524,7 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 		ins->sreg2 = sp [1]->dreg;	\
 		type_from_op (cfg, ins, sp [0], sp [1]);	\
 		CHECK_TYPE (ins);	\
+		if (ovf_exc) ins->inst_exc_name = ovf_exc; else ins->inst_exc_name = "OverflowException"; ovf_exc = NULL; \
 		/* Have to insert a widening op */		 \
         add_widen_op (cfg, ins, &sp [0], &sp [1]);		 \
         ins->dreg = alloc_dreg ((cfg), (MonoStackType)(ins)->type); \
@@ -6149,6 +6150,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoDebugMethodInfo *minfo;
 	MonoBitSet *seq_point_locs = NULL;
 	MonoBitSet *seq_point_set_locs = NULL;
+	const char *ovf_exc = NULL;
 	gboolean emitted_funccall_seq_point = FALSE;
 	gboolean detached_before_ret = FALSE;
 	gboolean ins_has_side_effect;
@@ -11084,6 +11086,11 @@ mono_ldptr:
 			*sp++ = ins;
 			break;
 		}
+		case MONO_CEE_MONO_REMAP_OVF_EXC:
+			/* Remap the exception thrown by the next _OVF opcode */
+			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
+			ovf_exc = (const char*)mono_method_get_wrapper_data (method, token);
+			break;
 
 		case MONO_CEE_ARGLIST: {
 			/* somewhat similar to LDTOKEN */

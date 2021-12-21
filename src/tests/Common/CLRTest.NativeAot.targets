@@ -139,22 +139,26 @@ if defined RunNativeAot (
     Outputs="$(OutputPath)\nativebuild.proj"
     BeforeTargets="Build">
     <PropertyGroup>
-      <_RootEntryAssemblyLine Condition="$(CLRTestFullTrimming) != 'true'">&lt;TrimmerDefaultAction&gt;copyused&lt;/TrimmerDefaultAction&gt;</_RootEntryAssemblyLine>
+      <_RootEntryAssemblyLine Condition="$(CLRTestFullTrimming) == 'true'">&lt;TrimmerDefaultAction&gt;link&lt;/TrimmerDefaultAction&gt;</_RootEntryAssemblyLine>
 
       <_NativeAotBuildProjectFile>
         <![CDATA[
-<Project DefaultTargets="LinkNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="LinkNative">
 
   <PropertyGroup>
     <TargetName>$(MSBuildProjectName)</TargetName>
-    <TargetExt>.dll</TargetExt>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
     <OutputPath>%24(MSBuildProjectDirectory)\</OutputPath>
     <IntermediateOutputPath>%24(MSBuildProjectDirectory)\</IntermediateOutputPath>
     <TargetArchitecture>$(TargetArchitecture)</TargetArchitecture>
     <Optimize>$(Optimize)</Optimize>
-    <DebugSymbols>true</DebugSymbols>
-    <NETCoreSdkVersion>$(NETCoreSdkVersion)</NETCoreSdkVersion>
+    <SkipResolvePackageAssets>true</SkipResolvePackageAssets>
+    <SelfContained>true</SelfContained>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     $(_RootEntryAssemblyLine)
   </PropertyGroup>
 
@@ -169,9 +173,9 @@ if defined RunNativeAot (
   </ItemGroup>
 
   <!-- We don't do anything in the Compile step since the test is already compiled to IL - the AOT compiler hooks up after this -->
-  <Target Name="Compile" />
+  <Target Name="CoreCompile" />
 
-  <Target Name="PrepareForILLink" />
+  <Target Name="CreateManifestResourceNames" />
 
   <Import Project="%24(IlcPath)\build\Microsoft.NETCore.Native.targets" />
 

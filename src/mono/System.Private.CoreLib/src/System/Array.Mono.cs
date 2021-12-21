@@ -144,6 +144,11 @@ namespace System
             if (FastCopy(sourceArray, sourceIndex, destinationArray, destinationIndex, length))
                 return;
 
+            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
+        }
+
+        private static void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        {
             int source_pos = sourceIndex - sourceArray.GetLowerBound(0);
             int dest_pos = destinationIndex - destinationArray.GetLowerBound(0);
 

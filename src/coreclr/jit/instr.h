@@ -131,6 +131,10 @@ enum insFlags : uint32_t
     // Avx
     INS_Flags_IsDstDstSrcAVXInstruction = 1 << 25,
     INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 26,
+    
+    // w and s bits
+    INS_FLAGS_Has_Wbit = 1 << 27,
+    INS_FLAGS_Has_Sbit = 1 << 28,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00,
