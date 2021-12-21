@@ -503,6 +503,7 @@ jobs:
           or(
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
 
 #
