@@ -54,10 +54,12 @@ namespace System.Drawing
     {
         protected Brush() { }
         public abstract object Clone();
+        public System.IntPtr Handle { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~Brush() { }
         protected internal void SetNativeBrush(System.IntPtr brush) { }
+        public static System.Drawing.Brush FromHandle(System.IntPtr handle) { throw null; }
     }
     public static partial class Brushes
     {

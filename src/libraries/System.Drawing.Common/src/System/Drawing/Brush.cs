@@ -31,6 +31,8 @@ namespace System.Drawing
             GC.SuppressFinalize(this);
         }
 
+        public IntPtr Handle => NativeBrush;
+
         protected virtual void Dispose(bool disposing)
         {
 #if FINALIZATION_WATCH
@@ -63,5 +65,15 @@ namespace System.Drawing
         }
 
         ~Brush() => Dispose(false);
+
+        /// <summary>
+        /// Creates a new <see cref="Brush"/> instance referring to a underlying GDI+ brush handle.
+        /// </summary>
+        /// <param name="handle">The GDI+ handle</param>
+        /// <returns>Brush instance</returns>
+        public static Brush FromHandle(IntPtr handle)
+        {
+            return new RawBrush(handle);
+        }
     }
 }
