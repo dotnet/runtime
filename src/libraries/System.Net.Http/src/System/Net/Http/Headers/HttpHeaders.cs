@@ -239,7 +239,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (HeaderEntry entry in entries)
                 {
-                    if (entry.Key.Descriptor is null)
+                    if (!entry.Key.HasValue)
                     {
                         break;
                     }
@@ -308,7 +308,7 @@ namespace System.Net.Http.Headers
             {
                 HeaderEntry entry = entries[i];
                 HeaderDescriptor descriptor = entry.Key;
-                if (descriptor.Descriptor is null)
+                if (!descriptor.HasValue)
                 {
                     break;
                 }
@@ -535,7 +535,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (HeaderEntry entry in sourceEntries)
                 {
-                    if (entry.Value is null)
+                    if (!entry.Key.HasValue)
                     {
                         break;
                     }
@@ -1320,7 +1320,7 @@ namespace System.Net.Http.Headers
                 }
                 else if (store is HeaderEntry[] entries)
                 {
-                    return 0u >= (uint)entries.Length || entries[0].Key.Descriptor is null;
+                    return 0u >= (uint)entries.Length || !entries[0].Key.HasValue;
                 }
                 else
                 {
@@ -1344,7 +1344,7 @@ namespace System.Net.Http.Headers
                 {
                     for (int i = 0; i < entries.Length; i++)
                     {
-                        if (entries[i].Key.Descriptor is null)
+                        if (!entries[i].Key.HasValue)
                         {
                             return i;
                         }
@@ -1365,13 +1365,18 @@ namespace System.Net.Http.Headers
             {
                 if (store is HeaderEntry[] entries)
                 {
-                    if (key.Descriptor is string)
+                    if (key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
                     {
                         for (int i = 0; i < entries.Length; i++)
                         {
-                            if (string.Equals(entries[i].Key.Descriptor as string, Unsafe.As<string>(key.Descriptor), StringComparison.OrdinalIgnoreCase))
+                            ref HeaderEntry entry = ref entries[i];
+                            if (!entry.Key.HasValue)
                             {
-                                return ref entries[i].Value;
+                                break;
+                            }
+                            else if (entry.Key.Equals(knownHeader))
+                            {
+                                return ref entry.Value;
                             }
                         }
                     }
@@ -1379,9 +1384,14 @@ namespace System.Net.Http.Headers
                     {
                         for (int i = 0; i < entries.Length; i++)
                         {
-                            if (ReferenceEquals(entries[i].Key.Descriptor, key.Descriptor))
+                            ref HeaderEntry entry = ref entries[i];
+                            if (!entry.Key.HasValue)
                             {
-                                return ref entries[i].Value;
+                                break;
+                            }
+                            else if (entry.Key.Equals(headerName))
+                            {
+                                return ref entry.Value;
                             }
                         }
                     }
@@ -1408,17 +1418,17 @@ namespace System.Net.Http.Headers
             }
             else if (store is HeaderEntry[] entries)
             {
-                if (key.Descriptor is string)
+                if (key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
                 {
                     for (int i = 0; i < entries.Length; i++)
                     {
                         ref HeaderEntry entry = ref entries[i];
-                        if (entry.Key.Descriptor is null)
+                        if (!entry.Key.HasValue)
                         {
                             entry.Key = key;
                             return ref entry.Value!;
                         }
-                        else if (string.Equals(entry.Key.Descriptor as string, Unsafe.As<string>(key.Descriptor), StringComparison.OrdinalIgnoreCase))
+                        else if (entry.Key.Equals(knownHeader))
                         {
                             return ref entry.Value!;
                         }
@@ -1429,12 +1439,12 @@ namespace System.Net.Http.Headers
                     for (int i = 0; i < entries.Length; i++)
                     {
                         ref HeaderEntry entry = ref entries[i];
-                        if (entry.Key.Descriptor is null)
+                        if (!entry.Key.HasValue)
                         {
                             entry.Key = key;
                             return ref entry.Value!;
                         }
-                        else if (ReferenceEquals(entry.Key.Descriptor, key.Descriptor))
+                        else if (entry.Key.Equals(headerName))
                         {
                             return ref entry.Value!;
                         }
@@ -1498,14 +1508,14 @@ namespace System.Net.Http.Headers
                     for (int i = 0; i < entries.Length; i++)
                     {
                         HeaderDescriptor entryKey = entries[i].Key;
-                        if (entryKey.Descriptor is null)
+                        if (!entryKey.HasValue)
                         {
                             break;
                         }
 
                         if (entryKey.Equals(key))
                         {
-                            while ((uint)(i + 1) < (uint)entries.Length && entries[i + 1].Key.Descriptor is not null)
+                            while ((uint)(i + 1) < (uint)entries.Length && entries[i + 1].Key.HasValue)
                             {
                                 entries[i] = entries[i + 1];
                                 i++;

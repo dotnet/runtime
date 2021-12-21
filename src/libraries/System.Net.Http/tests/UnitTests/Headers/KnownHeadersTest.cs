@@ -118,7 +118,8 @@ namespace System.Net.Http.Tests
                 Assert.NotNull(h);
                 Assert.Same(h, KnownHeaders.TryGetKnownHeader(name));
 
-                Assert.Same(h, h.Descriptor.Descriptor);
+                Assert.True(h.Descriptor.IsKnownHeader(out KnownHeader? knownHeader, out _));
+                Assert.Same(h, knownHeader);
                 Assert.Equal(name, h.Name, StringComparer.OrdinalIgnoreCase);
                 Assert.Equal(name, h.Descriptor.Name, StringComparer.OrdinalIgnoreCase);
             }

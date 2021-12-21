@@ -262,18 +262,18 @@ namespace System.Net.Http
             {
                 foreach (HeaderEntry header in entries)
                 {
-                    if (header.Key.Descriptor is null)
+                    if (!header.Key.HasValue)
                     {
                         break;
                     }
 
-                    if (header.Key.Descriptor is KnownHeader)
+                    if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
                     {
-                        await WriteBytesAsync(Unsafe.As<KnownHeader>(header.Key.Descriptor).AsciiBytesWithColonSpace, async).ConfigureAwait(false);
+                        await WriteBytesAsync(knownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
                     }
                     else
                     {
-                        await WriteAsciiStringAsync(Unsafe.As<string>(header.Key.Descriptor), async).ConfigureAwait(false);
+                        await WriteAsciiStringAsync(headerName, async).ConfigureAwait(false);
                         await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
                     }
 
@@ -285,7 +285,7 @@ namespace System.Net.Http
 
                         await WriteStringAsync(_headerValues[0], async, valueEncoding).ConfigureAwait(false);
 
-                        if (cookiesFromContainer != null && header.Key.Descriptor == KnownHeaders.Cookie)
+                        if (cookiesFromContainer != null && header.Key.Equals(KnownHeaders.Cookie))
                         {
                             await WriteTwoBytesAsync((byte)';', (byte)' ', async).ConfigureAwait(false);
                             await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);

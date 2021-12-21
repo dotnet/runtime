@@ -631,7 +631,7 @@ namespace System.Net.Http
 
             foreach (HeaderEntry header in entries)
             {
-                if (header.Key.Descriptor is null)
+                if (!header.Key.HasValue)
                 {
                     break;
                 }
@@ -642,7 +642,7 @@ namespace System.Net.Http
 
                 Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, _request);
 
-                if (header.Key.Descriptor is KnownHeader knownHeader)
+                if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
                 {
                     // The Host header is not sent for HTTP/3 because we send the ":authority" pseudo-header instead
                     // (see pseudo-header handling below in WriteHeaders).
@@ -675,7 +675,7 @@ namespace System.Net.Http
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    BufferLiteralHeaderWithoutNameReference(Unsafe.As<string>(header.Key.Descriptor), headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
+                    BufferLiteralHeaderWithoutNameReference(headerName, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
                 }
             }
         }
@@ -898,7 +898,7 @@ namespace System.Net.Http
         {
             if (descriptor.Name[0] == ':')
             {
-                if (descriptor.Descriptor != KnownHeaders.PseudoStatus)
+                if (!descriptor.Equals(KnownHeaders.PseudoStatus))
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);

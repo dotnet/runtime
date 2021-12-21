@@ -32,6 +32,8 @@ namespace System.Net.Http.Headers
             _descriptor = headerName;
         }
 
+        public bool HasValue => _descriptor is not null;
+
         public string Name
         {
             get
@@ -44,11 +46,31 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public object? Descriptor => _descriptor;
+        public bool IsKnownHeader([NotNullWhen(true)] out KnownHeader? knownHeader, [NotNullWhen(false)] out string? headerName)
+        {
+            Debug.Assert(_descriptor is not null);
+            object descriptor = _descriptor;
+            if (descriptor.GetType() == typeof(KnownHeader))
+            {
+                knownHeader = Unsafe.As<KnownHeader>(descriptor);
+                Unsafe.SkipInit(out headerName);
+                return true;
+            }
+            else
+            {
+                Unsafe.SkipInit(out knownHeader);
+                headerName = Unsafe.As<string>(descriptor);
+                return false;
+            }
+        }
 
         public HttpHeaderParser? Parser => _descriptor is KnownHeader knownHeader ? knownHeader.Parser : null;
         public HttpHeaderType HeaderType => _descriptor is KnownHeader knownHeader ? knownHeader.HeaderType : HttpHeaderType.Custom;
         public string Separator => _descriptor is KnownHeader knownHeader ? knownHeader.Separator : HttpHeaderParser.DefaultSeparator;
+
+        public bool Equals(KnownHeader other) => ReferenceEquals(_descriptor, other);
+
+        public bool Equals(string other) => string.Equals(_descriptor as string, other, StringComparison.OrdinalIgnoreCase);
 
         public bool Equals(HeaderDescriptor other)
         {

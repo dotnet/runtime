@@ -1347,7 +1347,7 @@ namespace System.Net.Http
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
             foreach (HeaderEntry header in entries)
             {
-                if (header.Key.Descriptor is null)
+                if (!header.Key.HasValue)
                 {
                     break;
                 }
@@ -1358,7 +1358,7 @@ namespace System.Net.Http
 
                 Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, request);
 
-                if (header.Key.Descriptor is KnownHeader knownHeader)
+                if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
                 {
                     // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
                     // (see pseudo-header handling below in WriteHeaders).
@@ -1391,7 +1391,7 @@ namespace System.Net.Http
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    WriteLiteralHeader(Unsafe.As<string>(header.Key.Descriptor), headerValues, valueEncoding, ref headerBuffer);
+                    WriteLiteralHeader(headerName, headerValues, valueEncoding, ref headerBuffer);
                 }
             }
         }
