@@ -3,7 +3,7 @@
 
 namespace System.Drawing
 {
-    internal class RawBrush : Brush
+    internal sealed class RawBrush : Brush
     {
         internal RawBrush(IntPtr handle)
         {
