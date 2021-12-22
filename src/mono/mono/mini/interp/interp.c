@@ -6804,7 +6804,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CPBLK) {
 			gpointer dest = LOCAL_VAR (ip [1], gpointer);
 			gpointer src = LOCAL_VAR (ip [2], gpointer);
-			gint32 size = LOCAL_VAR (ip [3], gint32);
+			guint32 size = LOCAL_VAR (ip [3], guint32);
 			if (size && (!dest || !src))
 				THROW_EX (mono_get_exception_null_reference(), ip);
 			else
@@ -6814,7 +6814,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INITBLK) {
 			gpointer dest = LOCAL_VAR (ip [1], gpointer);
-			gint32 size = LOCAL_VAR (ip [3], gint32);
+			guint32 size = LOCAL_VAR (ip [3], guint32);
 			if (size)
 				NULL_CHECK (dest);
 			memset (dest, LOCAL_VAR (ip [2], gint32), size);
