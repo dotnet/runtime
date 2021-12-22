@@ -347,6 +347,7 @@ namespace System.ConfigurationTests
             Assert.True(loadedFired);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not fixed on NetFX")]
         [Fact]
         public void SettingsProperty_SettingsWithNullableAttributes_Ok()
         {
