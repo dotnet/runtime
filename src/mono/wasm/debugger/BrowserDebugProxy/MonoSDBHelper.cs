@@ -2402,24 +2402,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (fields.Count == 0)
                     return new JArray(JObject.FromObject(new { result = new JArray(objectsDict.Values) }));
 
-                var pubNames = fields.Where(field => field.ProtectionLevel == FieldAttributes.Public).Select(field => field.Name).ToList();
+                var pubNames = fields.Where(field => field.ProtectionLevel == FieldAttributes.Public)
+                    .Select(field => field.Name).ToList();
                 var privNames = fields.Where(field =>
                     (field.ProtectionLevel == FieldAttributes.Private ||
                     field.ProtectionLevel == FieldAttributes.FamANDAssem) &&
                     // when field is inherited it is listed both in Private and Public, to avoid duplicates:
-                    pubNames.All(pubFieldName => pubFieldName != field.Name)
-                    ).Select(field => field.Name).ToList();
+                    pubNames.All(pubFieldName => pubFieldName != field.Name))
+                    .Select(field => field.Name).ToList();
                 //protected == family, internal == assembly
                 var protectedAndInternalNames = fields.Where(field =>
                     field.ProtectionLevel == FieldAttributes.Family ||
                     field.ProtectionLevel == FieldAttributes.Assembly ||
-                    field.ProtectionLevel == FieldAttributes.FamORAssem
-                    ).Select(field => field.Name).ToList();
+                    field.ProtectionLevel == FieldAttributes.FamORAssem)
+                    .Select(field => field.Name).ToList();
                 var accessorProperties = objectsDict
                     .Where(obj => (
-                        !pubNames.Any(name => name == obj.Key) &&
-                        !privNames.Any(name => name == obj.Key) &&
-                        !protectedAndInternalNames.Any(name => name == obj.Key)))
+                        pubNames.All(name => name != obj.Key) &&
+                        privNames.All(name => name != obj.Key) &&
+                        protectedAndInternalNames.All(name => name != obj.Key)))
                     .Select((k, v) => k.Value);
 
                 var pubProperties = objectsDict.GetValuesByKeys(pubNames);
