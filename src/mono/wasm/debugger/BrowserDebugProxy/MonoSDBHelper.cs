@@ -2352,12 +2352,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 int typeId = typeIdsIncludingParents[i];
                 // 0th id is for the object itself, and then its parents
                 bool isOwn = i == 0;
+                var fields = await GetTypeFields(typeId, token);
+                allFields.AddRange(fields);
 
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                 {
-                    var fields = await GetTypeFields(typeId, token);
-                    allFields.AddRange(fields);
-
                     var (collapsedFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeId, token);
 
                     var collapsedFieldsValues = await GetFieldsValues(collapsedFields, isOwn);
@@ -2366,10 +2365,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     objects.TryAddRange(collapsedFieldsValues);
                     objects.TryAddRange(hiddenFieldsValues);
                 }
+
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
                     return sortByAccessLevel ?
                         SegregatePropertiesByAccessLevel(allFields, objects, token) :
                         new JArray(objects.Values);
+
                 using var commandParamsObjWriter = new MonoBinaryWriter();
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", objectId), this);
                 var props = await CreateJArrayForProperties(
@@ -2380,7 +2381,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     $"dotnet:object:{objectId}",
                     i == 0,
                     token);
-                var properties = await GetProperties(props, typeId, token);
+                var properties = await GetProperties(props, allFields, typeId, token);
                 objects.TryAddRange(properties);
 
                 // ownProperties
@@ -2391,31 +2392,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 //break;
                 /*if (accessorPropertiesOnly)
                     break;*/
-            }
-            if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
-            {
-                var ownId = typeIdsIncludingParents[0];
-                var ownFields = await GetTypeFields(ownId, token);
-
-                var parentFields = new List<FieldTypeClass>();
-                for (int i = 1; i < typeIdsIncludingParents.Count; i++)
-                    parentFields.AddRange(await GetTypeFields(typeIdsIncludingParents[i], token));
-
-                var ownDuplicatedFields = ownFields.Where(field => objects.Any(obj =>
-                        field.Name.Equals(obj.Key) &&
-                        (obj.Value["isOwn"] == null ||
-                        obj.Value["isOwn"].Value<bool>() ||
-                        !obj.Value["isOwn"].Value<bool>())));
-
-                var parentDuplicatedFields = parentFields.Where(field => objects.Any(obj =>
-                        field.Name.Equals(obj.Key) &&
-                        (obj.Value["isOwn"] == null ||
-                        !obj.Value["isOwn"].Value<bool>())));
-
-                foreach (var duplicate in ownDuplicatedFields)
-                    objects.Remove(duplicate.Name);
-                foreach (var duplicate in parentDuplicatedFields)
-                    objects.Remove(duplicate.Name);
             }
             return sortByAccessLevel ?
                 SegregatePropertiesByAccessLevel(allFields, objects, token) :
@@ -2580,14 +2556,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return (collapsedFields, rootHiddenFields);
             }
 
-            async Task<JArray> GetProperties(JArray props, int typeId, CancellationToken token)
+            async Task<JArray> GetProperties(JArray props, List<FieldTypeClass> fields, int typeId, CancellationToken token)
             {
                 var typeInfo = await GetTypeInfo(typeId, token);
                 var typeProperitesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
                 var regularProps = new JArray();
                 foreach (var p in props)
                 {
-                    if (!typeProperitesBrowsableInfo.TryGetValue(p["name"].Value<string>(), out DebuggerBrowsableState? state))
+                    var propName = p["name"].Value<string>();
+                    // if property has a backing field - avoid adding a duplicate
+                    if (fields.Any(field => field.Name == propName))
+                        continue;
+                    if (!typeProperitesBrowsableInfo.TryGetValue(propName, out DebuggerBrowsableState? state))
                     {
                         regularProps.Add(p);
                         continue;
@@ -2599,7 +2579,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         case DebuggerBrowsableState.RootHidden:
                             DotnetObjectId rootObjId;
                             DotnetObjectId.TryParse(p["get"]["objectId"].Value<string>(), out rootObjId);
-                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, p["name"].Value<string>(), token);
+                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, propName, token);
                             await AppendRootHiddenChildren(rootObject, regularProps);
                             break;
                         case DebuggerBrowsableState.Collapsed:
