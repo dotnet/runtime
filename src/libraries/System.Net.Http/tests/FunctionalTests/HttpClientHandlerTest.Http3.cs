@@ -1350,7 +1350,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
                 // This endpoint is consistently failing.
-                // ISSUE: https://github.com/dotnet/runtime/issues/63009
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/63009")]
                 //{ "https://pgjones.dev/" }, // aioquic with content
             };
     }
