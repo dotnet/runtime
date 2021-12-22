@@ -3829,6 +3829,7 @@ typedef LPOSVERSIONINFOEXA LPOSVERSIONINFOEX;
 
 #define IMAGE_FILE_MACHINE_I386              0x014c
 #define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
+#define IMAGE_FILE_MACHINE_LOONGARCH64       0x6264  // LOONGARCH64 Little-Endian
 
 typedef struct _SYSTEM_INFO {
     WORD wProcessorArchitecture_PAL_Undefined;
