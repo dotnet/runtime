@@ -5,6 +5,9 @@ namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// Determines how <see cref="JsonSerializer"/> handles numbers when serializing and deserializing.
+    /// <remarks>
+    /// The behavior of <see cref="WriteAsString"/> and <see cref="AllowNamedFloatingPointLiterals"/> is not defined by the JSON specification. Altering the default number handling can potentially produce JSON that cannot be parsed by other JSON implementations.
+    /// </remarks>
     /// </summary>
     [Flags]
 #if BUILDING_SOURCE_GENERATOR
