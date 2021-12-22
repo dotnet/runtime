@@ -39,6 +39,7 @@
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
@@ -2400,6 +2401,10 @@ mono_class_get_field_idx (MonoClass *klass, int idx)
 				if ((idx >= first_field_idx) && (idx < first_field_idx + fcount)){
 					return &klass_fields [idx - first_field_idx];
 				}
+			}
+			if (G_UNLIKELY (m_class_get_image (klass)->has_updates && mono_class_has_metadata_update_info (klass))) {
+				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, idx + 1);
+				return mono_metadata_update_get_field (klass, token);
 			}
 		}
 		klass = m_class_get_parent (klass);
@@ -6417,11 +6422,18 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 	MonoImage *image = m_class_get_image (klass);
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
 	MonoType *ftype;
-	int field_idx = field - m_class_get_fields (klass);
+	int field_idx;
+
+	if (G_UNLIKELY (m_field_is_from_update (field))) {
+		field_idx = -1;
+	} else {
+		field_idx = field - m_class_get_fields (klass);
+	}
 
 	error_init (error);
 
 	if (gtd) {
+		g_assert (field_idx != -1);
 		MonoClassField *gfield = &m_class_get_fields (gtd) [field_idx];
 		MonoType *gtype = mono_field_get_type_checked (gfield, error);
 		if (!is_ok (error)) {
@@ -6440,7 +6452,13 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
 		MonoGenericContainer *container = NULL;
-		int idx = mono_class_get_first_field_idx (klass) + field_idx;
+		int idx;
+
+		if (G_UNLIKELY (m_field_is_from_update (field))) {
+			idx = mono_metadata_update_get_field_idx (field) - 1;
+		} else {
+			idx = mono_class_get_first_field_idx (klass) + field_idx;
+		}
 
 		/*FIXME, in theory we do not lazy load SRE fields*/
 		g_assert (!image_is_dynamic (image));

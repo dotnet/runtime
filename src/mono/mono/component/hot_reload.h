@@ -32,10 +32,12 @@ typedef struct _MonoComponentHotReload {
 	gpointer (*get_updated_method_ppdb) (MonoImage *base_image, uint32_t idx);
 	gboolean (*has_modified_rows) (const MonoTableInfo *table);
 	gboolean (*table_num_rows_slow) (MonoImage *base_image, int table_index);
-	GArray* (*get_added_methods) (MonoClass *klass);
+	GArray* (*get_added_members) (MonoClass *klass);
 	uint32_t (*method_parent) (MonoImage *base_image, uint32_t method_index);
 	void* (*metadata_linear_search) (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer);
 	uint32_t (*field_parent) (MonoImage *base_image, uint32_t method_index);
+	uint32_t (*get_field_idx) (MonoClassField *field);
+	MonoClassField* (*get_field) (MonoClass *klass, uint32_t fielddef_token);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

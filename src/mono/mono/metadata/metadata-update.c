@@ -153,3 +153,19 @@ mono_metadata_update_metadata_linear_search (MonoImage *base_image, MonoTableInf
 {
 	return mono_component_hot_reload()->metadata_linear_search (base_image, base_table, key, comparer);
 }
+
+/* 
+ * Returns the (1-based) table row index of the fielddef of the given field
+ * (which must have m_field_is_from_update set).
+ */
+uint32_t
+mono_metadata_update_get_field_idx (MonoClassField *field)
+{
+	return mono_component_hot_reload()->get_field_idx (field);
+}
+
+MonoClassField *
+mono_metadata_update_get_field (MonoClass *klass, uint32_t fielddef_token)
+{
+	return mono_component_hot_reload()->get_field (klass, fielddef_token);
+}

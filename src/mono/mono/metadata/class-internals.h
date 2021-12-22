@@ -1504,7 +1504,7 @@ mono_class_get_default_finalize_method (void);
 const char *
 mono_field_get_rva (MonoClassField *field, int swizzle);
 
-void
+MONO_COMPONENT_API void
 mono_field_resolve_type (MonoClassField *field, MonoError *error);
 
 gboolean
@@ -1587,10 +1587,10 @@ m_field_get_meta_flags (MonoClassField *field)
 	return (unsigned int)(field->parent_and_flags & MONO_CLASS_FIELD_META_FLAG_MASK);
 }
 
-void
+MONO_COMPONENT_API void
 m_field_set_parent (MonoClassField *field, MonoClass *klass);
 
-void
+MONO_COMPONENT_API void
 m_field_set_meta_flags (MonoClassField *field, unsigned int flags);
 
 static inline gboolean
