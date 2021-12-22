@@ -696,6 +696,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var resArr = await context.SdbAgent.GetArrayValues(objectId.Value, token);
                         return sortByAccessLevel ? JObject.FromObject(new { result = resArr }) : resArr;
                     }
+                    case "methodId":
+                    {
+                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, "", token);
+                        return sortByAccessLevel ? JObject.FromObject(new { result = resMethod }) : new JArray(resMethod);
+                    }
                     case "object":
                     {
                         var resObj = (await context.SdbAgent.GetObjectValues(objectId.Value, objectValuesOpt, token, sortByAccessLevel));
