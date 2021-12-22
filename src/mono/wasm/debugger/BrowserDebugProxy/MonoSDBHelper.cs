@@ -2422,9 +2422,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         !protectedAndInternalNames.Any(name => name == obj.Key)))
                     .Select((k, v) => k.Value);
 
-                var pubProperties = new JArray(objectsDict.Where(obj => pubNames.Any(name => name == obj.Key)).Select((k, v) => k.Value));
-                var privProperties = new JArray(objectsDict.Where(obj => privNames.Any(name => name == obj.Key)).Select((k, v) => k.Value));
-                var protAndIntProperties = new JArray(objectsDict.Where(obj => protectedAndInternalNames.Any(name => name == obj.Key)).Select((k, v) => k.Value));
+                var pubProperties = objectsDict.GetValuesByKeys(pubNames);
+                var privProperties = objectsDict.GetValuesByKeys(privNames);
+                var protAndIntProperties = objectsDict.GetValuesByKeys(protectedAndInternalNames);
                 pubProperties.AddRange(new JArray(accessorProperties));
 
                 return new JArray(JObject.FromObject(new
@@ -2695,6 +2695,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 dict.TryAdd(key, item);
             }
+        }
+
+        public static JArray GetValuesByKeys(this Dictionary<string, JToken> dict, List<string> keys)
+        {
+            var result = new JArray();
+            foreach (var name in keys)
+            {
+                if (!dict.TryGetValue(name, out var obj))
+                    continue;
+                result.Add(obj);
+            }
+            return result;
         }
     }
 }
