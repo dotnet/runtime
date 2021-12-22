@@ -627,7 +627,7 @@ namespace DebuggerTests
                         if (expectedValue.Type != JTokenType.Null)
                         {
                             var valueAfterRunGet = await GetProperties(get["objectId"]?.Value<string>());
-                            await CheckValue(valueAfterRunGet[0]?["value"], expectedValue, exp_val["type_name"]?.Value<string>());
+                            await CheckValue(valueAfterRunGet["value"], expectedValue, exp_val["type_name"]?.Value<string>());
                         }
                         break;
                     }
