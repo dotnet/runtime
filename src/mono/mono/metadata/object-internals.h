@@ -451,6 +451,14 @@ struct _MonoReflectionType {
 /* Safely access System.Type from native code */
 TYPED_HANDLE_DECL (MonoReflectionType);
 
+/* This corresponds to System.Runtime.CompilerServices.QCallTypeHandle */
+struct _MonoQCallTypeHandle {
+	gpointer _ptr;
+	MonoType *type;
+};
+
+typedef struct _MonoQCallTypeHandle MonoQCallTypeHandle;
+
 typedef struct {
 	MonoObject  object;
 	MonoReflectionType *class_to_proxy;	
