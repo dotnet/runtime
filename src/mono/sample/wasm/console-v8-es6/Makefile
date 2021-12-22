@@ -12,5 +12,6 @@ endif
 
 PROJECT_NAME=Wasm.Console.V8.ES6.Sample.csproj
 CONSOLE_DLL=Wasm.Console.V8.ES6.Sample.dll
+MAIN_JS=v8shim.cjs
 
 run: run-console

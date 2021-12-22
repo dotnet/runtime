@@ -12,5 +12,6 @@ endif
 
 PROJECT_NAME=Wasm.Console.Node.ES6.Sample.csproj
 CONSOLE_DLL=Wasm.Console.Node.ES6.Sample.dll
+MAIN_JS=main.mjs
 
-run: run-console
+run: run-console-node
