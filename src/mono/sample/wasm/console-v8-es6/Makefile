@@ -10,7 +10,7 @@ ifneq ($(V),)
 DOTNET_MONO_LOG_LEVEL=--setenv=MONO_LOG_LEVEL=debug
 endif
 
-PROJECT_NAME=Wasm.Console.Sample.csproj
-CONSOLE_DLL=Wasm.Console.Sample.dll
+PROJECT_NAME=Wasm.Console.V8.ES6.Sample.csproj
+CONSOLE_DLL=Wasm.Console.V8.ES6.Sample.dll
 
 run: run-console
