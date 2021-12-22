@@ -908,7 +908,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_CHAR:
 				break;
 			default:
-				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (field->parent), field->name);
+				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (m_field_get_parent (field)), field->name);
 				break;
 			}
 		}
@@ -2245,7 +2245,7 @@ mono_class_field_is_special_static (MonoClassField *field)
 	if (mono_field_is_deleted (field))
 		return FALSE;
 	if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
-		if (field_is_special_static (field->parent, field) != SPECIAL_STATIC_NONE)
+		if (field_is_special_static (m_field_get_parent (field), field) != SPECIAL_STATIC_NONE)
 			return TRUE;
 	}
 	return FALSE;
@@ -2267,7 +2267,7 @@ mono_class_field_get_special_static_type (MonoClassField *field)
 	if (mono_field_is_deleted (field))
 		return SPECIAL_STATIC_NONE;
 	if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
-		return field_is_special_static (field->parent, field);
+		return field_is_special_static (m_field_get_parent (field), field);
 	return SPECIAL_STATIC_NONE;
 }
 
@@ -2285,7 +2285,7 @@ mono_class_has_special_static_fields (MonoClass *klass)
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
-		g_assert (field->parent == klass);
+		g_assert (m_field_get_parent (field) == klass);
 		if (mono_class_field_is_special_static (field))
 			return TRUE;
 	}
@@ -2793,7 +2793,7 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 gpointer
 mono_special_static_field_get_offset (MonoClassField *field, MonoError *error)
 {
-	MonoMemoryManager *mem_manager = m_class_get_mem_manager (field->parent);
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (m_field_get_parent (field));
 	gpointer addr = NULL;
 
 	mono_mem_manager_lock (mem_manager);
@@ -3020,7 +3020,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		is_static = TRUE;
 
 		if (!is_literal) {
-			vtable = mono_class_vtable_checked (field->parent, error);
+			vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 			goto_if_nok (error, return_null);
 
 			if (!vtable->initialized) {

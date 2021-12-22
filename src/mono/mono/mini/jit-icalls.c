@@ -865,9 +865,9 @@ mono_class_static_field_address (MonoClassField *field)
 
 	//printf ("SFLDA0 %s.%s::%s %d\n", field->parent->name_space, field->parent->name, field->name, field->offset, field->parent->inited);
 
-	mono_class_init_internal (field->parent);
+	mono_class_init_internal (m_field_get_parent (field));
 
-	vtable = mono_class_vtable_checked (field->parent, error);
+	vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
