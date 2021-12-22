@@ -85,8 +85,6 @@ inline TADDR GetSP(T_CONTEXT* context)
     return (TADDR)context->Sp;
 #elif defined(TARGET_ARM64)
     return (TADDR)context->Sp;
-#elif defined(TARGET_LOONGARCH64)
-    return (TADDR)context->Sp;
 #else
     _ASSERTE(!"nyi for platform");
 #endif
@@ -99,8 +97,6 @@ inline PCODE GetIP(T_CONTEXT* context)
 #elif defined(TARGET_ARM)
     return (PCODE)context->Pc;
 #elif defined(TARGET_ARM64)
-    return (PCODE)context->Pc;
-#elif defined(TARGET_LOONGARCH64)
     return (PCODE)context->Pc;
 #else
     _ASSERTE(!"nyi for platform");
@@ -216,9 +212,9 @@ enum GcInfoDecoderFlags
     DECODE_EDIT_AND_CONTINUE     = 0x800,
     DECODE_REVERSE_PINVOKE_VAR   = 0x1000,
     DECODE_RETURN_KIND           = 0x2000,
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     DECODE_HAS_TAILCALLS         = 0x4000,
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64
 };
 
 enum GcInfoHeaderFlags
@@ -235,7 +231,7 @@ enum GcInfoHeaderFlags
     GC_INFO_HAS_STACK_BASE_REGISTER     = 0x40,
 #ifdef TARGET_AMD64
     GC_INFO_WANTS_REPORT_ONLY_LEAF      = 0x80,
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     GC_INFO_HAS_TAILCALLS               = 0x80,
 #endif // TARGET_AMD64
     GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS = 0x100,
@@ -540,9 +536,9 @@ public:
     bool    HasMethodTableGenericsInstContext();
     bool    GetIsVarArg();
     bool    WantsReportOnlyLeaf();
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     bool    HasTailCalls();
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64
     ReturnKind GetReturnKind();
     UINT32  GetCodeLength();
     UINT32  GetStackBaseRegister();
@@ -565,7 +561,7 @@ private:
     bool    m_GenericSecretParamIsMT;
 #ifdef TARGET_AMD64
     bool    m_WantsReportOnlyLeaf;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     bool    m_HasTailCalls;
 #endif // TARGET_AMD64
     INT32   m_SecurityObjectStackSlot;

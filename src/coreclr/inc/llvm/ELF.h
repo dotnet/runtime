@@ -343,10 +343,7 @@ enum {
   EM_NORC          = 218, // Nanoradio Optimized RISC
   EM_CSR_KALIMBA   = 219, // CSR Kalimba architecture family
   EM_AMDGPU        = 224, // AMD GPU architecture
-  EM_RISCV = 243,         // RISC-V
-  EM_LANAI = 244,         // Lanai 32-bit processor
-  EM_BPF = 247,           // Linux kernel bpf virtual machine
-  EM_LOONGARCH = 258,     // LoongArch processor
+  EM_LOONGARCH     = 258, // LoongArch processor
 
   // A request has been made to the maintainer of the official registry for
   // such numbers for an official value for WebAssembly. As soon as one is

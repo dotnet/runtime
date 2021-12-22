@@ -53,8 +53,7 @@ enum SPMI_TARGET_ARCHITECTURE
     SPMI_TARGET_ARCHITECTURE_X86,
     SPMI_TARGET_ARCHITECTURE_AMD64,
     SPMI_TARGET_ARCHITECTURE_ARM64,
-    SPMI_TARGET_ARCHITECTURE_ARM,
-    SPMI_TARGET_ARCHITECTURE_LOONGARCH64
+    SPMI_TARGET_ARCHITECTURE_ARM
 };
 
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
@@ -62,7 +61,7 @@ void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture);
 
 inline bool IsSpmiTarget64Bit()
 {
-    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
+    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64);
 }
 
 inline size_t SpmiTargetPointerSize()

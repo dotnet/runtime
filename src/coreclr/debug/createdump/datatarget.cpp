@@ -65,8 +65,6 @@ DumpDataTarget::GetMachineType(
     *machine = IMAGE_FILE_MACHINE_ARM64;
 #elif HOST_X86
     *machine = IMAGE_FILE_MACHINE_I386;
-#elif HOST_LOONGARCH64
-    *machine = IMAGE_FILE_MACHINE_LOONGARCH64;
 #else
 #error Unsupported architecture
 #endif
@@ -77,7 +75,7 @@ HRESULT STDMETHODCALLTYPE
 DumpDataTarget::GetPointerSize(
     /* [out] */ ULONG32 *size)
 {
-#if defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
     *size = 8;
 #elif defined(HOST_ARM) || defined(HOST_X86)
     *size = 4;

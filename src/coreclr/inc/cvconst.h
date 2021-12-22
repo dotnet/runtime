@@ -41,8 +41,7 @@ typedef enum CV_call_e {
     CV_CALL_CLRCALL     = 0x16, // clr call
     CV_CALL_INLINE      = 0x17, // Marker for routines always inlined and thus lacking a convention
     CV_CALL_NEAR_VECTOR = 0x18, // near left to right push with regs, callee pops stack
-    CV_CALL_LOONGARCHCALL = 0x19, // loongarch call
-    CV_CALL_RESERVED    = 0x1a  // first unused call enumeration
+    CV_CALL_RESERVED    = 0x19  // first unused call enumeration
 
     // Do NOT add any more machine specific conventions.  This is to be used for
     // calling conventions in the source only (e.g. __cdecl, __stdcall).
@@ -375,7 +374,6 @@ typedef enum CV_CPU_TYPE_e {
     CV_CFL_ARMNT        = 0xF4,
     CV_CFL_ARM64        = 0xF6,
     CV_CFL_D3D11_SHADER = 0x100,
-    CV_CFL_LOONGARCH64  = 0x200,
 } CV_CPU_TYPE_e;
 
 typedef enum CV_HREG_e {
@@ -3648,7 +3646,6 @@ typedef enum CV_HREG_e {
 
     // Note:  Next set of platform registers need to go into a new enum...
     // this one is above 44K now.
-    // TODO for LOONGARCH64: ?!?!?
 
 } CV_HREG_e;
 

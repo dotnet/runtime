@@ -53,10 +53,6 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         {
             SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_ARM64);
         }
-        else if (0 == _stricmp(targetArchitecture, "loongarch64"))
-        {
-            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
-        }
         else
         {
             LogError("Illegal target architecture '%s'", targetArchitecture);

@@ -5916,14 +5916,6 @@ extern "C" uint64_t __rdtsc();
 #else // _MSC_VER
     extern "C" ptrdiff_t get_cycle_count(void);
 #endif // _MSC_VER
-#elif defined(TARGET_LOONGARCH64)
-    static ptrdiff_t get_cycle_count()
-    {
-        ////FIXME: TODO for LOONGARCH64:
-        //ptrdiff_t  cycle;
-        __asm__ volatile ("break \n");
-        return 0;
-    }
 #else
     static ptrdiff_t get_cycle_count()
     {
