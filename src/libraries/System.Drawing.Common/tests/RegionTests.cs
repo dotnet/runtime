@@ -87,6 +87,16 @@ namespace System.Drawing.Tests
             }
         }
 
+        [Fact]
+        public void FromHandle()
+        {
+            var handle = IntPtr.Zero;
+            var pen = Region.FromHandle(handle);
+
+            IntPtr actualHandle = pen.Handle;
+            Assert.Equal(handle, actualHandle);
+        }
+
         public static IEnumerable<object[]> Region_TestData()
         {
             yield return new object[] { new Region() };

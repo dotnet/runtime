@@ -12,6 +12,16 @@ namespace System.Drawing.Tests
 {
     public partial class GraphicsTests
     {
+        [Fact]
+        public void FromHandle()
+        {
+            var handle = IntPtr.Zero;
+            var pen = Graphics.FromHandle(handle);
+
+            IntPtr actualHandle = pen.Handle;
+            Assert.Equal(handle, actualHandle);
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHdc_FromHdc_Roundtrips()

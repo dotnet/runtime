@@ -109,6 +109,16 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new GraphicsPath(new PointF[pointsLength], new byte[typesLength]));
         }
 
+        [Fact]
+        public void FromHandle()
+        {
+            var handle = IntPtr.Zero;
+            var pen = GraphicsPath.FromHandle(handle);
+
+            IntPtr actualHandle = pen.Handle;
+            Assert.Equal(handle, actualHandle);
+        }
+
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_Success()
         {

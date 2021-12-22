@@ -41,6 +41,16 @@ namespace System.Drawing.Tests
             Assert.Same(bitmap.PropertyIdList, bitmap.PropertyIdList);
         }
 
+        [Fact]
+        public void FromHandle()
+        {
+            var handle = IntPtr.Zero;
+            var pen = Image.FromHandle(handle);
+
+            IntPtr actualHandle = pen.Handle;
+            Assert.Equal(handle, actualHandle);
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [Fact]
         public void PropertyItems_GetBitmapJpg_Success()

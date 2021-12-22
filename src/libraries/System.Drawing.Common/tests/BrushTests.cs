@@ -20,6 +20,16 @@ namespace System.Drawing.Tests
             }
         }
 
+        [Fact]
+        public void FromHandle()
+        {
+            var handle = IntPtr.Zero;
+            var pen = Brush.FromHandle(handle);
+
+            IntPtr actualHandle = pen.Handle;
+            Assert.Equal(handle, actualHandle);
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/30157")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Dispose_NoSuchEntryPoint_SilentyCatchesException()
