@@ -24,7 +24,7 @@ else
 fi
 
 if [[ -z "$XHARNESS_COMMAND" ]]; then
-	if [[ "$SCENARIO" == "WasmTestOnBrowser" -o "$SCENARIO" == "wasmtestonbrowser"]]; then
+	if [[ "$SCENARIO" == "WasmTestOnBrowser" || "$SCENARIO" == "wasmtestonbrowser" ]]; then
 		XHARNESS_COMMAND="test-browser"
 	else
 		XHARNESS_COMMAND="test"
@@ -33,7 +33,7 @@ fi
 
 if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 	if [[ -z "$JS_ENGINE" ]]; then
-		if [[ "$SCENARIO" == "WasmTestOnNodeJs" -o "$SCENARIO" == "wasmtestonnodejs"]]; then
+		if [[ "$SCENARIO" == "WasmTestOnNodeJs" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
 			JS_ENGINE="--engine=NodeJS"
 		else
 			JS_ENGINE="--engine=V8"
