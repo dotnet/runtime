@@ -39,7 +39,7 @@ jobs:
         extraStepsTemplate: /eng/pipelines/libraries/helix.yml
         extraStepsParameters:
           scenarios:
-          - wasmtestonbrowser
+          - WasmTestOnBrowser
           testScope: outerloop
           creator: dotnet-bot
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)

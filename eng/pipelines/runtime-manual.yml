@@ -316,8 +316,8 @@ jobs:
         extraHelixArguments: /p:BrowserHost=windows
         scenarios:
         - normal
-        - wasmtestonbrowser
-        - wasmtestonnodejs
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJs
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),
@@ -498,7 +498,7 @@ jobs:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         scenarios:
-        - wasmtestonnodejs
+        - WasmTestOnNodeJs
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),

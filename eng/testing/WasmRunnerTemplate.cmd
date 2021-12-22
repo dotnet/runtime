@@ -25,7 +25,7 @@ if [%XHARNESS_CLI_PATH%] NEQ [] (
 )
 
 if [%XHARNESS_COMMAND%] == [] (
-    if /I [%SCENARIO%]==[wasmtestonbrowser] (
+    if /I [%SCENARIO%]==[WasmTestOnBrowser] (
         set XHARNESS_COMMAND=test-browser
     ) else (
         set XHARNESS_COMMAND=test
@@ -34,7 +34,7 @@ if [%XHARNESS_COMMAND%] == [] (
 
 if /I [%XHARNESS_COMMAND%] == [test] (
     if [%JS_ENGINE%] == [] (
-        if /I [%SCENARIO%] == [wasmtestonnodejs] (
+        if /I [%SCENARIO%] == [WasmTestOnNodeJs] (
             set "JS_ENGINE=--engine^=NodeJS"
         ) else (
             set "JS_ENGINE=--engine^=V8"
