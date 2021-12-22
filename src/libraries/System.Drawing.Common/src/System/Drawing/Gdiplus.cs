@@ -18,7 +18,9 @@ namespace System.Drawing
         internal static partial class Gdip
         {
             private static readonly IntPtr s_initToken;
-            private const string ThreadDataSlotName = "system.drawing.threaddata";
+
+            [ThreadStatic]
+            private static IDictionary? s_threadData;
 
             static Gdip()
             {
@@ -44,21 +46,7 @@ namespace System.Drawing
             /// a per-thread basis. This way we can avoid 'object in use' crashes when different threads are
             /// referencing the same drawing object.
             /// </summary>
-            internal static IDictionary ThreadData
-            {
-                get
-                {
-                    LocalDataStoreSlot slot = Thread.GetNamedDataSlot(ThreadDataSlotName);
-                    IDictionary? threadData = (IDictionary?)Thread.GetData(slot);
-                    if (threadData == null)
-                    {
-                        threadData = new Hashtable();
-                        Thread.SetData(slot, threadData);
-                    }
-
-                    return threadData;
-                }
-            }
+            internal static IDictionary ThreadData => s_threadData ??= new Hashtable();
 
             // Used to ensure static constructor has run.
             internal static void DummyFunction()
