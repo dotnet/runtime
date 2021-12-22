@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
@@ -139,199 +140,202 @@ namespace System.Drawing
             internal static extern int GdipPathIterCopyData(HandleRef pathIter, out int resultCount, PointF* points, byte* types, int startIndex, int endIndex);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateHatchBrush(int hatchstyle, int forecol, int backcol, out IntPtr brush);
+            internal static partial int GdipCreateHatchBrush(int hatchstyle, int forecol, int backcol, out SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetHatchStyle(HandleRef brush, out int hatchstyle);
+            internal static extern int GdipGetHatchStyle(SafeBrushHandle brush, out int hatchstyle);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetHatchForegroundColor(HandleRef brush, out int forecol);
+            internal static extern int GdipGetHatchForegroundColor(SafeBrushHandle brush, out int forecol);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetHatchBackgroundColor(HandleRef brush, out int backcol);
+            internal static extern int GdipGetHatchBackgroundColor(SafeBrushHandle brush, out int backcol);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCloneBrush(HandleRef brush, out IntPtr clonebrush);
+            internal static extern int GdipCloneBrush(SafeBrushHandle brush, out SafeBrushHandle clonebrush);
+
+            [DllImport(LibraryName)]
+            internal static extern int GdipDeleteBrush(IntPtr brush);
 
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
             // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateLineBrush(ref PointF point1, ref PointF point2, int color1, int color2, WrapMode wrapMode, out IntPtr lineGradient);
+            internal static extern int GdipCreateLineBrush(ref PointF point1, ref PointF point2, int color1, int color2, WrapMode wrapMode, out SafeBrushHandle lineGradient);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateLineBrushI(ref Point point1, ref Point point2, int color1, int color2, WrapMode wrapMode, out IntPtr lineGradient);
+            internal static extern int GdipCreateLineBrushI(ref Point point1, ref Point point2, int color1, int color2, WrapMode wrapMode, out SafeBrushHandle lineGradient);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateLineBrushFromRect(ref RectangleF rect, int color1, int color2, LinearGradientMode lineGradientMode, WrapMode wrapMode, out IntPtr lineGradient);
+            internal static extern int GdipCreateLineBrushFromRect(ref RectangleF rect, int color1, int color2, LinearGradientMode lineGradientMode, WrapMode wrapMode, out SafeBrushHandle lineGradient);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateLineBrushFromRectI(ref Rectangle rect, int color1, int color2, LinearGradientMode lineGradientMode, WrapMode wrapMode, out IntPtr lineGradient);
+            internal static extern int GdipCreateLineBrushFromRectI(ref Rectangle rect, int color1, int color2, LinearGradientMode lineGradientMode, WrapMode wrapMode, out SafeBrushHandle lineGradient);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateLineBrushFromRectWithAngle(ref RectangleF rect, int color1, int color2, float angle, bool isAngleScaleable, WrapMode wrapMode, out IntPtr lineGradient);
+            internal static extern int GdipCreateLineBrushFromRectWithAngle(ref RectangleF rect, int color1, int color2, float angle, bool isAngleScaleable, WrapMode wrapMode, out SafeBrushHandle lineGradient);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateLineBrushFromRectWithAngleI(ref Rectangle rect, int color1, int color2, float angle, bool isAngleScaleable, WrapMode wrapMode, out IntPtr lineGradient);
+            internal static extern int GdipCreateLineBrushFromRectWithAngleI(ref Rectangle rect, int color1, int color2, float angle, bool isAngleScaleable, WrapMode wrapMode, out SafeBrushHandle lineGradient);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetLineColors(HandleRef brush, int color1, int color2);
+            internal static extern int GdipSetLineColors(SafeBrushHandle brush, int color1, int color2);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLineColors(HandleRef brush, int[] colors);
+            internal static extern int GdipGetLineColors(SafeBrushHandle brush, int[] colors);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLineRect(HandleRef brush, out RectangleF gprectf);
+            internal static extern int GdipGetLineRect(SafeBrushHandle brush, out RectangleF gprectf);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLineGammaCorrection(HandleRef brush, out bool useGammaCorrection);
+            internal static extern int GdipGetLineGammaCorrection(SafeBrushHandle brush, out bool useGammaCorrection);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetLineGammaCorrection(HandleRef brush, bool useGammaCorrection);
+            internal static extern int GdipSetLineGammaCorrection(SafeBrushHandle brush, bool useGammaCorrection);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetLineSigmaBlend(HandleRef brush, float focus, float scale);
+            internal static extern int GdipSetLineSigmaBlend(SafeBrushHandle brush, float focus, float scale);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetLineLinearBlend(HandleRef brush, float focus, float scale);
+            internal static extern int GdipSetLineLinearBlend(SafeBrushHandle brush, float focus, float scale);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLineBlendCount(HandleRef brush, out int count);
+            internal static extern int GdipGetLineBlendCount(SafeBrushHandle brush, out int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLineBlend(HandleRef brush, IntPtr blend, IntPtr positions, int count);
+            internal static extern int GdipGetLineBlend(SafeBrushHandle brush, IntPtr blend, IntPtr positions, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetLineBlend(HandleRef brush, IntPtr blend, IntPtr positions, int count);
+            internal static extern int GdipSetLineBlend(SafeBrushHandle brush, IntPtr blend, IntPtr positions, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLinePresetBlendCount(HandleRef brush, out int count);
+            internal static extern int GdipGetLinePresetBlendCount(SafeBrushHandle brush, out int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLinePresetBlend(HandleRef brush, IntPtr blend, IntPtr positions, int count);
+            internal static extern int GdipGetLinePresetBlend(SafeBrushHandle brush, IntPtr blend, IntPtr positions, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetLinePresetBlend(HandleRef brush, IntPtr blend, IntPtr positions, int count);
+            internal static extern int GdipSetLinePresetBlend(SafeBrushHandle brush, IntPtr blend, IntPtr positions, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetLineWrapMode(HandleRef brush, int wrapMode);
+            internal static extern int GdipSetLineWrapMode(SafeBrushHandle brush, int wrapMode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLineWrapMode(HandleRef brush, out int wrapMode);
+            internal static extern int GdipGetLineWrapMode(SafeBrushHandle brush, out int wrapMode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipResetLineTransform(HandleRef brush);
+            internal static extern int GdipResetLineTransform(SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyLineTransform(HandleRef brush, HandleRef matrix, MatrixOrder order);
+            internal static extern int GdipMultiplyLineTransform(SafeBrushHandle brush, HandleRef matrix, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLineTransform(HandleRef brush, HandleRef matrix);
+            internal static extern int GdipGetLineTransform(SafeBrushHandle brush, HandleRef matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetLineTransform(HandleRef brush, HandleRef matrix);
+            internal static extern int GdipSetLineTransform(SafeBrushHandle brush, HandleRef matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTranslateLineTransform(HandleRef brush, float dx, float dy, MatrixOrder order);
+            internal static extern int GdipTranslateLineTransform(SafeBrushHandle brush, float dx, float dy, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipScaleLineTransform(HandleRef brush, float sx, float sy, MatrixOrder order);
+            internal static extern int GdipScaleLineTransform(SafeBrushHandle brush, float sx, float sy, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipRotateLineTransform(HandleRef brush, float angle, MatrixOrder order);
+            internal static extern int GdipRotateLineTransform(SafeBrushHandle brush, float angle, MatrixOrder order);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreatePathGradient(PointF* points, int count, WrapMode wrapMode, out IntPtr brush);
+            internal static partial int GdipCreatePathGradient(PointF* points, int count, WrapMode wrapMode, out SafeBrushHandle brush);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreatePathGradientI(Point* points, int count, WrapMode wrapMode, out IntPtr brush);
+            internal static partial int GdipCreatePathGradientI(Point* points, int count, WrapMode wrapMode, out SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreatePathGradientFromPath(HandleRef path, out IntPtr brush);
+            internal static extern int GdipCreatePathGradientFromPath(HandleRef path, out SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientCenterColor(HandleRef brush, out int color);
+            internal static extern int GdipGetPathGradientCenterColor(SafeBrushHandle brush, out int color);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientCenterColor(HandleRef brush, int color);
+            internal static extern int GdipSetPathGradientCenterColor(SafeBrushHandle brush, int color);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientSurroundColorsWithCount(HandleRef brush, int[] color, ref int count);
+            internal static extern int GdipGetPathGradientSurroundColorsWithCount(SafeBrushHandle brush, int[] color, ref int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientSurroundColorsWithCount(HandleRef brush, int[] argb, ref int count);
+            internal static extern int GdipSetPathGradientSurroundColorsWithCount(SafeBrushHandle brush, int[] argb, ref int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientCenterPoint(HandleRef brush, out PointF point);
+            internal static extern int GdipGetPathGradientCenterPoint(SafeBrushHandle brush, out PointF point);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientCenterPoint(HandleRef brush, ref PointF point);
+            internal static extern int GdipSetPathGradientCenterPoint(SafeBrushHandle brush, ref PointF point);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientRect(HandleRef brush, out RectangleF gprectf);
+            internal static extern int GdipGetPathGradientRect(SafeBrushHandle brush, out RectangleF gprectf);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientPointCount(HandleRef brush, out int count);
+            internal static extern int GdipGetPathGradientPointCount(SafeBrushHandle brush, out int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientSurroundColorCount(HandleRef brush, out int count);
+            internal static extern int GdipGetPathGradientSurroundColorCount(SafeBrushHandle brush, out int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientBlendCount(HandleRef brush, out int count);
+            internal static extern int GdipGetPathGradientBlendCount(SafeBrushHandle brush, out int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientBlend(HandleRef brush, float[] blend, float[] positions, int count);
+            internal static extern int GdipGetPathGradientBlend(SafeBrushHandle brush, float[] blend, float[] positions, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientBlend(HandleRef brush, IntPtr blend, IntPtr positions, int count);
+            internal static extern int GdipSetPathGradientBlend(SafeBrushHandle brush, IntPtr blend, IntPtr positions, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientPresetBlendCount(HandleRef brush, out int count);
+            internal static extern int GdipGetPathGradientPresetBlendCount(SafeBrushHandle brush, out int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientPresetBlend(HandleRef brush, int[] blend, float[] positions, int count);
+            internal static extern int GdipGetPathGradientPresetBlend(SafeBrushHandle brush, int[] blend, float[] positions, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientPresetBlend(HandleRef brush, int[] blend, float[] positions, int count);
+            internal static extern int GdipSetPathGradientPresetBlend(SafeBrushHandle brush, int[] blend, float[] positions, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientSigmaBlend(HandleRef brush, float focus, float scale);
+            internal static extern int GdipSetPathGradientSigmaBlend(SafeBrushHandle brush, float focus, float scale);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientLinearBlend(HandleRef brush, float focus, float scale);
+            internal static extern int GdipSetPathGradientLinearBlend(SafeBrushHandle brush, float focus, float scale);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientWrapMode(HandleRef brush, int wrapmode);
+            internal static extern int GdipSetPathGradientWrapMode(SafeBrushHandle brush, int wrapmode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientWrapMode(HandleRef brush, out int wrapmode);
+            internal static extern int GdipGetPathGradientWrapMode(SafeBrushHandle brush, out int wrapmode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientTransform(HandleRef brush, HandleRef matrix);
+            internal static extern int GdipSetPathGradientTransform(SafeBrushHandle brush, HandleRef matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientTransform(HandleRef brush, HandleRef matrix);
+            internal static extern int GdipGetPathGradientTransform(SafeBrushHandle brush, HandleRef matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipResetPathGradientTransform(HandleRef brush);
+            internal static extern int GdipResetPathGradientTransform(SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyPathGradientTransform(HandleRef brush, HandleRef matrix, MatrixOrder order);
+            internal static extern int GdipMultiplyPathGradientTransform(SafeBrushHandle brush, HandleRef matrix, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTranslatePathGradientTransform(HandleRef brush, float dx, float dy, MatrixOrder order);
+            internal static extern int GdipTranslatePathGradientTransform(SafeBrushHandle brush, float dx, float dy, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipScalePathGradientTransform(HandleRef brush, float sx, float sy, MatrixOrder order);
+            internal static extern int GdipScalePathGradientTransform(SafeBrushHandle brush, float sx, float sy, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipRotatePathGradientTransform(HandleRef brush, float angle, MatrixOrder order);
+            internal static extern int GdipRotatePathGradientTransform(SafeBrushHandle brush, float angle, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientFocusScales(HandleRef brush, float[] xScale, float[] yScale);
+            internal static extern int GdipGetPathGradientFocusScales(SafeBrushHandle brush, float[] xScale, float[] yScale);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientFocusScales(HandleRef brush, float xScale, float yScale);
+            internal static extern int GdipSetPathGradientFocusScales(SafeBrushHandle brush, float xScale, float yScale);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreateImageAttributes(out IntPtr imageattr);
@@ -385,59 +389,59 @@ namespace System.Drawing
             internal static partial int GdipGetImageEncoders(int numEncoders, int size, IntPtr encoders);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateSolidFill(int color, out IntPtr brush);
+            internal static partial int GdipCreateSolidFill(int color, out SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetSolidFillColor(HandleRef brush, int color);
+            internal static extern int GdipSetSolidFillColor(SafeBrushHandle brush, int color);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetSolidFillColor(HandleRef brush, out int color);
+            internal static extern int GdipGetSolidFillColor(SafeBrushHandle brush, out int color);
 
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateTexture(HandleRef bitmap, int wrapmode, out IntPtr texture);
+            internal static extern int GdipCreateTexture(HandleRef bitmap, int wrapmode, out SafeBrushHandle texture);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateTexture2(HandleRef bitmap, int wrapmode, float x, float y, float width, float height, out IntPtr texture);
+            internal static extern int GdipCreateTexture2(HandleRef bitmap, int wrapmode, float x, float y, float width, float height, out SafeBrushHandle texture);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateTextureIA(HandleRef bitmap, HandleRef imageAttrib, float x, float y, float width, float height, out IntPtr texture);
+            internal static extern int GdipCreateTextureIA(HandleRef bitmap, HandleRef imageAttrib, float x, float y, float width, float height, out SafeBrushHandle texture);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateTexture2I(HandleRef bitmap, int wrapmode, int x, int y, int width, int height, out IntPtr texture);
+            internal static extern int GdipCreateTexture2I(HandleRef bitmap, int wrapmode, int x, int y, int width, int height, out SafeBrushHandle texture);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateTextureIAI(HandleRef bitmap, HandleRef imageAttrib, int x, int y, int width, int height, out IntPtr texture);
+            internal static extern int GdipCreateTextureIAI(HandleRef bitmap, HandleRef imageAttrib, int x, int y, int width, int height, out SafeBrushHandle texture);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetTextureTransform(HandleRef brush, HandleRef matrix);
+            internal static extern int GdipSetTextureTransform(SafeBrushHandle brush, HandleRef matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetTextureTransform(HandleRef brush, HandleRef matrix);
+            internal static extern int GdipGetTextureTransform(SafeBrushHandle brush, HandleRef matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipResetTextureTransform(HandleRef brush);
+            internal static extern int GdipResetTextureTransform(SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyTextureTransform(HandleRef brush, HandleRef matrix, MatrixOrder order);
+            internal static extern int GdipMultiplyTextureTransform(SafeBrushHandle brush, HandleRef matrix, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTranslateTextureTransform(HandleRef brush, float dx, float dy, MatrixOrder order);
+            internal static extern int GdipTranslateTextureTransform(SafeBrushHandle brush, float dx, float dy, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipScaleTextureTransform(HandleRef brush, float sx, float sy, MatrixOrder order);
+            internal static extern int GdipScaleTextureTransform(SafeBrushHandle brush, float sx, float sy, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipRotateTextureTransform(HandleRef brush, float angle, MatrixOrder order);
+            internal static extern int GdipRotateTextureTransform(SafeBrushHandle brush, float angle, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetTextureWrapMode(HandleRef brush, int wrapMode);
+            internal static extern int GdipSetTextureWrapMode(SafeBrushHandle brush, int wrapMode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetTextureWrapMode(HandleRef brush, out int wrapMode);
+            internal static extern int GdipGetTextureWrapMode(SafeBrushHandle brush, out int wrapMode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetTextureImage(HandleRef brush, out IntPtr image);
+            internal static extern int GdipGetTextureImage(SafeBrushHandle brush, out IntPtr image);
 
             [DllImport(LibraryName)]
             internal static extern int GdipGetFontCollectionFamilyCount(HandleRef fontCollection, out int numFound);
@@ -533,7 +537,7 @@ namespace System.Drawing
             internal static partial int GdipCreatePen1(int argb, float width, int unit, out IntPtr pen);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreatePen2(HandleRef brush, float width, int unit, out IntPtr pen);
+            internal static extern int GdipCreatePen2(SafeBrushHandle brush, float width, int unit, out IntPtr pen);
 
             [DllImport(LibraryName)]
             internal static extern int GdipClonePen(HandleRef pen, out IntPtr clonepen);
@@ -605,19 +609,19 @@ namespace System.Drawing
             internal static extern int GdipGetPenTransform(HandleRef pen, HandleRef matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipResetPenTransform(HandleRef brush);
+            internal static extern int GdipResetPenTransform(HandleRef pen);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyPenTransform(HandleRef brush, HandleRef matrix, MatrixOrder order);
+            internal static extern int GdipMultiplyPenTransform(HandleRef pen, HandleRef matrix, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTranslatePenTransform(HandleRef brush, float dx, float dy, MatrixOrder order);
+            internal static extern int GdipTranslatePenTransform(HandleRef pen, float dx, float dy, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipScalePenTransform(HandleRef brush, float sx, float sy, MatrixOrder order);
+            internal static extern int GdipScalePenTransform(HandleRef pen, float sx, float sy, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipRotatePenTransform(HandleRef brush, float angle, MatrixOrder order);
+            internal static extern int GdipRotatePenTransform(HandleRef pen, float angle, MatrixOrder order);
 
             [DllImport(LibraryName)]
             internal static extern int GdipSetPenColor(HandleRef pen, int argb);
@@ -626,10 +630,10 @@ namespace System.Drawing
             internal static extern int GdipGetPenColor(HandleRef pen, out int argb);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPenBrushFill(HandleRef pen, HandleRef brush);
+            internal static extern int GdipSetPenBrushFill(HandleRef pen, SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPenBrushFill(HandleRef pen, out IntPtr brush);
+            internal static extern int GdipGetPenBrushFill(HandleRef pen, out SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
             internal static extern int GdipGetPenFillType(HandleRef pen, out int pentype);
@@ -845,7 +849,7 @@ namespace System.Drawing
             internal static extern int GdipDeleteRegion(HandleRef region);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillRegion(HandleRef graphics, HandleRef brush, HandleRef region);
+            internal static extern int GdipFillRegion(HandleRef graphics, SafeBrushHandle brush, HandleRef region);
 
             [DllImport(LibraryName)]
             internal static extern int GdipSetInfinite(HandleRef region);
@@ -1244,31 +1248,31 @@ namespace System.Drawing
             internal static extern int GdipDrawPolygonI(HandleRef graphics, HandleRef pen, Point* points, int count);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillEllipse(HandleRef graphics, HandleRef brush, float x, float y, float width, float height);
+            internal static extern int GdipFillEllipse(HandleRef graphics, SafeBrushHandle brush, float x, float y, float width, float height);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillEllipseI(HandleRef graphics, HandleRef brush, int x, int y, int width, int height);
+            internal static extern int GdipFillEllipseI(HandleRef graphics, SafeBrushHandle brush, int x, int y, int width, int height);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillPolygon(HandleRef graphics, HandleRef brush, PointF* points, int count, FillMode brushMode);
+            internal static extern int GdipFillPolygon(HandleRef graphics, SafeBrushHandle brush, PointF* points, int count, FillMode brushMode);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillPolygonI(HandleRef graphics, HandleRef brush, Point* points, int count, FillMode brushMode);
+            internal static extern int GdipFillPolygonI(HandleRef graphics, SafeBrushHandle brush, Point* points, int count, FillMode brushMode);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillRectangle(HandleRef graphics, HandleRef brush, float x, float y, float width, float height);
+            internal static extern int GdipFillRectangle(HandleRef graphics, SafeBrushHandle brush, float x, float y, float width, float height);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillRectangleI(HandleRef graphics, HandleRef brush, int x, int y, int width, int height);
+            internal static extern int GdipFillRectangleI(HandleRef graphics, SafeBrushHandle brush, int x, int y, int width, int height);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillRectangles(HandleRef graphics, HandleRef brush, RectangleF* rects, int count);
+            internal static extern int GdipFillRectangles(HandleRef graphics, SafeBrushHandle brush, RectangleF* rects, int count);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillRectanglesI(HandleRef graphics, HandleRef brush, Rectangle* rects, int count);
+            internal static extern int GdipFillRectanglesI(HandleRef graphics, SafeBrushHandle brush, Rectangle* rects, int count);
 
             [DllImport(LibraryName, CharSet = CharSet.Unicode, SetLastError = true)]
-            internal static extern int GdipDrawString(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, HandleRef brush);
+            internal static extern int GdipDrawString(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, SafeBrushHandle brush);
 
             [DllImport(LibraryName, SetLastError = true)]
             internal static extern int GdipDrawImageRectI(HandleRef graphics, HandleRef image, int x, int y, int width, int height);
@@ -1307,22 +1311,22 @@ namespace System.Drawing
             internal static extern int GdipDrawCurve3I(HandleRef graphics, HandleRef pen, Point* points, int count, int offset, int numberOfSegments, float tension);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillClosedCurve(HandleRef graphics, HandleRef brush, PointF* points, int count);
+            internal static extern int GdipFillClosedCurve(HandleRef graphics, SafeBrushHandle brush, PointF* points, int count);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillClosedCurveI(HandleRef graphics, HandleRef brush, Point* points, int count);
+            internal static extern int GdipFillClosedCurveI(HandleRef graphics, SafeBrushHandle brush, Point* points, int count);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillClosedCurve2(HandleRef graphics, HandleRef brush, PointF* points, int count, float tension, FillMode mode);
+            internal static extern int GdipFillClosedCurve2(HandleRef graphics, SafeBrushHandle brush, PointF* points, int count, float tension, FillMode mode);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillClosedCurve2I(HandleRef graphics, HandleRef brush, Point* points, int count, float tension, FillMode mode);
+            internal static extern int GdipFillClosedCurve2I(HandleRef graphics, SafeBrushHandle brush, Point* points, int count, float tension, FillMode mode);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillPie(HandleRef graphics, HandleRef brush, float x, float y, float width, float height, float startAngle, float sweepAngle);
+            internal static extern int GdipFillPie(HandleRef graphics, SafeBrushHandle brush, float x, float y, float width, float height, float startAngle, float sweepAngle);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillPieI(HandleRef graphics, HandleRef brush, int x, int y, int width, int height, float startAngle, float sweepAngle);
+            internal static extern int GdipFillPieI(HandleRef graphics, SafeBrushHandle brush, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
             [DllImport(LibraryName, CharSet = CharSet.Unicode)]
             internal static extern int GdipMeasureString(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, ref RectangleF boundingBox, out int codepointsFitted, out int linesFilled);

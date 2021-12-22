@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
-using System.Drawing.Internal;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
@@ -92,7 +92,7 @@ namespace System.Drawing
             }
 
             IntPtr pen = IntPtr.Zero;
-            int status = Gdip.GdipCreatePen2(new HandleRef(brush, brush.NativeBrush),
+            int status = Gdip.GdipCreatePen2(brush.SafeNativeBrush,
                 width,
                 (int)GraphicsUnit.World,
                 out pen);
@@ -651,15 +651,14 @@ namespace System.Drawing
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                int status = Gdip.GdipSetPenBrushFill(new HandleRef(this, NativePen),
-                    new HandleRef(value, value.NativeBrush));
+                int status = Gdip.GdipSetPenBrushFill(new HandleRef(this, NativePen), value.SafeNativeBrush);
                 Gdip.CheckStatus(status);
             }
         }
 
-        private IntPtr GetNativeBrush()
+        private SafeBrushHandle GetNativeBrush()
         {
-            IntPtr nativeBrush = IntPtr.Zero;
+            SafeBrushHandle nativeBrush;
             int status = Gdip.GdipGetPenBrushFill(new HandleRef(this, NativePen), out nativeBrush);
             Gdip.CheckStatus(status);
 

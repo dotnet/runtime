@@ -417,7 +417,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            int status = Gdip.GdipFillPath(NativeGraphics, brush.NativeBrush, path._nativePath);
+            int status = Gdip.GdipFillPath(NativeGraphics, brush.SafeNativeBrush, path._nativePath);
             Gdip.CheckStatus(status);
         }
 
@@ -428,7 +428,7 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException(nameof(region));
 
-            int status = (int)Gdip.GdipFillRegion(new HandleRef(this, NativeGraphics), new HandleRef(brush, brush.NativeBrush), new HandleRef(region, region.NativeRegion));
+            int status = Gdip.GdipFillRegion(new HandleRef(this, NativeGraphics), brush.SafeNativeBrush, new HandleRef(region, region.NativeRegion));
             Gdip.CheckStatus(status);
         }
 

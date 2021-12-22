@@ -1,13 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
+using Microsoft.Win32.SafeHandles;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Drawing.Printing;
-using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace System.Drawing
@@ -84,12 +80,6 @@ namespace System.Drawing
             internal static partial void GdipFree(IntPtr ptr);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipDeleteBrush(HandleRef brush);
-
-            [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipGetBrushType(IntPtr brush, out BrushType type);
-
-            [DllImport(LibraryName)]
             internal static extern int GdipDeleteGraphics(HandleRef graphics);
 
             [GeneratedDllImport(LibraryName)]
@@ -99,7 +89,7 @@ namespace System.Drawing
             internal static extern int GdipReleaseDC(HandleRef graphics, HandleRef hdc);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipFillPath(IntPtr graphics, IntPtr brush, IntPtr path);
+            internal static partial int GdipFillPath(IntPtr graphics, SafeBrushHandle brush, IntPtr path);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetNearestColor(IntPtr graphics, out int argb);

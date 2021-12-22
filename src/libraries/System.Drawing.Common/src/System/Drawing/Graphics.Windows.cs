@@ -342,7 +342,7 @@ namespace System.Drawing
 
             CheckErrorStatus(Gdip.GdipFillPath(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(brush, brush.NativeBrush),
+                brush.SafeNativeBrush,
                 new HandleRef(path, path._nativePath)));
         }
 
@@ -358,7 +358,7 @@ namespace System.Drawing
 
             CheckErrorStatus(Gdip.GdipFillRegion(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(brush, brush.NativeBrush),
+                brush.SafeNativeBrush,
                 new HandleRef(region, region.NativeRegion)));
         }
 

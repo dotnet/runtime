@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Internal;
@@ -209,9 +210,6 @@ namespace System.Drawing
             [DllImport(LibraryName)]
             internal static extern int GdipIsOutlineVisiblePathPointI(HandleRef path, int x, int y, HandleRef pen, HandleRef graphics, out bool result);
 
-            [DllImport(LibraryName)]
-            internal static extern int GdipDeleteBrush(HandleRef brush);
-
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipLoadImageFromStream(IntPtr stream, IntPtr* image);
 
@@ -279,7 +277,7 @@ namespace System.Drawing
             internal static extern int GdipDrawBeziersI(HandleRef graphics, HandleRef pen, Point* points, int count);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillPath(HandleRef graphics, HandleRef brush, HandleRef path);
+            internal static extern int GdipFillPath(HandleRef graphics, SafeBrushHandle brush, HandleRef path);
 
             [DllImport(LibraryName)]
             internal static extern int GdipEnumerateMetafileDestPoint(HandleRef graphics, HandleRef metafile, ref PointF destPoint, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);

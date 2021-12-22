@@ -1153,7 +1153,7 @@ namespace System.Drawing
 
             CheckErrorStatus(Gdip.GdipFillRectangle(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(brush, brush.NativeBrush),
+                brush.SafeNativeBrush,
                 x, y, width, height));
         }
 
@@ -1175,7 +1175,7 @@ namespace System.Drawing
 
             CheckErrorStatus(Gdip.GdipFillRectangleI(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(brush, brush.NativeBrush),
+                brush.SafeNativeBrush,
                 x, y, width, height));
         }
 
@@ -1193,7 +1193,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipFillRectangles(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(brush, brush.NativeBrush),
+                    brush.SafeNativeBrush,
                     r, rects.Length));
             }
         }
@@ -1212,7 +1212,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipFillRectanglesI(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(brush, brush.NativeBrush),
+                    brush.SafeNativeBrush,
                     r, rects.Length));
             }
         }
@@ -1239,7 +1239,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipFillPolygon(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(brush, brush.NativeBrush),
+                    brush.SafeNativeBrush,
                     p, points.Length,
                     fillMode));
             }
@@ -1267,7 +1267,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipFillPolygonI(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(brush, brush.NativeBrush),
+                    brush.SafeNativeBrush,
                     p, points.Length,
                     fillMode));
             }
@@ -1291,7 +1291,7 @@ namespace System.Drawing
 
             CheckErrorStatus(Gdip.GdipFillEllipse(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(brush, brush.NativeBrush),
+                brush.SafeNativeBrush,
                 x, y, width, height));
         }
 
@@ -1313,7 +1313,7 @@ namespace System.Drawing
 
             CheckErrorStatus(Gdip.GdipFillEllipseI(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(brush, brush.NativeBrush),
+                brush.SafeNativeBrush,
                 x, y, width, height));
         }
 
@@ -1335,7 +1335,7 @@ namespace System.Drawing
 
             CheckErrorStatus(Gdip.GdipFillPie(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(brush, brush.NativeBrush),
+                brush.SafeNativeBrush,
                 x, y, width, height,
                 startAngle,
                 sweepAngle));
@@ -1351,7 +1351,7 @@ namespace System.Drawing
 
             CheckErrorStatus(Gdip.GdipFillPieI(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(brush, brush.NativeBrush),
+                brush.SafeNativeBrush,
                 x, y, width, height,
                 startAngle,
                 sweepAngle));
@@ -1371,7 +1371,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurve(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(brush, brush.NativeBrush),
+                    brush.SafeNativeBrush,
                     p, points.Length));
             }
         }
@@ -1395,7 +1395,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurve2(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(brush, brush.NativeBrush),
+                    brush.SafeNativeBrush,
                     p, points.Length,
                     tension,
                     fillmode));
@@ -1416,7 +1416,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurveI(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(brush, brush.NativeBrush),
+                    brush.SafeNativeBrush,
                     p, points.Length));
             }
         }
@@ -1437,7 +1437,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurve2I(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(brush, brush.NativeBrush),
+                    brush.SafeNativeBrush,
                     p, points.Length,
                     tension,
                     fillmode));
@@ -1488,7 +1488,7 @@ namespace System.Drawing
                 new HandleRef(font, font.NativeFont),
                 ref layoutRectangle,
                 new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero),
-                new HandleRef(brush, brush.NativeBrush)));
+                brush.SafeNativeBrush));
         }
 
         public SizeF MeasureString(
