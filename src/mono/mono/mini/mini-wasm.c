@@ -439,10 +439,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 //functions exported to be used by JS
 G_BEGIN_DECLS
-EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (int id);
+EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (void);
 
 //JS functions imported that we use
-extern void mono_set_timeout (int t, int d);
+extern void mono_set_timeout (int t);
 extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
 
@@ -581,21 +581,23 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_set_timeout_exec (int id)
+mono_set_timeout_exec (void)
 {
 	ERROR_DECL (error);
 
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
-	g_assert (klass);
+	static MonoMethod *method = NULL;
+	if (method == NULL) {
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
+		g_assert (klass);
 
-	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
-	mono_error_assert_ok (error);
-	g_assert (method);
+		method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (method);
+	}
 
-	gpointer params[1] = { &id };
 	MonoObject *exc = NULL;
 
-	mono_runtime_try_invoke (method, NULL, params, &exc, error);
+	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
 
 	//YES we swallow exceptions cuz there's nothing much we can do from here.
 	//FIXME Maybe call the unhandled exception function?
@@ -614,10 +616,10 @@ mono_set_timeout_exec (int id)
 #endif
 
 void
-mono_wasm_set_timeout (int timeout, int id)
+mono_wasm_set_timeout (int timeout)
 {
 #ifdef HOST_BROWSER
-	mono_set_timeout (timeout, id);
+	mono_set_timeout (timeout);
 #endif
 }
 
@@ -626,12 +628,15 @@ tp_cb (void)
 {
 	ERROR_DECL (error);
 
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
-	g_assert (klass);
+	static MonoMethod *method = NULL;
+	if (method == NULL) {
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
+		g_assert (klass);
 
-	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
-	mono_error_assert_ok (error);
-	g_assert (method);
+		method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (method);
+	}
 
 	MonoObject *exc = NULL;
 
