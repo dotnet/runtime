@@ -7536,12 +7536,13 @@ void CodeGen::genFnProlog()
 
 #endif // PROFILING_SUPPORTED
 
-    // For OSR we may have a zero-length prolog. That's not supported,
-    // so add a nop if so.
+    // For OSR we may have a zero-length prolog. That's not supported
+    // when the method must report a generics context,/ so add a nop if so.
     //
-    if (compiler->opts.IsOSR() && (GetEmitter()->emitGetPrologOffsetEstimate() == 0))
+    if (compiler->opts.IsOSR() && (GetEmitter()->emitGetPrologOffsetEstimate() == 0) &&
+        (compiler->lvaReportParamTypeArg() || compiler->lvaKeepAliveAndReportThis()))
     {
-        JITDUMP("OSR: prolog was zero length: adding nop to pad it\n");
+        JITDUMP("OSR: prolog was zero length and has generic context to report: adding nop to pad prolog.\n");
         instGen(INS_nop);
     }
 
