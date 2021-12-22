@@ -2233,11 +2233,7 @@ inline ULONG CorSigCompressPointer( // return number of bytes of that compressed
     void * pvPointer,               // [IN] given uncompressed data
     void * pData)                   // [OUT] buffer where iLen will be compressed and stored.
 {
-#ifdef TARGET_LOONGARCH64
-    memcpy(pData, &pvPointer, sizeof(void*));
-#else
     *((void * UNALIGNED *)pData) = pvPointer;
-#endif
     return sizeof(void *);
 }
 
@@ -2246,11 +2242,7 @@ inline ULONG CorSigUncompressPointer(   // return number of bytes of that compre
     PCCOR_SIGNATURE pData,              // [IN] compressed data
     void **         ppvPointer)         // [OUT] the expanded *pData
 {
-#ifdef TARGET_LOONGARCH64
-    memcpy((void*)ppvPointer, (void*)pData, sizeof(void*));
-#else
     *ppvPointer = *(void * const UNALIGNED *)pData;
-#endif
     return sizeof(void *);
 }
 
