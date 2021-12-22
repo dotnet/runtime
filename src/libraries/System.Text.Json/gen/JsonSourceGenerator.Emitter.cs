@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
@@ -808,11 +809,11 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                 for (int i = 0; i < paramCount; i++)
                 {
                     ParameterInfo reflectionInfo = parameters[i].ParameterInfo;
-
-                    string parameterTypeRef = reflectionInfo.ParameterType.GetCompilableName();
+                    Type parameterType = reflectionInfo.ParameterType;
+                    string parameterTypeRef = parameterType.GetCompilableName();
 
                     object? defaultValue = reflectionInfo.GetDefaultValue();
-                    string defaultValueAsStr = GetParamDefaultValueAsString(defaultValue, parameterTypeRef);
+                    string defaultValueAsStr = GetParamDefaultValueAsString(defaultValue, parameterType, parameterTypeRef);
 
                     sb.Append(@$"
     {InfoVarName} = new()
@@ -1317,43 +1318,110 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
                     : "default";
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
-        }
 
-        private static string ToCSharpKeyword(bool value) => value.ToString().ToLowerInvariant();
+            private static string ToCSharpKeyword(bool value) => value.ToString().ToLowerInvariant();
 
-        private static string GetParamDefaultValueAsString(object? value, string objectTypeAsStr)
-        {
-            switch (value)
+            private string GetParamDefaultValueAsString(object? value, Type type, string typeRef)
             {
-                case null:
-                    return $"default({objectTypeAsStr})";
-                case bool @bool:
-                    return ToCSharpKeyword(@bool);
-                case string @string:
-                    return @$"""{@string}""";
-                case char @char:
-                    return @$"'{@char}'";
-                case double.NegativeInfinity:
-                    return "double.NegativeInfinity";
-                case double.PositiveInfinity:
-                    return "double.PositiveInfinity";
-                case double.NaN:
-                    return "double.NaN";
-                case float.NegativeInfinity:
-                    return "float.NegativeInfinity";
-                case float.PositiveInfinity:
-                    return "float.PositiveInfinity";
-                case float.NaN:
-                    return "float.NaN";
-                case double @double:
-                    return @double.ToString(JsonConstants.DoubleFormatString, CultureInfo.InvariantCulture);
-                case float @float:
-                    return @float.ToString(JsonConstants.SingleFormatString, CultureInfo.InvariantCulture);
-                case decimal @decimal:
-                    return @decimal.ToString(CultureInfo.InvariantCulture);
-                default:
-                    // Assume this is a number.
-                    return value!.ToString();
+                if (value == null)
+                {
+                    return $"default({typeRef})";
+                }
+
+                if (type.IsEnum)
+                {
+                    // Roslyn gives us an instance of the underlying type, which is numerical.
+#if DEBUG
+                    Type runtimeType = _generationSpec.MetadataLoadContext.Resolve(value.GetType());
+                    Debug.Assert(_generationSpec.IsNumberType(runtimeType));
+#endif
+
+                    // Return the numeric value.
+                    return $"({typeRef})({value.ToString()})";
+                }
+
+                switch (value)
+                {
+                    case string @string:
+                        return QuoteString(@string);
+                    case char @char:
+                        return String.Format("'{0}'", EscapeChar((char)value, inString: false));
+                    case double.NegativeInfinity:
+                        return "double.NegativeInfinity";
+                    case double.PositiveInfinity:
+                        return "double.PositiveInfinity";
+                    case double.NaN:
+                        return "double.NaN";
+                    case double @double:
+                        return $"({typeRef})({@double.ToString(JsonConstants.DoubleFormatString, CultureInfo.InvariantCulture)})";
+                    case float.NegativeInfinity:
+                        return "float.NegativeInfinity";
+                    case float.PositiveInfinity:
+                        return "float.PositiveInfinity";
+                    case float.NaN:
+                        return "float.NaN";
+                    case float @float:
+                        return $"({typeRef})({@float.ToString(JsonConstants.SingleFormatString, CultureInfo.InvariantCulture)})";
+                    case decimal.MaxValue:
+                        return "decimal.MaxValue";
+                    case decimal.MinValue:
+                        return "decimal.MinValue";
+                    case decimal @decimal:
+                        return @decimal.ToString(CultureInfo.InvariantCulture);
+                    case bool @bool:
+                        return ToCSharpKeyword(@bool);
+                    default:
+                        // Assume this is a number.
+                        return $"({typeRef})({value.ToString()})";
+                }
+            }
+
+            // The following logic to quote string constants with proper escaping is copied from the WriteMetadataConstant method from
+            // https://github.com/dotnet/arcade/blob/0cd94b1d02c03377d99f3739beb191591f6abee5/src/Microsoft.Cci.Extensions/Writers/CSharp/CSDeclarationWriter.Attributes.cs#L241
+
+            private static string QuoteString(string str)
+            {
+                StringBuilder sb = new StringBuilder("\"");
+
+                foreach (char ch in str)
+                {
+                    sb.Append(EscapeChar(ch, inString: true));
+                }
+
+                sb.Append("\"");
+
+                return sb.ToString();
+            }
+
+            private static string EscapeChar(char c, bool inString)
+            {
+                switch (c)
+                {
+                    case '\r': return @"\r";
+                    case '\n': return @"\n";
+                    case '\f': return @"\f";
+                    case '\t': return @"\t";
+                    case '\v': return @"\v";
+                    case '\0': return @"\0";
+                    case '\a': return @"\a";
+                    case '\b': return @"\b";
+                    case '\\': return @"\\";
+                    case '\'': return inString ? "'" : @"\'";
+                    case '"': return inString ? "\\\"" : "\"";
+                }
+
+                var cat = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (cat == UnicodeCategory.Control ||
+                  cat == UnicodeCategory.LineSeparator ||
+                  cat == UnicodeCategory.Format ||
+                  cat == UnicodeCategory.Surrogate ||
+                  cat == UnicodeCategory.PrivateUse ||
+                  cat == UnicodeCategory.OtherNotAssigned)
+                {
+                    return String.Format("\\u{0:X4}", (int)c);
+                }
+
+                return c.ToString();
             }
         }
     }
