@@ -233,23 +233,5 @@ namespace System.Reflection.Tests
                 Assert.Equal(ProcessorArchitecture.Arm, pa);
             }
         }
-
-        [Fact]
-        public static void GetPEKindLoongArch64()
-        {
-            using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
-            {
-                Assembly a = lc.LoadFromByteArray(TestData.s_PlatformLoongArch64);
-                Module m = a.ManifestModule;
-
-                m.GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine);
-                Assert.Equal(PortableExecutableKinds.ILOnly, peKind);
-                Assert.Equal(ImageFileMachine.LOONGARCH64, machine);
-
-                AssemblyName an = a.GetName(copiedName: false);
-                ProcessorArchitecture pa = an.ProcessorArchitecture;
-                Assert.Equal(ProcessorArchitecture.LoongArch64, pa);
-            }
-        }
     }
 }

@@ -12,11 +12,6 @@ Commonly Used Types:
 System.Reflection.MetadataLoadContext
 System.Reflection.MetadataAssemblyResolver</PackageDescription>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-     <DefineConstants>DotNetBuildFromSource;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="System\CoreRtBridge.cs" />
     <Compile Include="System\Reflection\DefaultBinder.cs" />
