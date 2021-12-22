@@ -13266,26 +13266,31 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
     {
         ssize_t op2Value = static_cast<ssize_t>(op2->IntegralValue());
 
-        // Optimizes (X & 1) == 1 to (X & 1)
-        //
-        //                        EQ/NE                   AND
-        //                        /  \                   /  \.
-        //                      AND   CNS 1  ->         x   CNS 1
-        //                     /   \.
-        //                    x   CNS 1
-        //
-        // The compiler requires jumps to have relop operands, so we do not fold that case.
-        if (op1->OperIs(GT_AND) && op2Value == 1 && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
+        if (fgGlobalMorph)
         {
-            if (op1->gtGetOp2()->IsIntegralConst(1))
+            // Optimizes (X & 1) == 1 to (X & 1)
+            //
+            //                        EQ/NE                   AND
+            //                        /  \                   /  \.
+            //                      AND   CNS 1  ->         x   CNS 1
+            //                     /   \.
+            //                    x   CNS 1
+            //
+            // The compiler requires jumps to have relop operands, so we do not fold that case.
+            if (op1->OperIs(GT_AND) && (op2Value == 1) && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
             {
-                DEBUG_DESTROY_NODE(op2);
-                DEBUG_DESTROY_NODE(cmp);
+                if (op1->gtGetOp2()->IsIntegralConst(1))
+                {
+                    
+                    DEBUG_DESTROY_NODE(op2);
+                    DEBUG_DESTROY_NODE(cmp);
 
-                return op1;
+                    optNarrowTree(op1, op1->TypeGet(), TYP_INT, ValueNumPair(), true);
+
+                    return op1;
+                }
             }
         }
-
         if (op1->OperIsCompare())
         {
             // Here we look for the following tree
