@@ -2356,7 +2356,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                 {
                     var fields = await GetTypeFields(typeId, token);
-                    allFields.AddRange(await GetTypeFields(typeId, token));
+                    allFields.AddRange(fields);
 
                     var (collapsedFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeId, token);
 
