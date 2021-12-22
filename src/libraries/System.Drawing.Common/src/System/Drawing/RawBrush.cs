@@ -10,6 +10,6 @@ namespace System.Drawing
             SetNativeBrush(handle);
         }
 
-        public override object Clone() => FromHandle(NativeBrush);
+        public override object Clone() => FromHandle(Handle);
     }
 }
