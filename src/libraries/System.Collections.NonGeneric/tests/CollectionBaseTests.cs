@@ -42,6 +42,7 @@ namespace System.Collections.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63079", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
         public static void Capacity_Excessive ()
         {
             Assert.Throws<OutOfMemoryException>(() => new MyCollection(int.MaxValue)); // Capacity is too large

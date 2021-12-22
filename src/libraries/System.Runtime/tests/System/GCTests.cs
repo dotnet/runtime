@@ -1035,6 +1035,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63079", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
         private static void AllocateArrayTooLarge()
         {
             Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue));

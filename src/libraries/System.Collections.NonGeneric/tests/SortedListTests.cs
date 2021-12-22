@@ -1300,6 +1300,7 @@ namespace System.Collections.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63079", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
         public void Capacity_Excessive()
         {
             var sortList1 = new SortedList();
