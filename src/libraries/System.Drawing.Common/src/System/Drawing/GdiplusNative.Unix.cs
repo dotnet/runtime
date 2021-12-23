@@ -332,16 +332,7 @@ namespace System.Drawing
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipWidenPath(IntPtr path, IntPtr pen, IntPtr matrix, float flatness);
-
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
-            [DllImport(LibraryName)]
-            internal static extern int GdipGetPathWorldBounds(IntPtr path, out RectangleF bounds, IntPtr matrix, IntPtr pen);
-
-            [DllImport(LibraryName)]
-            internal static extern int GdipGetPathWorldBoundsI(IntPtr path, out Rectangle bounds, IntPtr matrix, IntPtr pen);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+            internal static partial int GdipWidenPath(IntPtr path, SafePenHandle pen, IntPtr matrix, float flatness);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipIsVisiblePathPoint(IntPtr path, float x, float y, IntPtr graphics, out bool result);
@@ -350,10 +341,10 @@ namespace System.Drawing
             internal static partial int GdipIsVisiblePathPointI(IntPtr path, int x, int y, IntPtr graphics, out bool result);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipIsOutlineVisiblePathPoint(IntPtr path, float x, float y, IntPtr pen, IntPtr graphics, out bool result);
+            internal static partial int GdipIsOutlineVisiblePathPoint(IntPtr path, float x, float y, SafePenHandle pen, IntPtr graphics, out bool result);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipIsOutlineVisiblePathPointI(IntPtr path, int x, int y, IntPtr pen, IntPtr graphics, out bool result);
+            internal static partial int GdipIsOutlineVisiblePathPointI(IntPtr path, int x, int y, SafePenHandle pen, IntPtr graphics, out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreateFontFromLogfont(IntPtr hdc, ref Interop.User32.LOGFONT lf, out IntPtr ptr);

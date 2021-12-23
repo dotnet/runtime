@@ -271,7 +271,7 @@ namespace System.Drawing
                 Point p4 = points[i + 3];
 
                 status = Gdip.GdipDrawBezier(
-                                        new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
+                                        new HandleRef(this, NativeGraphics), pen.SafePenHandle,
                                         p1.X, p1.Y, p2.X, p2.Y,
                                         p3.X, p3.Y, p4.X, p4.Y);
                 Gdip.CheckStatus(status);
@@ -299,7 +299,7 @@ namespace System.Drawing
                 PointF p4 = points[i + 3];
 
                 status = Gdip.GdipDrawBezier(
-                                        new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
+                                        new HandleRef(this, NativeGraphics), pen.SafePenHandle,
                                         p1.X, p1.Y, p2.X, p2.Y,
                                         p3.X, p3.Y, p4.X, p4.Y);
                 Gdip.CheckStatus(status);
@@ -337,7 +337,7 @@ namespace System.Drawing
             if (!float.IsNaN(x1) && !float.IsNaN(y1) &&
                 !float.IsNaN(x2) && !float.IsNaN(y2))
             {
-                int status = Gdip.GdipDrawLine(new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen), x1, y1, x2, y2);
+                int status = Gdip.GdipDrawLine(new HandleRef(this, NativeGraphics), pen.SafePenHandle, x1, y1, x2, y2);
                 Gdip.CheckStatus(status);
             }
         }

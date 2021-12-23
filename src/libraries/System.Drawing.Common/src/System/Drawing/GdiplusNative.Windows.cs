@@ -187,7 +187,7 @@ namespace System.Drawing
             internal static extern int GdipFlattenPath(HandleRef path, HandleRef matrixfloat, float flatness);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipWidenPath(HandleRef path, HandleRef pen, HandleRef matrix, float flatness);
+            internal static extern int GdipWidenPath(HandleRef path, SafePenHandle pen, HandleRef matrix, float flatness);
 
             [DllImport(LibraryName)]
             internal static extern int GdipWarpPath(HandleRef path, HandleRef matrix, PointF* points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness);
@@ -196,19 +196,16 @@ namespace System.Drawing
             internal static extern int GdipTransformPath(HandleRef path, HandleRef matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathWorldBounds(HandleRef path, out RectangleF gprectf, HandleRef matrix, HandleRef pen);
-
-            [DllImport(LibraryName)]
             internal static extern int GdipIsVisiblePathPoint(HandleRef path, float x, float y, HandleRef graphics, out bool result);
 
             [DllImport(LibraryName)]
             internal static extern int GdipIsVisiblePathPointI(HandleRef path, int x, int y, HandleRef graphics, out bool result);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsOutlineVisiblePathPoint(HandleRef path, float x, float y, HandleRef pen, HandleRef graphics, out bool result);
+            internal static extern int GdipIsOutlineVisiblePathPoint(HandleRef path, float x, float y, SafePenHandle pen, HandleRef graphics, out bool result);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsOutlineVisiblePathPointI(HandleRef path, int x, int y, HandleRef pen, HandleRef graphics, out bool result);
+            internal static extern int GdipIsOutlineVisiblePathPointI(HandleRef path, int x, int y, SafePenHandle pen, HandleRef graphics, out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipLoadImageFromStream(IntPtr stream, IntPtr* image);
@@ -271,10 +268,10 @@ namespace System.Drawing
             internal static partial IntPtr GdipCreateHalftonePalette();
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipDrawBeziers(HandleRef graphics, HandleRef pen, PointF* points, int count);
+            internal static extern int GdipDrawBeziers(HandleRef graphics, SafePenHandle pen, PointF* points, int count);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipDrawBeziersI(HandleRef graphics, HandleRef pen, Point* points, int count);
+            internal static extern int GdipDrawBeziersI(HandleRef graphics, SafePenHandle pen, Point* points, int count);
 
             [DllImport(LibraryName, SetLastError = true)]
             internal static extern int GdipFillPath(HandleRef graphics, SafeBrushHandle brush, HandleRef path);

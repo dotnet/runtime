@@ -288,7 +288,7 @@ namespace System.Drawing
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
 
-            CheckErrorStatus(Gdip.GdipDrawLine(new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen), x1, y1, x2, y2));
+            CheckErrorStatus(Gdip.GdipDrawLine(new HandleRef(this, NativeGraphics), pen.SafePenHandle, x1, y1, x2, y2));
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipDrawBeziers(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(pen, pen.NativePen),
+                    pen.SafePenHandle,
                     p, points.Length));
             }
         }
@@ -324,7 +324,7 @@ namespace System.Drawing
             {
                 CheckErrorStatus(Gdip.GdipDrawBeziersI(
                     new HandleRef(this, NativeGraphics),
-                    new HandleRef(pen, pen.NativePen),
+                    pen.SafePenHandle,
                     p,
                     points.Length));
             }

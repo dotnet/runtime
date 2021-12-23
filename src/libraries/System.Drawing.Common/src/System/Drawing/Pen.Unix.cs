@@ -22,7 +22,7 @@ namespace System.Drawing
             get
             {
                 IntPtr lineCap = IntPtr.Zero;
-                int status = Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
+                int status = Gdip.GdipGetPenCustomStartCap(SafePenHandle, out lineCap);
                 Gdip.CheckStatus(status);
                 if (lineCap == IntPtr.Zero)
                 {
@@ -38,7 +38,7 @@ namespace System.Drawing
                     throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
                 }
 
-                int status = Gdip.GdipSetPenCustomStartCap(new HandleRef(this, NativePen),
+                int status = Gdip.GdipSetPenCustomStartCap(SafePenHandle,
                                                               new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
                 Gdip.CheckStatus(status);
             }
@@ -70,7 +70,7 @@ namespace System.Drawing
                 CustomLineCap? clone = value == null ? null : (CustomLineCap)value.Clone();
 
                 int status = Gdip.GdipSetPenCustomEndCap(
-                    new HandleRef(this, NativePen),
+                    SafePenHandle,
                     new HandleRef(clone, (clone == null) ? IntPtr.Zero : clone.nativeCap));
                 Gdip.CheckStatus(status);
                 _cachedEndCap = clone;

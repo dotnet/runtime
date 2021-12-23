@@ -254,7 +254,7 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(Gdip.GdipIsOutlineVisiblePathPoint(
                 new HandleRef(this, _nativePath),
                 pt.X, pt.Y,
-                new HandleRef(pen, pen.NativePen),
+                pen.SafePenHandle,
                 new HandleRef(graphics, graphics?.NativeGraphics ?? IntPtr.Zero),
                 out bool isVisible));
 
@@ -275,7 +275,7 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(Gdip.GdipIsOutlineVisiblePathPointI(
                 new HandleRef(this, _nativePath),
                 pt.X, pt.Y,
-                new HandleRef(pen, pen.NativePen),
+                pen.SafePenHandle,
                 new HandleRef(graphics, graphics?.NativeGraphics ?? IntPtr.Zero),
                 out bool isVisible));
 
@@ -688,7 +688,7 @@ namespace System.Drawing.Drawing2D
                 new HandleRef(matrix, matrix.NativeMatrix)));
         }
 
-        public RectangleF GetBounds() => GetBounds(null);
+        public RectangleF GetBounds() => GetBounds(null, null);
 
         public RectangleF GetBounds(Matrix? matrix) => GetBounds(matrix, null);
 
@@ -698,7 +698,7 @@ namespace System.Drawing.Drawing2D
                 new HandleRef(this, _nativePath),
                 out RectangleF bounds,
                 new HandleRef(matrix, matrix?.NativeMatrix ?? IntPtr.Zero),
-                new HandleRef(pen, pen?.NativePen ?? IntPtr.Zero)));
+                pen?.SafePenHandle));
 
             return bounds;
         }
@@ -731,7 +731,7 @@ namespace System.Drawing.Drawing2D
 
             Gdip.CheckStatus(Gdip.GdipWidenPath(
                 new HandleRef(this, _nativePath),
-                new HandleRef(pen, pen.NativePen),
+                pen.SafePenHandle,
                 new HandleRef(matrix, matrix?.NativeMatrix ?? IntPtr.Zero),
                 flatness));
         }

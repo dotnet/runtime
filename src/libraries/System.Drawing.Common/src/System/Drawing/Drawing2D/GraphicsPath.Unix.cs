@@ -714,10 +714,12 @@ namespace System.Drawing.Drawing2D
         public RectangleF GetBounds(Matrix? matrix, Pen? pen)
         {
             RectangleF retval;
-            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
-            IntPtr p = (pen == null) ? IntPtr.Zero : pen.NativePen;
 
-            int s = Gdip.GdipGetPathWorldBounds(_nativePath, out retval, m, p);
+            int s = Gdip.GdipGetPathWorldBounds(
+                new HandleRef(this, _nativePath),
+                out retval,
+                new HandleRef(matrix, matrix?.NativeMatrix ?? IntPtr.Zero),
+                pen?.SafePenHandle);
 
             Gdip.CheckStatus(s);
 
@@ -762,7 +764,7 @@ namespace System.Drawing.Drawing2D
             bool result;
             IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.NativeGraphics;
 
-            int s = Gdip.GdipIsOutlineVisiblePathPointI(_nativePath, x, y, pen.NativePen, g, out result);
+            int s = Gdip.GdipIsOutlineVisiblePathPointI(_nativePath, x, y, pen.SafePenHandle, g, out result);
             Gdip.CheckStatus(s);
 
             return result;
@@ -776,7 +778,7 @@ namespace System.Drawing.Drawing2D
             bool result;
             IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.NativeGraphics;
 
-            int s = Gdip.GdipIsOutlineVisiblePathPoint(_nativePath, x, y, pen.NativePen, g, out result);
+            int s = Gdip.GdipIsOutlineVisiblePathPoint(_nativePath, x, y, pen.SafePenHandle, g, out result);
             Gdip.CheckStatus(s);
 
             return result;
@@ -898,7 +900,7 @@ namespace System.Drawing.Drawing2D
                 return;
             IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
 
-            int s = Gdip.GdipWidenPath(_nativePath, pen.NativePen, m, flatness);
+            int s = Gdip.GdipWidenPath(_nativePath, pen.SafePenHandle, m, flatness);
             Gdip.CheckStatus(s);
         }
     }
