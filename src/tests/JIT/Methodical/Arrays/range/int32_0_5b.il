@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'test'
+.assembly 'int32_0_5b'
 {
 
 
@@ -28,7 +28,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 .namespace JitTest
 {
   .class private auto ansi Test

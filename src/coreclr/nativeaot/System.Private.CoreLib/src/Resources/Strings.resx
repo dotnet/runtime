@@ -886,7 +886,7 @@
     <value>The name can be no more than {0} characters in length.</value>
   </data>
   <data name="ArgumentException_OtherNotArrayOfCorrectLength" xml:space="preserve">
-    <value>Object is not a array with the same number of elements as the array to compare it to.</value>
+    <value>The object is not an array with the same number of elements as the array to compare it to.</value>
   </data>
   <data name="ArgumentException_TupleIncorrectType" xml:space="preserve">
     <value>Argument must be of type {0}.</value>
@@ -3246,6 +3246,18 @@
   </data>
   <data name="Arg_MemberInfoNotFound" xml:space="preserve">
     <value>A MemberInfo that matches '{0}' could not be found.</value>
+  </data>
+  <data name="InvalidOperation_BadTZHeader" xml:space="preserve">
+    <value>Bad magic in '{0}': Header starts with '{1}' instead of 'tzdata'</value>
+  </data>
+  <data name="InvalidOperation_ReadTZError" xml:space="preserve">
+    <value>Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.</value>
+  </data>
+  <data name="InvalidOperation_BadIndexLength" xml:space="preserve">
+    <value>Length in index file less than AndroidTzDataHeader</value>
+  </data>
+  <data name="TimeZoneNotFound_ValidTimeZoneFileMissing" xml:space="preserve">
+    <value>Unable to properly load any time zone data files.</value>
   </data>
   <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
     <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>

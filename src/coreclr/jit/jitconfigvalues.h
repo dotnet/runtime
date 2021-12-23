@@ -522,6 +522,10 @@ CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_In
 // Enable partial compilation for Tier0 methods
 CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
 
+#if defined(DEBUG)
+CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange")) // Enable osr for only some methods
+#endif                                                   // debug
+
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)

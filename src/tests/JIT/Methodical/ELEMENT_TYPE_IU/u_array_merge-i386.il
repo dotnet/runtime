@@ -9,7 +9,7 @@
 
 .assembly extern mscorlib
 { }
-.assembly 'test'
+.assembly 'u_array_merge-i386'
 { }
 .assembly extern xunit.core {}
 .class private auto ansi Test_u_array_merge_i386 extends [mscorlib]System.Object

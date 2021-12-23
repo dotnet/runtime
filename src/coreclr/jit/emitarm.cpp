@@ -4746,7 +4746,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         /* Indirect call, virtual calls */
 
-        id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize);
+        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize);
     }
     else
     {

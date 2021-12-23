@@ -112,6 +112,7 @@ namespace System
         public static string BaseDirectory { get { throw null; } }
         public static string? TargetFrameworkName { get { throw null; } }
         public static object? GetData(string name) { throw null; }
+        public static void SetData(string name, object? data) { }
         public static void SetSwitch(string switchName, bool isEnabled) { }
         public static bool TryGetSwitch(string switchName, out bool isEnabled) { throw null; }
     }
@@ -9040,6 +9041,12 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class AllowNullAttribute : System.Attribute
     {
         public AllowNullAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    public sealed class ConstantExpectedAttribute : Attribute
+    {
+        public object? Min { get { throw null; } set { } }
+        public object? Max { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited=false)]
     public sealed partial class DisallowNullAttribute : System.Attribute

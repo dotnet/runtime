@@ -21,7 +21,6 @@
 #include "pal_networkstatistics.h"
 #include "pal_process.h"
 #include "pal_random.h"
-#include "pal_runtimeextensions.h"
 #include "pal_runtimeinformation.h"
 #include "pal_searchpath.h"
 #include "pal_signal.h"
@@ -214,7 +213,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetProcessPath)
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes)
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes)
-    DllImportEntry(SystemNative_GetNodeName)
     DllImportEntry(SystemNative_GetUnixName)
     DllImportEntry(SystemNative_GetUnixRelease)
     DllImportEntry(SystemNative_GetUnixVersion)

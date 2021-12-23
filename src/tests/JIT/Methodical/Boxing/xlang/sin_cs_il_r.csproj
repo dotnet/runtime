@@ -10,7 +10,7 @@
     <NoWarn>$(NoWarn),8002</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="sin.cs" />
+    <Compile Include="sin_il.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="sinlib_il.ilproj" />

@@ -13,13 +13,12 @@
 {
 }
 .assembly extern common{}
-.assembly b30630
+.assembly 'labelbeginningfinally'
 {
   .hash algorithm 0x00008004
   .ver 1:0:3018:0
 }
 .assembly extern xunit.core {}
-.module b30630.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512

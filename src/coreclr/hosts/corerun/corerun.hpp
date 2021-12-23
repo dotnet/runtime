@@ -473,6 +473,12 @@ namespace pal
             return false;
         }
 
+        // Ignore directories
+        if (S_ISDIR(sb.st_mode))
+        {
+            return false;
+        }
+
         // Verify that the path points to a file
         if (!S_ISREG(sb.st_mode))
         {

@@ -300,8 +300,8 @@ namespace System
             if (Vector.IsHardwareAccelerated && Vector<T>.IsTypeSupported && (Vector<T>.Count * 2) <= length)
             {
                 Vector<T> valueVector = new Vector<T>(value);
-                Vector<T> compareVector = default;
-                Vector<T> matchVector = default;
+                Vector<T> compareVector;
+                Vector<T> matchVector;
                 if ((uint)length % (uint)Vector<T>.Count != 0)
                 {
                     // Number of elements is not a multiple of Vector<T>.Count, so do one
