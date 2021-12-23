@@ -53,10 +53,6 @@ namespace System.Reflection.TypeLoading.Ecma
                     data.ProcessorArchitecture = ProcessorArchitecture.Arm;
                     break;
 
-                case ImageFileMachine.LOONGARCH64:
-                    data.ProcessorArchitecture = ProcessorArchitecture.LoongArch64;
-                    break;
-
                 case ImageFileMachine.IA64:
                     data.ProcessorArchitecture = ProcessorArchitecture.IA64;
                     break;
