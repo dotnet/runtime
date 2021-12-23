@@ -294,6 +294,7 @@
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeGPtrArrayHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\Mono\HotReloadInstanceFieldTable.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
   </ItemGroup>
 
