@@ -316,7 +316,7 @@ namespace System.Net
             Interop.AppleCrypto.SslSetMaxProtocolVersion(sslContext, maxProtocolId);
         }
 
-        private static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
+        internal static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
             Debug.Assert(sslContext != null, "sslContext != null");
 

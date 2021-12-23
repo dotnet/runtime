@@ -4,6 +4,7 @@
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -32,6 +33,70 @@ namespace System.Net.Security.Tests
         {
             _serverCertificate.Dispose();
             _clientCertificate.Dispose();
+        }
+
+        [ConditionalTheory]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        public async Task CertificateSelectionCallback_DelayedCertificate_OK(bool delayCertificate, bool sendClientCertificate)
+        {
+             X509Certificate? remoteCertificate = null;
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
+                clientOptions.TargetHost = "localhost";
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, certificate, acceptableIssuers) =>
+                {
+                    remoteCertificate = certificate;
+                    if (delayCertificate && remoteCertificate == null)
+                    {
+                        // wait until we get remote certificate from peer e.g. handshake started.
+                        return null;
+                    }
+
+                    return sendClientCertificate ? _clientCertificate : null;
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
+                serverOptions.ServerCertificate = _serverCertificate;
+                serverOptions.ClientCertificateRequired = true;
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    if (sendClientCertificate)
+                    {
+                        Assert.NotNull(certificate);
+                        // The client chain may be incomplete.
+                        Assert.True(sslPolicyErrors == SslPolicyErrors.None || sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors);
+                    }
+                    else
+                    {
+                        Assert.Equal(SslPolicyErrors.RemoteCertificateNotAvailable, sslPolicyErrors);
+                    }
+
+                    return true;
+                };
+
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions),
+                                server.AuthenticateAsServerAsync(serverOptions));
+
+                // verify that the session is usable with or without client's certificate
+                await TestHelper.PingPong(client, server);
+                await TestHelper.PingPong(server, client);
+
+                if (delayCertificate)
+                {
+                    // LocalCertificateSelectionCallback should be called with real remote certificate.
+                    Assert.NotNull(remoteCertificate);
+                }
+            }
         }
 
         [Theory]
