@@ -147,7 +147,7 @@ namespace System.Drawing
         public override object Clone()
         {
             SafeBrushHandle clonedBrush;
-            int status = Gdip.GdipCloneBrush(SafeNativeBrush, out clonedBrush);
+            int status = Gdip.GdipCloneBrush(SafeBrushHandle, out clonedBrush);
             Gdip.CheckStatus(status);
 
             return new TextureBrush(clonedBrush);
@@ -158,7 +158,7 @@ namespace System.Drawing
             get
             {
                 var matrix = new Matrix();
-                int status = Gdip.GdipGetTextureTransform(SafeNativeBrush, new HandleRef(matrix, matrix.NativeMatrix));
+                int status = Gdip.GdipGetTextureTransform(SafeBrushHandle, new HandleRef(matrix, matrix.NativeMatrix));
                 Gdip.CheckStatus(status);
 
                 return matrix;
@@ -170,7 +170,7 @@ namespace System.Drawing
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                int status = Gdip.GdipSetTextureTransform(SafeNativeBrush, new HandleRef(value, value.NativeMatrix));
+                int status = Gdip.GdipSetTextureTransform(SafeBrushHandle, new HandleRef(value, value.NativeMatrix));
                 Gdip.CheckStatus(status);
             }
         }
@@ -180,7 +180,7 @@ namespace System.Drawing
             get
             {
                 int mode = 0;
-                int status = Gdip.GdipGetTextureWrapMode(SafeNativeBrush, out mode);
+                int status = Gdip.GdipGetTextureWrapMode(SafeBrushHandle, out mode);
                 Gdip.CheckStatus(status);
 
                 return (WrapMode)mode;
@@ -192,7 +192,7 @@ namespace System.Drawing
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(WrapMode));
                 }
 
-                int status = Gdip.GdipSetTextureWrapMode(SafeNativeBrush, unchecked((int)value));
+                int status = Gdip.GdipSetTextureWrapMode(SafeBrushHandle, unchecked((int)value));
                 Gdip.CheckStatus(status);
             }
         }
@@ -202,7 +202,7 @@ namespace System.Drawing
             get
             {
                 IntPtr image;
-                int status = Gdip.GdipGetTextureImage(SafeNativeBrush, out image);
+                int status = Gdip.GdipGetTextureImage(SafeBrushHandle, out image);
                 Gdip.CheckStatus(status);
 
                 return Image.CreateImageObject(image);
@@ -211,7 +211,7 @@ namespace System.Drawing
 
         public void ResetTransform()
         {
-            int status = Gdip.GdipResetTextureTransform(SafeNativeBrush);
+            int status = Gdip.GdipResetTextureTransform(SafeBrushHandle);
             Gdip.CheckStatus(status);
         }
 
@@ -231,7 +231,7 @@ namespace System.Drawing
                 return;
             }
 
-            int status = Gdip.GdipMultiplyTextureTransform(SafeNativeBrush,
+            int status = Gdip.GdipMultiplyTextureTransform(SafeBrushHandle,
                                                               new HandleRef(matrix, matrix.NativeMatrix),
                                                               order);
             Gdip.CheckStatus(status);
@@ -241,7 +241,7 @@ namespace System.Drawing
 
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {
-            int status = Gdip.GdipTranslateTextureTransform(SafeNativeBrush,
+            int status = Gdip.GdipTranslateTextureTransform(SafeBrushHandle,
                                                                dx,
                                                                dy,
                                                                order);
@@ -252,7 +252,7 @@ namespace System.Drawing
 
         public void ScaleTransform(float sx, float sy, MatrixOrder order)
         {
-            int status = Gdip.GdipScaleTextureTransform(SafeNativeBrush,
+            int status = Gdip.GdipScaleTextureTransform(SafeBrushHandle,
                                                            sx,
                                                            sy,
                                                            order);
@@ -263,7 +263,7 @@ namespace System.Drawing
 
         public void RotateTransform(float angle, MatrixOrder order)
         {
-            int status = Gdip.GdipRotateTextureTransform(SafeNativeBrush,
+            int status = Gdip.GdipRotateTextureTransform(SafeBrushHandle,
                                                             angle,
                                                             order);
             Gdip.CheckStatus(status);

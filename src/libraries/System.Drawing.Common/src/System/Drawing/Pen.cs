@@ -86,7 +86,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             }
 
-            int status = Gdip.GdipCreatePen2(brush.SafeNativeBrush,
+            int status = Gdip.GdipCreatePen2(brush.SafeBrushHandle,
                 width,
                 (int)GraphicsUnit.World,
                 out _nativePen);
@@ -602,7 +602,7 @@ namespace System.Drawing
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                int status = Gdip.GdipSetPenBrushFill(SafePenHandle, value.SafeNativeBrush);
+                int status = Gdip.GdipSetPenBrushFill(SafePenHandle, value.SafeBrushHandle);
                 Gdip.CheckStatus(status);
             }
         }

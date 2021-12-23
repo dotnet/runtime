@@ -51,7 +51,7 @@ namespace System.Drawing
         public override object Clone()
         {
             SafeBrushHandle clonedBrush;
-            int status = Gdip.GdipCloneBrush(SafeNativeBrush, out clonedBrush);
+            int status = Gdip.GdipCloneBrush(SafeBrushHandle, out clonedBrush);
             Gdip.CheckStatus(status);
 
             // Clones of immutable brushes are not immutable.
@@ -79,7 +79,7 @@ namespace System.Drawing
                 if (_color == Color.Empty)
                 {
                     int colorARGB;
-                    int status = Gdip.GdipGetSolidFillColor(SafeNativeBrush, out colorARGB);
+                    int status = Gdip.GdipGetSolidFillColor(SafeBrushHandle, out colorARGB);
                     Gdip.CheckStatus(status);
 
                     _color = Color.FromArgb(colorARGB);
@@ -118,7 +118,7 @@ namespace System.Drawing
         // Sets the color even if the brush is considered immutable.
         private void InternalSetColor(Color value)
         {
-            int status = Gdip.GdipSetSolidFillColor(SafeNativeBrush, value.ToArgb());
+            int status = Gdip.GdipSetSolidFillColor(SafeBrushHandle, value.ToArgb());
             Gdip.CheckStatus(status);
 
             _color = value;
@@ -127,7 +127,7 @@ namespace System.Drawing
 #if FEATURE_SYSTEM_EVENTS
         void ISystemColorTracker.OnSystemColorChanged()
         {
-            if (!SafeNativeBrush.IsClosed)
+            if (!SafeBrushHandle.IsClosed)
             {
                 InternalSetColor(_color);
             }

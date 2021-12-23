@@ -33,7 +33,7 @@ namespace System.Drawing.Drawing2D
         public override object Clone()
         {
             SafeBrushHandle clonedBrush;
-            int status = Gdip.GdipCloneBrush(SafeNativeBrush, out clonedBrush);
+            int status = Gdip.GdipCloneBrush(SafeBrushHandle, out clonedBrush);
             Gdip.CheckStatus(status);
 
             return new HatchBrush(clonedBrush);
@@ -44,7 +44,7 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int hatchStyle;
-                int status = Gdip.GdipGetHatchStyle(SafeNativeBrush, out hatchStyle);
+                int status = Gdip.GdipGetHatchStyle(SafeBrushHandle, out hatchStyle);
                 Gdip.CheckStatus(status);
 
                 return (HatchStyle)hatchStyle;
@@ -56,7 +56,7 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int foregroundArgb;
-                int status = Gdip.GdipGetHatchForegroundColor(SafeNativeBrush, out foregroundArgb);
+                int status = Gdip.GdipGetHatchForegroundColor(SafeBrushHandle, out foregroundArgb);
                 Gdip.CheckStatus(status);
 
                 return Color.FromArgb(foregroundArgb);
@@ -68,7 +68,7 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int backgroundArgb;
-                int status = Gdip.GdipGetHatchBackgroundColor(SafeNativeBrush, out backgroundArgb);
+                int status = Gdip.GdipGetHatchBackgroundColor(SafeBrushHandle, out backgroundArgb);
                 Gdip.CheckStatus(status);
 
                 return Color.FromArgb(backgroundArgb);

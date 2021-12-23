@@ -119,7 +119,7 @@ namespace System.Drawing.Drawing2D
 
         public override object Clone()
         {
-            Gdip.CheckStatus(Gdip.GdipCloneBrush(SafeNativeBrush, out SafeBrushHandle clonedBrush));
+            Gdip.CheckStatus(Gdip.GdipCloneBrush(SafeBrushHandle, out SafeBrushHandle clonedBrush));
             return new LinearGradientBrush(clonedBrush);
         }
 
@@ -128,7 +128,7 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int[] colors = new int[] { 0, 0 };
-                Gdip.CheckStatus(Gdip.GdipGetLineColors(SafeNativeBrush, colors));
+                Gdip.CheckStatus(Gdip.GdipGetLineColors(SafeBrushHandle, colors));
 
                 return new Color[]
                 {
@@ -139,7 +139,7 @@ namespace System.Drawing.Drawing2D
             set
             {
                 Gdip.CheckStatus(Gdip.GdipSetLineColors(
-                    SafeNativeBrush,
+                    SafeBrushHandle,
                     value[0].ToArgb(),
                     value[1].ToArgb()));
             }
@@ -149,7 +149,7 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                Gdip.CheckStatus(Gdip.GdipGetLineRect(SafeNativeBrush, out RectangleF rect));
+                Gdip.CheckStatus(Gdip.GdipGetLineRect(SafeBrushHandle, out RectangleF rect));
                 return rect;
             }
         }
@@ -159,14 +159,14 @@ namespace System.Drawing.Drawing2D
             get
             {
                 Gdip.CheckStatus(Gdip.GdipGetLineGammaCorrection(
-                    SafeNativeBrush,
+                    SafeBrushHandle,
                     out bool useGammaCorrection));
 
                 return useGammaCorrection;
             }
             set
             {
-                Gdip.CheckStatus(Gdip.GdipSetLineGammaCorrection(SafeNativeBrush, value));
+                Gdip.CheckStatus(Gdip.GdipSetLineGammaCorrection(SafeBrushHandle, value));
             }
         }
 
@@ -181,7 +181,7 @@ namespace System.Drawing.Drawing2D
                     return null;
 
                 // Figure out the size of blend factor array.
-                Gdip.CheckStatus(Gdip.GdipGetLineBlendCount(SafeNativeBrush, out int retval));
+                Gdip.CheckStatus(Gdip.GdipGetLineBlendCount(SafeBrushHandle, out int retval));
 
                 if (retval <= 0)
                     return null;
@@ -198,7 +198,7 @@ namespace System.Drawing.Drawing2D
                     positions = Marshal.AllocHGlobal(size);
 
                     // Retrieve horizontal blend factors.
-                    Gdip.CheckStatus(Gdip.GdipGetLineBlend(SafeNativeBrush, factors, positions, count));
+                    Gdip.CheckStatus(Gdip.GdipGetLineBlend(SafeBrushHandle, factors, positions, count));
 
                     // Return the result in a managed array.
                     var blend = new Blend(count);
@@ -256,7 +256,7 @@ namespace System.Drawing.Drawing2D
                     Marshal.Copy(value.Positions, 0, positions, count);
 
                     // Set blend factors.
-                    Gdip.CheckStatus(Gdip.GdipSetLineBlend(SafeNativeBrush, factors, positions, count));
+                    Gdip.CheckStatus(Gdip.GdipSetLineBlend(SafeBrushHandle, factors, positions, count));
                 }
                 finally
                 {
@@ -281,7 +281,7 @@ namespace System.Drawing.Drawing2D
             if (scale < 0 || scale > 1)
                 throw new ArgumentException(SR.GdiplusInvalidParameter, nameof(scale));
 
-            Gdip.CheckStatus(Gdip.GdipSetLineSigmaBlend(SafeNativeBrush, focus, scale));
+            Gdip.CheckStatus(Gdip.GdipSetLineSigmaBlend(SafeBrushHandle, focus, scale));
         }
 
         public void SetBlendTriangularShape(float focus) => SetBlendTriangularShape(focus, (float)1.0);
@@ -293,7 +293,7 @@ namespace System.Drawing.Drawing2D
             if (scale < 0 || scale > 1)
                 throw new ArgumentException(SR.GdiplusInvalidParameter, nameof(scale));
 
-            Gdip.CheckStatus(Gdip.GdipSetLineLinearBlend(SafeNativeBrush, focus, scale));
+            Gdip.CheckStatus(Gdip.GdipSetLineLinearBlend(SafeBrushHandle, focus, scale));
 
             // Setting a triangular shape overrides the explicitly set interpolation colors. libgdiplus correctly clears
             // the interpolation colors (https://github.com/mono/libgdiplus/blob/master/src/lineargradientbrush.c#L959) but
@@ -312,7 +312,7 @@ namespace System.Drawing.Drawing2D
                                                 SR.InterpolationColorsColorBlendNotSet, string.Empty));
 
                 // Figure out the size of blend factor array.
-                Gdip.CheckStatus(Gdip.GdipGetLinePresetBlendCount(SafeNativeBrush, out int retval));
+                Gdip.CheckStatus(Gdip.GdipGetLinePresetBlendCount(SafeBrushHandle, out int retval));
 
                 // Allocate temporary native memory buffer.
                 int count = retval;
@@ -327,7 +327,7 @@ namespace System.Drawing.Drawing2D
                     positions = Marshal.AllocHGlobal(size);
 
                     // Retrieve horizontal blend factors.
-                    Gdip.CheckStatus(Gdip.GdipGetLinePresetBlend(SafeNativeBrush, colors, positions, count));
+                    Gdip.CheckStatus(Gdip.GdipGetLinePresetBlend(SafeBrushHandle, colors, positions, count));
 
                     // Return the result in a managed array.
                     var blend = new ColorBlend(count);
@@ -414,7 +414,7 @@ namespace System.Drawing.Drawing2D
                     Marshal.Copy(value.Positions, 0, positions, count);
 
                     // Set blend factors.
-                    Gdip.CheckStatus(Gdip.GdipSetLinePresetBlend(SafeNativeBrush, colors, positions, count));
+                    Gdip.CheckStatus(Gdip.GdipSetLinePresetBlend(SafeBrushHandle, colors, positions, count));
                 }
                 finally
                 {
@@ -434,7 +434,7 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                Gdip.CheckStatus(Gdip.GdipGetLineWrapMode(SafeNativeBrush, out int mode));
+                Gdip.CheckStatus(Gdip.GdipGetLineWrapMode(SafeBrushHandle, out int mode));
                 return (WrapMode)mode;
             }
             set
@@ -442,7 +442,7 @@ namespace System.Drawing.Drawing2D
                 if (value < WrapMode.Tile || value > WrapMode.Clamp)
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(WrapMode));
 
-                Gdip.CheckStatus(Gdip.GdipSetLineWrapMode(SafeNativeBrush, unchecked((int)value)));
+                Gdip.CheckStatus(Gdip.GdipSetLineWrapMode(SafeBrushHandle, unchecked((int)value)));
             }
         }
 
@@ -451,7 +451,7 @@ namespace System.Drawing.Drawing2D
             get
             {
                 var matrix = new Matrix();
-                Gdip.CheckStatus(Gdip.GdipGetLineTransform(SafeNativeBrush, new HandleRef(matrix, matrix.NativeMatrix)));
+                Gdip.CheckStatus(Gdip.GdipGetLineTransform(SafeBrushHandle, new HandleRef(matrix, matrix.NativeMatrix)));
                 return matrix;
             }
             set
@@ -459,13 +459,13 @@ namespace System.Drawing.Drawing2D
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                Gdip.CheckStatus(Gdip.GdipSetLineTransform(SafeNativeBrush, new HandleRef(value, value.NativeMatrix)));
+                Gdip.CheckStatus(Gdip.GdipSetLineTransform(SafeBrushHandle, new HandleRef(value, value.NativeMatrix)));
             }
         }
 
         public void ResetTransform()
         {
-            Gdip.CheckStatus(Gdip.GdipResetLineTransform(SafeNativeBrush));
+            Gdip.CheckStatus(Gdip.GdipResetLineTransform(SafeBrushHandle));
         }
 
         public void MultiplyTransform(Matrix matrix) => MultiplyTransform(matrix, MatrixOrder.Prepend);
@@ -481,7 +481,7 @@ namespace System.Drawing.Drawing2D
                 return;
 
             Gdip.CheckStatus(Gdip.GdipMultiplyLineTransform(
-                SafeNativeBrush,
+                SafeBrushHandle,
                 new HandleRef(matrix, matrix.NativeMatrix),
                 order));
         }
@@ -490,21 +490,21 @@ namespace System.Drawing.Drawing2D
 
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {
-            Gdip.CheckStatus(Gdip.GdipTranslateLineTransform(SafeNativeBrush, dx, dy, order));
+            Gdip.CheckStatus(Gdip.GdipTranslateLineTransform(SafeBrushHandle, dx, dy, order));
         }
 
         public void ScaleTransform(float sx, float sy) => ScaleTransform(sx, sy, MatrixOrder.Prepend);
 
         public void ScaleTransform(float sx, float sy, MatrixOrder order)
         {
-            Gdip.CheckStatus(Gdip.GdipScaleLineTransform(SafeNativeBrush, sx, sy, order));
+            Gdip.CheckStatus(Gdip.GdipScaleLineTransform(SafeBrushHandle, sx, sy, order));
         }
 
         public void RotateTransform(float angle) => RotateTransform(angle, MatrixOrder.Prepend);
 
         public void RotateTransform(float angle, MatrixOrder order)
         {
-            Gdip.CheckStatus(Gdip.GdipRotateLineTransform(SafeNativeBrush, angle, order));
+            Gdip.CheckStatus(Gdip.GdipRotateLineTransform(SafeBrushHandle, angle, order));
         }
     }
 }
