@@ -1,28 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {
     public sealed class Matrix : MarshalByRefObject, IDisposable
     {
-        internal IntPtr NativeMatrix { get; private set; }
+        private readonly SafeMatrixHandle _nativeMatrix;
+
+        internal SafeMatrixHandle SafeMatrixHandle => _nativeMatrix;
 
         public Matrix()
         {
-            Gdip.CheckStatus(Gdip.GdipCreateMatrix(out IntPtr nativeMatrix));
-            NativeMatrix = nativeMatrix;
+            Gdip.CheckStatus(Gdip.GdipCreateMatrix(out _nativeMatrix));
         }
 
         public Matrix(float m11, float m12, float m21, float m22, float dx, float dy)
         {
-            Gdip.CheckStatus(Gdip.GdipCreateMatrix2(m11, m12, m21, m22, dx, dy, out IntPtr nativeMatrix));
-            NativeMatrix = nativeMatrix;
+            Gdip.CheckStatus(Gdip.GdipCreateMatrix2(m11, m12, m21, m22, dx, dy, out _nativeMatrix));
         }
 
         /// <summary>
@@ -33,12 +33,12 @@ namespace System.Drawing.Drawing2D
         {
         }
 
-        private Matrix(IntPtr nativeMatrix)
+        private Matrix(SafeMatrixHandle nativeMatrix)
         {
-            NativeMatrix = nativeMatrix;
+            _nativeMatrix = nativeMatrix;
         }
 
-        internal static IntPtr CreateNativeHandle(Matrix3x2 matrix)
+        internal static SafeMatrixHandle CreateNativeHandle(Matrix3x2 matrix)
         {
             Gdip.CheckStatus(Gdip.GdipCreateMatrix2(
                 matrix.M11,
@@ -47,7 +47,7 @@ namespace System.Drawing.Drawing2D
                 matrix.M22,
                 matrix.M31,
                 matrix.M32,
-                out IntPtr nativeMatrix));
+                out SafeMatrixHandle nativeMatrix));
 
             return nativeMatrix;
         }
@@ -61,8 +61,7 @@ namespace System.Drawing.Drawing2D
 
             fixed (PointF* p = plgpts)
             {
-                Gdip.CheckStatus(Gdip.GdipCreateMatrix3(ref rect, p, out IntPtr nativeMatrix));
-                NativeMatrix = nativeMatrix;
+                Gdip.CheckStatus(Gdip.GdipCreateMatrix3(ref rect, p, out _nativeMatrix));
             }
         }
 
@@ -75,34 +74,18 @@ namespace System.Drawing.Drawing2D
 
             fixed (Point* p = plgpts)
             {
-                Gdip.CheckStatus(Gdip.GdipCreateMatrix3I(ref rect, p, out IntPtr nativeMatrix));
-                NativeMatrix = nativeMatrix;
+                Gdip.CheckStatus(Gdip.GdipCreateMatrix3I(ref rect, p, out _nativeMatrix));
             }
         }
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            SafeMatrixHandle.Dispose();
         }
-
-        private void Dispose(bool disposing)
-        {
-            if (NativeMatrix != IntPtr.Zero)
-            {
-                if (Gdip.Initialized)
-                {
-                    Gdip.GdipDeleteMatrix(new HandleRef(this, NativeMatrix));
-                }
-                NativeMatrix = IntPtr.Zero;
-            }
-        }
-
-        ~Matrix() => Dispose(false);
 
         public Matrix Clone()
         {
-            Gdip.CheckStatus(Gdip.GdipCloneMatrix(new HandleRef(this, NativeMatrix), out IntPtr clonedMatrix));
+            Gdip.CheckStatus(Gdip.GdipCloneMatrix(SafeMatrixHandle, out SafeMatrixHandle clonedMatrix));
             return new Matrix(clonedMatrix);
         }
 
@@ -124,13 +107,13 @@ namespace System.Drawing.Drawing2D
             get
             {
                 Matrix3x2 matrix = default;
-                Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), (float*)&matrix));
+                Gdip.CheckStatus(Gdip.GdipGetMatrixElements(SafeMatrixHandle, (float*)&matrix));
                 return matrix;
             }
             set
             {
                 Gdip.CheckStatus(Gdip.GdipSetMatrixElements(
-                    new HandleRef(this, NativeMatrix),
+                    SafeMatrixHandle,
                     value.M11,
                     value.M12,
                     value.M21,
@@ -146,7 +129,7 @@ namespace System.Drawing.Drawing2D
 
             fixed (float* m = elements)
             {
-                Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), m));
+                Gdip.CheckStatus(Gdip.GdipGetMatrixElements(SafeMatrixHandle, m));
             }
         }
 
@@ -167,7 +150,7 @@ namespace System.Drawing.Drawing2D
         public void Reset()
         {
             Gdip.CheckStatus(Gdip.GdipSetMatrixElements(
-                new HandleRef(this, NativeMatrix),
+                SafeMatrixHandle,
                 1.0f, 0.0f, 0.0f,
                 1.0f, 0.0f, 0.0f));
         }
@@ -178,12 +161,12 @@ namespace System.Drawing.Drawing2D
         {
             if (matrix == null)
                 throw new ArgumentNullException(nameof(matrix));
-            if (matrix.NativeMatrix == NativeMatrix)
+            if (matrix.SafeMatrixHandle.HasEqualHandle(SafeMatrixHandle))
                 throw new InvalidOperationException(SR.GdiplusObjectBusy);
 
             Gdip.CheckStatus(Gdip.GdipMultiplyMatrix(
-                new HandleRef(this, NativeMatrix),
-                new HandleRef(matrix, matrix.NativeMatrix),
+                SafeMatrixHandle,
+                matrix.SafeMatrixHandle,
                 order));
         }
 
@@ -192,7 +175,7 @@ namespace System.Drawing.Drawing2D
         public void Translate(float offsetX, float offsetY, MatrixOrder order)
         {
             Gdip.CheckStatus(Gdip.GdipTranslateMatrix(
-                new HandleRef(this, NativeMatrix),
+                SafeMatrixHandle,
                 offsetX, offsetY, order));
         }
 
@@ -200,14 +183,14 @@ namespace System.Drawing.Drawing2D
 
         public void Scale(float scaleX, float scaleY, MatrixOrder order)
         {
-            Gdip.CheckStatus(Gdip.GdipScaleMatrix(new HandleRef(this, NativeMatrix), scaleX, scaleY, order));
+            Gdip.CheckStatus(Gdip.GdipScaleMatrix(SafeMatrixHandle, scaleX, scaleY, order));
         }
 
         public void Rotate(float angle) => Rotate(angle, MatrixOrder.Prepend);
 
         public void Rotate(float angle, MatrixOrder order)
         {
-            Gdip.CheckStatus(Gdip.GdipRotateMatrix(new HandleRef(this, NativeMatrix), angle, order));
+            Gdip.CheckStatus(Gdip.GdipRotateMatrix(SafeMatrixHandle, angle, order));
         }
 
         public void RotateAt(float angle, PointF point) => RotateAt(angle, point, MatrixOrder.Prepend);
@@ -216,15 +199,15 @@ namespace System.Drawing.Drawing2D
             int status;
             if (order == MatrixOrder.Prepend)
             {
-                status = Gdip.GdipTranslateMatrix(new HandleRef(this, NativeMatrix), point.X, point.Y, order);
-                status |= Gdip.GdipRotateMatrix(new HandleRef(this, NativeMatrix), angle, order);
-                status |= Gdip.GdipTranslateMatrix(new HandleRef(this, NativeMatrix), -point.X, -point.Y, order);
+                status = Gdip.GdipTranslateMatrix(SafeMatrixHandle, point.X, point.Y, order);
+                status |= Gdip.GdipRotateMatrix(SafeMatrixHandle, angle, order);
+                status |= Gdip.GdipTranslateMatrix(SafeMatrixHandle, -point.X, -point.Y, order);
             }
             else
             {
-                status = Gdip.GdipTranslateMatrix(new HandleRef(this, NativeMatrix), -point.X, -point.Y, order);
-                status |= Gdip.GdipRotateMatrix(new HandleRef(this, NativeMatrix), angle, order);
-                status |= Gdip.GdipTranslateMatrix(new HandleRef(this, NativeMatrix), point.X, point.Y, order);
+                status = Gdip.GdipTranslateMatrix(SafeMatrixHandle, -point.X, -point.Y, order);
+                status |= Gdip.GdipRotateMatrix(SafeMatrixHandle, angle, order);
+                status |= Gdip.GdipTranslateMatrix(SafeMatrixHandle, point.X, point.Y, order);
             }
 
             if (status != Gdip.Ok)
@@ -233,17 +216,17 @@ namespace System.Drawing.Drawing2D
 
         public void Shear(float shearX, float shearY)
         {
-            Gdip.CheckStatus(Gdip.GdipShearMatrix(new HandleRef(this, NativeMatrix), shearX, shearY, MatrixOrder.Prepend));
+            Gdip.CheckStatus(Gdip.GdipShearMatrix(SafeMatrixHandle, shearX, shearY, MatrixOrder.Prepend));
         }
 
         public void Shear(float shearX, float shearY, MatrixOrder order)
         {
-            Gdip.CheckStatus(Gdip.GdipShearMatrix(new HandleRef(this, NativeMatrix), shearX, shearY, order));
+            Gdip.CheckStatus(Gdip.GdipShearMatrix(SafeMatrixHandle, shearX, shearY, order));
         }
 
         public void Invert()
         {
-            Gdip.CheckStatus(Gdip.GdipInvertMatrix(new HandleRef(this, NativeMatrix)));
+            Gdip.CheckStatus(Gdip.GdipInvertMatrix(SafeMatrixHandle));
         }
 
         public unsafe void TransformPoints(PointF[] pts)
@@ -254,7 +237,7 @@ namespace System.Drawing.Drawing2D
             fixed (PointF* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipTransformMatrixPoints(
-                    new HandleRef(this, NativeMatrix),
+                    SafeMatrixHandle,
                     p,
                     pts.Length));
             }
@@ -268,7 +251,7 @@ namespace System.Drawing.Drawing2D
             fixed (Point* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipTransformMatrixPointsI(
-                    new HandleRef(this, NativeMatrix),
+                    SafeMatrixHandle,
                     p,
                     pts.Length));
             }
@@ -282,7 +265,7 @@ namespace System.Drawing.Drawing2D
             fixed (PointF* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipVectorTransformMatrixPoints(
-                    new HandleRef(this, NativeMatrix),
+                    SafeMatrixHandle,
                     p,
                     pts.Length));
             }
@@ -298,7 +281,7 @@ namespace System.Drawing.Drawing2D
             fixed (Point* p = pts)
             {
                 Gdip.CheckStatus(Gdip.GdipVectorTransformMatrixPointsI(
-                    new HandleRef(this, NativeMatrix),
+                    SafeMatrixHandle,
                     p,
                     pts.Length));
             }
@@ -308,7 +291,7 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                Gdip.CheckStatus(Gdip.GdipIsMatrixInvertible(new HandleRef(this, NativeMatrix), out int isInvertible));
+                Gdip.CheckStatus(Gdip.GdipIsMatrixInvertible(SafeMatrixHandle, out int isInvertible));
                 return isInvertible != 0;
             }
         }
@@ -317,7 +300,7 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                Gdip.CheckStatus(Gdip.GdipIsMatrixIdentity(new HandleRef(this, NativeMatrix), out int isIdentity));
+                Gdip.CheckStatus(Gdip.GdipIsMatrixIdentity(SafeMatrixHandle, out int isIdentity));
                 return isIdentity != 0;
             }
         }
@@ -328,8 +311,8 @@ namespace System.Drawing.Drawing2D
                 return false;
 
             Gdip.CheckStatus(Gdip.GdipIsMatrixEqual(
-                new HandleRef(this, NativeMatrix),
-                new HandleRef(matrix2, matrix2.NativeMatrix),
+                SafeMatrixHandle,
+                matrix2.SafeMatrixHandle,
                 out int isEqual));
 
             return isEqual != 0;

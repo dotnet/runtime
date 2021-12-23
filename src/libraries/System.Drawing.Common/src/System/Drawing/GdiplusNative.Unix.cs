@@ -320,19 +320,7 @@ namespace System.Drawing
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipFlattenPath(IntPtr path, IntPtr matrix, float floatness);
-
-            [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipTransformPath(IntPtr path, IntPtr matrix);
-
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-            // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
-            [DllImport(LibraryName)]
-            internal static extern int GdipWarpPath(IntPtr path, IntPtr matrix, PointF[] points, int count, float srcx, float srcy, float srcwidth, float srcheight, WarpMode mode, float flatness);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-
-            [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipWidenPath(IntPtr path, SafePenHandle pen, IntPtr matrix, float flatness);
+            internal static partial int GdipTransformPath(IntPtr path, SafeMatrixHandle matrix);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipIsVisiblePathPoint(IntPtr path, float x, float y, IntPtr graphics, out bool result);

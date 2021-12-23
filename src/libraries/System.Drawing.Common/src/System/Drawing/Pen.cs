@@ -378,7 +378,7 @@ namespace System.Drawing
             get
             {
                 var matrix = new Matrix();
-                int status = Gdip.GdipGetPenTransform(SafePenHandle, new HandleRef(matrix, matrix.NativeMatrix));
+                int status = Gdip.GdipGetPenTransform(SafePenHandle, matrix.SafeMatrixHandle);
                 Gdip.CheckStatus(status);
 
                 return matrix;
@@ -396,7 +396,7 @@ namespace System.Drawing
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                int status = Gdip.GdipSetPenTransform(SafePenHandle, new HandleRef(value, value.NativeMatrix));
+                int status = Gdip.GdipSetPenTransform(SafePenHandle, value.SafeMatrixHandle);
                 Gdip.CheckStatus(status);
             }
         }
@@ -420,14 +420,14 @@ namespace System.Drawing
         /// </summary>
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
-            if (matrix.NativeMatrix == IntPtr.Zero)
+            if (matrix.SafeMatrixHandle.IsClosed)
             {
                 // Disposed matrices should result in a no-op.
                 return;
             }
 
             int status = Gdip.GdipMultiplyPenTransform(SafePenHandle,
-                                                          new HandleRef(matrix, matrix.NativeMatrix),
+                                                          matrix.SafeMatrixHandle,
                                                           order);
             Gdip.CheckStatus(status);
         }

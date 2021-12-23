@@ -184,16 +184,7 @@ namespace System.Drawing
             internal static extern int GdipAddPathPolygonI(HandleRef path, Point* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipFlattenPath(HandleRef path, HandleRef matrixfloat, float flatness);
-
-            [DllImport(LibraryName)]
-            internal static extern int GdipWidenPath(HandleRef path, SafePenHandle pen, HandleRef matrix, float flatness);
-
-            [DllImport(LibraryName)]
-            internal static extern int GdipWarpPath(HandleRef path, HandleRef matrix, PointF* points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness);
-
-            [DllImport(LibraryName)]
-            internal static extern int GdipTransformPath(HandleRef path, HandleRef matrix);
+            internal static extern int GdipTransformPath(HandleRef path, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
             internal static extern int GdipIsVisiblePathPoint(HandleRef path, float x, float y, HandleRef graphics, out bool result);

@@ -279,7 +279,7 @@ namespace System.Drawing
 
             Gdip.CheckStatus(Gdip.GdipTransformRegion(
                 new HandleRef(this, NativeRegion),
-                new HandleRef(matrix, matrix.NativeMatrix)));
+                matrix.SafeMatrixHandle));
         }
 
         public RectangleF GetBounds(Graphics g)
@@ -415,7 +415,7 @@ namespace System.Drawing
             Gdip.CheckStatus(Gdip.GdipGetRegionScansCount(
                 new HandleRef(this, NativeRegion),
                 out int count,
-                new HandleRef(matrix, matrix.NativeMatrix)));
+                matrix.SafeMatrixHandle));
 
             RectangleF[] rectangles = new RectangleF[count];
 
@@ -430,7 +430,7 @@ namespace System.Drawing
                     (new HandleRef(this, NativeRegion),
                     r,
                     out count,
-                    new HandleRef(matrix, matrix.NativeMatrix)));
+                    matrix.SafeMatrixHandle));
             }
 
             return rectangles;

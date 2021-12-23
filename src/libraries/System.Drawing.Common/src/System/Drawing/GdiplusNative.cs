@@ -227,13 +227,13 @@ namespace System.Drawing
             internal static extern int GdipResetLineTransform(SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyLineTransform(SafeBrushHandle brush, HandleRef matrix, MatrixOrder order);
+            internal static extern int GdipMultiplyLineTransform(SafeBrushHandle brush, SafeMatrixHandle matrix, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetLineTransform(SafeBrushHandle brush, HandleRef matrix);
+            internal static extern int GdipGetLineTransform(SafeBrushHandle brush, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetLineTransform(SafeBrushHandle brush, HandleRef matrix);
+            internal static extern int GdipSetLineTransform(SafeBrushHandle brush, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
             internal static extern int GdipTranslateLineTransform(SafeBrushHandle brush, float dx, float dy, MatrixOrder order);
@@ -311,16 +311,16 @@ namespace System.Drawing
             internal static extern int GdipGetPathGradientWrapMode(SafeBrushHandle brush, out int wrapmode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathGradientTransform(SafeBrushHandle brush, HandleRef matrix);
+            internal static extern int GdipSetPathGradientTransform(SafeBrushHandle brush, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathGradientTransform(SafeBrushHandle brush, HandleRef matrix);
+            internal static extern int GdipGetPathGradientTransform(SafeBrushHandle brush, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
             internal static extern int GdipResetPathGradientTransform(SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyPathGradientTransform(SafeBrushHandle brush, HandleRef matrix, MatrixOrder order);
+            internal static extern int GdipMultiplyPathGradientTransform(SafeBrushHandle brush, SafeMatrixHandle matrix, MatrixOrder order);
 
             [DllImport(LibraryName)]
             internal static extern int GdipTranslatePathGradientTransform(SafeBrushHandle brush, float dx, float dy, MatrixOrder order);
@@ -414,16 +414,16 @@ namespace System.Drawing
             internal static extern int GdipCreateTextureIAI(HandleRef bitmap, HandleRef imageAttrib, int x, int y, int width, int height, out SafeBrushHandle texture);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetTextureTransform(SafeBrushHandle brush, HandleRef matrix);
+            internal static extern int GdipSetTextureTransform(SafeBrushHandle brush, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetTextureTransform(SafeBrushHandle brush, HandleRef matrix);
+            internal static extern int GdipGetTextureTransform(SafeBrushHandle brush, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
             internal static extern int GdipResetTextureTransform(SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyTextureTransform(SafeBrushHandle brush, HandleRef matrix, MatrixOrder order);
+            internal static extern int GdipMultiplyTextureTransform(SafeBrushHandle brush, SafeMatrixHandle matrix, MatrixOrder order);
 
             [DllImport(LibraryName)]
             internal static extern int GdipTranslateTextureTransform(SafeBrushHandle brush, float dx, float dy, MatrixOrder order);
@@ -603,16 +603,16 @@ namespace System.Drawing
             internal static extern int GdipGetPenMiterLimit(SafePenHandle pen, float[] miterLimit);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPenTransform(SafePenHandle pen, HandleRef matrix);
+            internal static extern int GdipSetPenTransform(SafePenHandle pen, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPenTransform(SafePenHandle pen, HandleRef matrix);
+            internal static extern int GdipGetPenTransform(SafePenHandle pen, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
             internal static extern int GdipResetPenTransform(SafePenHandle pen);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyPenTransform(SafePenHandle pen, HandleRef matrix, MatrixOrder order);
+            internal static extern int GdipMultiplyPenTransform(SafePenHandle pen, SafeMatrixHandle matrix, MatrixOrder order);
 
             [DllImport(LibraryName)]
             internal static extern int GdipTranslatePenTransform(SafePenHandle pen, float dx, float dy, MatrixOrder order);
@@ -669,13 +669,13 @@ namespace System.Drawing
             internal static extern int GdipGetPenCompoundArray(SafePenHandle pen, float[] array, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetWorldTransform(HandleRef graphics, HandleRef matrix);
+            internal static extern int GdipSetWorldTransform(HandleRef graphics, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
             internal static extern int GdipResetWorldTransform(HandleRef graphics);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyWorldTransform(HandleRef graphics, HandleRef matrix, MatrixOrder order);
+            internal static extern int GdipMultiplyWorldTransform(HandleRef graphics, SafeMatrixHandle matrix, MatrixOrder order);
 
             [DllImport(LibraryName)]
             internal static extern int GdipTranslateWorldTransform(HandleRef graphics, float dx, float dy, MatrixOrder order);
@@ -687,7 +687,7 @@ namespace System.Drawing
             internal static extern int GdipRotateWorldTransform(HandleRef graphics, float angle, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetWorldTransform(HandleRef graphics, HandleRef matrix);
+            internal static extern int GdipGetWorldTransform(HandleRef graphics, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
             internal static extern int GdipSetCompositingMode(HandleRef graphics, CompositingMode compositingMode);
@@ -756,70 +756,70 @@ namespace System.Drawing
             internal static extern int GdipGetDpiY(HandleRef graphics, out float dpi);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateMatrix(out IntPtr matrix);
+            internal static partial int GdipCreateMatrix(out SafeMatrixHandle matrix);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateMatrix2(float m11, float m12, float m21, float m22, float dx, float dy, out IntPtr matrix);
+            internal static partial int GdipCreateMatrix2(float m11, float m12, float m21, float m22, float dx, float dy, out SafeMatrixHandle matrix);
 
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
             // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateMatrix3(ref RectangleF rect, PointF* dstplg, out IntPtr matrix);
+            internal static extern int GdipCreateMatrix3(ref RectangleF rect, PointF* dstplg, out SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateMatrix3I(ref Rectangle rect, Point* dstplg, out IntPtr matrix);
+            internal static extern int GdipCreateMatrix3I(ref Rectangle rect, Point* dstplg, out SafeMatrixHandle matrix);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCloneMatrix(HandleRef matrix, out IntPtr cloneMatrix);
+            internal static extern int GdipCloneMatrix(SafeMatrixHandle matrix, out SafeMatrixHandle clonedMatrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipDeleteMatrix(HandleRef matrix);
+            internal static extern int GdipDeleteMatrix(IntPtr matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetMatrixElements(HandleRef matrix, float m11, float m12, float m21, float m22, float dx, float dy);
+            internal static extern int GdipSetMatrixElements(SafeMatrixHandle matrix, float m11, float m12, float m21, float m22, float dx, float dy);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipMultiplyMatrix(HandleRef matrix, HandleRef matrix2, MatrixOrder order);
+            internal static extern int GdipMultiplyMatrix(SafeMatrixHandle matrix, SafeMatrixHandle matrix2, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTranslateMatrix(HandleRef matrix, float offsetX, float offsetY, MatrixOrder order);
+            internal static extern int GdipTranslateMatrix(SafeMatrixHandle matrix, float offsetX, float offsetY, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipScaleMatrix(HandleRef matrix, float scaleX, float scaleY, MatrixOrder order);
+            internal static extern int GdipScaleMatrix(SafeMatrixHandle matrix, float scaleX, float scaleY, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipRotateMatrix(HandleRef matrix, float angle, MatrixOrder order);
+            internal static extern int GdipRotateMatrix(SafeMatrixHandle matrix, float angle, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipShearMatrix(HandleRef matrix, float shearX, float shearY, MatrixOrder order);
+            internal static extern int GdipShearMatrix(SafeMatrixHandle matrix, float shearX, float shearY, MatrixOrder order);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipInvertMatrix(HandleRef matrix);
+            internal static extern int GdipInvertMatrix(SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTransformMatrixPoints(HandleRef matrix, PointF* pts, int count);
+            internal static extern int GdipTransformMatrixPoints(SafeMatrixHandle matrix, PointF* pts, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTransformMatrixPointsI(HandleRef matrix, Point* pts, int count);
+            internal static extern int GdipTransformMatrixPointsI(SafeMatrixHandle matrix, Point* pts, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipVectorTransformMatrixPoints(HandleRef matrix, PointF* pts, int count);
+            internal static extern int GdipVectorTransformMatrixPoints(SafeMatrixHandle matrix, PointF* pts, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipVectorTransformMatrixPointsI(HandleRef matrix, Point* pts, int count);
+            internal static extern int GdipVectorTransformMatrixPointsI(SafeMatrixHandle matrix, Point* pts, int count);
 
             [DllImport(LibraryName)]
-            internal static extern unsafe int GdipGetMatrixElements(HandleRef matrix, float* m);
+            internal static extern unsafe int GdipGetMatrixElements(SafeMatrixHandle matrix, float* m);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsMatrixInvertible(HandleRef matrix, out int boolean);
+            internal static extern int GdipIsMatrixInvertible(SafeMatrixHandle matrix, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsMatrixIdentity(HandleRef matrix, out int boolean);
+            internal static extern int GdipIsMatrixIdentity(SafeMatrixHandle matrix, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsMatrixEqual(HandleRef matrix, HandleRef matrix2, out int boolean);
+            internal static extern int GdipIsMatrixEqual(SafeMatrixHandle matrix, SafeMatrixHandle matrix2, out int boolean);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreateRegion(out IntPtr region);
@@ -876,7 +876,7 @@ namespace System.Drawing
             internal static extern int GdipTranslateRegionI(HandleRef region, int dx, int dy);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTransformRegion(HandleRef region, HandleRef matrix);
+            internal static extern int GdipTransformRegion(HandleRef region, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
             internal static extern int GdipGetRegionBounds(HandleRef region, HandleRef graphics, out RectangleF gprectf);
@@ -912,10 +912,10 @@ namespace System.Drawing
             internal static extern int GdipIsVisibleRegionRectI(HandleRef region, int X, int Y, int width, int height, HandleRef graphics, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetRegionScansCount(HandleRef region, out int count, HandleRef matrix);
+            internal static extern int GdipGetRegionScansCount(HandleRef region, out int count, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetRegionScans(HandleRef region, RectangleF* rects, out int count, HandleRef matrix);
+            internal static extern int GdipGetRegionScans(HandleRef region, RectangleF* rects, out int count, SafeMatrixHandle matrix);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreateFromHDC(IntPtr hdc, out IntPtr graphics);

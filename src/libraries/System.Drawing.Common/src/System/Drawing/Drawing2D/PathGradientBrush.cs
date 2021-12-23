@@ -316,7 +316,7 @@ namespace System.Drawing.Drawing2D
             get
             {
                 Matrix matrix = new Matrix();
-                Gdip.CheckStatus(Gdip.GdipGetPathGradientTransform(SafeBrushHandle, new HandleRef(matrix, matrix.NativeMatrix)));
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientTransform(SafeBrushHandle, matrix.SafeMatrixHandle));
                 return matrix;
             }
             set
@@ -324,7 +324,7 @@ namespace System.Drawing.Drawing2D
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                Gdip.CheckStatus(Gdip.GdipSetPathGradientTransform(SafeBrushHandle, new HandleRef(value, value.NativeMatrix)));
+                Gdip.CheckStatus(Gdip.GdipSetPathGradientTransform(SafeBrushHandle, value.SafeMatrixHandle));
             }
         }
 
@@ -342,12 +342,12 @@ namespace System.Drawing.Drawing2D
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
             // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
-            if (matrix.NativeMatrix == IntPtr.Zero)
+            if (matrix.SafeMatrixHandle.IsClosed)
                 return;
 
             Gdip.CheckStatus(Gdip.GdipMultiplyPathGradientTransform(
                 SafeBrushHandle,
-                new HandleRef(matrix, matrix.NativeMatrix),
+                matrix.SafeMatrixHandle,
                 order));
         }
 

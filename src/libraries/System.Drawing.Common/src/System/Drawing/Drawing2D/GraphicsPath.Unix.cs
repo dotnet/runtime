@@ -620,7 +620,7 @@ namespace System.Drawing.Drawing2D
             if (matrix == null)
                 throw new ArgumentNullException(nameof(matrix));
 
-            int status = Gdip.GdipTransformPath(_nativePath, matrix.NativeMatrix);
+            int status = Gdip.GdipTransformPath(_nativePath, matrix.SafeMatrixHandle);
             Gdip.CheckStatus(status);
         }
 
@@ -695,8 +695,7 @@ namespace System.Drawing.Drawing2D
 
         public void Flatten(Matrix? matrix, float flatness)
         {
-            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
-            int status = Gdip.GdipFlattenPath(_nativePath, m, flatness);
+            int status = Gdip.GdipFlattenPath(new HandleRef(this, _nativePath), matrix?.SafeMatrixHandle, flatness);
 
             Gdip.CheckStatus(status);
         }
@@ -718,7 +717,7 @@ namespace System.Drawing.Drawing2D
             int s = Gdip.GdipGetPathWorldBounds(
                 new HandleRef(this, _nativePath),
                 out retval,
-                new HandleRef(matrix, matrix?.NativeMatrix ?? IntPtr.Zero),
+                matrix?.SafeMatrixHandle,
                 pen?.SafePenHandle);
 
             Gdip.CheckStatus(s);
@@ -874,10 +873,13 @@ namespace System.Drawing.Drawing2D
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
 
-            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
-
-            int s = Gdip.GdipWarpPath(_nativePath, m, destPoints, destPoints.Length,
-                            srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, warpMode, flatness);
+            int s = Gdip.GdipWarpPath(
+                new HandleRef(this, _nativePath),
+                matrix?.SafeMatrixHandle,
+                destPoints,
+                destPoints.Length,
+                srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
+                warpMode, flatness);
 
             Gdip.CheckStatus(s);
         }
@@ -898,9 +900,8 @@ namespace System.Drawing.Drawing2D
                 throw new ArgumentNullException(nameof(pen));
             if (PointCount == 0)
                 return;
-            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
 
-            int s = Gdip.GdipWidenPath(_nativePath, pen.SafePenHandle, m, flatness);
+            int s = Gdip.GdipWidenPath(new HandleRef(this, _nativePath), pen.SafePenHandle, matrix?.SafeMatrixHandle, flatness);
             Gdip.CheckStatus(s);
         }
     }
