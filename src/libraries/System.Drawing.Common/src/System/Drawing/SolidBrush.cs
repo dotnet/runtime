@@ -127,7 +127,7 @@ namespace System.Drawing
 #if FEATURE_SYSTEM_EVENTS
         void ISystemColorTracker.OnSystemColorChanged()
         {
-            if (NativeBrush != IntPtr.Zero)
+            if (!SafeNativeBrush.IsClosed)
             {
                 InternalSetColor(_color);
             }
