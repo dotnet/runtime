@@ -305,27 +305,6 @@ namespace System
             return res.ToString();
         }
 
-        internal static bool NeedsEscaping(string internalName)
-        {
-            foreach (char c in internalName)
-            {
-                switch (c)
-                {
-                    case ',':
-                    case '+':
-                    case '*':
-                    case '&':
-                    case '[':
-                    case ']':
-                    case '\\':
-                        return true;
-                    default:
-                        break;
-                }
-            }
-            return false;
-        }
-
         internal Type? Resolve(Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
             Assembly? asm = null;
