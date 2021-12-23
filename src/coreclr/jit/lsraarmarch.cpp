@@ -694,53 +694,38 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 {
                     buildInternalIntRegisterDefForNode(blkNode);
 #ifdef TARGET_ARM64
-                    const bool isSrcRegAddrAlignmentKnown =
-                        src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
-                        ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIsLocalAddr());
-                    const bool isDstRegAddrAlignmentKnown = dstAddr->OperIsLocalAddr();
+                    const bool dstAddrMayNeedReg = dstAddr->isContained();
+                    const bool srcAddrMayNeedReg = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
+                                                   ((srcAddrOrFill != nullptr) && srcAddrOrFill->isContained());
 
-                    bool willUseSimdInstrs = false;
-
-                    if (isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown)
+                    if (srcAddrMayNeedReg && dstAddrMayNeedReg)
                     {
                         // The following allocates an additional integer register in a case
-                        // when neither loads nor stores can be encoded using unsigned instruction offsets.
+                        // when a load instruction and a store instruction cannot be encoded.
                         buildInternalIntRegisterDefForNode(blkNode);
-
-                        if (size >= FP_REGSIZE_BYTES)
+                        // In this case, CodeGen will use a SIMD register for copying.
+                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        // And in case of a larger block size, two SIMD registers.
+                        if (size >= 2 * REGSIZE_BYTES)
                         {
-                            willUseSimdInstrs = true;
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                         }
                     }
-                    else if (dstAddr->isContained() && (src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
-                                                        (srcAddrOrFill != nullptr) && srcAddrOrFill->isContained()))
+                    else if (srcAddrMayNeedReg || dstAddrMayNeedReg)
                     {
-                        // Both srcAddr and dstAddr are contained - the addresses will be computed in CodeGen.
-                        // This might take up to two integer registers to store both values.
-                        // The following allocates an additional integer register to store an address.
-                        buildInternalIntRegisterDefForNode(blkNode);
-                    }
-
-                    // The following allocates temporary register(s) for copying from source to destination.
-
-                    if (willUseSimdInstrs)
-                    {
-                        // Note that the following allocates a pair of SIMD registers.
-                        // CodeGen might end up needing both when two integer registers (allocated above)
-                        // are occupied with source and destination addresses.
-                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    }
-                    else
-                    {
-                        buildInternalIntRegisterDefForNode(blkNode);
-
-                        // CodeGen will use load-pair/store-pair instructions to reduce code size
-                        // and improve performance. LSRA needs to reserve an extra internal register for these.
                         if (size >= 2 * REGSIZE_BYTES)
+                        {
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                        else
                         {
                             buildInternalIntRegisterDefForNode(blkNode);
                         }
+                    }
+                    else if (size >= 2 * REGSIZE_BYTES)
+                    {
+                        buildInternalIntRegisterDefForNode(blkNode);
                     }
 #endif
                 }

@@ -2847,10 +2847,9 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // LSRA allocates a pair of SIMD registers when alignments of both source and destination base addresses are
     // known and the block size is larger than a single SIMD register size (i.e. when using SIMD instructions can
     // be profitable).
-    const bool hasAvailableSimdRegs =
-        isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown && (size >= FP_REGSIZE_BYTES);
 
-    const bool canUse16ByteWideInstrs = hasAvailableSimdRegs && (srcRegAddrAlignment == dstRegAddrAlignment);
+    const bool canUse16ByteWideInstrs = isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown &&
+                                        (size >= FP_REGSIZE_BYTES) && (srcRegAddrAlignment == dstRegAddrAlignment);
 
     bool shouldUse16ByteWideInstrs = false;
 
@@ -2929,50 +2928,56 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         dstReg = tempReg;
     }
 
-    regNumber simdReg1 = REG_NA;
-    regNumber simdReg2 = REG_NA;
-
     regNumber intReg1 = REG_NA;
     regNumber intReg2 = REG_NA;
 
-    if (hasAvailableSimdRegs)
+    const unsigned intRegCount = node->AvailableTempRegCount(RBM_ALLINT);
+
+    switch (intRegCount)
     {
-        simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
-        simdReg2 = node->GetSingleTempReg(RBM_ALLFLOAT);
-
-        if ((srcOffsetAdjustment == 0) || (dstOffsetAdjustment == 0))
-        {
+        case 1:
+            intReg1 = node->GetSingleTempReg(RBM_ALLINT);
+            break;
+        case 2:
             intReg1 = node->ExtractTempReg(RBM_ALLINT);
+            intReg2 = node->GetSingleTempReg(RBM_ALLINT);
+            break;
+        default:
+            break;
+    }
 
-            if ((srcOffsetAdjustment == 0) && (dstOffsetAdjustment == 0))
-            {
-                intReg2 = node->GetSingleTempReg(RBM_ALLINT);
-            }
-        }
+    regNumber simdReg1 = REG_NA;
+    regNumber simdReg2 = REG_NA;
 
-        if (shouldUse16ByteWideInstrs || (intReg2 == REG_NA))
-        {
-            const unsigned initialRegSizeBytes = shouldUse16ByteWideInstrs ? FP_REGSIZE_BYTES : REGSIZE_BYTES;
+    const unsigned simdRegCount = node->AvailableTempRegCount(RBM_ALLFLOAT);
 
-            helper.Unroll(initialRegSizeBytes, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
-        }
-        else
-        {
-            assert(intReg1 != REG_NA);
+    switch (simdRegCount)
+    {
+        case 1:
+            simdReg1 = node->GetSingleTempReg(RBM_ALLFLOAT);
+            break;
+        case 2:
+            simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
+            simdReg2 = node->GetSingleTempReg(RBM_ALLFLOAT);
+            break;
+        default:
+            break;
+    }
 
-            helper.UnrollBaseInstrs(intReg1, intReg2, srcReg, dstReg, GetEmitter());
-        }
+    if (shouldUse16ByteWideInstrs)
+    {
+        helper.Unroll(FP_REGSIZE_BYTES, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
     }
     else
     {
-        intReg1 = node->ExtractTempReg(RBM_ALLINT);
-
-        if (size >= 2 * REGSIZE_BYTES)
+        if (intReg2 == REG_NA)
         {
-            intReg2 = node->ExtractTempReg(RBM_ALLINT);
+            helper.Unroll(REGSIZE_BYTES, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
         }
-
-        helper.UnrollBaseInstrs(intReg1, intReg2, srcReg, dstReg, GetEmitter());
+        else
+        {
+            helper.UnrollBaseInstrs(intReg1, intReg2, srcReg, dstReg, GetEmitter());
+        }
     }
 #endif // TARGET_ARM64
 
