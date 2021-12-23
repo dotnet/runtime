@@ -113,6 +113,9 @@ hot_reload_get_field_idx (MonoClassField *field);
 static MonoClassField *
 hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token);
 
+static gpointer
+hot_reload_get_static_field_addr (MonoClassField *field);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, MonoError *error);
 
@@ -141,6 +144,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_field_parent,
 	&hot_reload_get_field_idx,
 	&hot_reload_get_field,
+	&hot_reload_get_static_field_addr,
 };
 
 MonoComponentHotReload *
@@ -2385,6 +2389,9 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, MonoError *error)
 {
+	// TODO: hang a "pending field" struct off the parent_klass if !parent_klass->fields
+	//   In that case we can do things simpler, maybe by just creating the MonoClassField array as usual, and just relying on the normal layout algorithm to make space for the instance.
+
 	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent_klass);
 
 	MonoClassMetadataUpdateField *field = mono_class_alloc0 (parent_klass, sizeof (MonoClassMetadataUpdateField));
@@ -2410,4 +2417,17 @@ metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, Basel
 	g_ptr_array_add (parent_info->added_fields, field);
 
 	return field;
+}
+
+static gpointer
+hot_reload_get_static_field_addr (MonoClassField *field)
+{
+	g_assert (m_field_is_from_update (field));
+	MonoClassMetadataUpdateField *f = (MonoClassMetadataUpdateField *)field;
+	g_assert ((f->field.type->attrs & FIELD_ATTRIBUTE_STATIC) != 0);
+	// FIXME: this needs to be GC-visible
+
+	g_assert_not_reached (); // FIXME: finish me
+
+	return NULL;
 }

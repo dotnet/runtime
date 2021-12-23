@@ -67,4 +67,7 @@ mono_metadata_update_get_field_idx (MonoClassField *field);
 MonoClassField *
 mono_metadata_update_get_field (MonoClass *klass, uint32_t fielddef_token);
 
+gpointer
+mono_metadata_update_get_static_field_addr (MonoClassField *field);
+
 #endif /*__MONO_METADATA_UPDATE_H__*/

@@ -169,3 +169,9 @@ mono_metadata_update_get_field (MonoClass *klass, uint32_t fielddef_token)
 {
 	return mono_component_hot_reload()->get_field (klass, fielddef_token);
 }
+
+gpointer
+mono_metadata_update_get_static_field_addr (MonoClassField *field)
+{
+	return mono_component_hot_reload()->get_static_field_addr (field);
+}
