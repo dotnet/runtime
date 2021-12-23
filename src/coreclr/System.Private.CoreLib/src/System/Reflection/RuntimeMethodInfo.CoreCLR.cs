@@ -479,7 +479,7 @@ namespace System.Reflection
 
             RuntimeType.SanityCheckGenericArguments(methodInstantionRuntimeType, genericParameters);
 
-            MethodInfo? ret = null;
+            MethodInfo? ret;
 
             try
             {
