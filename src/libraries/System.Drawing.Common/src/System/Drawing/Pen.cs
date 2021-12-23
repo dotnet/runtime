@@ -113,21 +113,12 @@ namespace System.Drawing
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
             if (_immutable)
             {
                 throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
             }
 
-            if (disposing)
-            {
-                _nativePen.Dispose();
-            }
+            _nativePen.Dispose();
         }
 
         /// <summary>
