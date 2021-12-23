@@ -832,7 +832,7 @@ MINI_OP(OP_ICONV_TO_X, "iconv_to_x", XREG, IREG, NONE)
 
 MINI_OP(OP_EXPAND_I1, "expand_i1", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_I2, "expand_i2", XREG, IREG, NONE)
-MINI_OP(OP_EXPAND_I4, "expand_i4", XREG, IREG, NONE)
+MINI_OP(OP_EXPAND_I4, "expand_i4", ZREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R4, "expand_r4", XREG, FREG, NONE)
 MINI_OP(OP_EXPAND_I8, "expand_i8", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
@@ -1544,6 +1544,9 @@ MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_FORCEINT, "xbinop_forceint", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_BYSCALAR, "xbinop_byscalar", XREG, XREG, XREG)
+
+MINI_OP(OP_ZBINOP, "zbinop", ZREG, ZREG, ZREG)
+
 /* inst_c0 contains an INTRINS_ enum, inst_c1 might contain additional data */
 MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
 MINI_OP(OP_XOP_X_I, "xop_x_i", XREG, IREG, NONE)

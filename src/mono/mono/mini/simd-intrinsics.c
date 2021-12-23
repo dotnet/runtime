@@ -184,7 +184,10 @@ emit_simd_ins (MonoCompile *cfg, MonoClass *klass, int opcode, int sreg1, int sr
 	MonoInst *ins;
 
 	MONO_INST_NEW (cfg, ins, opcode);
-	if (spec [MONO_INST_DEST] == 'x') {
+	if (spec [MONO_INST_DEST] == 'z') {
+		ins->dreg = alloc_zreg (cfg);
+		ins->type = STACK_VTYPE;
+	} else if (spec [MONO_INST_DEST] == 'x') {
 		ins->dreg = alloc_xreg (cfg);
 		ins->type = STACK_VTYPE;
 	} else if (spec [MONO_INST_DEST] == 'i') {
@@ -278,7 +281,8 @@ get_vector_t_elem_type (MonoType *vector_type)
 		!strcmp (m_class_get_name (klass), "Vector`1") ||
 		!strcmp (m_class_get_name (klass), "Vector64`1") ||
 		!strcmp (m_class_get_name (klass), "Vector128`1") ||
-		!strcmp (m_class_get_name (klass), "Vector256`1"));
+		!strcmp (m_class_get_name (klass), "Vector256`1") ||
+		!strcmp (m_class_get_name (klass), "Vector512`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	return etype;
 }
@@ -2313,10 +2317,16 @@ static SimdIntrinsic x86base_methods [] = {
 	{SN_get_IsSupported}
 };
 
+static SimdIntrinsic avx512_methods [] = {
+	{SN_Add},
+};
+
+
 static const IntrinGroup supported_x86_intrinsics [] = {
 	{ "Aes", MONO_CPU_X86_AES, aes_methods, sizeof (aes_methods) },
 	{ "Avx", MONO_CPU_X86_AVX, unsupported, sizeof (unsupported) },
 	{ "Avx2", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
+	{ "Avx512", MONO_CPU_X86_AVX512, avx512_methods, sizeof (avx512_methods) },
 	{ "AvxVnni", 0, unsupported, sizeof (unsupported) },
 	{ "Bmi1", MONO_CPU_X86_BMI1, bmi1_methods, sizeof (bmi1_methods) },
 	{ "Bmi2", MONO_CPU_X86_BMI2, bmi2_methods, sizeof (bmi2_methods) },
@@ -2375,6 +2385,15 @@ emit_x86_intrinsics (
 		}
 		case SN_LoadScalarVector128:
 			return NULL;
+		default:
+			return NULL;
+		}
+	}
+
+	if (feature == MONO_CPU_X86_AVX512) {
+		switch (id) {
+		case SN_Add:
+			return emit_simd_ins_for_sig (cfg, klass, OP_ZBINOP, arg0_type == MONO_TYPE_R8 ? OP_FADD : OP_IADD, arg0_type, fsig, args);
 		default:
 			return NULL;
 		}
@@ -3061,7 +3080,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
-		if (!strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector64"))
+		if (!strcmp (class_name, "Vector512") || !strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector64"))
 			return emit_sri_vector (cfg, cmethod, fsig, args);
 	}
 

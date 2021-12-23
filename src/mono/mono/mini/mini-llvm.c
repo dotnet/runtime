@@ -221,7 +221,7 @@ typedef struct {
 #define FREG 'f'
 #define VREG 'v'
 #define XREG 'x'
-//#define ZREG 'z'
+#define ZREG 'z'
 #define LREG 'l'
 /* keep in sync with the enum in mini.h */
 const char
@@ -260,7 +260,7 @@ mini_llvm_ins_info[] = {
 #define ctx_ok(ctx) (!(ctx)->cfg->disable_llvm)
 
 enum {
-	MAX_VECTOR_ELEMS = 32, // 2 vectors * 128 bits per vector / 8 bits per element
+	MAX_VECTOR_ELEMS = 64, // 2 vectors * 128 bits per vector / 8 bits per element
 	ARM64_MAX_VECTOR_ELEMS = 16,
 };
 
@@ -594,7 +594,7 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector4")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1")) {
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);
 		switch (etype->type) {
@@ -7668,6 +7668,35 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ZBINOP: {
+			gboolean scalar = ins->opcode == OP_XBINOP_SCALAR;
+			gboolean byscalar = ins->opcode == OP_XBINOP_BYSCALAR;
+			LLVMValueRef result = NULL;
+			LLVMValueRef args [] = { lhs, rhs };
+			if (scalar)
+				for (int i = 0; i < 2; ++i)
+					args [i] = scalar_from_vector (ctx, args [i]);
+			if (byscalar) {
+				LLVMTypeRef t = LLVMTypeOf (args [0]);
+				unsigned int elems = LLVMGetVectorSize (t);
+				args [1] = broadcast_element (ctx, scalar_from_vector (ctx, args [1]), elems);
+			}
+			LLVMValueRef l = args [0];
+			LLVMValueRef r = args [1];
+			switch (ins->inst_c0) {
+			case OP_IADD:
+				result = LLVMBuildAdd (builder, l, r, "");
+				break;
+
+			default:
+				g_assert_not_reached ();
+			}
+			if (scalar)
+				result = vector_from_scalar (ctx, LLVMTypeOf (lhs), result);
+			values [ins->dreg] = result;
+			break;
+		}
+
 		case OP_XBINOP_FORCEINT: {
 			LLVMTypeRef t = LLVMTypeOf (lhs);
 			LLVMTypeRef elem_t = LLVMGetElementType (t);
@@ -13703,6 +13732,7 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 		{ "popcnt",	MONO_CPU_X86_POPCNT },
 		{ "avx",	MONO_CPU_X86_AVX },
 		{ "avx2",	MONO_CPU_X86_AVX2 },
+		{ "avx512",	MONO_CPU_X86_AVX512 },
 		{ "fma",	MONO_CPU_X86_FMA },
 		{ "lzcnt",	MONO_CPU_X86_LZCNT },
 		{ "bmi",	MONO_CPU_X86_BMI1 },
