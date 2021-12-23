@@ -468,15 +468,32 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 
                 switch (stackSize)
                 {
+#if defined(TARGET_LOONGARCH64)
+                    case 1:
+                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U1)
+                            *((INT64*)pDest) = (UINT8)pArguments[arg];
+                        else
+                            *((INT64*)pDest) = (INT8)pArguments[arg];
+                        break;
+                    case 2:
+                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U2)
+                            *((INT64*)pDest) = (UINT16)pArguments[arg];
+                        else
+                            *((INT64*)pDest) = (INT16)pArguments[arg];
+                        break;
+                    case 4:
+                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U4)
+                            *((INT64*)pDest) = (UINT32)pArguments[arg];
+                        else
+                            *((INT64*)pDest) = (INT32)pArguments[arg];
+                        break;
+#else
                     case 1:
                     case 2:
                     case 4:
-#if defined(TARGET_LOONGARCH64)
-                        *((INT64*)pDest) = (INT32)pArguments[arg];
-#else
                         *((INT32*)pDest) = (INT32)pArguments[arg];
-#endif
                         break;
+#endif
 
                     case 8:
                         *((INT64*)pDest) = pArguments[arg];
