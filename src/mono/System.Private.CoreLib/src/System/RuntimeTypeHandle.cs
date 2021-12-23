@@ -201,12 +201,12 @@ namespace System
             return isGenericCOM ? false : IsComObject(type);
         }
 
-        internal static bool IsContextful(RuntimeType type)
+        internal static bool IsContextful(RuntimeType _)
         {
             return false;
         }
 
-        internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)
+        internal static bool IsEquivalentTo(RuntimeType _1, RuntimeType _2)
         {
             // refence check is done earlier and we don't recognize anything else
             return false;
@@ -287,8 +287,7 @@ namespace System
         private static extern RuntimeType internal_from_name(string name, ref StackCrawlMark stackMark, Assembly? callerAssembly, bool throwOnError, bool ignoreCase);
 
         [RequiresUnreferencedCode("Types might be removed")]
-        internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
-                                                  bool loadTypeFromPartialName)
+        internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));

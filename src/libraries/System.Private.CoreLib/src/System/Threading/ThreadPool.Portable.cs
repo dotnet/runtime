@@ -34,11 +34,11 @@ namespace System.Threading
         // Threadpool specific initialization of a new thread. Used by OS-provided threadpools. No-op for portable threadpool.
         internal static void InitializeForThreadPoolThread() { }
 
-        internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => true;
-        internal static void SetMinIOCompletionThreads(int ioCompletionThreads) { }
+        internal static bool CanSetMinIOCompletionThreads(int _) => true;
+        internal static void SetMinIOCompletionThreads(int _) { }
 
-        internal static bool CanSetMaxIOCompletionThreads(int ioCompletionThreads) => true;
-        internal static void SetMaxIOCompletionThreads(int ioCompletionThreads) { }
+        internal static bool CanSetMaxIOCompletionThreads(int _) => true;
+        internal static void SetMaxIOCompletionThreads(int _) { }
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
@@ -90,9 +90,8 @@ namespace System.Threading
         /// <summary>
         /// Called from the gate thread periodically to perform runtime-specific gate activities
         /// </summary>
-        /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
         /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
-        internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization) => false;
+        internal static bool PerformRuntimeSpecificGateActivities(int _) => false;
 
         internal static void NotifyWorkItemProgress() => PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
 

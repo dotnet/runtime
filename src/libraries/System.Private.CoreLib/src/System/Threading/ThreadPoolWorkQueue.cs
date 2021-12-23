@@ -787,14 +787,14 @@ namespace System.Threading
             bool reportedStatus = false;
             try
             {
-                ThreadPool.ReportThreadStatus(isWorking: true);
+                ThreadPool.ReportThreadStatus(true);
                 reportedStatus = true;
                 DispatchWorkItem(workItem, currentThread);
             }
             finally
             {
                 if (reportedStatus)
-                    ThreadPool.ReportThreadStatus(isWorking: false);
+                    ThreadPool.ReportThreadStatus(false);
             }
         }
 

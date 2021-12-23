@@ -60,7 +60,7 @@ namespace System
         }
 
         // Helper function to get the full display name for the UTC static time zone instance
-        private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
+        private static string GetUtcFullDisplayName(string _, string standardDisplayName)
         {
             return $"(UTC) {standardDisplayName}";
         }

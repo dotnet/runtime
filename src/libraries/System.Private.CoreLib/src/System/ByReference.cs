@@ -17,7 +17,7 @@ namespace System
 #pragma warning restore CA1823, 169
 
         [Intrinsic]
-        public ByReference(ref T value)
+        public ByReference(ref T _)
         {
             // Implemented as a JIT intrinsic - This default implementation is for
             // completeness and to provide a concrete error if called via reflection

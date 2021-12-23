@@ -64,7 +64,7 @@ namespace System.Reflection.Emit
             if (mb is DynamicMethod)
                 table_idx = 0;
             else
-                table_idx = mb.get_next_table_index(this, 0x08, 1);
+                table_idx = mb.get_next_table_index(0x08, 1);
         }
 
         public virtual int Attributes

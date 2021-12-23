@@ -1830,7 +1830,6 @@ namespace System.Reflection.Emit
             return new PropertyBuilder(
                     m_module,
                     name,
-                    sigHelper,
                     attributes,
                     returnType,
                     prToken,

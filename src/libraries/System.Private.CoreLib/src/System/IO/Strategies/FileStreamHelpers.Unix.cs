@@ -8,7 +8,7 @@ namespace System.IO.Strategies
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
-        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
+        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool _) =>
             new UnixFileStreamStrategy(handle, access);
 
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
@@ -28,7 +28,7 @@ namespace System.IO.Strategies
             return result;
         }
 
-        internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin, bool closeInvalidHandle = false) =>
+        internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin) =>
             CheckFileCall(Interop.Sys.LSeek(handle, offset, (Interop.Sys.SeekWhence)(int)origin), handle.Path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
 
         internal static void ThrowInvalidArgument(SafeFileHandle handle) =>

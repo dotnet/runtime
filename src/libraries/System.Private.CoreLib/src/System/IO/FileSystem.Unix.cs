@@ -22,29 +22,17 @@ namespace System.IO
             Interop.Sys.Permissions filePermissions;
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, openPermissions: filePermissions,
-                                            (Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path) => CreateOpenException(error, flags, path));
+                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, openPermissions: filePermissions);
 
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
-
-            static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
-            {
-                // If the destination path points to a directory, we throw to match Windows behaviour.
-                if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
-                {
-                    return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
-                }
-
-                return null; // Let SafeFileHandle create the exception for this error.
-            }
         }
 
-        public static void Encrypt(string path)
+        public static void Encrypt(string _)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
 
-        public static void Decrypt(string path)
+        public static void Decrypt(string _)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
@@ -107,7 +95,7 @@ namespace System.IO
         }
 
 
-        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
+        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool _1)
         {
             // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
             // These checks are not atomic, the file could change after a check was performed and before it is renamed.
@@ -605,7 +593,7 @@ namespace System.IO
             return DriveInfoInternal.GetLogicalDrives();
         }
 
-        internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
+        internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool _) => Interop.Sys.ReadLink(linkPath);
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
@@ -618,7 +606,7 @@ namespace System.IO
             ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
             sb.Append(linkPath);
 
-            string? linkTarget = GetLinkTarget(linkPath, isDirectory: false /* Irrelevant in Unix */);
+            string? linkTarget = Interop.Sys.ReadLink(linkPath);
             if (linkTarget == null)
             {
                 sb.Dispose();
@@ -651,7 +639,7 @@ namespace System.IO
                     }
 
                     GetLinkTargetFullPath(ref sb, current);
-                    current = GetLinkTarget(sb.AsSpan(), isDirectory: false);
+                    current = Interop.Sys.ReadLink(sb.AsSpan());
                     visitCount++;
                 }
             }

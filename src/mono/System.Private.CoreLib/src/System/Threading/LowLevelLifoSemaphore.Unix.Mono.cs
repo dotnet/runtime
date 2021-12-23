@@ -12,7 +12,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr InitInternal();
 
-        private void Create(int maximumSignalCount)
+        private void Create(int _)
         {
             lifo_semaphore = InitInternal();
         }

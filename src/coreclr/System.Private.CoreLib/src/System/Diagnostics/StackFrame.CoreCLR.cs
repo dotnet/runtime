@@ -52,7 +52,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
+        private static bool AppendStackFrameWithoutMethodBase(StringBuilder _) => false;
 
         [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "StackFrame_GetMethodDescFromNativeIP")]
         private static partial RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);

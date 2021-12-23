@@ -5227,7 +5227,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return "\\u" + ((int)c).ToString("x4", CultureInfo.InvariantCulture);
         }
 
-        private static void Trace(string s)
+        private static void Trace(string _)
         {
             // Internal.Console.WriteLine(s);
         }

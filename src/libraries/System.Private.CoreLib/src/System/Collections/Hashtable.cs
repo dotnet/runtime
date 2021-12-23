@@ -223,7 +223,7 @@ namespace System.Collections
 
         // Note: this constructor is a bogus constructor that does nothing
         // and is for use only with SyncHashtable.
-        internal Hashtable(bool trash)
+        internal Hashtable(bool _)
         {
         }
 

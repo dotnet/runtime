@@ -45,7 +45,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static bool AppendStackFrameWithoutMethodBase(StringBuilder sb) => false;
+        private static bool AppendStackFrameWithoutMethodBase(StringBuilder _) => false;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool get_frame_info(int skipFrames, bool needFileInfo,

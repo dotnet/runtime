@@ -151,7 +151,7 @@ namespace System
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark, false);
+                typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
         private static void SplitName(string? fullname, out string? name, out string? ns)
@@ -833,7 +833,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             if (binder == null)
                 binder = DefaultBinder;
@@ -873,7 +873,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
             if (binder == null)
                 binder = DefaultBinder;

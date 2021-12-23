@@ -70,7 +70,7 @@ namespace System.Reflection
             return parameterTypes;
         }
 
-        internal virtual int get_next_table_index(object obj, int table, int count)
+        internal virtual int get_next_table_index(int table, int count)
         {
             throw new NotImplementedException();
         }

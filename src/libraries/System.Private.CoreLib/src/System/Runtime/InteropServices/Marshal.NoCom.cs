@@ -162,7 +162,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
+        internal static Type? GetTypeFromCLSID(Guid _, string? _1, bool throwOnError)
         {
             if (throwOnError)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);

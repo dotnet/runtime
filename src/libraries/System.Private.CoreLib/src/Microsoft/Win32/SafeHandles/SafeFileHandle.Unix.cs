@@ -175,8 +175,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
-                                            Interop.Sys.Permissions openPermissions = DefaultOpenPermissions,
-                                            Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
+                                            Interop.Sys.Permissions openPermissions = DefaultOpenPermissions)
         {
             long fileLength;
             Interop.Sys.Permissions filePermissions;
@@ -311,7 +310,7 @@ namespace Microsoft.Win32.SafeHandles
             if ((access & FileAccess.Write) == 0)
             {
                 // Stat the file descriptor to avoid race conditions.
-                FStatCheckIO(this, path, ref status, ref statusHasValue);
+                FStatCheckIO(path, ref status, ref statusHasValue);
 
                 if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
                 {
@@ -361,7 +360,7 @@ namespace Microsoft.Win32.SafeHandles
             if (_isLocked && ((options & FileOptions.DeleteOnClose) != 0) &&
                 share == FileShare.None && mode == FileMode.OpenOrCreate)
             {
-                FStatCheckIO(this, path, ref status, ref statusHasValue);
+                FStatCheckIO(path, ref status, ref statusHasValue);
 
                 Interop.Sys.FileStatus pathStatus;
                 if (Interop.Sys.Stat(path, out pathStatus) < 0)
@@ -476,7 +475,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private void FStatCheckIO(SafeFileHandle handle, string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)
+        private void FStatCheckIO(string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)
         {
             if (!statusHasValue)
             {

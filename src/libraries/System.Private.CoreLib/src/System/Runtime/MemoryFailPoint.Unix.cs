@@ -24,14 +24,14 @@ namespace System.Runtime
         // returns whether there is enough space.  In all cases, we update
         // our last known free address space, hopefully avoiding needing to
         // probe again.
-        private static void CheckForFreeAddressSpace(ulong size, bool shouldThrow)
+        private static void CheckForFreeAddressSpace(ulong _, bool _1)
         {
             // Unreachable until CheckForAvailableMemory is implemented
         }
 
         // Allocate a specified number of bytes, commit them and free them. This should enlarge
         // page file if necessary and possible.
-        private static void GrowPageFileIfNecessaryAndPossible(UIntPtr numBytes)
+        private static void GrowPageFileIfNecessaryAndPossible(UIntPtr _)
         {
             // Unreachable until CheckForAvailableMemory is implemented
         }

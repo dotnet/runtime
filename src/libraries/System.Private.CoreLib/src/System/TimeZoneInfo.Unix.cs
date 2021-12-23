@@ -54,14 +54,12 @@ namespace System
             byte[] typeOfLocalTime;
             TZifType[] transitionType;
             string zoneAbbreviations;
-            bool[] StandardTime;
-            bool[] GmtTime;
             string? futureTransitionsPosixFormat;
             string? standardAbbrevName = null;
             string? daylightAbbrevName = null;
 
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
-            TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out StandardTime, out GmtTime, out futureTransitionsPosixFormat);
+            TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out futureTransitionsPosixFormat);
 
             // find the best matching baseUtcOffset and display strings based on the current utcNow value.
             // NOTE: read the Standard and Daylight display strings from the tzfile now in case they can't be loaded later
@@ -118,7 +116,7 @@ namespace System
             if (!dstDisabled)
             {
                 // only create the adjustment rule if DST is enabled
-                TZif_GenerateAdjustmentRules(out _adjustmentRules, _baseUtcOffset, dts, typeOfLocalTime, transitionType, StandardTime, GmtTime, futureTransitionsPosixFormat);
+                TZif_GenerateAdjustmentRules(out _adjustmentRules, _baseUtcOffset, dts, typeOfLocalTime, transitionType, futureTransitionsPosixFormat);
             }
 
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
@@ -467,7 +465,7 @@ namespace System
         //
         //
         private static void TZif_GenerateAdjustmentRules(out AdjustmentRule[]? rules, TimeSpan baseUtcOffset, DateTime[] dts, byte[] typeOfLocalTime,
-            TZifType[] transitionType, bool[] StandardTime, bool[] GmtTime, string? futureTransitionsPosixFormat)
+            TZifType[] transitionType, string? futureTransitionsPosixFormat)
         {
             rules = null;
 
@@ -478,7 +476,7 @@ namespace System
 
                 while (index <= dts.Length)
                 {
-                    TZif_GenerateAdjustmentRule(ref index, baseUtcOffset, rulesList, dts, typeOfLocalTime, transitionType, StandardTime, GmtTime, futureTransitionsPosixFormat);
+                    TZif_GenerateAdjustmentRule(ref index, baseUtcOffset, rulesList, dts, typeOfLocalTime, transitionType, futureTransitionsPosixFormat);
                 }
 
                 rules = rulesList.ToArray();
@@ -490,7 +488,7 @@ namespace System
         }
 
         private static void TZif_GenerateAdjustmentRule(ref int index, TimeSpan timeZoneBaseUtcOffset, List<AdjustmentRule> rulesList, DateTime[] dts,
-            byte[] typeOfLocalTime, TZifType[] transitionTypes, bool[] StandardTime, bool[] GmtTime, string? futureTransitionsPosixFormat)
+            byte[] typeOfLocalTime, TZifType[] transitionTypes, string? futureTransitionsPosixFormat)
         {
             // To generate AdjustmentRules, use the following approach:
             // The first AdjustmentRule will go from DateTime.MinValue to the first transition time greater than DateTime.MinValue.
@@ -1117,7 +1115,7 @@ namespace System
             DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime;
 
         private static void TZif_ParseRaw(byte[] data, out TZifHead t, out DateTime[] dts, out byte[] typeOfLocalTime, out TZifType[] transitionType,
-                                          out string zoneAbbreviations, out bool[] StandardTime, out bool[] GmtTime, out string? futureTransitionsPosixFormat)
+                                          out string zoneAbbreviations, out string? futureTransitionsPosixFormat)
         {
             futureTransitionsPosixFormat = null;
 
@@ -1143,8 +1141,6 @@ namespace System
             dts = new DateTime[t.TimeCount];
             typeOfLocalTime = new byte[t.TimeCount];
             transitionType = new TZifType[t.TypeCount];
-            StandardTime = new bool[t.TypeCount];
-            GmtTime = new bool[t.TypeCount];
 
             // read in the UTC transition points and convert them to Windows
             //
@@ -1196,7 +1192,7 @@ namespace System
             //
             for (int i = 0; i < t.IsStdCount && i < t.TypeCount && index < data.Length; i++)
             {
-                StandardTime[i] = (data[index++] != 0);
+                index++;
             }
 
             // read in the GMT Time table.  There should be a 1:1 mapping between Type-Index and GMT Time table
@@ -1208,7 +1204,7 @@ namespace System
             //
             for (int i = 0; i < t.IsGmtCount && i < t.TypeCount && index < data.Length; i++)
             {
-                GmtTime[i] = (data[index++] != 0);
+                index++;
             }
 
             if (t.Version != TZVersion.V1)

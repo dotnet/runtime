@@ -36,7 +36,7 @@ namespace System.Runtime.Loader
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
+        private Assembly InternalLoadFromPath(string? assemblyPath, string? _)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 

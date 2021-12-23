@@ -5,7 +5,7 @@ namespace System
 {
     public partial class MissingMemberException
     {
-        internal static string FormatSignature(byte[] signature)
+        internal static string FormatSignature(byte[] _)
         {
             return "";
         }

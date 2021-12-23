@@ -19,7 +19,7 @@ namespace System.Threading
             createdNew = true;
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out EventWaitHandle? result)
+        private static OpenExistingResult OpenExistingWorker(string _, out EventWaitHandle? _1)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }

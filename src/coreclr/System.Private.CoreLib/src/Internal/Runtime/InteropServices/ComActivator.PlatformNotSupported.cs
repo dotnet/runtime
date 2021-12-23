@@ -11,25 +11,22 @@ namespace Internal.Runtime.InteropServices
         /// <summary>
         /// Internal entry point for unmanaged COM activation API from native code
         /// </summary>
-        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        private static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
+        private static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* _)
             => throw new PlatformNotSupportedException();
 
         /// <summary>
         /// Internal entry point for registering a managed COM server API from native code
         /// </summary>
-        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        private static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
+        private static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* _)
             => throw new PlatformNotSupportedException();
 
         /// <summary>
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
-        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        private static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
+        private static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* _)
             => throw new PlatformNotSupportedException();
     }
 }

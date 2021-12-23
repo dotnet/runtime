@@ -160,7 +160,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
+        internal static Type? GetTypeFromProgID(string progID, string? _, bool throwOnError)
         {
             if (progID == null)
                 throw new ArgumentNullException(nameof(progID));

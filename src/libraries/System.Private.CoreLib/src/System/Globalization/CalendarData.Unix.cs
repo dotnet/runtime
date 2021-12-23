@@ -8,7 +8,7 @@ namespace System.Globalization
         private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId) =>
             IcuLoadCalendarDataFromSystem(localeName, calendarId);
 
-        internal static int GetCalendarsCore(string localeName, bool useUserOverride, CalendarId[] calendars) =>
+        internal static int GetCalendarsCore(string localeName, bool _, CalendarId[] calendars) =>
             IcuGetCalendars(localeName, calendars);
      }
 }

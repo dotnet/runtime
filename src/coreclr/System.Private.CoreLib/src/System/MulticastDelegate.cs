@@ -595,7 +595,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
-        private void CtorOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk)
+        private void CtorOpened(object _, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
@@ -603,7 +603,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
-        private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
+        private void CtorVirtualDispatch(object _, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
@@ -619,7 +619,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
-        private void CtorCollectibleOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
+        private void CtorCollectibleOpened(object _, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
@@ -628,7 +628,7 @@ namespace System
         }
 
         [System.Diagnostics.DebuggerNonUserCode]
-        private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
+        private void CtorCollectibleVirtualDispatch(object _, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             this._target = this;
             this._methodPtr = shuffleThunk;

@@ -62,12 +62,12 @@ namespace System.Reflection.Emit
             attrs = eventAttrs;
             type = eventType;
             typeb = tb;
-            table_idx = get_next_table_index(this, 0x14, 1);
+            table_idx = get_next_table_index(0x14, 1);
         }
 
-        internal int get_next_table_index(object obj, int table, int count)
+        internal int get_next_table_index(int table, int count)
         {
-            return typeb.get_next_table_index(obj, table, count);
+            return typeb.get_next_table_index(table, count);
         }
 
         public void AddOtherMethod(MethodBuilder mdBuilder)

@@ -71,7 +71,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SetValueInternal(FieldInfo fi, object? obj, object? value);
 
-        internal static void SetValue(RuntimeFieldInfo field, object? obj, object? value, RuntimeType? fieldType, FieldAttributes fieldAttr, RuntimeType? declaringType, ref bool domainInitialized)
+        internal static void SetValue(RuntimeFieldInfo field, object? obj, object? value, RuntimeType? _, FieldAttributes _1, RuntimeType? _2, ref bool _3)
         {
             SetValueInternal(field, obj, value);
         }
