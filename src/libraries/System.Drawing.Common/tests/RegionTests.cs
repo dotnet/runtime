@@ -88,6 +88,7 @@ namespace System.Drawing.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
         public void FromHandle()
         {
             var handle = IntPtr.Zero;

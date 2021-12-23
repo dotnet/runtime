@@ -13,6 +13,7 @@ namespace System.Drawing.Tests
     public partial class GraphicsTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
         public void FromHandle()
         {
             var handle = IntPtr.Zero;
