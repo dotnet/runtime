@@ -16,11 +16,14 @@ namespace System.Drawing.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
         public void FromHandle()
         {
-            var handle = IntPtr.Zero;
-            var pen = Graphics.FromHandle(handle);
+            var bitmap = new Bitmap(1, 1);
+            using var graphics = Graphics.FromImage(bitmap);
 
-            IntPtr actualHandle = pen.Handle;
-            Assert.Equal(handle, actualHandle);
+            var expectedHandle = graphics.Handle;
+            var actualGraphics = Graphics.FromHandle(expectedHandle);
+
+            IntPtr actualHandle = actualGraphics.Handle;
+            Assert.Equal(expectedHandle, actualHandle);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]

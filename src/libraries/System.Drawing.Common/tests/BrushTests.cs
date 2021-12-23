@@ -24,11 +24,13 @@ namespace System.Drawing.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
         public void FromHandle()
         {
-            var handle = IntPtr.Zero;
-            var pen = Brush.FromHandle(handle);
+            using var brush = new SolidBrush(Color.White);
 
-            IntPtr actualHandle = pen.Handle;
-            Assert.Equal(handle, actualHandle);
+            var expectedHandle = brush.Handle;
+            var actualBrush = Brush.FromHandle(expectedHandle);
+
+            IntPtr actualHandle = actualBrush.Handle;
+            Assert.Equal(expectedHandle, actualHandle);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/30157")]

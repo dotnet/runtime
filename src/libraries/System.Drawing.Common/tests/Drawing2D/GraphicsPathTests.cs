@@ -112,11 +112,13 @@ namespace System.Drawing.Drawing2D.Tests
         [Fact]
         public void FromHandle()
         {
-            var handle = IntPtr.Zero;
-            var pen = GraphicsPath.FromHandle(handle);
+            using var graphicsPath = new GraphicsPath();
 
-            IntPtr actualHandle = pen.Handle;
-            Assert.Equal(handle, actualHandle);
+            var expectedHandle = graphicsPath.Handle;
+            var actualGraphicsPath = Matrix.FromHandle(expectedHandle);
+
+            IntPtr actualHandle = actualGraphicsPath.Handle;
+            Assert.Equal(expectedHandle, actualHandle);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

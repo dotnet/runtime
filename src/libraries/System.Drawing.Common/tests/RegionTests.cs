@@ -91,11 +91,13 @@ namespace System.Drawing.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
         public void FromHandle()
         {
-            var handle = IntPtr.Zero;
-            var pen = Region.FromHandle(handle);
+            using var region = new Region();
 
-            IntPtr actualHandle = pen.Handle;
-            Assert.Equal(handle, actualHandle);
+            var expectedHandle = region.Handle;
+            var actualRegion = Region.FromHandle(expectedHandle);
+
+            IntPtr actualHandle = actualRegion.Handle;
+            Assert.Equal(expectedHandle, actualHandle);
         }
 
         public static IEnumerable<object[]> Region_TestData()
