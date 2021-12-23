@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Drawing.Drawing2D;
-using System.Drawing.Internal;
-using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
@@ -18,8 +16,21 @@ namespace System.Drawing
             }
 
             // for libgdiplus HRGN == GpRegion*, and we check the return code
-            int status = Gdip.GdipDeleteRegion(new HandleRef(this, regionHandle));
-            Gdip.CheckStatus(status);
+            SafeRegionHandle nativeRegion = SafeRegionHandle;
+            bool releaseThisRegion = false;
+            try
+            {
+                nativeRegion.DangerousAddRef(ref releaseThisRegion);
+                int status = Gdip.GdipDeleteRegion(nativeRegion.DangerousGetHandle());
+                Gdip.CheckStatus(status);
+            }
+            finally
+            {
+                if (releaseThisRegion)
+                {
+                    nativeRegion.DangerousRelease();
+                }
+            }
         }
     }
 }

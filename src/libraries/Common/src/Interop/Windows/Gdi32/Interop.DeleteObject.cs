@@ -11,6 +11,23 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.Gdi32)]
         public static partial bool DeleteObject(IntPtr ho);
 
+        public static bool DeleteObject(IntPtr ho, SafeHandle owningHandle)
+        {
+            bool releaseOwner = false;
+            try
+            {
+                owningHandle.DangerousAddRef(ref releaseOwner);
+                return DeleteObject(ho);
+            }
+            finally
+            {
+                if (releaseOwner)
+                {
+                    owningHandle.DangerousRelease();
+                }
+            }
+        }
+
         public static bool DeleteObject(HandleRef ho)
         {
             bool result = DeleteObject(ho.Handle);

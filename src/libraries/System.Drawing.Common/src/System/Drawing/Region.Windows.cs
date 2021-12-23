@@ -16,7 +16,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(regionHandle));
             }
 
-            Interop.Gdi32.DeleteObject(new HandleRef(this, regionHandle));
+            Interop.Gdi32.DeleteObject(regionHandle, this.SafeRegionHandle);
         }
     }
 }

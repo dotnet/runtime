@@ -428,7 +428,7 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException(nameof(region));
 
-            int status = Gdip.GdipFillRegion(new HandleRef(this, NativeGraphics), brush.SafeBrushHandle, new HandleRef(region, region.NativeRegion));
+            int status = Gdip.GdipFillRegion(new HandleRef(this, NativeGraphics), brush.SafeBrushHandle, region.SafeRegionHandle);
             Gdip.CheckStatus(status);
         }
 

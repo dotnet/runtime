@@ -822,100 +822,100 @@ namespace System.Drawing
             internal static extern int GdipIsMatrixEqual(SafeMatrixHandle matrix, SafeMatrixHandle matrix2, out int boolean);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateRegion(out IntPtr region);
+            internal static partial int GdipCreateRegion(out SafeRegionHandle region);
 
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
             // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support blittable structs defined in other assemblies.
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateRegionRect(ref RectangleF gprectf, out IntPtr region);
+            internal static extern int GdipCreateRegionRect(ref RectangleF gprectf, out SafeRegionHandle region);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateRegionRectI(ref Rectangle gprect, out IntPtr region);
+            internal static extern int GdipCreateRegionRectI(ref Rectangle gprect, out SafeRegionHandle region);
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateRegionPath(HandleRef path, out IntPtr region);
+            internal static extern int GdipCreateRegionPath(HandleRef path, out SafeRegionHandle region);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateRegionRgnData(byte[] rgndata, int size, out IntPtr region);
+            internal static partial int GdipCreateRegionRgnData(byte[] rgndata, int size, out SafeRegionHandle region);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreateRegionHrgn(IntPtr hRgn, out IntPtr region);
+            internal static partial int GdipCreateRegionHrgn(IntPtr hRgn, out SafeRegionHandle region);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCloneRegion(HandleRef region, out IntPtr cloneregion);
+            internal static extern int GdipCloneRegion(SafeRegionHandle region, out SafeRegionHandle clonedRegion);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipDeleteRegion(HandleRef region);
+            internal static extern int GdipDeleteRegion(IntPtr region);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillRegion(HandleRef graphics, SafeBrushHandle brush, HandleRef region);
+            internal static extern int GdipFillRegion(HandleRef graphics, SafeBrushHandle brush, SafeRegionHandle region);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetInfinite(HandleRef region);
+            internal static extern int GdipSetInfinite(SafeRegionHandle region);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetEmpty(HandleRef region);
+            internal static extern int GdipSetEmpty(SafeRegionHandle region);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCombineRegionRect(HandleRef region, ref RectangleF gprectf, CombineMode mode);
+            internal static extern int GdipCombineRegionRect(SafeRegionHandle region, ref RectangleF gprectf, CombineMode mode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCombineRegionRectI(HandleRef region, ref Rectangle gprect, CombineMode mode);
+            internal static extern int GdipCombineRegionRectI(SafeRegionHandle region, ref Rectangle gprect, CombineMode mode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCombineRegionPath(HandleRef region, HandleRef path, CombineMode mode);
+            internal static extern int GdipCombineRegionPath(SafeRegionHandle region, HandleRef path, CombineMode mode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCombineRegionRegion(HandleRef region, HandleRef region2, CombineMode mode);
+            internal static extern int GdipCombineRegionRegion(SafeRegionHandle region, SafeRegionHandle region2, CombineMode mode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTranslateRegion(HandleRef region, float dx, float dy);
+            internal static extern int GdipTranslateRegion(SafeRegionHandle region, float dx, float dy);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTranslateRegionI(HandleRef region, int dx, int dy);
+            internal static extern int GdipTranslateRegionI(SafeRegionHandle region, int dx, int dy);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTransformRegion(HandleRef region, SafeMatrixHandle matrix);
+            internal static extern int GdipTransformRegion(SafeRegionHandle region, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetRegionBounds(HandleRef region, HandleRef graphics, out RectangleF gprectf);
+            internal static extern int GdipGetRegionBounds(SafeRegionHandle region, HandleRef graphics, out RectangleF gprectf);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetRegionHRgn(HandleRef region, HandleRef graphics, out IntPtr hrgn);
+            internal static extern int GdipGetRegionHRgn(SafeRegionHandle region, HandleRef graphics, out IntPtr hrgn);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsEmptyRegion(HandleRef region, HandleRef graphics, out int boolean);
+            internal static extern int GdipIsEmptyRegion(SafeRegionHandle region, HandleRef graphics, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsInfiniteRegion(HandleRef region, HandleRef graphics, out int boolean);
+            internal static extern int GdipIsInfiniteRegion(SafeRegionHandle region, HandleRef graphics, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsEqualRegion(HandleRef region, HandleRef region2, HandleRef graphics, out int boolean);
+            internal static extern int GdipIsEqualRegion(SafeRegionHandle region, SafeRegionHandle region2, HandleRef graphics, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetRegionDataSize(HandleRef region, out int bufferSize);
+            internal static extern int GdipGetRegionDataSize(SafeRegionHandle region, out int bufferSize);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetRegionData(HandleRef region, byte[] regionData, int bufferSize, out int sizeFilled);
+            internal static extern int GdipGetRegionData(SafeRegionHandle region, byte[] regionData, int bufferSize, out int sizeFilled);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsVisibleRegionPoint(HandleRef region, float X, float Y, HandleRef graphics, out int boolean);
+            internal static extern int GdipIsVisibleRegionPoint(SafeRegionHandle region, float X, float Y, HandleRef graphics, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsVisibleRegionPointI(HandleRef region, int X, int Y, HandleRef graphics, out int boolean);
+            internal static extern int GdipIsVisibleRegionPointI(SafeRegionHandle region, int X, int Y, HandleRef graphics, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsVisibleRegionRect(HandleRef region, float X, float Y, float width, float height, HandleRef graphics, out int boolean);
+            internal static extern int GdipIsVisibleRegionRect(SafeRegionHandle region, float X, float Y, float width, float height, HandleRef graphics, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsVisibleRegionRectI(HandleRef region, int X, int Y, int width, int height, HandleRef graphics, out int boolean);
+            internal static extern int GdipIsVisibleRegionRectI(SafeRegionHandle region, int X, int Y, int width, int height, HandleRef graphics, out int boolean);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetRegionScansCount(HandleRef region, out int count, SafeMatrixHandle matrix);
+            internal static extern int GdipGetRegionScansCount(SafeRegionHandle region, out int count, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetRegionScans(HandleRef region, RectangleF* rects, out int count, SafeMatrixHandle matrix);
+            internal static extern int GdipGetRegionScans(SafeRegionHandle region, RectangleF* rects, out int count, SafeMatrixHandle matrix);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreateFromHDC(IntPtr hdc, out IntPtr graphics);
@@ -933,7 +933,7 @@ namespace System.Drawing
             internal static extern int GdipSetClipPath(HandleRef graphics, HandleRef path, CombineMode mode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetClipRegion(HandleRef graphics, HandleRef region, CombineMode mode);
+            internal static extern int GdipSetClipRegion(HandleRef graphics, SafeRegionHandle region, CombineMode mode);
 
             [DllImport(LibraryName)]
             internal static extern int GdipResetClip(HandleRef graphics);
@@ -942,7 +942,7 @@ namespace System.Drawing
             internal static extern int GdipTranslateClip(HandleRef graphics, float dx, float dy);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetClip(HandleRef graphics, HandleRef region);
+            internal static extern int GdipGetClip(HandleRef graphics, SafeRegionHandle region);
 
             [DllImport(LibraryName)]
             internal static extern int GdipGetClipBounds(HandleRef graphics, out RectangleF rect);
@@ -1332,7 +1332,7 @@ namespace System.Drawing
             internal static extern int GdipMeasureString(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, ref RectangleF boundingBox, out int codepointsFitted, out int linesFilled);
 
             [DllImport(LibraryName, CharSet = CharSet.Unicode)]
-            internal static extern int GdipMeasureCharacterRanges(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, int characterCount, [In] [Out] IntPtr[] region);
+            internal static extern int GdipMeasureCharacterRanges(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, int characterCount, [In] [Out] IntPtr[] regions);
 
             [DllImport(LibraryName, SetLastError = true)]
             internal static extern int GdipDrawImageI(HandleRef graphics, HandleRef image, int x, int y);

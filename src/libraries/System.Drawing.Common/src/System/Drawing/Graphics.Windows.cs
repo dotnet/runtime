@@ -359,7 +359,7 @@ namespace System.Drawing
             CheckErrorStatus(Gdip.GdipFillRegion(
                 new HandleRef(this, NativeGraphics),
                 brush.SafeBrushHandle,
-                new HandleRef(region, region.NativeRegion)));
+                region.SafeRegionHandle));
         }
 
         public void DrawIcon(Icon icon, int x, int y)

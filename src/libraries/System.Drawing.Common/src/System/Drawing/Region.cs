@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using Microsoft.Win32.SafeHandles;
 using System.Drawing.Drawing2D;
-using System.Drawing.Internal;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
@@ -12,28 +10,23 @@ namespace System.Drawing
 {
     public sealed partial class Region : MarshalByRefObject, IDisposable
     {
-#if FINALIZATION_WATCH
-        private string allocationSite = Graphics.GetAllocationStack();
-#endif
+        private readonly SafeRegionHandle _nativeRegion;
 
-        internal IntPtr NativeRegion { get; private set; }
+        internal SafeRegionHandle SafeRegionHandle => _nativeRegion;
 
         public Region()
         {
-            Gdip.CheckStatus(Gdip.GdipCreateRegion(out IntPtr region));
-            SetNativeRegion(region);
+            Gdip.CheckStatus(Gdip.GdipCreateRegion(out _nativeRegion));
         }
 
         public Region(RectangleF rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCreateRegionRect(ref rect, out IntPtr region));
-            SetNativeRegion(region);
+            Gdip.CheckStatus(Gdip.GdipCreateRegionRect(ref rect, out _nativeRegion));
         }
 
         public Region(Rectangle rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCreateRegionRectI(ref rect, out IntPtr region));
-            SetNativeRegion(region);
+            Gdip.CheckStatus(Gdip.GdipCreateRegionRectI(ref rect, out _nativeRegion));
         }
 
         public Region(GraphicsPath path)
@@ -41,8 +34,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCreateRegionPath(new HandleRef(path, path._nativePath), out IntPtr region));
-            SetNativeRegion(region);
+            Gdip.CheckStatus(Gdip.GdipCreateRegionPath(new HandleRef(path, path._nativePath), out _nativeRegion));
         }
 
         public Region(RegionData rgnData)
@@ -53,87 +45,46 @@ namespace System.Drawing
             Gdip.CheckStatus(Gdip.GdipCreateRegionRgnData(
                 rgnData.Data,
                 rgnData.Data.Length,
-                out IntPtr region));
-
-            SetNativeRegion(region);
+                out _nativeRegion));
         }
 
-        internal Region(IntPtr nativeRegion) => SetNativeRegion(nativeRegion);
+        internal Region(SafeRegionHandle nativeRegion) => _nativeRegion = nativeRegion;
 
         public static Region FromHrgn(IntPtr hrgn)
         {
-            Gdip.CheckStatus(Gdip.GdipCreateRegionHrgn(hrgn, out IntPtr region));
+            Gdip.CheckStatus(Gdip.GdipCreateRegionHrgn(hrgn, out SafeRegionHandle region));
             return new Region(region);
-        }
-
-        private void SetNativeRegion(IntPtr nativeRegion)
-        {
-            if (nativeRegion == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(nativeRegion));
-
-            NativeRegion = nativeRegion;
         }
 
         public Region Clone()
         {
-            Gdip.CheckStatus(Gdip.GdipCloneRegion(new HandleRef(this, NativeRegion), out IntPtr region));
+            Gdip.CheckStatus(Gdip.GdipCloneRegion(SafeRegionHandle, out SafeRegionHandle region));
             return new Region(region);
         }
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            _nativeRegion.Dispose();
         }
-
-        private void Dispose(bool disposing)
-        {
-#if FINALIZATION_WATCH
-            if (!disposing && nativeRegion != IntPtr.Zero)
-                Debug.WriteLine("**********************\nDisposed through finalization:\n" + allocationSite);
-#endif
-            if (NativeRegion != IntPtr.Zero)
-            {
-                try
-                {
-#if DEBUG
-                    int status = !Gdip.Initialized ? Gdip.Ok :
-#endif
-                    Gdip.GdipDeleteRegion(new HandleRef(this, NativeRegion));
-#if DEBUG
-                    Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
-#endif
-                }
-                catch (Exception ex) when (!ClientUtils.IsSecurityOrCriticalException(ex))
-                {
-                }
-                finally
-                {
-                    NativeRegion = IntPtr.Zero;
-                }
-            }
-        }
-
-        ~Region() => Dispose(false);
 
         public void MakeInfinite()
         {
-            Gdip.CheckStatus(Gdip.GdipSetInfinite(new HandleRef(this, NativeRegion)));
+            Gdip.CheckStatus(Gdip.GdipSetInfinite(SafeRegionHandle));
         }
 
         public void MakeEmpty()
         {
-            Gdip.CheckStatus(Gdip.GdipSetEmpty(new HandleRef(this, NativeRegion)));
+            Gdip.CheckStatus(Gdip.GdipSetEmpty(SafeRegionHandle));
         }
 
         public void Intersect(RectangleF rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Intersect));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(SafeRegionHandle, ref rect, CombineMode.Intersect));
         }
 
         public void Intersect(Rectangle rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Intersect));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(SafeRegionHandle, ref rect, CombineMode.Intersect));
         }
 
         public void Intersect(GraphicsPath path)
@@ -141,7 +92,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(new HandleRef(this, NativeRegion), new HandleRef(path, path._nativePath), CombineMode.Intersect));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, new HandleRef(path, path._nativePath), CombineMode.Intersect));
         }
 
         public void Intersect(Region region)
@@ -149,17 +100,17 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException(nameof(region));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRegion(new HandleRef(this, NativeRegion), new HandleRef(region, region.NativeRegion), CombineMode.Intersect));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRegion(SafeRegionHandle, region.SafeRegionHandle, CombineMode.Intersect));
         }
 
         public void Union(RectangleF rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Union));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(SafeRegionHandle, ref rect, CombineMode.Union));
         }
 
         public void Union(Rectangle rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Union));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(SafeRegionHandle, ref rect, CombineMode.Union));
         }
 
         public void Union(GraphicsPath path)
@@ -167,7 +118,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(new HandleRef(this, NativeRegion), new HandleRef(path, path._nativePath), CombineMode.Union));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, new HandleRef(path, path._nativePath), CombineMode.Union));
         }
 
         public void Union(Region region)
@@ -175,17 +126,17 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException(nameof(region));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRegion(new HandleRef(this, NativeRegion), new HandleRef(region, region.NativeRegion), CombineMode.Union));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRegion(SafeRegionHandle, region.SafeRegionHandle, CombineMode.Union));
         }
 
         public void Xor(RectangleF rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Xor));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(SafeRegionHandle, ref rect, CombineMode.Xor));
         }
 
         public void Xor(Rectangle rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Xor));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(SafeRegionHandle, ref rect, CombineMode.Xor));
         }
 
         public void Xor(GraphicsPath path)
@@ -193,7 +144,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(new HandleRef(this, NativeRegion), new HandleRef(path, path._nativePath), CombineMode.Xor));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, new HandleRef(path, path._nativePath), CombineMode.Xor));
         }
 
         public void Xor(Region region)
@@ -201,17 +152,17 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException(nameof(region));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRegion(new HandleRef(this, NativeRegion), new HandleRef(region, region.NativeRegion), CombineMode.Xor));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRegion(SafeRegionHandle, region.SafeRegionHandle, CombineMode.Xor));
         }
 
         public void Exclude(RectangleF rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Exclude));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(SafeRegionHandle, ref rect, CombineMode.Exclude));
         }
 
         public void Exclude(Rectangle rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Exclude));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(SafeRegionHandle, ref rect, CombineMode.Exclude));
         }
 
         public void Exclude(GraphicsPath path)
@@ -220,7 +171,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(path));
 
             Gdip.CheckStatus(Gdip.GdipCombineRegionPath(
-                new HandleRef(this, NativeRegion),
+                SafeRegionHandle,
                 new HandleRef(path, path._nativePath),
                 CombineMode.Exclude));
         }
@@ -231,19 +182,19 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(region));
 
             Gdip.CheckStatus(Gdip.GdipCombineRegionRegion(
-                new HandleRef(this, NativeRegion),
-                new HandleRef(region, region.NativeRegion),
+                SafeRegionHandle,
+                region.SafeRegionHandle,
                 CombineMode.Exclude));
         }
 
         public void Complement(RectangleF rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Complement));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(SafeRegionHandle, ref rect, CombineMode.Complement));
         }
 
         public void Complement(Rectangle rect)
         {
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Complement));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(SafeRegionHandle, ref rect, CombineMode.Complement));
         }
 
         public void Complement(GraphicsPath path)
@@ -251,7 +202,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(new HandleRef(this, NativeRegion), new HandleRef(path, path._nativePath), CombineMode.Complement));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, new HandleRef(path, path._nativePath), CombineMode.Complement));
         }
 
         public void Complement(Region region)
@@ -259,17 +210,17 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException(nameof(region));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRegion(new HandleRef(this, NativeRegion), new HandleRef(region, region.NativeRegion), CombineMode.Complement));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRegion(SafeRegionHandle, region.SafeRegionHandle, CombineMode.Complement));
         }
 
         public void Translate(float dx, float dy)
         {
-            Gdip.CheckStatus(Gdip.GdipTranslateRegion(new HandleRef(this, NativeRegion), dx, dy));
+            Gdip.CheckStatus(Gdip.GdipTranslateRegion(SafeRegionHandle, dx, dy));
         }
 
         public void Translate(int dx, int dy)
         {
-            Gdip.CheckStatus(Gdip.GdipTranslateRegionI(new HandleRef(this, NativeRegion), dx, dy));
+            Gdip.CheckStatus(Gdip.GdipTranslateRegionI(SafeRegionHandle, dx, dy));
         }
 
         public void Transform(Matrix matrix)
@@ -278,7 +229,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(matrix));
 
             Gdip.CheckStatus(Gdip.GdipTransformRegion(
-                new HandleRef(this, NativeRegion),
+                SafeRegionHandle,
                 matrix.SafeMatrixHandle));
         }
 
@@ -287,7 +238,7 @@ namespace System.Drawing
             if (g == null)
                 throw new ArgumentNullException(nameof(g));
 
-            Gdip.CheckStatus(Gdip.GdipGetRegionBounds(new HandleRef(this, NativeRegion), new HandleRef(g, g.NativeGraphics), out RectangleF bounds));
+            Gdip.CheckStatus(Gdip.GdipGetRegionBounds(SafeRegionHandle, new HandleRef(g, g.NativeGraphics), out RectangleF bounds));
             return bounds;
         }
 
@@ -296,7 +247,7 @@ namespace System.Drawing
             if (g == null)
                 throw new ArgumentNullException(nameof(g));
 
-            Gdip.CheckStatus(Gdip.GdipGetRegionHRgn(new HandleRef(this, NativeRegion), new HandleRef(g, g.NativeGraphics), out IntPtr hrgn));
+            Gdip.CheckStatus(Gdip.GdipGetRegionHRgn(SafeRegionHandle, new HandleRef(g, g.NativeGraphics), out IntPtr hrgn));
             return hrgn;
         }
 
@@ -305,7 +256,7 @@ namespace System.Drawing
             if (g == null)
                 throw new ArgumentNullException(nameof(g));
 
-            Gdip.CheckStatus(Gdip.GdipIsEmptyRegion(new HandleRef(this, NativeRegion), new HandleRef(g, g.NativeGraphics), out int isEmpty));
+            Gdip.CheckStatus(Gdip.GdipIsEmptyRegion(SafeRegionHandle, new HandleRef(g, g.NativeGraphics), out int isEmpty));
             return isEmpty != 0;
         }
 
@@ -314,7 +265,7 @@ namespace System.Drawing
             if (g == null)
                 throw new ArgumentNullException(nameof(g));
 
-            Gdip.CheckStatus(Gdip.GdipIsInfiniteRegion(new HandleRef(this, NativeRegion), new HandleRef(g, g.NativeGraphics), out int isInfinite));
+            Gdip.CheckStatus(Gdip.GdipIsInfiniteRegion(SafeRegionHandle, new HandleRef(g, g.NativeGraphics), out int isInfinite));
             return isInfinite != 0;
         }
 
@@ -325,19 +276,19 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException(nameof(region));
 
-            Gdip.CheckStatus(Gdip.GdipIsEqualRegion(new HandleRef(this, NativeRegion), new HandleRef(region, region.NativeRegion), new HandleRef(g, g.NativeGraphics), out int isEqual));
+            Gdip.CheckStatus(Gdip.GdipIsEqualRegion(SafeRegionHandle, region.SafeRegionHandle, new HandleRef(g, g.NativeGraphics), out int isEqual));
             return isEqual != 0;
         }
 
         public RegionData? GetRegionData()
         {
-            Gdip.CheckStatus(Gdip.GdipGetRegionDataSize(new HandleRef(this, NativeRegion), out int regionSize));
+            Gdip.CheckStatus(Gdip.GdipGetRegionDataSize(SafeRegionHandle, out int regionSize));
 
             if (regionSize == 0)
                 return null;
 
             byte[] regionData = new byte[regionSize];
-            Gdip.CheckStatus(Gdip.GdipGetRegionData(new HandleRef(this, NativeRegion), regionData, regionSize, out regionSize));
+            Gdip.CheckStatus(Gdip.GdipGetRegionData(SafeRegionHandle, regionData, regionSize, out regionSize));
             return new RegionData(regionData);
         }
 
@@ -350,7 +301,7 @@ namespace System.Drawing
         public bool IsVisible(PointF point, Graphics? g)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisibleRegionPoint(
-                new HandleRef(this, NativeRegion),
+                SafeRegionHandle,
                 point.X, point.Y,
                 new HandleRef(g, g?.NativeGraphics ?? IntPtr.Zero),
                 out int isVisible));
@@ -367,7 +318,7 @@ namespace System.Drawing
         public bool IsVisible(RectangleF rect, Graphics? g)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisibleRegionRect(
-                new HandleRef(this, NativeRegion),
+                SafeRegionHandle,
                 rect.X, rect.Y, rect.Width, rect.Height,
                 new HandleRef(g, g?.NativeGraphics ?? IntPtr.Zero),
                 out int isVisible));
@@ -382,7 +333,7 @@ namespace System.Drawing
         public bool IsVisible(Point point, Graphics? g)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisibleRegionPointI(
-                new HandleRef(this, NativeRegion),
+                SafeRegionHandle,
                 point.X, point.Y,
                 new HandleRef(g, g?.NativeGraphics ?? IntPtr.Zero),
                 out int isVisible));
@@ -399,7 +350,7 @@ namespace System.Drawing
         public bool IsVisible(Rectangle rect, Graphics? g)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisibleRegionRectI(
-                new HandleRef(this, NativeRegion),
+                SafeRegionHandle,
                 rect.X, rect.Y, rect.Width, rect.Height,
                 new HandleRef(g, g?.NativeGraphics ?? IntPtr.Zero),
                 out int isVisible));
@@ -413,7 +364,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(matrix));
 
             Gdip.CheckStatus(Gdip.GdipGetRegionScansCount(
-                new HandleRef(this, NativeRegion),
+                SafeRegionHandle,
                 out int count,
                 matrix.SafeMatrixHandle));
 
@@ -427,7 +378,7 @@ namespace System.Drawing
             fixed (RectangleF* r = rectangles)
             {
                 Gdip.CheckStatus(Gdip.GdipGetRegionScans
-                    (new HandleRef(this, NativeRegion),
+                    (SafeRegionHandle,
                     r,
                     out count,
                     matrix.SafeMatrixHandle));
