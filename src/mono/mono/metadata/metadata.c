@@ -4986,14 +4986,14 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 	loc.col_idx = MONO_NESTED_CLASS_NESTED;
 	loc.t = tdef;
 
-	/* FIXME: metadata-update */
-
-	if (tdef->base && !mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) && !meta->has_updates)
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
+	if (!found && !meta->has_updates)
 		return 0;
 
-	if (G_UNLIKELY (meta->has_updates))
-		if (!mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
 			return 0;
+	}
 	
 	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
 	return mono_metadata_decode_row_col (tdef, loc.result, MONO_NESTED_CLASS_ENCLOSING) | MONO_TOKEN_TYPE_DEF;
@@ -5086,18 +5086,23 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	locator_t loc;
 
-	if (!tdef->base)
+	if (!tdef->base && !meta->has_updates)
 		return 0;
 
 	loc.idx = index;
 	loc.col_idx = MONO_CUSTOM_ATTR_PARENT;
 	loc.t = tdef;
 
-	/* FIXME: metadata-update */
 	/* FIXME: Index translation */
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
+	if (!found && !meta->has_updates)
 		return 0;
+
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+			return 0;
+	}
 
 	/* Find the first entry by searching backwards */
 	while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_CUSTOM_ATTR_PARENT) == index))
