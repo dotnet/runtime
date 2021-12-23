@@ -1815,7 +1815,7 @@ namespace System.Drawing.Tests
                 set => _stream.Position = _canSeek ? value : throw new NotSupportedException();
             }
             public override void Flush() => _stream.Flush();
-            public override int Read(byte[] buffer, int offset, int count) => _canRead ?  _stream.Read(buffer, offset, count) : throw new NotSupportedException();
+            public override int Read(byte[] buffer, int offset, int count) => _canRead ? _stream.Read(buffer, offset, count) : throw new NotSupportedException();
             public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
             public override void SetLength(long value) => _stream.SetLength(value);
             public override void Write(byte[] buffer, int offset, int count) => _stream.Write(buffer, offset, count);

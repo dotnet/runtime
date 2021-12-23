@@ -19,7 +19,7 @@ namespace System.Drawing
             // When set to false, where Carbon Drawing is used instead.
             // macOS users can force X11 by setting the SYSTEM_DRAWING_COMMON_FORCE_X11 flag.
             public static bool UseX11Drawable { get; } =
-                !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
+                !OperatingSystem.IsMacOS() ||
                 Environment.GetEnvironmentVariable("SYSTEM_DRAWING_COMMON_FORCE_X11") != null;
 
             internal static IntPtr LoadNativeLibrary()
@@ -27,7 +27,7 @@ namespace System.Drawing
                 var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 
                 IntPtr lib = IntPtr.Zero;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (OperatingSystem.IsMacOS())
                 {
                     if (!NativeLibrary.TryLoad("libgdiplus.dylib", assembly, default, out lib))
                     {

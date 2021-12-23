@@ -39,7 +39,7 @@ namespace System.Drawing.Internal
 
                 if (!addedTracker)
                 {
-                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+                    Debug.Assert(OperatingSystem.IsWindows());
                     addedTracker = true;
                     SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
                 }
@@ -132,7 +132,7 @@ namespace System.Drawing.Internal
 
         private static void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
         {
-            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+            Debug.Assert(OperatingSystem.IsWindows());
 
             // Update pens and brushes
             if (e.Category == UserPreferenceCategory.Color)
