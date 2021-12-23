@@ -13,6 +13,10 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(preexistingHandle);
         }
 
+        public SafePenHandle() : base(true)
+        {
+        }
+
         protected override int ReleaseHandleImpl() => Gdip.GdipDeletePen(handle);
     }
 }
