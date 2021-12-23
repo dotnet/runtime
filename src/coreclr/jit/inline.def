@@ -179,6 +179,7 @@ INLINE_OBSERVATION(ARG_EXACT_CLS_SIG_IS_NOT,  int,    "arg is more concrete than
 INLINE_OBSERVATION(ARG_CONST,                 int,    "arg is a constant",                    INFORMATION, CALLSITE)
 INLINE_OBSERVATION(ARG_BOXED,                 int,    "arg is boxed at call site",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_INTRINSIC,        int,    "foldable intrinsic",                   INFORMATION, CALLSITE)
+INLINE_OBSERVATION(FOLDABLE_LDSFLD,           int,    "foldable ldsfld",                      INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_EXPR,             int,    "foldable binary expression",           INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_EXPR_UN,          int,    "foldable unary expression",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_BRANCH,           int,    "foldable branch",                      INFORMATION, CALLSITE)

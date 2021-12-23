@@ -1133,10 +1133,16 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             // These are most likely foldable without arguments
                             case NI_System_Collections_Generic_Comparer_get_Default:
                             case NI_System_Collections_Generic_EqualityComparer_get_Default:
-                            case NI_System_Enum_HasFlag:
                             case NI_System_GC_KeepAlive:
                             {
                                 pushedStack.PushUnknown();
+                                foldableIntrinsc = true;
+                                break;
+                            }
+
+                            case NI_System_Enum_HasFlag:
+                            {
+                                // keep its argument in the stack as a return value
                                 foldableIntrinsc = true;
                                 break;
                             }
@@ -1151,11 +1157,19 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
                             }
 
+                            case NI_System_Span_get_Length:
+                            case NI_System_ReadOnlySpan_get_Length:
+                            {
+                                // Keep argument on top of the stack
+                                handled = FgStack::IsArgument(pushedStack.Top(0));
+                                break;
+                            }
+
                             case NI_System_Object_GetType:
                             {
+                                // obj.GetType() is folded into typeof() if obj is exact
                                 if (FgStack::IsExactArgument(pushedStack.Top(0), impInlineInfo))
                                 {
-                                    // TODO: if arg is constant/valuetype/exact
                                     pushedStack.PushConstant();
                                     foldableIntrinsc = true;
                                 }
@@ -1294,6 +1308,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     bool                 inited = false;
                     if ((info.compCompHnd->getStaticFieldCurrentClass(fldHnd, &inited) == NO_CLASS_HANDLE) && inited)
                     {
+                        compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_LDSFLD);
                         pushedStack.PushConstant();
                         handled = true;
                     }

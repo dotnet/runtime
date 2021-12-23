@@ -203,6 +203,7 @@ public:
         , m_ArgIsConst(0)
         , m_ArgIsBoxedAtCallsite(0)
         , m_FoldableIntrinsic(0)
+        , m_FoldableLdsfld(0)
         , m_FoldableExpr(0)
         , m_FoldableExprUn(0)
         , m_FoldableBranch(0)
@@ -254,6 +255,7 @@ protected:
     unsigned m_ArgIsConst;
     unsigned m_ArgIsBoxedAtCallsite;
     unsigned m_FoldableIntrinsic;
+    unsigned m_FoldableLdsfld;
     unsigned m_FoldableExpr;
     unsigned m_FoldableExprUn;
     unsigned m_FoldableBranch;

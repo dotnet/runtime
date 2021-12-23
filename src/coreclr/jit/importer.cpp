@@ -5239,12 +5239,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Span_get_Item;
             }
+            else if (strcmp(methodName, "get_Length") == 0)
+            {
+                result = NI_System_Span_get_Length;
+            }
         }
         else if (strcmp(className, "ReadOnlySpan`1") == 0)
         {
             if (strcmp(methodName, "get_Item") == 0)
             {
                 result = NI_System_ReadOnlySpan_get_Item;
+            }
+            else if (strcmp(methodName, "get_Length") == 0)
+            {
+                result = NI_System_ReadOnlySpan_get_Length;
             }
         }
         else if (strcmp(className, "EETypePtr") == 0)

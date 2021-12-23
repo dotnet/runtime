@@ -1286,6 +1286,10 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_FoldableIntrinsic++;
             break;
 
+        case InlineObservation::CALLSITE_FOLDABLE_LDSFLD:
+            m_FoldableLdsfld++;
+            break;
+
         case InlineObservation::CALLSITE_FOLDABLE_EXPR:
             m_FoldableExpr++;
             break;
@@ -1583,6 +1587,13 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline has %d foldable intrinsics.  Multiplier increased to %g.", m_FoldableIntrinsic, multiplier);
     }
 
+    if (m_FoldableLdsfld > 0)
+    {
+        // static readonly fields of already initialized types
+        multiplier += m_FoldableLdsfld;
+        JITDUMP("\nInline has %d foldable ldslfd.  Multiplier increased to %g.", m_FoldableLdsfld, multiplier);
+    }
+
     if (m_FoldableExpr > 0)
     {
         // E.g. add/mul/ceq, etc. over constant/constant arguments
@@ -1616,7 +1627,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //   ceq
         //
         // so at least we can note potential constant tests
-        multiplier += m_BinaryExprWithCns * 0.5;
+        multiplier += 1.5 + m_BinaryExprWithCns * 0.5;
         JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
                 m_BinaryExprWithCns, multiplier);
 
@@ -1807,6 +1818,7 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_ArgIsConst)
     XATTR_I4(m_ArgIsBoxedAtCallsite)
     XATTR_I4(m_FoldableIntrinsic)
+    XATTR_I4(m_FoldableLdsfld)
     XATTR_I4(m_FoldableExpr)
     XATTR_I4(m_FoldableExprUn)
     XATTR_I4(m_FoldableBranch)
