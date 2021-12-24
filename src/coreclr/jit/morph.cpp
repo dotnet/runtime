@@ -13279,13 +13279,11 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
             // The compiler requires jumps to have relop operands, so we do not fold that case.
             if (op1->OperIs(GT_AND) && (op2Value == 1) && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
             {
-                if (op1->gtGetOp2()->IsIntegralConst(1))
+                if (op1->gtGetOp2()->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()))
                 {
-                    
+
                     DEBUG_DESTROY_NODE(op2);
                     DEBUG_DESTROY_NODE(cmp);
-
-                    optNarrowTree(op1, op1->TypeGet(), TYP_INT, ValueNumPair(), true);
 
                     return op1;
                 }
