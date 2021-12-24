@@ -765,7 +765,6 @@ namespace System.Drawing
             }
         }
 
-#if NETCOREAPP3_1_OR_GREATER
         /// <summary>
         ///  Gets the cumulative offset.
         /// </summary>
@@ -792,7 +791,6 @@ namespace System.Drawing
             Vector2 translation = cumulativeTransform.Translation;
             offset = new PointF(translation.X, translation.Y);
         }
-#endif
 
         public RectangleF VisibleClipBounds
         {
