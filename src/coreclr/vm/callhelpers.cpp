@@ -470,7 +470,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 {
 #if defined(TARGET_LOONGARCH64)
                     case 1:
-                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U1)
+                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U1 || m_argIt.GetArgType() == ELEMENT_TYPE_BOOLEAN)
                             *((INT64*)pDest) = (UINT8)pArguments[arg];
                         else
                             *((INT64*)pDest) = (INT8)pArguments[arg];
