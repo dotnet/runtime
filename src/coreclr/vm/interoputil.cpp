@@ -2501,8 +2501,8 @@ HRESULT GetTypeLibGuidForAssembly(Assembly *pAssembly, GUID *pGuid)
     CQuickArray<BYTE> rName;            // String for guid.
     ULONG       cbData;                 // Size of the string in bytes.
 
-    // Get GUID from Assembly, else from Manifest Module, else Generate from name.
-    hr = pAssembly->GetManifestImport()->GetItemGuid(TokenFromRid(1, mdtAssembly), pGuid);
+    // Get GUID from Assembly, else Generate from name.
+    hr = pAssembly->GetMDImport()->GetItemGuid(TokenFromRid(1, mdtAssembly), pGuid);
 
     if (*pGuid == GUID_NULL)
     {
@@ -2548,7 +2548,7 @@ HRESULT GetTypeLibVersionForAssembly(
     ULONG cbData = 0;
 
     // Check to see if the TypeLibVersionAttribute is set.
-    IfFailRet(pAssembly->GetManifestImport()->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_TYPELIBVERSION_TYPE, (const void**)&pbData, &cbData));
+    IfFailRet(pAssembly->GetMDImport()->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_TYPELIBVERSION_TYPE, (const void**)&pbData, &cbData));
 
     // For attribute contents, see https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.typelibversionattribute
     if (cbData >= (2 + 2 * sizeof(UINT32)))

@@ -262,7 +262,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModul
     ULONG                   cbNewSig;
 
     IfFailThrow( pRefedModule->GetMDImport()->TranslateSigWithScope(
-        pRefedAssembly->GetManifestImport(),
+        pRefedAssembly->GetMDImport(),
         NULL, 0,        // hash value
         pvComSig,
         cbComSig,
@@ -349,7 +349,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         }
 
         IfFailThrow( pMeth->GetMDImport()->TranslateSigWithScope(
-            pRefedAssembly->GetManifestImport(),
+            pRefedAssembly->GetMDImport(),
             NULL, 0,        // hash blob value
             pvComSig,
             cbComSig,
@@ -428,7 +428,7 @@ extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::Mo
         ULONG           cbNewSig;
 
         IfFailThrow( pRefedMDImport->TranslateSigWithScope(
-        pRefedAssembly->GetManifestImport(),
+        pRefedAssembly->GetMDImport(),
         NULL, 0,            // hash value
         pvComSig,
         cbComSig,

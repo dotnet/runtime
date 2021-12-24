@@ -563,7 +563,7 @@ BOOL ClassLoader::IsNested(Module *pModule, mdToken token, mdToken *mdEncloser)
                     (*mdEncloser != mdTypeRefNil));
 
         case mdtExportedType:
-            IfFailThrow(pModule->GetAssembly()->GetManifestImport()->GetExportedTypeProps(
+            IfFailThrow(pModule->GetAssembly()->GetMDImport()->GetExportedTypeProps(
                 token,
                 NULL,   // namespace
                 NULL,   // name
@@ -744,7 +744,7 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                                                                (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
                         break;
                     case mdtExportedType:
-                        while ((!CompareNestedEntryWithExportedType(pNameModule->GetAssembly()->GetManifestImport(),
+                        while ((!CompareNestedEntryWithExportedType(pNameModule->GetAssembly()->GetMDImport(),
                                                                     mdEncloser,
                                                                     pCurrentClsModule->GetAvailableClassHash(),
                                                                     pBucket->GetEncloser())) &&
@@ -858,8 +858,8 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
         PopulateAvailableClassHashTable(pModule, &amTracker);
     }
 
-    // Add exported types of the manifest module to the hashtable
-    IMDInternalImport * pManifestImport = GetAssembly()->GetManifestImport();
+    // Add exported types to the hashtable
+    IMDInternalImport * pManifestImport = GetAssembly()->GetMDImport();
     HENUMInternalHolder phEnum(pManifestImport);
     phEnum.EnumInit(mdtExportedType, mdTokenNil);
 
@@ -1498,7 +1498,7 @@ ClassLoader::LoadTypeHandleThrowing(
                 if (typeHnd.IsNull() || !CompareNameHandleWithTypeHandleNoThrow(pName, typeHnd))
                 {
                     if (SUCCEEDED(pClsLdr->FindTypeDefByExportedType(
-                            pClsLdr->GetAssembly()->GetManifestImport(),
+                            pClsLdr->GetAssembly()->GetMDImport(),
                             FoundExportedType,
                             pFoundModule->GetMDImport(),
                             &FoundCl)))

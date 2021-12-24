@@ -334,7 +334,7 @@ void Assembly::Terminate( BOOL signalProfiler )
 
 Assembly * Assembly::Create(
     BaseDomain *                 pDomain,
-    PEAssembly *                 pFile,
+    PEAssembly *                 pPEAssembly,
     DebuggerAssemblyControlFlags debuggerFlags,
     BOOL                         fIsCollectible,
     AllocMemTracker *            pamTracker,
@@ -342,7 +342,7 @@ Assembly * Assembly::Create(
 {
     STANDARD_VM_CONTRACT;
 
-    NewHolder<Assembly> pAssembly (new Assembly(pDomain, pFile, debuggerFlags, fIsCollectible));
+    NewHolder<Assembly> pAssembly (new Assembly(pDomain, pPEAssembly, debuggerFlags, fIsCollectible));
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -798,9 +798,9 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
     mdToken mdLinkRef;
     mdToken mdBinding;
 
-    IMDInternalImport *pManifestImport = GetManifestImport();
+    IMDInternalImport *pMDImport = GetMDImport();
 
-    IfFailThrow(pManifestImport->GetExportedTypeProps(
+    IfFailThrow(pMDImport->GetExportedTypeProps(
         mdType,
         NULL,
         NULL,
@@ -809,7 +809,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
         NULL));         // dwflags
 
     // Don't trust the returned tokens.
-    if (!pManifestImport->IsValidToken(mdLinkRef))
+    if (!pMDImport->IsValidToken(mdLinkRef))
     {
         if (loadFlag != Loader::Load)
         {
@@ -1137,13 +1137,13 @@ void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
 
     mdToken mdExportedType;
 
-    HENUMInternalHolder phEnum(GetManifestImport());
+    HENUMInternalHolder phEnum(GetMDImport());
     phEnum.EnumInit(mdtExportedType,
                     mdTokenNil);
 
     ClassLoader::AvailableClasses_LockHolder lh(m_pClassLoader);
 
-    for(int i = 0; GetManifestImport()->EnumNext(&phEnum, &mdExportedType); i++)
+    for(int i = 0; GetMDImport()->EnumNext(&phEnum, &mdExportedType); i++)
         m_pClassLoader->AddExportedTypeHaveLock(GetManifestModule(),
                                                 mdExportedType,
                                                 pamTracker);

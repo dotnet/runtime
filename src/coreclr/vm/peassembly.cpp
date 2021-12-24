@@ -552,7 +552,7 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
         pDomainAssembly = pAssembly->GetDomainAssembly();
         pPEAssembly = pDomainAssembly->GetPEAssembly();
 
-        if (FAILED(pAssembly->GetManifestImport()->FindManifestResourceByName(
+        if (FAILED(pAssembly->GetMDImport()->FindManifestResourceByName(
             szName,
             &mdResource)))
         {

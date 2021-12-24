@@ -727,7 +727,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle 
 
     Assembly * pAsm = pAssembly->GetAssembly();
 
-    IMDInternalImport *pImport = pAsm->GetManifestImport();
+    IMDInternalImport *pImport = pAsm->GetMDImport();
 
     {
         HENUMTypeDefInternalHolder phTDEnum(pImport);
@@ -847,7 +847,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle
 
     Assembly * pAsm = pAssembly->GetAssembly();
 
-    IMDInternalImport *pImport = pAsm->GetManifestImport();
+    IMDInternalImport *pImport = pAsm->GetMDImport();
 
     // enumerate the ExportedTypes table
     {
@@ -979,7 +979,7 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    IMDInternalImport *pImport = pAssembly->GetAssembly()->GetManifestImport();
+    IMDInternalImport *pImport = pAssembly->GetAssembly()->GetMDImport();
 
     MethodTable* pAsmNameClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME);
 

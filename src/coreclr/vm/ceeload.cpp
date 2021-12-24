@@ -1629,9 +1629,7 @@ BOOL Module::IsNoStringInterning()
 
         HRESULT hr;
 
-        // This flag applies to assembly, but it is stored on module so it can be cached in ngen image
-        // Thus, we should ever need it for manifest module only.
-        IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
+        IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
         _ASSERTE(mdImport);
 
         mdToken token;
@@ -1736,9 +1734,7 @@ BOOL Module::IsRuntimeWrapExceptions()
         HRESULT hr;
         BOOL fRuntimeWrapExceptions = FALSE;
 
-        // This flag applies to assembly, but it is stored on module so it can be cached in ngen image
-        // Thus, we should ever need it for manifest module only.
-        IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
+        IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
 
         mdToken token;
         IfFailGo(mdImport->GetAssemblyFromScope(&token));
@@ -1822,7 +1818,7 @@ BOOL Module::IsPreV4Assembly()
 
     if (!(m_dwPersistedFlags & COMPUTED_IS_PRE_V4_ASSEMBLY))
     {
-        IMDInternalImport *pImport = GetAssembly()->GetManifestImport();
+        IMDInternalImport *pImport = GetAssembly()->GetMDImport();
         _ASSERTE(pImport);
 
         BOOL fIsPreV4Assembly = FALSE;
@@ -3543,7 +3539,7 @@ DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
     else
     {
         // This is mdtFile
-        IfFailThrow(GetAssembly()->GetManifestImport()->GetFileProps(kFile,
+        IfFailThrow(GetAssembly()->GetMDImport()->GetFileProps(kFile,
                                     &psModuleName,
                                     NULL,
                                     NULL,

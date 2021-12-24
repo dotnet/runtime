@@ -35,6 +35,7 @@ inline Module* DomainFile::GetModule()
     return m_pModule;
 }
 
+//TODO: VS remove?
 inline Assembly* DomainAssembly::GetCurrentAssembly()
 {
     LIMITED_METHOD_CONTRACT;

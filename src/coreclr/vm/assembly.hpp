@@ -295,7 +295,7 @@ public:
         return m_pPEAssembly;
     }
 
-    IMDInternalImport* GetManifestImport()
+    IMDInternalImport* GetMDImport()
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;

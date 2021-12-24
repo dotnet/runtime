@@ -2705,7 +2705,7 @@ FCIMPL1(INT32, AssemblyHandle::GetToken, AssemblyBaseObject* pAssemblyUNSAFE) {
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
     mdAssembly token = mdAssemblyNil;
 
-    IMDInternalImport *mdImport = pAssembly->GetCurrentAssembly()->GetManifestImport();
+    IMDInternalImport *mdImport = pAssembly->GetCurrentAssembly()->GetMDImport();
 
     if (mdImport != 0)
     {
