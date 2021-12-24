@@ -394,7 +394,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
         return;
     }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(UNIX_LOONGARCH64_ABI)
 
     if (argDest->IsStructPassedInRegs())
     {
@@ -427,7 +427,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
 
 #endif
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(UNIX_LOONGARCH64_ABI)
     if (argDest->IsStructPassedInRegs())
     {
         *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 0;
@@ -1817,7 +1817,7 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
 
 #endif // UNIX_AMD64_ABI
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(UNIX_LOONGARCH64_ABI)
 
     if (argDest->IsStructPassedInRegs())
     {
