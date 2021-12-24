@@ -119,6 +119,8 @@ namespace Microsoft.Extensions.Hosting
 
         /// <summary>
         /// Run the given actions to initialize the host. This can only be called once.
+        /// Adds host application lifetime service to the host.
+        /// The application will run until interrupted or until <see cref="M:IHostApplicationLifetime.StopApplication()" /> is called.
         /// </summary>
         /// <returns>An initialized <see cref="IHost"/></returns>
         public IHost Build()
