@@ -1075,7 +1075,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         if ((opcode == CEE_ISINST) && FgStack::IsExactArgument(slot, impInlineInfo))
                         {
                             // isinst on top of non-constant "exact" argument (at callsite)
-                            // most likely will fold this isinst 
+                            // most likely will fold this isinst
                             pushedStack.PushConstant();
                         }
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR_UN);
@@ -1176,7 +1176,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                     pushedStack.PushConstant();
                                     foldableIntrinsc = true;
                                 }
-                                else if ()
                                 break;
                             }
 
@@ -1633,9 +1632,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_STSFLD:
                 if (makeInlineObservations)
                 {
-                    if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo) && ((opcode == CEE_STFLD) || (opcode == CEE_STSFLD)))
+                    if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo) &&
+                        ((opcode == CEE_STFLD) || (opcode == CEE_STSFLD)))
                     {
-                        // If we inline we'll set a constant value (e.g. null) to this field 
+                        // If we inline we'll set a constant value (e.g. null) to this field
                         // If it's of reference type we'll avoid an expensive write barrier here
                         compInlineResult->Note(InlineObservation::CALLSITE_CONST_ARG_SETS_FLD);
                     }
@@ -1646,7 +1646,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
                     break;
                 }
-            break;
+                break;
 
             case CEE_LDSFLD:
                 if (resolveTokens && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))

@@ -1656,7 +1656,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         case InlineCallsiteFrequency::RARE:
             // Note this one is not additive, it uses '=' instead of '+='
             multiplier = 1.3;
-            JITDUMP("\nInline candidate callsite is rare. Multiplier limited to %g.", multiplier);
+            JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
             break;
         case InlineCallsiteFrequency::BORING:
             multiplier += 1.3;
