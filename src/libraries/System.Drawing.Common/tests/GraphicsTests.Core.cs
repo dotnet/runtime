@@ -51,8 +51,8 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TransformElements);
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TransformElements = Matrix3x2.Identity);
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => graphics.TransformElements);
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => graphics.TransformElements = Matrix3x2.Identity);
             }
         }
 

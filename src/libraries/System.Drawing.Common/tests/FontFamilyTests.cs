@@ -232,7 +232,7 @@ namespace System.Drawing.Tests
             FontFamily fontFamily = FontFamily.GenericMonospace;
             fontFamily.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => fontFamily.IsStyleAvailable(FontStyle.Italic));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => fontFamily.IsStyleAvailable(FontStyle.Italic));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -242,7 +242,7 @@ namespace System.Drawing.Tests
             FontFamily fontFamily = FontFamily.GenericMonospace;
             fontFamily.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => fontFamily.GetEmHeight(FontStyle.Italic));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => fontFamily.GetEmHeight(FontStyle.Italic));
         }
 
         private const int FrenchLCID = 1036;
@@ -274,7 +274,7 @@ namespace System.Drawing.Tests
             FontFamily fontFamily = FontFamily.GenericMonospace;
             fontFamily.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => fontFamily.GetName(0));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => fontFamily.GetName(0));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -284,7 +284,7 @@ namespace System.Drawing.Tests
             FontFamily fontFamily = FontFamily.GenericMonospace;
             fontFamily.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => fontFamily.GetCellAscent(FontStyle.Italic));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => fontFamily.GetCellAscent(FontStyle.Italic));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -294,7 +294,7 @@ namespace System.Drawing.Tests
             FontFamily fontFamily = FontFamily.GenericMonospace;
             fontFamily.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => fontFamily.GetCellDescent(FontStyle.Italic));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => fontFamily.GetCellDescent(FontStyle.Italic));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -304,7 +304,7 @@ namespace System.Drawing.Tests
             FontFamily fontFamily = FontFamily.GenericMonospace;
             fontFamily.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => fontFamily.GetLineSpacing(FontStyle.Italic));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => fontFamily.GetLineSpacing(FontStyle.Italic));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]

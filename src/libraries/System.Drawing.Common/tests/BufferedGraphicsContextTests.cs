@@ -176,8 +176,8 @@ namespace System.Drawing.Tests
                 graphics.Dispose();
 
                 Rectangle largeRectangle = new Rectangle(0, 0, context.MaximumBuffer.Width + 1, context.MaximumBuffer.Height + 1);
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => context.Allocate(graphics, largeRectangle));
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => context.Allocate(graphics, Rectangle.Empty));
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => context.Allocate(graphics, largeRectangle));
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => context.Allocate(graphics, Rectangle.Empty));
             }
         }
 

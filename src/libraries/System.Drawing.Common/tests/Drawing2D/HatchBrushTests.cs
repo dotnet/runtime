@@ -91,7 +91,7 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Clone());
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Clone());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -100,7 +100,7 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.HatchStyle);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.HatchStyle);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -109,7 +109,7 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.ForegroundColor);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.ForegroundColor);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -118,7 +118,7 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.BackgroundColor);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.BackgroundColor);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

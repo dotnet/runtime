@@ -180,7 +180,7 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_Disposed_ThrowsObjectDisposedException()
         {
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => CreateDisposedMatrix().Clone());
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => CreateDisposedMatrix().Clone());
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -226,19 +226,19 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Equals_Disposed_ThrowsObjectDisposedException()
         {
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => CreateDisposedMatrix().Equals(new Matrix()));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => CreateDisposedMatrix().Equals(new Matrix()));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Equals_DisposedOther_ThrowsObjectDisposedException()
         {
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => new Matrix().Equals(CreateDisposedMatrix()));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => new Matrix().Equals(CreateDisposedMatrix()));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Elements_Disposed_ThrowsObjectDisposedException()
         {
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => CreateDisposedMatrix().Elements);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => CreateDisposedMatrix().Elements);
         }
 
         public static IEnumerable<object[]> Invert_TestData()
@@ -284,19 +284,19 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Invert_Disposed_ThrowsObjectDisposedException()
         {
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => CreateDisposedMatrix().Invert());
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => CreateDisposedMatrix().Invert());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsIdentity_Disposed_ThrowsObjectDisposedException()
         {
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => CreateDisposedMatrix().IsIdentity);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => CreateDisposedMatrix().IsIdentity);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsInvertible_Disposed_ThrowsObjectDisposedException()
         {
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => CreateDisposedMatrix().IsInvertible);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => CreateDisposedMatrix().IsInvertible);
         }
 
         public static IEnumerable<object[]> Multiply_TestData()
@@ -381,8 +381,8 @@ namespace System.Drawing.Drawing2D.Tests
 
             using (var other = new Matrix())
             {
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.Multiply(other));
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.Multiply(other, MatrixOrder.Prepend));
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.Multiply(other));
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.Multiply(other, MatrixOrder.Prepend));
             }
         }
 
@@ -393,8 +393,8 @@ namespace System.Drawing.Drawing2D.Tests
 
             using (var matrix = new Matrix())
             {
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => matrix.Multiply(disposedMatrix));
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => matrix.Multiply(disposedMatrix, MatrixOrder.Prepend));
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => matrix.Multiply(disposedMatrix));
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => matrix.Multiply(disposedMatrix, MatrixOrder.Prepend));
             }
         }
 
@@ -424,7 +424,7 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reset_Disposed_ThrowsObjectDisposedException()
         {
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => CreateDisposedMatrix().Reset());
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => CreateDisposedMatrix().Reset());
         }
 
         public static IEnumerable<object[]> Rotate_TestData()
@@ -517,7 +517,7 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Rotate_Disposed_ThrowsObjectDisposedException()
         {
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => CreateDisposedMatrix().Rotate(1, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => CreateDisposedMatrix().Rotate(1, MatrixOrder.Append));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -536,8 +536,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             Matrix disposedMatrix = CreateDisposedMatrix();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.RotateAt(1, PointF.Empty));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.RotateAt(1, PointF.Empty, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.RotateAt(1, PointF.Empty));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.RotateAt(1, PointF.Empty, MatrixOrder.Append));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -623,8 +623,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             Matrix disposedMatrix = CreateDisposedMatrix();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.Scale(1, 2));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.Scale(1, 2, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.Scale(1, 2));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.Scale(1, 2, MatrixOrder.Append));
         }
 
         public static IEnumerable<object[]> Shear_TestData()
@@ -700,8 +700,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             Matrix disposedMatrix = CreateDisposedMatrix();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.Shear(1, 2));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.Shear(1, 2, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.Shear(1, 2));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.Shear(1, 2, MatrixOrder.Append));
         }
 
         public static IEnumerable<object[]> Translate_TestData()
@@ -767,8 +767,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             Matrix disposedMatrix = CreateDisposedMatrix();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.Translate(1, 2));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.Translate(1, 2, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.Translate(1, 2));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.Translate(1, 2, MatrixOrder.Append));
         }
 
         public static IEnumerable<object[]> TransformPoints_TestData()
@@ -826,8 +826,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             Matrix disposedMatrix = CreateDisposedMatrix();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.TransformPoints(new Point[1]));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.TransformPoints(new PointF[1]));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.TransformPoints(new Point[1]));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.TransformPoints(new PointF[1]));
         }
 
         public static IEnumerable<object[]> TransformVectors_TestData()
@@ -898,9 +898,9 @@ namespace System.Drawing.Drawing2D.Tests
         {
             Matrix disposedMatrix = CreateDisposedMatrix();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.VectorTransformPoints(new Point[1]));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.TransformPoints(new Point[1]));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => disposedMatrix.TransformVectors(new PointF[1]));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.VectorTransformPoints(new Point[1]));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.TransformPoints(new Point[1]));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => disposedMatrix.TransformVectors(new PointF[1]));
         }
 
         private static void AssertEqualFloatArray(float[] expected, float[] actual)

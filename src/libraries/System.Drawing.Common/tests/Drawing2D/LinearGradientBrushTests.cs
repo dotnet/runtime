@@ -275,7 +275,7 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Clone());
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Clone());
         }
 
         [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
@@ -389,8 +389,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Blend);
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Blend = new Blend());
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Blend);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Blend = new Blend());
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -410,8 +410,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.GammaCorrection);
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.GammaCorrection = true);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.GammaCorrection);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.GammaCorrection = true);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -534,8 +534,8 @@ namespace System.Drawing.Drawing2D.Tests
             };
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.InterpolationColors);
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.InterpolationColors = new ColorBlend
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.InterpolationColors);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.InterpolationColors = new ColorBlend
             {
                 Colors = new Color[2],
                 Positions = new float[] { 0f, 1f }
@@ -620,8 +620,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.LinearColors);
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.LinearColors = new Color[] { Color.Red, Color.Wheat });
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.LinearColors);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.LinearColors = new Color[] { Color.Red, Color.Wheat });
         }
 
         [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
@@ -630,7 +630,7 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Rectangle);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Rectangle);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -658,8 +658,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Transform);
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Transform = new Matrix());
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Transform);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Transform = new Matrix());
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -701,8 +701,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.WrapMode);
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.WrapMode = WrapMode.TileFlipX);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.WrapMode);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.WrapMode = WrapMode.TileFlipX);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -723,7 +723,7 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.ResetTransform());
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.ResetTransform());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -810,8 +810,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.MultiplyTransform(new Matrix()));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.MultiplyTransform(new Matrix(), MatrixOrder.Prepend));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.MultiplyTransform(new Matrix()));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.MultiplyTransform(new Matrix(), MatrixOrder.Prepend));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -866,8 +866,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.TranslateTransform(0, 0));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.TranslateTransform(0, 0, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.TranslateTransform(0, 0));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.TranslateTransform(0, 0, MatrixOrder.Append));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -922,8 +922,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.ScaleTransform(0, 0));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.ScaleTransform(0, 0, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.ScaleTransform(0, 0));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.ScaleTransform(0, 0, MatrixOrder.Append));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -979,8 +979,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.RotateTransform(0));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.RotateTransform(0, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.RotateTransform(0));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.RotateTransform(0, MatrixOrder.Append));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -1029,8 +1029,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.SetSigmaBellShape(0));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.SetSigmaBellShape(0, 1));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.SetSigmaBellShape(0));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.SetSigmaBellShape(0, 1));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -1097,8 +1097,8 @@ namespace System.Drawing.Drawing2D.Tests
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.SetBlendTriangularShape(0));
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.SetBlendTriangularShape(0, 1));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.SetBlendTriangularShape(0));
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.SetBlendTriangularShape(0, 1));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

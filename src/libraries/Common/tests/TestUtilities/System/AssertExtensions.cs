@@ -166,7 +166,26 @@ namespace System
             return Throws(typeof(TNetCoreExceptionType), typeof(TNetFxExceptionType), action);
         }
 
+        public static Exception Throws<TNetCoreExceptionType, TNetFxExceptionType>(Func<object> action)
+            where TNetCoreExceptionType : Exception
+            where TNetFxExceptionType : Exception
+        {
+            return Throws(typeof(TNetCoreExceptionType), typeof(TNetFxExceptionType), action);
+        }
+
         public static Exception Throws(Type netCoreExceptionType, Type netFxExceptionType, Action action)
+        {
+            if (IsNetFramework)
+            {
+                return Assert.Throws(netFxExceptionType, action);
+            }
+            else
+            {
+                return Assert.Throws(netCoreExceptionType, action);
+            }
+        }
+
+        public static Exception Throws(Type netCoreExceptionType, Type netFxExceptionType, Func<object> action)
         {
             if (IsNetFramework)
             {

@@ -236,13 +236,13 @@ namespace System.Drawing.Drawing2D.Tests
             using (CustomLineCap customLineCap = new CustomLineCap(null, strokePath))
             {
                 customLineCap.Dispose();
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => customLineCap.StrokeJoin);
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => customLineCap.BaseCap);
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => customLineCap.BaseInset);
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => customLineCap.WidthScale);
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => customLineCap.Clone());
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => customLineCap.SetStrokeCaps(LineCap.Flat, LineCap.Flat));
-                AssertExtensions.Throws<ObjectDisposedException>(null, () => customLineCap.GetStrokeCaps(out LineCap startCap, out LineCap endCap));
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => customLineCap.StrokeJoin);
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => customLineCap.BaseCap);
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => customLineCap.BaseInset);
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => customLineCap.WidthScale);
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => customLineCap.Clone());
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => customLineCap.SetStrokeCaps(LineCap.Flat, LineCap.Flat));
+                AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => customLineCap.GetStrokeCaps(out LineCap startCap, out LineCap endCap));
             }
         }
     }

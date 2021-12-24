@@ -56,7 +56,7 @@ namespace System.Drawing.Tests
             var brush = new SolidBrush(Color.LavenderBlush);
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Clone());
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Clone());
         }
 
         [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
@@ -65,7 +65,7 @@ namespace System.Drawing.Tests
             var brush = new SolidBrush(new Color());
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Color);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Color);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -90,7 +90,7 @@ namespace System.Drawing.Tests
             var brush = new SolidBrush(new Color());
             brush.Dispose();
 
-            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Color = Color.WhiteSmoke);
+            AssertExtensions.Throws<ObjectDisposedException, ArgumentException>(() => brush.Color = Color.WhiteSmoke);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
