@@ -377,7 +377,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
 
             writer.WriteLine("// No starting position found");
-            writer.WriteLine("ReturnFalse:");
+            writer.WriteLine("NoStartingPositionFound:");
             writer.WriteLine("base.runtextpos = end;");
             writer.WriteLine("return false;");
 
@@ -399,7 +399,7 @@ namespace System.Text.RegularExpressions.Generator
                             additionalDeclarations.Add("int beginning = base.runtextbeg;");
                             using (EmitBlock(writer, "if (pos > beginning)"))
                             {
-                                writer.WriteLine("goto ReturnFalse;");
+                                writer.WriteLine("goto NoStartingPositionFound;");
                             }
                             writer.WriteLine("return true;");
                             return true;
@@ -408,7 +408,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine("// Start \\G anchor");
                             using (EmitBlock(writer, "if (pos > base.runtextstart)"))
                             {
-                                writer.WriteLine("goto ReturnFalse;");
+                                writer.WriteLine("goto NoStartingPositionFound;");
                             }
                             writer.WriteLine("return true;");
                             return true;
@@ -444,7 +444,7 @@ namespace System.Text.RegularExpressions.Generator
                                 writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos), '\\n');");
                                 using (EmitBlock(writer, "if (newlinePos < 0 || newlinePos + pos + 1 > end)"))
                                 {
-                                    writer.WriteLine("goto ReturnFalse;");
+                                    writer.WriteLine("goto NoStartingPositionFound;");
                                 }
                                 writer.WriteLine("pos = newlinePos + pos + 1;");
                             }
@@ -517,7 +517,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"int indexOfPos = {indexOf};");
                         using (EmitBlock(writer, "if (indexOfPos < 0)"))
                         {
-                            writer.WriteLine("goto ReturnFalse;");
+                            writer.WriteLine("goto NoStartingPositionFound;");
                         }
                         writer.WriteLine("i += indexOfPos;");
                         writer.WriteLine();
@@ -526,7 +526,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             using (EmitBlock(writer, $"if (i >= span.Length - {minRequiredLength - 1})"))
                             {
-                                writer.WriteLine("goto ReturnFalse;");
+                                writer.WriteLine("goto NoStartingPositionFound;");
                             }
                             writer.WriteLine();
                         }
