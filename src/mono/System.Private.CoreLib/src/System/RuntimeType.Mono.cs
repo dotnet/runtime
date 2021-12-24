@@ -1285,16 +1285,19 @@ namespace System
 
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
-            return (RuntimeType[])GetGenericArgumentsInternal(true);
+            RuntimeType[]? res = null;
+            var this_type = this;
+            GetGenericArgumentsInternal(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res), true);
+            return res!;
         }
 
         public override Type[] GetGenericArguments()
         {
-            Type[] types = GetGenericArgumentsInternal(false);
-
+            Type[]? types = null;
+            var this_type = this;
+            GetGenericArgumentsInternal(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref types), false);
             if (types == null)
                 types = Type.EmptyTypes;
-
             return types;
         }
 
@@ -1309,7 +1312,9 @@ namespace System
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
-            if (GetGenericArguments().Length != instantiation.Length)
+            RuntimeType[] genericParameters = GetGenericArgumentsInternal();
+
+            if (genericParameters.Length != instantiation.Length)
                 throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
 
             for (int i = 0; i < instantiation.Length; i++)
@@ -1336,8 +1341,6 @@ namespace System
                 instantiationRuntimeType[i] = rtInstantiationElem;
             }
 
-            RuntimeType[] genericParameters = GetGenericArgumentsInternal();
-
             SanityCheckGenericArguments(instantiationRuntimeType, genericParameters);
 
             Type? ret = null;
@@ -1354,7 +1357,8 @@ namespace System
                 if (!IsGenericParameter)
                     throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-                return GetGenericParameterPosition();
+                var this_type = this;
+                return GetGenericParameterPosition(new QCallTypeHandle(ref this_type));
             }
         }
 
@@ -1567,23 +1571,22 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern MethodInfo GetCorrespondingInflatedMethod(MethodInfo generic);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern ConstructorInfo GetCorrespondingInflatedConstructor(ConstructorInfo generic);
+        private static extern MemberInfo GetCorrespondingInflatedMethod(QCallTypeHandle type, MemberInfo generic);
 
         internal override MethodInfo GetMethod(MethodInfo fromNoninstanciated)
         {
             if (fromNoninstanciated == null)
                 throw new ArgumentNullException(nameof(fromNoninstanciated));
-            return GetCorrespondingInflatedMethod(fromNoninstanciated);
+            var this_type = this;
+            return (MethodInfo)GetCorrespondingInflatedMethod(new QCallTypeHandle(ref this_type), fromNoninstanciated);
         }
 
         internal override ConstructorInfo GetConstructor(ConstructorInfo fromNoninstanciated)
         {
             if (fromNoninstanciated == null)
                 throw new ArgumentNullException(nameof(fromNoninstanciated));
-            return GetCorrespondingInflatedConstructor(fromNoninstanciated);
+            var this_type = this;
+            return (ConstructorInfo)GetCorrespondingInflatedMethod(new QCallTypeHandle(ref this_type), fromNoninstanciated);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
@@ -1634,8 +1637,10 @@ namespace System
                 if (ReferenceEquals(elementType, typeof(TypedReference)) || ReferenceEquals(elementType, typeof(RuntimeArgumentHandle)))
                     throw new NotSupportedException("NotSupported_ContainsStackPtr");
 
-                if (IsValueType)
-                    return CreateInstanceInternal(this);
+                if (IsValueType) {
+                    var this_type = this;
+                    return CreateInstanceInternal(new QCallTypeHandle(ref this_type));
+                }
 
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
@@ -1875,12 +1880,13 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void make_array_type(Type type, int rank, ObjectHandleOnStack res);
+        private static extern void make_array_type(QCallTypeHandle type, int rank, ObjectHandleOnStack res);
 
         public override Type MakeArrayType()
         {
             Type? type = null;
-            make_array_type(this, 0, ObjectHandleOnStack.Create(ref type));
+            var base_type = this;
+            make_array_type(new QCallTypeHandle(ref base_type), 0, ObjectHandleOnStack.Create(ref type));
             return type!;
         }
 
@@ -1890,31 +1896,34 @@ namespace System
                 throw new IndexOutOfRangeException();
 
             Type? type = null;
-            make_array_type(this, rank, ObjectHandleOnStack.Create(ref type));
+            var base_type = this;
+            make_array_type(new QCallTypeHandle(ref base_type), rank, ObjectHandleOnStack.Create(ref type));
             return type!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void make_byref_type(Type type, ObjectHandleOnStack res);
+        private static extern void make_byref_type(QCallTypeHandle type, ObjectHandleOnStack res);
 
         public override Type MakeByRefType()
         {
             if (IsByRef)
                 throw new TypeLoadException("Can not call MakeByRefType on a ByRef type");
             Type? type = null;
-            make_byref_type(this, ObjectHandleOnStack.Create(ref type));
+            var base_type = this;
+            make_byref_type(new QCallTypeHandle(ref base_type), ObjectHandleOnStack.Create(ref type));
             return type!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void make_pointer_type(Type type, ObjectHandleOnStack res);
+        private static extern void make_pointer_type(QCallTypeHandle type, ObjectHandleOnStack res);
 
         public override Type MakePointerType()
         {
             if (IsByRef)
                 throw new TypeLoadException($"Could not load type '{GetType()}' from assembly '{AssemblyQualifiedName}");
             Type? type = null;
-            make_pointer_type(this, ObjectHandleOnStack.Create(ref type));
+            var base_type = this;
+            make_pointer_type(new QCallTypeHandle(ref base_type), ObjectHandleOnStack.Create(ref type));
             return type!;
         }
 
@@ -1997,15 +2006,16 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern IntPtr GetPropertiesByName_native(IntPtr name, BindingFlags bindingAttr, MemberListType listType);
+        private static extern IntPtr GetPropertiesByName_native(QCallTypeHandle type, IntPtr name, BindingFlags bindingAttr, MemberListType listType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern IntPtr GetConstructors_native(BindingFlags bindingAttr);
+        private static extern IntPtr GetConstructors_native(QCallTypeHandle type, BindingFlags bindingAttr);
 
         private RuntimeConstructorInfo[] GetConstructors_internal(BindingFlags bindingAttr, RuntimeType reflectedType)
         {
             var refh = new RuntimeTypeHandle(reflectedType);
-            using (var h = new Mono.SafeGPtrArrayHandle(GetConstructors_native(bindingAttr)))
+            var this_type = this;
+            using (var h = new Mono.SafeGPtrArrayHandle(GetConstructors_native(new QCallTypeHandle(ref this_type), bindingAttr)))
             {
                 int n = h.Length;
                 var a = new RuntimeConstructorInfo[n];
@@ -2021,8 +2031,9 @@ namespace System
         private RuntimePropertyInfo[] GetPropertiesByName(string? name, BindingFlags bindingAttr, MemberListType listType, RuntimeType reflectedType)
         {
             var refh = new RuntimeTypeHandle(reflectedType);
+            var this_type = this;
             using (var namePtr = new Mono.SafeStringMarshal(name))
-            using (var h = new Mono.SafeGPtrArrayHandle(GetPropertiesByName_native(namePtr.Value, bindingAttr, listType)))
+            using (var h = new Mono.SafeGPtrArrayHandle(GetPropertiesByName_native(new QCallTypeHandle(ref this_type), namePtr.Value, bindingAttr, listType)))
             {
                 int n = h.Length;
                 var a = new RuntimePropertyInfo[n];
@@ -2085,7 +2096,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern object CreateInstanceInternal(Type type);
+        private static extern object CreateInstanceInternal(QCallTypeHandle type);
 
         public extern override MethodBase? DeclaringMethod
         {
@@ -2094,10 +2105,18 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern string getFullName(bool full_name, bool assembly_qualified);
+        internal static extern void getFullName(QCallTypeHandle type, ObjectHandleOnStack res, bool full_name, bool assembly_qualified);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Type[] GetGenericArgumentsInternal(bool runtimeArray);
+        private static extern void GetGenericArgumentsInternal(QCallTypeHandle type, ObjectHandleOnStack res, bool runtimeArray);
+
+        internal string getFullName(bool full_name, bool assembly_qualified)
+        {
+            var this_type = this;
+            string? res = null;
+            getFullName(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res), full_name, assembly_qualified);
+            return res!;
+        }
 
         private GenericParameterAttributes GetGenericParameterAttributes()
         {
@@ -2105,19 +2124,20 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern int GetGenericParameterPosition();
+        private static extern int GetGenericParameterPosition(QCallTypeHandle type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern IntPtr GetEvents_native(IntPtr name, MemberListType listType);
+        private static extern IntPtr GetEvents_native(QCallTypeHandle type, IntPtr name, MemberListType listType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern IntPtr GetFields_native(IntPtr name, BindingFlags bindingAttr, MemberListType listType);
+        private static extern IntPtr GetFields_native(QCallTypeHandle type, IntPtr name, BindingFlags bindingAttr, MemberListType listType);
 
         private RuntimeFieldInfo[] GetFields_internal(string? name, BindingFlags bindingAttr, MemberListType listType, RuntimeType reflectedType)
         {
             var refh = new RuntimeTypeHandle(reflectedType);
+            var this_type = this;
             using (var namePtr = new Mono.SafeStringMarshal(name))
-            using (var h = new Mono.SafeGPtrArrayHandle(GetFields_native(namePtr.Value, bindingAttr, listType)))
+            using (var h = new Mono.SafeGPtrArrayHandle(GetFields_native(new QCallTypeHandle(ref this_type), namePtr.Value, bindingAttr, listType)))
             {
                 int n = h.Length;
                 var a = new RuntimeFieldInfo[n];
@@ -2133,8 +2153,9 @@ namespace System
         private RuntimeEventInfo[] GetEvents_internal(string? name, MemberListType listType, RuntimeType reflectedType)
         {
             var refh = new RuntimeTypeHandle(reflectedType);
+            var this_type = this;
             using (var namePtr = new Mono.SafeStringMarshal(name))
-            using (var h = new Mono.SafeGPtrArrayHandle(GetEvents_native(namePtr.Value, listType)))
+            using (var h = new Mono.SafeGPtrArrayHandle(GetEvents_native(new QCallTypeHandle(ref this_type), namePtr.Value, listType)))
             {
                 int n = h.Length;
                 var a = new RuntimeEventInfo[n];
@@ -2152,15 +2173,16 @@ namespace System
         public extern override Type[] GetInterfaces();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern IntPtr GetNestedTypes_native(IntPtr name, BindingFlags bindingAttr, MemberListType listType);
+        private static extern IntPtr GetNestedTypes_native(QCallTypeHandle type, IntPtr name, BindingFlags bindingAttr, MemberListType listType);
 
         private RuntimeType[] GetNestedTypes_internal(string? displayName, BindingFlags bindingAttr, MemberListType listType)
         {
             string? internalName = null;
             if (displayName != null)
                 internalName = displayName;
+            var this_type = this;
             using (var namePtr = new Mono.SafeStringMarshal(internalName))
-            using (var h = new Mono.SafeGPtrArrayHandle(GetNestedTypes_native(namePtr.Value, bindingAttr, listType)))
+            using (var h = new Mono.SafeGPtrArrayHandle(GetNestedTypes_native(new QCallTypeHandle(ref this_type), namePtr.Value, bindingAttr, listType)))
             {
                 int n = h.Length;
                 var a = new RuntimeType[n];

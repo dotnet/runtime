@@ -197,4 +197,6 @@ ICALL_EXPORT guint32 ves_icall_RuntimeTypeHandle_GetAttributes (MonoQCallTypeHan
 
 ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition (MonoQCallTypeHandle type_handle);
 
+ICALL_EXPORT gint32 ves_icall_RuntimeType_GetGenericParameterPosition (MonoQCallTypeHandle type_handle);
+
 #endif // __MONO_METADATA_ICALL_DECL_H__
