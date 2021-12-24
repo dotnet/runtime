@@ -1076,8 +1076,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     if (FgStack::IsConstantOrConstArg(slot, impInlineInfo) ||
                         FgStack::IsExactArgument(slot, impInlineInfo))
                     {
+                        if (opcode == CEE_ISINST)
+                        {
+                            pushedStack.PushConstant();
+                        }
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR_UN);
-                        handled = true; // and keep argument in the pushedStack
+                        handled = true;
                     }
                     else if (FgStack::IsArgument(slot))
                     {
