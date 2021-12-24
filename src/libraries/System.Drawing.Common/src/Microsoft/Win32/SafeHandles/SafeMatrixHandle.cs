@@ -19,7 +19,6 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override int ReleaseHandleImpl() => Gdip.GdipDeleteMatrix(handle);
 
-        internal bool HasEqualHandle(SafeMatrixHandle other) =>
-            DangerousGetHandle() == other.DangerousGetHandle();
+        internal bool HasEqualHandle(SafeMatrixHandle other) => handle == other.handle;
     }
 }

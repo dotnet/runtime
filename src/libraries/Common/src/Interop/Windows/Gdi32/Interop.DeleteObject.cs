@@ -16,7 +16,10 @@ internal static partial class Interop
             bool releaseOwner = false;
             try
             {
-                owningHandle.DangerousAddRef(ref releaseOwner);
+                if (!owningHandle.IsClosed)
+                {
+                    owningHandle.DangerousAddRef(ref releaseOwner);
+                }
                 return DeleteObject(ho);
             }
             finally
