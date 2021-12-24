@@ -1999,7 +1999,7 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNode.EndZ:
-                        writer.WriteLine($"if ({sliceSpan}.Length - 1 > {sliceStaticPos} || ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
+                        writer.WriteLine($"if ({sliceSpan}.Length > {sliceStaticPos + 1} || ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
                         using (EmitBlock(writer, null))
                         {
                             writer.WriteLine($"goto {doneLabel};");
