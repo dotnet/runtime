@@ -3488,6 +3488,7 @@ namespace System.Text.RegularExpressions.Generator
                     (2, int.MaxValue) => " at least twice",
                     (_, int.MaxValue) => $" at least {node.M} times",
                     (0, 1) => ", optionally",
+                    (0, _) => $"at most {node.N} times",
                     _ => $" at least {node.M} and at most {node.N} times"
                 };
 
