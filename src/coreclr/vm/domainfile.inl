@@ -35,27 +35,11 @@ inline Module* DomainFile::GetModule()
     return m_pModule;
 }
 
-//TODO: VS remove?
-inline Assembly* DomainAssembly::GetCurrentAssembly()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_pAssembly;
-}
-
-inline Assembly* DomainAssembly::GetLoadedAssembly()
+inline Assembly* DomainAssembly::GetAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     CONSISTENCY_CHECK(CheckLoaded());
 
-    return m_pAssembly;
-}
-
-inline Assembly* DomainAssembly::GetAssembly()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    CONSISTENCY_CHECK(CheckLoadLevel(FILE_LOAD_ALLOCATE));
     return m_pAssembly;
 }
 

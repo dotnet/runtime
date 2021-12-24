@@ -1072,7 +1072,7 @@ Module * Assembly::FindModuleByTypeRef(
             if (pDomainAssembly == NULL)
                 RETURN NULL;
 
-            pAssembly = pDomainAssembly->GetCurrentAssembly();
+            pAssembly = pDomainAssembly->GetAssembly();
             if (pAssembly == NULL)
             {
                 RETURN NULL;

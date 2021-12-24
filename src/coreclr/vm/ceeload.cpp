@@ -3316,7 +3316,7 @@ Module::GetAssemblyIfLoaded(
                 }
 
                 if (pDomainAssembly && pDomainAssembly->IsLoaded())
-                    pAssembly = pDomainAssembly->GetCurrentAssembly(); // <NOTE> Do not use GetAssembly - that may force the completion of a load
+                    pAssembly = pDomainAssembly->GetAssembly(); // <NOTE> Do not use GetAssembly - that may force the completion of a load
 
                 // Only store in the rid map if working with the current AppDomain.
                 if (fCanUseRidMap && pAssembly)
@@ -3427,9 +3427,9 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
             !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
             GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
-        if (pDomainAssembly->GetCurrentAssembly() != NULL)
+        if (pDomainAssembly->GetAssembly() != NULL)
         {
-            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetCurrentAssembly());
+            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetAssembly());
         }
     }
 

@@ -6184,7 +6184,7 @@ void ETW::EnumerationLog::IterateDomain(BaseDomain *pDomain, DWORD enumerationOp
             CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
             while (assemblyIterator.Next(pDomainAssembly.This()))
             {
-                CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetLoadedAssembly();
+                CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
                 BOOL bIsDomainNeutral = pAssembly->IsDomainNeutral();
                 if (bIsDomainNeutral)
                     continue;

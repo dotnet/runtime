@@ -441,8 +441,6 @@ public:
     // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
     OBJECTREF GetExposedAssemblyObject();
 
-    Assembly* GetCurrentAssembly();
-    Assembly* GetLoadedAssembly();
     Assembly* GetAssembly();
 
 #ifdef DACCESS_COMPILE
