@@ -3385,7 +3385,7 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.End => "Match if at the end of the string.",
                 RegexNode.EndZ => "Match if at the end of the string or if before an ending newline.",
                 RegexNode.Eol => "Match if at the end of a line.",
-                RegexNode.Loop or RegexNode.Lazyloop => $"Loop {DescribeLoop(node)}.",
+                RegexNode.Loop or RegexNode.Lazyloop => node.M == 0 && node.N == 1 ? $"Optional ({(node.Type is RegexNode.Loop ? "greedy" : "lazy")})." : $"Loop {DescribeLoop(node)}.",
                 RegexNode.Multi => $"Match the string {Literal(node.Str!)}.",
                 RegexNode.NonBoundary => $"Match if at anything other than a word boundary.",
                 RegexNode.NonECMABoundary => $"Match if at anything other than a word boundary (according to ECMAScript rules).",
