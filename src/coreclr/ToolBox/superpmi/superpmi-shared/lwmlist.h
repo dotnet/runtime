@@ -51,7 +51,6 @@ LWM(GetAddrOfCaptureThreadGlobal, DWORD, DLDL)
 LWM(GetArgClass, Agnostic_GetArgClass_Key, Agnostic_GetArgClass_Value)
 LWM(GetArgNext, DWORDLONG, DWORDLONG)
 LWM(GetArgType, Agnostic_GetArgType_Key, Agnostic_GetArgType_Value)
-LWM(GetFieldTypeByHnd, DWORDLONG, DWORD)
 LWM(GetArrayInitializationData, DLD, DWORDLONG)
 LWM(GetArrayRank, DWORDLONG, DWORD)
 LWM(GetArrayIntrinsicID, DWORDLONG, DWORD)
@@ -160,6 +159,7 @@ LWM(SatisfiesMethodConstraints, DLDL, DWORD)
 LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
 LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
+LWM(GetFieldTypeByHnd, DWORDLONG, DWORD)
 
 #undef LWM
 #undef DENSELWM

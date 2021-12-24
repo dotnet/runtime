@@ -1210,7 +1210,7 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,    
     return temp;
 }
 
-CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
+CorInfoTypeWithMod interceptor_ICJI::getArgType2(CORINFO_SIG_INFO*       sig,      /* IN */
                                                 CORINFO_ARG_LIST_HANDLE args,     /* IN */
                                                 CORINFO_CLASS_HANDLE*   vcTypeRet, /* OUT */
                                                 int*                    flags      /* OUT */
@@ -1221,9 +1221,9 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,    
     RunWithErrorExceptionCodeCaptureAndContinue(
     [&]()
     {
-        mc->cr->AddCall("getArgType");
+        mc->cr->AddCall("getArgType2");
         temp =
-            original_ICorJitInfo->getArgType(sig, args, vcTypeRet, flags);
+            original_ICorJitInfo->getArgType2(sig, args, vcTypeRet, flags);
 
 #ifdef fatMC
         CORINFO_CLASS_HANDLE temp3 = getArgClass(sig, args);

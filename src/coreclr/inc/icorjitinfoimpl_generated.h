@@ -417,9 +417,7 @@ CORINFO_ARG_LIST_HANDLE getArgNext(
 CorInfoTypeWithMod getArgType(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
-          CORINFO_CLASS_HANDLE* vcTypeRet
-          int *flags = NULL
-) override;
+          CORINFO_CLASS_HANDLE* vcTypeRet) override;
 
 CORINFO_CLASS_HANDLE getArgClass(
           CORINFO_SIG_INFO* sig,
@@ -714,6 +712,15 @@ uint32_t getJitFlags(
 
 bool doesFieldBelongToClass(
           CORINFO_FIELD_HANDLE fldHnd,
+          CORINFO_CLASS_HANDLE cls) override;
+
+CorInfoTypeWithMod getArgType2(
+          CORINFO_SIG_INFO* sig,
+          CORINFO_ARG_LIST_HANDLE args,
+          CORINFO_CLASS_HANDLE* vcTypeRet,
+          int* flags) override;
+
+uint32_t getFieldTypeByHnd(
           CORINFO_CLASS_HANDLE cls) override;
 
 /**********************************************************************************/

@@ -184,6 +184,8 @@ struct JitInterfaceCallbacks
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
     bool (* doesFieldBelongToClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls);
+    CorInfoTypeWithMod (* getArgType2)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet, int* flags);
+    uint32_t (* getFieldTypeByHnd)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
 
 };
 
@@ -1864,6 +1866,27 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->doesFieldBelongToClass(_thisHandle, &pException, fldHnd, cls);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CorInfoTypeWithMod getArgType2(
+          CORINFO_SIG_INFO* sig,
+          CORINFO_ARG_LIST_HANDLE args,
+          CORINFO_CLASS_HANDLE* vcTypeRet,
+          int* flags)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CorInfoTypeWithMod temp = _callbacks->getArgType2(_thisHandle, &pException, sig, args, vcTypeRet, flags);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual uint32_t getFieldTypeByHnd(
+          CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    uint32_t temp = _callbacks->getFieldTypeByHnd(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

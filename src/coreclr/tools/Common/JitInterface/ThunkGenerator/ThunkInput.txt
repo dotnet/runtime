@@ -326,3 +326,5 @@ FUNCTIONS
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
     bool doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
+    CorInfoTypeWithMod getArgType2(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet, int *flags);
+    uint32_t getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls);

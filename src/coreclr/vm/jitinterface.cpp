@@ -9384,6 +9384,524 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     return result;
 }
 
+CorInfoTypeWithMod CEEInfo::getArgType2 (
+        CORINFO_SIG_INFO*       sig,
+        CORINFO_ARG_LIST_HANDLE args,
+        CORINFO_CLASS_HANDLE*   vcTypeRet,
+        int *flags
+        )
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CorInfoTypeWithMod result = CorInfoTypeWithMod(CORINFO_TYPE_UNDEF);
+
+    JIT_TO_EE_TRANSITION();
+
+   _ASSERTE((BYTE*) sig->pSig <= (BYTE*) sig->args && (BYTE*) args < (BYTE*) sig->pSig + sig->cbSig);
+   _ASSERTE((BYTE*) sig->args <= (BYTE*) args);
+    INDEBUG(*vcTypeRet = CORINFO_CLASS_HANDLE((size_t)INVALID_POINTER_CC));
+
+    SigPointer ptr((unsigned __int8*) args);
+    CorElementType eType;
+    IfFailThrow(ptr.PeekElemType(&eType));
+    while (eType == ELEMENT_TYPE_PINNED)
+    {
+        result = CORINFO_TYPE_MOD_PINNED;
+        IfFailThrow(ptr.GetElemType(NULL));
+        IfFailThrow(ptr.PeekElemType(&eType));
+    }
+
+    // Now read off the "real" element type after taking any instantiations into consideration
+    SigTypeContext typeContext;
+    GetTypeContext(&sig->sigInst,&typeContext);
+
+    Module* pModule = GetModule(sig->scope);
+
+    CorElementType type = ptr.PeekElemTypeClosed(pModule, &typeContext);
+
+    TypeHandle typeHnd = TypeHandle();
+    switch (type) {
+      case ELEMENT_TYPE_VAR :
+      case ELEMENT_TYPE_MVAR :
+      case ELEMENT_TYPE_VALUETYPE :
+      case ELEMENT_TYPE_TYPEDBYREF :
+      case ELEMENT_TYPE_INTERNAL :
+      {
+            typeHnd = ptr.GetTypeHandleThrowing(pModule, &typeContext);
+            _ASSERTE(!typeHnd.IsNull());
+
+            CorElementType normType = typeHnd.GetInternalCorElementType();
+
+            // if we are looking up a value class, don't morph it to a refernece type
+            // (This can only happen in illegal IL)
+            if (!CorTypeInfo::IsObjRef(normType) || type != ELEMENT_TYPE_VALUETYPE)
+            {
+                type = normType;
+            }
+            if ((flags != NULL) && (type == ELEMENT_TYPE_VALUETYPE))
+            {
+                *flags = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)typeHnd.AsTAddr());
+            }
+        }
+        break;
+
+    case ELEMENT_TYPE_PTR:
+        // Load the type eagerly under debugger to make the eval work
+        if (!isVerifyOnly() && CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
+        {
+            // NOTE: in some IJW cases, when the type pointed at is unmanaged,
+            // the GetTypeHandle may fail, because there is no TypeDef for such type.
+            // Usage of GetTypeHandleThrowing would lead to class load exception
+            TypeHandle thPtr = ptr.GetTypeHandleNT(pModule, &typeContext);
+            if(!thPtr.IsNull())
+            {
+                m_pOverride->classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
+            }
+        }
+        break;
+
+    case ELEMENT_TYPE_VOID:
+        // void is not valid in local sigs
+        if (sig->flags & CORINFO_SIGFLAG_IS_LOCAL_SIG)
+            COMPlusThrowHR(COR_E_INVALIDPROGRAM);
+        break;
+
+    case ELEMENT_TYPE_END:
+           COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        break;
+
+    default:
+        break;
+    }
+
+    result = CorInfoTypeWithMod(result | CEEInfo::asCorInfoType(type, typeHnd, vcTypeRet));
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+// Although this is only used for LoongArch64-ABI now,
+// maybe it can be used for other architecture for getting ABI-info
+// between JIT/EE if the ABI is similar.
+uint32_t CEEInfo::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle th(cls);
+
+    DWORD size = 0;
+    bool useNativeLayout = false;
+    MethodTable* methodTablePtr = nullptr;
+
+    if (!th.IsTypeDesc())
+    {
+        methodTablePtr = th.AsMethodTable();
+        if (methodTablePtr->HasLayout())
+            useNativeLayout = true;
+        else if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        {
+            DWORD numIntroducedFields = methodTablePtr->GetNumIntroducedInstanceFields();
+
+            if (numIntroducedFields == 1)
+            {
+                FieldDesc *pFieldStart = methodTablePtr->GetApproxFieldDescListRaw();
+
+                CorElementType fieldType = pFieldStart[0].GetFieldType();
+
+                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    if ((fieldType == ELEMENT_TYPE_R4) || (fieldType == ELEMENT_TYPE_R8))
+                        size = 1;
+                }
+            }
+            else if (numIntroducedFields == 2)
+            {
+                FieldDesc *pFieldStart = methodTablePtr->GetApproxFieldDescListRaw();
+
+                CorElementType fieldType = pFieldStart[0].GetFieldType();
+                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    if (fieldType == ELEMENT_TYPE_R4)
+                        size = 2;
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                        size = 0x12;
+                    else if (pFieldStart[0].GetSize() == 8)
+                        size = 0x10;
+
+                }
+                else if (pFieldStart[0].GetSize() == 8)
+                    size = 0x10;
+
+                fieldType = pFieldStart[1].GetFieldType();
+                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    if (fieldType == ELEMENT_TYPE_R4)
+                        size = size & 2 ? (size ^ 0xa) : (size | 4);
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                        size = size & 2 ? (size ^ 0x2a) : (size | 0x24);
+                    else if (pFieldStart[1].GetSize() == 8)
+                        size |= 0x20;
+                }
+                else if (pFieldStart[1].GetSize() == 8)
+                    size |= 0x20;
+            }
+            goto _End_arg;
+        }
+    }
+    else
+    {
+        _ASSERTE(th.IsNativeValueType());
+
+        useNativeLayout = true;
+        methodTablePtr = th.AsNativeValueType();
+    }
+    _ASSERTE(methodTablePtr != nullptr);
+
+    if (useNativeLayout)
+    {
+        if (th.GetSize() <= 16 /*MAX_PASS_MULTIREG_BYTES*/)
+        {
+            //MethodTable* methodTablePtr = th.AsMethodTable();
+            //assert(methodTablePtr->GetNumInstanceFieldBytes() <= 16 /*MAX_PASS_MULTIREG_BYTES*/);
+
+            DWORD numIntroducedFields = methodTablePtr->GetNumIntroducedInstanceFields();
+            FieldDesc *pFieldStart = nullptr;
+
+            if (numIntroducedFields == 1)
+            {
+                pFieldStart = methodTablePtr->GetApproxFieldDescListRaw();
+
+_fields_1:
+                CorElementType fieldType = pFieldStart[0].GetFieldType();
+
+                bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                                        || fieldType == ELEMENT_TYPE_VALUETYPE)
+                                    && (pFieldStart->GetOffset() == 0)
+                                    && methodTablePtr->HasLayout()
+                                    && (methodTablePtr->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+
+                if (isFixedBuffer)
+                {
+                    numIntroducedFields = methodTablePtr->GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+                    if (numIntroducedFields > 2)
+                        goto _End_arg;
+                    if (fieldType == ELEMENT_TYPE_R4)
+                    {
+                        if (numIntroducedFields == 1)
+                            size = 1;
+                        else if (numIntroducedFields == 2)
+                            size = 8;
+                        goto _End_arg;
+                    }
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                    {
+                        if (numIntroducedFields == 1)
+                            size = 1;
+                        else if (numIntroducedFields == 2)
+                            size = 0x38;
+                        goto _End_arg;
+                    }
+                }
+
+                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    if ((fieldType == ELEMENT_TYPE_R4) || (fieldType == ELEMENT_TYPE_R8))
+                        size = 1;
+                }
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    const NativeFieldDescriptor *pNativeFieldDescs = methodTablePtr->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
+                    if (pNativeFieldDescs->GetCategory() == NativeFieldCategory::NESTED)
+                    {
+                        size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)pNativeFieldDescs->GetNestedNativeMethodTable());
+                        //if ((size == 1) && (methodTablePtr->GetNumInstanceFieldBytes() > 8))
+                        //    size = 0;
+                        return size;
+                    }
+                    else
+                    {
+                        if (pNativeFieldDescs->GetNumElements() == 1)
+                        {
+                            pFieldStart = pNativeFieldDescs->GetFieldDesc();
+                            goto _fields_1;
+                        }
+                        else if (pNativeFieldDescs->GetNumElements() == 2)
+                        {
+                            pFieldStart = pNativeFieldDescs->GetFieldDesc();
+                            goto _fields_2;
+                        }
+                        //CorElementType fieldType = pNativeFieldDescs->GetFieldDesc()[0].GetFieldType();
+                        //if ((fieldType == ELEMENT_TYPE_R4) || (fieldType == ELEMENT_TYPE_R8))
+                        //    size = 1;
+                    }
+                }
+                //else
+                //{
+                //    assert(!"------------should amend for LOONGARCH64!!!");
+                //    //goto _End_arg;
+                //}
+            }
+            else if (numIntroducedFields == 2)
+            {
+                pFieldStart = methodTablePtr->GetApproxFieldDescListRaw();
+
+_fields_2:
+                if (pFieldStart->GetOffset() || !pFieldStart[1].GetOffset() || (pFieldStart[0].GetSize() > pFieldStart[1].GetOffset()))
+                {
+                    goto _End_arg;
+                }
+
+                CorElementType fieldType = pFieldStart[0].GetFieldType();
+                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    if (fieldType == ELEMENT_TYPE_R4)
+                        size = 2;
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                        size = 0x12;
+                    else if (pFieldStart[0].GetSize() == 8)
+                        size = 0x10;
+
+                    fieldType = pFieldStart[1].GetFieldType();
+                    if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                    {
+                        if (fieldType == ELEMENT_TYPE_R4)
+                            size = size & 0x2 ? (size ^ 0xa) : (size | 4);
+                        else if (fieldType == ELEMENT_TYPE_R8)
+                            size = size & 0x2 ? (size ^ 0x2a) : (size | 0x24);
+                        else if (pFieldStart[1].GetSize() == 8)
+                            size |= 0x20;
+                        goto _End_arg;
+                    }
+                }
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    const NativeFieldDescriptor *pNativeFieldDescs = methodTablePtr->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
+
+                    //bool isFixedBuffer = numIntroducedFields == 1 && (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                    //                    || fieldType == ELEMENT_TYPE_VALUETYPE)
+                    //                && (pFieldStart->GetOffset() == 0)
+                    //                && methodTablePtr->HasLayout()
+                    //                && (methodTablePtr->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+
+                    if (pNativeFieldDescs->GetCategory() == NativeFieldCategory::NESTED)
+                    {
+                        MethodTable* methodTablePtr2 = pNativeFieldDescs->GetNestedNativeMethodTable();
+
+                        if ((methodTablePtr2->GetNumInstanceFieldBytes() > 8) || (methodTablePtr2->GetNumIntroducedInstanceFields() > 1))
+                            goto _End_arg;
+                        size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
+                        if (size == 1)
+                        {
+                            if (pFieldStart[0].GetSize() == 8)
+                                size = 0x12;
+                            else
+                                size = 0x2;
+                        }
+                        else if (pFieldStart[0].GetSize() == 8)
+                        {
+                            size = 0x10;
+                        }
+                        else
+                            size = 0;
+                        //else if (methodTablePtr2->GetNumIntroducedInstanceFields() != 1)
+                        //    goto _End_arg;
+                    }
+                    else
+                    {
+                        MethodTable* methodTablePtr2 = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
+                        if (methodTablePtr2->GetNumIntroducedInstanceFields() == 1)
+                        {
+                            size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
+                            if (size == 1)
+                            {
+                                if (pFieldStart[0].GetSize() == 8)
+                                    size = 0x12;
+                                else
+                                    size = 0x2;
+                            }
+                            else if (pFieldStart[0].GetSize() == 8)
+                            {
+                                size = 0x10;
+                            }
+                            else
+                                size = 0;
+                        }
+                        else
+                            goto _End_arg;
+                    }
+                }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    const NativeFieldDescriptor *pNativeFieldDescs = methodTablePtr->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
+
+                    //bool isFixedBuffer = numIntroducedFields == 1 && (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
+                    //                    || fieldType == ELEMENT_TYPE_VALUETYPE)
+                    //                && (pFieldStart->GetOffset() == 0)
+                    //                && methodTablePtr->HasLayout()
+                    //                && (methodTablePtr->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+
+                    if (pNativeFieldDescs->NativeSize() > 8)
+                        goto _End_arg;
+
+                    if (pNativeFieldDescs->GetCategory() == NativeFieldCategory::NESTED)
+                    {
+                        MethodTable* methodTablePtr2 = pNativeFieldDescs->GetNestedNativeMethodTable();
+                        //MethodTable* methodTablePtr2 = ((FieldMarshaler_NestedValueClass*)pFieldMarshalers)->GetMethodTable();
+
+                        if (methodTablePtr2->GetNumInstanceFieldBytes() > 8)
+                            goto _End_arg;
+                        size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
+                        if (size == 1)
+                        {
+                            if (pFieldStart[0].GetSize() == 8)
+                                size = 0x12;
+                            else
+                                size = 0x2;
+                        }
+                        else if (pFieldStart[0].GetSize() == 8)
+                        {
+                            size = 0x10;
+                        }
+                    }
+                    else
+                    {
+                        MethodTable* methodTablePtr2 = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
+                        if (methodTablePtr2->GetNumIntroducedInstanceFields() == 1)
+                        {
+                            size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
+                            if (size == 1)
+                            {
+                                if (pFieldStart[0].GetSize() == 8)
+                                    size = 0x12;
+                                else
+                                    size = 0x2;
+                            }
+                            else if (pFieldStart[0].GetSize() == 8)
+                            {
+                                size = 0x10;
+                            }
+                            else
+                                size = 0;
+                        }
+                        else
+                            goto _End_arg;
+                    }
+                    //else
+                    //{
+                    //    assert(!"------------should amend for LOONGARCH64!!!");
+                    //    goto _End_arg;
+                    //}
+                }
+                else if (pFieldStart[0].GetSize() == 8)
+                    size = 0x10;
+
+                fieldType = pFieldStart[1].GetFieldType();
+                if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
+                {
+                    if (fieldType == ELEMENT_TYPE_R4)
+                        size = size & 2 ? (size ^ 0xa) : (size | 4);
+                    else if (fieldType == ELEMENT_TYPE_R8)
+                        size = size & 2 ? (size ^ 0x2a) : (size | 0x24);
+                    else if (pFieldStart[1].GetSize() == 8)
+                        size |= 0x20;
+                }
+                else if ((fieldType == ELEMENT_TYPE_VALUETYPE) || (fieldType == ELEMENT_TYPE_CLASS))
+                {
+                    MethodTable* methodTablePtr2 = pFieldStart[1].LookupApproxFieldTypeHandle().AsMethodTable();
+                    if ((methodTablePtr2->GetNumInstanceFieldBytes() > 8) || (methodTablePtr2->GetNumIntroducedInstanceFields() > 1))
+                    {
+                        size = 0;
+                        goto _End_arg;
+                    }
+                    if (methodTablePtr2->HasLayout())
+                    {
+                        const NativeFieldDescriptor *pNativeFieldDescs = methodTablePtr2->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
+
+                        if (pNativeFieldDescs->NativeSize() > 8)
+                        {
+                            size = 0;
+                            goto _End_arg;
+                        }
+
+                        if (pNativeFieldDescs->GetCategory() == NativeFieldCategory::NESTED)
+                        {
+                            methodTablePtr = pNativeFieldDescs->GetNestedNativeMethodTable();
+
+                            if (methodTablePtr->GetNumIntroducedInstanceFields() > 1)
+                            {
+                                size = 0;
+                                goto _End_arg;
+                            }
+
+                            if (getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr) == 1)
+                            {
+                                if (methodTablePtr->GetNumInstanceFieldBytes() == 4)
+                                    size = size & 2 ? (size ^ 0xa) : (size | 4);
+                                else if (methodTablePtr->GetNumInstanceFieldBytes() == 8)
+                                    size = size & 2 ? (size ^ 0x2a) : (size | 0x24);
+                            }
+                            else if (methodTablePtr->GetNumInstanceFieldBytes() == 8)//pFieldStart[1].GetSize()
+                                size |= 0x20;
+                            else
+                            {
+                                size = 0;
+                            }
+                        }
+                        else
+                        {
+                            if (pNativeFieldDescs->GetNumElements() == 1)
+                            {
+                                fieldType = pNativeFieldDescs->GetFieldDesc()[0].GetFieldType();
+                                if (fieldType == ELEMENT_TYPE_R4)
+                                    size = size & 2 ? (size ^ 0xa) : (size | 4);
+                                else if (fieldType == ELEMENT_TYPE_R8)
+                                    size = size & 2 ? (size ^ 0x2a) : (size | 0x24);
+                                else if (pNativeFieldDescs->NativeSize() == 8)
+                                    size |= 0x20;
+                            }
+                            else
+                            {
+                                size = 0;
+                                //goto _End_arg;
+                            }
+                        }
+                        //else
+                        //{
+                        //    assert(!"------------should amend for LOONGARCH64!!!");
+                        //    goto _End_arg;
+                        //}
+                    }
+                    else
+                    {
+                        size |= getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
+                        if (!(size & 0xf))
+                            size = 0;
+                        else
+                            assert(!"------------should amend for LOONGARCH64!!!");
+                    }
+                }
+                else if (pFieldStart[1].GetSize() == 8)
+                    size |= 0x20;
+            }
+        }
+    }
+_End_arg:
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return size;
+}
+
 /*********************************************************************/
 
 CORINFO_CLASS_HANDLE CEEInfo::getArgClass (

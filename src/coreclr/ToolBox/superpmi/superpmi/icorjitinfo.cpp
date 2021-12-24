@@ -1060,14 +1060,14 @@ CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
     return value;
 }
 
-CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
+CorInfoTypeWithMod MyICJI::getArgType2(CORINFO_SIG_INFO*       sig,      /* IN */
                                       CORINFO_ARG_LIST_HANDLE args,     /* IN */
                                       CORINFO_CLASS_HANDLE*   vcTypeRet,/* OUT */
                                       int*                    flags     /* OUT */
                                       )
 {
     DWORD exceptionCode = 0;
-    jitInstance->mc->cr->AddCall("getArgType");
+    jitInstance->mc->cr->AddCall("getArgType2");
     CorInfoTypeWithMod value = jitInstance->mc->repGetArgType(sig, args, vcTypeRet, flags, &exceptionCode);
     if (exceptionCode != 0)
         ThrowException(exceptionCode);

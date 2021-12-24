@@ -528,10 +528,8 @@ struct Agnostic_GetArgType_Value
 {
     DWORDLONG vcTypeRet;
     DWORD     result;
-#if defined(TARGET_LOONGARCH64)
-        int       flags;
-#endif
     DWORD     exceptionCode;
+    int       flags;//Now only LoongArch64 used.
 };
 
 // Agnostic_ConfigIntInfo combines as a single key the name
