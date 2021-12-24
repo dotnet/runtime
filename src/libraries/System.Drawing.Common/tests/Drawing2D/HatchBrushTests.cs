@@ -86,39 +86,39 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Clone_Disposed_ThrowsArgumentException()
+        public void Clone_Disposed_ThrowsObjectDisposedException()
         {
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.Clone());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Clone());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void HatchStyle_EmptyAndGetDisposed_ThrowsArgumentException()
+        public void HatchStyle_EmptyAndGetDisposed_ThrowsObjectDisposedException()
         {
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.HatchStyle);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.HatchStyle);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ForegroundColor_EmptyAndGetDisposed_ThrowsArgumentException()
+        public void ForegroundColor_EmptyAndGetDisposed_ThrowsObjectDisposedException()
         {
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.ForegroundColor);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.ForegroundColor);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void BackgroundColor_EmptyAndGetDisposed_ThrowsArgumentException()
+        public void BackgroundColor_EmptyAndGetDisposed_ThrowsObjectDisposedException()
         {
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.BackgroundColor);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.BackgroundColor);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

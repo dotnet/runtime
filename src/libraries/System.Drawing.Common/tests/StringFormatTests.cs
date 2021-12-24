@@ -90,12 +90,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Ctor_DisposedFormat_ThrowsArgumentException()
+        public void Ctor_DisposedFormat_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => new StringFormat(format));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => new StringFormat(format));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -127,12 +127,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Clone_Disposed_ThrowsArgumentException()
+        public void Clone_Disposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.Clone());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.Clone());
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -152,12 +152,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetDigitSubstitution_Disposed_ThrowsArgumentException()
+        public void SetDigitSubstitution_Disposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.SetDigitSubstitution(0, StringDigitSubstitute.None));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.SetDigitSubstitution(0, StringDigitSubstitute.None));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -202,21 +202,21 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetTabStops_Disposed_ThrowsArgumentException()
+        public void SetTabStops_Disposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.SetTabStops(0, new float[0]));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.SetTabStops(0, new float[0]));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void GetTabStops_Disposed_ThrowsArgumentException()
+        public void GetTabStops_Disposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.GetTabStops(out float firstTabOffset));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.GetTabStops(out float firstTabOffset));
         }
 
         public static IEnumerable<object[]> SetMeasurableCharacterRanges_TestData()
@@ -256,12 +256,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetMeasurableCharacterRanges_Disposed_ThrowsArgumentException()
+        public void SetMeasurableCharacterRanges_Disposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.SetMeasurableCharacterRanges(new CharacterRange[0]));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.SetMeasurableCharacterRanges(new CharacterRange[0]));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -288,31 +288,31 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Alignment_GetSetWhenDisposed_ThrowsArgumentException()
+        public void Alignment_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.Alignment);
-            AssertExtensions.Throws<ArgumentException>(null, () => format.Alignment = StringAlignment.Center);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.Alignment);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.Alignment = StringAlignment.Center);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DigitSubstitutionMethod_GetSetWhenDisposed_ThrowsArgumentException()
+        public void DigitSubstitutionMethod_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.DigitSubstitutionMethod);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.DigitSubstitutionMethod);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DigitSubstitutionLanguage_GetSetWhenDisposed_ThrowsArgumentException()
+        public void DigitSubstitutionLanguage_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.DigitSubstitutionLanguage);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.DigitSubstitutionLanguage);
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -328,13 +328,13 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void FormatFlags_GetSetWhenDisposed_ThrowsArgumentException()
+        public void FormatFlags_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.FormatFlags);
-            AssertExtensions.Throws<ArgumentException>(null, () => format.FormatFlags = StringFormatFlags.NoClip);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.FormatFlags);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.FormatFlags = StringFormatFlags.NoClip);
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -361,13 +361,13 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void LineAlignment_GetSetWhenDisposed_ThrowsArgumentException()
+        public void LineAlignment_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.LineAlignment);
-            AssertExtensions.Throws<ArgumentException>(null, () => format.LineAlignment = StringAlignment.Center);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.LineAlignment);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.LineAlignment = StringAlignment.Center);
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -394,13 +394,13 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void HotkeyPrefix_GetSetWhenDisposed_ThrowsArgumentException()
+        public void HotkeyPrefix_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.HotkeyPrefix);
-            AssertExtensions.Throws<ArgumentException>(null, () => format.HotkeyPrefix = HotkeyPrefix.Hide);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.HotkeyPrefix);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.HotkeyPrefix = HotkeyPrefix.Hide);
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -425,14 +425,14 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Trimming_GetSetWhenDisposed_ThrowsArgumentException()
+        public void Trimming_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat();
             format.Dispose();
 
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.Trimming);
-            AssertExtensions.Throws<ArgumentException>(null, () => format.Trimming = StringTrimming.Word);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.Trimming);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.Trimming = StringTrimming.Word);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -475,12 +475,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ToString_Disposed_ThrowsArgumentException()
+        public void ToString_Disposed_ThrowsObjectDisposedException()
         {
             var format = new StringFormat(StringFormatFlags.DirectionVertical);
             format.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => format.ToString());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => format.ToString());
         }
     }
 }

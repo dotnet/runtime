@@ -87,12 +87,12 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Clone_Disposed_ThrowsArgumentException()
+        public void Clone_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.Clone());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.Clone());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -230,14 +230,14 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetColorMatrix_Disposed_ThrowsArgumentException()
+        public void SetColorMatrix_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetColorMatrix(_greenComponentToZeroColorMatrix));
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetColorMatrix(_greenComponentToZeroColorMatrix, ColorMatrixFlag.Default));
-            AssertExtensions.Throws<ArgumentException>(null, () =>
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetColorMatrix(_greenComponentToZeroColorMatrix));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetColorMatrix(_greenComponentToZeroColorMatrix, ColorMatrixFlag.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () =>
                 imageAttr.SetColorMatrix(_greenComponentToZeroColorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Default));
         }
 
@@ -347,13 +347,13 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ClearColorMatrix_Disposed_ThrowsArgumentException()
+        public void ClearColorMatrix_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearColorMatrix());
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearColorMatrix(ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearColorMatrix());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearColorMatrix(ColorAdjustType.Default));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -469,14 +469,14 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetColorMatrices_Disposed_ThrowsArgumentException()
+        public void SetColorMatrices_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetColorMatrices(_greenComponentToZeroColorMatrix, _grayMatrix));
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetColorMatrices(_greenComponentToZeroColorMatrix, _grayMatrix, ColorMatrixFlag.Default));
-            AssertExtensions.Throws<ArgumentException>(null, () =>
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetColorMatrices(_greenComponentToZeroColorMatrix, _grayMatrix));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetColorMatrices(_greenComponentToZeroColorMatrix, _grayMatrix, ColorMatrixFlag.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () =>
                 imageAttr.SetColorMatrices(_greenComponentToZeroColorMatrix, _grayMatrix, ColorMatrixFlag.Default, ColorAdjustType.Default));
         }
 
@@ -570,12 +570,12 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetThreshold_Disposed_ThrowsArgumentException()
+        public void SetThreshold_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetThreshold(0.5f));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetThreshold(0.5f));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -624,12 +624,12 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ClearThreshold_Disposed_ThrowsArgumentException()
+        public void ClearThreshold_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearThreshold(ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearThreshold(ColorAdjustType.Default));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -691,13 +691,13 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetGamma_Disposed_ThrowsArgumentException()
+        public void SetGamma_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetGamma(2.2f));
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetGamma(2.2f, ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetGamma(2.2f));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetGamma(2.2f, ColorAdjustType.Default));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -728,12 +728,12 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ClearGamma_Disposed_ThrowsArgumentException()
+        public void ClearGamma_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearGamma(ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearGamma(ColorAdjustType.Default));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -783,13 +783,13 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetNoOp_Disposed_ThrowsArgumentException()
+        public void SetNoOp_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetNoOp());
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetNoOp(ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetNoOp());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetNoOp(ColorAdjustType.Default));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -861,13 +861,13 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ClearNoOp_Disposed_ThrowsArgumentException()
+        public void ClearNoOp_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearNoOp());
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearNoOp(ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearNoOp());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearNoOp(ColorAdjustType.Default));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -930,13 +930,13 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetColorKey_Disposed_ThrowsArgumentException()
+        public void SetColorKey_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetColorKey(Color.FromArgb(50, 50, 50), Color.FromArgb(150, 150, 150)));
-            AssertExtensions.Throws<ArgumentException>(null, () =>
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetColorKey(Color.FromArgb(50, 50, 50), Color.FromArgb(150, 150, 150)));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () =>
                 imageAttr.SetColorKey(Color.FromArgb(50, 50, 50), Color.FromArgb(150, 150, 150), ColorAdjustType.Default));
         }
 
@@ -985,13 +985,13 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ClearColorKey_Disposed_ThrowsArgumentException()
+        public void ClearColorKey_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearColorKey());
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearColorKey(ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearColorKey());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearColorKey(ColorAdjustType.Default));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -1093,13 +1093,13 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetOutputChannel_Disposed_ThrowsArgumentException()
+        public void SetOutputChannel_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetOutputChannel(ColorChannelFlag.ColorChannelY));
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetOutputChannel(ColorChannelFlag.ColorChannelY, ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetOutputChannel(ColorChannelFlag.ColorChannelY));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetOutputChannel(ColorChannelFlag.ColorChannelY, ColorAdjustType.Default));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -1171,13 +1171,13 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ClearOutputChannel_Disposed_ThrowsArgumentException()
+        public void ClearOutputChannel_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearOutputChannel());
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearOutputChannel(ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearOutputChannel());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearOutputChannel(ColorAdjustType.Default));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -1209,14 +1209,14 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetOutputChannelColorProfile_Disposed_ThrowsArgumentException()
+        public void SetOutputChannelColorProfile_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () =>
+            AssertExtensions.Throws<ObjectDisposedException>(null, () =>
                 imageAttr.SetOutputChannelColorProfile(Helpers.GetTestColorProfilePath("RSWOP.icm")));
-            AssertExtensions.Throws<ArgumentException>(null, () =>
+            AssertExtensions.Throws<ObjectDisposedException>(null, () =>
                 imageAttr.SetOutputChannelColorProfile(Helpers.GetTestColorProfilePath("RSWOP.icm"), ColorAdjustType.Default));
         }
 
@@ -1314,13 +1314,13 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ClearOutputChannelColorProfile_Disposed_ThrowsArgumentException()
+        public void ClearOutputChannelColorProfile_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearOutputChannelColorProfile());
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearOutputChannelColorProfile(ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearOutputChannelColorProfile());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearOutputChannelColorProfile(ColorAdjustType.Default));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -1379,13 +1379,13 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetRemapTable_Disposed_ThrowsArgumentException()
+        public void SetRemapTable_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetRemapTable(_yellowToRedColorMap));
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetRemapTable(_yellowToRedColorMap, ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetRemapTable(_yellowToRedColorMap));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetRemapTable(_yellowToRedColorMap, ColorAdjustType.Default));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -1460,13 +1460,13 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ClearRemapTable_Disposed_ThrowsArgumentException()
+        public void ClearRemapTable_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearRemapTable());
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearRemapTable(ColorAdjustType.Default));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearRemapTable());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.ClearRemapTable(ColorAdjustType.Default));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -1480,26 +1480,26 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetWrapMode_Disposed_ThrowsArgumentException()
+        public void SetWrapMode_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetWrapMode(WrapMode.Clamp));
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetWrapMode(WrapMode.Clamp, Color.Black));
-            AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetWrapMode(WrapMode.Clamp, Color.Black, true));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetWrapMode(WrapMode.Clamp));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetWrapMode(WrapMode.Clamp, Color.Black));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.SetWrapMode(WrapMode.Clamp, Color.Black, true));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void GetAdjustedPalette_Disposed_ThrowsArgumentException()
+        public void GetAdjustedPalette_Disposed_ThrowsObjectDisposedException()
         {
             var imageAttr = new ImageAttributes();
             imageAttr.Dispose();
 
             using (var bitmap = new Bitmap(_rectangle.Width, _rectangle.Height))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.GetAdjustedPalette(bitmap.Palette, ColorAdjustType.Default));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => imageAttr.GetAdjustedPalette(bitmap.Palette, ColorAdjustType.Default));
             }
         }
 

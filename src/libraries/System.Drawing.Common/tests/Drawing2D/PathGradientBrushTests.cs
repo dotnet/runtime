@@ -141,12 +141,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Clone_Disposed_ThrowsArgumentException()
+        public void Clone_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.Clone());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Clone());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -163,12 +163,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void CenterColor_Disposed_ThrowsArgumentException()
+        public void CenterColor_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.CenterColor = Color.Blue);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.CenterColor = Color.Blue);
         }
 
         [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
@@ -204,13 +204,13 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SurroundColors_Disposed_ThrowsArgumentException()
+        public void SurroundColors_Disposed_ThrowsObjectDisposedException()
         {
             Color[] colors = new Color[2] { Color.FromArgb(255, 0, 0, 255), Color.FromArgb(255, 255, 0, 0) };
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SurroundColors = colors);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.SurroundColors = colors);
         }
 
         public static IEnumerable<object[]> SurroundColors_InvalidColorsLength_TestData()
@@ -259,12 +259,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void CenterPoint_Disposed_ThrowsArgumentException()
+        public void CenterPoint_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.CenterPoint);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.CenterPoint);
         }
 
         public static IEnumerable<object[]> Blend_FactorsPositions_TestData()
@@ -316,12 +316,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Blend_Disposed_ThrowsArgumentException()
+        public void Blend_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.Blend);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Blend);
         }
 
         public static IEnumerable<object[]> Blend_InvalidFactorsPositions_TestData()
@@ -454,13 +454,13 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetSigmaBellShape_Disposed_ThrowsArgumentException()
+        public void SetSigmaBellShape_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetSigmaBellShape(1f));
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetSigmaBellShape(1f, 1f));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.SetSigmaBellShape(1f));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.SetSigmaBellShape(1f, 1f));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -546,13 +546,13 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetBlendTriangularShape_Disposed_ThrowsArgumentException()
+        public void SetBlendTriangularShape_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetBlendTriangularShape(1f));
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.SetBlendTriangularShape(1f, 1f));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.SetBlendTriangularShape(1f));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.SetBlendTriangularShape(1f, 1f));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -620,12 +620,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void InterpolationColors_Disposed_ThrowsArgumentException()
+        public void InterpolationColors_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.InterpolationColors);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.InterpolationColors);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -724,12 +724,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Transform_Disposed_ThrowsArgumentException()
+        public void Transform_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.Transform);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Transform);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -767,12 +767,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ResetTransform_Disposed_ThrowsArgumentException()
+        public void ResetTransform_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.ResetTransform());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.ResetTransform());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -804,14 +804,14 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void MultiplyTransform_Disposed_ThrowsArgumentException()
+        public void MultiplyTransform_Disposed_ThrowsObjectDisposedException()
         {
             using (Matrix matrix = new Matrix(1, 0, 0, 1, 1, 1))
             {
                 PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
                 brush.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => brush.MultiplyTransform(matrix, MatrixOrder.Append));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.MultiplyTransform(matrix, MatrixOrder.Append));
             }
         }
 
@@ -889,12 +889,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void TranslateTransform_Disposed_ThrowsArgumentException()
+        public void TranslateTransform_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.TranslateTransform(20f, 30f, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.TranslateTransform(20f, 30f, MatrixOrder.Append));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -945,12 +945,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ScaleTransform_Disposed_ThrowsArgumentException()
+        public void ScaleTransform_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.ScaleTransform(0.25f, 2, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.ScaleTransform(0.25f, 2, MatrixOrder.Append));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -992,12 +992,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void RotateTransform_Disposed_ThrowsArgumentException()
+        public void RotateTransform_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.RotateTransform(45, MatrixOrder.Append));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.RotateTransform(45, MatrixOrder.Append));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -1022,12 +1022,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void FocusScales_Disposed_ThrowsArgumentException()
+        public void FocusScales_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.FocusScales);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.FocusScales);
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -1042,12 +1042,12 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void WrapMode_Disposed_ThrowsArgumentException()
+        public void WrapMode_Disposed_ThrowsObjectDisposedException()
         {
             PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.WrapMode);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.WrapMode);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

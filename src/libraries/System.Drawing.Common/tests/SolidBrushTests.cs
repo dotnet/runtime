@@ -51,21 +51,21 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Clone_Disposed_ThrowsArgumentException()
+        public void Clone_Disposed_ThrowsObjectDisposedException()
         {
             var brush = new SolidBrush(Color.LavenderBlush);
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.Clone());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Clone());
         }
 
         [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
-        public void Color_EmptyAndGetDisposed_ThrowsArgumentException()
+        public void Color_EmptyAndGetDisposed_ThrowsObjectDisposedException()
         {
             var brush = new SolidBrush(new Color());
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.Color);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Color);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -85,12 +85,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Color_SetDisposed_ThrowsArgumentException()
+        public void Color_SetDisposed_ThrowsObjectDisposedException()
         {
             var brush = new SolidBrush(new Color());
             brush.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => brush.Color = Color.WhiteSmoke);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => brush.Color = Color.WhiteSmoke);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

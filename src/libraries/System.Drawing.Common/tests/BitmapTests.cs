@@ -397,14 +397,14 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Ctor_DisposedImage_ThrowsArgumentException()
+        public void Ctor_DisposedImage_ThrowsObjectDisposedException()
         {
             var image = new Bitmap(1, 1);
             image.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => new Bitmap(image));
-            AssertExtensions.Throws<ArgumentException>(null, () => new Bitmap(image, 1, 1));
-            AssertExtensions.Throws<ArgumentException>(null, () => new Bitmap(image, new Size(1, 1)));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => new Bitmap(image));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => new Bitmap(image, 1, 1));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => new Bitmap(image, new Size(1, 1)));
         }
 
         public static IEnumerable<object[]> Clone_TestData()
@@ -549,14 +549,14 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Clone_Disposed_ThrowsArgumentException()
+        public void Clone_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Clone());
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Clone(new Rectangle(0, 0, 1, 1), PixelFormat.Format32bppArgb));
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Clone(new RectangleF(0, 0, 1, 1), PixelFormat.Format32bppArgb));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.Clone());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.Clone(new Rectangle(0, 0, 1, 1), PixelFormat.Format32bppArgb));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.Clone(new RectangleF(0, 0, 1, 1), PixelFormat.Format32bppArgb));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -573,12 +573,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void GetFrameCount_Disposed_ThrowsArgumentException()
+        public void GetFrameCount_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetFrameCount(FrameDimension.Page));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.GetFrameCount(FrameDimension.Page));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -598,12 +598,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SelectActiveFrame_Disposed_ThrowsArgumentException()
+        public void SelectActiveFrame_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.SelectActiveFrame(FrameDimension.Page, 0));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.SelectActiveFrame(FrameDimension.Page, 0));
         }
 
         public static IEnumerable<object[]> GetPixel_TestData()
@@ -662,12 +662,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void GetPixel_Disposed_ThrowsArgumentException()
+        public void GetPixel_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetPixel(0, 0));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.GetPixel(0, 0));
         }
 
         public static IEnumerable<object[]> GetHbitmap_TestData()
@@ -733,12 +733,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void GetHbitmap_Disposed_ThrowsArgumentException()
+        public void GetHbitmap_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetHbitmap());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.GetHbitmap());
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -814,12 +814,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void GetHicon_Disposed_ThrowsArgumentException()
+        public void GetHicon_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetHicon());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.GetHicon());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -994,13 +994,13 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void MakeTransparent_Disposed_ThrowsArgumentException()
+        public void MakeTransparent_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.MakeTransparent());
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.MakeTransparent(Color.Red));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.MakeTransparent());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.MakeTransparent(Color.Red));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -1084,12 +1084,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetPixel_Disposed_ThrowsArgumentException()
+        public void SetPixel_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.SetPixel(0, 0, Color.Red));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.SetPixel(0, 0, Color.Red));
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -1132,12 +1132,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SetResolution_Disposed_ThrowsArgumentException()
+        public void SetResolution_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.SetResolution(1, 1));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.SetResolution(1, 1));
         }
 
         public static IEnumerable<object[]> LockBits_NotUnix_TestData()
@@ -1336,14 +1336,14 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void LockBits_Disposed_ThrowsArgumentException()
+        public void LockBits_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.LockBits(new Rectangle(0, 0, 1, 1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.LockBits(new Rectangle(0, 0, 1, 1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb));
 
             var bitmapData = new BitmapData();
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.LockBits(new Rectangle(0, 0, 1, 1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb, bitmapData));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.LockBits(new Rectangle(0, 0, 1, 1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb, bitmapData));
             Assert.Equal(IntPtr.Zero, bitmapData.Scan0);
         }
 
@@ -1436,23 +1436,23 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void UnlockBits_Disposed_ThrowsArgumentException()
+        public void UnlockBits_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.UnlockBits(new BitmapData()));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.UnlockBits(new BitmapData()));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Size_Disposed_ThrowsArgumentException()
+        public void Size_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Width);
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Height);
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Size);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.Width);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.Height);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.Size);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -1635,15 +1635,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Palette_Disposed_ThrowsArgumentException()
+        public void Palette_Disposed_ThrowsObjectDisposedException()
         {
             var bitmap = new Bitmap(1, 1);
             ColorPalette palette = bitmap.Palette;
             bitmap.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Palette);
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Palette = palette);
-            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Size);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.Palette);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.Palette = palette);
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => bitmap.Size);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]

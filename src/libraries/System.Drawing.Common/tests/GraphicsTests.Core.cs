@@ -44,15 +44,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void TransformElements_GetSetWhenDisposed_ThrowsArgumentException()
+        public void TransformElements_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TransformElements);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TransformElements = Matrix3x2.Identity);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TransformElements);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TransformElements = Matrix3x2.Identity);
             }
         }
 

@@ -990,12 +990,12 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void GetMetafileHeader_Disposed_ThrowsArgumentException()
+        public void GetMetafileHeader_Disposed_ThrowsObjectDisposedException()
         {
             var metafile = new Metafile(GetPath(WmfFile));
             metafile.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => metafile.GetMetafileHeader());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => metafile.GetMetafileHeader());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -1009,21 +1009,21 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void GetHenhmetafile_Disposed_ThrowsArgumentException()
+        public void GetHenhmetafile_Disposed_ThrowsObjectDisposedException()
         {
             var metafile = new Metafile(GetPath(WmfFile));
             metafile.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => metafile.GetHenhmetafile());
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => metafile.GetHenhmetafile());
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void PlayRecord_Disposed_ThrowsArgumentException()
+        public void PlayRecord_Disposed_ThrowsObjectDisposedException()
         {
             var metafile = new Metafile(GetPath(WmfFile));
             metafile.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () =>
+            AssertExtensions.Throws<ObjectDisposedException>(null, () =>
                 metafile.PlayRecord(EmfPlusRecordType.BeginContainer, 0, 1, new byte[1]));
         }
 

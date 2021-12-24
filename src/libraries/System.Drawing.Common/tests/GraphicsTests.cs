@@ -84,7 +84,7 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(bitmap);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.GetHdc());
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.GetHdc());
             }
         }
 
@@ -248,9 +248,9 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(bitmap);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc());
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc(IntPtr.Zero));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(IntPtr.Zero));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.ReleaseHdc());
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.ReleaseHdc(IntPtr.Zero));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.ReleaseHdcInternal(IntPtr.Zero));
             }
         }
 
@@ -336,12 +336,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void FromImage_DisposedImage_ThrowsArgumentException()
+        public void FromImage_DisposedImage_ThrowsObjectDisposedException()
         {
             var image = new Bitmap(10, 10);
             image.Dispose();
 
-            AssertExtensions.Throws<ArgumentException>(null, () => Graphics.FromImage(image));
+            AssertExtensions.Throws<ObjectDisposedException>(null, () => Graphics.FromImage(image));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -435,15 +435,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void CompositingMode_GetSetWhenDisposed_ThrowsArgumentException()
+        public void CompositingMode_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CompositingMode);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CompositingMode = CompositingMode.SourceCopy);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.CompositingMode);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.CompositingMode = CompositingMode.SourceCopy);
             }
         }
 
@@ -529,15 +529,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void CompositingQuality_GetSetWhenDisposed_ThrowsArgumentException()
+        public void CompositingQuality_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CompositingQuality);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CompositingQuality = CompositingQuality.AssumeLinear);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.CompositingQuality);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.CompositingQuality = CompositingQuality.AssumeLinear);
             }
         }
 
@@ -591,14 +591,14 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DpiX_GetWhenDisposed_ThrowsArgumentException()
+        public void DpiX_GetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DpiX);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DpiX);
             }
         }
 
@@ -622,14 +622,14 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DpiY_GetWhenDisposed_ThrowsArgumentException()
+        public void DpiY_GetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DpiX);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DpiX);
             }
         }
 
@@ -675,15 +675,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Flush_Disposed_ThrowsArgumentException()
+        public void Flush_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Flush());
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Flush(FlushIntention.Flush));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.Flush());
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.Flush(FlushIntention.Flush));
             }
         }
 
@@ -749,15 +749,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void InterpolationMode_GetSetWhenDisposed_ThrowsArgumentException()
+        public void InterpolationMode_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.InterpolationMode);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.InterpolationMode = InterpolationMode.HighQualityBilinear);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.InterpolationMode);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.InterpolationMode = InterpolationMode.HighQualityBilinear);
             }
         }
 
@@ -811,15 +811,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void PageScale_GetSetWhenDisposed_ThrowsArgumentException()
+        public void PageScale_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageScale);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageScale = 10);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.PageScale);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.PageScale = 10);
             }
         }
 
@@ -883,15 +883,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void PageUnit_GetSetWhenDisposed_ThrowsArgumentException()
+        public void PageUnit_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageUnit);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageUnit = GraphicsUnit.Document);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.PageUnit);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.PageUnit = GraphicsUnit.Document);
             }
         }
 
@@ -954,15 +954,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void PixelOffsetMode_GetSetWhenDisposed_ThrowsArgumentException()
+        public void PixelOffsetMode_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PixelOffsetMode);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PixelOffsetMode = PixelOffsetMode.Default);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.PixelOffsetMode);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.PixelOffsetMode = PixelOffsetMode.Default);
             }
         }
 
@@ -1044,15 +1044,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void RenderingOrigin_GetSetWhenDisposed_ThrowsArgumentException()
+        public void RenderingOrigin_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.RenderingOrigin);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.RenderingOrigin = Point.Empty);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.RenderingOrigin);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.RenderingOrigin = Point.Empty);
             }
         }
 
@@ -1115,15 +1115,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void SmoothingMode_GetSetWhenDisposed_ThrowsArgumentException()
+        public void SmoothingMode_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.SmoothingMode);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.SmoothingMode = SmoothingMode.AntiAlias);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.SmoothingMode);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.SmoothingMode = SmoothingMode.AntiAlias);
             }
         }
 
@@ -1174,15 +1174,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void TextContrast_GetSetWhenDisposed_ThrowsArgumentException()
+        public void TextContrast_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TextContrast);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TextContrast = 5);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TextContrast);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TextContrast = 5);
             }
         }
 
@@ -1236,15 +1236,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void TextRenderingHint_GetSetWhenDisposed_ThrowsArgumentException()
+        public void TextRenderingHint_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TextRenderingHint);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TextRenderingHint);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit);
             }
         }
 
@@ -1288,7 +1288,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Transform_SetDisposedMatrix_ThrowsArgumentException()
+        public void Transform_SetDisposedMatrix_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -1296,7 +1296,7 @@ namespace System.Drawing.Tests
                 var matrix = new Matrix();
                 matrix.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Transform = matrix);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.Transform = matrix);
             }
         }
 
@@ -1333,7 +1333,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Transform_GetSetWhenDisposed_ThrowsArgumentException()
+        public void Transform_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var matrix = new Matrix())
@@ -1341,8 +1341,8 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Transform);
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Transform = matrix);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.Transform);
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.Transform = matrix);
             }
         }
 
@@ -1381,14 +1381,14 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ResetTransform_Disposed_ThrowsArgumentException()
+        public void ResetTransform_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ResetTransform());
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.ResetTransform());
             }
         }
 
@@ -1501,7 +1501,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void MultiplyTransform_Disposed_ThrowsArgumentException()
+        public void MultiplyTransform_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var matrix = new Matrix())
@@ -1509,8 +1509,8 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.MultiplyTransform(matrix));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.MultiplyTransform(matrix, MatrixOrder.Prepend));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.MultiplyTransform(matrix));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.MultiplyTransform(matrix, MatrixOrder.Prepend));
             }
         }
 
@@ -1588,15 +1588,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void TranslateTransform_Disposed_ThrowsArgumentException()
+        public void TranslateTransform_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TranslateTransform(0, 0));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TranslateTransform(0, 0, MatrixOrder.Append));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TranslateTransform(0, 0));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TranslateTransform(0, 0, MatrixOrder.Append));
             }
         }
 
@@ -1682,15 +1682,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ScaleTransform_Disposed_ThrowsArgumentException()
+        public void ScaleTransform_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ScaleTransform(0, 0));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ScaleTransform(0, 0, MatrixOrder.Append));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.ScaleTransform(0, 0));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.ScaleTransform(0, 0, MatrixOrder.Append));
             }
         }
 
@@ -1769,15 +1769,15 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void RotateTransform_Disposed_ThrowsArgumentException()
+        public void RotateTransform_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.RotateTransform(0));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.RotateTransform(0, MatrixOrder.Append));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.RotateTransform(0));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.RotateTransform(0, MatrixOrder.Append));
             }
         }
 
@@ -1954,17 +1954,17 @@ namespace System.Drawing.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/23375")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void CopyFromScreen_Disposed_ThrowsArgumentException()
+        public void CopyFromScreen_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CopyFromScreen(0, 0, 0, 0, Size.Empty));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CopyFromScreen(0, 0, 0, 0, Size.Empty, CopyPixelOperation.MergeCopy));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CopyFromScreen(Point.Empty, Point.Empty, Size.Empty));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CopyFromScreen(Point.Empty, Point.Empty, Size.Empty, CopyPixelOperation.MergeCopy));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.CopyFromScreen(0, 0, 0, 0, Size.Empty));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.CopyFromScreen(0, 0, 0, 0, Size.Empty, CopyPixelOperation.MergeCopy));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.CopyFromScreen(Point.Empty, Point.Empty, Size.Empty));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.CopyFromScreen(Point.Empty, Point.Empty, Size.Empty, CopyPixelOperation.MergeCopy));
             }
         }
 
@@ -2215,15 +2215,15 @@ namespace System.Drawing.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void TransformPoints_Disposed_ThrowsArgumentException()
+        public void TransformPoints_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TransformPoints(CoordinateSpace.Page, CoordinateSpace.Page, new Point[] { Point.Empty }));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TransformPoints(CoordinateSpace.Page, CoordinateSpace.Page, new PointF[] { PointF.Empty }));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TransformPoints(CoordinateSpace.Page, CoordinateSpace.Page, new Point[] { Point.Empty }));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.TransformPoints(CoordinateSpace.Page, CoordinateSpace.Page, new PointF[] { PointF.Empty }));
             }
         }
 
@@ -2266,14 +2266,14 @@ namespace System.Drawing.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void GetNearestColor_Disposed_ThrowsArgumentException()
+        public void GetNearestColor_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             {
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.GetNearestColor(Color.Red));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.GetNearestColor(Color.Red));
             }
         }
 
@@ -2293,7 +2293,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawArc_DisposedPen_ThrowsArgumentException()
+        public void DrawArc_DisposedPen_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -2301,10 +2301,10 @@ namespace System.Drawing.Tests
                 var pen = new Pen(Color.Red);
                 pen.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
             }
         }
 
@@ -2363,7 +2363,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawArc_Disposed_ThrowsArgumentException()
+        public void DrawArc_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -2371,10 +2371,10 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
             }
         }
 
@@ -2391,7 +2391,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawRectangle_DisposedPen_ThrowsArgumentException()
+        public void DrawRectangle_DisposedPen_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -2400,9 +2400,9 @@ namespace System.Drawing.Tests
                 pen.Dispose();
 
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0, 0, 1, 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangle(pen, 0, 0, 1, 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
             }
         }
 
@@ -2429,7 +2429,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawRectangle_Disposed_ThrowsArgumentException()
+        public void DrawRectangle_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -2437,9 +2437,9 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0, 0, 1, 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangle(pen, 0, 0, 1, 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
             }
         }
 
@@ -2455,7 +2455,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawRectangles_DisposedPen_ThrowsArgumentException()
+        public void DrawRectangles_DisposedPen_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -2463,8 +2463,8 @@ namespace System.Drawing.Tests
                 var pen = new Pen(Color.Red);
                 pen.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new Rectangle[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new RectangleF[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangles(pen, new Rectangle[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangles(pen, new RectangleF[2]));
             }
         }
 
@@ -2514,7 +2514,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawRectangles_Disposed_ThrowsArgumentException()
+        public void DrawRectangles_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -2522,8 +2522,8 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new Rectangle[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new RectangleF[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangles(pen, new Rectangle[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawRectangles(pen, new RectangleF[2]));
             }
         }
 
@@ -2541,7 +2541,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawEllipse_DisposedPen_ThrowsArgumentException()
+        public void DrawEllipse_DisposedPen_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -2550,10 +2550,10 @@ namespace System.Drawing.Tests
                 pen.Dispose();
 
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, new Rectangle(0, 0, 1, 1)));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, 0, 0, 1, 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, new RectangleF(0, 0, 1, 1)));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, 0f, 0f, 1f, 1f));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawEllipse(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawEllipse(pen, 0, 0, 1, 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawEllipse(pen, new RectangleF(0, 0, 1, 1)));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawEllipse(pen, 0f, 0f, 1f, 1f));
             }
         }
 
@@ -2581,7 +2581,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawEllipse_Disposed_ThrowsArgumentException()
+        public void DrawEllipse_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -2589,10 +2589,10 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, new Rectangle(0, 0, 1, 1)));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, 0, 0, 1, 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, new RectangleF(0, 0, 1, 1)));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, 0f, 0f, 1f, 1f));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawEllipse(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawEllipse(pen, 0, 0, 1, 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawEllipse(pen, new RectangleF(0, 0, 1, 1)));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawEllipse(pen, 0f, 0f, 1f, 1f));
             }
         }
 
@@ -2610,7 +2610,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawPie_DisposedPen_ThrowsArgumentException()
+        public void DrawPie_DisposedPen_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -2618,10 +2618,10 @@ namespace System.Drawing.Tests
                 var pen = new Pen(Color.Red);
                 pen.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new Rectangle(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0, 0, 1, 1, 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new RectangleF(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0f, 0f, 1f, 1f, 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPie(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPie(pen, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPie(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPie(pen, 0f, 0f, 1f, 1f, 0, 90));
             }
         }
 
@@ -2679,7 +2679,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawPie_Disposed_ThrowsArgumentException()
+        public void DrawPie_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -2687,10 +2687,10 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new Rectangle(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0, 0, 1, 1, 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new RectangleF(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0f, 0f, 1f, 1f, 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPie(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPie(pen, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPie(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPie(pen, 0f, 0f, 1f, 1f, 0, 90));
             }
         }
 
@@ -2706,7 +2706,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawPolygon_DisposedPen_ThrowsArgumentException()
+        public void DrawPolygon_DisposedPen_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -2714,8 +2714,8 @@ namespace System.Drawing.Tests
                 var pen = new Pen(Color.Red);
                 pen.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new Point[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new PointF[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPolygon(pen, new Point[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPolygon(pen, new PointF[2]));
             }
         }
 
@@ -2767,7 +2767,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawPolygon_Disposed_ThrowsArgumentException()
+        public void DrawPolygon_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -2775,8 +2775,8 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new Point[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new PointF[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPolygon(pen, new Point[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPolygon(pen, new PointF[2]));
             }
         }
 
@@ -2792,7 +2792,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawPath_DisposedPen_ThrowsArgumentException()
+        public void DrawPath_DisposedPen_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -2801,7 +2801,7 @@ namespace System.Drawing.Tests
                 var pen = new Pen(Color.Red);
                 pen.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPath(pen, graphicsPath));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPath(pen, graphicsPath));
             }
         }
 
@@ -2817,7 +2817,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawPath_DisposedPath_ThrowsArgumentException()
+        public void DrawPath_DisposedPath_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -2826,7 +2826,7 @@ namespace System.Drawing.Tests
                 var graphicsPath = new GraphicsPath();
                 graphicsPath.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPath(pen, graphicsPath));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPath(pen, graphicsPath));
             }
         }
 
@@ -2852,7 +2852,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawPath_Disposed_ThrowsArgumentException()
+        public void DrawPath_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -2861,7 +2861,7 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPath(pen, graphicsPath));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawPath(pen, graphicsPath));
             }
         }
 
@@ -2882,7 +2882,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawCurve_DisposedPen_ThrowsArgumentException()
+        public void DrawCurve_DisposedPen_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -2890,13 +2890,13 @@ namespace System.Drawing.Tests
                 var pen = new Pen(Color.Red);
                 pen.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2], 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2], 0, 2, 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2, 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new Point[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new PointF[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new Point[2], 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new PointF[2], 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new Point[2], 0, 2, 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2, 1));
             }
         }
 
@@ -2982,7 +2982,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawCurve_Disposed_ThrowsArgumentException()
+        public void DrawCurve_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -2990,13 +2990,13 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2], 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2], 0, 2, 1));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2, 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new Point[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new PointF[2]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new Point[2], 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new PointF[2], 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new Point[2], 0, 2, 1));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2, 1));
             }
         }
 
@@ -3014,7 +3014,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawClosedCurve_DisposedPen_ThrowsArgumentException()
+        public void DrawClosedCurve_DisposedPen_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -3022,10 +3022,10 @@ namespace System.Drawing.Tests
                 var pen = new Pen(Color.Red);
                 pen.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[3]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[3], 1, FillMode.Winding));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3], 1, FillMode.Winding));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawClosedCurve(pen, new Point[3]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawClosedCurve(pen, new Point[3], 1, FillMode.Winding));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3], 1, FillMode.Winding));
             }
         }
 
@@ -3084,7 +3084,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void DrawClosedCurve_Disposed_ThrowsArgumentException()
+        public void DrawClosedCurve_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -3092,10 +3092,10 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[3]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[3], 1, FillMode.Alternate));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3], 1, FillMode.Alternate));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawClosedCurve(pen, new Point[3]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawClosedCurve(pen, new Point[3], 1, FillMode.Alternate));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3]));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3], 1, FillMode.Alternate));
             }
         }
 
@@ -3140,7 +3140,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Clear_Disposed_ThrowsArgumentException()
+        public void Clear_Disposed_ThrowsObjectDisposedException()
         {
             using (var image = new Bitmap(10, 10))
             using (var pen = new Pen(Color.Red))
@@ -3148,7 +3148,7 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Clear(Color.Red));
+                AssertExtensions.Throws<ObjectDisposedException>(null, () => graphics.Clear(Color.Red));
             }
         }
 
