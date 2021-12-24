@@ -27,7 +27,6 @@
     <PropertyGroup>
       <NativeCompiler>$(Compiler)</NativeCompiler>
       <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
-      <NativeCompiler Condition="$(NativeCompiler.StartsWith('-'))">$(NativeCompiler.TrimStart('-'))</NativeCompiler>
     </PropertyGroup>
 
     <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $CC'"
