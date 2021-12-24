@@ -112,8 +112,6 @@ struct JitInterfaceCallbacks
     void (* freeArray)(void * thisHandle, CorInfoExceptionClass** ppException, void* array);
     CORINFO_ARG_LIST_HANDLE (* getArgNext)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ARG_LIST_HANDLE args);
     CorInfoTypeWithMod (* getArgType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet);
-    CorInfoTypeWithMod (* getArgType2)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet, int* flags);
-    uint32_t (* getFieldTypeByHnd)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_CLASS_HANDLE (* getArgClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     CorInfoHFAElemType (* getHFAType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE hClass);
     JITINTERFACE_HRESULT (* GetErrorHRESULT)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
@@ -1179,27 +1177,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CorInfoTypeWithMod temp = _callbacks->getArgType(_thisHandle, &pException, sig, args, vcTypeRet);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CorInfoTypeWithMod getArgType2(
-          CORINFO_SIG_INFO* sig,
-          CORINFO_ARG_LIST_HANDLE args,
-          CORINFO_CLASS_HANDLE* vcTypeRet,
-          int* flags)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CorInfoTypeWithMod temp = _callbacks->getArgType2(_thisHandle, &pException, sig, args, vcTypeRet, flags);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual uint32_t getFieldTypeByHnd(
-          CORINFO_CLASS_HANDLE cls)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    uint32_t temp = _callbacks->getFieldTypeByHnd(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

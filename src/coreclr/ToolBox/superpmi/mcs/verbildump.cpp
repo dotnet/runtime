@@ -90,12 +90,7 @@ void DumpSigToConsoleBare(MethodContext* mc, CORINFO_SIG_INFO* pSig)
     for (int i = 0; i < (int)pSig->numArgs; i++)
     {
         DWORDLONG          dl;
-#if defined(TARGET_LOONGARCH64)
-        int                  flags;
-        CorInfoTypeWithMod type = mc->repGetArgType(pSig, currentItem, (CORINFO_CLASS_HANDLE*)&dl, &flags, &exceptionCode);
-#else
         CorInfoTypeWithMod type = mc->repGetArgType(pSig, currentItem, (CORINFO_CLASS_HANDLE*)&dl, &exceptionCode);
-#endif
         CorInfoType        cit  = strip(type);
         if (cit == CORINFO_TYPE_CLASS)
             dl = CastHandle(mc->repGetArgClass(pSig, currentItem, &exceptionCode));

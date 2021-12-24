@@ -994,27 +994,6 @@ CorInfoTypeWithMod WrapICorJitInfo::getArgType(
     return temp;
 }
 
-CorInfoTypeWithMod WrapICorJitInfo::getArgType2(
-          CORINFO_SIG_INFO* sig,
-          CORINFO_ARG_LIST_HANDLE args,
-          CORINFO_CLASS_HANDLE* vcTypeRet,
-          int* flags)
-{
-    API_ENTER(getArgType2);
-    CorInfoTypeWithMod temp = wrapHnd->getArgType2(sig, args, vcTypeRet, flags);
-    API_LEAVE(getArgType2);
-    return temp;
-}
-
-uint32_t WrapICorJitInfo::getFieldTypeByHnd(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(getFieldTypeByHnd);
-    uint32_t temp = wrapHnd->getFieldTypeByHnd(cls);
-    API_LEAVE(getFieldTypeByHnd);
-    return temp;
-}
-
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getArgClass(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args)

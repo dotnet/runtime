@@ -254,8 +254,6 @@ FUNCTIONS
     void freeArray(void*array);
     CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args);
     CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet);
-    CorInfoTypeWithMod getArgType2(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet, int *flags);
-    uint32_t getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls);
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
     JITINTERFACE_HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);

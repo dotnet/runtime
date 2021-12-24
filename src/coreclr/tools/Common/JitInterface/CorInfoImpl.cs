@@ -2927,16 +2927,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private CorInfoTypeWithMod getArgType2(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet, ref int flags)
-        {
-            throw new NotImplementedException("For LoongArch64, would be implemented later");
-        }
-
-        private uint getFieldTypeByHnd(CORINFO_CLASS_STRUCT_* cls)
-        {
-            throw new NotImplementedException("For LoongArch64, would be implemented later");
-        }
-
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
