@@ -34,7 +34,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCreateRegionPath(new HandleRef(path, path._nativePath), out _nativeRegion));
+            Gdip.CheckStatus(Gdip.GdipCreateRegionPath(path.SafeGraphicsPathHandle, out _nativeRegion));
         }
 
         public Region(RegionData rgnData)
@@ -92,7 +92,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, new HandleRef(path, path._nativePath), CombineMode.Intersect));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, path.SafeGraphicsPathHandle, CombineMode.Intersect));
         }
 
         public void Intersect(Region region)
@@ -118,7 +118,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, new HandleRef(path, path._nativePath), CombineMode.Union));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, path.SafeGraphicsPathHandle, CombineMode.Union));
         }
 
         public void Union(Region region)
@@ -144,7 +144,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, new HandleRef(path, path._nativePath), CombineMode.Xor));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, path.SafeGraphicsPathHandle, CombineMode.Xor));
         }
 
         public void Xor(Region region)
@@ -172,7 +172,7 @@ namespace System.Drawing
 
             Gdip.CheckStatus(Gdip.GdipCombineRegionPath(
                 SafeRegionHandle,
-                new HandleRef(path, path._nativePath),
+                path.SafeGraphicsPathHandle,
                 CombineMode.Exclude));
         }
 
@@ -202,7 +202,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, new HandleRef(path, path._nativePath), CombineMode.Complement));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionPath(SafeRegionHandle, path.SafeGraphicsPathHandle, CombineMode.Complement));
         }
 
         public void Complement(Region region)

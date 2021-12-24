@@ -13,24 +13,24 @@ namespace System.Drawing
         {
             // Passing null SafeHandles in P/Invokes is not supported so we will do it the manual way.
             // TODO: Revisit this file when custom marshallers are available.
-            internal static int GdipGetPathWorldBounds(HandleRef path, out RectangleF gprectf, SafeMatrixHandle? matrixOptional, SafePenHandle? penOptional)
+            internal static int GdipGetPathWorldBounds(SafeGraphicsPathHandle path, out RectangleF gprectf, SafeMatrixHandle? matrix, SafePenHandle? pen)
             {
                 bool releaseMatrix = false;
                 bool releasePen = false;
                 try
                 {
                     IntPtr nativeMatrix = IntPtr.Zero;
-                    if (matrixOptional != null)
+                    if (matrix != null)
                     {
-                        matrixOptional.DangerousAddRef(ref releaseMatrix);
-                        nativeMatrix = matrixOptional.DangerousGetHandle();
+                        matrix.DangerousAddRef(ref releaseMatrix);
+                        nativeMatrix = matrix.DangerousGetHandle();
                     }
 
                     IntPtr nativePen = IntPtr.Zero;
-                    if (penOptional != null)
+                    if (pen != null)
                     {
-                        penOptional.DangerousAddRef(ref releasePen);
-                        nativePen = penOptional.DangerousGetHandle();
+                        pen.DangerousAddRef(ref releasePen);
+                        nativePen = pen.DangerousGetHandle();
                     }
 
                     return __PInvoke__(path, out gprectf, nativeMatrix, nativePen);
@@ -39,29 +39,29 @@ namespace System.Drawing
                 {
                     if (releaseMatrix)
                     {
-                        matrixOptional!.DangerousRelease();
+                        matrix!.DangerousRelease();
                     }
 
                     if (releasePen)
                     {
-                        penOptional!.DangerousRelease();
+                        pen!.DangerousRelease();
                     }
                 }
 
                 [DllImport(LibraryName, EntryPoint = nameof(GdipGetPathWorldBounds))]
-                static extern int __PInvoke__(HandleRef path, out RectangleF gprectf, IntPtr nativeMatrix, IntPtr penOptional);
+                static extern int __PInvoke__(SafeGraphicsPathHandle path, out RectangleF gprectf, IntPtr matrix, IntPtr pen);
             }
 
-            internal static int GdipFlattenPath(HandleRef path, SafeMatrixHandle? matrixOptional, float flatness)
+            internal static int GdipFlattenPath(SafeGraphicsPathHandle path, SafeMatrixHandle? matrix, float flatness)
             {
                 bool releaseMatrix = false;
                 try
                 {
                     IntPtr nativeMatrix = IntPtr.Zero;
-                    if (matrixOptional != null)
+                    if (matrix != null)
                     {
-                        matrixOptional.DangerousAddRef(ref releaseMatrix);
-                        nativeMatrix = matrixOptional.DangerousGetHandle();
+                        matrix.DangerousAddRef(ref releaseMatrix);
+                        nativeMatrix = matrix.DangerousGetHandle();
                     }
 
                     return __PInvoke__(path, nativeMatrix, flatness);
@@ -70,24 +70,24 @@ namespace System.Drawing
                 {
                     if (releaseMatrix)
                     {
-                        matrixOptional!.DangerousRelease();
+                        matrix!.DangerousRelease();
                     }
                 }
 
                 [DllImport(LibraryName, EntryPoint = nameof(GdipFlattenPath))]
-                static extern int __PInvoke__(HandleRef path, IntPtr nativeMatrix, float flatness);
+                static extern int __PInvoke__(SafeGraphicsPathHandle path, IntPtr matrix, float flatness);
             }
 
-            internal static int GdipWidenPath(HandleRef path, SafePenHandle pen, SafeMatrixHandle? matrixOptional, float flatness)
+            internal static int GdipWidenPath(SafeGraphicsPathHandle path, SafePenHandle pen, SafeMatrixHandle? matrix, float flatness)
             {
                 bool releaseMatrix = false;
                 try
                 {
                     IntPtr nativeMatrix = IntPtr.Zero;
-                    if (matrixOptional != null)
+                    if (matrix != null)
                     {
-                        matrixOptional.DangerousAddRef(ref releaseMatrix);
-                        nativeMatrix = matrixOptional.DangerousGetHandle();
+                        matrix.DangerousAddRef(ref releaseMatrix);
+                        nativeMatrix = matrix.DangerousGetHandle();
                     }
 
                     return __PInvoke__(path, pen, nativeMatrix, flatness);
@@ -96,24 +96,24 @@ namespace System.Drawing
                 {
                     if (releaseMatrix)
                     {
-                        matrixOptional!.DangerousRelease();
+                        matrix!.DangerousRelease();
                     }
                 }
 
                 [DllImport(LibraryName, EntryPoint = nameof(GdipWidenPath))]
-                static extern int __PInvoke__(HandleRef path, SafePenHandle pen, IntPtr nativeMatrix, float flatness);
+                static extern int __PInvoke__(SafeGraphicsPathHandle path, SafePenHandle pen, IntPtr matrix, float flatness);
             }
 
-            internal static int GdipWarpPath(HandleRef path, SafeMatrixHandle? matrixOptional, PointF[] points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness)
+            internal static int GdipWarpPath(SafeGraphicsPathHandle path, SafeMatrixHandle? matrix, PointF[] points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness)
             {
                 bool releaseMatrix = false;
                 try
                 {
                     IntPtr nativeMatrix = IntPtr.Zero;
-                    if (matrixOptional != null)
+                    if (matrix != null)
                     {
-                        matrixOptional.DangerousAddRef(ref releaseMatrix);
-                        nativeMatrix = matrixOptional.DangerousGetHandle();
+                        matrix.DangerousAddRef(ref releaseMatrix);
+                        nativeMatrix = matrix.DangerousGetHandle();
                     }
 
                     return __PInvoke__(path, nativeMatrix, points, count, srcX, srcY, srcWidth, srcHeight, warpMode, flatness);
@@ -122,14 +122,130 @@ namespace System.Drawing
                 {
                     if (releaseMatrix)
                     {
-                        matrixOptional!.DangerousRelease();
+                        matrix!.DangerousRelease();
                     }
                 }
 
                 [DllImport(LibraryName, EntryPoint = nameof(GdipWarpPath))]
-                static extern int __PInvoke__(HandleRef path, IntPtr nativeMatrix, PointF[] points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness);
+                static extern int __PInvoke__(SafeGraphicsPathHandle path, IntPtr matrix, PointF[] points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness);
             }
 
+            internal static int GdipCreateCustomLineCap(SafeGraphicsPathHandle? fillPath, SafeGraphicsPathHandle? strokePath, LineCap baseCap, float baseInset, out IntPtr customCap)
+            {
+                bool releaseFillPath = false;
+                bool releaseStrokePath = false;
+                try
+                {
+                    IntPtr nativeFillPath = IntPtr.Zero;
+                    if (fillPath != null)
+                    {
+                        fillPath.DangerousAddRef(ref releaseFillPath);
+                        nativeFillPath = fillPath.DangerousGetHandle();
+                    }
+
+                    IntPtr nativeStrokePath = IntPtr.Zero;
+                    if (strokePath != null)
+                    {
+                        strokePath.DangerousAddRef(ref releaseStrokePath);
+                        nativeStrokePath = strokePath.DangerousGetHandle();
+                    }
+
+                    return __PInvoke__(nativeFillPath, nativeStrokePath, baseCap, baseInset, out customCap);
+                }
+                finally
+                {
+                    if (releaseFillPath)
+                    {
+                        fillPath!.DangerousRelease();
+                    }
+
+                    if (releaseStrokePath)
+                    {
+                        strokePath!.DangerousRelease();
+                    }
+                }
+
+                [DllImport(LibraryName, EntryPoint = nameof(GdipCreateCustomLineCap))]
+                static extern int __PInvoke__(IntPtr fillpath, IntPtr strokepath, LineCap baseCap, float baseInset, out IntPtr customCap);
+            }
+
+            internal static int GdipCreatePathIter(out IntPtr pathIter, SafeGraphicsPathHandle? path)
+            {
+                bool releasePath = false;
+                try
+                {
+                    IntPtr nativePath = IntPtr.Zero;
+                    if (path != null)
+                    {
+                        path.DangerousAddRef(ref releasePath);
+                        nativePath = path.DangerousGetHandle();
+                    }
+
+                    return __PInvoke__(out pathIter, nativePath);
+                }
+                finally
+                {
+                    if (releasePath)
+                    {
+                        path!.DangerousRelease();
+                    }
+                }
+
+                [DllImport(LibraryName, EntryPoint = nameof(GdipCreatePathIter))]
+                static extern int __PInvoke__(out IntPtr pathIter, IntPtr path);
+            }
+
+            internal static int GdipPathIterNextSubpathPath(HandleRef pathIter, out int resultCount, SafeGraphicsPathHandle? path, out bool isClosed)
+            {
+                bool releasePath = false;
+                try
+                {
+                    IntPtr nativePath = IntPtr.Zero;
+                    if (path != null)
+                    {
+                        path.DangerousAddRef(ref releasePath);
+                        nativePath = path.DangerousGetHandle();
+                    }
+
+                    return __PInvoke__(pathIter, out resultCount, nativePath, out isClosed);
+                }
+                finally
+                {
+                    if (releasePath)
+                    {
+                        path!.DangerousRelease();
+                    }
+                }
+
+                [DllImport(LibraryName, EntryPoint = nameof(GdipPathIterNextSubpathPath))]
+                static extern int __PInvoke__(HandleRef pathIter, out int resultCount, IntPtr path, out bool isClosed);
+            }
+
+            internal static int GdipPathIterNextMarkerPath(HandleRef pathIter, out int resultCount, SafeGraphicsPathHandle? path)
+            {
+                bool releasePath = false;
+                try
+                {
+                    IntPtr nativePath = IntPtr.Zero;
+                    if (path != null)
+                    {
+                        path.DangerousAddRef(ref releasePath);
+                        nativePath = path.DangerousGetHandle();
+                    }
+
+                    return __PInvoke__(pathIter, out resultCount, nativePath);
+                }
+                finally
+                {
+                    if (releasePath)
+                    {
+                        path!.DangerousRelease();
+                    }
+                }
+
+                [DllImport(LibraryName, EntryPoint = nameof(GdipPathIterNextMarkerPath))]
+                static extern int __PInvoke__(HandleRef pathIter, out int resultCount, IntPtr path);
+            }
         }
     }
 }

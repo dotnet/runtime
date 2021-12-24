@@ -28,8 +28,8 @@ namespace System.Drawing.Drawing2D
         {
             IntPtr nativeLineCap;
             int status = Gdip.GdipCreateCustomLineCap(
-                                new HandleRef(fillPath, (fillPath == null) ? IntPtr.Zero : fillPath._nativePath),
-                                new HandleRef(strokePath, (strokePath == null) ? IntPtr.Zero : strokePath._nativePath),
+                                fillPath?.SafeGraphicsPathHandle,
+                                strokePath?.SafeGraphicsPathHandle,
                                 baseCap, baseInset, out nativeLineCap);
 
             if (status != Gdip.Ok)

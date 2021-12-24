@@ -343,7 +343,7 @@ namespace System.Drawing
             CheckErrorStatus(Gdip.GdipFillPath(
                 new HandleRef(this, NativeGraphics),
                 brush.SafeBrushHandle,
-                new HandleRef(path, path._nativePath)));
+                path.SafeGraphicsPathHandle));
         }
 
         /// <summary>

@@ -63,7 +63,7 @@ namespace System.Drawing.Drawing2D
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            Gdip.CheckStatus(Gdip.GdipCreatePathGradientFromPath(new HandleRef(path, path._nativePath), out SafeBrushHandle nativeBrush));
+            Gdip.CheckStatus(Gdip.GdipCreatePathGradientFromPath(path.SafeGraphicsPathHandle, out SafeBrushHandle nativeBrush));
             SetNativeBrushInternal(nativeBrush);
         }
 

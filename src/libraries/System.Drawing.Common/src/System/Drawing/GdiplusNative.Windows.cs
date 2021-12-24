@@ -28,175 +28,175 @@ namespace System.Drawing
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreatePath(int brushMode, out IntPtr path);
+            internal static partial int GdipCreatePath(int brushMode, out SafeGraphicsPathHandle path);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreatePath2(PointF* points, byte* types, int count, int brushMode, out IntPtr path);
+            internal static partial int GdipCreatePath2(PointF* points, byte* types, int count, int brushMode, out SafeGraphicsPathHandle path);
 
             [GeneratedDllImport(LibraryName)]
-            internal static partial int GdipCreatePath2I(Point* points, byte* types, int count, int brushMode, out IntPtr path);
+            internal static partial int GdipCreatePath2I(Point* points, byte* types, int count, int brushMode, out SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipClonePath(HandleRef path, out IntPtr clonepath);
+            internal static extern int GdipClonePath(SafeGraphicsPathHandle path, out SafeGraphicsPathHandle clonepath);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipDeletePath(HandleRef path);
+            internal static extern int GdipDeletePath(IntPtr path);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipResetPath(HandleRef path);
+            internal static extern int GdipResetPath(SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPointCount(HandleRef path, out int count);
+            internal static extern int GdipGetPointCount(SafeGraphicsPathHandle path, out int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathTypes(HandleRef path, byte[] types, int count);
+            internal static extern int GdipGetPathTypes(SafeGraphicsPathHandle path, byte[] types, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathPoints(HandleRef path, PointF* points, int count);
+            internal static extern int GdipGetPathPoints(SafeGraphicsPathHandle path, PointF* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathFillMode(HandleRef path, out FillMode fillmode);
+            internal static extern int GdipGetPathFillMode(SafeGraphicsPathHandle path, out FillMode fillmode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathFillMode(HandleRef path, FillMode fillmode);
+            internal static extern int GdipSetPathFillMode(SafeGraphicsPathHandle path, FillMode fillmode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathData(HandleRef path, GpPathData* pathData);
+            internal static extern int GdipGetPathData(SafeGraphicsPathHandle path, GpPathData* pathData);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipStartPathFigure(HandleRef path);
+            internal static extern int GdipStartPathFigure(SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipClosePathFigure(HandleRef path);
+            internal static extern int GdipClosePathFigure(SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipClosePathFigures(HandleRef path);
+            internal static extern int GdipClosePathFigures(SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetPathMarker(HandleRef path);
+            internal static extern int GdipSetPathMarker(SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipClearPathMarkers(HandleRef path);
+            internal static extern int GdipClearPathMarkers(SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipReversePath(HandleRef path);
+            internal static extern int GdipReversePath(SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipGetPathLastPoint(HandleRef path, out PointF lastPoint);
+            internal static extern int GdipGetPathLastPoint(SafeGraphicsPathHandle path, out PointF lastPoint);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathLine(HandleRef path, float x1, float y1, float x2, float y2);
+            internal static extern int GdipAddPathLine(SafeGraphicsPathHandle path, float x1, float y1, float x2, float y2);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathLine2(HandleRef path, PointF* points, int count);
+            internal static extern int GdipAddPathLine2(SafeGraphicsPathHandle path, PointF* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathArc(HandleRef path, float x, float y, float width, float height, float startAngle, float sweepAngle);
+            internal static extern int GdipAddPathArc(SafeGraphicsPathHandle path, float x, float y, float width, float height, float startAngle, float sweepAngle);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathBezier(HandleRef path, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
+            internal static extern int GdipAddPathBezier(SafeGraphicsPathHandle path, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathBeziers(HandleRef path, PointF* points, int count);
+            internal static extern int GdipAddPathBeziers(SafeGraphicsPathHandle path, PointF* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathCurve(HandleRef path, PointF* points, int count);
+            internal static extern int GdipAddPathCurve(SafeGraphicsPathHandle path, PointF* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathCurve2(HandleRef path, PointF* points, int count, float tension);
+            internal static extern int GdipAddPathCurve2(SafeGraphicsPathHandle path, PointF* points, int count, float tension);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathCurve3(HandleRef path, PointF* points, int count, int offset, int numberOfSegments, float tension);
+            internal static extern int GdipAddPathCurve3(SafeGraphicsPathHandle path, PointF* points, int count, int offset, int numberOfSegments, float tension);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathClosedCurve(HandleRef path, PointF* points, int count);
+            internal static extern int GdipAddPathClosedCurve(SafeGraphicsPathHandle path, PointF* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathClosedCurve2(HandleRef path, PointF* points, int count, float tension);
+            internal static extern int GdipAddPathClosedCurve2(SafeGraphicsPathHandle path, PointF* points, int count, float tension);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathRectangle(HandleRef path, float x, float y, float width, float height);
+            internal static extern int GdipAddPathRectangle(SafeGraphicsPathHandle path, float x, float y, float width, float height);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathRectangles(HandleRef path, RectangleF* rects, int count);
+            internal static extern int GdipAddPathRectangles(SafeGraphicsPathHandle path, RectangleF* rects, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathEllipse(HandleRef path, float x, float y, float width, float height);
+            internal static extern int GdipAddPathEllipse(SafeGraphicsPathHandle path, float x, float y, float width, float height);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathPie(HandleRef path, float x, float y, float width, float height, float startAngle, float sweepAngle);
+            internal static extern int GdipAddPathPie(SafeGraphicsPathHandle path, float x, float y, float width, float height, float startAngle, float sweepAngle);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathPolygon(HandleRef path, PointF* points, int count);
+            internal static extern int GdipAddPathPolygon(SafeGraphicsPathHandle path, PointF* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathPath(HandleRef path, HandleRef addingPath, bool connect);
+            internal static extern int GdipAddPathPath(SafeGraphicsPathHandle path, SafeGraphicsPathHandle addingPath, bool connect);
 
             [DllImport(LibraryName, CharSet = CharSet.Unicode)]
-            internal static extern int GdipAddPathString(HandleRef path, string s, int length, HandleRef fontFamily, int style, float emSize, ref RectangleF layoutRect, HandleRef format);
+            internal static extern int GdipAddPathString(SafeGraphicsPathHandle path, string s, int length, HandleRef fontFamily, int style, float emSize, ref RectangleF layoutRect, HandleRef format);
 
             [DllImport(LibraryName, CharSet = CharSet.Unicode)]
-            internal static extern int GdipAddPathStringI(HandleRef path, string s, int length, HandleRef fontFamily, int style, float emSize, ref Rectangle layoutRect, HandleRef format);
+            internal static extern int GdipAddPathStringI(SafeGraphicsPathHandle path, string s, int length, HandleRef fontFamily, int style, float emSize, ref Rectangle layoutRect, HandleRef format);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathLineI(HandleRef path, int x1, int y1, int x2, int y2);
+            internal static extern int GdipAddPathLineI(SafeGraphicsPathHandle path, int x1, int y1, int x2, int y2);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathLine2I(HandleRef path, Point* points, int count);
+            internal static extern int GdipAddPathLine2I(SafeGraphicsPathHandle path, Point* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathArcI(HandleRef path, int x, int y, int width, int height, float startAngle, float sweepAngle);
+            internal static extern int GdipAddPathArcI(SafeGraphicsPathHandle path, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathBezierI(HandleRef path, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4);
+            internal static extern int GdipAddPathBezierI(SafeGraphicsPathHandle path, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathBeziersI(HandleRef path, Point* points, int count);
+            internal static extern int GdipAddPathBeziersI(SafeGraphicsPathHandle path, Point* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathCurveI(HandleRef path, Point* points, int count);
+            internal static extern int GdipAddPathCurveI(SafeGraphicsPathHandle path, Point* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathCurve2I(HandleRef path, Point* points, int count, float tension);
+            internal static extern int GdipAddPathCurve2I(SafeGraphicsPathHandle path, Point* points, int count, float tension);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathCurve3I(HandleRef path, Point* points, int count, int offset, int numberOfSegments, float tension);
+            internal static extern int GdipAddPathCurve3I(SafeGraphicsPathHandle path, Point* points, int count, int offset, int numberOfSegments, float tension);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathClosedCurveI(HandleRef path, Point* points, int count);
+            internal static extern int GdipAddPathClosedCurveI(SafeGraphicsPathHandle path, Point* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathClosedCurve2I(HandleRef path, Point* points, int count, float tension);
+            internal static extern int GdipAddPathClosedCurve2I(SafeGraphicsPathHandle path, Point* points, int count, float tension);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathRectangleI(HandleRef path, int x, int y, int width, int height);
+            internal static extern int GdipAddPathRectangleI(SafeGraphicsPathHandle path, int x, int y, int width, int height);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathRectanglesI(HandleRef path, Rectangle* rects, int count);
+            internal static extern int GdipAddPathRectanglesI(SafeGraphicsPathHandle path, Rectangle* rects, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathEllipseI(HandleRef path, int x, int y, int width, int height);
+            internal static extern int GdipAddPathEllipseI(SafeGraphicsPathHandle path, int x, int y, int width, int height);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathPieI(HandleRef path, int x, int y, int width, int height, float startAngle, float sweepAngle);
+            internal static extern int GdipAddPathPieI(SafeGraphicsPathHandle path, int x, int y, int width, int height, float startAngle, float sweepAngle);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipAddPathPolygonI(HandleRef path, Point* points, int count);
+            internal static extern int GdipAddPathPolygonI(SafeGraphicsPathHandle path, Point* points, int count);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipTransformPath(HandleRef path, SafeMatrixHandle matrix);
+            internal static extern int GdipTransformPath(SafeGraphicsPathHandle path, SafeMatrixHandle matrix);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsVisiblePathPoint(HandleRef path, float x, float y, HandleRef graphics, out bool result);
+            internal static extern int GdipIsVisiblePathPoint(SafeGraphicsPathHandle path, float x, float y, HandleRef graphics, out bool result);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsVisiblePathPointI(HandleRef path, int x, int y, HandleRef graphics, out bool result);
+            internal static extern int GdipIsVisiblePathPointI(SafeGraphicsPathHandle path, int x, int y, HandleRef graphics, out bool result);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsOutlineVisiblePathPoint(HandleRef path, float x, float y, SafePenHandle pen, HandleRef graphics, out bool result);
+            internal static extern int GdipIsOutlineVisiblePathPoint(SafeGraphicsPathHandle path, float x, float y, SafePenHandle pen, HandleRef graphics, out bool result);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipIsOutlineVisiblePathPointI(HandleRef path, int x, int y, SafePenHandle pen, HandleRef graphics, out bool result);
+            internal static extern int GdipIsOutlineVisiblePathPointI(SafeGraphicsPathHandle path, int x, int y, SafePenHandle pen, HandleRef graphics, out bool result);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipLoadImageFromStream(IntPtr stream, IntPtr* image);
@@ -265,7 +265,7 @@ namespace System.Drawing
             internal static extern int GdipDrawBeziersI(HandleRef graphics, SafePenHandle pen, Point* points, int count);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipFillPath(HandleRef graphics, SafeBrushHandle brush, HandleRef path);
+            internal static extern int GdipFillPath(HandleRef graphics, SafeBrushHandle brush, SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName)]
             internal static extern int GdipEnumerateMetafileDestPoint(HandleRef graphics, HandleRef metafile, ref PointF destPoint, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata, HandleRef imageattributes);

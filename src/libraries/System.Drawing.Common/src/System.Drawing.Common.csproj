@@ -33,8 +33,10 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeBrushHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeGdiPlusHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeGraphicsPathHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeMatrixHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePenHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeRegionHandle.cs" />
     <Compile Include="System\Drawing\Bitmap.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
@@ -84,6 +86,7 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
     <Compile Include="System\Drawing\Drawing2D\FillMode.cs" />
     <Compile Include="System\Drawing\Drawing2D\FlushIntention.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsContainer.cs" />
+    <Compile Include="System\Drawing\Drawing2D\GraphicsPath.cs" />
     <Compile Include="System\Drawing\Drawing2D\HatchBrush.cs" />
     <Compile Include="System\Drawing\Drawing2D\HatchStyle.cs" />
     <Compile Include="System\Drawing\Drawing2D\InterpolationMode.cs" />

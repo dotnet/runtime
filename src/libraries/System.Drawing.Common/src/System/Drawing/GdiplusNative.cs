@@ -58,9 +58,6 @@ namespace System.Drawing
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipGetCustomLineCapType(IntPtr customCap, out CustomLineCapType capType);
 
-            [DllImport(LibraryName)]
-            internal static extern int GdipCreateCustomLineCap(HandleRef fillpath, HandleRef strokepath, LineCap baseCap, float baseInset, out IntPtr customCap);
-
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipDeleteCustomLineCap(IntPtr customCap);
 
@@ -101,25 +98,16 @@ namespace System.Drawing
             internal static extern int GdipGetCustomLineCapWidthScale(HandleRef customCap, out float widthScale);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreatePathIter(out IntPtr pathIter, HandleRef path);
-
-            [DllImport(LibraryName)]
             internal static extern int GdipDeletePathIter(HandleRef pathIter);
 
             [DllImport(LibraryName)]
             internal static extern int GdipPathIterNextSubpath(HandleRef pathIter, out int resultCount, out int startIndex, out int endIndex, out bool isClosed);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipPathIterNextSubpathPath(HandleRef pathIter, out int resultCount, HandleRef path, out bool isClosed);
-
-            [DllImport(LibraryName)]
             internal static extern int GdipPathIterNextPathType(HandleRef pathIter, out int resultCount, out byte pathType, out int startIndex, out int endIndex);
 
             [DllImport(LibraryName)]
             internal static extern int GdipPathIterNextMarker(HandleRef pathIter, out int resultCount, out int startIndex, out int endIndex);
-
-            [DllImport(LibraryName)]
-            internal static extern int GdipPathIterNextMarkerPath(HandleRef pathIter, out int resultCount, HandleRef path);
 
             [DllImport(LibraryName)]
             internal static extern int GdipPathIterGetCount(HandleRef pathIter, out int count);
@@ -251,7 +239,7 @@ namespace System.Drawing
             internal static partial int GdipCreatePathGradientI(Point* points, int count, WrapMode wrapMode, out SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreatePathGradientFromPath(HandleRef path, out SafeBrushHandle brush);
+            internal static extern int GdipCreatePathGradientFromPath(SafeGraphicsPathHandle path, out SafeBrushHandle brush);
 
             [DllImport(LibraryName)]
             internal static extern int GdipGetPathGradientCenterColor(SafeBrushHandle brush, out int color);
@@ -834,7 +822,7 @@ namespace System.Drawing
 #pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCreateRegionPath(HandleRef path, out SafeRegionHandle region);
+            internal static extern int GdipCreateRegionPath(SafeGraphicsPathHandle path, out SafeRegionHandle region);
 
             [GeneratedDllImport(LibraryName)]
             internal static partial int GdipCreateRegionRgnData(byte[] rgndata, int size, out SafeRegionHandle region);
@@ -864,7 +852,7 @@ namespace System.Drawing
             internal static extern int GdipCombineRegionRectI(SafeRegionHandle region, ref Rectangle gprect, CombineMode mode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipCombineRegionPath(SafeRegionHandle region, HandleRef path, CombineMode mode);
+            internal static extern int GdipCombineRegionPath(SafeRegionHandle region, SafeGraphicsPathHandle path, CombineMode mode);
 
             [DllImport(LibraryName)]
             internal static extern int GdipCombineRegionRegion(SafeRegionHandle region, SafeRegionHandle region2, CombineMode mode);
@@ -930,7 +918,7 @@ namespace System.Drawing
             internal static extern int GdipSetClipRectI(HandleRef graphics, int x, int y, int width, int height, CombineMode mode);
 
             [DllImport(LibraryName)]
-            internal static extern int GdipSetClipPath(HandleRef graphics, HandleRef path, CombineMode mode);
+            internal static extern int GdipSetClipPath(HandleRef graphics, SafeGraphicsPathHandle path, CombineMode mode);
 
             [DllImport(LibraryName)]
             internal static extern int GdipSetClipRegion(HandleRef graphics, SafeRegionHandle region, CombineMode mode);
@@ -1233,7 +1221,7 @@ namespace System.Drawing
             internal static extern int GdipDrawLines(HandleRef graphics, SafePenHandle pen, PointF* points, int count);
 
             [DllImport(LibraryName, SetLastError = true)]
-            internal static extern int GdipDrawPath(HandleRef graphics, SafePenHandle pen, HandleRef path);
+            internal static extern int GdipDrawPath(HandleRef graphics, SafePenHandle pen, SafeGraphicsPathHandle path);
 
             [DllImport(LibraryName, SetLastError = true)]
             internal static extern int GdipDrawPie(HandleRef graphics, SafePenHandle pen, float x, float y, float width, float height, float startAngle, float sweepAngle);

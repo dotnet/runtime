@@ -417,7 +417,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            int status = Gdip.GdipFillPath(NativeGraphics, brush.SafeBrushHandle, path._nativePath);
+            int status = Gdip.GdipFillPath(NativeGraphics, brush.SafeBrushHandle, path.SafeGraphicsPathHandle);
             Gdip.CheckStatus(status);
         }
 

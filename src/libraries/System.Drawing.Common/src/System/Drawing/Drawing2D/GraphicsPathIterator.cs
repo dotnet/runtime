@@ -13,7 +13,7 @@ namespace System.Drawing.Drawing2D
         public GraphicsPathIterator(GraphicsPath? path)
         {
             IntPtr nativeIter = IntPtr.Zero;
-            int status = Gdip.GdipCreatePathIter(out nativeIter, new HandleRef(path, (path == null) ? IntPtr.Zero : path._nativePath));
+            int status = Gdip.GdipCreatePathIter(out nativeIter, path?.SafeGraphicsPathHandle);
 
             if (status != Gdip.Ok)
                 throw Gdip.StatusException(status);
@@ -78,7 +78,7 @@ namespace System.Drawing.Drawing2D
         public int NextSubpath(GraphicsPath path, out bool isClosed)
         {
             int status = Gdip.GdipPathIterNextSubpathPath(new HandleRef(this, nativeIter), out int resultCount,
-                        new HandleRef(path, (path == null) ? IntPtr.Zero : path._nativePath), out isClosed);
+                        path?.SafeGraphicsPathHandle, out isClosed);
 
             if (status != Gdip.Ok)
                 throw Gdip.StatusException(status);
@@ -111,7 +111,7 @@ namespace System.Drawing.Drawing2D
         public int NextMarker(GraphicsPath path)
         {
             int status = Gdip.GdipPathIterNextMarkerPath(new HandleRef(this, nativeIter), out int resultCount,
-                        new HandleRef(path, (path == null) ? IntPtr.Zero : path._nativePath));
+                        path?.SafeGraphicsPathHandle);
 
             if (status != Gdip.Ok)
                 throw Gdip.StatusException(status);
