@@ -86,7 +86,7 @@ public:
     LoadedMethodDescIterator(void);
 
 protected:
-    Module * GetCurrentModule();
+    Module * GetModule();
 
 };  // class LoadedMethodDescIterator
 

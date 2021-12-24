@@ -249,8 +249,6 @@ class DomainFile
     BOOL Equals(PEAssembly *pPEAssembly) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pPEAssembly); }
 #endif // DACCESS_COMPILE
 
-    Module* GetCurrentModule();
-    Module* GetLoadedModule();
     Module* GetModule();
 
 #ifdef DACCESS_COMPILE
@@ -484,11 +482,6 @@ public:
         {
             WRAPPER_NO_CONTRACT;
             return GetDomainFile()->GetModule();
-        }
-        Module  *GetLoadedModule()
-        {
-            WRAPPER_NO_CONTRACT;
-            return GetDomainFile()->GetLoadedModule();
         }
         DomainFile *GetDomainFile()
         {

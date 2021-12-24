@@ -1106,7 +1106,7 @@ FCIMPL1(ReflectModuleBaseObject *, AssemblyNative::GetInMemoryAssemblyModule, As
 
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
 
-    FC_RETURN_MODULE_OBJECT(pAssembly->GetCurrentModule(), refAssembly);
+    FC_RETURN_MODULE_OBJECT(pAssembly->GetModule(), refAssembly);
 }
 FCIMPLEND
 

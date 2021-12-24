@@ -211,18 +211,18 @@ void DomainFile::SetError(Exception *ex)
 
     m_pError = new ExInfo(ex->DomainBoundClone());
 
-    GetCurrentModule()->NotifyEtwLoadFinished(ex->GetHR());
+    GetModule()->NotifyEtwLoadFinished(ex->GetHR());
 
     if (!IsProfilerNotified())
     {
         SetProfilerNotified();
 
 #ifdef PROFILING_SUPPORTED
-        if (GetCurrentModule() != NULL)
+        if (GetModule() != NULL)
         {
             // Only send errors for non-shared assemblies; other assemblies might be successfully completed
             // in another app domain later.
-            GetCurrentModule()->NotifyProfilerLoadFinished(ex->GetHR());
+            GetModule()->NotifyProfilerLoadFinished(ex->GetHR());
         }
 #endif
     }
@@ -557,7 +557,7 @@ void DomainFile::PostLoadLibrary()
     if (!IsProfilerNotified())
     {
         SetProfilerNotified();
-        GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
+        GetModule()->NotifyProfilerLoadFinished(S_OK);
     }
 
 #endif
@@ -573,18 +573,18 @@ void DomainFile::EagerFixups()
     WRAPPER_NO_CONTRACT;
 
 #ifdef FEATURE_READYTORUN
-    if (GetCurrentModule()->IsReadyToRun())
+    if (GetModule()->IsReadyToRun())
     {
-        GetCurrentModule()->RunEagerFixups();
+        GetModule()->RunEagerFixups();
 
-        PEImageLayout * pLayout = GetCurrentModule()->GetReadyToRunInfo()->GetImage();
+        PEImageLayout * pLayout = GetModule()->GetReadyToRunInfo()->GetImage();
 
         TADDR base = dac_cast<TADDR>(pLayout->GetBase());
 
         ExecutionManager::AddCodeRange(base, base + (TADDR)pLayout->GetVirtualSize(),
                                         ExecutionManager::GetReadyToRunJitManager(),
                                          RangeSection::RANGE_SECTION_READYTORUN,
-                                         GetCurrentModule() /* (void *)pLayout */);
+                                         GetModule() /* (void *)pLayout */);
     }
 #endif // FEATURE_READYTORUN
 }
@@ -593,7 +593,7 @@ void DomainFile::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
-    GetCurrentModule()->FixupVTables();
+    GetModule()->FixupVTables();
 }
 
 void DomainFile::FinishLoad()
@@ -642,8 +642,8 @@ void DomainFile::Activate()
         // We cannot execute any code in this assembly until we know what exception plan it is on.
         // At the point of an exception's stack-crawl it is too late because we cannot tolerate a GC.
         // See PossiblyUnwrapThrowable and its callers.
-        _ASSERTE(GetLoadedModule() == GetDomainAssembly()->GetAssembly()->GetManifestModule());
-        GetLoadedModule()->IsRuntimeWrapExceptions();
+        _ASSERTE(GetModule() == GetDomainAssembly()->GetAssembly()->GetManifestModule());
+        GetModule()->IsRuntimeWrapExceptions();
     }
 
     // Now activate any dependencies.
@@ -946,14 +946,14 @@ void DomainAssembly::DeliverSyncEvents()
     }
     CONTRACTL_END;
 
-    GetCurrentModule()->NotifyEtwLoadFinished(S_OK);
+    GetModule()->NotifyEtwLoadFinished(S_OK);
 
     // We may be notified from inside the loader lock if we are delivering IJW events, so keep track.
 #ifdef PROFILING_SUPPORTED
     if (!IsProfilerNotified())
     {
         SetProfilerNotified();
-        GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
+        GetModule()->NotifyProfilerLoadFinished(S_OK);
     }
 
 #endif

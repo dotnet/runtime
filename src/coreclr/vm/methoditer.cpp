@@ -95,7 +95,7 @@ ADVANCE_MODULE:
 ADVANCE_TYPE:
     if (m_mainMD->HasClassInstantiation())
     {
-        if (!GetCurrentModule()->GetAvailableParamTypes()->FindNext(&m_typeIterator, &m_typeIteratorEntry))
+        if (!GetModule()->GetAvailableParamTypes()->FindNext(&m_typeIterator, &m_typeIteratorEntry))
             goto ADVANCE_MODULE;
         if (CORCOMPILE_IS_POINTER_TAGGED(m_typeIteratorEntry->GetTypeHandle().AsTAddr()))
             goto ADVANCE_TYPE;
@@ -149,7 +149,7 @@ ADVANCE_TYPE:
 ADVANCE_METHOD:
     if (m_mainMD->HasMethodInstantiation())
     {
-        if (!GetCurrentModule()->GetInstMethodHashTable()->FindNext(&m_methodIterator, &m_methodIteratorEntry))
+        if (!GetModule()->GetInstMethodHashTable()->FindNext(&m_methodIterator, &m_methodIteratorEntry))
             goto ADVANCE_TYPE;
         if (CORCOMPILE_IS_POINTER_TAGGED(dac_cast<TADDR>(m_methodIteratorEntry->GetMethod())))
             goto ADVANCE_METHOD;
@@ -178,7 +178,7 @@ ADVANCE_METHOD:
 } // LoadedMethodDescIterator::Next
 
 
-Module * LoadedMethodDescIterator::GetCurrentModule()
+Module * LoadedMethodDescIterator::GetModule()
 {
     CONTRACTL
     {
@@ -188,7 +188,7 @@ Module * LoadedMethodDescIterator::GetCurrentModule()
     }
     CONTRACTL_END
 
-    return m_moduleIterator.GetLoadedModule();
+    return m_moduleIterator.GetModule();
 }
 
 MethodDesc *LoadedMethodDescIterator::Current()

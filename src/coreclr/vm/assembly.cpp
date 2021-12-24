@@ -837,7 +837,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                         GetManifestModule()->LoadAssembly(mdLinkRef);
                     PREFIX_ASSUME(pDomainAssembly != NULL);
 
-                    RETURN pDomainAssembly->GetCurrentModule();
+                    RETURN pDomainAssembly->GetModule();
 #else
                     _ASSERTE(!"DAC shouldn't attempt to trigger loading");
                     return NULL;
@@ -894,7 +894,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                 RETURN NULL;
             else
             {
-                pModule = pDomainModule->GetCurrentModule();
+                pModule = pDomainModule->GetModule();
                 if (pModule == NULL)
                 {
                     _ASSERTE(loadFlag!=Loader::Load);

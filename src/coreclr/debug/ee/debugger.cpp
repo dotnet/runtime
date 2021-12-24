@@ -5317,7 +5317,7 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainFile * pDomainFile)
     LOG((LF_CORDB, LL_INFO1000, "D::ADM df=0x%x\n", pDomainFile));
     DebuggerDataLockHolder chInfo(this);
 
-    Module *     pRuntimeModule = pDomainFile->GetCurrentModule();
+    Module *     pRuntimeModule = pDomainFile->GetModule();
     AppDomain *  pAppDomain     = pDomainFile->GetAppDomain();
 
     HRESULT hr = CheckInitModuleTable();

@@ -720,7 +720,7 @@ HRESULT DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
 
     DWORD        dwBits      = 0;
     DomainFile * pDomainFile = vmDomainFile.GetDacPtr();
-    Module *     pModule     = pDomainFile->GetCurrentModule();
+    Module *     pModule     = pDomainFile->GetModule();
     HRESULT      hr          = S_OK;
 
 
@@ -1090,7 +1090,7 @@ void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainFile vmDomainFile,
     DD_ENTER_MAY_THROW;
 
     DomainFile * pDomainFile = vmDomainFile.GetDacPtr();
-    Module *     pModule     = pDomainFile->GetCurrentModule();
+    Module *     pModule     = pDomainFile->GetModule();
     RVA          methodRVA   = 0;
     DWORD        implFlags;
 
@@ -1335,7 +1335,7 @@ void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainFile         vmDomainFil
     pCodeInfo->Clear();
 
     DomainFile * pDomainFile = vmDomainFile.GetDacPtr();
-    Module *     pModule     = pDomainFile->GetCurrentModule();
+    Module *     pModule     = pDomainFile->GetModule();
 
     MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
     pCodeInfo->vmNativeCodeMethodDescToken.SetHostPtr(pMethodDesc);
@@ -4091,7 +4091,7 @@ void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
 {
     DD_ENTER_MAY_THROW;
     DomainFile * pDomainFile        = pTypeRefInfo->vmDomainFile.GetDacPtr();
-    Module *     pReferencingModule = pDomainFile->GetCurrentModule();
+    Module *     pReferencingModule = pDomainFile->GetModule();
     BOOL         fSuccess = FALSE;
 
     // Resolve the type ref
@@ -4528,7 +4528,7 @@ VMPTR_DomainAssembly DacDbiInterfaceImpl::ResolveAssembly(
 
     DomainFile * pDomainFile  = vmScope.GetDacPtr();
     AppDomain  * pAppDomain   = pDomainFile->GetAppDomain();
-    Module     * pModule      = pDomainFile->GetCurrentModule();
+    Module     * pModule      = pDomainFile->GetModule();
 
     VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
 
