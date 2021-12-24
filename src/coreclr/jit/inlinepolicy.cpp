@@ -1446,19 +1446,19 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 2.5;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 2.5;
+        multiplier += 2.0;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
                 multiplier);
     }
     else if (m_FldAccessOverArgStruct > 0)
     {
-        multiplier += 1.5;
+        multiplier += 1.0;
         // Such ldfld/stfld are cheap for promotable structs
         JITDUMP("\n%d ldfld or stfld over arguments which are structs.  Multiplier increased to %g.",
                 m_FldAccessOverArgStruct, multiplier);
@@ -1484,7 +1484,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_NonGenericCallsGeneric)
     {
-        multiplier += 4.0;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
     }
 
@@ -1498,7 +1498,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        multiplier += 4.0 + m_FoldableBranch * 1.5;
+        multiplier += 3.0 + m_FoldableBranch;
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
     }
@@ -1519,7 +1519,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     {
         // What it means that for this specific st(s)fld we can avoid emitting a heavy write-barrier
         // if we inline the candidate
-        multiplier += 1.5 + m_ConstArgSetsFld;
+        multiplier += m_ConstArgSetsFld;
         JITDUMP("\nInline candidate has const arg that sets %d fields.  Multiplier increased to %g.", m_ConstArgSetsFld,
                 multiplier);
     }
@@ -1597,7 +1597,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExpr > 0)
     {
         // E.g. add/mul/ceq, etc. over constant/constant arguments
-        multiplier += 1.5 + m_FoldableExpr;
+        multiplier += 1.0 + m_FoldableExpr;
         JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr,
                 multiplier);
     }
@@ -1605,7 +1605,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExprUn > 0)
     {
         // E.g. casts, negations, etc. over constants/constant arguments
-        multiplier += 0.5 + m_FoldableExprUn;
+        multiplier += m_FoldableExprUn;
         JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn,
                 multiplier);
     }
@@ -1627,7 +1627,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //   ceq
         //
         // so at least we can note potential constant tests
-        multiplier += 1.5 + m_BinaryExprWithCns * 0.5;
+        multiplier += m_BinaryExprWithCns * 0.5;
         JITDUMP("\nInline candidate has %d binary expressions with constants.  Multiplier increased to %g.",
                 m_BinaryExprWithCns, multiplier);
 
@@ -1655,8 +1655,8 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     {
         case InlineCallsiteFrequency::RARE:
             // Note this one is not additive, it uses '=' instead of '+='
-            multiplier /= 2;
-            JITDUMP("\nInline candidate callsite is rare.  Multiplier decreased to %g.", multiplier);
+            multiplier = 1.3;
+            JITDUMP("\nInline candidate callsite is rare. Multiplier limited to %g.", multiplier);
             break;
         case InlineCallsiteFrequency::BORING:
             multiplier += 1.3;

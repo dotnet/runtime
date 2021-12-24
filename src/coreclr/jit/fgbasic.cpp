@@ -838,10 +838,6 @@ public:
     }
     static bool IsExactArgument(FgSlot value, InlineInfo* info)
     {
-        if (IsConstantOrConstArg(value, info))
-        {
-            return true;
-        }
         if ((info == nullptr) || !IsArgument(value))
         {
             return false;
@@ -1076,12 +1072,14 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     if (FgStack::IsConstantOrConstArg(slot, impInlineInfo) ||
                         FgStack::IsExactArgument(slot, impInlineInfo))
                     {
-                        if (opcode == CEE_ISINST)
+                        if ((opcode == CEE_ISINST) && FgStack::IsExactArgument(slot, impInlineInfo))
                         {
+                            // isinst on top of non-constant "exact" argument (at callsite)
+                            // most likely will fold this isinst 
                             pushedStack.PushConstant();
                         }
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR_UN);
-                        handled = true;
+                        handled = true; // and keep argument in the pushedStack
                     }
                     else if (FgStack::IsArgument(slot))
                     {
@@ -1172,11 +1170,13 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Object_GetType:
                             {
                                 // obj.GetType() is folded into typeof() if obj is exact
-                                if (FgStack::IsExactArgument(pushedStack.Top(0), impInlineInfo))
+                                if (FgStack::IsExactArgument(pushedStack.Top(0), impInlineInfo) ||
+                                    FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
                                 {
                                     pushedStack.PushConstant();
                                     foldableIntrinsc = true;
                                 }
+                                else if ()
                                 break;
                             }
 
@@ -1283,41 +1283,16 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     // it is a wrapper method.
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
-            }
-            break;
 
-            case CEE_STFLD:
-            case CEE_STSFLD:
-            {
-                if (makeInlineObservations)
+                if (!isIntrinsic && !handled && FgStack::IsArgument(pushedStack.Top()))
                 {
-                    // If we inline we'll end up setting a constant value to a field
-                    // e.g. it might help us to avoid emitting a write barrier if the
-                    // field is of a reference type and we set argument (which is null) to it.
-                    if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo))
-                    {
-                        compInlineResult->Note(InlineObservation::CALLSITE_CONST_ARG_SETS_FLD);
-                    }
+                    // Optimistically assume that "call(arg)" returns something arg-dependent.
+                    // However, we don't know how many args it expects and its return type.
+                    // TODO: Make IL scan 100% precise so we can guess it looking at the stack.
+                    handled = true;
                 }
             }
             break;
-
-            case CEE_LDSFLD:
-                if (resolveTokens && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-                {
-                    // Push a constant to the stack for static readonly fields (initialized)
-                    // of primitive types.
-                    impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Field);
-                    CORINFO_FIELD_HANDLE fldHnd = resolvedToken.hField;
-                    bool                 inited = false;
-                    if ((info.compCompHnd->getStaticFieldCurrentClass(fldHnd, &inited) == NO_CLASS_HANDLE) && inited)
-                    {
-                        compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_LDSFLD);
-                        pushedStack.PushConstant();
-                        handled = true;
-                    }
-                }
-                break;
 
             case CEE_LDIND_I1:
             case CEE_LDIND_U1:
@@ -1651,6 +1626,43 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 }
             }
             break;
+
+            case CEE_LDFLDA:
+            case CEE_LDFLD:
+            case CEE_STFLD:
+            case CEE_STSFLD:
+                if (makeInlineObservations)
+                {
+                    if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo) && ((opcode == CEE_STFLD) || (opcode == CEE_STSFLD)))
+                    {
+                        // If we inline we'll set a constant value (e.g. null) to this field 
+                        // If it's of reference type we'll avoid an expensive write barrier here
+                        compInlineResult->Note(InlineObservation::CALLSITE_CONST_ARG_SETS_FLD);
+                    }
+                    else if (FgStack::IsArgument(pushedStack.Top()))
+                    {
+                        compInlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT_FIELD_ACCESS);
+                        handled = true; // keep argument on top of the stack
+                    }
+                    break;
+                }
+            break;
+
+            case CEE_LDSFLD:
+                if (resolveTokens && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+                {
+                    // Push a constant to the stack for static readonly fields (initialized)
+                    impResolveToken(codeAddr, &resolvedToken, CORINFO_TOKENKIND_Field);
+                    CORINFO_FIELD_HANDLE fldHnd = resolvedToken.hField;
+                    bool                 inited = false;
+                    if ((info.compCompHnd->getStaticFieldCurrentClass(fldHnd, &inited) == NO_CLASS_HANDLE) && inited)
+                    {
+                        compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_LDSFLD);
+                        pushedStack.PushConstant();
+                        handled = true;
+                    }
+                }
+                break;
 
             case CEE_LDELEM_I1:
             case CEE_LDELEM_U1:
