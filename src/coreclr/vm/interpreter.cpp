@@ -91,7 +91,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
     }
 #endif
 
-#if defined(UNIX_AMD64_ABI) || defined(HOST_LOONGARCH64)
+#if defined(UNIX_AMD64_ABI) || defined(UNIX_LOONGARCH64_ABI)
     // ...or it fits into two registers.
     if (hasRetBuff && getClassSize(methInfo->args.retTypeClass) <= 2 * sizeof(void*))
     {
@@ -1246,7 +1246,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             unsigned short stackArgBaseOffset = (2 + argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*);
 #elif defined(HOST_AMD64)
             unsigned short stackArgBaseOffset = (argState.numRegArgs) * sizeof(void*);
-#elif defined(HOST_LOONGARCH64)
+#elif defined(UNIX_LOONGARCH64_ABI)
             // See StubLinkerCPU::EmitProlog for the layout of the stack
             unsigned       intRegArgBaseOffset = (argState.numFPRegArgSlots) * sizeof(void*);
             unsigned short stackArgBaseOffset = (unsigned short) ((argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*));
@@ -1298,7 +1298,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     X86Reg argRegs[] = { kECX, kEDX, kR8, kR9 };
                     if (!jmpCall) { sl.X86EmitIndexRegStoreRSP(regArgsFound * sizeof(void*), argRegs[regArgsFound - 1]); }
                     argState.argOffsets[k] = (regArgsFound - 1) * sizeof(void*);
-#elif defined(HOST_LOONGARCH64)
+#elif defined(UNIX_LOONGARCH64_ABI)
                     argState.argOffsets[k] += intRegArgBaseOffset;
 #else
 #error unsupported platform
@@ -1612,7 +1612,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
         sl.EmitEpilog();
 
-#elif defined(HOST_LOONGARCH64)
+#elif defined(UNIX_LOONGARCH64_ABI)
         assert(!"unimplemented on LOONGARCH yet");
 
 #else

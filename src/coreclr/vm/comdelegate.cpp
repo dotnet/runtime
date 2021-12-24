@@ -181,8 +181,8 @@ public:
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
-#if defined(TARGET_LOONGARCH64)
-            if (7 < (/*m_argLocDesc->m_cGenReg*/ m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
+#if defined(UNIX_LOONGARCH64_ABI)
+            if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
             {
                 m_currentGenRegIndex++;
                 index = m_currentByteStackIndex;
@@ -339,10 +339,9 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
     {
         // We should have slots to shuffle in the destination at the same time as the source.
         _ASSERTE(iteratorDst.HasNextOfs());
-#if defined(TARGET_LOONGARCH64)
+#if defined(UNIX_LOONGARCH64_ABI)
         if (!sArgDst.m_byteStackSize && (sArgSrc.m_offs > 0))
         {
-            //assert(sArgSrc.m_idxStack >= 0);
             if (sArgSrc.m_byteStackSize > 0)
             {
                 if (sArgSrc.m_cGenReg > 0)
@@ -356,7 +355,6 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
 
                 if ((sArgSrc.m_offs == 1) || (sArgSrc.m_offs == 4))
                 {//first float;   ||   second float;
-                    //assert((sArgDst.m_cFloatReg + sArgDst.m_cGenReg) == sArgDst.m_cFloatReg);
                     assert(sArgDst.m_cGenReg == 1);
                     assert(sArgDst.m_cFloatReg == 1);
                     assert(sArgSrc.m_byteStackSize == 8);
@@ -364,19 +362,15 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     entry.srcofs = iteratorSrc.GetNextOfs();
                     entry.dstofs = iteratorDst.GetNextOfs();
                     assert(entry.srcofs != entry.dstofs);
-                    //entry.delay = true;
                     entry.stackofs = sArgSrc.m_offs;
                     pShuffleEntryArray->Append(entry);
 
-                    //entry.srcofs = entry.srcofs;//iteratorSrc.GetNextOfs();
                     entry.dstofs = iteratorDst.GetNextOfs();
                     assert(entry.srcofs != entry.dstofs);
-                    //entry.delay = true;
-                    //entry.stackofs = sArgSrc.m_offs;
                     pShuffleEntryArray->Append(entry);
 
                     assert(!iteratorSrc.HasNextOfs());
-                    break;//continue;
+                    break;
                 }
                 else if ((sArgSrc.m_offs == 8) || (sArgSrc.m_offs == 7))
                 {//second double.   ||    first double.
@@ -387,19 +381,16 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     entry.srcofs = iteratorSrc.GetNextOfs();
                     entry.dstofs = iteratorDst.GetNextOfs();
                     assert(entry.srcofs != entry.dstofs);
-                    //entry.delay = true;
                     entry.stackofs = sArgSrc.m_offs;
                     pShuffleEntryArray->Append(entry);
 
                     entry.srcofs = iteratorSrc.GetNextOfs();
                     entry.dstofs = iteratorDst.GetNextOfs();
                     assert(entry.srcofs != entry.dstofs);
-                    //entry.delay = true;
-                    //entry.stackofs = sArgSrc.m_offs;
                     pShuffleEntryArray->Append(entry);
 
                     assert(!iteratorSrc.HasNextOfs());
-                    break;//continue;
+                    break;
                 }
 
                 assert(!"---------No this stack case.--------------");
