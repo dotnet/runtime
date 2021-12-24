@@ -310,7 +310,7 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
 
     SString sAssemblyName;
     StackScratchBuffer scratch;
-    pMod->GetAssembly()->GetManifestFile()->GetDisplayName(sAssemblyName);
+    pMod->GetAssembly()->GetPEAssembly()->GetDisplayName(sAssemblyName);
 
     LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8(scratch);
     unsigned lenAssemblyName = sAssemblyName.GetCount();

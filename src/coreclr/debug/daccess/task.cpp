@@ -1170,7 +1170,7 @@ ClrDataAssembly::GetFileName(
     {
         COUNT_T _nameLen;
 
-        if (m_assembly->GetManifestFile()->GetPath().
+        if (m_assembly->GetPEAssembly()->GetPath().
             DacGetUnicode(bufLen, name, &_nameLen))
         {
             if (nameLen)

@@ -88,7 +88,7 @@ public:
     static Assembly *Create(BaseDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pManifestFile->IsSystem(); }
+    BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
 
     static Assembly *CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args);
 
@@ -231,50 +231,50 @@ public:
     LPCWSTR GetDebugName()
     {
         WRAPPER_NO_CONTRACT;
-        return GetManifestFile()->GetDebugName();
+        return GetPEAssembly()->GetDebugName();
     }
 #endif
 
     LPCUTF8 GetSimpleName()
     {
         WRAPPER_NO_CONTRACT;
-        return GetManifestFile()->GetSimpleName();
+        return GetPEAssembly()->GetSimpleName();
     }
 
     BOOL IsStrongNamed()
     {
         WRAPPER_NO_CONTRACT;
-        return GetManifestFile()->IsStrongNamed();
+        return GetPEAssembly()->IsStrongNamed();
     }
 
     const void *GetPublicKey(DWORD *pcbPK)
     {
         WRAPPER_NO_CONTRACT;
-        return GetManifestFile()->GetPublicKey(pcbPK);
+        return GetPEAssembly()->GetPublicKey(pcbPK);
     }
 
     ULONG GetHashAlgId()
     {
         WRAPPER_NO_CONTRACT;
-        return GetManifestFile()->GetHashAlgId();
+        return GetPEAssembly()->GetHashAlgId();
     }
 
     HRESULT GetVersion(USHORT *pMajor, USHORT *pMinor, USHORT *pBuild, USHORT *pRevision)
     {
         WRAPPER_NO_CONTRACT;
-        return GetManifestFile()->GetVersion(pMajor, pMinor, pBuild, pRevision);
+        return GetPEAssembly()->GetVersion(pMajor, pMinor, pBuild, pRevision);
     }
 
     LPCUTF8 GetLocale()
     {
         WRAPPER_NO_CONTRACT;
-        return GetManifestFile()->GetLocale();
+        return GetPEAssembly()->GetLocale();
     }
 
     DWORD GetFlags()
     {
         WRAPPER_NO_CONTRACT;
-        return GetManifestFile()->GetFlags();
+        return GetPEAssembly()->GetFlags();
     }
 
     PTR_LoaderHeap GetLowFrequencyHeap();
@@ -288,18 +288,18 @@ public:
         return m_pManifest;
     }
 
-    PTR_PEAssembly GetManifestFile()
+    PTR_PEAssembly GetPEAssembly()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return m_pManifestFile;
+        return m_pPEAssembly;
     }
 
     IMDInternalImport* GetManifestImport()
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return m_pManifestFile->GetMDImport();
+        return m_pPEAssembly->GetMDImport();
     }
 
     HRESULT GetCustomAttribute(mdToken parentToken,
@@ -324,7 +324,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return m_pManifestFile->GetDisplayName(result, flags);
+        return m_pPEAssembly->GetDisplayName(result, flags);
     }
 #endif // DACCESS_COMPILE
 
@@ -332,7 +332,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return m_pManifestFile->GetCodeBase(result);
+        return m_pPEAssembly->GetCodeBase(result);
     }
 
     OBJECTREF GetExposedObject();
@@ -360,7 +360,7 @@ public:
 
     ULONG HashIdentity()
     {
-        return GetManifestFile()->HashIdentity();
+        return GetPEAssembly()->HashIdentity();
     }
 
     //****************************************************************************************
@@ -558,7 +558,7 @@ private:
 
     PTR_MethodDesc        m_pEntryPoint;    // Method containing the entry point
     PTR_Module            m_pManifest;
-    PTR_PEAssembly        m_pManifestFile;
+    PTR_PEAssembly        m_pPEAssembly;
 
     FriendAssemblyDescriptor *m_pFriendAssemblyDescriptor;
 
@@ -673,7 +673,7 @@ private:
     static
     bool IsAssemblyOnList(Assembly *pAssembly, const ArrayList &alAssemblyNames)
     {
-        return IsAssemblyOnList(pAssembly->GetManifestFile(), alAssemblyNames);
+        return IsAssemblyOnList(pAssembly->GetPEAssembly(), alAssemblyNames);
     }
 
     static

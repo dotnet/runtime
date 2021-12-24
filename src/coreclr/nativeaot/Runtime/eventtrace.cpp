@@ -4829,13 +4829,13 @@ void ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
     BOOL bIsDynamicAssembly = pAssembly->IsDynamic();
     BOOL bIsCollectibleAssembly = pAssembly->IsCollectible();
     BOOL bIsDomainNeutral = pAssembly->IsDomainNeutral() ;
-    BOOL bHasNativeImage = pAssembly->GetManifestFile()->HasNativeImage();
+    BOOL bHasNativeImage = pAssembly->GetPEAssembly()->HasNativeImage();
 
     ULONGLONG ullAssemblyId = (ULONGLONG)pAssembly;
     ULONGLONG ullDomainId = (ULONGLONG)pAssembly->GetDomain();
     ULONGLONG ullBindingID = 0;
 #if (defined FEATURE_PREJIT) && (defined FEATURE_FUSION_DEPRECATE)
-    ullBindingID = pAssembly->GetManifestFile()->GetBindingID();
+    ullBindingID = pAssembly->GetPEAssembly()->GetBindingID();
 #endif
     ULONG ulAssemblyFlags = ((bIsDomainNeutral ? ETW::LoaderLog::LoaderStructs::DomainNeutralAssembly : 0) |
                              (bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicAssembly : 0) |
@@ -5207,7 +5207,7 @@ void ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 #endif // !FEATURE_PAL
     if(!bIsDynamicAssembly)
     {
-        ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetManifestFile()->GetILimage()->GetPath().GetUnicode();
+        ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetPEAssembly()->GetILimage()->GetPath().GetUnicode();
         ModuleNativePath = (PWCHAR)pEmptyString;
 
 #ifdef FEATURE_PREJIT

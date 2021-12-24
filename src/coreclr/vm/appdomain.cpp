@@ -3827,7 +3827,7 @@ PEAssembly *AppDomain::TryResolveAssemblyUsingEvent(AssemblySpec *pSpec)
         Assembly *pAssembly = RaiseAssemblyResolveEvent(pSpec);
         if (pAssembly != nullptr)
         {
-            PEAssembly* pPEAssembly = pAssembly->GetManifestFile();
+            PEAssembly* pPEAssembly = pAssembly->GetPEAssembly();
             pPEAssembly->AddRef();
             result = pPEAssembly;
         }

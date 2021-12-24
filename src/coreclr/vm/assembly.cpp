@@ -127,7 +127,7 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssembl
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
     m_pManifest(NULL),
-    m_pManifestFile(clr::SafeAddRef(pPEAssembly)),
+    m_pPEAssembly(clr::SafeAddRef(pPEAssembly)),
     m_pFriendAssemblyDescriptor(NULL),
     m_isDynamic(false),
 #ifdef FEATURE_COLLECTIBLE_TYPES
@@ -189,7 +189,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
 
-    PEAssembly* pPEAssembly = GetManifestFile();
+    PEAssembly* pPEAssembly = GetPEAssembly();
 
     // "Module::Create" will initialize R2R support, if there is an R2R header.
     // make sure the PE is loaded or R2R will be disabled.
@@ -252,9 +252,9 @@ Assembly::~Assembly()
     if (m_pFriendAssemblyDescriptor != NULL)
         m_pFriendAssemblyDescriptor->Release();
 
-    if (m_pManifestFile)
+    if (m_pPEAssembly)
     {
-        m_pManifestFile->Release();
+        m_pPEAssembly->Release();
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -516,7 +516,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         IfFailThrow(pAssemblyEmit->DefineAssembly(publicKey, publicKey.GetSize(), ulHashAlgId,
                                                    name, &assemData, dwFlags,
                                                    &ma));
-        pPEAssembly = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
+        pPEAssembly = PEAssembly::Create(pCallerAssembly->GetPEAssembly(), pAssemblyEmit);
 
         AssemblyBinder* pFallbackBinder = pBinder;
 
@@ -531,7 +531,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
             // and will have a fallback load context binder associated with it.
 
             // There is always a manifest file - wehther working with static or dynamic assemblies.
-            PEAssembly* pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
+            PEAssembly* pCallerAssemblyManifestFile = pCallerAssembly->GetPEAssembly();
             _ASSERTE(pCallerAssemblyManifestFile != NULL);
 
             if (!pCallerAssemblyManifestFile->IsDynamic())
@@ -1222,7 +1222,7 @@ void Assembly::CacheFriendAssemblyInfo()
 
     if (m_pFriendAssemblyDescriptor == NULL)
     {
-        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly());
         _ASSERTE(pFriendAssemblies != NULL);
 
         CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
@@ -1257,7 +1257,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
 
     while (true)
     {
-        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly());
         FriendAssemblyDescriptor* pFriendAssemblyDescriptorNextLoop = NULL;
 
         {
@@ -1699,7 +1699,7 @@ MethodDesc* Assembly::GetEntryPoint()
     if (m_pEntryPoint)
         RETURN m_pEntryPoint;
 
-    mdToken mdEntry = m_pManifestFile->GetEntryPointToken();
+    mdToken mdEntry = m_pPEAssembly->GetEntryPointToken();
     if (IsNilToken(mdEntry))
         RETURN NULL;
 
@@ -1715,7 +1715,7 @@ MethodDesc* Assembly::GetEntryPoint()
         break;
 
     case mdtMethodDef:
-        if (m_pManifestFile->GetMDImport()->IsValidToken(mdEntry))
+        if (m_pPEAssembly->GetMDImport()->IsValidToken(mdEntry))
             pModule = m_pManifest;
         break;
     }
@@ -1874,7 +1874,7 @@ BOOL Assembly::IsInstrumentedHelper()
         return false;
 
     // We must have a native image in order to perform IBC instrumentation
-    if (!GetManifestFile()->IsReadyToRun())
+    if (!GetPEAssembly()->IsReadyToRun())
         return false;
 
     // @Consider using the full name instead of the short form
@@ -2001,7 +2001,7 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     SafeComHolder<IMetaDataAssemblyEmit> emitHolder;
 
     AssemblySpec spec;
-    spec.InitializeSpec(refedAssembly->GetManifestFile());
+    spec.InitializeSpec(refedAssembly->GetPEAssembly());
 
     if (refedAssembly->IsCollectible())
     {
@@ -2242,9 +2242,9 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pManifest->EnumMemoryRegions(flags, true);
     }
-    if (m_pManifestFile.IsValid())
+    if (m_pPEAssembly.IsValid())
     {
-        m_pManifestFile->EnumMemoryRegions(flags);
+        m_pPEAssembly->EnumMemoryRegions(flags);
     }
 }
 
