@@ -1128,7 +1128,11 @@ namespace System.Text.RegularExpressions.Generator
 
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
 
-                TransferSliceStaticPosToPos();
+                if (sliceStaticPos > 0)
+                {
+                    TransferSliceStaticPosToPos();
+                    writer.WriteLine();
+                }
 
                 // If the specified capture hasn't yet captured anything, fail to match... except when using RegexOptions.ECMAScript,
                 // in which case per ECMA 262 section 21.2.2.9 the backreference should succeed.
