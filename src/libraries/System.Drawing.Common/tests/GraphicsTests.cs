@@ -12,20 +12,6 @@ namespace System.Drawing.Tests
 {
     public partial class GraphicsTests
     {
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
-        public void FromHandle()
-        {
-            var bitmap = new Bitmap(1, 1);
-            using var graphics = Graphics.FromImage(bitmap);
-
-            var expectedHandle = graphics.Handle;
-            var actualGraphics = Graphics.FromHandle(expectedHandle);
-
-            IntPtr actualHandle = actualGraphics.Handle;
-            Assert.Equal(expectedHandle, actualHandle);
-        }
-
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHdc_FromHdc_Roundtrips()
