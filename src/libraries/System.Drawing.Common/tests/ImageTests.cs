@@ -15,7 +15,7 @@ using Encoder = System.Drawing.Imaging.Encoder;
 namespace System.Drawing.Tests
 {
     [ConditionalClass(typeof(PlatformDetection),nameof(PlatformDetection.IsDrawingSupported))]
-    public class ImageTests
+    public partial class ImageTests
     {
         private const int PropertyTagLuminanceTable = 0x5090;
         private const int PropertyTagChrominanceTable = 0x5091;
@@ -39,19 +39,6 @@ namespace System.Drawing.Tests
             using var bitmap = new Bitmap(1, 1);
             Assert.Empty(bitmap.PropertyIdList);
             Assert.Same(bitmap.PropertyIdList, bitmap.PropertyIdList);
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
-        public void FromHandle()
-        {
-            using var image = new Bitmap(1, 1);
-
-            var expectedHandle = image.Handle;
-            var actualImage = Image.FromHandle(expectedHandle);
-
-            IntPtr actualHandle = actualImage.Handle;
-            Assert.Equal(expectedHandle, actualHandle);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
