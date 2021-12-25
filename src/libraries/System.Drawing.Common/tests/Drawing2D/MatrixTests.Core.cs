@@ -40,5 +40,17 @@ namespace System.Drawing.Drawing2D.Tests
                 Assert.Equal(dy, matrix.OffsetY);
             }
         }
+
+        [Fact]
+        public void FromHandle()
+        {
+            using var matrix = new Matrix();
+
+            var expectedHandle = matrix.Handle;
+            var actualMatrix = Matrix.FromHandle(expectedHandle);
+
+            IntPtr actualHandle = actualMatrix.Handle;
+            Assert.Equal(expectedHandle, actualHandle);
+        }
     }
 }

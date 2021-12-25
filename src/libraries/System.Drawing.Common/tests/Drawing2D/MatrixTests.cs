@@ -159,18 +159,6 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Throws<OutOfMemoryException>(() => new Matrix(new RectangleF(1, 1, 0, 1), new PointF[3]));
         }
 
-        [Fact]
-        public void FromHandle()
-        {
-            using var matrix = new Matrix();
-
-            var expectedHandle = matrix.Handle;
-            var actualMatrix = Matrix.FromHandle(expectedHandle);
-
-            IntPtr actualHandle = actualMatrix.Handle;
-            Assert.Equal(expectedHandle, actualHandle);
-        }
-
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_HeightZero_ThrowsOutOfMemoryException()
         {
