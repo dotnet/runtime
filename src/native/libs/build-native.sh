@@ -53,7 +53,6 @@ if [[ "$__BuildArch" == wasm ]]; then
     source "$EMSDK_PATH"/emsdk_env.sh
 
     export CLR_CC=$(which emcc)
-    export CLR_CXX=$(which em++)
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true

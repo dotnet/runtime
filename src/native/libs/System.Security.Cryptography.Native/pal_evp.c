@@ -56,7 +56,7 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
     return ret;
 }
 
-static EVP_MD_CTX* CryptoNative_EvpDup(const EVP_MD_CTX* ctx)
+static EVP_MD_CTX* EvpDup(const EVP_MD_CTX* ctx)
 {
     if (ctx == NULL)
     {
@@ -81,7 +81,7 @@ static EVP_MD_CTX* CryptoNative_EvpDup(const EVP_MD_CTX* ctx)
 
 int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 {
-    EVP_MD_CTX* dup = CryptoNative_EvpDup(ctx);
+    EVP_MD_CTX* dup = EvpDup(ctx);
 
     if (dup != NULL)
     {

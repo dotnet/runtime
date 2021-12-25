@@ -956,7 +956,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_peek SSL_peek_ptr
 #define SSL_state_string_long SSL_state_string_long_ptr
 #define SSL_read SSL_read_ptr
-#define ERR_print_errors_fp ERR_print_errors_fp_ptr
 #define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
 #define SSL_session_reused SSL_session_reused_ptr

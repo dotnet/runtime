@@ -50,7 +50,7 @@ void* SystemNative_AlignedRealloc(void* ptr, uintptr_t alignment, uintptr_t new_
 
     if (result != NULL)
     {
-        uintptr_t old_size = SystemNative_GetUsableSize(ptr);
+        uintptr_t old_size = MALLOC_SIZE(ptr);
         assert((ptr != NULL) || (old_size == 0));
 
         memcpy(result, ptr, (new_size < old_size) ? new_size : old_size);
@@ -68,11 +68,6 @@ void* SystemNative_Calloc(uintptr_t num, uintptr_t size)
 void SystemNative_Free(void* ptr)
 {
     free(ptr);
-}
-
-uintptr_t SystemNative_GetUsableSize(void* ptr)
-{
-    return MALLOC_SIZE(ptr);
 }
 
 void* SystemNative_Malloc(uintptr_t size)
