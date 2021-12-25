@@ -491,7 +491,7 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
 
 #ifdef FEATURE_MULTICOREJIT
     {
-        Module * pModule = GetModule();
+        Module * pModule = m_pModule;
 
         if (pModule != NULL) // Should not triggle assert when module is NULL
         {
