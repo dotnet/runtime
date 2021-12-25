@@ -29,7 +29,7 @@ using Xunit;
 
 namespace System.Drawing.Tests
 {
-    public class RegionTests
+    public partial class RegionTests
     {
         private static readonly Graphics s_graphic = Graphics.FromImage(new Bitmap(1, 1));
 
@@ -85,19 +85,6 @@ namespace System.Drawing.Tests
                 Assert.False(region.IsInfinite(s_graphic));
                 Assert.Equal(rectangle, region.GetBounds(s_graphic));
             }
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
-        public void FromHandle()
-        {
-            using var region = new Region();
-
-            var expectedHandle = region.Handle;
-            var actualRegion = Region.FromHandle(expectedHandle);
-
-            IntPtr actualHandle = actualRegion.Handle;
-            Assert.Equal(expectedHandle, actualHandle);
         }
 
         public static IEnumerable<object[]> Region_TestData()
