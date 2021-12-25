@@ -31,7 +31,9 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                var builder = new SparseArrayBuilder<TResult>(initialize: true);
+#pragma warning disable SA1129 // Do not use default value type constructor
+                SparseArrayBuilder<TResult> builder = new();
+#pragma warning restore SA1129 // Do not use default value type constructor
                 ArrayBuilder<IEnumerable<TResult>> deferredCopies = default;
 
                 foreach (TSource element in _source)

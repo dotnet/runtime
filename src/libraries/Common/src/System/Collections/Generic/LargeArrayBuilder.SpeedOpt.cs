@@ -25,7 +25,6 @@ namespace System.Collections.Generic
         /// <summary>
         /// Constructs a new builder.
         /// </summary>
-        /// <param name="initialize">Pass <c>true</c>.</param>
         public LargeArrayBuilder()
             : this(maxCapacity: int.MaxValue)
         {
@@ -42,6 +41,7 @@ namespace System.Collections.Generic
         {
             Debug.Assert(maxCapacity >= 0);
 
+            this = default;
             _first = _current = Array.Empty<T>();
             _maxCapacity = maxCapacity;
         }

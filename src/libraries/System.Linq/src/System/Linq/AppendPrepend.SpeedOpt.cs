@@ -23,7 +23,9 @@ namespace System.Linq
             {
                 Debug.Assert(GetCount(onlyIfCheap: true) == -1);
 
-                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+#pragma warning disable SA1129 // Do not use default value type constructor
+                LargeArrayBuilder<TSource> builder = new();
+#pragma warning restore SA1129 // Do not use default value type constructor
 
                 if (!_appending)
                 {
@@ -106,7 +108,9 @@ namespace System.Linq
             {
                 Debug.Assert(GetCount(onlyIfCheap: true) == -1);
 
-                var builder = new SparseArrayBuilder<TSource>(initialize: true);
+#pragma warning disable SA1129 // Do not use default value type constructor
+                SparseArrayBuilder<TSource> builder = new();
+#pragma warning restore SA1129 // Do not use default value type constructor
 
                 if (_prepended != null)
                 {

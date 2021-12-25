@@ -80,7 +80,9 @@ namespace System.Collections.Generic
                 return result;
             }
 
-            var builder = new LargeArrayBuilder<T>(initialize: true);
+#pragma warning disable SA1129 // Do not use default value type constructor
+            LargeArrayBuilder<T> builder = new();
+#pragma warning restore SA1129 // Do not use default value type constructor
             builder.AddRange(source);
             return builder.ToArray();
         }

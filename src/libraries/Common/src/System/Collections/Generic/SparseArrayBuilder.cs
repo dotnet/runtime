@@ -53,7 +53,7 @@ namespace System.Collections.Generic
         /// <remarks>
         /// This field is a mutable struct; do not mark it readonly.
         /// </remarks>
-        private LargeArrayBuilder<T> _builder = new();
+        private LargeArrayBuilder<T> _builder;
 
         /// <summary>
         /// The list of reserved regions within this builder.
@@ -67,6 +67,17 @@ namespace System.Collections.Generic
         /// The total number of reserved slots within this builder.
         /// </summary>
         private int _reservedCount;
+
+        /// <summary>
+        /// Constructs a new builder.
+        /// </summary>
+        public SparseArrayBuilder()
+        {
+            this = default;
+#pragma warning disable SA1129 // Do not use default value type constructor
+            _builder = new LargeArrayBuilder<T>();
+#pragma warning restore SA1129 // Do not use default value type constructor
+        }
 
         /// <summary>
         /// The total number of items in this builder, including reserved regions.
