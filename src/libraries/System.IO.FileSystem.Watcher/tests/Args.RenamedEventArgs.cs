@@ -22,6 +22,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(WatcherChangeTypes.Changed, "C:", "foo.txt", "bar.txt")]
         [InlineData(WatcherChangeTypes.Changed, "D:\\", "foo.txt", "bar.txt")]
         [InlineData(WatcherChangeTypes.Changed, "E:\\bar", "foo.txt", "bar.txt")]

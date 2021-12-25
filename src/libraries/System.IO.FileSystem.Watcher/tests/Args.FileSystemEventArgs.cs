@@ -8,6 +8,7 @@ namespace System.IO.Tests
     public class FileSystemEventArgsTests
     {
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(WatcherChangeTypes.Changed, "C:", "foo.txt")]
         [InlineData(WatcherChangeTypes.Changed, "D:\\", "foo.txt")]
         [InlineData(WatcherChangeTypes.Changed, "E:\\bar", "foo.txt")]
