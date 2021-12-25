@@ -1063,7 +1063,7 @@ CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type)
     {
         // Check the class interface attribute at the assembly level.
         Assembly *pAssembly = type.GetAssembly();
-        hr = TryParseClassInterfaceAttribute(pAssembly->GetManifestModule(), pAssembly->GetManifestToken(), &attrValueMaybe);
+        hr = TryParseClassInterfaceAttribute(pAssembly->GetModule(), pAssembly->GetManifestToken(), &attrValueMaybe);
         if (FAILED(hr))
             ThrowHR(hr, BFA_BAD_CLASS_INT_CA_FORMAT);
     }

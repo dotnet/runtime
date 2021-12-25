@@ -256,7 +256,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModul
     }
 
     SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
-    IfFailThrow( pRefingAssembly->GetManifestModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
+    IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
 
     CQuickBytes             qbNewSig;
     ULONG                   cbNewSig;
@@ -335,7 +335,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         Assembly * pRefingAssembly = pModule->GetAssembly();
 
         SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
-        IfFailThrow( pRefingAssembly->GetManifestModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
+        IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
 
         CQuickBytes     qbNewSig;
         ULONG           cbNewSig;
@@ -421,7 +421,7 @@ extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::Mo
                 COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
         }
         SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
-        IfFailThrow( pRefingAssembly->GetManifestModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
+        IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
 
         // Translate the field signature this scope
         CQuickBytes     qbNewSig;

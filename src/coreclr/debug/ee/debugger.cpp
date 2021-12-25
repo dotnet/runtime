@@ -9461,7 +9461,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
         {
             // The loader lookups may throw or togggle GC mode, so do them inside a TRY/Catch and
             // outside any debugger locks.
-            Module * pManifestModule = pRuntimeModule->GetAssembly()->GetManifestModule();
+            Module * pManifestModule = pRuntimeModule->GetAssembly()->GetModule();
 
             _ASSERTE(pManifestModule != pRuntimeModule);
             _ASSERTE(pManifestModule->IsManifest());

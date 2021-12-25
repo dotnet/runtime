@@ -354,7 +354,7 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
     if (refType == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    Module *pModule = refType->GetType().GetAssembly()->GetManifestModule();
+    Module *pModule = refType->GetType().GetAssembly()->GetModule();
     DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
 
     FC_RETURN_ASSEMBLY_OBJECT(pDomainAssembly, refType);
@@ -2669,7 +2669,7 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
     Assembly* currentAssembly = pAssembly->GetAssembly();
 
-    Module *pModule = currentAssembly->GetManifestModule();
+    Module *pModule = currentAssembly->GetModule();
     DomainFile * pDomainFile = pModule->GetDomainFile();
 
 #ifdef _DEBUG

@@ -865,7 +865,7 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
 
     mdToken mdExportedType;
     while (pManifestImport->EnumNext(&phEnum, &mdExportedType))
-        AddExportedTypeHaveLock(GetAssembly()->GetManifestModule(), mdExportedType, &amTracker);
+        AddExportedTypeHaveLock(GetAssembly()->GetModule(), mdExportedType, &amTracker);
 
     amTracker.SuppressRelease();
 }
@@ -882,7 +882,7 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
     }
     CONTRACTL_END;
 
-    if (GetAssembly()->GetManifestModule()->GetAvailableClassHash() == NULL)
+    if (GetAssembly()->GetModule()->GetAvailableClassHash() == NULL)
     {
         // This is a R2R assembly, and a case insensitive type lookup was triggered.
         // Construct the case-sensitive table first, since the case-insensitive table
@@ -1860,7 +1860,7 @@ void ClassLoader::FreeModules()
     CONTRACTL_END;
 
     Module *pManifest = NULL;
-    if (GetAssembly() && (NULL != (pManifest = GetAssembly()->GetManifestModule()))) {
+    if (GetAssembly() && (NULL != (pManifest = GetAssembly()->GetModule()))) {
         // Unload the manifest last, since it contains the module list in its rid map
         ModuleIterator i = GetAssembly()->IterateModules();
         while (i.Next()) {

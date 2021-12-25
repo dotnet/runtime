@@ -642,7 +642,7 @@ void DomainFile::Activate()
         // We cannot execute any code in this assembly until we know what exception plan it is on.
         // At the point of an exception's stack-crawl it is too late because we cannot tolerate a GC.
         // See PossiblyUnwrapThrowable and its callers.
-        _ASSERTE(GetModule() == GetDomainAssembly()->GetAssembly()->GetManifestModule());
+        _ASSERTE(GetModule() == GetDomainAssembly()->GetAssembly()->GetModule());
         GetModule()->IsRuntimeWrapExceptions();
     }
 
@@ -735,11 +735,11 @@ void DomainAssembly::SetAssembly(Assembly* pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(pAssembly->GetManifestModule()->GetPEAssembly()==m_pPEAssembly);
+    _ASSERTE(pAssembly->GetModule()->GetPEAssembly()==m_pPEAssembly);
     _ASSERTE(m_pAssembly == NULL);
 
     m_pAssembly = pAssembly;
-    m_pModule = pAssembly->GetManifestModule();
+    m_pModule = pAssembly->GetModule();
 
     pAssembly->SetDomainAssembly(this);
 }

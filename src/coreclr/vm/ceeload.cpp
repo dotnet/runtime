@@ -1041,7 +1041,7 @@ BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssemb
 BOOL Module::IsManifest()
 {
     WRAPPER_NO_CONTRACT;
-    return dac_cast<TADDR>(GetAssembly()->GetManifestModule()) ==
+    return dac_cast<TADDR>(GetAssembly()->GetModule()) ==
            dac_cast<TADDR>(this);
 }
 
@@ -3470,7 +3470,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         if (kFile == mdTokenNil)
             RETURN NULL;
 
-        RETURN GetAssembly()->GetManifestModule()->GetModuleIfLoaded(kFile);
+        RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(kFile);
     }
 
     Module *pModule = LookupFile(kFile);
@@ -3479,7 +3479,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         if (IsManifest())
         {
             if (kFile == mdFileNil)
-                pModule = GetAssembly()->GetManifestModule();
+                pModule = GetAssembly()->GetModule();
         }
         else
         {
@@ -3493,7 +3493,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
             {
                 if (kMatch == mdFileNil)
                 {
-                    pModule = pAssembly->GetManifestModule();
+                    pModule = pAssembly->GetModule();
                 }
                 else
                 {
@@ -3501,7 +3501,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
                 }
             }
             else
-            pModule = pAssembly->GetManifestModule()->LookupFile(kMatch);
+            pModule = pAssembly->GetModule()->LookupFile(kMatch);
         }
 
 #ifndef DACCESS_COMPILE
@@ -3578,7 +3578,7 @@ PTR_Module Module::LookupModule(mdToken kFile)
         if (kFileLocal == mdTokenNil)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 
-        RETURN GetAssembly()->GetManifestModule()->LookupModule(kFileLocal);
+        RETURN GetAssembly()->GetModule()->LookupModule(kFileLocal);
     }
 
     PTR_Module pModule = LookupFile(kFile);
@@ -3589,12 +3589,12 @@ PTR_Module Module::LookupModule(mdToken kFile)
         mdFile kMatch = pAssembly->GetManifestFileToken(GetMDImport(), kFile);
         if (IsNilToken(kMatch)) {
             if (kMatch == mdFileNil)
-                pModule = pAssembly->GetManifestModule();
+                pModule = pAssembly->GetModule();
             else
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
         else
-            pModule = pAssembly->GetManifestModule()->LookupFile(kMatch);
+            pModule = pAssembly->GetModule()->LookupFile(kMatch);
     }
     RETURN pModule;
 }
@@ -4591,7 +4591,7 @@ Module *Module::GetModuleFromIndex(DWORD ix)
         Assembly *pAssembly = this->LookupAssemblyRef(mdAssemblyRefToken);
         if (pAssembly)
         {
-            RETURN pAssembly->GetManifestModule();
+            RETURN pAssembly->GetModule();
         }
         else
         {

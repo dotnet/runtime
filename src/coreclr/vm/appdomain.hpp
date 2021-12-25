@@ -2453,7 +2453,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        return SystemAssembly()->GetManifestModule();
+        return SystemAssembly()->GetModule();
     }
 
     static BOOL IsSystemLoaded()

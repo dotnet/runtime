@@ -64,7 +64,7 @@ struct CreateDynamicAssemblyArgs : CreateDynamicAssemblyArgsGC
 //
 // So in general an assemly is a list of code:Module, where a code:Module is 1-1 with a DLL or EXE file.
 //
-// One of the modules the code:Assembly.m_pManifest is special in that it knows about all the other
+// One of the modules the code:Assembly.m_pModule is special in that it knows about all the other
 // modules in an assembly (often it is the only one).
 //
 class Assembly
@@ -108,7 +108,7 @@ public:
     void SetIsTenured()
     {
         WRAPPER_NO_CONTRACT;
-        m_pManifest->SetIsTenured();
+        m_pModule->SetIsTenured();
     }
 
     // CAUTION: This should only be used as backout code if an assembly is unsuccessfully
@@ -116,7 +116,7 @@ public:
     void UnsetIsTenured()
     {
         WRAPPER_NO_CONTRACT;
-        m_pManifest->UnsetIsTenured();
+        m_pModule->UnsetIsTenured();
     }
 #endif // DACCESS_COMPILE
 
@@ -136,7 +136,7 @@ public:
 
     class ModuleIterator
     {
-        Module* m_pManifest;
+        Module* m_pModule;
         DWORD m_i;
 
       public:
@@ -155,7 +155,7 @@ public:
             LIMITED_METHOD_CONTRACT;
             SUPPORTS_DAC;
 
-            m_pManifest = NULL;
+            m_pModule = NULL;
             m_i = (DWORD) -1;
         }
 
@@ -164,7 +164,7 @@ public:
             LIMITED_METHOD_CONTRACT;
             SUPPORTS_DAC;
 
-            m_pManifest = pAssembly->GetManifestModule();
+            m_pModule = pAssembly->GetModule();
             m_i = (DWORD) -1;
         }
 
@@ -172,7 +172,7 @@ public:
         {
             LIMITED_METHOD_CONTRACT;
             SUPPORTS_DAC;
-            while (++m_i <= m_pManifest->GetFileMax())
+            while (++m_i <= m_pModule->GetFileMax())
             {
                 if (GetModule() != NULL)
                     return TRUE;
@@ -184,7 +184,7 @@ public:
         {
             LIMITED_METHOD_CONTRACT;
             SUPPORTS_DAC;
-            return m_pManifest->LookupFile(TokenFromRid(m_i, mdtFile));
+            return m_pModule->LookupFile(TokenFromRid(m_i, mdtFile));
         }
     };
 
@@ -282,11 +282,11 @@ public:
     PTR_LoaderHeap GetHighFrequencyHeap();
     PTR_LoaderHeap GetStubHeap();
 
-    PTR_Module GetManifestModule()
+    PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return m_pManifest;
+        return m_pModule;
     }
 
     PTR_PEAssembly GetPEAssembly()
@@ -310,7 +310,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return GetManifestModule()->GetCustomAttribute(parentToken, attribute, ppData, pcbData);
+        return GetModule()->GetCustomAttribute(parentToken, attribute, ppData, pcbData);
     }
 
     mdAssembly GetManifestToken()
@@ -521,9 +521,9 @@ protected:
 
         int mask = INTEROP_ATTRIBUTE_UNSET;
 
-        if (GetManifestModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::ImportedFromTypeLib, NULL, 0) == S_OK)
+        if (GetModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::ImportedFromTypeLib, NULL, 0) == S_OK)
             mask |= INTEROP_ATTRIBUTE_IMPORTED_FROM_TYPELIB;
-        if (GetManifestModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::PrimaryInteropAssembly, NULL, 0) == S_OK)
+        if (GetModule()->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::PrimaryInteropAssembly, NULL, 0) == S_OK)
             mask |= INTEROP_ATTRIBUTE_PRIMARY_INTEROP_ASSEMBLY;
 
         if (!IsDynamic())
@@ -558,7 +558,7 @@ private:
 
 
     PTR_MethodDesc        m_pEntryPoint;    // Method containing the entry point
-    PTR_Module            m_pManifest;
+    PTR_Module            m_pModule;
     PTR_PEAssembly        m_pPEAssembly;
 
     FriendAssemblyDescriptor *m_pFriendAssemblyDescriptor;

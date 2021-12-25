@@ -1273,7 +1273,7 @@ TypeName::GetTypeHaveAssemblyHelper(
 
     TypeHandle th = TypeHandle();
     SArray<SString *> & names = GetNames();
-    Module *      pManifestModule = pAssembly->GetManifestModule();
+    Module *      pManifestModule = pAssembly->GetModule();
     Module *      pLookOnlyInModule = NULL;
     ClassLoader * pClassLoader = pAssembly->GetLoader();
 

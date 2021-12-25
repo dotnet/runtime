@@ -1325,7 +1325,7 @@ void SystemDomain::LoadBaseSystemClasses()
     m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_POST_LOADLIBRARY)->GetAssembly();
 
     // Set up binder for CoreLib
-    CoreLibBinder::AttachModule(m_pSystemAssembly->GetManifestModule());
+    CoreLibBinder::AttachModule(m_pSystemAssembly->GetModule());
 
     // Load Object
     g_pObjectClass = CoreLibBinder::GetClass(CLASS__OBJECT);
@@ -2626,7 +2626,7 @@ CHECK AppDomain::CheckCanLoadTypes(Assembly *pAssembly)
         MODE_ANY;
     }
     CONTRACTL_END;
-    CHECK_MSG(CheckValidModule(pAssembly->GetManifestModule()),
+    CHECK_MSG(CheckValidModule(pAssembly->GetModule()),
               "Type loading can occur only when executing in the assembly's app domain");
     CHECK_OK;
 }
@@ -4903,7 +4903,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
             // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
             // window during collectible assembly creation. No thread should need to have a pointer
             // to the just allocated DomainAssembly at this stage.)
-            if (!pDomainAssembly->GetAssembly()->GetManifestModule()->IsTenured())
+            if (!pDomainAssembly->GetAssembly()->GetModule()->IsTenured())
             {
                 continue; // reject
             }

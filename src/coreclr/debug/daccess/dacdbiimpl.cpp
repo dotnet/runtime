@@ -4066,7 +4066,7 @@ BOOL DacDbiInterfaceImpl::GetAssemblyPath(
 
     // Get the manifest module for this assembly
     Assembly * pAssembly = vmAssembly.GetDacPtr();
-    Module * pManifestModule = pAssembly->GetManifestModule();
+    Module * pManifestModule = pAssembly->GetModule();
 
     // Get the path for the manifest module.
     // since we no longer support Win9x, we assume all paths will be in unicode format already
