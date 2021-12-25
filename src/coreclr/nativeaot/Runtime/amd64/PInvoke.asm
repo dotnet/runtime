@@ -3,8 +3,6 @@
 
 include asmmacros.inc
 
-extern RhpReversePInvokeBadTransition : proc
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
