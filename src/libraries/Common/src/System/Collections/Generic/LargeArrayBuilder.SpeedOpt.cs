@@ -26,12 +26,9 @@ namespace System.Collections.Generic
         /// Constructs a new builder.
         /// </summary>
         /// <param name="initialize">Pass <c>true</c>.</param>
-        public LargeArrayBuilder(bool initialize)
+        public LargeArrayBuilder()
             : this(maxCapacity: int.MaxValue)
         {
-            // This is a workaround for C# not having parameterless struct constructors yet.
-            // Once it gets them, replace this with a parameterless constructor.
-            Debug.Assert(initialize);
         }
 
         /// <summary>
@@ -42,7 +39,6 @@ namespace System.Collections.Generic
         /// Do not add more than <paramref name="maxCapacity"/> items to this builder.
         /// </remarks>
         public LargeArrayBuilder(int maxCapacity)
-            : this()
         {
             Debug.Assert(maxCapacity >= 0);
 

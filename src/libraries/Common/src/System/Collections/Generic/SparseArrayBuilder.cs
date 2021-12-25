@@ -53,7 +53,7 @@ namespace System.Collections.Generic
         /// <remarks>
         /// This field is a mutable struct; do not mark it readonly.
         /// </remarks>
-        private LargeArrayBuilder<T> _builder;
+        private LargeArrayBuilder<T> _builder = new();
 
         /// <summary>
         /// The list of reserved regions within this builder.
@@ -67,20 +67,6 @@ namespace System.Collections.Generic
         /// The total number of reserved slots within this builder.
         /// </summary>
         private int _reservedCount;
-
-        /// <summary>
-        /// Constructs a new builder.
-        /// </summary>
-        /// <param name="initialize">Pass <c>true</c>.</param>
-        public SparseArrayBuilder(bool initialize)
-            : this()
-        {
-            // Once C# gains parameterless struct constructors, please
-            // remove this workaround.
-            Debug.Assert(initialize);
-
-            _builder = new LargeArrayBuilder<T>(initialize: true);
-        }
 
         /// <summary>
         /// The total number of items in this builder, including reserved regions.
