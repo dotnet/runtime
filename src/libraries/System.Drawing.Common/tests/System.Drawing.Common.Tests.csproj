@@ -119,6 +119,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="BrushTests.Core.cs" />
     <Compile Include="GraphicsTests.Core.cs" />
     <Compile Include="Graphics_GetContextTests.Core.cs" />
     <Compile Include="Drawing2D\MatrixTests.Core.cs" />

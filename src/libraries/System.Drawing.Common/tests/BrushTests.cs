@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Drawing.Tests
 {
-    public class BrushTests
+    public partial class BrushTests
     {
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetNativeBrush_Brush_Success()
@@ -18,19 +18,6 @@ namespace System.Drawing.Tests
                 brush.PublicSetNativeBrush((IntPtr)10);
                 brush.PublicSetNativeBrush(IntPtr.Zero);
             }
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
-        public void FromHandle()
-        {
-            using var brush = new SolidBrush(Color.White);
-
-            var expectedHandle = brush.Handle;
-            var actualBrush = Brush.FromHandle(expectedHandle);
-
-            IntPtr actualHandle = actualBrush.Handle;
-            Assert.Equal(expectedHandle, actualHandle);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/30157")]
