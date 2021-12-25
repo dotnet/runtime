@@ -1023,7 +1023,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
         InvokeUtil::CopyArg(th, &objs->GetAt(i), &argDest);
 
-#if defined(UNIX_LOONGARCH64_ABI)
+#if defined(TARGET_LOONGARCH64)
         if ((ofs < 0) && (objs->GetAt(i) != 0) && (th.GetVerifierCorElementType() == ELEMENT_TYPE_VALUETYPE) && (th.GetSize() == 8) && (argit.m_idxFPReg == 2))
         {
             long * dest = (long*)argDest.GetDestinationAddress();

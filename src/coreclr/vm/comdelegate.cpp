@@ -181,7 +181,7 @@ public:
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
-#if defined(UNIX_LOONGARCH64_ABI)
+#if defined(TARGET_LOONGARCH64)
             if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
             {
                 m_currentGenRegIndex++;
@@ -339,7 +339,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
     {
         // We should have slots to shuffle in the destination at the same time as the source.
         _ASSERTE(iteratorDst.HasNextOfs());
-#if defined(UNIX_LOONGARCH64_ABI)
+#if defined(TARGET_LOONGARCH64)
         if (!sArgDst.m_byteStackSize && (sArgSrc.m_offs > 0))
         {
             if (sArgSrc.m_byteStackSize > 0)
@@ -347,8 +347,6 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                 if (sArgSrc.m_cGenReg > 0)
                 {
                     assert(!"---------No this case--------------");
-                    assert(sArgSrc.m_cGenReg == 1);
-                    assert(sArgSrc.m_offs == 1);
                 }
 
                 assert(sArgDst.m_cFloatReg > 0);
