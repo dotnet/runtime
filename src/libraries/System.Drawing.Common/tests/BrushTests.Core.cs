@@ -8,7 +8,6 @@ namespace System.Drawing.Tests
     public partial class BrushTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not implemented in .NET Framework.")]
         public void FromHandle()
         {
             using var brush = new SolidBrush(Color.White);
