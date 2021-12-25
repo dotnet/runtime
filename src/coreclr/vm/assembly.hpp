@@ -188,6 +188,7 @@ public:
         }
     };
 
+    // TODO: VS
     ModuleIterator IterateModules()
     {
         WRAPPER_NO_CONTRACT;

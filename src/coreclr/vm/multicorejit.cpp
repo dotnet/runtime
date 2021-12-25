@@ -770,21 +770,8 @@ HRESULT MulticoreJitModuleEnumerator::HandleAssembly(DomainAssembly * pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    DomainAssembly::ModuleIterator modIt = pAssembly->IterateModules(kModIterIncludeLoaded);
-
-    HRESULT hr = S_OK;
-
-    while (modIt.Next() && SUCCEEDED(hr))
-    {
-        Module * pModule = modIt.GetModule();
-
-        if (pModule != NULL)
-        {
-            hr = OnModule(pModule);
-        }
-    }
-
-    return hr;
+    Module * pModule = pAssembly->GetModule();
+    return OnModule(pModule);
 }
 
 

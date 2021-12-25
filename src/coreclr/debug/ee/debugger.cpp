@@ -14725,16 +14725,12 @@ HRESULT Debugger::IterateAppDomainsForPdbs()
             if (!pDomainAssembly->IsVisibleToDebugger())
                 continue;
 
-            DomainAssembly::ModuleIterator j = pDomainAssembly->IterateModules(kModIterIncludeLoading);
-            while (j.Next())
+            if (pDomainAssembly->ShouldNotifyDebugger())
             {
-                DomainFile * pDomainFile = j.GetDomainFile();
-                if (!pDomainFile->ShouldNotifyDebugger())
-                    continue;
-
-                Module* pRuntimeModule = pDomainFile->GetModule();
+                Module* pRuntimeModule = pDomainAssembly->GetModule();
                 CopyModulePdb(pRuntimeModule);
             }
+
             if (pDomainAssembly->ShouldNotifyDebugger())
             {
                 CopyModulePdb(pDomainAssembly->GetModule());

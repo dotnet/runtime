@@ -725,13 +725,6 @@ DomainAssembly::~DomainAssembly()
         UnregisterFromHostAssembly();
     }
 
-    ModuleIterator i = IterateModules(kModIterIncludeLoading);
-    while (i.Next())
-    {
-        if (i.GetDomainFile() != this)
-            delete i.GetDomainFile();
-    }
-
     if (m_pAssembly != NULL)
     {
         delete m_pAssembly;
@@ -1162,16 +1155,12 @@ BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
         result = TRUE;
     }
 
-    DomainModuleIterator i = IterateModules(kModIterIncludeLoading);
-    while (i.Next())
+    if(this->ShouldNotifyDebugger())
     {
-        DomainFile * pDomainFile = i.GetDomainFile();
-        if(pDomainFile->ShouldNotifyDebugger())
-        {
-            result = result ||
-                pDomainFile->GetModule()->NotifyDebuggerLoad(this->GetAppDomain(), pDomainFile, flags, attaching);
-        }
+        result = result ||
+            this->GetModule()->NotifyDebuggerLoad(this->GetAppDomain(), this, flags, attaching);
     }
+
     if( ShouldNotifyDebugger())
     {
            result|=m_pModule->NotifyDebuggerLoad(m_pDomain, this, ATTACH_MODULE_LOAD, attaching);
@@ -1195,13 +1184,9 @@ void DomainAssembly::NotifyDebuggerUnload()
 
     m_fDebuggerUnloadStarted = TRUE;
 
-    // Dispatch module unloads for all modules. Debugger is resilient in case we haven't dispatched
+    // Dispatch module unload for the module. Debugger is resilient in case we haven't dispatched
     // a previous load event (such as if debugger attached after the modules was loaded).
-    DomainModuleIterator i = IterateModules(kModIterIncludeLoading);
-    while (i.Next())
-    {
-            i.GetDomainFile()->GetModule()->NotifyDebuggerUnload(this->GetAppDomain());
-    }
+    this->GetModule()->NotifyDebuggerUnload(this->GetAppDomain());
 
     g_pDebugInterface->UnloadAssembly(this);
 

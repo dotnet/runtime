@@ -4494,24 +4494,13 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
 
     DomainAssembly * pDomainAssembly = vmAssembly.GetDacPtr();
 
-    // If the domain is not yet fully-loaded, don't advertise it yet.
-    // It's not ready to be inspected.
-    DomainModuleIterator iterator =  pDomainAssembly->IterateModules(kModIterIncludeLoaded);
-
-    while (iterator.Next())
+    // Debugger isn't notified of Resource / Inspection-only modules.
+    if (pDomainAssembly->GetModule()->IsVisibleToDebugger())
     {
-        DomainFile * pDomainFile = iterator.GetDomainFile();
-
-        // Debugger isn't notified of Resource / Inspection-only modules.
-        if (!pDomainFile->GetModule()->IsVisibleToDebugger())
-        {
-            continue;
-        }
-
-        _ASSERTE(pDomainFile->IsLoaded());
+        _ASSERTE(pDomainAssembly->IsLoaded());
 
         VMPTR_DomainFile vmDomainFile = VMPTR_DomainFile::NullPtr();
-        vmDomainFile.SetHostPtr(pDomainFile);
+        vmDomainFile.SetHostPtr(pDomainAssembly);
 
         fpCallback(vmDomainFile, pUserData);
     }

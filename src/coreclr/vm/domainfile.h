@@ -383,22 +383,6 @@ class DomainFile
     BOOL m_bDisableActivationCheck;
 };
 
-//---------------------------------------------------------------------------------------
-// One of these values is specified when requesting a module iterator to customize which
-// modules should appear in the enumeration
-enum ModuleIterationOption
-{
-    // include only modules that are already loaded (m_level >= FILE_LOAD_DELIVER_EVENTS)
-    kModIterIncludeLoaded                = 1,
-
-    // include all modules, even those that are still in the process of loading (all m_level values)
-    kModIterIncludeLoading               = 2,
-
-    // include only modules loaded just enough that profilers are notified of them.
-    // (m_level >= FILE_LOAD_LOADLIBRARY).  See comment at code:DomainFile::IsAvailableToProfilers
-    kModIterIncludeAvailableToProfilers  = 3,
-};
-
 // --------------------------------------------------------------------------------
 // DomainAssembly is a subclass of DomainFile which specifically represents a assembly.
 // --------------------------------------------------------------------------------
@@ -444,77 +428,6 @@ public:
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-
-    // ------------------------------------------------------------
-    // Modules
-    // ------------------------------------------------------------
-    class ModuleIterator
-    {
-        ArrayList::Iterator m_i;
-        ModuleIterationOption m_moduleIterationOption;
-
-      public:
-        BOOL Next()
-        {
-            WRAPPER_NO_CONTRACT;
-            while (m_i.Next())
-            {
-                if (m_i.GetElement() == NULL)
-                {
-                    continue;
-                }
-                if (GetDomainFile()->IsError())
-                {
-                    continue;
-                }
-                if (m_moduleIterationOption == kModIterIncludeLoading)
-                    return TRUE;
-                if ((m_moduleIterationOption == kModIterIncludeLoaded) &&
-                    GetDomainFile()->IsLoaded())
-                    return TRUE;
-                if ((m_moduleIterationOption == kModIterIncludeAvailableToProfilers) &&
-                    GetDomainFile()->IsAvailableToProfilers())
-                    return TRUE;
-            }
-            return FALSE;
-        }
-        Module *GetModule()
-        {
-            WRAPPER_NO_CONTRACT;
-            return GetDomainFile()->GetModule();
-        }
-        DomainFile *GetDomainFile()
-        {
-            WRAPPER_NO_CONTRACT;
-            return dac_cast<PTR_DomainFile>(m_i.GetElement());
-        }
-        SIZE_T GetIndex()
-        {
-            WRAPPER_NO_CONTRACT;
-            return m_i.GetIndex();
-        }
-
-      private:
-        friend class DomainAssembly;
-        // Cannot have constructor so this iterator can be used inside a union
-        static ModuleIterator Create(DomainAssembly * pDomainAssembly, ModuleIterationOption moduleIterationOption)
-        {
-            WRAPPER_NO_CONTRACT;
-            ModuleIterator i;
-
-            i.m_i = pDomainAssembly->m_Modules.Iterate();
-            i.m_moduleIterationOption = moduleIterationOption;
-
-            return i;
-        }
-    };
-    friend class ModuleIterator;
-
-    ModuleIterator IterateModules(ModuleIterationOption moduleIterationOption)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ModuleIterator::Create(this, moduleIterationOption);
-    }
 
     // ------------------------------------------------------------
     // Resource access
@@ -593,6 +506,7 @@ private:
     LOADERHANDLE                            m_hExposedAssemblyObject;
     PTR_Assembly                            m_pAssembly;
     DebuggerAssemblyControlFlags            m_debuggerFlags;
+
     ArrayList                               m_Modules;
     BOOL                                    m_fDebuggerUnloadStarted;
     BOOL                                    m_fCollectible;
@@ -612,7 +526,5 @@ private:
           m_NextDomainAssemblyInSameALC = domainAssembly;
       }
 };
-
-typedef DomainAssembly::ModuleIterator DomainModuleIterator;
 
 #endif  // _DOMAINFILE_H_

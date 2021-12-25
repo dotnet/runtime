@@ -282,21 +282,14 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
         //     < Module NOT available from catch-up enumeration
         //     < ModuleUnloadStarted issued
         //
-        // The IterateModules parameter below ensures only modules at level >=
-        // code:FILE_LOAD_LOADLIBRARY will be included in the iteration.
-        //
         // Details for module callbacks are the same as those for assemblies, so see
         // code:#ProfilerEnumAssemblies for info on how the timing works.
-        DomainModuleIterator domainModuleIterator =
-            pDomainAssembly->IterateModules(kModIterIncludeAvailableToProfilers);
-        while (domainModuleIterator.Next())
+
+        // Call user-supplied callback, and cancel iteration if requested
+        HRESULT hr = (callbackObj->*callbackMethod)(pDomainAssembly->GetModule());
+        if (hr != S_OK)
         {
-            // Call user-supplied callback, and cancel iteration if requested
-            HRESULT hr = (callbackObj->*callbackMethod)(domainModuleIterator.GetModule());
-            if (hr != S_OK)
-            {
-                return hr;
-            }
+            return hr;
         }
     }
 

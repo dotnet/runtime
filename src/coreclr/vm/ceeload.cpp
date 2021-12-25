@@ -6474,11 +6474,7 @@ void Module::WriteAllModuleProfileData(bool cleanup)
 
             while (assemblyIterator.Next(pDomainAssembly.This()))
             {
-                DomainModuleIterator i = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
-                while (i.Next())
-                {
-                    /*hr=*/i.GetModule()->WriteMethodProfileDataLogFile(cleanup);
-                }
+                pDomainAssembly->GetModule()->WriteMethodProfileDataLogFile(cleanup);
             }
         }
     }
