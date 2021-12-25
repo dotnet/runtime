@@ -2709,9 +2709,13 @@ ves_icall_RuntimeType_GetPacking (MonoReflectionTypeHandle ref_type, guint32 *pa
 	return_if_nok (error);
 
 	if (image_is_dynamic (m_class_get_image (klass))) {
-		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_type);
-		*packing = MONO_HANDLE_GETVAL (tb, packing_size);
-		*size = MONO_HANDLE_GETVAL (tb, class_size);
+		MonoGCHandle ref_info_handle = mono_class_get_ref_info_handle (klass);
+		g_assert (ref_info_handle);
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mono_gchandle_get_target_internal (ref_info_handle);
+		g_assert (tb);
+
+		*packing = tb->packing_size;
+		*size = tb->class_size;
 	} else {
 		mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), packing, size);
 	}
