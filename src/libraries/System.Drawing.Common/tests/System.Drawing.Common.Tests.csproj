@@ -121,6 +121,7 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="BrushTests.Core.cs" />
     <Compile Include="GraphicsTests.Core.cs" />
+    <Compile Include="PenTests.Core.cs" />
     <Compile Include="RegionTests.Core.cs" />
     <Compile Include="Graphics_GetContextTests.Core.cs" />
     <Compile Include="Drawing2D\GraphicsPathTests.Core.cs" />
