@@ -30,7 +30,7 @@ using Xunit;
 
 namespace System.Drawing.Drawing2D.Tests
 {
-    public class GraphicsPathTests
+    public partial class GraphicsPathTests
     {
         private const float Pi4 = (float)(Math.PI / 4);
         private const float Delta = 0.0003f;
@@ -107,18 +107,6 @@ namespace System.Drawing.Drawing2D.Tests
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new GraphicsPath(new Point[pointsLength], new byte[typesLength]));
             AssertExtensions.Throws<ArgumentException>(null, () => new GraphicsPath(new PointF[pointsLength], new byte[typesLength]));
-        }
-
-        [Fact]
-        public void FromHandle()
-        {
-            using var graphicsPath = new GraphicsPath();
-
-            var expectedHandle = graphicsPath.Handle;
-            var actualGraphicsPath = Matrix.FromHandle(expectedHandle);
-
-            IntPtr actualHandle = actualGraphicsPath.Handle;
-            Assert.Equal(expectedHandle, actualHandle);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
