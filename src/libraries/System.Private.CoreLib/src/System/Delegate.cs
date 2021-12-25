@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
@@ -93,31 +92,25 @@ namespace System
             return newDelegate;
         }
 
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Delegate? d1, Delegate? d2)
         {
             // Test d2 first to allow branch elimination when inlined for null checks (== null)
             // so it can become a simple test
             if (d2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (d1 is null) ? true : false;
+                return d1 is null;
             }
 
             return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
         }
 
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Delegate? d1, Delegate? d2)
         {
             // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
             // so it can become a simple test
             if (d2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (d1 is null) ? false : true;
+                return d1 is not null;
             }
 
             return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);

@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -58,19 +57,17 @@ namespace System.Reflection
         public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(PropertyInfo? left, PropertyInfo? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (left is null) ? true : false;
+                return left is null;
             }
 
             // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
-            if ((object?)left == (object)right)
+            if (ReferenceEquals(left, right))
             {
                 return true;
             }
