@@ -1546,7 +1546,7 @@ mono_runtime_get_caller_from_stack_mark (MonoStackCrawlMark *stack_mark)
 		return NULL;
 }
 
-static MonoReflectionTypeHandle
+static MonoReflectionType*
 type_from_parsed_name (MonoTypeNameParse *info, MonoStackCrawlMark *stack_mark, MonoBoolean ignoreCase, MonoAssembly **caller_assembly, MonoError *error)
 {
 	MonoMethod *m;
@@ -1617,15 +1617,16 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoStackCrawlMark *stack_mark, 
 	if (!type)
 		goto fail;
 
-	return mono_type_get_object_handle (type, error);
+	return mono_type_get_object_checked (type, error);
 fail:
-	return MONO_HANDLE_NEW (MonoReflectionType, NULL);
+	return NULL;
 }
 
-MonoReflectionTypeHandle
-ves_icall_System_RuntimeTypeHandle_internal_from_name (MonoStringHandle name,
+void
+ves_icall_System_RuntimeTypeHandle_internal_from_name (char *name,
 					  MonoStackCrawlMark *stack_mark,
-					  MonoReflectionAssemblyHandle callerAssembly,
+					  MonoQCallAssemblyHandle callerAssembly,
+					  MonoObjectHandleOnStack res,
 					  MonoBoolean throwOnError,
 					  MonoBoolean ignoreCase,
 					  MonoError *error)
@@ -1633,24 +1634,19 @@ ves_icall_System_RuntimeTypeHandle_internal_from_name (MonoStringHandle name,
 	MonoTypeNameParse info;
 	gboolean free_info = FALSE;
 	MonoAssembly *caller_assembly;
-	MonoReflectionTypeHandle type = MONO_HANDLE_NEW (MonoReflectionType, NULL);
 
 	/* The callerAssembly argument is unused for now */
 
-	char *str = mono_string_handle_to_utf8 (name, error);
-	goto_if_nok (error, leave);
-
 	free_info = TRUE;
-	if (!mono_reflection_parse_type_checked (str, &info, error))
+	if (!mono_reflection_parse_type_checked (name, &info, error))
 		goto leave;
 
 	/* mono_reflection_parse_type() mangles the string */
 
-	MONO_HANDLE_ASSIGN (type, type_from_parsed_name (&info, (MonoStackCrawlMark*)stack_mark, ignoreCase, &caller_assembly, error));
-
+	HANDLE_ON_STACK_SET (res, type_from_parsed_name (&info, (MonoStackCrawlMark*)stack_mark, ignoreCase, &caller_assembly, error));
 	goto_if_nok (error, leave);
 
-	if (MONO_HANDLE_IS_NULL (type)) {
+	if (!(*res)) {
 		if (throwOnError) {
 			char *tname = info.name_space ? g_strdup_printf ("%s.%s", info.name_space, info.name) : g_strdup (info.name);
 			char *aname;
@@ -1668,15 +1664,12 @@ ves_icall_System_RuntimeTypeHandle_internal_from_name (MonoStringHandle name,
 leave:
 	if (free_info)
 		mono_reflection_free_type_info (&info);
-	g_free (str);
 	if (!is_ok (error)) {
 		if (!throwOnError) {
 			mono_error_cleanup (error);
 			error_init (error);
 		}
-		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
-	} else
-		return type;
+	}
 }
 
 

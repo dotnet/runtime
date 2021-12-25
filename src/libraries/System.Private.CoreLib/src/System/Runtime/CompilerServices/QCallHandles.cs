@@ -75,7 +75,10 @@ namespace System.Runtime.CompilerServices
         internal QCallAssembly(ref System.Reflection.RuntimeAssembly assembly)
         {
             _ptr = Unsafe.AsPointer(ref assembly);
-            _assembly = assembly.GetUnderlyingNativeHandle();
+            if (assembly != null)
+                _assembly = assembly.GetUnderlyingNativeHandle();
+            else
+                _assembly = IntPtr.Zero;
         }
     }
 

@@ -459,6 +459,14 @@ struct _MonoQCallTypeHandle {
 
 typedef struct _MonoQCallTypeHandle MonoQCallTypeHandle;
 
+/* This corresponds to System.Runtime.CompilerServices.QCallAssembly */
+struct _MonoQCallAssemblyHandle {
+	gpointer _ptr;
+	MonoAssembly *assembly;
+};
+
+typedef struct _MonoQCallAssemblyHandle MonoQCallAssemblyHandle;
+
 typedef struct {
 	MonoObject  object;
 	MonoReflectionType *class_to_proxy;	

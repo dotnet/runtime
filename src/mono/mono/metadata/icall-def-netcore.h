@@ -412,7 +412,7 @@ HANDLES(RTH_21, "IsByRefLike", ves_icall_RuntimeTypeHandle_IsByRefLike, MonoBool
 HANDLES(RTH_12, "IsComObject", ves_icall_RuntimeTypeHandle_IsComObject, MonoBoolean, 1, (MonoQCallTypeHandle))
 NOHANDLES(ICALL(RTH_13, "IsGenericTypeDefinition", ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition))
 HANDLES(RTH_15, "IsInstanceOfType", ves_icall_RuntimeTypeHandle_IsInstanceOfType, guint32, 2, (MonoQCallTypeHandle, MonoObject))
-HANDLES(RTH_17a, "internal_from_name", ves_icall_System_RuntimeTypeHandle_internal_from_name, MonoReflectionType, 5, (MonoString, MonoStackCrawlMark_ptr, MonoReflectionAssembly, MonoBoolean, MonoBoolean))
+HANDLES(RTH_17a, "internal_from_name", ves_icall_System_RuntimeTypeHandle_internal_from_name, void, 6, (char_ptr, MonoStackCrawlMark_ptr, MonoQCallAssemblyHandle, MonoObjectHandleOnStack, MonoBoolean, MonoBoolean))
 HANDLES(RTH_17b, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of, MonoBoolean, 2, (MonoQCallTypeHandle, MonoQCallTypeHandle))
 HANDLES(RTH_18, "type_is_assignable_from", ves_icall_RuntimeTypeHandle_type_is_assignable_from, MonoBoolean, 2, (MonoQCallTypeHandle, MonoQCallTypeHandle))
 
