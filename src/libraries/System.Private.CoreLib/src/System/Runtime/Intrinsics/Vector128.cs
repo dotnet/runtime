@@ -993,7 +993,7 @@ namespace System.Runtime.Intrinsics
                     value,
                 };
 #else
-                nint* pResult = stackalloc nuint[1]
+                nuint* pResult = stackalloc nuint[1]
                 {
                     value
                 };
