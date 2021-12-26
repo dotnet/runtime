@@ -1552,6 +1552,32 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Creates a new <see cref="Vector128{IntPtr}" /> instance from two <see cref="Vector64{IntPtr}" /> instances.</summary>
+        /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
+        /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{IntPtr}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<nint> Create(Vector64<nint> lower, Vector64<nint> upper)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                return lower.ToVector128Unsafe().WithUpper(upper);
+            }
+
+            return SoftwareFallback(lower, upper);
+
+            static Vector128<nint> SoftwareFallback(Vector64<nint> lower, Vector64<nint> upper)
+            {
+                Vector128<nint> result128 = Vector128<nint>.Zero;
+
+                ref Vector64<nint> result64 = ref Unsafe.As<Vector128<nint>, Vector64<nint>>(ref result128);
+                result64 = lower;
+                Unsafe.Add(ref result64, 1) = upper;
+
+                return result128;
+            }
+        }
+
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance from two <see cref="Vector64{SByte}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
@@ -1680,6 +1706,33 @@ namespace System.Runtime.Intrinsics
                 Vector128<ulong> result128 = Vector128<ulong>.Zero;
 
                 ref Vector64<ulong> result64 = ref Unsafe.As<Vector128<ulong>, Vector64<ulong>>(ref result128);
+                result64 = lower;
+                Unsafe.Add(ref result64, 1) = upper;
+
+                return result128;
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance from two <see cref="Vector64{UIntPtr}" /> instances.</summary>
+        /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
+        /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{UIntPtr}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<nuint> Create(Vector64<nuint> lower, Vector64<nuint> upper)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                return lower.ToVector128Unsafe().WithUpper(upper);
+            }
+
+            return SoftwareFallback(lower, upper);
+
+            static Vector128<nuint> SoftwareFallback(Vector64<nuint> lower, Vector64<nuint> upper)
+            {
+                Vector128<nuint> result128 = Vector128<nuint>.Zero;
+
+                ref Vector64<nuint> result64 = ref Unsafe.As<Vector128<nuint>, Vector64<nuint>>(ref result128);
                 result64 = lower;
                 Unsafe.Add(ref result64, 1) = upper;
 
