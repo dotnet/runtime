@@ -418,11 +418,6 @@ namespace Internal.IL
 
             TypeDesc exactType = method.OwningType;
 
-            if (method.IsUnmanagedCallersOnly && (opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn))
-            {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramUnmanagedCallersOnly, method);
-            }
-
             bool resolvedConstraint = false;
             bool forceUseRuntimeLookup = false;
 

@@ -132,9 +132,6 @@
   <data name="MissingMember" xml:space="preserve">
     <value>Member not found.</value>
   </data>
-  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
-    <value>Ambiguous match found.</value>
-  </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
