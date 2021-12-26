@@ -8,7 +8,5 @@ namespace System.Runtime.InteropServices
         public static string OSDescription => "Browser";
 
         public static Architecture OSArchitecture => Architecture.Wasm;
-
-        public static Architecture ProcessArchitecture => Architecture.Wasm;
     }
 }

@@ -14,8 +14,7 @@ PALEXPORT int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
 
 PALEXPORT int32_t SystemNative_GetOSArchitecture(void);
 
-PALEXPORT int32_t SystemNative_GetProcessArchitecture(void);
-
+// Keep in sync with System.Runtime.InteropServices.Architecture enum
 enum 
 {
     ARCH_X86,
