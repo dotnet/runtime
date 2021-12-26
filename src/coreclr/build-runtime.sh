@@ -116,8 +116,6 @@ __CodeCoverage=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __Compiler=clang
-__CompilerMajorVersion=
-__CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0
