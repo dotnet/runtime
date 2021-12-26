@@ -170,6 +170,15 @@ namespace System.Runtime.Intrinsics
         public static Vector128<long> AsInt64<T>(this Vector128<T> vector)
             where T : struct => vector.As<T, long>();
 
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{IntPtr}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{IntPtr}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector128<nint> AsNInt<T>(this Vector128<T> vector)
+            where T : struct => vector.As<T, nint>();
+
         /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{SByte}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
@@ -218,6 +227,16 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector128<ulong> AsUInt64<T>(this Vector128<T> vector)
             where T : struct => vector.As<T, ulong>();
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{UIntPtr}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{UIntPtr}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<nuint> AsNUInt<T>(this Vector128<T> vector)
+            where T : struct => vector.As<T, nuint>();
 
         /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
@@ -759,6 +778,39 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Creates a new <see cref="Vector128{IntPtr}" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi64x</remarks>
+        /// <returns>A new <see cref="Vector128{IntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector128<nint> Create(nint value)
+        {
+            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
+            {
+                return Create(value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector128<nint> SoftwareFallback(nint value)
+            {
+#if TARGET_64BIT
+                nint* pResult = stackalloc nint[2]
+                {
+                    value,
+                    value,
+                };
+#else
+                nint* pResult = stackalloc nint[1]
+                {
+                    value
+                };
+#endif
+
+                return Unsafe.AsRef<Vector128<nint>>(pResult);
+            }
+        }
+
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi8</remarks>
@@ -914,6 +966,40 @@ namespace System.Runtime.Intrinsics
                 };
 
                 return Unsafe.AsRef<Vector128<ulong>>(pResult);
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi64x</remarks>
+        /// <returns>A new <see cref="Vector128{UIntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static unsafe Vector128<nuint> Create(nuint value)
+        {
+            if (Sse2.X64.IsSupported || AdvSimd.Arm64.IsSupported)
+            {
+                return Create(value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector128<nuint> SoftwareFallback(nuint value)
+            {
+#if TARGET_64BIT
+                nuint* pResult = stackalloc nuint[2]
+                {
+                    value,
+                    value,
+                };
+#else
+                nint* pResult = stackalloc nuint[1]
+                {
+                    value
+                };
+#endif
+
+                return Unsafe.AsRef<Vector128<nuint>>(pResult);
             }
         }
 
@@ -1734,6 +1820,19 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Creates a new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        public static unsafe Vector128<nint> CreateScalar(nint value)
+        {
+#if TARGET_64BIT
+            Vector128<long> nativeVector = CreateScalar((long)value);
+#else
+            Vector128<int> nativeVector = CreateScalar((int)value);
+#endif
+            return nativeVector.AsNInt();
+        }
+
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{SByte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
@@ -1872,6 +1971,20 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [CLSCompliant(false)]
+        public static unsafe Vector128<nuint> CreateScalar(nuint value)
+        {
+#if TARGET_64BIT
+            Vector128<ulong> nativeVector = CreateScalar((ulong)value);
+#else
+            Vector128<uint> nativeVector = CreateScalar((uint)value);
+#endif
+            return nativeVector.AsNUInt();
+        }
+
         /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Byte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
@@ -1940,6 +2053,24 @@ namespace System.Runtime.Intrinsics
             long* pResult = stackalloc long[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<long>>(pResult);
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        public static unsafe Vector128<nint> CreateScalarUnsafe(nint value)
+        {
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+#if TARGET_64BIT
+            nint* pResult = stackalloc nint[2];
+#else
+            nint* pResult = stackalloc nint[4];
+#endif
+            pResult[0] = value;
+            return Unsafe.AsRef<Vector128<nint>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
@@ -2014,6 +2145,25 @@ namespace System.Runtime.Intrinsics
             ulong* pResult = stackalloc ulong[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<ulong>>(pResult);
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static unsafe Vector128<nuint> CreateScalarUnsafe(nuint value)
+        {
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+#if TARGET_64BIT
+            nuint* pResult = stackalloc nuint[2];
+#else
+            nuint* pResult = stackalloc nuint[4];
+#endif
+            pResult[0] = value;
+            return Unsafe.AsRef<Vector128<nuint>>(pResult);
         }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
