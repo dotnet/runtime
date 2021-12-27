@@ -32,7 +32,7 @@ namespace System.Text.Json.Nodes
         /// </summary>
         /// <param name="properties">The properties to be added.</param>
         /// <param name="options">Options to control the behavior.</param>
-        public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null)
+        public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : base(options)
         {
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
