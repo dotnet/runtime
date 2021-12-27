@@ -30,7 +30,6 @@ namespace Internal.TypeSystem
         InvalidProgramSpecific,
         InvalidProgramVararg,
         InvalidProgramCallVirtFinalize,
-        InvalidProgramUnmanagedCallersOnly,
         InvalidProgramCallAbstractMethod,
         InvalidProgramCallVirtStatic,
         InvalidProgramNonStaticMethod,

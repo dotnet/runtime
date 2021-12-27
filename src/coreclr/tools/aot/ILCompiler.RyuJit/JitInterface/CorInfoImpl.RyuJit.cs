@@ -501,8 +501,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE:
                     id = ReadyToRunHelper.Unbox_Nullable;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_NONVARARG:
-                    id = ReadyToRunHelper.NewMultiDimArr_NonVarArg;
+                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR:
+                    id = ReadyToRunHelper.NewMultiDimArr;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWFAST:
                     id = ReadyToRunHelper.NewObject;
@@ -1103,14 +1103,6 @@ namespace Internal.JitInterface
             if (method.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
             {
                 throw new BadImageFormatException();
-            }
-
-            // This block enforces the rule that methods with [UnmanagedCallersOnly] attribute
-            // can only be called from unmanaged code. The call from managed code is replaced
-            // with a stub that throws an InvalidProgramException
-            if (method.IsUnmanagedCallersOnly && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
-            {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramUnmanagedCallersOnly, method);
             }
 
             TypeDesc exactType = HandleToObject(pResolvedToken.hClass);

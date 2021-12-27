@@ -3324,9 +3324,9 @@ namespace System.ComponentModel
                     // custom type descriptor
 
                     TypeDescriptionProvider p = _node.Provider;
-                    if (p is ReflectTypeDescriptionProvider rp)
+                    if (p is ReflectTypeDescriptionProvider)
                     {
-                        return rp.GetExtendedAttributes(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedAttributes(_instance);
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3369,9 +3369,9 @@ namespace System.ComponentModel
                     // custom type descriptor
 
                     TypeDescriptionProvider p = _node.Provider;
-                    if (p is ReflectTypeDescriptionProvider rp)
+                    if (p is ReflectTypeDescriptionProvider)
                     {
-                        return rp.GetExtendedComponentName(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedComponentName(_instance);
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3413,9 +3413,9 @@ namespace System.ComponentModel
                     // custom type descriptor
 
                     TypeDescriptionProvider p = _node.Provider;
-                    if (p is ReflectTypeDescriptionProvider rp)
+                    if (p is ReflectTypeDescriptionProvider)
                     {
-                        return rp.GetExtendedDefaultEvent(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedDefaultEvent();
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3433,9 +3433,9 @@ namespace System.ComponentModel
                     // If so, we can call on it directly rather than creating another
                     // custom type descriptor
                     TypeDescriptionProvider p = _node.Provider;
-                    if (p is ReflectTypeDescriptionProvider rp)
+                    if (p is ReflectTypeDescriptionProvider)
                     {
-                        return rp.GetExtendedDefaultProperty(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedDefaultProperty(_instance);
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3478,9 +3478,9 @@ namespace System.ComponentModel
                     // If so, we can call on it directly rather than creating another
                     // custom type descriptor
                     TypeDescriptionProvider p = _node.Provider;
-                    if (p is ReflectTypeDescriptionProvider rp)
+                    if (p is ReflectTypeDescriptionProvider)
                     {
-                        return rp.GetExtendedEvents(_instance);
+                        return ReflectTypeDescriptionProvider.GetExtendedEvents(_instance);
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3500,13 +3500,13 @@ namespace System.ComponentModel
                     // If so, we can call on it directly rather than creating another
                     // custom type descriptor
                     TypeDescriptionProvider p = _node.Provider;
-                    if (p is ReflectTypeDescriptionProvider rp)
+                    if (p is ReflectTypeDescriptionProvider)
                     {
                         // There is no need to filter these events. For extended objects, they
                         // are accessed through our pipeline code, which always filters before
                         // returning. So any filter we do here is redundant. Note that we do
                         // pass a valid filter to a custom descriptor so it can optimize if it wants.
-                        EventDescriptorCollection events = rp.GetExtendedEvents(_instance);
+                        EventDescriptorCollection events = ReflectTypeDescriptionProvider.GetExtendedEvents(_instance);
                         return events;
                     }
 
@@ -3578,9 +3578,9 @@ namespace System.ComponentModel
 
                     TypeDescriptionProvider p = _node.Provider;
 
-                    if (p is ReflectTypeDescriptionProvider rp)
+                    if (p is ReflectTypeDescriptionProvider)
                     {
-                        return rp.GetExtendedPropertyOwner(_instance, pd);
+                        return ReflectTypeDescriptionProvider.GetExtendedPropertyOwner(_instance, pd);
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3675,9 +3675,9 @@ namespace System.ComponentModel
                     // custom type descriptor
                     TypeDescriptionProvider p = _node.Provider;
                     string? name;
-                    if (p is ReflectTypeDescriptionProvider rp)
+                    if (p is ReflectTypeDescriptionProvider)
                     {
-                        name = rp.GetComponentName(_objectType, _instance);
+                        name = ReflectTypeDescriptionProvider.GetComponentName(_instance);
                     }
                     else
                     {
@@ -3924,7 +3924,7 @@ namespace System.ComponentModel
                     object? owner;
                     if (p is ReflectTypeDescriptionProvider rp)
                     {
-                        owner = rp.GetPropertyOwner(_objectType, _instance!, pd);
+                        owner = ReflectTypeDescriptionProvider.GetPropertyOwner(_objectType, _instance!, pd);
                     }
                     else
                     {

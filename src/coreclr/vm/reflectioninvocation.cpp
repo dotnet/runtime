@@ -540,6 +540,7 @@ class ArgIteratorBaseForMethodInvoke
 {
 protected:
     SIGNATURENATIVEREF * m_ppNativeSig;
+    bool m_fHasThis;
 
     FORCEINLINE CorElementType GetReturnType(TypeHandle * pthValueType)
     {
@@ -567,7 +568,7 @@ public:
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
-        return (*m_ppNativeSig)->HasThis();
+        return m_fHasThis;
     }
 
     BOOL HasParamType()
@@ -602,9 +603,11 @@ public:
 class ArgIteratorForMethodInvoke : public ArgIteratorTemplate<ArgIteratorBaseForMethodInvoke>
 {
 public:
-    ArgIteratorForMethodInvoke(SIGNATURENATIVEREF * ppNativeSig)
+    ArgIteratorForMethodInvoke(SIGNATURENATIVEREF * ppNativeSig, BOOL fCtorOfVariableSizedObject)
     {
         m_ppNativeSig = ppNativeSig;
+
+        m_fHasThis = (*m_ppNativeSig)->HasThis() && !fCtorOfVariableSizedObject;
 
         DWORD dwFlags = (*m_ppNativeSig)->GetArgIteratorFlags();
 
@@ -803,7 +806,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     }
 
     {
-    ArgIteratorForMethodInvoke argit(&gc.pSig);
+    ArgIteratorForMethodInvoke argit(&gc.pSig, fCtorOfVariableSizedObject);
 
     if (argit.IsActivationNeeded())
         pMeth->EnsureActive();
@@ -888,7 +891,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     }
 
     // Copy "this" pointer
-    if (!pMeth->IsStatic()) {
+    if (!pMeth->IsStatic() && !fCtorOfVariableSizedObject) {
         PVOID pThisPtr;
 
         if (fConstructor)
@@ -1097,7 +1100,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
             if (pReturnedReference == NULL)
             {
-                COMPlusThrow(kNullReferenceException, IDS_INVOKE_NULLREF_RETURNED);
+                COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
             }
             CopyValueClass(gc.retVal->GetData(), pReturnedReference, gc.retVal->GetMethodTable());
         }
@@ -1120,7 +1123,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
         if (pReturnedReference == NULL)
         {
-            COMPlusThrow(kNullReferenceException, IDS_INVOKE_NULLREF_RETURNED);
+            COMPlusThrow(kNullReferenceException, W("NullReference_InvokeNullRefReturned"));
         }
 
         gc.retVal = InvokeUtil::CreateObjectAfterInvoke(refReturnTargetTH, pReturnedReference);

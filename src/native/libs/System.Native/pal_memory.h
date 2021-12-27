@@ -32,11 +32,6 @@ PALEXPORT void* SystemNative_Calloc(uintptr_t num, uintptr_t size);
 PALEXPORT void SystemNative_Free(void* ptr);
 
 /**
- * Get usable size of C runtime malloc
- */
-PALEXPORT uintptr_t SystemNative_GetUsableSize(void* ptr);
-
-/**
  * C runtime malloc
  */
 PALEXPORT void* SystemNative_Malloc(uintptr_t size);

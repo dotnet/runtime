@@ -110,9 +110,6 @@ typedef enum
     PAL_SSL_ERROR_ZERO_RETURN = 6,
 } SslErrorCode;
 
-// the function pointer definition for the callback used in SslCtxSetVerify
-typedef int32_t (*SslCtxSetVerifyCallback)(int32_t, X509_STORE_CTX*);
-
 // the function pointer definition for the callback used in SslCtxSetAlpnSelectCb
 typedef int32_t (*SslCtxSetAlpnCallback)(SSL* ssl,
     const uint8_t** out,
@@ -311,11 +308,6 @@ Shims the SSL_get_client_CA_list method.
 Returns the list of CA names explicity set.
 */
 PALEXPORT X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl);
-
-/*
-Shims the SSL_CTX_set_verify method.
-*/
-PALEXPORT void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback);
 
 /*
 Shims the SSL_set_verify method.

@@ -48,6 +48,10 @@ For example:
 ```
 ./build.sh libs.tests -os iOS -arch x64 -test /p:DevTeamProvisioning=H1A2B3C4D5
 ```
+Other possible options are:
+- to sign with an adhoc key by setting `/p:DevTeamProvisioning=adhoc`
+- to skip signing all together by setting `/p:DevTeamProvisioning=-` .
+
 [AppleAppBuilder](https://github.com/dotnet/runtime/blob/main/src/tasks/AppleAppBuilder/AppleAppBuilder.cs) generates temp Xcode projects you can manually open and resolve provisioning issues there using native UI and deploy to your devices.
 
 ### Running individual test suites

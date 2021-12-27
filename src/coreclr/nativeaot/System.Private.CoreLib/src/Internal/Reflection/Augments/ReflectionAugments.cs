@@ -105,8 +105,7 @@ namespace Internal.Reflection.Augments
             get
             {
                 ReflectionCoreCallbacks callbacks = s_reflectionCoreCallbacks;
-                if (callbacks == null)
-                    throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+                Debug.Assert(callbacks != null);
                 return callbacks;
             }
         }

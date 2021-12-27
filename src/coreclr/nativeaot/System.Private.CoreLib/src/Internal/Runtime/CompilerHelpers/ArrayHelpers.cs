@@ -54,7 +54,7 @@ namespace Internal.Runtime.CompilerHelpers
                     for (int i = 0; i < rank; i++)
                     {
                         if (pDimensions[2 * i] != 0)
-                            throw new PlatformNotSupportedException(SR.Arg_NotSupportedNonZeroLowerBound);
+                            throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
 
                         pDimensions[i] = pDimensions[2 * i + 1];
                     }

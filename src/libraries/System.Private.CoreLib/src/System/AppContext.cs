@@ -45,6 +45,12 @@ namespace System
             return data;
         }
 
+        /// <summary>
+        /// Sets the value of the named data element assigned to the current application domain.
+        /// </summary>
+        /// <param name="name">The name of the data element</param>
+        /// <param name="data">The value of <paramref name="name"/></param>
+        /// <exception cref="ArgumentNullException">If <paramref name="name"/> is <see langword="null"/></exception>
         public static void SetData(string name, object? data)
         {
             if (name == null)

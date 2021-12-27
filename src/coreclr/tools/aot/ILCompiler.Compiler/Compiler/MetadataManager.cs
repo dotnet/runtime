@@ -332,6 +332,8 @@ namespace ILCompiler
                 {
                     // We're going to generate a mapping table entry for this. Collect dependencies.
                     ReflectionInvokeMapNode.AddDependenciesDueToReflectability(ref dependencies, factory, method);
+
+                    ReflectionInvokeSupportDependencyAlgorithm.GetDependenciesFromParamsArray(ref dependencies, factory, method);
                 }
             }
         }

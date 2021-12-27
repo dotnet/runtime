@@ -750,7 +750,7 @@ namespace System.StubHelpers
         private unsafe IntPtr ConvertArrayToNative(object pManagedHome, int dwFlags)
         {
             Type elementType = pManagedHome.GetType().GetElementType()!;
-            VarEnum vt = VarEnum.VT_EMPTY;
+            VarEnum vt;
 
             switch (Type.GetTypeCode(elementType))
             {

@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -14,7 +13,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class SourceList : DebuggerTestBase
+    public class MiscTests : DebuggerTestBase
     {
 
         [Fact]
@@ -66,13 +65,14 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "IntAdd",
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 use_cfo: use_cfo,
-                test_fn: (locals) =>
+                test_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     CheckNumber(locals, "b", 20);
                     CheckNumber(locals, "c", 30);
                     CheckNumber(locals, "d", 0);
                     CheckNumber(locals, "e", 0);
+                    await Task.CompletedTask;
                 }
             );
 
@@ -81,10 +81,11 @@ namespace DebuggerTests
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test.cs", 154, 8, "PrimitiveTypesTest",
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
-                test_fn: (locals) =>
+                test_fn: async (locals) =>
                 {
                     CheckSymbol(locals, "c0", "8364 '€'");
                     CheckSymbol(locals, "c1", "65 'A'");
+                    await Task.CompletedTask;
                 }
             );
 
@@ -94,7 +95,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test2.cs", 50, 8, "Types",
                 "window.setTimeout(function() { invoke_static_method (\"[debugger-test] Fancy:Types\")(); }, 1);",
                 use_cfo: false,
-                test_fn: (locals) =>
+                test_fn: async (locals) =>
                 {
                     CheckNumber(locals, "dPI", Math.PI);
                     CheckNumber(locals, "fPI", (float)Math.PI);
@@ -116,6 +117,7 @@ namespace DebuggerTests
                     CheckNumber(locals, "sMin", short.MinValue);
                     CheckNumber(locals, "usMin", ushort.MinValue);
                     CheckNumber(locals, "usMax", ushort.MaxValue);
+                    await Task.CompletedTask;
                 }
             );
 
@@ -199,7 +201,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs", 74, 8, "GenericTypesTest",
                 "window.setTimeout(function() { invoke_generic_types_test (); }, 1);",
                 use_cfo: use_cfo,
-                test_fn: (locals) =>
+                test_fn: async (locals) =>
                 {
                     CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
                     CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
@@ -213,6 +215,7 @@ namespace DebuggerTests
 
                     CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
                     CheckObject(locals, "list_arr_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
+                    await Task.CompletedTask;
                 }
             );
 
@@ -753,6 +756,7 @@ namespace DebuggerTests
         }
 
         [Fact]
+        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62667
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
             int line = 9;
@@ -807,37 +811,8 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task GetSourceUsingSourceUri()
-        {
-            //testing without using sourcelink, expected values at GetSourceAsync
-            //SourceUri - file:///LOCAL_PATH/runtime/src/mono/wasm/debugger/tests/debugger-test/debugger-test.cs
-            //SourceLinkUri - empty
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
-
-            Assert.EndsWith("debugger-test.cs", bp1_res.Value["breakpointId"].ToString());
-            Assert.Equal(1, bp1_res.Value["locations"]?.Value<JArray>()?.Count);
-
-            var loc = bp1_res.Value["locations"]?.Value<JArray>()[0];
-
-            var sourceToGet = JObject.FromObject(new
-            {
-                scriptId = loc["scriptId"]?.Value<string>()
-            });
-
-            Assert.Equal("dotnet://debugger-test.dll/debugger-test.cs", scripts[loc["scriptId"]?.Value<string>()]);
-            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
-            Assert.True(source.IsOk);
-        }
-        [Fact]
         public async Task GetSourceUsingSourceLink()
         {
-            //testing using sourcelink, expected values at GetSourceAsync
-            // On CI
-            //SourceUri - file:///fakepath/LOCAL_PATH/runtime/src/mono/wasm/debugger/tests/debugger-test-with-source-link/test.cs
-            //SourceLinkUri - file:///LOCAL_PATH/runtime/src/mono/wasm/debugger/tests/debugger-test-with-source-link/test.cs
-            // Locally
-            // SourceUri - file:////src/mono/wasm/debugger/tests/debugger-test-with-source-link/test.cs
-            // SourceLinkUri - https://raw.githubusercontent.com/FORK/runtime/COMMIT_ID/src/mono/wasm/debugger/tests/debugger-test-with-source-link/test.cs
             var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test-with-source-link] DebuggerTests.ClassToBreak:TestBreakpoint'); }, 1);",
@@ -852,7 +827,7 @@ namespace DebuggerTests
             });
 
             var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
-            Assert.True(source.IsOk);
+            Assert.True(source.IsOk, $"Failed to getScriptSource: {source}");
         }
 
         [Fact]
@@ -882,9 +857,10 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method('[debugger-test] MainPage:CallSetValue'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 758, 16,
                 "set_SomeValue",
-                locals_fn: (locals) =>
+                locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "view", 150);
+                    await Task.CompletedTask;
                 }
             );
         }

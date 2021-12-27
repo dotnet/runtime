@@ -668,7 +668,6 @@ namespace System
                 sourceOffset += sourceRule.BaseUtcOffsetDelta;
                 if (sourceRule.HasDaylightSaving)
                 {
-                    bool sourceIsDaylightSavings = false;
                     DaylightTimeStruct sourceDaylightTime = sourceTimeZone.GetDaylightTime(dateTime.Year, sourceRule, sourceRuleIndex);
 
                     // 'dateTime' might be in an invalid time range since it is in an AdjustmentRule
@@ -677,7 +676,7 @@ namespace System
                     {
                         throw new ArgumentException(SR.Argument_DateTimeIsInvalid, nameof(dateTime));
                     }
-                    sourceIsDaylightSavings = GetIsDaylightSavings(dateTime, sourceRule, sourceDaylightTime);
+                    bool sourceIsDaylightSavings = GetIsDaylightSavings(dateTime, sourceRule, sourceDaylightTime);
 
                     // adjust the sourceOffset according to the Adjustment Rule / Daylight Saving Rule
                     sourceOffset += (sourceIsDaylightSavings ? sourceRule.DaylightDelta : TimeSpan.Zero /*FUTURE: sourceRule.StandardDelta*/);
@@ -2003,11 +2002,10 @@ namespace System
             if (adjustmentRules != null && adjustmentRules.Length != 0)
             {
                 adjustmentRulesSupportDst = true;
-                AdjustmentRule? prev = null;
                 AdjustmentRule? current = null;
                 for (int i = 0; i < adjustmentRules.Length; i++)
                 {
-                    prev = current;
+                    AdjustmentRule? prev = current;
                     current = adjustmentRules[i];
 
                     if (current == null)

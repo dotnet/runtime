@@ -22,8 +22,7 @@ namespace System.Net.Http.Headers
             {
                 if (_allow == null)
                 {
-                    _allow = new HttpHeaderValueCollection<string>(KnownHeaders.Allow.Descriptor,
-                        this, HeaderUtilities.TokenValidator);
+                    _allow = new HttpHeaderValueCollection<string>(KnownHeaders.Allow.Descriptor, this);
                 }
                 return _allow;
             }
@@ -43,8 +42,7 @@ namespace System.Net.Http.Headers
             {
                 if (_contentEncoding == null)
                 {
-                    _contentEncoding = new HttpHeaderValueCollection<string>(KnownHeaders.ContentEncoding.Descriptor,
-                        this, HeaderUtilities.TokenValidator);
+                    _contentEncoding = new HttpHeaderValueCollection<string>(KnownHeaders.ContentEncoding.Descriptor, this);
                 }
                 return _contentEncoding;
             }
@@ -56,8 +54,7 @@ namespace System.Net.Http.Headers
             {
                 if (_contentLanguage == null)
                 {
-                    _contentLanguage = new HttpHeaderValueCollection<string>(KnownHeaders.ContentLanguage.Descriptor,
-                        this, HeaderUtilities.TokenValidator);
+                    _contentLanguage = new HttpHeaderValueCollection<string>(KnownHeaders.ContentLanguage.Descriptor, this);
                 }
                 return _contentLanguage;
             }
