@@ -13266,29 +13266,29 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
     {
         ssize_t op2Value = static_cast<ssize_t>(op2->IntegralValue());
 
-        if (fgGlobalMorph)
+        // Optimizes (X & 1) == 1 to (X & 1)
+        //
+        //                        EQ/NE                   AND
+        //                        /  \                   /  \.
+        //                      AND   CNS 1  ->         x   CNS 1
+        //                     /   \.
+        //                    x   CNS 1
+        //
+        // The compiler requires jumps to have relop operands, so we do not fold that case.
+        if (op1->OperIs(GT_AND) && (op2Value == 1) && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
         {
-            // Optimizes (X & 1) == 1 to (X & 1)
-            //
-            //                        EQ/NE                   AND
-            //                        /  \                   /  \.
-            //                      AND   CNS 1  ->         x   CNS 1
-            //                     /   \.
-            //                    x   CNS 1
-            //
-            // The compiler requires jumps to have relop operands, so we do not fold that case.
-            if (op1->OperIs(GT_AND) && (op2Value == 1) && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
+            if ((op1->gtGetOp1()->gtOper == GT_LCL_VAR) && op1->gtGetOp2()->IsIntegralConst(1) &&
+                (genActualType(op1) == cmp->TypeGet()))
             {
-                if (op1->gtGetOp2()->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()))
-                {
+                op1->SetVNsFromNode(cmp);
 
-                    DEBUG_DESTROY_NODE(op2);
-                    DEBUG_DESTROY_NODE(cmp);
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(cmp);
 
-                    return op1;
-                }
+                return op1;
             }
         }
+
         if (op1->OperIsCompare())
         {
             // Here we look for the following tree
