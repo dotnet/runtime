@@ -15,7 +15,7 @@ namespace System.Net.NetworkInformation
 {
     public partial class Ping
     {
-        private static bool SendIpHeader => false;
+        private static bool SendIpHeader => OperatingSystem.IsFreeBSD();
         private static bool NeedsConnect => OperatingSystem.IsLinux();
         private static bool SupportsDualMode => true;
 
