@@ -130,73 +130,6 @@ public:
         return m_pClassLoader;
     }
 
-    // ------------------------------------------------------------
-    // Modules
-    // ------------------------------------------------------------
-
-    class ModuleIterator
-    {
-        Module* m_pModule;
-        DWORD m_i;
-
-      public:
-        // The preferred constructor.  If you use this, you don't have to
-        // call Start() yourself
-        ModuleIterator(Assembly *pAssembly)
-        {
-            WRAPPER_NO_CONTRACT;
-            Start(pAssembly);
-        }
-
-        // When you don't have the Assembly at contruction time, use this
-        // constructor, and explicitly call Start() to begin the iteration.
-        ModuleIterator()
-        {
-            LIMITED_METHOD_CONTRACT;
-            SUPPORTS_DAC;
-
-            m_pModule = NULL;
-            m_i = (DWORD) -1;
-        }
-
-        void Start(Assembly * pAssembly)
-        {
-            LIMITED_METHOD_CONTRACT;
-            SUPPORTS_DAC;
-
-            m_pModule = pAssembly->GetModule();
-            m_i = (DWORD) -1;
-        }
-
-        BOOL Next()
-        {
-            LIMITED_METHOD_CONTRACT;
-            SUPPORTS_DAC;
-            while (++m_i <= m_pModule->GetFileMax())
-            {
-                if (GetModule() != NULL)
-                    return TRUE;
-            }
-            return FALSE;
-        }
-
-        Module *GetModule()
-        {
-            LIMITED_METHOD_CONTRACT;
-            SUPPORTS_DAC;
-            return m_pModule->LookupFile(TokenFromRid(m_i, mdtFile));
-        }
-    };
-
-    // TODO: VS
-    ModuleIterator IterateModules()
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        return ModuleIterator(this);
-    }
-
-
     //****************************************************************************************
     //
     // Get the domain the assembly lives in.
@@ -541,7 +474,6 @@ private:
     //****************************************************************************************
 
     void CacheManifestExportedTypes(AllocMemTracker *pamTracker);
-    void CacheManifestFiles();
 
     void CacheFriendAssemblyInfo();
 #ifndef DACCESS_COMPILE
@@ -590,8 +522,6 @@ private:
 #endif // FEATURE_READYTORUN
 
 };
-
-typedef Assembly::ModuleIterator ModuleIterator;
 
 #ifndef DACCESS_COMPILE
 

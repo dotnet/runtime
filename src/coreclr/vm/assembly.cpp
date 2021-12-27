@@ -205,8 +205,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
     PrepareModuleForAssembly(m_pModule, pamTracker);
 
-    CacheManifestFiles();
-
     if (!m_pModule->IsReadyToRun())
         CacheManifestExportedTypes(pamTracker);
 
@@ -1150,10 +1148,6 @@ void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
 
     RETURN;
 }
-void Assembly::CacheManifestFiles()
-{
-}
-
 
 //<TODO>@TODO: if module is not signed it needs to acquire the
 //permissions from the assembly.</TODO>

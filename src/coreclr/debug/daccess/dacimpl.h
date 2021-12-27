@@ -509,7 +509,6 @@ struct ProcessModIter
     bool m_nextDomain;
     AppDomain::AssemblyIterator m_assemIter;
     Assembly* m_curAssem;
-    Assembly::ModuleIterator m_modIter;
 
     ProcessModIter(void)
         : m_domainIter(FALSE)
@@ -554,27 +553,13 @@ struct ProcessModIter
     Module* NextModule(void)
     {
         SUPPORTS_DAC;
-        for (;;)
+        m_curAssem = NextAssem();
+        if (!m_curAssem)
         {
-            if (!m_curAssem)
-            {
-                m_curAssem = NextAssem();
-                if (!m_curAssem)
-                {
-                    return NULL;
-                }
-
-                m_modIter = m_curAssem->IterateModules();
-            }
-
-            if (!m_modIter.Next())
-            {
-                m_curAssem = NULL;
-                continue;
-            }
-
-            return m_modIter.GetModule();
+            return NULL;
         }
+
+        return m_curAssem->GetModule();
     }
 };
 

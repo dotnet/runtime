@@ -643,17 +643,11 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
 #endif
 
     PTR_Assembly assembly = GetAssembly();
-    PREFIX_ASSUME(assembly != NULL);
-    ModuleIterator i = assembly->IterateModules();
+    Module * pCurrentClsModule = assembly->GetModule();
+    _ASSERTE(pCurrentClsModule != NULL);
 
-    while (i.Next())
+    if (!pLookInThisModuleOnly || (pCurrentClsModule == pLookInThisModuleOnly))
     {
-        Module * pCurrentClsModule = i.GetModule();
-        PREFIX_ASSUME(pCurrentClsModule != NULL);
-
-        if (pLookInThisModuleOnly && (pCurrentClsModule != pLookInThisModuleOnly))
-            continue;
-
 #ifdef FEATURE_READYTORUN
         if (nhTable == nhCaseSensitive && pCurrentClsModule->IsReadyToRun() && pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes() &&
             pCurrentClsModule->GetAvailableClassHash() == NULL)
@@ -838,16 +832,11 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     _ASSERT(m_cUnhashedModules > 0);
 
     AllocMemTracker amTracker;
-    ModuleIterator i = GetAssembly()->IterateModules();
 
-    // Create a case-sensitive hashtable for each module, and fill it with the module's typedef entries
-    while (i.Next())
+    // Create a case-sensitive hashtable for the module, and fill it with the module's typedef entries
+    Module *pModule = GetAssembly()->GetModule();
+    if (pModule->GetAvailableClassHash() == NULL)
     {
-        Module *pModule = i.GetModule();
-        PREFIX_ASSUME(pModule != NULL);
-        if (pModule->GetAvailableClassHash() != NULL)
-            continue;
-
         // Lazy construction of the case-sensitive hashtable of types is *only* a scenario for ReadyToRun images
         // (either images compiled with an old version of crossgen, or for case-insensitive type lookups in R2R modules)
         _ASSERT(pModule->IsReadyToRun());
@@ -893,28 +882,23 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
     // Add any unhashed modules into our hash tables, and try again.
 
     AllocMemTracker amTracker;
-    ModuleIterator i = GetAssembly()->IterateModules();
-
-    while (i.Next())
+    Module *pModule = GetAssembly()->GetModule();
+    if (pModule->GetAvailableClassCaseInsHash() == NULL)
     {
-        Module *pModule = i.GetModule();
-        if (pModule->GetAvailableClassCaseInsHash() == NULL)
+        EEClassHashTable *pNewClassCaseInsHash = pModule->GetAvailableClassHash()->MakeCaseInsensitiveTable(pModule, &amTracker);
+
+        LOG((LF_CLASSLOADER, LL_INFO10, "%s's classes being added to case insensitive hash table\n",
+                pModule->GetSimpleName()));
+
         {
-            EEClassHashTable *pNewClassCaseInsHash = pModule->GetAvailableClassHash()->MakeCaseInsensitiveTable(pModule, &amTracker);
+            CANNOTTHROWCOMPLUSEXCEPTION();
+            FAULT_FORBID();
 
-            LOG((LF_CLASSLOADER, LL_INFO10, "%s's classes being added to case insensitive hash table\n",
-                 pModule->GetSimpleName()));
+            amTracker.SuppressRelease();
+            pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
+            FastInterlockDecrement((LONG*)&m_cUnhashedModules);
 
-            {
-                CANNOTTHROWCOMPLUSEXCEPTION();
-                FAULT_FORBID();
-
-                amTracker.SuppressRelease();
-                pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
-                FastInterlockDecrement((LONG*)&m_cUnhashedModules);
-
-                _ASSERT(m_cUnhashedModules >= 0);
-            }
+            _ASSERT(m_cUnhashedModules >= 0);
         }
     }
 }
@@ -1860,16 +1844,8 @@ void ClassLoader::FreeModules()
     CONTRACTL_END;
 
     Module *pManifest = NULL;
-    if (GetAssembly() && (NULL != (pManifest = GetAssembly()->GetModule()))) {
-        // Unload the manifest last, since it contains the module list in its rid map
-        ModuleIterator i = GetAssembly()->IterateModules();
-        while (i.Next()) {
-            // Have the module free its various tables and some of the EEClass links
-            if (i.GetModule() != pManifest)
-                i.GetModule()->Destruct();
-        }
-
-        // Now do the manifest module.
+    if (GetAssembly() && (NULL != (pManifest = GetAssembly()->GetModule())))
+    {
         pManifest->Destruct();
     }
 
@@ -5159,12 +5135,7 @@ ClassLoader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     if (m_pAssembly.IsValid())
     {
-        ModuleIterator modIter = GetAssembly()->IterateModules();
-
-        while (modIter.Next())
-        {
-            modIter.GetModule()->EnumMemoryRegions(flags, true);
-        }
+        m_pAssembly->GetModule()->EnumMemoryRegions(flags, true);
     }
 }
 

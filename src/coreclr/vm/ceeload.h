@@ -923,7 +923,6 @@ private:
     // a compressed format for NGen that makes up for it.
     LookupMap<PTR_MethodTable>      m_GenericTypeDefToCanonMethodTableMap;
 
-    //TODO: VS
     // Mapping from File token to Module *
     LookupMap<PTR_Module>           m_FileReferencesMap;
 

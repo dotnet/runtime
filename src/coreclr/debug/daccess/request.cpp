@@ -2607,8 +2607,7 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     assemblyData->ModuleCount = 0;
     assemblyData->isDomainNeutral = FALSE;
 
-    ModuleIterator mi = pAssembly->IterateModules();
-    while (mi.Next())
+    if (pAssembly->GetModule())
     {
         assemblyData->ModuleCount++;
     }
@@ -2701,21 +2700,14 @@ ClrDataAccess::GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int coun
     SOSDacEnter();
 
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
-    ModuleIterator mi = pAssembly->IterateModules();
-    unsigned int n = 0;
     if (modules)
     {
-        while (mi.Next() && n < count)
-            modules[n++] = HOST_CDADDR(mi.GetModule());
-    }
-    else
-    {
-        while (mi.Next())
-            n++;
+        if (pAssembly->GetModule() && count > 0)
+            modules[0] = HOST_CDADDR(pAssembly->GetModule());
     }
 
     if (pNeeded)
-        *pNeeded = n;
+        *pNeeded = 1;
 
     SOSDacLeave();
     return hr;
