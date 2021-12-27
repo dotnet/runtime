@@ -368,14 +368,24 @@
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <XCodeSdk Condition="'$(TargetsiOS)' == 'true'">iphone</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetsiOSSimulator)' == 'true'">iphonesimulator</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetstvOS)' == 'true'">appletvos</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetstvOSSimulator)' == 'true'">appletvsimulator</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetsMacCatalyst)' == 'true'">maccatalyst</XCodeSdk>
+    </PropertyGroup>
+
     <ItemGroup>
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
     </ItemGroup>
-    <PropertyGroup>
-      <_MergedPayloadFilesPatterns>@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(TargetOS.ToLowerInvariant())/%(Identity).app/**')</_MergedPayloadFilesPatterns>
-    </PropertyGroup>
     <ItemGroup>
-      <_MergedPayloadFiles Include="$(_MergedPayloadFilesPatterns)" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)/$(_MergedWrapperName).app/**" />
+      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
+        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
+             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+      </_MergedPayloadFiles>
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
