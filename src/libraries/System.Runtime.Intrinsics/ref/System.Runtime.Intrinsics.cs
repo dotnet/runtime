@@ -3700,6 +3700,10 @@ namespace System.Runtime.Intrinsics.X86
 
         public static System.Runtime.Intrinsics.Vector512<int> Add(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
 
+        public static System.Runtime.Intrinsics.Vector512<float> Add(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
+
+        public static System.Runtime.Intrinsics.Vector512<float> AddRound(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right, int round) { throw null; }
+
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx.X64
         {
             internal X64() { }

@@ -1546,6 +1546,7 @@ MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_BYSCALAR, "xbinop_byscalar", XREG, XREG, XREG)
 
 MINI_OP(OP_ZBINOP, "zbinop", ZREG, ZREG, ZREG)
+MINI_OP3(OP_ZADDROUND, "zaddround", ZREG, ZREG, ZREG, IREG)
 
 /* inst_c0 contains an INTRINS_ enum, inst_c1 might contain additional data */
 MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)

@@ -250,6 +250,10 @@ INTRINS_OVR(SSE_SSUB_SATI8, ssub_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_USUB_SATI8, usub_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_SSUB_SATI16, ssub_sat, Generic, v128_i2_t)
 INTRINS_OVR(SSE_USUB_SATI16, usub_sat, Generic, v128_i2_t)
+
+//INTRINS_OVR_3_ARG(AVX512_ADDROUND, x86_avx512_add_ps_512, X86, v512_r4_t, v512_r4_t, i4_t)
+INTRINS(AVX512_ADDROUND, x86_avx512_add_ps_512, X86)
+
 #endif
 #if defined(TARGET_WASM)
 INTRINS_OVR(WASM_ANYTRUE_V16, wasm_anytrue, Wasm, sse_i1_t)

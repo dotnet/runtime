@@ -589,3 +589,6 @@ METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh)
 METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh)
 // Arm.Dp
 METHOD(DotProductBySelectedQuadruplet)
+
+// Avx512 Hacking
+METHOD(AddRound)

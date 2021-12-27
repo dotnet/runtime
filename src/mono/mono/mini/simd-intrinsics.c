@@ -2319,6 +2319,7 @@ static SimdIntrinsic x86base_methods [] = {
 
 static SimdIntrinsic avx512_methods [] = {
 	{SN_Add},
+	{SN_AddRound}
 };
 
 
@@ -2392,8 +2393,12 @@ emit_x86_intrinsics (
 
 	if (feature == MONO_CPU_X86_AVX512) {
 		switch (id) {
-		case SN_Add:
-			return emit_simd_ins_for_sig (cfg, klass, OP_ZBINOP, arg0_type == MONO_TYPE_R8 ? OP_FADD : OP_IADD, arg0_type, fsig, args);
+		case SN_Add: {
+			return emit_simd_ins_for_sig (cfg, klass, OP_ZBINOP, arg0_type == MONO_TYPE_R8 || arg0_type == MONO_TYPE_R4 ? OP_FADD : OP_IADD, arg0_type, fsig, args);
+		}
+		case SN_AddRound: {
+			return emit_simd_ins_for_sig (cfg, klass, OP_ZADDROUND, -1, -1, fsig, args);
+		}
 		default:
 			return NULL;
 		}

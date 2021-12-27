@@ -25,5 +25,9 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         public static Vector512<int> Add(Vector512<int> left, Vector512<int> right) => Add(left, right);
+
+        public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) => Add(left, right);
+
+        public static Vector512<float> AddRound(Vector512<float> left, Vector512<float> right, int round) => AddRound(left, right, round);
     }
 }
