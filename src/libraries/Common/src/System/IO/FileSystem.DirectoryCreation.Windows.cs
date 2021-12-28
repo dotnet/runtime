@@ -26,7 +26,8 @@ namespace System.IO
                 return;
             }
 
-            List<string> stackDir = new List<string>();
+            const int preAllocationSize = 8;
+            List<string> stackDir = new(preAllocationSize);
 
             // Attempt to figure out which directories don't exist, and only
             // create the ones we need.  Note that FileExists may fail due
