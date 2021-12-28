@@ -427,7 +427,7 @@ extern DummyGlobalContract ___contract;
 #include "typehandle.inl"
 #include "object.inl"
 #include "clsload.inl"
-#include "domainfile.inl"
+#include "domainassembly.inl"
 #include "method.inl"
 #include "syncblk.inl"
 #include "threads.inl"

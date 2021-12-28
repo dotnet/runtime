@@ -63,7 +63,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debuginfostore.cpp
     decodemd.cpp
     disassembler.cpp
-    domainfile.cpp
+    domainassembly.cpp
     dynamicmethod.cpp
     ecall.cpp
     eedbginterfaceimpl.cpp
@@ -161,8 +161,8 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     debuginfostore.h
     decodemd.h
     disassembler.h
-    domainfile.h
-    domainfile.inl
+    domainassembly.h
+    domainassembly.inl
     dynamicmethod.h
     ecall.h
     eedbginterfaceimpl.h

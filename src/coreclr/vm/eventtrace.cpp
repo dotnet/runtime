@@ -1380,7 +1380,7 @@ void BulkComLogger::AddCcwHandle(Object **handle)
 
 
 
-#include "domainfile.h"
+#include "domainassembly.h"
 
 BulkStaticsLogger::BulkStaticsLogger(BulkTypeEventLogger *typeLogger)
     : m_buffer(0), m_used(0), m_count(0), m_domain(0), m_typeLogger(typeLogger)

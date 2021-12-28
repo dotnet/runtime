@@ -7,8 +7,8 @@
 // --------------------------------------------------------------------------------
 
 
-#ifndef _DOMAINFILE_H_
-#define _DOMAINFILE_H_
+#ifndef _DOMAINASSEMBLY_H_
+#define _DOMAINASSEMBLY_H_
 
 // --------------------------------------------------------------------------------
 // Required headers
@@ -472,4 +472,4 @@ protected:
     BOOL                                    m_fHostAssemblyPublished;
 };
 
-#endif  // _DOMAINFILE_H_
+#endif  // _DOMAINASSEMBLY_H_

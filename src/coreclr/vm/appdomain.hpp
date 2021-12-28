@@ -21,7 +21,7 @@
 #include "arraylist.h"
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
-#include "domainfile.h"
+#include "domainassembly.h"
 #include "fptrstubs.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
