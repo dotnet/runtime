@@ -164,13 +164,13 @@ struct MSLAYOUT TargetBuffer
 // Module properties, retrieved by DAC.
 // Describes a VMPTR_DomainFile representing a module.
 // In the VM, a raw Module may be domain neutral and shared by many appdomains.
-// Whereas a DomainFile is like a { AppDomain, Module} pair. DomainFile corresponds
+// Whereas a DomainAssembly is like a { AppDomain, Module} pair. DomainAssembly corresponds
 // much more to ICorDebugModule (which also has appdomain affinity).
 //===================================================================================
 struct MSLAYOUT DomainFileInfo
 {
-    // The appdomain that the DomainFile is associated with.
-    // Although VMPTR_Module may be shared across multiple domains, a DomainFile has appdomain affinity.
+    // The appdomain that the DomainAssembly is associated with.
+    // Although VMPTR_Module may be shared across multiple domains, a DomainAssembly has appdomain affinity.
     VMPTR_AppDomain vmAppDomain;
 
     // The assembly this module belongs to. All modules live in an assembly.

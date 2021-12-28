@@ -234,7 +234,7 @@ FileLoadLevel MulticoreJitManager::GetModuleFileLoadLevel(Module * pModule)
 
     if (pModule != NULL)
     {
-        DomainFile * pDomainAssembly = pModule->GetDomainAssembly();
+        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
 
         if (pDomainAssembly != NULL)
         {

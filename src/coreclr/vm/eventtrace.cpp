@@ -1529,7 +1529,7 @@ void BulkStaticsLogger::LogAllStatics()
             if (module == NULL)
                 continue;
 
-            DomainFile *domainAssembly = module->GetDomainAssembly();
+            DomainAssembly *domainAssembly = module->GetDomainAssembly();
             if (domainAssembly == NULL)
                 continue;
 

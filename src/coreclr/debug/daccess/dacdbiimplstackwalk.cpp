@@ -514,7 +514,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 #endif // FEATURE_COMINTEROP
 
             Module *     pModule = (pMD ? pMD->GetModule() : NULL);
-            DomainFile * pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
+            DomainAssembly * pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
 
             if (frameData.stubFrame.frameType == STUBFRAME_FUNC_EVAL)
             {
@@ -702,7 +702,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // Although MiniDumpNormal tries to dump all AppDomains, it's possible
         // target corruption will keep one from being present.  This should mean
         // we'll just fail later, but struggle on for now.
-        DomainFile *pDomainAssembly = NULL;
+        DomainAssembly *pDomainAssembly = NULL;
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
             pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);

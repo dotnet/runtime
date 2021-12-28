@@ -186,7 +186,7 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     if (pModule == NULL)
         return NULL;
 
-    DomainFile * pDomainAssembly = pModule->GetDomainAssembly();
+    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
 
     OBJECTREF refModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
 
@@ -2670,7 +2670,7 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
     Assembly* currentAssembly = pAssembly->GetAssembly();
 
     Module *pModule = currentAssembly->GetModule();
-    DomainFile * pDomainAssembly = pModule->GetDomainAssembly();
+    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
 
 #ifdef _DEBUG
     OBJECTREF orModule;
@@ -2905,7 +2905,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    DomainFile *pDomainModule = pModule->GetDomainAssembly();
+    DomainAssembly *pDomainModule = pModule->GetDomainAssembly();
 
     U1ARRAYREF dataArray = (U1ARRAYREF)sig;
     DWORD sigSize = dataArray->GetNumComponents();

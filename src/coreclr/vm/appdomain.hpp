@@ -201,7 +201,7 @@ struct DomainLocalModule
     static SIZE_T GetOffsetOfDataBlob() { return offsetof(DomainLocalModule, m_pDataBlob); }
     static SIZE_T GetOffsetOfGCStaticPointer() { return offsetof(DomainLocalModule, m_pGCStatics); }
 
-    inline DomainFile* GetDomainAssembly()
+    inline DomainAssembly* GetDomainAssembly()
     {
         LIMITED_METHOD_CONTRACT
         SUPPORTS_DAC;
@@ -209,7 +209,7 @@ struct DomainLocalModule
     }
 
 #ifndef DACCESS_COMPILE
-    inline void        SetDomainAssembly(DomainFile* pDomainAssembly)
+    inline void        SetDomainAssembly(DomainAssembly* pDomainAssembly)
     {
         LIMITED_METHOD_CONTRACT
         m_pDomainAssembly = pDomainAssembly;
@@ -416,7 +416,7 @@ private:
     void SetClassFlags(MethodTable* pMT, DWORD dwFlags);
     DWORD GetClassFlags(MethodTable* pMT, DWORD iClassIndex);
 
-    PTR_DomainFile           m_pDomainAssembly;
+    PTR_DomainAssembly           m_pDomainAssembly;
     VolatilePtr<DynamicClassInfo, PTR_DynamicClassInfo> m_pDynamicClassTable;   // used for generics and reflection.emit in memory
     Volatile<SIZE_T>         m_aDynamicEntries;      // number of entries in dynamic table
     VolatilePtr<UMEntryThunk> m_pADThunkTable;
@@ -747,7 +747,7 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 
 // Loading infrastructure:
 //
-// a DomainFile is a file being loaded.  Files are loaded in layers to enable loading in the
+// a DomainAssembly is a file being loaded.  Files are loaded in layers to enable loading in the
 // presence of dependency loops.
 //
 // FileLoadLevel describes the various levels available.  These are implemented slightly
@@ -773,14 +773,14 @@ class FileLoadLock : public ListLockEntry
 {
 private:
     FileLoadLevel           m_level;
-    DomainFile              *m_pDomainAssembly;
+    DomainAssembly              *m_pDomainAssembly;
     HRESULT                 m_cachedHR;
 
 public:
-    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainAssembly);
+    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
 
     ~FileLoadLock();
-    DomainFile *GetDomainAssembly();
+    DomainAssembly *GetDomainAssembly();
     FileLoadLevel GetLoadLevel();
 
     // CanAcquire will return FALSE if Acquire will definitely not take the lock due
@@ -807,7 +807,7 @@ public:
 
 private:
 
-    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainAssembly);
+    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
 
     static void HolderLeave(FileLoadLock *pThis);
 
@@ -1307,7 +1307,7 @@ enum AssemblyIterationFlags
                                         // (all m_level values)
     kIncludeAvailableToProfilers
                           = 0x00000020, // include assemblies available to profilers
-                                        // See comment at code:DomainFile::IsAvailableToProfilers
+                                        // See comment at code:DomainAssembly::IsAvailableToProfilers
 
     // Execution / introspection flags
     kIncludeExecution     = 0x00000004, // include assemblies that are loaded for execution only
@@ -1797,13 +1797,13 @@ public:
 
     CHECK CheckCanLoadTypes(Assembly *pAssembly);
     CHECK CheckCanExecuteManagedCode(MethodDesc* pMD);
-    CHECK CheckLoading(DomainFile *pFile, FileLoadLevel level);
+    CHECK CheckLoading(DomainAssembly *pFile, FileLoadLevel level);
 
-    FileLoadLevel GetDomainFileLoadLevel(DomainFile *pFile);
-    BOOL IsLoading(DomainFile *pFile, FileLoadLevel level);
+    FileLoadLevel GetDomainFileLoadLevel(DomainAssembly *pFile);
+    BOOL IsLoading(DomainAssembly *pFile, FileLoadLevel level);
     static FileLoadLevel GetThreadFileLoadLevel();
 
-    void LoadDomainFile(DomainFile *pFile,
+    void LoadDomainFile(DomainAssembly *pFile,
                         FileLoadLevel targetLevel);
 
     enum FindAssemblyOptions
@@ -1839,10 +1839,10 @@ public:
     // private:
     void LoadSystemAssemblies();
 
-    DomainFile *LoadDomainFile(FileLoadLock *pLock,
+    DomainAssembly *LoadDomainFile(FileLoadLock *pLock,
                                FileLoadLevel targetLevel);
 
-    void TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
+    void TryIncrementalLoad(DomainAssembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
 
@@ -2119,7 +2119,7 @@ public:
 private:
     void RaiseLoadingAssemblyEvent(DomainAssembly* pAssembly);
 
-    friend class DomainFile;
+    friend class DomainAssembly;
 
 private:
     BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating);

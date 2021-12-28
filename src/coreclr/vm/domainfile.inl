@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-inline Module* DomainFile::GetModule()
+inline Module* DomainAssembly::GetModule()
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(CheckLoaded());
@@ -9,7 +9,7 @@ inline Module* DomainFile::GetModule()
     return m_pModule;
 }
 
-inline Assembly* DomainFile::GetAssembly()
+inline Assembly* DomainAssembly::GetAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     CONSISTENCY_CHECK(CheckLoaded());
@@ -17,13 +17,13 @@ inline Assembly* DomainFile::GetAssembly()
     return m_pAssembly;
 }
 
-inline ULONG DomainFile::HashIdentity()
+inline ULONG DomainAssembly::HashIdentity()
 {
     WRAPPER_NO_CONTRACT;
     return GetPEAssembly()->HashIdentity();
 }
 
-inline BOOL DomainFile::IsCollectible()
+inline BOOL DomainAssembly::IsCollectible()
 {
     LIMITED_METHOD_CONTRACT;
     return m_fCollectible;

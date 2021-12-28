@@ -2239,7 +2239,7 @@ DispIDCache* AppDomain::SetupRefDispIDCache()
 
 #endif // FEATURE_COMINTEROP
 
-FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainFile *pDomainAssembly)
+FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainAssembly *pDomainAssembly)
 {
     CONTRACTL
     {
@@ -2272,7 +2272,7 @@ FileLoadLock::~FileLoadLock()
     ((PEAssembly *) m_data)->Release();
 }
 
-DomainFile *FileLoadLock::GetDomainAssembly()
+DomainAssembly *FileLoadLock::GetDomainAssembly()
 {
     LIMITED_METHOD_CONTRACT;
     return m_pDomainAssembly;
@@ -2379,7 +2379,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
 
                 // Dev11 bug 236344
                 // In AppDomain::IsLoading, if the lock is taken on m_pList and then FindFileLock returns NULL,
-                // we depend on the DomainFile's load level being up to date. Hence we must update the load
+                // we depend on the DomainAssembly's load level being up to date. Hence we must update the load
                 // level while the m_pList lock is held.
                 if (success)
                     m_pDomainAssembly->SetLoadLevel(level);
@@ -2405,7 +2405,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
             case FILE_LOAD_DELIVER_EVENTS:
             case FILE_LOADED:
             case FILE_ACTIVE: // The timing of stress logs is not critical, so even for the FILE_ACTIVE stage we need not do it while the m_pList lock is held.
-                STRESS_LOG3(LF_CLASSLOADER, LL_INFO100, "Completed Load Level %s for DomainFile %p - success = %i\n", fileLoadLevelName[level], m_pDomainAssembly, success);
+                STRESS_LOG3(LF_CLASSLOADER, LL_INFO100, "Completed Load Level %s for DomainAssembly %p - success = %i\n", fileLoadLevelName[level], m_pDomainAssembly, success);
                 break;
             default:
                 break;
@@ -2464,7 +2464,7 @@ UINT32 FileLoadLock::Release()
     return count;
 }
 
-FileLoadLock::FileLoadLock(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainFile *pDomainAssembly)
+FileLoadLock::FileLoadLock(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainAssembly *pDomainAssembly)
   : ListLockEntry(pLock, pPEAssembly, "File load lock"),
     m_level((FileLoadLevel) (FILE_LOAD_CREATE)),
     m_pDomainAssembly(pDomainAssembly),
@@ -2522,7 +2522,7 @@ void AppDomain::LoadSystemAssemblies()
     LoadAssembly(NULL, SystemDomain::System()->SystemPEAssembly(), FILE_ACTIVE);
 }
 
-FileLoadLevel AppDomain::GetDomainFileLoadLevel(DomainFile *pFile)
+FileLoadLevel AppDomain::GetDomainFileLoadLevel(DomainAssembly *pFile)
 {
     CONTRACTL
     {
@@ -2555,7 +2555,7 @@ FileLoadLevel AppDomain::GetDomainFileLoadLevel(DomainFile *pFile)
 // thread has completed the load step.
 //
 
-BOOL AppDomain::IsLoading(DomainFile *pFile, FileLoadLevel level)
+BOOL AppDomain::IsLoading(DomainAssembly *pFile, FileLoadLevel level)
 {
     // Cheap out
     if (pFile->GetLoadLevel() < level)
@@ -2592,7 +2592,7 @@ BOOL AppDomain::IsLoading(DomainFile *pFile, FileLoadLevel level)
 
 // CheckLoading is a weaker form of IsLoading, which will not block on
 // other threads waiting for their status.  This is appropriate for asserts.
-CHECK AppDomain::CheckLoading(DomainFile *pFile, FileLoadLevel level)
+CHECK AppDomain::CheckLoading(DomainAssembly *pFile, FileLoadLevel level)
 {
     // Cheap out
     if (pFile->GetLoadLevel() < level)
@@ -2658,7 +2658,7 @@ CHECK AppDomain::CheckCanExecuteManagedCode(MethodDesc* pMD)
 
 #endif // !DACCESS_COMPILE
 
-void AppDomain::LoadDomainFile(DomainFile *pFile,
+void AppDomain::LoadDomainFile(DomainAssembly *pFile,
                                FileLoadLevel targetLevel)
 {
     CONTRACTL
@@ -2895,14 +2895,6 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     else
         result->EnsureLoadLevel(targetLevel);
 
-    // Malformed metadata may contain a Module reference to what is actually
-    // an Assembly. In this case we need to throw an exception, since returning
-    // a DomainModule as a DomainAssembly is a type safety violation.
-    if (!result->IsAssembly())
-    {
-        ThrowHR(COR_E_ASSEMBLYEXPECTED);
-    }
-
     // Cache result in all cases, since found pPEAssembly could be from a different AssemblyRef than pIdentity
     if (pIdentity == NULL)
     {
@@ -2923,12 +2915,12 @@ struct LoadFileArgs
 {
     FileLoadLock *pLock;
     FileLoadLevel targetLevel;
-    DomainFile *result;
+    DomainAssembly *result;
 };
 
-DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetLevel)
+DomainAssembly *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetLevel)
 {
-    CONTRACT(DomainFile *)
+    CONTRACT(DomainAssembly *)
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pLock));
@@ -2939,7 +2931,7 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
     }
     CONTRACT_END;
 
-    DomainFile *pFile = pLock->GetDomainAssembly();
+    DomainAssembly *pFile = pLock->GetDomainAssembly();
 
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
@@ -3042,7 +3034,7 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
     RETURN pFile;
 }
 
-void AppDomain::TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder)
+void AppDomain::TryIncrementalLoad(DomainAssembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder)
 {
     STANDARD_VM_CONTRACT;
 
@@ -3056,7 +3048,7 @@ void AppDomain::TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, F
 
         // Special case: for LoadLibrary, we cannot hold the lock during the
         // actual LoadLibrary call, because we might get a callback from _CorDllMain on any
-        // other thread.  (Note that this requires DomainFile's LoadLibrary to be independently threadsafe.)
+        // other thread.  (Note that this requires DomainAssembly's LoadLibrary to be independently threadsafe.)
 
         if (workLevel == FILE_LOAD_LOADLIBRARY)
         {

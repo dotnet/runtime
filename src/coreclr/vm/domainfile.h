@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // --------------------------------------------------------------------------------
-// DomainFile.h
+// DomainAssembly.h
 //
 
 // --------------------------------------------------------------------------------
@@ -59,13 +59,13 @@ enum NotificationStatus
 };
 
 // --------------------------------------------------------------------------------
-// DomainFile represents a file loaded (or being loaded) into an app domain.  It
+// DomainAssembly represents an assembly loaded (or being loaded) into an app domain.  It
 // is guranteed to be unique per file per app domain.
 // --------------------------------------------------------------------------------
 
-class DomainFile
+class DomainAssembly final
 {
-    VPTR_BASE_VTABLE_CLASS(DomainFile);
+    VPTR_BASE_CONCRETE_VTABLE_CLASS(DomainAssembly);
 
   public:
 
@@ -74,8 +74,8 @@ class DomainFile
     // ------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    virtual ~DomainFile();
-    DomainFile() {LIMITED_METHOD_CONTRACT;};
+    virtual ~DomainAssembly();
+    DomainAssembly() {LIMITED_METHOD_CONTRACT;};
 #endif
 
     PTR_AppDomain GetAppDomain()
@@ -141,18 +141,9 @@ class DomainFile
     }
 #endif
 
-    // TODO: VS remove
-    BOOL IsAssembly()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TRUE;
-    }
-
     BOOL IsCollectible();
     Assembly* GetAssembly();
     ULONG HashIdentity();
-
-    DomainAssembly *GetDomainAssembly();
 
 // ------------------------------------------------------------
 // Public API
@@ -270,7 +261,7 @@ class DomainFile
     // ------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    BOOL Equals(DomainFile *pFile) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pFile->GetPEAssembly()); }
+    BOOL Equals(DomainAssembly *pAssembly) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pAssembly->GetPEAssembly()); }
     BOOL Equals(PEAssembly *pPEAssembly) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pPEAssembly); }
 #endif // DACCESS_COMPILE
 
@@ -322,7 +313,7 @@ class DomainFile
     friend class Module;
     friend class FileLoadLock;
 
-    DomainFile(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
+    DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
@@ -479,33 +470,6 @@ protected:
 
     BOOL                                    m_fDebuggerUnloadStarted;
     BOOL                                    m_fHostAssemblyPublished;
-};
-
-// --------------------------------------------------------------------------------
-// DomainAssembly is a subclass of DomainFile which specifically represents a assembly.
-// --------------------------------------------------------------------------------
-
-class DomainAssembly : public DomainFile
-{
-    VPTR_VTABLE_CLASS(DomainAssembly, DomainFile);
-
-public:
-
- private:
-
-    // ------------------------------------------------------------
-    // Loader API
-    // ------------------------------------------------------------
-
-    friend class AppDomain;
-    friend class Assembly;
-
-#ifndef DACCESS_COMPILE
-public:
-    ~DomainAssembly();
-private:
-    DomainAssembly(AppDomain *pDomain, PEAssembly *pPEAssembly, LoaderAllocator *pLoaderAllocator);
-#endif
 };
 
 #endif  // _DOMAINFILE_H_

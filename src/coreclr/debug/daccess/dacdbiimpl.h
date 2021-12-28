@@ -829,7 +829,7 @@ public:
     // Return the current appdomain the specified thread is in.
     VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread);
 
-    // Given an assembly ref token and metadata scope (via the DomainFile), resolve the assembly.
+    // Given an assembly ref token and metadata scope (via the DomainAssembly), resolve the assembly.
     VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainFile vmScope, mdToken tkAssemblyRef);
 
 

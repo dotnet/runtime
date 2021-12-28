@@ -5199,7 +5199,7 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
 //  @dbgtodo JMC - this should go away when we get rid of DebuggerModule.
 //
 
-DebuggerModule * Debugger::LookupOrCreateModule(DomainFile * pDomainAssembly)
+DebuggerModule * Debugger::LookupOrCreateModule(DomainAssembly * pDomainAssembly)
 {
     _ASSERTE(pDomainAssembly != NULL);
     LOG((LF_CORDB, LL_INFO1000, "D::LOCM df=0x%x\n", pDomainAssembly));
@@ -5211,7 +5211,7 @@ DebuggerModule * Debugger::LookupOrCreateModule(DomainFile * pDomainAssembly)
     return pDModule;
 }
 
-// Overloaded Wrapper around for VMPTR_DomainFile-->DomainFile*
+// Overloaded Wrapper around for VMPTR_DomainFile-->DomainAssembly*
 //
 // Arguments:
 //    vmDomainFile - VMPTR cookie for a domain file. This can be NullPtr().
@@ -5223,7 +5223,7 @@ DebuggerModule * Debugger::LookupOrCreateModule(DomainFile * pDomainAssembly)
 //    VMPTR comes from IPC events
 DebuggerModule * Debugger::LookupOrCreateModule(VMPTR_DomainFile vmDomainFile)
 {
-    DomainFile * pDomainAssembly = vmDomainFile.GetRawPtr();
+    DomainAssembly * pDomainAssembly = vmDomainFile.GetRawPtr();
     if (pDomainAssembly == NULL)
     {
         return NULL;
@@ -5281,7 +5281,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
         HRESULT hr = S_OK;
         EX_TRY
         {
-            DomainFile * pDomainAssembly = pModule->GetDomainAssembly();
+            DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
             SIMPLIFYING_ASSUMPTION(pDomainAssembly != NULL);
             dmod = AddDebuggerModule(pDomainAssembly); // throws
         }
@@ -5305,7 +5305,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
 // Returns:
 //    New instnace of a DebuggerModule. Throws on failure.
 //
-DebuggerModule* Debugger::AddDebuggerModule(DomainFile * pDomainAssembly)
+DebuggerModule* Debugger::AddDebuggerModule(DomainAssembly * pDomainAssembly)
 {
     CONTRACTL
     {
@@ -9426,7 +9426,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
                           DWORD dwModuleName, // length of pszModuleName in chars, not including null.
                           Assembly *pAssembly,
                           AppDomain *pAppDomain,
-                          DomainFile *  pDomainAssembly,
+                          DomainAssembly *  pDomainAssembly,
                           BOOL fAttaching)
 {
 
@@ -9467,7 +9467,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
             _ASSERTE(pManifestModule->IsManifest());
             _ASSERTE(pManifestModule->GetAssembly() == pRuntimeModule->GetAssembly());
 
-            DomainFile * pManifestDomainFile = pManifestModule->GetDomainAssembly();
+            DomainAssembly * pManifestDomainFile = pManifestModule->GetDomainAssembly();
 
             DebuggerLockHolder dbgLockHolder(this);
 
@@ -9509,9 +9509,9 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     module->SetCanChangeJitFlags(true);
 
 
-    // @dbgtodo  inspection - Check whether the DomainFile we get is consistent with the Module and AppDomain we get.
+    // @dbgtodo  inspection - Check whether the DomainAssembly we get is consistent with the Module and AppDomain we get.
     // We should simply things when we actually get rid of DebuggerModule, possibly by just passing the
-    // DomainFile around.
+    // DomainAssembly around.
     _ASSERTE(module->GetDomainAssembly()    == pDomainAssembly);
     _ASSERTE(module->GetAppDomain()     == pDomainAssembly->GetAppDomain());
     _ASSERTE(module->GetRuntimeModule() == pDomainAssembly->GetModule());
@@ -14403,7 +14403,7 @@ void Debugger::SendLogSwitchSetting(int iLevel,
 //            pDomain    - domain file for the domain in which the notification occurred
 //            classToken - metadata token for the type of the notification object
 void Debugger::SendCustomDebuggerNotification(Thread * pThread,
-                                              DomainFile * pDomain,
+                                              DomainAssembly * pDomain,
                                               mdTypeDef classToken)
 {
     CONTRACTL

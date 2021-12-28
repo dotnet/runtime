@@ -847,14 +847,14 @@ typedef VMPTR_Base<DT_CONTEXT, PTR_CONTEXT> VMPTR_CONTEXT;
 typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
 #endif
 
-// DomainFile is a base-class for a CLR module, with app-domain affinity.
-// For domain-neutral modules (like CoreLib), there is a DomainFile instance
+// DomainAssembly is a base-class for a CLR module, with app-domain affinity.
+// For domain-neutral modules (like CoreLib), there is a DomainAssembly instance
 // for each appdomain the module lives in.
 // This is the canonical handle ICorDebug uses to a CLR module.
-DEFINE_VMPTR(class DomainFile,      PTR_DomainFile,     VMPTR_DomainFile);
+DEFINE_VMPTR(class DomainAssembly,      PTR_DomainAssembly,     VMPTR_DomainFile);
 DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 
-// DomainAssembly derives from DomainFile and represents a manifest module.
+// DomainAssembly derives from DomainAssembly and represents a manifest module.
 DEFINE_VMPTR(class DomainAssembly,  PTR_DomainAssembly, VMPTR_DomainAssembly);
 DEFINE_VMPTR(class Assembly,        PTR_Assembly,       VMPTR_Assembly);
 

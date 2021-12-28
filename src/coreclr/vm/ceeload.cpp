@@ -1993,13 +1993,13 @@ void Module::AllocateStatics(AllocMemTracker *pamTracker)
     BuildStaticsOffsets(pamTracker);
 }
 
-void Module::SetDomainAssembly(DomainFile *pDomainAssembly)
+void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pDomainAssembly));
-        PRECONDITION(IsManifest() == pDomainAssembly->IsAssembly());
+        PRECONDITION(IsManifest());
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
@@ -3510,9 +3510,9 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
 
 #ifndef DACCESS_COMPILE
 
-DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
+DomainAssembly *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
 {
-    CONTRACT(DomainFile *)
+    CONTRACT(DomainAssembly *)
     {
         INSTANCE_CHECK;
         THROWS;
@@ -4056,7 +4056,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #endif // DEBUGGING_SUPPORTED
 
-BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainAssembly, int flags, BOOL attaching)
+BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -7498,7 +7498,7 @@ CHECK Module::CheckActivated()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    DomainFile *pDomainAssembly = GetDomainAssembly();
+    DomainAssembly *pDomainAssembly = GetDomainAssembly();
     CHECK(pDomainAssembly != NULL);
     PREFIX_ASSUME(pDomainAssembly != NULL);
     CHECK(pDomainAssembly->CheckActivated());

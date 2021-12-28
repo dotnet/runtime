@@ -614,7 +614,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     HENUMInternalHolder phEnum(pAssembly->GetMDImport());
     phEnum.EnumInit(mdtFile, mdTokenNil);
 
-    InlineSArray<DomainFile *, 8> modules;
+    InlineSArray<DomainAssembly *, 8> modules;
 
     modules.Append(pAssembly);
 
@@ -623,7 +623,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     {
         if (fLoadIfNotFound)
         {
-            DomainFile* pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile);
+            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile);
             modules.Append(pModule);
         }
     }
@@ -640,7 +640,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
 
         for(COUNT_T i = 0; i < modules.GetCount(); i++)
         {
-            DomainFile * pModule = modules[i];
+            DomainAssembly * pModule = modules[i];
 
             OBJECTREF o = pModule->GetExposedModuleObject();
             orModules->SetAt(i, o);
@@ -699,10 +699,10 @@ extern "C" void QCALLTYPE AssemblyNative_GetModule(QCall::AssemblyHandle pAssemb
 
     LPCUTF8 pModuleName = NULL;
 
-    if SUCCEEDED(pAssembly->GetDomainAssembly()->GetModule()->GetScopeName(&pModuleName))
+    if SUCCEEDED(pAssembly->GetModule()->GetScopeName(&pModuleName))
     {
         if (::SString::_stricmp(pModuleName, szModuleName) == 0)
-            pModule = pAssembly->GetDomainAssembly()->GetModule();
+            pModule = pAssembly->GetModule();
     }
 
 
@@ -1358,7 +1358,7 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
         {
             COMPlusThrow(kNotSupportedException, W("NotSupported_DebuggerAttached"));
         }
-        Module* pModule = assembly->GetDomainAssembly()->GetModule();
+        Module* pModule = assembly->GetModule();
         if (!pModule->IsEditAndContinueEnabled())
         {
             COMPlusThrow(kInvalidOperationException, W("InvalidOperation_AssemblyNotEditable"));

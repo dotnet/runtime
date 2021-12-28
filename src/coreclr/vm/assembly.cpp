@@ -882,7 +882,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
             // We should never get here in the GC case - the above should have succeeded.
             CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
 
-            DomainFile* pDomainModule = NULL;
+            DomainAssembly* pDomainModule = NULL;
             if (loadFlag == Loader::Load)
             {
                 pDomainModule = GetModule()->LoadModule(::GetAppDomain(), mdLinkRef);
@@ -1015,7 +1015,7 @@ Module * Assembly::FindModuleByTypeRef(
 #ifndef DACCESS_COMPILE
             if (loadFlag == Loader::Load)
             {
-                DomainFile* pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType);
+                DomainAssembly* pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType);
                 RETURN(pActualDomainFile->GetModule());
             }
             else

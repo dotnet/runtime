@@ -1584,7 +1584,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::Modul
 {
     QCALL_CONTRACT;
 
-    DomainFile *pDomainAssembly = pModule->GetDomainAssembly();
+    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
     if (pDomainAssembly != NULL && pDomainAssembly->IsActive())
         return;
 

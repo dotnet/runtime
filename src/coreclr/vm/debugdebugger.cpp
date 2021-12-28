@@ -827,7 +827,7 @@ FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
         StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(pData);
         MethodTable * pMT = pData->GetGCSafeMethodTable();
         Module * pModule = pMT->GetModule();
-        DomainFile * pDomainAssembly = pModule->GetDomainAssembly();
+        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
         mdTypeDef classToken = pMT->GetCl();
 
         pThread->SetThreadCurrNotification(objHandle);

@@ -52,7 +52,7 @@ inline DebuggerModuleTable * Debugger::GetModuleTable()
 // @dbgtodo inspection - get rid of this entire class as we move things out-of-proc.
 //-----------------------------------------------------------------------------
 inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
-                                      DomainFile *  pDomainAssembly,
+                                      DomainAssembly *  pDomainAssembly,
                                       AppDomain *   pAppDomain) :
         m_enableClassLoadCallbacks(FALSE),
         m_pPrimaryModule(NULL),

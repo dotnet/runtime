@@ -1134,7 +1134,7 @@ protected:
 
     DomainAssembly *GetDomainAssembly();
 
-    void SetDomainAssembly(DomainFile *pDomainAssembly);
+    void SetDomainAssembly(DomainAssembly *pDomainAssembly);
 
     OBJECTREF GetExposedObject();
 
@@ -1432,7 +1432,7 @@ public:
 
     DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
     Module *GetModuleIfLoaded(mdFile kFile);
-    DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile);
+    DomainAssembly *LoadModule(AppDomain *pDomain, mdFile kFile);
     PTR_Module LookupModule(mdToken kFile); //wrapper over GetModuleIfLoaded, takes modulerefs as well
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
@@ -1715,7 +1715,7 @@ public:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainAssembly, int level, BOOL attaching);
+    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int level, BOOL attaching);
     void NotifyDebuggerUnload(AppDomain *pDomain);
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);

@@ -595,10 +595,10 @@ public:
 
 
     //
-    // Get properties for a DomainFile
+    // Get properties for a DomainAssembly
     //
     // Arguments:
-    //    vmDomainFile - vm handle to a DomainFile
+    //    vmDomainFile - vm handle to a DomainAssembly
     //    pData - required out parameter which will be filled out with module properties
     //
     // Notes:
@@ -672,7 +672,7 @@ public:
     // Get the values of the JIT Optimization and EnC flags.
     //
     // Arguments:
-    //    vmDomainFile -   (input) VM DomainFile (module) for which we are retrieving flags
+    //    vmDomainFile -   (input) VM DomainAssembly (module) for which we are retrieving flags
     //    pfAllowJITOpts - (mandatory output) true iff this is not compiled for debug,
     //                      i.e., without optimization
     //    pfEnableEnc -    (mandatory output) true iff this module has EnC enabled
@@ -695,7 +695,7 @@ public:
     // Set the values of the JIT optimization and EnC flags.
     //
     // Arguments:
-    //    vmDomainFile -   (input) VM DomainFile (module) for which we are retrieving flags
+    //    vmDomainFile -   (input) VM DomainAssembly (module) for which we are retrieving flags
     //    pfAllowJITOpts - (input) true iff this should not be compiled for debug,
     //                      i.e., without optimization
     //    pfEnableEnc -    (input) true iff this module should have EnC enabled. If this is
