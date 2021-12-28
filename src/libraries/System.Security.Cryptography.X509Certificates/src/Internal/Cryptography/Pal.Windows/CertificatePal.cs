@@ -294,6 +294,12 @@ namespace Internal.Cryptography.Pal
                         return string.Empty;
 
                     int spanLength = (cbData + 1) / 2;
+
+                    if (spanLength < 0)
+                    {
+                        return string.Empty;
+                    }
+
                     Span<char> buffer = spanLength <= 256 ? stackalloc char[spanLength] : new char[spanLength];
                     fixed (char* ptr = &MemoryMarshal.GetReference(buffer))
                     {
