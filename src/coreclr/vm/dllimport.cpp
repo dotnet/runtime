@@ -3287,6 +3287,15 @@ BOOL NDirect::MarshalingRequired(
     }
     CollateParamTokens(pMDImport, methodToken, numArgs - 1, pParamTokenArray);
 
+    // We enable the built-in marshalling system whenever it is enabled on the module as a whole
+    // or when the call is a COM interop call. COM interop calls are already using a significant portion of the built-in
+    // marshalling system just to function at all, so we aren't going to disable the parameter marshalling;
+    // we'd rather have developers use the feature flag to diable the whole COM interop subsystem at once.
+    bool builtInMarshallingEnabled = pModule->IsRuntimeMarshallingEnabled();
+#ifdef FEATURE_COMINTEROP
+    builtInMarshallingEnabled |= pMD && pMD->IsComPlusCall();
+#endif
+
     for (ULONG i = 0; i < numArgs; i++)
     {
         SigPointer arg = ptr;
@@ -3300,7 +3309,7 @@ BOOL NDirect::MarshalingRequired(
                 IfFailThrow(arg.GetElemType(NULL)); // skip ELEMENT_TYPE_PTR
                 IfFailThrow(arg.PeekElemType(&type));
 
-                if (type == ELEMENT_TYPE_VALUETYPE)
+                if (builtInMarshallingEnabled && type == ELEMENT_TYPE_VALUETYPE)
                 {
                     if ((arg.HasCustomModifier(pModule,
                                               "Microsoft.VisualC.NeedsCopyConstructorModifier",
@@ -3331,9 +3340,16 @@ BOOL NDirect::MarshalingRequired(
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
 
-                // JIT can handle internal blittable value types
-                if (!hndArgType.IsBlittable() && !hndArgType.IsEnum())
+                // When the built-in runtime marshalling system is disabled, we don't support
+                // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
+                if (!builtInMarshallingEnabled && hndArgType.GetMethodTable()->ContainsPointers())
                 {
+                    return TRUE;
+                }
+                else if (!hndArgType.IsBlittable() && !hndArgType.IsEnum())
+                {
+                    // When the built-in runtime marshalling system is enabled, we do special handling
+                    // for any types that aren't blittable or enums.
                     return TRUE;
                 }
 
@@ -3348,10 +3364,15 @@ BOOL NDirect::MarshalingRequired(
             case ELEMENT_TYPE_BOOLEAN:
             case ELEMENT_TYPE_CHAR:
             {
+                // When runtime marshalling is enabled:
                 // Bool requires marshaling
                 // Char may require marshaling (MARSHAL_TYPE_ANSICHAR)
-                return TRUE;
+                if (builtInMarshallingEnabled)
+                {
+                    return TRUE;
+                }
             }
+            FALLTHROUGH;
 
             default:
             {
@@ -3376,7 +3397,10 @@ BOOL NDirect::MarshalingRequired(
         // check for explicit MarshalAs
         NativeTypeParamInfo paramInfo;
 
-        if (pParamTokenArray[i] != mdParamDefNil)
+        // We only check the MarshalAs info when the built-in marshalling system is enabled.
+        // We ignore MarshalAs when the system is disabled, so no reason to disqualify from inlining
+        // when it is present.
+        if (builtInMarshallingEnabled && pParamTokenArray[i] != mdParamDefNil)
         {
             if (!ParseNativeTypeInfo(pParamTokenArray[i], pMDImport, &paramInfo) ||
                 paramInfo.m_NativeType != NATIVE_TYPE_DEFAULT)

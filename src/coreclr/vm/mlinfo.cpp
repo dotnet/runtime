@@ -1163,7 +1163,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_byref = TRUE;
 #endif
 
-
+    const bool useBuiltInMarshalling = ms == MARSHAL_SCENARIO_NDIRECT && pModule->IsRuntimeMarshallingEnabled();
 
     // Retrieve the native type for the current parameter.
     if (!ParseNativeTypeInfo(token, pModule->GetMDImport(), &ParamInfo))
@@ -1254,7 +1254,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         }
     }
 
-    if (nativeType == NATIVE_TYPE_CUSTOMMARSHALER)
+    if (useBuiltInMarshalling && nativeType == NATIVE_TYPE_CUSTOMMARSHALER)
     {
         if (IsFieldScenario())
         {
@@ -1322,6 +1322,12 @@ MarshalInfo::MarshalInfo(Module* pModule,
     switch (mtype)
     {
         case ELEMENT_TYPE_BOOLEAN:
+            if (!useBuiltInMarshalling)
+            {
+                m_type = MARSHAL_TYPE_GENERIC_U1;
+                break;
+            }
+
             switch (nativeType)
             {
                 case NATIVE_TYPE_BOOLEAN:
@@ -1362,6 +1368,12 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_CHAR:
+            if (!useBuiltInMarshalling)
+            {
+                m_type = MARSHAL_TYPE_GENERIC_U2;
+                break;
+            }
+
             switch (nativeType)
             {
                 case NATIVE_TYPE_I1: //fallthru
@@ -1386,7 +1398,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_I1:
-            if (!(nativeType == NATIVE_TYPE_I1 || nativeType == NATIVE_TYPE_U1 || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_I1 || nativeType == NATIVE_TYPE_U1 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I1;
                 IfFailGoto(E_FAIL, lFail);
@@ -1395,7 +1407,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_U1:
-            if (!(nativeType == NATIVE_TYPE_U1 || nativeType == NATIVE_TYPE_I1 || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_U1 || nativeType == NATIVE_TYPE_I1 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I1;
                 IfFailGoto(E_FAIL, lFail);
@@ -1404,7 +1416,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_I2:
-            if (!(nativeType == NATIVE_TYPE_I2 || nativeType == NATIVE_TYPE_U2 || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_I2 || nativeType == NATIVE_TYPE_U2 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I2;
                 IfFailGoto(E_FAIL, lFail);
@@ -1413,7 +1425,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_U2:
-            if (!(nativeType == NATIVE_TYPE_U2 || nativeType == NATIVE_TYPE_I2 || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_U2 || nativeType == NATIVE_TYPE_I2 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I2;
                 IfFailGoto(E_FAIL, lFail);
@@ -1422,6 +1434,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_I4:
+            if (!useBuiltInMarshalling)
+            {
+                m_type = MARSHAL_TYPE_GENERIC_4;
+                break;
+            }
             switch (nativeType)
             {
                 case NATIVE_TYPE_I4:
@@ -1443,6 +1460,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_U4:
+            if (!useBuiltInMarshalling)
+            {
+                m_type = MARSHAL_TYPE_GENERIC_U4;
+                break;
+            }
             switch (nativeType)
             {
                 case NATIVE_TYPE_I4:
@@ -1464,7 +1486,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_I8:
-            if (!(nativeType == NATIVE_TYPE_I8 || nativeType == NATIVE_TYPE_U8 || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_I8 || nativeType == NATIVE_TYPE_U8 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I8;
                 IfFailGoto(E_FAIL, lFail);
@@ -1473,7 +1495,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_U8:
-            if (!(nativeType == NATIVE_TYPE_U8 || nativeType == NATIVE_TYPE_I8 || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_U8 || nativeType == NATIVE_TYPE_I8 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I8;
                 IfFailGoto(E_FAIL, lFail);
@@ -1482,11 +1504,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_I:
-            // Technically the "native int" and "native uint" types aren't supported in the WinRT scenario,
-            // but we need to not block ourselves from using them to enable accurate managed->native marshalling of
-            // projected types such as NotifyCollectionChangedEventArgs and NotifyPropertyChangedEventArgs.
-
-            if (!(nativeType == NATIVE_TYPE_INT || nativeType == NATIVE_TYPE_UINT || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_INT || nativeType == NATIVE_TYPE_UINT || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I;
                 IfFailGoto(E_FAIL, lFail);
@@ -1499,8 +1517,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_U:
-
-            if (!(nativeType == NATIVE_TYPE_UINT || nativeType == NATIVE_TYPE_INT || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_UINT || nativeType == NATIVE_TYPE_INT || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_I;
                 IfFailGoto(E_FAIL, lFail);
@@ -1514,7 +1531,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
 
         case ELEMENT_TYPE_R4:
-            if (!(nativeType == NATIVE_TYPE_R4 || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_R4 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_R4;
                 IfFailGoto(E_FAIL, lFail);
@@ -1523,7 +1540,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_R8:
-            if (!(nativeType == NATIVE_TYPE_R8 || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_R8 || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_R8;
                 IfFailGoto(E_FAIL, lFail);
@@ -1532,7 +1549,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_PTR:
-            if (nativeType != NATIVE_TYPE_DEFAULT)
+            if (useBuiltInMarshalling && nativeType != NATIVE_TYPE_DEFAULT)
             {
                 m_resID = IDS_EE_BADMARSHAL_PTR;
                 IfFailGoto(E_FAIL, lFail);
@@ -1545,7 +1562,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_FNPTR:
-            if (!(nativeType == NATIVE_TYPE_FUNC || nativeType == NATIVE_TYPE_DEFAULT))
+            if (useBuiltInMarshalling && !(nativeType == NATIVE_TYPE_FUNC || nativeType == NATIVE_TYPE_DEFAULT))
             {
                 m_resID = IDS_EE_BADMARSHAL_FNPTR;
                 IfFailGoto(E_FAIL, lFail);
@@ -1563,6 +1580,27 @@ MarshalInfo::MarshalInfo(Module* pModule,
         case ELEMENT_TYPE_VAR:
         {
             TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
+
+            if (sigTH.GetMethodTable()->IsValueType())
+            {
+                // For value types, we need to handle the "value type marshalled as a COM interface"
+                // case as-is today for back-compat when the marshalling system is enabled.
+                // Otherwise, we can go to the value-type case.
+#ifdef FEATURE_COMINTEROP
+                if (!useBuiltInMarshalling || nativeType != NATIVE_TYPE_INTF)
+                {
+                    goto lValueClass;
+                }
+#else
+                goto lValueClass;
+#endif
+            }
+
+            if (!useBuiltInMarshalling)
+            {
+                m_resID = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
+                IfFailGoto(E_FAIL, lFail);
+            }
 
             // Disallow marshaling generic types.
             if (sigTH.HasInstantiation())
@@ -1975,7 +2013,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 #endif // FEATURE_COMINTEROP
-                else if (!m_pMT->IsValueType())
+                else
                 {
                     if (!(nativeType == NATIVE_TYPE_INTF || nativeType == NATIVE_TYPE_DEFAULT))
                     {
@@ -1990,12 +2028,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
 #endif // FEATURE_COMINTEROP
                 }
-
-                else
-                {
-                    _ASSERTE(m_pMT->IsValueType());
-                    goto lValueClass;
-                }
             }
             break;
         }
@@ -2004,7 +2036,20 @@ MarshalInfo::MarshalInfo(Module* pModule,
         case ELEMENT_TYPE_VALUETYPE:
         lValueClass:
         {
-            if (sig.IsClassThrowing(pModule, g_DecimalClassName, pTypeContext))
+            if (!useBuiltInMarshalling)
+            {
+                TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
+                if (sigTH.GetMethodTable()->ContainsPointers())
+                {
+                    m_resID = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
+                    IfFailGoto(E_FAIL, lFail);
+                }
+                m_pMT = sigTH.GetMethodTable();
+                m_args.m_pMT = m_pMT;
+                m_type = MARSHAL_TYPE_BLITTABLEVALUECLASS;
+                break;
+            }
+            else if (sig.IsClassThrowing(pModule, g_DecimalClassName, pTypeContext))
             {
                 switch (nativeType)
                 {
@@ -2166,8 +2211,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T))
                         || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T))
                         || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T))
-                            // Crossgen scenarios block Vector<T> from even being loaded
-                            || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT))
+                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT))
                     )))
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
@@ -2248,6 +2292,11 @@ MarshalInfo::MarshalInfo(Module* pModule,
         case ELEMENT_TYPE_SZARRAY:
         case ELEMENT_TYPE_ARRAY:
         {
+            if (!useBuiltInMarshalling)
+            {
+                m_resID = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
+                IfFailGoto(E_FAIL, lFail);
+            }
             // Get class info from array.
             TypeHandle arrayTypeHnd = sig.GetTypeHandleThrowing(pModule, pTypeContext);
             _ASSERTE(!arrayTypeHnd.IsNull());

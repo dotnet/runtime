@@ -834,6 +834,11 @@ private:
 
         // Low level system assembly. Used by preferred zap module computation.
         LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME = 0x00004000,
+
+        //If setting has been cached
+        RUNTIME_MARSHALLING_ENABLED_IS_CACHED = 0x00008000,
+        //If runtime marshalling is enabled for this assembly
+        RUNTIME_MARSHALLING_ENABLED = 0x00010000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -2070,6 +2075,18 @@ public:
     // words, they become compliant
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeWrapExceptions();
+
+    //-----------------------------------------------------------------------------------------
+    // If true, the built-in runtime-generated marshalling subsystem will be used for
+    // P/Invokes, function pointer invocations, and delegates defined in this module
+    //-----------------------------------------------------------------------------------------
+    BOOL                    IsRuntimeMarshallingEnabled();
+
+    BOOL                    IsRuntimeMarshallingEnabledCached()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
+    }
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
 

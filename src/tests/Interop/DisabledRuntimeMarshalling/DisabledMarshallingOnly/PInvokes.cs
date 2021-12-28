@@ -29,16 +29,16 @@ public class PInvokes
     [Fact]
     public static void Strings_NotSupported()
     {
-        Assert.Throws<NotSupportedException>(() => DisabledRuntimeMarshallingNative.CheckStringWithAnsiCharSet(""));
-        Assert.Throws<NotSupportedException>(() => DisabledRuntimeMarshallingNative.CheckStringWithUnicodeCharSet(""));
-        Assert.Throws<NotSupportedException>(() => DisabledRuntimeMarshallingNative.CheckStructWithStructWithString(new StructWithString("")));
-        Assert.Throws<NotSupportedException>(() => DisabledRuntimeMarshallingNative.GetStringWithUnicodeCharSet());
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CheckStringWithAnsiCharSet(""));
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CheckStringWithUnicodeCharSet(""));
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CheckStructWithStructWithString(new StructWithString("")));
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.GetStringWithUnicodeCharSet());
     }
 
     [Fact]
     public static void LayoutClass_NotSupported()
     {
-        Assert.Throws<NotSupportedException>(() => DisabledRuntimeMarshallingNative.CheckLayoutClass(new LayoutClass()));
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CheckLayoutClass(new LayoutClass()));
     }
 
     [Fact]

@@ -297,6 +297,7 @@ BEGIN
     IDS_EE_BADMARSHAL_GENERICS_RESTRICTION  "Non-blittable generic types cannot be marshaled."
     IDS_EE_BADMARSHAL_AUTOLAYOUT            "Structures marked with [StructLayout(LayoutKind.Auto)] cannot be marshaled."
     IDS_EE_BADMARSHAL_STRING_OUT            "Cannot marshal a string by-value with the [Out] attribute."
+    IDS_EE_BADMARSHAL_MARSHAL_DISABLED      "Cannot marshal managed types when the built-in marshaling system is disabled."
 
     IDS_EE_BADMARSHALPARAM_STRINGBUILDER    "Invalid managed/unmanaged type combination (StringBuilders must be paired with LPStr, LPWStr, or LPTStr)."
     IDS_EE_BADMARSHALPARAM_NO_LPTSTR        "Invalid managed/unmanaged type combination (Strings cannot be paired with LPTStr for parameters and return types of methods in interfaces exposed to COM)."
