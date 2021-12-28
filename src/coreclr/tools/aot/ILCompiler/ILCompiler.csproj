@@ -32,6 +32,9 @@
 
   <PropertyGroup>
     <ObjWriterVersion>1.0.0-alpha.1.21627.1</ObjWriterVersion>
+    <ObjWriterRid Condition="'$(ObjWriterRid)' == '' and '$(RuntimeIdentifier)' == 'osx-x64'">osx.10.12-x64</ObjWriterRid>
+    <ObjWriterRid Condition="'$(ObjWriterRid)' == '' and '$(RuntimeIdentifier)' == 'osx-arm64'">osx.11.0-arm64</ObjWriterRid>
+    <ObjWriterRid Condition="'$(ObjWriterRid)' == ''">$(RuntimeIdentifier)</ObjWriterRid>
 
     <!-- CoreDisTools are used in debugging visualizers. -->
     <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release'">true</IncludeCoreDisTools>
@@ -40,11 +43,11 @@
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
 
   <ItemGroup>
-    <PackageReference Include="runtime.$(RuntimeIdentifier).Microsoft.NETCore.Runtime.ObjWriter">
+    <PackageReference Include="runtime.$(ObjWriterRid).Microsoft.NETCore.Runtime.ObjWriter">
       <Version>$(ObjWriterVersion)</Version>
     </PackageReference>
 
-    <Content Include="$(NuGetPackageRoot)runtime.$(RuntimeIdentifier).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(RuntimeIdentifier)\native\$(LibPrefix)objwriter$(LibSuffix)">
+    <Content Include="$(NuGetPackageRoot)runtime.$(ObjWriterRid).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(RuntimeIdentifier)\native\$(LibPrefix)objwriter$(LibSuffix)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
       <Pack>false</Pack>
