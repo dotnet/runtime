@@ -14,6 +14,7 @@
 }
 .assembly extern xunit.core {}
 
+.namespace Test_sin3double {
 .class private sequential ansi sealed beforefieldinit VV extends [mscorlib]System.ValueType
 {
   .pack 0
@@ -212,7 +213,7 @@
            object V_8,
            object V_9,
            object V_10,
-           valuetype VV V_11)
+           valuetype Test_sin3double.VV V_11)
   IL_0000:  ldc.i4.0
   IL_0001:  stloc.s    V_4
   IL_0003:  ldnull
@@ -357,7 +358,7 @@
   IL_0160:  ldstr      ")="
   IL_016a:  call       void [console]System.Console::Write(string)
   IL_016f:  ldloc.3
-  IL_0170:  call       float64 Z::mySin(float64)
+  IL_0170:  call       float64 Test_sin3double.Z::mySin(float64)
   IL_0175:  stloc.1
   IL_0176:  ldloc.1
   IL_0177:  call       void [console]System.Console::WriteLine(float64)
@@ -436,4 +437,4 @@
 }
 
 }
-
+}

@@ -12,6 +12,7 @@
 .assembly extern eh_common{}
 .assembly 'nestedfinallycall' {}
 .assembly extern xunit.core {}
+.namespace Test_nestedfinallycall {
 .class public EHTest
 {
 	.field private static class [eh_common]TestUtil.TestLog testLog
@@ -41,7 +42,7 @@
       		callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
       		ldloc.s    expectedOut
       		newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-      		stsfld     class [eh_common]TestUtil.TestLog EHTest::testLog
+      		stsfld     class [eh_common]TestUtil.TestLog Test_nestedfinallycall.EHTest::testLog
       		ret
     } 
     
@@ -131,12 +132,12 @@
 		)
 		.entrypoint
 		
-		ldsfld     class [eh_common]TestUtil.TestLog EHTest::testLog
+		ldsfld     class [eh_common]TestUtil.TestLog Test_nestedfinallycall.EHTest::testLog
 		callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
 		.try
 		{
-			call void EHTest::f2()
+			call void Test_nestedfinallycall.EHTest::f2()
 			leave RET
 		}
 		catch [mscorlib]System.Exception
@@ -146,11 +147,12 @@
 		RET:
 			ldstr "PASSED"
 			call void [System.Console]System.Console::WriteLine(string)
-			ldsfld     class [eh_common]TestUtil.TestLog EHTest::testLog
+			ldsfld     class [eh_common]TestUtil.TestLog Test_nestedfinallycall.EHTest::testLog
       		callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
-      		ldsfld     class [eh_common]TestUtil.TestLog EHTest::testLog
+      		ldsfld     class [eh_common]TestUtil.TestLog Test_nestedfinallycall.EHTest::testLog
       		callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
        		ret
 		}
+}
 }
