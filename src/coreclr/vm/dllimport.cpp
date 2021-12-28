@@ -3618,6 +3618,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnInteropStubSetup: '%s' ", pSigDesc->m_pDebugName));
 #endif // _DEBUG
 
+    bool builtInMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pModule->IsRuntimeMarshallingEnabled();
     if (SF_IsCOMStub(dwStubFlags))
     {
         _ASSERTE(0 == nlType);
@@ -3643,17 +3644,28 @@ static void CreateNDirectStubWorker(StubState*               pss,
 
     bool fThisCall = (unmgdCallConv == CorInfoCallConvExtension::Thiscall);
 
-    pss->SetLastError(nlFlags & nlfLastError);
+    if (nlFlags & nlfLastError)
+    {
+        if (!builtInMarshallingEnabled)
+        {
+            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_SETLASTERROR);
+        }
+        pss->SetLastError(TRUE);
+    }
 
     // This has been in the product since forward P/Invoke via delegates was
     // introduced. It's wrong, but please keep it for backward compatibility.
-    if (SF_IsDelegateStub(dwStubFlags))
+    if (builtInMarshallingEnabled && SF_IsDelegateStub(dwStubFlags))
         pss->SetLastError(TRUE);
 
     pss->BeginEmit(dwStubFlags);
 
     if (-1 != iLCIDArg)
     {
+        if (!builtInMarshallingEnabled)
+        {
+            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_LCID);
+        }
         // The code to handle the LCID  will call MarshalLCID before calling MarshalArgument
         // on the argument the LCID should go after. So we just bump up the index here.
         iLCIDArg++;

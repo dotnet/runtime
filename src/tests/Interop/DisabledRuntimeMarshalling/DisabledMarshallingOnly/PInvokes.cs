@@ -42,6 +42,18 @@ public class PInvokes
     }
 
     [Fact]
+    public static void SetLastError_NotSupported()
+    {
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithSetLastError());
+    }
+
+    [Fact]
+    public static void LCID_NotSupported()
+    {
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithLCID());
+    }
+
+    [Fact]
     public static void NoBooleanNormalization()
     {
         byte byteVal = 42;

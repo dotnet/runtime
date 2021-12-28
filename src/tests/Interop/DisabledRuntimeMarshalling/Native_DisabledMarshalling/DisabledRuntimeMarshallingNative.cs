@@ -90,6 +90,11 @@ public unsafe class DisabledRuntimeMarshallingNative
     public static extern void CheckStructWithStructWithString(StructWithString s);
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CheckLayoutClass(LayoutClass c);
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", SetLastError = true)]
+    public static extern void CallWithSetLastError();
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    [LCIDConversion(0)]
+    public static extern void CallWithLCID();
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     public static extern delegate*<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
