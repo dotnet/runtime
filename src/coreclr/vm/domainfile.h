@@ -97,6 +97,19 @@ class DomainFile
         return m_pPEAssembly->GetMDImport();
     }
 
+    OBJECTREF GetExposedAssemblyObjectIfExists()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        OBJECTREF objRet = NULL;
+        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedAssemblyObject, &objRet);
+        return objRet;
+    }
+
+    // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
+    // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
+    OBJECTREF GetExposedAssemblyObject();
+
     OBJECTREF GetExposedModuleObjectIfExists()
     {
         LIMITED_METHOD_CONTRACT;
@@ -139,6 +152,12 @@ class DomainFile
     ULONG HashIdentity();
 
     DomainAssembly *GetDomainAssembly();
+
+// ------------------------------------------------------------
+// Public API
+// ------------------------------------------------------------
+
+    void SetAssembly(Assembly* pAssembly);
 
     // ------------------------------------------------------------
     // Loading state checks
@@ -282,6 +301,16 @@ class DomainFile
         return m_pLoaderAllocator;
     }
 
+
+// ------------------------------------------------------------
+// Resource access
+// ------------------------------------------------------------
+
+    BOOL GetResource(LPCSTR szName, DWORD* cbResource,
+        PBYTE* pbInMemoryResource, DomainAssembly** pAssemblyRef,
+        LPCSTR* szFileName, DWORD* dwLocation,
+        BOOL fSkipRaiseResolveEvent);
+
  protected:
     // ------------------------------------------------------------
     // Loader API
@@ -299,18 +328,21 @@ class DomainFile
     void SetLoadLevel(FileLoadLevel level) { LIMITED_METHOD_CONTRACT; m_level = level; }
 
 #ifndef DACCESS_COMPILE
-    virtual void Begin() = 0;
-    virtual void Allocate() = 0;
+    void Begin();
+    void Allocate();
     void AddDependencies();
     void PreLoadLibrary();
     void LoadLibrary();
     void PostLoadLibrary();
     void EagerFixups();
     void VtableFixups();
-    virtual void DeliverSyncEvents() = 0;
-    virtual void DeliverAsyncEvents() = 0;
+    void DeliverSyncEvents();
+    void DeliverAsyncEvents();
     void FinishLoad();
     void Activate();
+
+    void RegisterWithHostAssembly();
+    void UnregisterFromHostAssembly();
 #endif
 
     // This should be used to permanently set the load to fail. Do not use with transient conditions
@@ -385,6 +417,33 @@ class DomainFile
             m_pError->ConvertToHResult();
     };
 
+public:
+// ------------------------------------------------------------
+// Debugger control API
+// ------------------------------------------------------------
+
+    DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_debuggerFlags;
+    }
+
+    void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_debuggerFlags = newBits;
+    }
+
+    void SetupDebuggingConfig(void);
+    DWORD ComputeDebuggingConfig(void);
+
+    HRESULT GetDebuggingCustomAttributes(DWORD* pdwFlags);
+
+    BOOL IsVisibleToDebugger();
+    BOOL NotifyDebuggerLoad(int flags, BOOL attaching);
+    void NotifyDebuggerUnload();
+
+protected:
     // ------------------------------------------------------------
     // Instance data
     // ------------------------------------------------------------
@@ -399,7 +458,9 @@ class DomainFile
     PTR_LoaderAllocator         m_pLoaderAllocator;
 
     FileLoadLevel               m_level;
+
     LOADERHANDLE                m_hExposedModuleObject;
+    LOADERHANDLE                m_hExposedAssemblyObject;
 
     ExInfo                      *m_pError;
 
@@ -428,62 +489,6 @@ class DomainAssembly : public DomainFile
     VPTR_VTABLE_CLASS(DomainAssembly, DomainFile);
 
 public:
-    // ------------------------------------------------------------
-    // Public API
-    // ------------------------------------------------------------
-
-    void SetAssembly(Assembly* pAssembly);
-
-    OBJECTREF GetExposedAssemblyObjectIfExists()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedAssemblyObject, &objRet);
-        return objRet;
-    }
-
-    // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
-    // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-    OBJECTREF GetExposedAssemblyObject();
-
-#ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-    // ------------------------------------------------------------
-    // Resource access
-    // ------------------------------------------------------------
-
-    BOOL GetResource(LPCSTR szName, DWORD *cbResource,
-                     PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
-                     LPCSTR *szFileName, DWORD *dwLocation,
-                     BOOL fSkipRaiseResolveEvent);
-
-    // ------------------------------------------------------------
-    // Debugger control API
-    // ------------------------------------------------------------
-
-    DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_debuggerFlags;
-    }
-
-    void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_debuggerFlags = newBits;
-    }
-
-    void SetupDebuggingConfig(void);
-    DWORD ComputeDebuggingConfig(void);
-
-    HRESULT GetDebuggingCustomAttributes(DWORD *pdwFlags);
-
-    BOOL IsVisibleToDebugger();
-    BOOL NotifyDebuggerLoad(int flags, BOOL attaching);
-    void NotifyDebuggerUnload();
 
  private:
 
@@ -500,27 +505,6 @@ public:
 private:
     DomainAssembly(AppDomain *pDomain, PEAssembly *pPEAssembly, LoaderAllocator *pLoaderAllocator);
 #endif
-
-    // ------------------------------------------------------------
-    // Internal routines
-    // ------------------------------------------------------------
-
-#ifndef DACCESS_COMPILE
-    void Begin();
-    void Allocate();
-    void DeliverSyncEvents();
-    void DeliverAsyncEvents();
-    void RegisterWithHostAssembly();
-    void UnregisterFromHostAssembly();
-#endif
-
-public:
-    // ------------------------------------------------------------
-    // Instance data
-    // ------------------------------------------------------------
-
-  private:
-    LOADERHANDLE                            m_hExposedAssemblyObject;
 };
 
 #endif  // _DOMAINFILE_H_

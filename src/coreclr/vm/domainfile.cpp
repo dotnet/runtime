@@ -52,15 +52,19 @@ DomainFile::DomainFile(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAlloca
     CONTRACTL
     {
         CONSTRUCTOR_CHECK;
-        THROWS;  // From CreateHandle
-        GC_NOTRIGGER;
+        THROWS;             // ValidateForExecution
+        GC_TRIGGERS;        // ValidateForExecution
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
     m_hExposedModuleObject = NULL;
+    m_hExposedAssemblyObject = NULL;
+
     pPEAssembly->AddRef();
+    pPEAssembly->ValidateForExecution();
+
+    SetupDebuggingConfig();
 }
 
 DomainFile::~DomainFile()
@@ -77,7 +81,19 @@ DomainFile::~DomainFile()
     m_pPEAssembly->Release();
     if (m_pDynamicMethodTable)
         m_pDynamicMethodTable->Destroy();
+
     delete m_pError;
+
+    if (m_fHostAssemblyPublished)
+    {
+        // Remove association first.
+        UnregisterFromHostAssembly();
+    }
+
+    if (m_pAssembly != NULL)
+    {
+        delete m_pAssembly;
+    }
 }
 
 // Optimization intended for EnsureLoadLevel only
@@ -194,20 +210,20 @@ void DomainFile::SetError(Exception *ex)
 
     m_pError = new ExInfo(ex->DomainBoundClone());
 
-    GetModule()->NotifyEtwLoadFinished(ex->GetHR());
-
-    if (!IsProfilerNotified())
+    if (m_pModule)
     {
-        SetProfilerNotified();
+        m_pModule->NotifyEtwLoadFinished(ex->GetHR());
+
+        if (!IsProfilerNotified())
+        {
+            SetProfilerNotified();
 
 #ifdef PROFILING_SUPPORTED
-        if (GetModule() != NULL)
-        {
             // Only send errors for non-shared assemblies; other assemblies might be successfully completed
             // in another app domain later.
-            GetModule()->NotifyProfilerLoadFinished(ex->GetHR());
-        }
+            m_pModule->NotifyProfilerLoadFinished(ex->GetHR());
 #endif
+        }
     }
 
     RETURN;
@@ -326,7 +342,7 @@ DomainAssembly *DomainFile::GetDomainAssembly()
 //   to visible, but NOT vice versa.  Once a DomainAssmebly is fully initialized, this function should be
 //   immutable for an instance of a module. That ensures that the debugger gets consistent
 //   notifications about it. It this value mutates, than the debugger may miss relevant notifications.
-BOOL DomainAssembly::IsVisibleToDebugger()
+BOOL DomainFile::IsVisibleToDebugger()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -663,21 +679,6 @@ void DomainFile::Activate()
 DomainAssembly::DomainAssembly(AppDomain *pDomain, PEAssembly *pPEAssembly, LoaderAllocator *pLoaderAllocator)
   : DomainFile(pDomain, pPEAssembly, pLoaderAllocator)
 {
-    CONTRACTL
-    {
-        CONSTRUCTOR_CHECK;
-        STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    pPEAssembly->ValidateForExecution();
-
-    // !!! backout
-
-    m_hExposedAssemblyObject = NULL;
-
-    SetupDebuggingConfig();
 }
 
 DomainAssembly::~DomainAssembly()
@@ -691,20 +692,9 @@ DomainAssembly::~DomainAssembly()
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-
-    if (m_fHostAssemblyPublished)
-    {
-        // Remove association first.
-        UnregisterFromHostAssembly();
-    }
-
-    if (m_pAssembly != NULL)
-    {
-        delete m_pAssembly;
-    }
 }
 
-void DomainAssembly::SetAssembly(Assembly* pAssembly)
+void DomainFile::SetAssembly(Assembly* pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -714,7 +704,7 @@ void DomainAssembly::SetAssembly(Assembly* pAssembly)
     m_pAssembly = pAssembly;
     m_pModule = pAssembly->GetModule();
 
-    pAssembly->SetDomainAssembly(this);
+    pAssembly->SetDomainAssembly((DomainAssembly*)this);
 }
 
 
@@ -723,7 +713,7 @@ void DomainAssembly::SetAssembly(Assembly* pAssembly)
 // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
 // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
 //
-OBJECTREF DomainAssembly::GetExposedAssemblyObject()
+OBJECTREF DomainFile::GetExposedAssemblyObject()
 {
     CONTRACTL
     {
@@ -776,7 +766,7 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
         GCPROTECT_BEGIN(assemblyObj);
         assemblyObj = (ASSEMBLYREF)AllocateObject(pMT);
 
-        assemblyObj->SetAssembly(this);
+        assemblyObj->SetAssembly((DomainAssembly*)this);
 
         // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
         // alive as long as a reference to the assembly is kept alive.
@@ -807,22 +797,22 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
     }
 
     return pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject);
-} // DomainAssembly::GetExposedAssemblyObject
+}
 
-void DomainAssembly::Begin()
+void DomainFile::Begin()
 {
     STANDARD_VM_CONTRACT;
 
     {
         AppDomain::LoadLockHolder lock(m_pDomain);
-        m_pDomain->AddAssembly(this);
+        m_pDomain->AddAssembly((DomainAssembly*)this);
     }
     // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
     RegisterWithHostAssembly();
     m_fHostAssemblyPublished = true;
 }
 
-void DomainAssembly::RegisterWithHostAssembly()
+void DomainFile::RegisterWithHostAssembly()
 {
     CONTRACTL
     {
@@ -834,11 +824,11 @@ void DomainAssembly::RegisterWithHostAssembly()
 
     if (GetPEAssembly()->HasHostAssembly())
     {
-        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(this);
+        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly((DomainAssembly*)this);
     }
 }
 
-void DomainAssembly::UnregisterFromHostAssembly()
+void DomainFile::UnregisterFromHostAssembly()
 {
     CONTRACTL
     {
@@ -854,7 +844,7 @@ void DomainAssembly::UnregisterFromHostAssembly()
     }
 }
 
-void DomainAssembly::Allocate()
+void DomainFile::Allocate()
 {
     CONTRACTL
     {
@@ -884,9 +874,9 @@ void DomainAssembly::Allocate()
 
     SetAssembly(pAssembly);
 
-} // DomainAssembly::Allocate
+}
 
-void DomainAssembly::DeliverAsyncEvents()
+void DomainFile::DeliverAsyncEvents()
 {
     CONTRACTL
     {
@@ -898,12 +888,10 @@ void DomainAssembly::DeliverAsyncEvents()
     CONTRACTL_END;
 
     OVERRIDE_LOAD_LEVEL_LIMIT(FILE_ACTIVE);
-    m_pDomain->RaiseLoadingAssemblyEvent(this);
-
+    m_pDomain->RaiseLoadingAssemblyEvent((DomainAssembly*)this);
 }
 
-
-void DomainAssembly::DeliverSyncEvents()
+void DomainFile::DeliverSyncEvents()
 {
     CONTRACTL
     {
@@ -934,7 +922,7 @@ void DomainAssembly::DeliverSyncEvents()
 
     }
 #endif // DEBUGGING_SUPPORTED
-} // DomainAssembly::DeliverSyncEvents
+}
 
 /*
   // The enum for dwLocation from managed code:
@@ -946,7 +934,7 @@ void DomainAssembly::DeliverSyncEvents()
     }
 */
 
-BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
+BOOL DomainFile::GetResource(LPCSTR szName, DWORD *cbResource,
                                  PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
                                  LPCSTR *szFileName, DWORD *dwLocation,
                                  BOOL fSkipRaiseResolveEvent)
@@ -967,12 +955,12 @@ BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
                                    szFileName,
                                    dwLocation,
                                    fSkipRaiseResolveEvent,
-                                   this,
+                                   (DomainAssembly*)this,
                                    this->m_pDomain );
 }
 
 
-DWORD DomainAssembly::ComputeDebuggingConfig()
+DWORD DomainFile::ComputeDebuggingConfig()
 {
     CONTRACTL
     {
@@ -993,7 +981,7 @@ DWORD DomainAssembly::ComputeDebuggingConfig()
 #endif // DEBUGGING_SUPPORTED
 }
 
-void DomainAssembly::SetupDebuggingConfig(void)
+void DomainFile::SetupDebuggingConfig(void)
 {
     CONTRACTL
     {
@@ -1016,7 +1004,7 @@ void DomainAssembly::SetupDebuggingConfig(void)
 
 // For right now, we only check to see if the DebuggableAttribute is present - later may add fields/properties to the
 // attributes.
-HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
+HRESULT DomainFile::GetDebuggingCustomAttributes(DWORD *pdwFlags)
 {
     CONTRACTL
     {
@@ -1098,7 +1086,7 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
     return hr;
 }
 
-BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
+BOOL DomainFile::NotifyDebuggerLoad(int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1123,7 +1111,7 @@ BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     {
         if (ShouldNotifyDebugger())
         {
-            g_pDebugInterface->LoadAssembly(this);
+            g_pDebugInterface->LoadAssembly((DomainAssembly*)this);
         }
         result = TRUE;
     }
@@ -1145,7 +1133,7 @@ BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     return result;
 }
 
-void DomainAssembly::NotifyDebuggerUnload()
+void DomainFile::NotifyDebuggerUnload()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1161,7 +1149,7 @@ void DomainAssembly::NotifyDebuggerUnload()
     // a previous load event (such as if debugger attached after the modules was loaded).
     this->GetModule()->NotifyDebuggerUnload(this->GetAppDomain());
 
-    g_pDebugInterface->UnloadAssembly(this);
+    g_pDebugInterface->UnloadAssembly((DomainAssembly*)this);
 
 }
 
@@ -1191,16 +1179,6 @@ DomainFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pDomain->EnumMemoryRegions(flags, true);
     }
-}
-
-void
-DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    //sizeof(DomainAssembly) == 0xe0
-    DAC_ENUM_VTHIS();
-    DomainFile::EnumMemoryRegions(flags);
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {

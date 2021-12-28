@@ -2119,7 +2119,7 @@ public:
 private:
     void RaiseLoadingAssemblyEvent(DomainAssembly* pAssembly);
 
-    friend class DomainAssembly;
+    friend class DomainFile;
 
 private:
     BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating);
