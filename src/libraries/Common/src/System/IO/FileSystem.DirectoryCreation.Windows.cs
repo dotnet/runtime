@@ -39,7 +39,7 @@ namespace System.IO
             int length = fullPathSpan.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
-            if (length >= 2 && PathInternal.EndsInDirectorySeparator(fullPathSpan))
+            if (length >= 2 && PathInternal.EndsInDirectorySeparatorUnchecked(fullPathSpan))
             {
                 length--;
             }
@@ -52,12 +52,11 @@ namespace System.IO
                 int i = length - 1;
                 while (i >= lengthRoot && !somepathexists)
                 {
-                    ReadOnlySpan<char> dir = fullPathSpan[..(i + 1)];
-                    string heapDir = dir.ToString();
+                    string dir = fullPath[..(i + 1)];
 
-                    if (!DirectoryExists(heapDir)) // Create only the ones missing
+                    if (!DirectoryExists(dir)) // Create only the ones missing
                     {
-                        stackDir.Add(heapDir);
+                        stackDir.Add(dir);
                     }
                     else
                     {
