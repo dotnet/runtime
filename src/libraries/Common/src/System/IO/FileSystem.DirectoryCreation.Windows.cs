@@ -93,32 +93,36 @@ namespace System.IO
                     stackDir.RemoveAt(removalIndex);
 
                     r = Interop.Kernel32.CreateDirectory(name, ref secAttrs);
-                    if (!r && firstError == 0)
+                    if (r || firstError != 0)
                     {
-                        int currentError = Marshal.GetLastWin32Error();
-                        // While we tried to avoid creating directories that don't
-                        // exist above, there are at least two cases that will
-                        // cause us to see ERROR_ALREADY_EXISTS here.  FileExists
-                        // can fail because we didn't have permission to the
-                        // directory.  Secondly, another thread or process could
-                        // create the directory between the time we check and the
-                        // time we try using the directory.  Thirdly, it could
-                        // fail because the target does exist, but is a file.
-                        if (currentError != Interop.Errors.ERROR_ALREADY_EXISTS)
-                        {
-                            firstError = currentError;
-                        }
-                        else
-                        {
-                            (bool fileExists, bool dirExists) = PathExists(name, out currentError);
+                        continue;
+                    }
 
-                            // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
-                            if (fileExists || !dirExists && currentError == Interop.Errors.ERROR_ACCESS_DENIED)
-                            {
-                                firstError = currentError;
-                                errorString = name;
-                            }
+                    int currentError = Marshal.GetLastWin32Error();
+                    // While we tried to avoid creating directories that don't
+                    // exist above, there are at least two cases that will
+                    // cause us to see ERROR_ALREADY_EXISTS here.  FileExists
+                    // can fail because we didn't have permission to the
+                    // directory.  Secondly, another thread or process could
+                    // create the directory between the time we check and the
+                    // time we try using the directory.  Thirdly, it could
+                    // fail because the target does exist, but is a file.
+                    if (currentError != Interop.Errors.ERROR_ALREADY_EXISTS)
+                    {
+                        firstError = currentError;
+                    }
+                    else
+                    {
+                        (bool fileExists, bool dirExists) = PathExists(name, out currentError);
+
+                        // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
+                        if (!fileExists && (dirExists || currentError != Interop.Errors.ERROR_ACCESS_DENIED))
+                        {
+                            continue;
                         }
+
+                        firstError = currentError;
+                        errorString = name;
                     }
                 }
             }

@@ -210,14 +210,12 @@ namespace System.IO
         // only contains whitespace characters an ArgumentException gets thrown.
         public static string? GetPathRoot(string? path)
         {
-            if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
+            ReadOnlySpan<char> pathSpan = path.AsSpan();
+            if (PathInternal.IsEffectivelyEmpty(pathSpan))
                 return null;
 
-            ReadOnlySpan<char> result = GetPathRoot(path.AsSpan());
-            if (path!.Length == result.Length)
-                return PathInternal.NormalizeDirectorySeparators(path);
-
-            return PathInternal.NormalizeDirectorySeparators(result.ToString());
+            ReadOnlySpan<char> result = GetPathRoot(pathSpan);
+            return PathInternal.NormalizeDirectorySeparators(path!.Length == result.Length ? path : result.ToString());
         }
 
         /// <remarks>
