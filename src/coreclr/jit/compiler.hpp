@@ -779,9 +779,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtDebugFlags = GTF_DEBUG_NONE;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
-#if ASSERTION_PROP
     ClearAssertion();
-#endif
 
     gtNext = nullptr;
     gtPrev = nullptr;
@@ -3219,8 +3217,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#if LOCAL_ASSERTION_PROP
-
 /*****************************************************************************
  *
  *  The following resets the value assignment table
@@ -3332,7 +3328,6 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
         optAssertionReset(newAssertionCount);
     }
 }
-#endif // LOCAL_ASSERTION_PROP
 
 inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd)
 {

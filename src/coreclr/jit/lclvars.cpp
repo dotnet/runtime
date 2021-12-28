@@ -1404,12 +1404,10 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         varDsc->lvType = type;
     }
 
-#if OPT_BOOL_OPS
     if (type == TYP_BOOL)
     {
         varDsc->lvIsBoolean = true;
     }
-#endif
 
 #ifdef DEBUG
     varDsc->SetStackOffset(BAD_STK_OFFS);
@@ -3621,7 +3619,6 @@ void Compiler::lvaSortByRefCount()
 #endif
 }
 
-#if ASSERTION_PROP
 /*****************************************************************************
  *
  *  This is called by lvaMarkLclRefs to disqualify a variable from being
@@ -3633,7 +3630,6 @@ void LclVarDsc::lvaDisqualifyVar()
     this->lvSingleDef  = false;
     this->lvDefStmt    = nullptr;
 }
-#endif // ASSERTION_PROP
 
 #ifdef FEATURE_SIMD
 var_types LclVarDsc::GetSimdBaseType() const
@@ -3908,8 +3904,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             GenTree* op1 = tree->AsOp()->gtOp1;
             GenTree* op2 = tree->AsOp()->gtOp2;
 
-#if OPT_BOOL_OPS
-
             /* Is this an assignment to a local variable? */
 
             if (op1->gtOper == GT_LCL_VAR && op2->gtType != TYP_BOOL)
@@ -3957,7 +3951,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                         break;
                 }
             }
-#endif
         }
     }
 
@@ -4015,15 +4008,12 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         if (tree->gtOper == GT_LCL_FLD)
         {
-#if ASSERTION_PROP
             // variables that have uses inside a GT_LCL_FLD
             // cause problems, so we will disqualify them here
             varDsc->lvaDisqualifyVar();
-#endif // ASSERTION_PROP
             return;
         }
 
-#if ASSERTION_PROP
         if (fgDomsComputed && IsDominatedByExceptionalEntry(block))
         {
             SetVolatileHint(varDsc);
@@ -4113,8 +4103,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 }
             }
         }
-
-#endif // ASSERTION_PROP
 
         bool allowStructs = false;
 #ifdef UNIX_AMD64_ABI
@@ -4359,12 +4347,10 @@ void Compiler::lvaMarkLocalVars()
         lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
 
-#if ASSERTION_PROP
     assert(PreciseRefCountsRequired());
 
     // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
     optAddCopies();
-#endif
 }
 
 //------------------------------------------------------------------------
