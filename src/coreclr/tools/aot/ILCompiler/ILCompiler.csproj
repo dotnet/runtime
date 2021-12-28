@@ -31,13 +31,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ILCompilerVersion>7.0.0-alpha.1.21612.2</ILCompilerVersion>
-
-    <ObjWriterBuildType>$(Configuration)</ObjWriterBuildType>
-    <ObjWriterBuildType Condition="'$(ObjWriterBuildType)' == 'Checked'">Debug</ObjWriterBuildType>
-
-    <ObjWriterArtifactPath Condition="'$(TargetsWindows)' == 'true'">$(ArtifactsDir)llvm-project\llvm\build\$(TargetArchitecture)\$(ObjWriterBuildType)\bin\$(LibPrefix)objwriter$(LibSuffix)</ObjWriterArtifactPath>
-    <ObjWriterArtifactPath Condition="'$(TargetsWindows)' != 'true'">$(ArtifactsDir)llvm-project\llvm\build\$(TargetArchitecture)\lib\$(LibPrefix)objwriter$(LibSuffix)</ObjWriterArtifactPath>
+    <ObjWriterVersion>1.0.0-alpha.1.21627.1</ObjWriterVersion>
 
     <!-- CoreDisTools are used in debugging visualizers. -->
     <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release'">true</IncludeCoreDisTools>
@@ -45,20 +39,12 @@
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
 
-  <ItemGroup Condition="Exists('$(ObjWriterArtifactPath)')">
-    <Content Include="$(ObjWriterArtifactPath)">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
-      <Pack>false</Pack>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup Condition="!Exists('$(ObjWriterArtifactPath)')">
-    <PackageReference Include="Microsoft.DotNet.ILCompiler">
-      <Version>$(ILCompilerVersion)</Version>
+  <ItemGroup>
+    <PackageReference Include="runtime.$(RuntimeIdentifier).Microsoft.NETCore.Runtime.ObjWriter">
+      <Version>$(ObjWriterVersion)</Version>
     </PackageReference>
 
-    <Content Include="$(NuGetPackageRoot)runtime.$(RuntimeIdentifier).microsoft.dotnet.ilcompiler\$(ILCompilerVersion)\tools\$(LibPrefix)objwriter$(LibSuffix)">
+    <Content Include="$(NuGetPackageRoot)runtime.$(RuntimeIdentifier).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(RuntimeIdentifier)\native\$(LibPrefix)objwriter$(LibSuffix)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
       <Pack>false</Pack>

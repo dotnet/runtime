@@ -25,7 +25,7 @@ The executable looks like a native executable, in the sense that it can be debug
 - [NOT PORTED OVER YET] The build will place the toolchain packages at `artifacts\packages\[Debug|Release]\Shipping`. To publish your project using these packages:
    - [NOT PORTED OVER YET] Add the package directory to your `nuget.config` file. For example, replace `dotnet-experimental` line in `samples\HelloWorld\nuget.config` with `<add key="local" value="C:\runtimelab\artifacts\packages\Debug\Shipping" />`
    - [NOT PORTED OVER YET] Run `dotnet publish --packages pkg -r [win-x64|linux-x64|osx-64] -c [Debug|Release]` to publish your project. `--packages pkg` option restores the package into a local directory that is easy to cleanup once you are done. It avoids polluting the global nuget cache with your locally built dev package.
-- *Optional*. The ObjWriter component of the AOT compiler is not built by default. If you're working on ObjWriter or bringing up a new platform that doesn't have ObjWriter packages yet, as additional pre-requiresites you need to run `build[.cmd|.sh] clr.objwriter` from the repo root before building the product.
+- The component that writes out object files (objwriter.dll/libobjwriter.so/libobjwriter.dylib) is based on LLVM and doesn't build in the runtime repo. It gets published as a NuGet package out of the dotnet/llvm-project repo (branch objwriter/12.x). If you're working on ObjWriter or bringing up a new platform that doesn't have ObjWriter packages yet, as additional pre-requiresites you need to build objwriter out of that repo and replace the file in the output.
 
 ## Visual Studio Solutions
 
