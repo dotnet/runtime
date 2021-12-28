@@ -31,8 +31,9 @@ namespace System.IO
 
             bool somePathExists = false;
 
-            ReadOnlySpan<char> fullPathSpan = fullPath.AsSpan();
-            int length = fullPathSpan.Length;
+            char fullPathFirst = fullPath[0];
+            int length = fullPath.Length;
+            ReadOnlySpan<char> fullPathSpan = MemoryMarshal.CreateReadOnlySpan(ref fullPathFirst, length);
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
             if (length >= 2 && PathInternal.EndsInDirectorySeparator(fullPathSpan))
@@ -108,14 +109,13 @@ namespace System.IO
                     else
                     {
                         Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = GetAttributeData(name, out currentError);
-                        int errorCode = FillAttributeInfo(fullPath, ref data, true);
 
-                        bool fileExists = errorCode == 0 &&
-                                          data.dwFileAttributes != -1 &&
-                                          (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0;
-                        bool directoryExists = errorCode == 0 &&
-                                          data.dwFileAttributes != -1 &&
-                                          (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
+                        bool noErrors = currentError == 0 && data.dwFileAttributes != -1;
+                        int directoryAttributeFlag = data.dwFileAttributes &
+                                                     Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY;
+
+                        bool fileExists = noErrors && directoryAttributeFlag == 0;
+                        bool directoryExists = noErrors && directoryAttributeFlag != 0;
 
                         // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
                         if (!fileExists && (directoryExists ||
