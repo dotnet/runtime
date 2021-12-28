@@ -1132,13 +1132,9 @@ protected:
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
-    // This works for manifest modules too
-    DomainFile *GetDomainFile();
-
-    // Operates on assembly of module
     DomainAssembly *GetDomainAssembly();
 
-    void SetDomainFile(DomainFile *pDomainFile);
+    void SetDomainAssembly(DomainFile *pDomainAssembly);
 
     OBJECTREF GetExposedObject();
 
@@ -1719,7 +1715,7 @@ public:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, int level, BOOL attaching);
+    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainAssembly, int level, BOOL attaching);
     void NotifyDebuggerUnload(AppDomain *pDomain);
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);

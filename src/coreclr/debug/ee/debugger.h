@@ -472,7 +472,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainFile * pDomainFile, AppDomain * pAppDomain);
+    DebuggerModule(Module * pRuntimeModule, DomainFile * pDomainAssembly, AppDomain * pAppDomain);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -510,7 +510,7 @@ class DebuggerModule
     // workaround to facilitate the removal of DebuggerModule.
     // </TODO>
     DebuggerModule * GetPrimaryModule();
-    DomainFile * GetDomainFile()
+    DomainFile * GetDomainAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pRuntimeDomainFile;
@@ -1893,9 +1893,9 @@ public:
                     DWORD dwModuleName,
                     Assembly *pAssembly,
                     AppDomain *pAppDomain,
-                    DomainFile * pDomainFile,
+                    DomainFile * pDomainAssembly,
                     BOOL fAttaching);
-    DebuggerModule * AddDebuggerModule(DomainFile * pDomainFile);
+    DebuggerModule * AddDebuggerModule(DomainFile * pDomainAssembly);
 
 
     void UnloadModule(Module* pRuntimeModule,
@@ -2069,7 +2069,7 @@ public:
     bool HandleIPCEvent(DebuggerIPCEvent* event);
 
     DebuggerModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFile);
-    DebuggerModule * LookupOrCreateModule(DomainFile * pDomainFile);
+    DebuggerModule * LookupOrCreateModule(DomainFile * pDomainAssembly);
     DebuggerModule * LookupOrCreateModule(Module * pModule, AppDomain * pAppDomain);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);

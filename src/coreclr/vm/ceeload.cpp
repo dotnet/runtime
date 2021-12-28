@@ -1049,14 +1049,7 @@ DomainAssembly* Module::GetDomainAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return dac_cast<PTR_DomainAssembly>(m_ModuleID->GetDomainFile());
-}
-
-DomainFile *Module::GetDomainFile()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return dac_cast<PTR_DomainFile>(m_ModuleID->GetDomainFile());
+    return dac_cast<PTR_DomainAssembly>(m_ModuleID->GetDomainAssembly());
 }
 
 #ifndef DACCESS_COMPILE
@@ -2000,13 +1993,13 @@ void Module::AllocateStatics(AllocMemTracker *pamTracker)
     BuildStaticsOffsets(pamTracker);
 }
 
-void Module::SetDomainFile(DomainFile *pDomainFile)
+void Module::SetDomainAssembly(DomainFile *pDomainAssembly)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pDomainFile));
-        PRECONDITION(IsManifest() == pDomainFile->IsAssembly());
+        PRECONDITION(CheckPointer(pDomainAssembly));
+        PRECONDITION(IsManifest() == pDomainAssembly->IsAssembly());
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
@@ -2026,7 +2019,7 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
         }
         else
         {
-            pLoaderAllocator = pDomainFile->GetAppDomain()->GetLoaderAllocator();
+            pLoaderAllocator = pDomainAssembly->GetAppDomain()->GetLoaderAllocator();
         }
 
         SIZE_T size = GetDomainLocalModuleSize();
@@ -2066,7 +2059,7 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
         m_ModuleID = pModuleData;
     }
 
-    m_ModuleID->SetDomainFile(pDomainFile);
+    m_ModuleID->SetDomainAssembly(pDomainAssembly);
 
     // Allocate static handles now.
     // NOTE: Bootstrapping issue with CoreLib - we will manually allocate later
@@ -2074,7 +2067,7 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
     // as it is currently initialized through the DomainLocalModule::PopulateClass in MethodTable::CheckRunClassInitThrowing
     // (If we don't do this, it would allocate here unused regular static handles that will be overridden later)
     if (g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] != NULL && !GetAssembly()->IsCollectible())
-        AllocateRegularStaticHandles(pDomainFile->GetAppDomain());
+        AllocateRegularStaticHandles(pDomainAssembly->GetAppDomain());
 }
 
 OBJECTREF Module::GetExposedObject()
@@ -2089,7 +2082,7 @@ OBJECTREF Module::GetExposedObject()
     }
     CONTRACT_END;
 
-    RETURN GetDomainFile()->GetExposedModuleObject();
+    RETURN GetDomainAssembly()->GetExposedModuleObject();
 }
 
 //
@@ -4063,7 +4056,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #endif // DEBUGGING_SUPPORTED
 
-BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, int flags, BOOL attaching)
+BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -4074,7 +4067,7 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, in
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
-        Module * pModule = pDomainFile->GetModule();
+        Module * pModule = pDomainAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
 
@@ -4095,7 +4088,7 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, in
                                       m_pPEAssembly->GetPath().GetCount(),
                                       GetAssembly(),
                                       pDomain,
-                                      pDomainFile,
+                                      pDomainAssembly,
                                       attaching);
 
         result = TRUE;
@@ -7465,7 +7458,7 @@ VOID Module::EnsureActive()
         MODE_ANY;
     }
     CONTRACTL_END;
-    GetDomainFile()->EnsureActive();
+    GetDomainAssembly()->EnsureActive();
 }
 #endif // DACCESS_COMPILE
 
@@ -7484,13 +7477,13 @@ VOID Module::EnsureAllocated()
     }
     CONTRACTL_END;
 
-    GetDomainFile()->EnsureAllocated();
+    GetDomainAssembly()->EnsureAllocated();
 }
 
 VOID Module::EnsureLibraryLoaded()
 {
     STANDARD_VM_CONTRACT;
-    GetDomainFile()->EnsureLibraryLoaded();
+    GetDomainAssembly()->EnsureLibraryLoaded();
 }
 #endif // !DACCESS_COMPILE
 
@@ -7505,10 +7498,10 @@ CHECK Module::CheckActivated()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    DomainFile *pDomainFile = GetDomainFile();
-    CHECK(pDomainFile != NULL);
-    PREFIX_ASSUME(pDomainFile != NULL);
-    CHECK(pDomainFile->CheckActivated());
+    DomainFile *pDomainAssembly = GetDomainAssembly();
+    CHECK(pDomainAssembly != NULL);
+    PREFIX_ASSUME(pDomainAssembly != NULL);
+    CHECK(pDomainAssembly->CheckActivated());
 #endif
     CHECK_OK;
 }

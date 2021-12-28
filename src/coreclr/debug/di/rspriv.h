@@ -4806,7 +4806,7 @@ public:
     void DestNaryType(Instantiation *pInst);
 
     CorElementType GetElementType() { return m_elementType; }
-    VMPTR_DomainFile GetDomainFile();
+    VMPTR_DomainFile GetDomainAssembly();
     VMPTR_Module GetModule();
 
     // If this is a ptr type, get the CordbType that it points to.

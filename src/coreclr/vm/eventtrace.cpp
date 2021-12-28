@@ -1529,12 +1529,12 @@ void BulkStaticsLogger::LogAllStatics()
             if (module == NULL)
                 continue;
 
-            DomainFile *domainFile = module->GetDomainFile();
-            if (domainFile == NULL)
+            DomainFile *domainAssembly = module->GetDomainAssembly();
+            if (domainAssembly == NULL)
                 continue;
 
             // Ensure the module has fully loaded.
-            if (!domainFile->IsActive())
+            if (!domainAssembly->IsActive())
                 continue;
 
             DomainLocalModule *domainModule = module->GetDomainLocalModule();

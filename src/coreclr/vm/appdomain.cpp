@@ -2239,7 +2239,7 @@ DispIDCache* AppDomain::SetupRefDispIDCache()
 
 #endif // FEATURE_COMINTEROP
 
-FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainFile *pDomainFile)
+FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainFile *pDomainAssembly)
 {
     CONTRACTL
     {
@@ -2252,7 +2252,7 @@ FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssemb
     }
     CONTRACTL_END;
 
-    NewHolder<FileLoadLock> result(new FileLoadLock(pLock, pPEAssembly, pDomainFile));
+    NewHolder<FileLoadLock> result(new FileLoadLock(pLock, pPEAssembly, pDomainAssembly));
 
     pLock->AddElement(result);
     result->AddRef(); // Add one ref on behalf of the ListLock's reference. The corresponding Release() happens in FileLoadLock::CompleteLoadLevel.
@@ -2272,10 +2272,10 @@ FileLoadLock::~FileLoadLock()
     ((PEAssembly *) m_data)->Release();
 }
 
-DomainFile *FileLoadLock::GetDomainFile()
+DomainFile *FileLoadLock::GetDomainAssembly()
 {
     LIMITED_METHOD_CONTRACT;
-    return m_pDomainFile;
+    return m_pDomainAssembly;
 }
 
 FileLoadLevel FileLoadLock::GetLoadLevel()
@@ -2357,7 +2357,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
     if (level > m_level)
     {
         // Must complete each level in turn, unless we have an error
-        CONSISTENCY_CHECK(m_pDomainFile->IsError() || (level == (m_level+1)));
+        CONSISTENCY_CHECK(m_pDomainAssembly->IsError() || (level == (m_level+1)));
         // Remove the lock from the list if the load is completed
         if (level >= FILE_ACTIVE)
         {
@@ -2371,7 +2371,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
                     m_pList->Unlink(this);
                 _ASSERTE(fDbgOnly_SuccessfulUnlink);
 
-                m_pDomainFile->ClearLoading();
+                m_pDomainAssembly->ClearLoading();
 
                 CONSISTENCY_CHECK(m_dwRefCount >= 2); // Caller (LoadDomainFile) should have 1 refcount and m_pList should have another which was acquired in FileLoadLock::Create.
 
@@ -2382,7 +2382,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
                 // we depend on the DomainFile's load level being up to date. Hence we must update the load
                 // level while the m_pList lock is held.
                 if (success)
-                    m_pDomainFile->SetLoadLevel(level);
+                    m_pDomainAssembly->SetLoadLevel(level);
             }
 
 
@@ -2394,7 +2394,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
             m_level = (FileLoadLevel)level;
 
             if (success)
-                m_pDomainFile->SetLoadLevel(level);
+                m_pDomainAssembly->SetLoadLevel(level);
         }
 
 #ifndef DACCESS_COMPILE
@@ -2405,7 +2405,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
             case FILE_LOAD_DELIVER_EVENTS:
             case FILE_LOADED:
             case FILE_ACTIVE: // The timing of stress logs is not critical, so even for the FILE_ACTIVE stage we need not do it while the m_pList lock is held.
-                STRESS_LOG3(LF_CLASSLOADER, LL_INFO100, "Completed Load Level %s for DomainFile %p - success = %i\n", fileLoadLevelName[level], m_pDomainFile, success);
+                STRESS_LOG3(LF_CLASSLOADER, LL_INFO100, "Completed Load Level %s for DomainFile %p - success = %i\n", fileLoadLevelName[level], m_pDomainAssembly, success);
                 break;
             default:
                 break;
@@ -2434,9 +2434,9 @@ void FileLoadLock::SetError(Exception *ex)
     m_cachedHR = ex->GetHR();
 
     LOG((LF_LOADER, LL_WARNING, "LOADER: %x:***%s*\t!!!Non-transient error 0x%x\n",
-         m_pDomainFile->GetAppDomain(), m_pDomainFile->GetSimpleName(), m_cachedHR));
+         m_pDomainAssembly->GetAppDomain(), m_pDomainAssembly->GetSimpleName(), m_cachedHR));
 
-    m_pDomainFile->SetError(ex);
+    m_pDomainAssembly->SetError(ex);
 
     CompleteLoadLevel(FILE_ACTIVE, FALSE);
 }
@@ -2464,10 +2464,10 @@ UINT32 FileLoadLock::Release()
     return count;
 }
 
-FileLoadLock::FileLoadLock(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainFile *pDomainFile)
+FileLoadLock::FileLoadLock(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainFile *pDomainAssembly)
   : ListLockEntry(pLock, pPEAssembly, "File load lock"),
     m_level((FileLoadLevel) (FILE_LOAD_CREATE)),
-    m_pDomainFile(pDomainFile),
+    m_pDomainAssembly(pDomainAssembly),
     m_cachedHR(S_OK)
 {
     WRAPPER_NO_CONTRACT;
@@ -2932,14 +2932,14 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pLock));
-        PRECONDITION(pLock->GetDomainFile()->GetAppDomain() == this);
+        PRECONDITION(pLock->GetDomainAssembly()->GetAppDomain() == this);
         POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
                       || RETVAL->GetLoadLevel() >= targetLevel);
         POSTCONDITION(RETVAL->CheckNoError(targetLevel));
     }
     CONTRACT_END;
 
-    DomainFile *pFile = pLock->GetDomainFile();
+    DomainFile *pFile = pLock->GetDomainAssembly();
 
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
@@ -3140,7 +3140,7 @@ CHECK AppDomain::CheckValidModule(Module * pModule)
     }
     CONTRACTL_END;
 
-    if (pModule->GetDomainFile() != NULL)
+    if (pModule->GetDomainAssembly() != NULL)
         CHECK_OK;
 
     CHECK_OK;
@@ -4215,7 +4215,7 @@ DWORD DomainLocalModule::GetClassFlags(MethodTable* pMT, DWORD iClassIndex /*=(D
     } CONTRACTL_END;
 
     {
-        CONSISTENCY_CHECK(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
+        CONSISTENCY_CHECK(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
     }
 
     if (pMT->IsDynamicStatics())
@@ -4246,7 +4246,7 @@ void DomainLocalModule::SetClassInitialized(MethodTable* pMT)
     }
     CONTRACTL_END;
 
-    BaseDomain::DomainLocalBlockLockHolder lh(GetDomainFile()->GetAppDomain());
+    BaseDomain::DomainLocalBlockLockHolder lh(GetDomainAssembly()->GetAppDomain());
 
     _ASSERTE(!IsClassInitialized(pMT));
     _ASSERTE(!IsClassInitError(pMT));
@@ -4258,7 +4258,7 @@ void DomainLocalModule::SetClassInitError(MethodTable* pMT)
 {
     WRAPPER_NO_CONTRACT;
 
-    BaseDomain::DomainLocalBlockLockHolder lh(GetDomainFile()->GetAppDomain());
+    BaseDomain::DomainLocalBlockLockHolder lh(GetDomainAssembly()->GetAppDomain());
 
     SetClassFlags(pMT, ClassInitFlags::ERROR_FLAG);
 }
@@ -4268,9 +4268,9 @@ void DomainLocalModule::SetClassFlags(MethodTable* pMT, DWORD dwFlags)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
+        PRECONDITION(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
         // Assumes BaseDomain::DomainLocalBlockLockHolder is taken
-        PRECONDITION(GetDomainFile()->GetAppDomain()->OwnDomainLocalBlockLock());
+        PRECONDITION(GetDomainAssembly()->GetAppDomain()->OwnDomainLocalBlockLock());
     } CONTRACTL_END;
 
     if (pMT->IsDynamicStatics())
@@ -4295,7 +4295,7 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
         // Assumes BaseDomain::DomainLocalBlockLockHolder is taken
-        PRECONDITION(GetDomainFile()->GetAppDomain()->OwnDomainLocalBlockLock());
+        PRECONDITION(GetDomainAssembly()->GetAppDomain()->OwnDomainLocalBlockLock());
     }
     CONTRACTL_END;
 
@@ -4313,7 +4313,7 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
 
     DynamicClassInfo* pNewDynamicClassTable;
     pNewDynamicClassTable = (DynamicClassInfo*)
-        (void*)GetDomainFile()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
+        (void*)GetDomainAssembly()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
             S_SIZE_T(sizeof(DynamicClassInfo)) * S_SIZE_T(aDynamicEntries));
 
     memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * m_aDynamicEntries);
@@ -4337,13 +4337,13 @@ void    DomainLocalModule::AllocateDynamicClass(MethodTable *pMT)
         THROWS;
         GC_TRIGGERS;
         // Assumes BaseDomain::DomainLocalBlockLockHolder is taken
-        PRECONDITION(GetDomainFile()->GetAppDomain()->OwnDomainLocalBlockLock());
+        PRECONDITION(GetDomainAssembly()->GetAppDomain()->OwnDomainLocalBlockLock());
     }
     CONTRACTL_END;
 
     _ASSERTE(!pMT->ContainsGenericVariables());
     _ASSERTE(!pMT->IsSharedByGenericInstantiations());
-    _ASSERTE(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
+    _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
     _ASSERTE(pMT->IsDynamicStatics());
 
     DWORD dynamicEntryIDIndex = pMT->GetModuleDynamicEntryID();
@@ -4368,7 +4368,7 @@ void    DomainLocalModule::AllocateDynamicClass(MethodTable *pMT)
     {
         if (pDynamicStatics == NULL)
         {
-            LoaderHeap * pLoaderAllocator = GetDomainFile()->GetLoaderAllocator()->GetHighFrequencyHeap();
+            LoaderHeap * pLoaderAllocator = GetDomainAssembly()->GetLoaderAllocator()->GetHighFrequencyHeap();
 
             if (pMT->Collectible())
             {
@@ -4407,7 +4407,7 @@ void    DomainLocalModule::AllocateDynamicClass(MethodTable *pMT)
             else
 #endif
                 nongcStaticsArray = AllocatePrimitiveArray(ELEMENT_TYPE_U1, dwStaticBytes);
-            ((CollectibleDynamicEntry *)pDynamicStatics)->m_hNonGCStatics = GetDomainFile()->GetModule()->GetLoaderAllocator()->AllocateHandle(nongcStaticsArray);
+            ((CollectibleDynamicEntry *)pDynamicStatics)->m_hNonGCStatics = GetDomainAssembly()->GetModule()->GetLoaderAllocator()->AllocateHandle(nongcStaticsArray);
             GCPROTECT_END();
         }
         if (dwNumHandleStatics > 0)
@@ -4423,7 +4423,7 @@ void    DomainLocalModule::AllocateDynamicClass(MethodTable *pMT)
                 OBJECTREF gcStaticsArray = NULL;
                 GCPROTECT_BEGIN(gcStaticsArray);
                 gcStaticsArray = AllocateObjectArray(dwNumHandleStatics, g_pObjectClass);
-                ((CollectibleDynamicEntry *)pDynamicStatics)->m_hGCStatics = GetDomainFile()->GetModule()->GetLoaderAllocator()->AllocateHandle(gcStaticsArray);
+                ((CollectibleDynamicEntry *)pDynamicStatics)->m_hGCStatics = GetDomainAssembly()->GetModule()->GetLoaderAllocator()->AllocateHandle(gcStaticsArray);
                 GCPROTECT_END();
             }
         }
@@ -4448,7 +4448,7 @@ void DomainLocalModule::PopulateClass(MethodTable *pMT)
 
     if (!IsClassAllocated(pMT, iClassIndex))
     {
-        BaseDomain::DomainLocalBlockLockHolder lh(GetDomainFile()->GetAppDomain());
+        BaseDomain::DomainLocalBlockLockHolder lh(GetDomainAssembly()->GetAppDomain());
 
         if (!IsClassAllocated(pMT, iClassIndex))
         {
@@ -5186,9 +5186,9 @@ DomainLocalModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // sizeof(DomainLocalModule) == 0x28
     DAC_ENUM_DTHIS();
 
-    if (m_pDomainFile.IsValid())
+    if (m_pDomainAssembly.IsValid())
     {
-        m_pDomainFile->EnumMemoryRegions(flags);
+        m_pDomainAssembly->EnumMemoryRegions(flags);
     }
 
     if (m_pDynamicClassTable.Load().IsValid())

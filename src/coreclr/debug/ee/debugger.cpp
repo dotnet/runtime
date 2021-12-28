@@ -5187,10 +5187,10 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
 }
 
 //
-// Lookup or create a DebuggerModule for the given pDomainFile.
+// Lookup or create a DebuggerModule for the given pDomainAssembly.
 //
 // Arguments:
-//    pDomainFile - non-null domain file.
+//    pDomainAssembly - non-null domain file.
 //
 // Returns:
 //   DebuggerModule instance for the given domain file. May be lazily created.
@@ -5199,14 +5199,14 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
 //  @dbgtodo JMC - this should go away when we get rid of DebuggerModule.
 //
 
-DebuggerModule * Debugger::LookupOrCreateModule(DomainFile * pDomainFile)
+DebuggerModule * Debugger::LookupOrCreateModule(DomainFile * pDomainAssembly)
 {
-    _ASSERTE(pDomainFile != NULL);
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM df=0x%x\n", pDomainFile));
-    DebuggerModule * pDModule = LookupOrCreateModule(pDomainFile->GetModule(), pDomainFile->GetAppDomain());
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=0x%x ad=0x%x -> dm=0x%x\n", pDomainFile->GetModule(), pDomainFile->GetAppDomain(), pDModule));
+    _ASSERTE(pDomainAssembly != NULL);
+    LOG((LF_CORDB, LL_INFO1000, "D::LOCM df=0x%x\n", pDomainAssembly));
+    DebuggerModule * pDModule = LookupOrCreateModule(pDomainAssembly->GetModule(), pDomainAssembly->GetAppDomain());
+    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=0x%x ad=0x%x -> dm=0x%x\n", pDomainAssembly->GetModule(), pDomainAssembly->GetAppDomain(), pDModule));
     _ASSERTE(pDModule != NULL);
-    _ASSERTE(pDModule->GetDomainFile() == pDomainFile);
+    _ASSERTE(pDModule->GetDomainAssembly() == pDomainAssembly);
 
     return pDModule;
 }
@@ -5223,12 +5223,12 @@ DebuggerModule * Debugger::LookupOrCreateModule(DomainFile * pDomainFile)
 //    VMPTR comes from IPC events
 DebuggerModule * Debugger::LookupOrCreateModule(VMPTR_DomainFile vmDomainFile)
 {
-    DomainFile * pDomainFile = vmDomainFile.GetRawPtr();
-    if (pDomainFile == NULL)
+    DomainFile * pDomainAssembly = vmDomainFile.GetRawPtr();
+    if (pDomainAssembly == NULL)
     {
         return NULL;
     }
-    return LookupOrCreateModule(pDomainFile);
+    return LookupOrCreateModule(pDomainAssembly);
 }
 
 // Lookup or create a DebuggerModule for the given (Module, AppDomain) pair.
@@ -5281,9 +5281,9 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
         HRESULT hr = S_OK;
         EX_TRY
         {
-            DomainFile * pDomainFile = pModule->GetDomainFile();
-            SIMPLIFYING_ASSUMPTION(pDomainFile != NULL);
-            dmod = AddDebuggerModule(pDomainFile); // throws
+            DomainFile * pDomainAssembly = pModule->GetDomainAssembly();
+            SIMPLIFYING_ASSUMPTION(pDomainAssembly != NULL);
+            dmod = AddDebuggerModule(pDomainAssembly); // throws
         }
         EX_CATCH_HRESULT(hr);
         SIMPLIFYING_ASSUMPTION(dmod != NULL); // may not be true in OOM cases; but LS doesn't handle OOM.
@@ -5293,19 +5293,19 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
     _ASSERTE( (dmod == NULL) || (dmod->GetAppDomain() == pAppDomain) );
 
     LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=0x%x ad=0x%x -> dm=0x%x(Mod=0x%x, DomFile=0x%x, AD=0x%x)\n",
-        pModule, pAppDomain, dmod, dmod->GetRuntimeModule(), dmod->GetDomainFile(), dmod->GetAppDomain()));
+        pModule, pAppDomain, dmod, dmod->GetRuntimeModule(), dmod->GetDomainAssembly(), dmod->GetAppDomain()));
     return dmod;
 }
 
 // Create a new DebuggerModule object
 //
 // Arguments:
-//    pDomainFile-  runtime domain file to create debugger module object around
+//    pDomainAssembly-  runtime domain file to create debugger module object around
 //
 // Returns:
 //    New instnace of a DebuggerModule. Throws on failure.
 //
-DebuggerModule* Debugger::AddDebuggerModule(DomainFile * pDomainFile)
+DebuggerModule* Debugger::AddDebuggerModule(DomainFile * pDomainAssembly)
 {
     CONTRACTL
     {
@@ -5314,16 +5314,16 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainFile * pDomainFile)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "D::ADM df=0x%x\n", pDomainFile));
+    LOG((LF_CORDB, LL_INFO1000, "D::ADM df=0x%x\n", pDomainAssembly));
     DebuggerDataLockHolder chInfo(this);
 
-    Module *     pRuntimeModule = pDomainFile->GetModule();
-    AppDomain *  pAppDomain     = pDomainFile->GetAppDomain();
+    Module *     pRuntimeModule = pDomainAssembly->GetModule();
+    AppDomain *  pAppDomain     = pDomainAssembly->GetAppDomain();
 
     HRESULT hr = CheckInitModuleTable();
     IfFailThrow(hr);
 
-    DebuggerModule* pModule = new (interopsafe) DebuggerModule(pRuntimeModule, pDomainFile, pAppDomain);
+    DebuggerModule* pModule = new (interopsafe) DebuggerModule(pRuntimeModule, pDomainAssembly, pAppDomain);
     _ASSERTE(pModule != NULL); // throws on oom
 
     TRACE_ALLOC(pModule);
@@ -5332,7 +5332,7 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainFile * pDomainFile)
     // @dbgtodo  inspection/exceptions - this may leak module in OOM case. LS is not OOM resilient; and we
     // expect to get rid of DebuggerModule anyways.
 
-    LOG((LF_CORDB, LL_INFO1000, "D::ADM df=0x%x -> dm=0x%x\n", pDomainFile, pModule));
+    LOG((LF_CORDB, LL_INFO1000, "D::ADM df=0x%x -> dm=0x%x\n", pDomainAssembly, pModule));
     return pModule;
 }
 
@@ -6246,7 +6246,7 @@ void Debugger::LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP,
     Module *pRuntimeModule = pFD->GetModule();
 
     DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule, thread->GetDomain());
-    ipce->EnCRemap.vmDomainFile.SetRawPtr((pDModule ? pDModule->GetDomainFile() : NULL));
+    ipce->EnCRemap.vmDomainFile.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s "
         "dmod:0x%x, methodDef:0x%x \n",
@@ -6315,7 +6315,7 @@ void Debugger::LockAndSendEnCRemapCompleteEvent(MethodDesc *pFD)
     Module *pRuntimeModule = pFD->GetModule();
 
     DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule, thread->GetDomain());
-    ipce->EnCRemapComplete.vmDomainFile.SetRawPtr((pDModule ? pDModule->GetDomainFile() : NULL));
+    ipce->EnCRemapComplete.vmDomainFile.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
 
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRC: %s::%s "
@@ -6381,7 +6381,7 @@ void Debugger::SendEnCUpdateEvent(DebuggerIPCEventType eventType,
     _ASSERTE(pModule->GetDomain()->IsAppDomain());
 
     DebuggerModule * pDModule = LookupOrCreateModule(pModule, pModule->GetDomain()->AsAppDomain());
-    event->EnCUpdate.vmDomainFile.SetRawPtr((pDModule ? pDModule->GetDomainFile() : NULL));
+    event->EnCUpdate.vmDomainFile.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
 
     m_pRCThread->SendIPCEvent();
 
@@ -9426,7 +9426,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
                           DWORD dwModuleName, // length of pszModuleName in chars, not including null.
                           Assembly *pAssembly,
                           AppDomain *pAppDomain,
-                          DomainFile *  pDomainFile,
+                          DomainFile *  pDomainAssembly,
                           BOOL fAttaching)
 {
 
@@ -9467,7 +9467,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
             _ASSERTE(pManifestModule->IsManifest());
             _ASSERTE(pManifestModule->GetAssembly() == pRuntimeModule->GetAssembly());
 
-            DomainFile * pManifestDomainFile = pManifestModule->GetDomainFile();
+            DomainFile * pManifestDomainFile = pManifestModule->GetDomainAssembly();
 
             DebuggerLockHolder dbgLockHolder(this);
 
@@ -9499,7 +9499,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     // The RS has logic to ignore duplicate ModuleLoad events. We have to send what could possibly be a dup, though,
     // due to some really nasty issues with getting proper assembly and module load events from the loader when dealing
     // with shared assemblies.
-    module = LookupOrCreateModule(pDomainFile);
+    module = LookupOrCreateModule(pDomainAssembly);
     _ASSERTE(module != NULL);
 
 
@@ -9512,15 +9512,15 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     // @dbgtodo  inspection - Check whether the DomainFile we get is consistent with the Module and AppDomain we get.
     // We should simply things when we actually get rid of DebuggerModule, possibly by just passing the
     // DomainFile around.
-    _ASSERTE(module->GetDomainFile()    == pDomainFile);
-    _ASSERTE(module->GetAppDomain()     == pDomainFile->GetAppDomain());
-    _ASSERTE(module->GetRuntimeModule() == pDomainFile->GetModule());
+    _ASSERTE(module->GetDomainAssembly()    == pDomainAssembly);
+    _ASSERTE(module->GetAppDomain()     == pDomainAssembly->GetAppDomain());
+    _ASSERTE(module->GetRuntimeModule() == pDomainAssembly->GetModule());
 
     // Send a load module event to the Right Side.
     ipce = m_pRCThread->GetIPCEventSendBuffer();
     InitIPCEvent(ipce,DB_IPCE_LOAD_MODULE, pThread, pAppDomain);
 
-    ipce->LoadModuleData.vmDomainFile.SetRawPtr(pDomainFile);
+    ipce->LoadModuleData.vmDomainFile.SetRawPtr(pDomainAssembly);
 
     m_pRCThread->SendIPCEvent();
 
@@ -9588,7 +9588,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *p
                  g_pEEInterface->GetThread(),
                  pAppDomain);
 
-    ipce->UpdateModuleSymsData.vmDomainFile.SetRawPtr((module ? module->GetDomainFile() : NULL));
+    ipce->UpdateModuleSymsData.vmDomainFile.SetRawPtr((module ? module->GetDomainAssembly() : NULL));
 
     m_pRCThread->SendIPCEvent();
 }
@@ -9695,8 +9695,8 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
 
         STRESS_LOG6(LF_CORDB, LL_INFO10000,
             "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
-            pRuntimeModule, pRuntimeModule->GetDomainFile(), false,
-            module, module->GetRuntimeModule(), module->GetDomainFile());
+            pRuntimeModule, pRuntimeModule->GetDomainAssembly(), false,
+            module, module->GetRuntimeModule(), module->GetDomainAssembly());
 
         // Note: the appdomain the module was loaded in must match the appdomain we're unloading it from. If it doesn't,
         // then we've either found the wrong DebuggerModule in LookupModule or we were passed bad data.
@@ -9705,7 +9705,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         // Send the unload module event to the Right Side.
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce, DB_IPCE_UNLOAD_MODULE, thread, pAppDomain);
-        ipce->UnloadModuleData.vmDomainFile.SetRawPtr((module ? module->GetDomainFile() : NULL));
+        ipce->UnloadModuleData.vmDomainFile.SetRawPtr((module ? module->GetDomainAssembly() : NULL));
         ipce->UnloadModuleData.debuggerAssemblyToken.Set(pRuntimeModule->GetClassLoader()->GetAssembly());
         m_pRCThread->SendIPCEvent();
 
@@ -9877,7 +9877,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
         InitIPCEvent(pEvent, DB_IPCE_LOAD_CLASS, g_pEEInterface->GetThread(), pAppDomain);
 
         pEvent->LoadClass.classMetadataToken = classMetadataToken;
-        pEvent->LoadClass.vmDomainFile.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetDomainFile() : NULL));
+        pEvent->LoadClass.vmDomainFile.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetDomainAssembly() : NULL));
         pEvent->LoadClass.classDebuggerAssemblyToken.Set(pAssembly);
 
 
@@ -9889,7 +9889,7 @@ void Debugger::SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
         InitIPCEvent(pEvent, DB_IPCE_UNLOAD_CLASS, g_pEEInterface->GetThread(), pAppDomain);
 
         pEvent->UnloadClass.classMetadataToken = classMetadataToken;
-        pEvent->UnloadClass.vmDomainFile.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetDomainFile() : NULL));
+        pEvent->UnloadClass.vmDomainFile.SetRawPtr((pClassDebuggerModule ? pClassDebuggerModule->GetDomainAssembly() : NULL));
         pEvent->UnloadClass.classDebuggerAssemblyToken.Set(pAssembly);
     }
 
@@ -9943,7 +9943,7 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
         // triggers too early in the loading process. FindDomainFile will not become
         // non-NULL until the module is fully loaded into the domain which is what we
         // want.
-        if (classModule->GetDomainFile() != NULL )
+        if (classModule->GetDomainAssembly() != NULL )
         {
             // Find the Left Side module that this class belongs in.
             DebuggerModule* pModule = LookupOrCreateModule(classModule, pAppDomain);
@@ -11828,7 +11828,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
                                                                              // only set if instantiated
             res->metadataToken = th.GetCl();
             DebuggerModule * pDModule = LookupOrCreateModule(th.GetModule(), pAppDomain);
-            res->vmDomainFile.SetRawPtr((pDModule ? pDModule->GetDomainFile() : NULL));
+            res->vmDomainFile.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
             break;
         }
 
@@ -11907,7 +11907,7 @@ treatAllValuesAsBoxed:
             res->ClassTypeData.typeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr(); // only set if instantiated
             res->ClassTypeData.metadataToken = th.GetCl();
             DebuggerModule * pModule = LookupOrCreateModule(th.GetModule(), pAppDomain);
-            res->ClassTypeData.vmDomainFile.SetRawPtr((pModule ? pModule->GetDomainFile() : NULL));
+            res->ClassTypeData.vmDomainFile.SetRawPtr((pModule ? pModule->GetDomainAssembly() : NULL));
             _ASSERTE(!res->ClassTypeData.vmDomainFile.IsNull());
             break;
         }

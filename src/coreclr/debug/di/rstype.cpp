@@ -1876,7 +1876,7 @@ CordbType::GetUnboxedObjectSize(ULONG32 *pObjectSize)
     }
 }
 
-VMPTR_DomainFile CordbType::GetDomainFile()
+VMPTR_DomainFile CordbType::GetDomainAssembly()
 {
     if (m_pClass != NULL)
     {
@@ -1950,7 +1950,7 @@ HRESULT CordbType::TypeToBasicTypeData(DebuggerIPCE_BasicTypeData *data)
         _ASSERTE(m_pClass != NULL);
         data->elementType = m_pClass->IsValueClassNoInit() ? ELEMENT_TYPE_VALUETYPE : ELEMENT_TYPE_CLASS;
         data->metadataToken = m_pClass->MDToken();
-	    data->vmDomainFile = GetDomainFile();
+	    data->vmDomainFile = GetDomainAssembly();
         data->vmTypeHandle = m_typeHandleExact;
         if (m_pClass->HasTypeParams() && data->vmTypeHandle.IsNull())
         {
@@ -2001,7 +2001,7 @@ void CordbType::TypeToExpandedTypeData(DebuggerIPCE_ExpandedTypeData *data)
         {
             data->elementType = m_pClass->IsValueClassNoInit() ? ELEMENT_TYPE_VALUETYPE : ELEMENT_TYPE_CLASS;
             data->ClassTypeData.metadataToken = m_pClass->GetToken();
-            data->ClassTypeData.vmDomainFile = GetDomainFile();
+            data->ClassTypeData.vmDomainFile = GetDomainAssembly();
             data->ClassTypeData.vmModule = GetModule();
             data->ClassTypeData.typeHandle = VMPTR_TypeHandle::NullPtr();
 

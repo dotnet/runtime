@@ -2459,7 +2459,7 @@ public:
     virtual
     bool GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp,
                                 OUT VMPTR_Module * pModule,
-                                OUT VMPTR_DomainFile * pDomainFile) = 0;
+                                OUT VMPTR_DomainFile * pDomainAssembly) = 0;
 
 
     //   Reference Walking.

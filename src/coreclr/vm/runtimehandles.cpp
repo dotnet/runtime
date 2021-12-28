@@ -186,9 +186,9 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     if (pModule == NULL)
         return NULL;
 
-    DomainFile * pDomainFile = pModule->GetDomainFile();
+    DomainFile * pDomainAssembly = pModule->GetDomainAssembly();
 
-    OBJECTREF refModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
+    OBJECTREF refModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
 
     if(refModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
@@ -2670,17 +2670,17 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
     Assembly* currentAssembly = pAssembly->GetAssembly();
 
     Module *pModule = currentAssembly->GetModule();
-    DomainFile * pDomainFile = pModule->GetDomainFile();
+    DomainFile * pDomainAssembly = pModule->GetDomainAssembly();
 
 #ifdef _DEBUG
     OBJECTREF orModule;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refAssembly);
-    orModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
+    orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
     if (orModule == NULL)
         orModule = pModule->GetExposedObject();
 #else
-    OBJECTREF orModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
+    OBJECTREF orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
     if (orModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(orModule);
 
@@ -2905,7 +2905,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    DomainFile *pDomainModule = pModule->GetDomainFile();
+    DomainFile *pDomainModule = pModule->GetDomainAssembly();
 
     U1ARRAYREF dataArray = (U1ARRAYREF)sig;
     DWORD sigSize = dataArray->GetNumComponents();

@@ -3243,15 +3243,6 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     UINT32 typeLoad = ETW::TypeSystemLog::TypeLoadBegin();
 #endif
 
-    // When using domain neutral assemblies (and not eagerly propagating dependency loads),
-    // it's possible to get here without having injected the module into the current app domain.
-    // GetDomainFile will accomplish that.
-
-    if (!pTypeKey->IsConstructed())
-    {
-        pTypeKey->GetModule()->GetDomainFile();
-    }
-
     ClassLoadLevel currentLevel = typeHnd.IsNull() ? CLASS_LOAD_BEGIN : typeHnd.GetLoadLevel();
     ClassLoadLevel targetLevelUnderLock = targetLevel < CLASS_DEPENDENCIES_LOADED ? targetLevel : (ClassLoadLevel) (CLASS_DEPENDENCIES_LOADED-1);
     if (currentLevel < targetLevelUnderLock)

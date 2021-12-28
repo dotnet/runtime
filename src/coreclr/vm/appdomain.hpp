@@ -201,18 +201,18 @@ struct DomainLocalModule
     static SIZE_T GetOffsetOfDataBlob() { return offsetof(DomainLocalModule, m_pDataBlob); }
     static SIZE_T GetOffsetOfGCStaticPointer() { return offsetof(DomainLocalModule, m_pGCStatics); }
 
-    inline DomainFile* GetDomainFile()
+    inline DomainFile* GetDomainAssembly()
     {
         LIMITED_METHOD_CONTRACT
         SUPPORTS_DAC;
-        return m_pDomainFile;
+        return m_pDomainAssembly;
     }
 
 #ifndef DACCESS_COMPILE
-    inline void        SetDomainFile(DomainFile* pDomainFile)
+    inline void        SetDomainAssembly(DomainFile* pDomainAssembly)
     {
         LIMITED_METHOD_CONTRACT
-        m_pDomainFile = pDomainFile;
+        m_pDomainAssembly = pDomainAssembly;
     }
 #endif
 
@@ -236,7 +236,7 @@ struct DomainLocalModule
 
         if (pMT->IsDynamicStatics())
         {
-            _ASSERTE(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
+            _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
             return GetDynamicEntryGCStaticsBasePointer(pMT->GetModuleDynamicEntryID(), pMT->GetLoaderAllocator());
         }
         else
@@ -252,7 +252,7 @@ struct DomainLocalModule
 
         if (pMT->IsDynamicStatics())
         {
-            _ASSERTE(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
+            _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
             return GetDynamicEntryNonGCStaticsBasePointer(pMT->GetModuleDynamicEntryID(), pMT->GetLoaderAllocator());
         }
         else
@@ -403,7 +403,7 @@ struct DomainLocalModule
     FORCEINLINE MethodTable * GetMethodTableFromClassDomainID(DWORD dwClassDomainID)
     {
         DWORD rid = (DWORD)(dwClassDomainID) + 1;
-        TypeHandle th = GetDomainFile()->GetModule()->LookupTypeDef(TokenFromRid(rid, mdtTypeDef));
+        TypeHandle th = GetDomainAssembly()->GetModule()->LookupTypeDef(TokenFromRid(rid, mdtTypeDef));
         _ASSERTE(!th.IsNull());
         MethodTable * pMT = th.AsMethodTable();
         PREFIX_ASSUME(pMT != NULL);
@@ -416,7 +416,7 @@ private:
     void SetClassFlags(MethodTable* pMT, DWORD dwFlags);
     DWORD GetClassFlags(MethodTable* pMT, DWORD iClassIndex);
 
-    PTR_DomainFile           m_pDomainFile;
+    PTR_DomainFile           m_pDomainAssembly;
     VolatilePtr<DynamicClassInfo, PTR_DynamicClassInfo> m_pDynamicClassTable;   // used for generics and reflection.emit in memory
     Volatile<SIZE_T>         m_aDynamicEntries;      // number of entries in dynamic table
     VolatilePtr<UMEntryThunk> m_pADThunkTable;
@@ -773,14 +773,14 @@ class FileLoadLock : public ListLockEntry
 {
 private:
     FileLoadLevel           m_level;
-    DomainFile              *m_pDomainFile;
+    DomainFile              *m_pDomainAssembly;
     HRESULT                 m_cachedHR;
 
 public:
-    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainFile);
+    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainAssembly);
 
     ~FileLoadLock();
-    DomainFile *GetDomainFile();
+    DomainFile *GetDomainAssembly();
     FileLoadLevel GetLoadLevel();
 
     // CanAcquire will return FALSE if Acquire will definitely not take the lock due
@@ -807,7 +807,7 @@ public:
 
 private:
 
-    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainFile);
+    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainAssembly);
 
     static void HolderLeave(FileLoadLock *pThis);
 

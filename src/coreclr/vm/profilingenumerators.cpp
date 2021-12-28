@@ -450,8 +450,8 @@ HRESULT IterateAppDomainContainingModule::AddAppDomainContainingModule(AppDomain
     }
     CONTRACTL_END;
 
-    DomainFile * pDomainFile = m_pModule->GetDomainFile();
-    if ((pDomainFile != NULL) && (pDomainFile->IsAvailableToProfilers()))
+    DomainFile * pDomainAssembly = m_pModule->GetDomainAssembly();
+    if ((pDomainAssembly != NULL) && (pDomainAssembly->IsAvailableToProfilers()))
     {
         if (m_index < m_cAppDomainIds)
         {

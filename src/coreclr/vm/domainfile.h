@@ -141,6 +141,7 @@ class DomainFile
     }
 #endif
 
+    // TODO: VS remove
     BOOL IsAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;

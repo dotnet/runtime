@@ -694,7 +694,7 @@ void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
     }
     CONTRACTL_END;
 
-    GetModule()->SetDomainFile(pDomainAssembly);
+    GetModule()->SetDomainAssembly(pDomainAssembly);
 
 } // Assembly::SetDomainAssembly
 
