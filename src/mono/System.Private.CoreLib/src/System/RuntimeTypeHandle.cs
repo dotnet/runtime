@@ -201,16 +201,13 @@ namespace System
             return isGenericCOM ? false : IsComObject(type);
         }
 
-        internal static bool IsContextful(RuntimeType _)
-        {
-            return false;
-        }
-
-        internal static bool IsEquivalentTo(RuntimeType _1, RuntimeType _2)
+#pragma warning disable IDE0060
+        internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)
         {
             // refence check is done earlier and we don't recognize anything else
             return false;
         }
+#pragma warning restore IDE0060
 
         internal static bool IsInterface(RuntimeType type)
         {

@@ -34,11 +34,15 @@ namespace System.Threading
         // Threadpool specific initialization of a new thread. Used by OS-provided threadpools. No-op for portable threadpool.
         internal static void InitializeForThreadPoolThread() { }
 
-        internal static bool CanSetMinIOCompletionThreads(int _) => true;
-        internal static void SetMinIOCompletionThreads(int _) { }
+#pragma warning disable IDE0060
+        internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => true;
+        internal static bool CanSetMaxIOCompletionThreads(int ioCompletionThreads) => true;
+#pragma warning restore IDE0060
 
-        internal static bool CanSetMaxIOCompletionThreads(int _) => true;
-        internal static void SetMaxIOCompletionThreads(int _) { }
+        [Conditional("unnecessary")]
+        internal static void SetMinIOCompletionThreads(int ioCompletionThreads) { }
+        [Conditional("unnecessary")]
+        internal static void SetMaxIOCompletionThreads(int ioCompletionThreads) { }
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
@@ -90,8 +94,11 @@ namespace System.Threading
         /// <summary>
         /// Called from the gate thread periodically to perform runtime-specific gate activities
         /// </summary>
+        /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
         /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
-        internal static bool PerformRuntimeSpecificGateActivities(int _) => false;
+#pragma warning disable IDE0060
+        internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization) => false;
+#pragma warning restore IDE0060
 
         internal static void NotifyWorkItemProgress() => PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
 

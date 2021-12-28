@@ -675,7 +675,8 @@ namespace System.Runtime.InteropServices
         }
 
 #if !CORECLR
-        private static Exception? GetExceptionForHRInternal(int errorCode, IntPtr _)
+#pragma warning disable IDE0060
+        private static Exception? GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
         {
             switch (errorCode)
             {
@@ -904,6 +905,7 @@ namespace System.Runtime.InteropServices
                     return new COMException("", errorCode);
             }
         }
+#pragma warning restore IDE0060
 #endif
 
         /// <summary>

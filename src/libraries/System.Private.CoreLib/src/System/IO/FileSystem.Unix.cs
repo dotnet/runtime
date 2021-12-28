@@ -27,15 +27,17 @@ namespace System.IO
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
         }
 
-        public static void Encrypt(string _)
+#pragma warning disable IDE0060
+        public static void Encrypt(string path)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
 
-        public static void Decrypt(string _)
+        public static void Decrypt(string path)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
+#pragma warning restore IDE0060
 
         private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
         {
@@ -94,8 +96,8 @@ namespace System.IO
             }
         }
 
-
-        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool _1)
+#pragma warning disable IDE0060
+        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors /* unused */)
         {
             // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
             // These checks are not atomic, the file could change after a check was performed and before it is renamed.
@@ -160,6 +162,7 @@ namespace System.IO
             // Finally, rename the source to the destination, overwriting the destination.
             Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath));
         }
+#pragma warning restore IDE0060
 
         public static void MoveFile(string sourceFullPath, string destFullPath)
         {
@@ -593,7 +596,9 @@ namespace System.IO
             return DriveInfoInternal.GetLogicalDrives();
         }
 
-        internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool _) => Interop.Sys.ReadLink(linkPath);
+#pragma warning disable IDE0060
+        internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
+#pragma warning restore IDE0060
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {

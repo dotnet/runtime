@@ -8,8 +8,10 @@ namespace System.IO.Strategies
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
-        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool _) =>
+#pragma warning disable IDE0060
+        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
             new UnixFileStreamStrategy(handle, access);
+#pragma warning restore IDE0060
 
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
             new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize);

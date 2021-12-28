@@ -3,12 +3,14 @@
 
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 
 namespace System.Threading
 {
     public static partial class ThreadPool
     {
-        internal static void ReportThreadStatus(bool _)
+        [Conditional("unnecessary")]
+        internal static void ReportThreadStatus(bool isWorking)
         {
         }
 
