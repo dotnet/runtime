@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- NOTE: this test simply takes too long to complete under heap verify or GCStress. It is not fundamentally incompatible. -->
+    <HeapVerifyIncompatible>true</HeapVerifyIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <IsLongRunningGCTest>true</IsLongRunningGCTest>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="thread-race.cs" />
+  </ItemGroup>
+</Project>

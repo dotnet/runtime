@@ -17,7 +17,7 @@ if [ -n "$6" ]; then
     ADDITIONAL_ARGS=${@:6}
 fi
 
-if [[ "$CONFIGURATION" != "Debug" ]]; then $CONFIGURATION="Release"; fi
+if [[ "$CONFIGURATION" != "Debug" ]]; then CONFIGURATION="Release"; fi
 
 if [[ "$TARGET_OS" == "maccatalyst" ]]; then TARGET=maccatalyst; fi
 

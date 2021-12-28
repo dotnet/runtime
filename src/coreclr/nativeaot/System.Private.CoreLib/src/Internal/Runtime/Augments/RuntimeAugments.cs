@@ -135,7 +135,7 @@ namespace Internal.Runtime.Augments
                 foreach (int lowerBound in lowerBounds)
                 {
                     if (lowerBound != 0)
-                        throw new PlatformNotSupportedException(SR.Arg_NotSupportedNonZeroLowerBound);
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
                 }
             }
 
@@ -812,9 +812,8 @@ namespace Internal.Runtime.Augments
             get
             {
                 ReflectionExecutionDomainCallbacks callbacks = s_reflectionExecutionDomainCallbacks;
-                if (callbacks != null)
-                    return callbacks;
-                throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+                Debug.Assert(callbacks != null);
+                return callbacks;
             }
         }
 
@@ -831,9 +830,8 @@ namespace Internal.Runtime.Augments
             get
             {
                 TypeLoaderCallbacks callbacks = s_typeLoaderCallbacks;
-                if (callbacks != null)
-                    return callbacks;
-                throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+                Debug.Assert(callbacks != null);
+                return callbacks;
             }
         }
 
@@ -842,9 +840,8 @@ namespace Internal.Runtime.Augments
             get
             {
                 InteropCallbacks callbacks = s_interopCallbacks;
-                if (callbacks != null)
-                    return callbacks;
-                throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+                Debug.Assert(callbacks != null);
+                return callbacks;
             }
         }
 

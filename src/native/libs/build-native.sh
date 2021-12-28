@@ -31,8 +31,6 @@ __TargetOS=Linux
 __BuildType=Debug
 __CMakeArgs=""
 __Compiler=clang
-__CompilerMajorVersion=
-__CompilerMinorVersion=
 __CrossBuild=0
 __PortableBuild=1
 __RootBinDir="$__RepoRootDir/artifacts"
@@ -53,7 +51,6 @@ if [[ "$__BuildArch" == wasm ]]; then
     source "$EMSDK_PATH"/emsdk_env.sh
 
     export CLR_CC=$(which emcc)
-    export CLR_CXX=$(which em++)
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true

@@ -27,7 +27,6 @@ set(NATIVE_SOURCES
     pal_process.c
     pal_random.c
     pal_runtimeinformation.c
-    pal_runtimeextensions.c
     pal_signal.c
     pal_string.c
     pal_tcpstate.c

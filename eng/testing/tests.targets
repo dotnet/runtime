@@ -102,6 +102,7 @@
     </ItemGroup>
 
     <GenerateRunScript RunCommands="@(RunScriptCommands)"
+                       SetCommands="@(SetScriptCommands)"
                        TemplatePath="$(RunScriptInputPath)"
                        OutputPath="$(RunScriptOutputPath)" />
 

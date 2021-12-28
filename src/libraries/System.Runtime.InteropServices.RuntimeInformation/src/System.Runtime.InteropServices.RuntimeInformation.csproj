@@ -1,50 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.Runtime.InteropServices</RootNamespace>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\Architecture.cs" />
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\OSPlatform.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Browser.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixVersion.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.GetUnixVersion.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetOSArchitecture.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.GetOSArchitecture.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetProcessArchitecture.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.GetProcessArchitecture.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ProcessorArchitecture.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.ProcessorArchitecture.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetNativeSystemInfo.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetNativeSystemInfo.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemInfo.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Reflection.Extensions" />
-    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

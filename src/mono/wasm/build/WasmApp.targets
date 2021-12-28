@@ -61,6 +61,7 @@
       - $(WasmBuildOnlyAfterPublish)        - Causes relinking to be done only for Publish. Defaults to false.
       - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
                                               Defaults to false.
+      - $(WasmAotProfilePath)               - Path to an AOT profile file.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -207,9 +208,13 @@
       <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
-    <Warning Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_MainAssemblyPath) == ''" Text="Could not find %24(AssemblyName)=$(AssemblyName).dll in the assemblies to be bundled." />
-    <Warning Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_WasmRuntimeConfigFilePath) != '' and !Exists($(_WasmRuntimeConfigFilePath))"
-             Text="Could not find $(_WasmRuntimeConfigFilePath) for $(_MainAssemblyPath)." />
+    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_MainAssemblyPath) == ''"
+             Text="Could not find %24(AssemblyName)=$(AssemblyName).dll in the assemblies to be bundled."
+             Importance="Low" />
+
+    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_WasmRuntimeConfigFilePath) != '' and !Exists($(_WasmRuntimeConfigFilePath))"
+             Text="Could not find $(_WasmRuntimeConfigFilePath) for $(_MainAssemblyPath)."
+             Importance="Low" />
 
     <ItemGroup>
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />

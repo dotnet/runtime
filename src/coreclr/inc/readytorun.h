@@ -297,7 +297,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Unbox                     = 0x5A,
     READYTORUN_HELPER_Unbox_Nullable            = 0x5B,
     READYTORUN_HELPER_NewMultiDimArr            = 0x5C,
-    READYTORUN_HELPER_NewMultiDimArr_NonVarArg  = 0x5D,
 
     // Helpers used with generic handle lookup cases
     READYTORUN_HELPER_NewObject                 = 0x60,

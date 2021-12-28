@@ -824,14 +824,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return (start.StartLocation.Line, start.StartLocation.Column, end.EndLocation.Line, end.EndLocation.Column);
         }
 
-        private static async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
+        private async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
         {
             var mem = new MemoryStream();
             try
             {
                 if (uri.IsFile && File.Exists(uri.LocalPath))
                 {
-                    using (FileStream file = File.Open(uri.LocalPath, FileMode.Open))
+                    using (FileStream file = File.Open(SourceUri.LocalPath, FileMode.Open))
                     {
                         await file.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;

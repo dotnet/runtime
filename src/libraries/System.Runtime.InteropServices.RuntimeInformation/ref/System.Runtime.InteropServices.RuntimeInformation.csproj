@@ -4,7 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Runtime.InteropServices.RuntimeInformation.cs" />
+    <Compile Include="System.Runtime.InteropServices.RuntimeInformation.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

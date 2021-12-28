@@ -5111,7 +5111,7 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 
 void Compiler::fgSetRngChkTarget(GenTree* tree, bool delay)
 {
-    if (tree->OperIsBoundsCheck())
+    if (tree->OperIs(GT_BOUNDS_CHECK))
     {
         GenTreeBoundsChk* const boundsChk = tree->AsBoundsChk();
         BasicBlock* const       failBlock = fgSetRngChkTargetInner(boundsChk->gtThrowKind, delay);
@@ -5162,7 +5162,7 @@ BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay)
  *  The orginal GT_INDEX node is bashed into the GT_IND node that accesses
  *  the array element.  We expand the GT_INDEX node into a larger tree that
  *  evaluates the array base and index.  The simplest expansion is a GT_COMMA
- *  with a GT_ARR_BOUNDS_CHECK and a GT_IND with a GTF_INX_RNGCHK flag.
+ *  with a GT_BOUNDS_CHECK and a GT_IND with a GTF_INX_RNGCHK flag.
  *  For complex array or index expressions one or more GT_COMMA assignments
  *  are inserted so that we only evaluate the array or index expressions once.
  *
@@ -5252,7 +5252,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     //    side-effecting.
     // 2. Evaluate the array index expression and store the result in a temp if the expression is complex or
     //    side-effecting.
-    // 3. Perform an explicit bounds check: GT_ARR_BOUNDS_CHECK(index, GT_ARR_LENGTH(array))
+    // 3. Perform an explicit bounds check: GT_BOUNDS_CHECK(index, GT_ARR_LENGTH(array))
     // 4. Compute the address of the element that will be accessed:
     //    GT_ADD(GT_ADD(array, firstElementOffset), GT_MUL(index, elementSize))
     // 5. Dereference the address with a GT_IND.
@@ -5311,7 +5311,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* indexDefn  = nullptr; // non-NULL if we need to allocate a temp for the index expression
     GenTree* bndsChk    = nullptr;
 
-    // If we're doing range checking, introduce a GT_ARR_BOUNDS_CHECK node for the address.
+    // If we're doing range checking, introduce a GT_BOUNDS_CHECK node for the address.
     if (chkd)
     {
         GenTree* arrRef2 = nullptr; // The second copy will be used in array address expression
@@ -5360,7 +5360,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             noway_assert(index2 != nullptr);
         }
 
-        // Next introduce a GT_ARR_BOUNDS_CHECK node
+        // Next introduce a GT_BOUNDS_CHECK node
         var_types bndsChkType = TYP_INT; // By default, try to use 32-bit comparison for array bounds check.
 
 #ifdef TARGET_64BIT
@@ -5380,8 +5380,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             arrLen = gtNewCastNode(bndsChkType, arrLen, true, bndsChkType);
         }
 
-        GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
-            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, SCK_RNGCHK_FAIL);
+        GenTreeBoundsChk* arrBndsChk = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, arrLen, SCK_RNGCHK_FAIL);
 
         bndsChk = arrBndsChk;
 
@@ -11160,13 +11159,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 }
             }
 
-            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
-            // if op2 is a positive cns
-            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
-                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UDIV or DIV
+            // Convert DIV to UDIV if boths op1 and op2 are known to be never negative
+            if (!gtIsActiveCSE_Candidate(tree) && varTypeIsIntegral(tree) && op1->IsNeverNegative(this) &&
+                op2->IsNeverNegative(this))
             {
                 assert(tree->OperIs(GT_DIV));
-                tree->ChangeOper(GT_UDIV);
+                tree->ChangeOper(GT_UDIV, GenTree::PRESERVE_VN);
                 return fgMorphSmpOp(tree, mac);
             }
 
@@ -11229,13 +11227,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 goto USE_HELPER_FOR_ARITH;
             }
 
-            // array.Length is always positive so GT_DIV can be changed to GT_UDIV
-            // if op2 is a positive cns
-            if (!optValnumCSE_phase && op1->OperIs(GT_ARR_LENGTH) && op2->IsIntegralConst() &&
-                op2->AsIntCon()->IconValue() >= 2) // for 0 and 1 it doesn't matter if it's UMOD or MOD
+            // Convert MOD to UMOD if boths op1 and op2 are known to be never negative
+            if (!gtIsActiveCSE_Candidate(tree) && varTypeIsIntegral(tree) && op1->IsNeverNegative(this) &&
+                op2->IsNeverNegative(this))
             {
                 assert(tree->OperIs(GT_MOD));
-                tree->ChangeOper(GT_UMOD);
+                tree->ChangeOper(GT_UMOD, GenTree::PRESERVE_VN);
                 return fgMorphSmpOp(tree, mac);
             }
 
@@ -12032,7 +12029,7 @@ DONE_MORPHING_CHILDREN:
             effectiveOp1 = op1->gtEffectiveVal();
 
             // If we are storing a small type, we might be able to omit a cast.
-            if (effectiveOp1->OperIs(GT_IND) && varTypeIsSmall(effectiveOp1))
+            if (effectiveOp1->OperIs(GT_IND, GT_CLS_VAR) && varTypeIsSmall(effectiveOp1))
             {
                 if (!gtIsActiveCSE_Candidate(op2) && op2->OperIs(GT_CAST) &&
                     varTypeIsIntegral(op2->AsCast()->CastOp()) && !op2->gtOverflow())
@@ -12646,13 +12643,7 @@ DONE_MORPHING_CHILDREN:
             fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_ARITH_EXCPN);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif
+        case GT_BOUNDS_CHECK:
             fgSetRngChkTarget(tree);
             break;
 

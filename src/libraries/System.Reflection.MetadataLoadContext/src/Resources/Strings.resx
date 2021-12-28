@@ -125,9 +125,6 @@
   <data name="Argument_InvalidEnum" xml:space="preserve">
     <value>The enum type should contain one and only one instance field.</value>
   </data>
-  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
-    <value>Ambiguous match found.</value>
-  </data>
   <data name="Arg_EmptyArray" xml:space="preserve">
     <value>Array may not be empty.</value>
   </data>
