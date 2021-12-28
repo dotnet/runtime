@@ -52,11 +52,12 @@ namespace System.IO
                 int i = length - 1;
                 while (i >= lengthRoot && !somepathexists)
                 {
-                    string dir = fullPath.Substring(0, i + 1);
+                    ReadOnlySpan<char> dir = fullPathSpan[..(i + 1)];
+                    string heapDir = dir.ToString();
 
-                    if (!DirectoryExists(dir)) // Create only the ones missing
+                    if (!DirectoryExists(heapDir)) // Create only the ones missing
                     {
-                        stackDir.Add(dir);
+                        stackDir.Add(heapDir);
                     }
                     else
                     {
