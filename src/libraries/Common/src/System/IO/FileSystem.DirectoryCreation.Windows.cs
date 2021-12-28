@@ -85,8 +85,9 @@ namespace System.IO
 
                 while (stackDir.Count > 0)
                 {
-                    string name = stackDir[stackDir.Count - 1];
-                    stackDir.RemoveAt(stackDir.Count - 1);
+                    int removalIndex = stackDir.Count - 1;
+                    string name = stackDir[removalIndex];
+                    stackDir.RemoveAt(removalIndex);
 
                     r = Interop.Kernel32.CreateDirectory(name, ref secAttrs);
                     if (!r && (firstError == 0))
