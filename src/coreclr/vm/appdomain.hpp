@@ -1803,7 +1803,7 @@ public:
     BOOL IsLoading(DomainAssembly *pFile, FileLoadLevel level);
     static FileLoadLevel GetThreadFileLoadLevel();
 
-    void LoadDomainFile(DomainAssembly *pFile,
+    void LoadDomainAssembly(DomainAssembly *pFile,
                         FileLoadLevel targetLevel);
 
     enum FindAssemblyOptions
@@ -1839,7 +1839,7 @@ public:
     // private:
     void LoadSystemAssemblies();
 
-    DomainAssembly *LoadDomainFile(FileLoadLock *pLock,
+    DomainAssembly *LoadDomainAssembly(FileLoadLock *pLock,
                                FileLoadLevel targetLevel);
 
     void TryIncrementalLoad(DomainAssembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);

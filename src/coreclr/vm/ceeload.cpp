@@ -443,7 +443,6 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
 //
 // szName is only used by dynamic modules, see ReflectionModule::Initialize
 //
-//
 void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 {
     CONTRACTL
@@ -464,14 +463,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_DictionaryCrst.Init(CrstDomainLocalBlock);
 
     AllocateMaps();
-
-    if (IsSystem() ||
-        (strcmp(m_pSimpleName, "System") == 0) ||
-        (strcmp(m_pSimpleName, "System.Core") == 0))
-    {
-        FastInterlockOr(&m_dwPersistedFlags, LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME);
-    }
-
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
@@ -3393,7 +3384,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
     if (pAssembly != NULL)
     {
         pDomainAssembly = pAssembly->GetDomainAssembly();
-        ::GetAppDomain()->LoadDomainFile(pDomainAssembly, FILE_LOADED);
+        ::GetAppDomain()->LoadDomainAssembly(pDomainAssembly, FILE_LOADED);
 
         RETURN pDomainAssembly;
     }

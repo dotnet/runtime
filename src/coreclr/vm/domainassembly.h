@@ -141,15 +141,15 @@ class DomainAssembly final
     }
 #endif
 
-    BOOL IsCollectible();
-    Assembly* GetAssembly();
-    ULONG HashIdentity();
-
 // ------------------------------------------------------------
 // Public API
 // ------------------------------------------------------------
 
-    void SetAssembly(Assembly* pAssembly);
+    Assembly* GetAssembly();
+    Module* GetModule();
+
+    BOOL IsCollectible();
+    ULONG HashIdentity();
 
     // ------------------------------------------------------------
     // Loading state checks
@@ -265,8 +265,6 @@ class DomainAssembly final
     BOOL Equals(PEAssembly *pPEAssembly) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pPEAssembly); }
 #endif // DACCESS_COMPILE
 
-    Module* GetModule();
-
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -303,7 +301,7 @@ class DomainAssembly final
         LPCSTR* szFileName, DWORD* dwLocation,
         BOOL fSkipRaiseResolveEvent);
 
- protected:
+ private:
     // ------------------------------------------------------------
     // Loader API
     // ------------------------------------------------------------
@@ -339,6 +337,7 @@ class DomainAssembly final
 
     // This should be used to permanently set the load to fail. Do not use with transient conditions
     void SetError(Exception *ex);
+    void SetAssembly(Assembly* pAssembly);
 
     void SetProfilerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|= PROFILER_NOTIFIED; }
     void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NOTIFIED; }

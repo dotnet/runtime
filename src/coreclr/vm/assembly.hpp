@@ -110,14 +110,6 @@ public:
         WRAPPER_NO_CONTRACT;
         m_pModule->SetIsTenured();
     }
-
-    // CAUTION: This should only be used as backout code if an assembly is unsuccessfully
-    //          added to the shared domain assembly map.
-    void UnsetIsTenured()
-    {
-        WRAPPER_NO_CONTRACT;
-        m_pModule->UnsetIsTenured();
-    }
 #endif // DACCESS_COMPILE
 
     //****************************************************************************************

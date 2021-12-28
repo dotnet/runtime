@@ -111,7 +111,7 @@ void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
     TRIGGERSGC ();
     if (IsLoading())
     {
-        this->GetAppDomain()->LoadDomainFile(this, targetLevel);
+        this->GetAppDomain()->LoadDomainAssembly(this, targetLevel);
 
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
@@ -137,7 +137,7 @@ void DomainAssembly::AttemptLoadLevel(FileLoadLevel targetLevel)
     CONTRACT_END;
 
     if (IsLoading())
-        this->GetAppDomain()->LoadDomainFile(this, targetLevel);
+        this->GetAppDomain()->LoadDomainAssembly(this, targetLevel);
     else
         ThrowIfError(targetLevel);
 

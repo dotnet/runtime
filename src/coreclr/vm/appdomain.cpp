@@ -2373,7 +2373,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
 
                 m_pDomainAssembly->ClearLoading();
 
-                CONSISTENCY_CHECK(m_dwRefCount >= 2); // Caller (LoadDomainFile) should have 1 refcount and m_pList should have another which was acquired in FileLoadLock::Create.
+                CONSISTENCY_CHECK(m_dwRefCount >= 2); // Caller (LoadDomainAssembly) should have 1 refcount and m_pList should have another which was acquired in FileLoadLock::Create.
 
                 m_level = (FileLoadLevel)level;
 
@@ -2658,7 +2658,7 @@ CHECK AppDomain::CheckCanExecuteManagedCode(MethodDesc* pMD)
 
 #endif // !DACCESS_COMPILE
 
-void AppDomain::LoadDomainFile(DomainAssembly *pFile,
+void AppDomain::LoadDomainAssembly(DomainAssembly *pFile,
                                FileLoadLevel targetLevel)
 {
     CONTRACTL
@@ -2698,7 +2698,7 @@ void AppDomain::LoadDomainFile(DomainAssembly *pFile,
 
         lock.Release();
 
-        LoadDomainFile(pLockEntry, targetLevel);
+        LoadDomainAssembly(pLockEntry, targetLevel);
     }
 
 #else // DACCESS_COMPILE
@@ -2875,12 +2875,12 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         if (result == NULL)
         {
-            // We pass our ref on fileLock to LoadDomainFile to release.
+            // We pass our ref on fileLock to LoadDomainAssembly to release.
 
             // Note that if we throw here, we will poison fileLock with an error condition,
             // so it will not be removed until app domain unload.  So there is no need
             // to release our ref count.
-            result = (DomainAssembly *)LoadDomainFile(fileLock, targetLevel);
+            result = (DomainAssembly *)LoadDomainAssembly(fileLock, targetLevel);
         }
         else
         {
@@ -2918,7 +2918,7 @@ struct LoadFileArgs
     DomainAssembly *result;
 };
 
-DomainAssembly *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetLevel)
+DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel)
 {
     CONTRACT(DomainAssembly *)
     {
