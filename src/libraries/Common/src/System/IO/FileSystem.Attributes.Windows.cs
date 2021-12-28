@@ -32,9 +32,22 @@ namespace System.IO
             lastError = FillAttributeInfo(path, ref data, returnErrorOnNotFound: true);
 
             return
-                (lastError == 0) &&
-                (data.dwFileAttributes != -1) &&
-                ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0);
+                lastError == 0 &&
+                data.dwFileAttributes != -1 &&
+                (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
+        }
+
+        private static (bool fileExists, bool dirExists) PathExists(string path, out int lastError)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            lastError = FillAttributeInfo(path, ref data, true);
+
+            bool b = lastError == 0 && data.dwFileAttributes != -1;
+            int dwDirectoryFlag = data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY;
+            bool dirExists = dwDirectoryFlag != 0;
+            bool fileExists = dwDirectoryFlag == 0;
+
+            return (fileExists, dirExists);
         }
 
         public static bool FileExists(string fullPath)
@@ -43,9 +56,9 @@ namespace System.IO
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
 
             return
-                (errorCode == 0) &&
-                (data.dwFileAttributes != -1) &&
-                ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
+                errorCode == 0 &&
+                data.dwFileAttributes != -1 &&
+                (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0;
         }
 
         /// <summary>
