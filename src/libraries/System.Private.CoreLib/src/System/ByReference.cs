@@ -16,14 +16,16 @@ namespace System
         private readonly IntPtr _value;
 #pragma warning restore CA1823, 169
 
+#pragma warning disable IDE0060
         [Intrinsic]
-        public ByReference(ref T _)
+        public ByReference(ref T value)
         {
             // Implemented as a JIT intrinsic - This default implementation is for
             // completeness and to provide a concrete error if called via reflection
             // or if intrinsic is missed.
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore IDE0060
 
 #pragma warning disable CA1822 // Mark members as static
         public ref T Value

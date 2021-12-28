@@ -15,10 +15,17 @@ namespace System
             }
         }
 
-        private static DateTime FromFileTimeLeapSecondsAware(ulong _) => default;
-        private static ulong ToFileTimeLeapSecondsAware(long _) => default;
+#pragma warning disable IDE0060
+
+        // Never called
+        private static DateTime FromFileTimeLeapSecondsAware(ulong fileTime) => default;
+
+        // Never called
+        private static ulong ToFileTimeLeapSecondsAware(long ticks) => default;
 
         // IsValidTimeWithLeapSeconds is not expected to be called at all for now on non-Windows platforms
-        internal static bool IsValidTimeWithLeapSeconds(int _, int _1, int _2, int _3, int _4, DateTimeKind _5) => false;
+        internal static bool IsValidTimeWithLeapSeconds(int year, int month, int day, int hour, int minute, DateTimeKind kind) => false;
+
+#pragma warning restore IDE0060
     }
 }
