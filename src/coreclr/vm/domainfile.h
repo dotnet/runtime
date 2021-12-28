@@ -78,8 +78,6 @@ class DomainFile
     DomainFile() {LIMITED_METHOD_CONTRACT;};
 #endif
 
-    virtual LoaderAllocator *GetLoaderAllocator();
-
     PTR_AppDomain GetAppDomain()
     {
         LIMITED_METHOD_CONTRACT;
@@ -130,7 +128,15 @@ class DomainFile
     }
 #endif
 
-    virtual BOOL IsAssembly() = 0;
+    BOOL IsAssembly()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return TRUE;
+    }
+
+    BOOL IsCollectible();
+    Assembly* GetAssembly();
+    ULONG HashIdentity();
 
     DomainAssembly *GetDomainAssembly();
 
@@ -202,7 +208,6 @@ class DomainFile
         return EnsureLoadLevel(FILE_LOAD_ALLOCATE);
     }
 
-
     void EnsureLibraryLoaded()
     {
         WRAPPER_NO_CONTRACT;
@@ -260,6 +265,23 @@ class DomainFile
     DynamicMethodTable* GetDynamicMethodTable();
 #endif
 
+    DomainAssembly* GetNextDomainAssemblyInSameALC()
+    {
+        return m_NextDomainAssemblyInSameALC;
+    }
+
+    void SetNextDomainAssemblyInSameALC(DomainAssembly* domainAssembly)
+    {
+        _ASSERTE(m_NextDomainAssemblyInSameALC == NULL);
+        m_NextDomainAssemblyInSameALC = domainAssembly;
+    }
+
+    LoaderAllocator* GetLoaderAllocator()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pLoaderAllocator;
+    }
+
  protected:
     // ------------------------------------------------------------
     // Loader API
@@ -270,7 +292,7 @@ class DomainFile
     friend class Module;
     friend class FileLoadLock;
 
-    DomainFile(AppDomain *pDomain, PEAssembly *pPEAssembly);
+    DomainFile(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
@@ -298,31 +320,21 @@ class DomainFile
     void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NOTIFIED; }
     void SetShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NEEDNOTIFICATION; }
 
-    // ------------------------------------------------------------
-    // Instance data
-    // ------------------------------------------------------------
-
-    PTR_AppDomain               m_pDomain;
-    PTR_PEAssembly              m_pPEAssembly;
-    PTR_Module                  m_pModule;
-    FileLoadLevel               m_level;
-    LOADERHANDLE                m_hExposedModuleObject;
-
     class ExInfo
     {
         enum
         {
-           ExType_ClrEx,
-           ExType_HR
+            ExType_ClrEx,
+            ExType_HR
         }
         m_type;
         union
         {
-            Exception                   *m_pEx;
+            Exception* m_pEx;
             HRESULT                     m_hr;
         };
 
-        public:
+    public:
         void Throw()
         {
             CONTRACTL
@@ -332,11 +344,11 @@ class DomainFile
                 MODE_ANY;
             }
             CONTRACTL_END;
-            if (m_type==ExType_ClrEx)
+            if (m_type == ExType_ClrEx)
             {
-                PAL_CPP_THROW(Exception *, m_pEx->DomainBoundClone());
+                PAL_CPP_THROW(Exception*, m_pEx->DomainBoundClone());
             }
-            if (m_type==ExType_HR)
+            if (m_type == ExType_HR)
                 ThrowHR(m_hr);
             _ASSERTE(!"Bad exception type");
             ThrowHR(E_UNEXPECTED);
@@ -344,28 +356,28 @@ class DomainFile
         ExInfo(Exception* pEx)
         {
             LIMITED_METHOD_CONTRACT;
-            m_type=ExType_ClrEx;
-            m_pEx=pEx;
+            m_type = ExType_ClrEx;
+            m_pEx = pEx;
         };
 
         void ConvertToHResult()
         {
             LIMITED_METHOD_CONTRACT;
-            if(m_type==ExType_HR)
+            if (m_type == ExType_HR)
                 return;
-            _ASSERTE(m_type==ExType_ClrEx);
-            HRESULT hr=m_pEx->GetHR();
+            _ASSERTE(m_type == ExType_ClrEx);
+            HRESULT hr = m_pEx->GetHR();
             delete m_pEx;
-            m_hr=hr;
-            m_type=ExType_HR;
+            m_hr = hr;
+            m_type = ExType_HR;
         };
         ~ExInfo()
         {
             LIMITED_METHOD_CONTRACT;
-            if (m_type==ExType_ClrEx)
+            if (m_type == ExType_ClrEx)
                 delete m_pEx;
         }
-    }* m_pError;
+    };
 
     void ReleaseManagedData()
     {
@@ -373,14 +385,38 @@ class DomainFile
             m_pError->ConvertToHResult();
     };
 
-    DWORD                    m_notifyflags;
+    // ------------------------------------------------------------
+    // Instance data
+    // ------------------------------------------------------------
+
+    PTR_Assembly                m_pAssembly;
+    PTR_AppDomain               m_pDomain;
+    PTR_PEAssembly              m_pPEAssembly;
+    PTR_Module                  m_pModule;
+
+    BOOL                        m_fCollectible;
+    DomainAssembly              *m_NextDomainAssemblyInSameALC;
+    PTR_LoaderAllocator         m_pLoaderAllocator;
+
+    FileLoadLevel               m_level;
+    LOADERHANDLE                m_hExposedModuleObject;
+
+    ExInfo                      *m_pError;
+
+    DWORD                       m_notifyflags;
     BOOL                        m_loading;
+
     // m_pDynamicMethodTable is used by the light code generation to allow method
     // generation on the fly. They are lazily created when/if a dynamic method is requested
     // for this specific module
     DynamicMethodTable          *m_pDynamicMethodTable;
-    class UMThunkHash *m_pUMThunkHash;
-    BOOL m_bDisableActivationCheck;
+    class UMThunkHash           *m_pUMThunkHash;
+    BOOL                        m_bDisableActivationCheck;
+
+    DebuggerAssemblyControlFlags            m_debuggerFlags;
+
+    BOOL                                    m_fDebuggerUnloadStarted;
+    BOOL                                    m_fHostAssemblyPublished;
 };
 
 // --------------------------------------------------------------------------------
@@ -396,19 +432,7 @@ public:
     // Public API
     // ------------------------------------------------------------
 
-    LoaderAllocator *GetLoaderAllocator()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLoaderAllocator;
-    }
-
     void SetAssembly(Assembly* pAssembly);
-
-    BOOL IsAssembly()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TRUE;
-    }
 
     OBJECTREF GetExposedAssemblyObjectIfExists()
     {
@@ -422,8 +446,6 @@ public:
     // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
     // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
     OBJECTREF GetExposedAssemblyObject();
-
-    Assembly* GetAssembly();
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -463,9 +485,6 @@ public:
     BOOL NotifyDebuggerLoad(int flags, BOOL attaching);
     void NotifyDebuggerUnload();
 
-    inline BOOL IsCollectible();
-
-
  private:
 
     // ------------------------------------------------------------
@@ -495,36 +514,13 @@ private:
     void UnregisterFromHostAssembly();
 #endif
 
- public:
-    ULONG HashIdentity();
-
+public:
     // ------------------------------------------------------------
     // Instance data
     // ------------------------------------------------------------
 
   private:
     LOADERHANDLE                            m_hExposedAssemblyObject;
-    PTR_Assembly                            m_pAssembly;
-    DebuggerAssemblyControlFlags            m_debuggerFlags;
-
-    ArrayList                               m_Modules;
-    BOOL                                    m_fDebuggerUnloadStarted;
-    BOOL                                    m_fCollectible;
-    Volatile<bool>                          m_fHostAssemblyPublished;
-    PTR_LoaderAllocator                     m_pLoaderAllocator;
-    DomainAssembly*                         m_NextDomainAssemblyInSameALC;
-
-  public:
-      DomainAssembly* GetNextDomainAssemblyInSameALC()
-      {
-          return m_NextDomainAssemblyInSameALC;
-      }
-
-      void SetNextDomainAssemblyInSameALC(DomainAssembly* domainAssembly)
-      {
-          _ASSERTE(m_NextDomainAssemblyInSameALC == NULL);
-          m_NextDomainAssemblyInSameALC = domainAssembly;
-      }
 };
 
 #endif  // _DOMAINFILE_H_

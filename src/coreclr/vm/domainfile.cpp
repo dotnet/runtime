@@ -30,17 +30,24 @@
 #endif // FEATURE_PERFMAP
 
 #ifndef DACCESS_COMPILE
-DomainFile::DomainFile(AppDomain *pDomain, PEAssembly *pPEAssembly)
-  : m_pDomain(pDomain),
+DomainFile::DomainFile(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
+    m_pAssembly(NULL),
+    m_pDomain(pDomain),
     m_pPEAssembly(pPEAssembly),
     m_pModule(NULL),
+    m_fCollectible(pLoaderAllocator->IsCollectible()),
+    m_NextDomainAssemblyInSameALC(NULL),
+    m_pLoaderAllocator(pLoaderAllocator),
     m_level(FILE_LOAD_CREATE),
     m_pError(NULL),
     m_notifyflags(NOT_NOTIFIED),
     m_loading(TRUE),
     m_pDynamicMethodTable(NULL),
     m_pUMThunkHash(NULL),
-    m_bDisableActivationCheck(FALSE)
+    m_bDisableActivationCheck(FALSE),
+    m_debuggerFlags(DACF_NONE),
+    m_fDebuggerUnloadStarted(FALSE),
+    m_fHostAssemblyPublished(FALSE)
 {
     CONTRACTL
     {
@@ -72,30 +79,6 @@ DomainFile::~DomainFile()
         m_pDynamicMethodTable->Destroy();
     delete m_pError;
 }
-
-#endif //!DACCESS_COMPILE
-
-LoaderAllocator * DomainFile::GetLoaderAllocator()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    Assembly *pAssembly = GetDomainAssembly()->GetAssembly();
-    if ((pAssembly != NULL) && (pAssembly->IsCollectible()))
-    {
-        return pAssembly->GetLoaderAllocator();
-    }
-    else
-    {
-        return this->GetAppDomain()->GetLoaderAllocator();
-    }
-}
-
-#ifndef DACCESS_COMPILE
 
 // Optimization intended for EnsureLoadLevel only
 #include <optsmallperfcritical.h>
@@ -678,14 +661,7 @@ void DomainFile::Activate()
 //--------------------------------------------------------------------------------
 
 DomainAssembly::DomainAssembly(AppDomain *pDomain, PEAssembly *pPEAssembly, LoaderAllocator *pLoaderAllocator)
-  : DomainFile(pDomain, pPEAssembly),
-    m_pAssembly(NULL),
-    m_debuggerFlags(DACF_NONE),
-    m_fDebuggerUnloadStarted(FALSE),
-    m_fCollectible(pLoaderAllocator->IsCollectible()),
-    m_fHostAssemblyPublished(false),
-    m_pLoaderAllocator(pLoaderAllocator),
-    m_NextDomainAssemblyInSameALC(NULL)
+  : DomainFile(pDomain, pPEAssembly, pLoaderAllocator)
 {
     CONTRACTL
     {
@@ -702,9 +678,6 @@ DomainAssembly::DomainAssembly(AppDomain *pDomain, PEAssembly *pPEAssembly, Load
     m_hExposedAssemblyObject = NULL;
 
     SetupDebuggingConfig();
-
-    // Add a Module iterator entry for this assembly.
-    IfFailThrow(m_Modules.Append(this));
 }
 
 DomainAssembly::~DomainAssembly()
@@ -1228,9 +1201,6 @@ DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     //sizeof(DomainAssembly) == 0xe0
     DAC_ENUM_VTHIS();
     DomainFile::EnumMemoryRegions(flags);
-
-    // For minidumps without full memory, we need to always be able to iterate over m_Modules.
-    m_Modules.EnumMemoryRegions(flags);
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {

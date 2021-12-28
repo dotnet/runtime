@@ -9,7 +9,7 @@ inline Module* DomainFile::GetModule()
     return m_pModule;
 }
 
-inline Assembly* DomainAssembly::GetAssembly()
+inline Assembly* DomainFile::GetAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     CONSISTENCY_CHECK(CheckLoaded());
@@ -17,13 +17,13 @@ inline Assembly* DomainAssembly::GetAssembly()
     return m_pAssembly;
 }
 
-inline ULONG DomainAssembly::HashIdentity()
+inline ULONG DomainFile::HashIdentity()
 {
     WRAPPER_NO_CONTRACT;
     return GetPEAssembly()->HashIdentity();
 }
 
-inline BOOL DomainAssembly::IsCollectible()
+inline BOOL DomainFile::IsCollectible()
 {
     LIMITED_METHOD_CONTRACT;
     return m_fCollectible;
