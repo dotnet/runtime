@@ -357,5 +357,120 @@ namespace DebuggerTests
                 label: "c#PointsField");
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task InspectValueTypeArrayLocalsStaticAsync(bool use_cfo)
+        {
+            int line = 157;
+            int col = 12;
+            string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
+            string method_name = "MoveNext"; // BUG: this should be ValueTypeLocalsAsync
+            int frame_idx = 0;
+
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
+
+            await SetBreakpoint(debugger_test_loc, line, col);
+
+            var eval_expr = "window.setTimeout(function() { invoke_static_method_async (" +
+                $"'{entry_method_name}', false" // *false* here keeps us only in the static method
+                +
+                "); }, 1);";
+
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, method_name);
+            var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
+            await CheckProps(frame_locals, new
+            {
+                call_other = TBool(false),
+                gvclass_arr = TArray("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[]", "DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[2]"),
+                gvclass_arr_empty = TArray("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[]", "DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[0]"),
+                gvclass_arr_null = TObject("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>[]", is_null: true),
+                gvclass = TValueType("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>"),
+                // BUG: this shouldn't be null!
+                points = TObject("DebuggerTests.Point[]", is_null: true)
+            }, "ValueTypeLocalsAsync#locals");
+
+            var local_var_name_prefix = "gvclass";
+            await CompareObjectPropertiesFor(frame_locals, local_var_name_prefix, new
+            {
+                Id = TString(null),
+                Color = TEnum("DebuggerTests.RGB", "Red"),
+                Value = TPoint(0, 0, null, "Red")
+            });
+
+            await CompareObjectPropertiesFor(frame_locals, $"{local_var_name_prefix}_arr",
+                new[]
+                {
+                        new
+                        {
+                            Id = TString("gvclass_arr#1#Id"),
+                                Color = TEnum("DebuggerTests.RGB", "Red"),
+                                Value = TPoint(100, 200, "gvclass_arr#1#Value#Id", "Red")
+                        },
+                        new
+                        {
+                            Id = TString("gvclass_arr#2#Id"),
+                                Color = TEnum("DebuggerTests.RGB", "Blue"),
+                                Value = TPoint(10, 20, "gvclass_arr#2#Value#Id", "Green")
+                        }
+                }
+            );
+            await CompareObjectPropertiesFor(frame_locals, $"{local_var_name_prefix}_arr_empty",
+                new object[0]);
+        }
+
+        // TODO: Check previous frame too
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task InspectValueTypeArrayLocalsInstanceAsync(bool use_cfo)
+        {
+            //Collect events
+            int line = 170;
+            int col = 12;
+            string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
+            int frame_idx = 0;
+
+            UseCallFunctionOnBeforeGetProperties = use_cfo;
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
+
+            await SetBreakpoint(debugger_test_loc, line, col);
+
+            var eval_expr = "window.setTimeout(function() { invoke_static_method_async (" +
+                $"'{entry_method_name}', true" +
+                "); }, 1);";
+
+            // BUG: Should be InspectValueTypeArrayLocalsInstanceAsync
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, "MoveNext");
+
+            var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
+            await CheckProps(frame_locals, new
+            {
+                t1 = TObject("DebuggerTests.SimpleGenericStruct<DebuggerTests.Point>"),
+                @this = TObject("DebuggerTests.ArrayTestsClass"),
+                point_arr = TArray("DebuggerTests.Point[]", "DebuggerTests.Point[2]"),
+                point = TValueType("DebuggerTests.Point")
+            }, "InspectValueTypeArrayLocalsInstanceAsync#locals");
+
+            await CompareObjectPropertiesFor(frame_locals, "t1",
+                new
+                {
+                    Id = TString("gvclass_arr#1#Id"),
+                    Color = TEnum("DebuggerTests.RGB", "Red"),
+                    Value = TPoint(100, 200, "gvclass_arr#1#Value#Id", "Red")
+                });
+
+            await CompareObjectPropertiesFor(frame_locals, "point_arr",
+                new[]
+                {
+                        TPoint(5, -2, "point_arr#Id#0", "Red"),
+                            TPoint(123, 0, "point_arr#Id#1", "Blue"),
+                }
+            );
+
+            await CompareObjectPropertiesFor(frame_locals, "point",
+                TPoint(45, 51, "point#Id", "Green"));
+        }
     }
 }
