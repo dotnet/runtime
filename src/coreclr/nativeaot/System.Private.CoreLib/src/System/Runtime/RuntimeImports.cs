@@ -28,7 +28,7 @@ namespace System.Runtime
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        internal static extern ulong PalGetTickCount64();
+        internal static extern ulong RhpGetTickCount64();
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr RhpGetCurrentThread();

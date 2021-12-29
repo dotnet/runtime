@@ -167,6 +167,6 @@ namespace System
         [DoesNotReturn]
         private static void ExitRaw() => Interop.Sys.Exit(s_latchedExitCode);
 
-        public static long TickCount64 => (long)RuntimeImports.PalGetTickCount64();
+        public static long TickCount64 => (long)RuntimeImports.RhpGetTickCount64();
     }
 }
