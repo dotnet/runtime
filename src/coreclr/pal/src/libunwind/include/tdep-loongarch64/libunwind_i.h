@@ -229,7 +229,7 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 #define tdep_get_as_arg(c)              ((c)->dwarf.as_arg)
 #define tdep_get_ip(c)                  ((c)->dwarf.ip)
 
-extern int tdep_init_done;
+extern atomic_bool tdep_init_done;
 #define tdep_init_mem_validate          UNW_OBJ(init_mem_validate)
 
 extern void tdep_init (void);
