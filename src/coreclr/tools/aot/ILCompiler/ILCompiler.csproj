@@ -47,7 +47,7 @@
       <Version>$(ObjWriterVersion)</Version>
     </PackageReference>
 
-    <Content Include="$(NuGetPackageRoot)runtime.$(ObjWriterRid).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(RuntimeIdentifier)\native\$(LibPrefix)objwriter$(LibSuffix)">
+    <Content Include="$(NuGetPackageRoot)runtime.$(ObjWriterRid).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(ObjWriterRid)\native\$(LibPrefix)objwriter$(LibSuffix)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
       <Pack>false</Pack>
