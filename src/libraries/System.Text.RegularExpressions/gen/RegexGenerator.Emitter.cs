@@ -3408,8 +3408,6 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.Testref => $"Conditionally match {(node.ChildCount() == 1 ? "an expression" : "one of two expressions")} depending on whether the {DescribeNonNegative(node.M)} capture group matched.",
                 RegexNode.UpdateBumpalong => $"Advance the next matching position.",
                 _ => $"Unknown node type {node.Type}",
-
-                // Concatenation
             };
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
