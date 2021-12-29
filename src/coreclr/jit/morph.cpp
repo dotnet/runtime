@@ -13435,28 +13435,6 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
         std::swap(tree->gtOp1, tree->gtOp2);
     }
 
-    if (!optValnumCSE_phase)
-    {
-        GenTree* optimizedTree = nullptr;
-        if (tree->OperIs(GT_ADD))
-        {
-            optimizedTree = fgOptimizeAddition(tree);
-        }
-        else if (tree->OperIs(GT_MUL))
-        {
-            optimizedTree = fgOptimizeMultiply(tree);
-        }
-        else if (tree->OperIs(GT_AND))
-        {
-            optimizedTree = fgOptimizeBitwiseAnd(tree);
-        }
-
-        if (optimizedTree != nullptr)
-        {
-            return optimizedTree;
-        }
-    }
-
     if (fgOperIsBitwiseRotationRoot(tree->OperGet()))
     {
         GenTree* rotationTree = fgRecognizeAndMorphBitwiseRotation(tree);
@@ -13477,7 +13455,36 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
 
     if (varTypeIsIntegralOrI(tree))
     {
+        genTreeOps oldTreeOper   = tree->OperGet();
         GenTreeOp* optimizedTree = fgMorphCommutative(tree->AsOp());
+        if (optimizedTree != nullptr)
+        {
+            if (!optimizedTree->OperIs(oldTreeOper))
+            {
+                // "optimizedTree" could end up being a COMMA.
+                return optimizedTree;
+            }
+
+            tree = optimizedTree;
+        }
+    }
+
+    if (!optValnumCSE_phase)
+    {
+        GenTree* optimizedTree = nullptr;
+        if (tree->OperIs(GT_ADD))
+        {
+            optimizedTree = fgOptimizeAddition(tree);
+        }
+        else if (tree->OperIs(GT_MUL))
+        {
+            optimizedTree = fgOptimizeMultiply(tree);
+        }
+        else if (tree->OperIs(GT_AND))
+        {
+            optimizedTree = fgOptimizeBitwiseAnd(tree);
+        }
+
         if (optimizedTree != nullptr)
         {
             return optimizedTree;
