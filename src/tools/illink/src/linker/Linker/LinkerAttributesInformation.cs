@@ -83,7 +83,7 @@ namespace Mono.Linker
 
 		public bool HasAttribute<T> () where T : Attribute
 		{
-			return _linkerAttributes != null && TryFindAttributeList (_linkerAttributes, typeof(T), out _);
+			return _linkerAttributes != null && TryFindAttributeList (_linkerAttributes, typeof (T), out _);
 		}
 
 		public IEnumerable<T> GetAttributes<T> () where T : Attribute
@@ -91,7 +91,7 @@ namespace Mono.Linker
 			if (_linkerAttributes == null)
 				return Enumerable.Empty<T> ();
 
-			if (!TryFindAttributeList (_linkerAttributes, typeof (T), out var attributeList)) 
+			if (!TryFindAttributeList (_linkerAttributes, typeof (T), out var attributeList))
 				return Enumerable.Empty<T> ();
 
 			if (attributeList.Count == 0)
