@@ -18,7 +18,9 @@ namespace System.IO
             : base(changeType, directory, name)
         {
             _oldName = oldName;
-            _oldFullPath = Path.GetFullPath(Combine(directory, oldName));
+
+            string joinedPath = Path.Join(directory, oldName);
+            _oldFullPath = string.IsNullOrWhiteSpace(joinedPath) ? string.Empty : Path.GetFullPath(joinedPath);
         }
 
         /// <devdoc>

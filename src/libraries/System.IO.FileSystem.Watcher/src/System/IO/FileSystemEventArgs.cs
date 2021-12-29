@@ -19,29 +19,9 @@ namespace System.IO
         {
             _changeType = changeType;
             _name = name;
-            _fullPath = Path.GetFullPath(Combine(directory, name));
-        }
 
-        /// <summary>Combines a directory path and a relative file name into a single path.</summary>
-        /// <param name="directoryPath">The directory path.</param>
-        /// <param name="name">The file name.</param>
-        /// <returns>The combined name.</returns>
-        /// <remarks>
-        /// This is like Path.Combine, except without argument validation,
-        /// and a separator is used even if the name argument is empty.
-        /// </remarks>
-        internal static string Combine(string directoryPath, string? name)
-        {
-            bool hasSeparator = false;
-            if (directoryPath.Length > 0)
-            {
-                char c = directoryPath[directoryPath.Length - 1];
-                hasSeparator = c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;
-            }
-
-            return hasSeparator ?
-                directoryPath + name :
-                directoryPath + Path.DirectorySeparatorChar + name;
+            string joinedPath = Path.Join(directory, name);
+            _fullPath = string.IsNullOrWhiteSpace(joinedPath) ? string.Empty : Path.GetFullPath(joinedPath);
         }
 
         /// <devdoc>
