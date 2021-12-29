@@ -460,11 +460,6 @@ namespace System.Net.Security
                  where TIOAdapter : IReadWriteAdapter
         {
             int readBytes = await FillHandshakeBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-            if (readBytes == 0)
-            {
-                throw new IOException(SR.net_io_eof);
-            }
-
             if (_framing == Framing.Unified || _framing == Framing.Unknown)
             {
                 _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
@@ -1083,7 +1078,7 @@ namespace System.Net.Security
                 int bytesRead = t.Result;
                 if (bytesRead == 0)
                 {
-                    return new ValueTask<int>(0);
+                    throw new IOException(SR.net_io_eof);
                 }
 
                 _handshakeBuffer.Commit(bytesRead);
