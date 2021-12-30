@@ -40,9 +40,9 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
-      <NativeLibrary Condition="$(NativeLib) == ''" Include="$(IlcPath)/sdk/libbootstrapper.a" />
-      <NativeLibrary Condition="$(NativeLib) != ''" Include="$(IlcPath)/sdk/libbootstrapperdll.a" />
-      <NativeLibrary Include="$(IlcPath)/sdk/$(FullRuntimeName).a" />
+      <NativeLibrary Condition="$(NativeLib) == ''" Include="$(IlcSdkPath)libbootstrapper.a" />
+      <NativeLibrary Condition="$(NativeLib) != ''" Include="$(IlcSdkPath)libbootstrapperdll.a" />
+      <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
     </ItemGroup>
 
     <ItemGroup>
@@ -57,7 +57,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup>
       <DirectPInvoke Include="@(NetCoreAppNativeLibrary->'lib%(Identity)')" />
       <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
-        <EscapedPath>$(IlcPath)/framework/lib%(Identity).a</EscapedPath>
+        <EscapedPath>$(IlcFrameworkPath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
     </ItemGroup>
