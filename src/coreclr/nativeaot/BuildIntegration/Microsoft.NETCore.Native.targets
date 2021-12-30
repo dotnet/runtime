@@ -20,7 +20,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
     <IlcBuildTasksPath Condition="'$(IlcBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\netstandard\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
-    <IlcHostPath Condition="'$(IlcPath)' != ''">$(IlcPath)</IlcHostPath>
+    <IlcToolsPath Condition="'$(IlcPath)' != '' and '$(IlcToolsPath)' == ''">$(IlcPath)\tools\</IlcToolsPath>
+    <IlcSdkPath Condition="'$(IlcPath)' != '' and '$(IlcSdkPath)' == ''">$(IlcPath)\sdk\</IlcSdkPath>
+    <IlcFrameworkPath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkPath)' == ''">$(IlcPath)\framework\</IlcFrameworkPath>
+    <IlcMibcPath Condition="'$(IlcPath)' != '' and '$(IlcMibcPath)' == ''">$(IlcPath)\mibc\</IlcMibcPath>
     <TargetOS Condition="'$([MSBuild]::IsOSPlatform(Windows))' == 'true'">windows</TargetOS>
     <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
@@ -102,13 +105,13 @@ The .NET Foundation licenses this file to you under the MIT license.
   </ItemGroup>
 
   <ItemGroup>
-    <_ExcludedPrivateSdkAssemblies Include="$(IlcPath)\sdk\System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-    <PrivateSdkAssemblies Include="$(IlcPath)\sdk\*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+    <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
+    <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
 
     <!-- Exclude unmanaged dlls -->
-    <FrameworkAssemblies Include="$(IlcPath)\framework\*.dll" Exclude="$(IlcPath)\framework\*.Native.dll;$(IlcPath)\framework\msquic.dll" />
+    <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
 
-    <MibcFile Include="$(IlcPath)\mibc\*.mibc" Condition="'$(IlcPgoOptimize)' == 'true'" />
+    <MibcFile Include="$(IlcMibcPath)*.mibc" Condition="'$(IlcPgoOptimize)' == 'true'" />
 
     <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
     <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
@@ -134,19 +137,21 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)" BeforeTargets="Publish">
     <PropertyGroup>
       <!-- Define paths used in build targets to point to the runtime-specific ILCompiler implementation -->
-      <IlcHostPath Condition="'$(IlcPath)' == ''">$(IlcHostPackagePath)</IlcHostPath>
-      <IlcPath Condition="'$(IlcPath)' == ''">$(RuntimePackagePath)</IlcPath>
+      <IlcToolsPath Condition="'$(IlcToolsPath)' == ''">$(IlcHostPackagePath)\tools\</IlcToolsPath>
+      <IlcSdkPath Condition="'$(IlcSdkPath)' == ''">$(RuntimePackagePath)\sdk\</IlcSdkPath>
+      <IlcFrameworkPath Condition="'$(IlcFrameworkPath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkPath>
+      <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 
-    <!-- If running from a package these values need to be set again with the resolved IlcPath -->
+    <!-- If running from a package these values need to be set again with the resolved IlcXYZPath -->
     <ItemGroup>
-      <_ExcludedPrivateSdkAssemblies Include="$(IlcPath)\sdk\System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-      <PrivateSdkAssemblies Include="$(IlcPath)\sdk\*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+      <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
+      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
 
       <!-- Exclude unmanaged dlls -->
-      <FrameworkAssemblies Include="$(IlcPath)\framework\*.dll" Exclude="$(IlcPath)\framework\*.Native.dll;$(IlcPath)\framework\msquic.dll" />
+      <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
 
-      <MibcFile Include="$(IlcPath)\mibc\*.mibc" Condition="'$(IlcPgoOptimize)' == 'true'" />
+      <MibcFile Include="$(IlcMibcPath)*.mibc" Condition="'$(IlcPgoOptimize)' == 'true'" />
 
       <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
       <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
@@ -284,7 +289,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
     <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeCoreRT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
-    <Exec Command="&quot;$(IlcHostPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
+    <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
 
     <!-- Trick ILLinker into not actually running -->
     <MakeDir Directories="$(IntermediateLinkDir)" />
