@@ -89,7 +89,7 @@ public:
         return PTR_PEAssembly(m_pPEAssembly);
     }
 
-    Assembly* DomainAssembly::GetAssembly()
+    Assembly* GetAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         CONSISTENCY_CHECK(CheckLoaded());
@@ -97,7 +97,7 @@ public:
         return m_pAssembly;
     }
 
-    Module* DomainAssembly::GetModule()
+    Module* GetModule()
     {
         LIMITED_METHOD_CONTRACT;
         CONSISTENCY_CHECK(CheckLoaded());
@@ -155,13 +155,13 @@ public:
     }
 #endif
 
-    BOOL DomainAssembly::IsCollectible()
+    BOOL IsCollectible()
     {
         LIMITED_METHOD_CONTRACT;
         return m_fCollectible;
     }
 
-    ULONG DomainAssembly::HashIdentity()
+    ULONG HashIdentity()
     {
         WRAPPER_NO_CONTRACT;
         return GetPEAssembly()->HashIdentity();
@@ -338,7 +338,7 @@ public:
     void AddDependencies();
     void PreLoadLibrary();
     void LoadLibrary();
-    void PostLoadLibrary();
+    void PostLoadLibrary(); 
     void EagerFixups();
     void VtableFixups();
     void DeliverSyncEvents();
