@@ -307,7 +307,6 @@ public:
         return m_pLoaderAllocator;
     }
 
-
 // ------------------------------------------------------------
 // Resource access
 // ------------------------------------------------------------
@@ -370,7 +369,7 @@ public:
         union
         {
             Exception* m_pEx;
-            HRESULT                     m_hr;
+            HRESULT    m_hr;
         };
 
     public:
@@ -392,6 +391,7 @@ public:
             _ASSERTE(!"Bad exception type");
             ThrowHR(E_UNEXPECTED);
         };
+
         ExInfo(Exception* pEx)
         {
             LIMITED_METHOD_CONTRACT;
@@ -399,17 +399,6 @@ public:
             m_pEx = pEx;
         };
 
-        void ConvertToHResult()
-        {
-            LIMITED_METHOD_CONTRACT;
-            if (m_type == ExType_HR)
-                return;
-            _ASSERTE(m_type == ExType_ClrEx);
-            HRESULT hr = m_pEx->GetHR();
-            delete m_pEx;
-            m_hr = hr;
-            m_type = ExType_HR;
-        };
         ~ExInfo()
         {
             LIMITED_METHOD_CONTRACT;
@@ -444,7 +433,7 @@ public:
     BOOL NotifyDebuggerLoad(int flags, BOOL attaching);
     void NotifyDebuggerUnload();
 
-protected:
+private:
     // ------------------------------------------------------------
     // Instance data
     // ------------------------------------------------------------
@@ -455,30 +444,29 @@ protected:
     PTR_Module                  m_pModule;
 
     BOOL                        m_fCollectible;
-    DomainAssembly              *m_NextDomainAssemblyInSameALC;
+    DomainAssembly*             m_NextDomainAssemblyInSameALC;
     PTR_LoaderAllocator         m_pLoaderAllocator;
 
     FileLoadLevel               m_level;
+    BOOL                        m_loading;
 
     LOADERHANDLE                m_hExposedModuleObject;
     LOADERHANDLE                m_hExposedAssemblyObject;
 
-    ExInfo                      *m_pError;
+    ExInfo*                     m_pError;
 
-    DWORD                       m_notifyflags;
-    BOOL                        m_loading;
+    BOOL                        m_bDisableActivationCheck;
+    BOOL                        m_fHostAssemblyPublished;
 
     // m_pDynamicMethodTable is used by the light code generation to allow method
     // generation on the fly. They are lazily created when/if a dynamic method is requested
     // for this specific module
-    DynamicMethodTable          *m_pDynamicMethodTable;
-    class UMThunkHash           *m_pUMThunkHash;
-    BOOL                        m_bDisableActivationCheck;
+    DynamicMethodTable*         m_pDynamicMethodTable;
 
-    DebuggerAssemblyControlFlags            m_debuggerFlags;
 
-    BOOL                                    m_fDebuggerUnloadStarted;
-    BOOL                                    m_fHostAssemblyPublished;
+    DebuggerAssemblyControlFlags    m_debuggerFlags;
+    DWORD                       m_notifyflags;
+    BOOL                        m_fDebuggerUnloadStarted;
 };
 
 #endif  // _DOMAINASSEMBLY_H_

@@ -39,15 +39,16 @@ DomainAssembly::DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, Load
     m_NextDomainAssemblyInSameALC(NULL),
     m_pLoaderAllocator(pLoaderAllocator),
     m_level(FILE_LOAD_CREATE),
-    m_pError(NULL),
-    m_notifyflags(NOT_NOTIFIED),
     m_loading(TRUE),
-    m_pDynamicMethodTable(NULL),
-    m_pUMThunkHash(NULL),
+    m_hExposedModuleObject(NULL),
+    m_hExposedAssemblyObject(NULL),
+    m_pError(NULL),
     m_bDisableActivationCheck(FALSE),
+    m_fHostAssemblyPublished(FALSE),
+    m_pDynamicMethodTable(NULL),
     m_debuggerFlags(DACF_NONE),
-    m_fDebuggerUnloadStarted(FALSE),
-    m_fHostAssemblyPublished(FALSE)
+    m_notifyflags(NOT_NOTIFIED),
+    m_fDebuggerUnloadStarted(FALSE)
 {
     CONTRACTL
     {
@@ -57,9 +58,6 @@ DomainAssembly::DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, Load
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    m_hExposedModuleObject = NULL;
-    m_hExposedAssemblyObject = NULL;
 
     pPEAssembly->AddRef();
     pPEAssembly->ValidateForExecution();
@@ -620,10 +618,6 @@ void DomainAssembly::Activate()
     _ASSERTE(GetModule() == GetAssembly()->GetModule());
     GetModule()->IsRuntimeWrapExceptions();
 
-    // Now activate any dependencies.
-    // This will typically cause reentrancy of course.
-
-
     //
     // Now call the module constructor.  Note that this might cause reentrancy;
     // this is fine and will be handled by the class cctor mechanism.
@@ -642,7 +636,6 @@ void DomainAssembly::Activate()
         m_pModule->ExpandAll();
     }
 #endif //_DEBUG
-
 
     RETURN;
 }
@@ -854,15 +847,6 @@ void DomainAssembly::DeliverSyncEvents()
 
     GetModule()->NotifyEtwLoadFinished(S_OK);
 
-    // We may be notified from inside the loader lock if we are delivering IJW events, so keep track.
-#ifdef PROFILING_SUPPORTED
-    if (!IsProfilerNotified())
-    {
-        SetProfilerNotified();
-        GetModule()->NotifyProfilerLoadFinished(S_OK);
-    }
-
-#endif
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();
     if (!IsDebuggerNotified())
