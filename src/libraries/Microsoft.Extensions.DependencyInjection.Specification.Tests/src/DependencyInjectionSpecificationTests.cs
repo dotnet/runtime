@@ -168,31 +168,45 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             // Arrange
             var collection = new TestServiceCollection();
+            // When resolved from the root service provider / root scope, the scoped IFakeService effectively
+            // also becomes a singleton.
+            collection.AddScoped<IFakeService, FakeService>();
             collection.AddSingleton<ClassWithServiceProvider>();
             var provider = CreateServiceProvider(collection);
 
             // Act
-            IServiceProvider scopedSp1 = null;
-            IServiceProvider scopedSp2 = null;
-            ClassWithServiceProvider instance1 = null;
-            ClassWithServiceProvider instance2 = null;
+            IFakeService fakeServiceFromScope1 = null;
+            IFakeService scopedFakeServiceFromScope1 = null;
+            IFakeService fakeServiceFromScope2 = null;
+            IFakeService scopedFakeServiceFromScope2 = null;
 
             using (var scope1 = provider.CreateScope())
             {
-                scopedSp1 = scope1.ServiceProvider;
-                instance1 = scope1.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                scopedFakeServiceFromScope1 = scope1.ServiceProvider.GetRequiredService<IFakeService>();
+                var serviceWithProvider = scope1.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                // resolved through singleton, the fake service should be scoped to root scope
+                fakeServiceFromScope1 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
             }
 
             using (var scope2 = provider.CreateScope())
             {
-                scopedSp2 = scope2.ServiceProvider;
-                instance2 = scope2.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                scopedFakeServiceFromScope2 = scope2.ServiceProvider.GetRequiredService<IFakeService>();
+                var serviceWithProvider = scope2.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                // resolved through singleton, the fake service should be scoped to root scope
+                fakeServiceFromScope2 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
             }
 
+            IFakeService fakeServiceFromRootScope = provider.GetRequiredService<IFakeService>();
+
             // Assert
-            Assert.Same(instance1.ServiceProvider, instance2.ServiceProvider);
-            Assert.NotSame(instance1.ServiceProvider, scopedSp1);
-            Assert.NotSame(instance2.ServiceProvider, scopedSp2);
+            // resolved through singleton should be the same and same with resolved from root scope
+            Assert.Same(fakeServiceFromScope1, fakeServiceFromScope2);
+            Assert.Same(fakeServiceFromRootScope, fakeServiceFromScope1);
+            Assert.Same(fakeServiceFromRootScope, fakeServiceFromScope2);
+            // resolved through scope should be different from corresponding scoped instance
+            Assert.NotSame(fakeServiceFromScope1, scopedFakeServiceFromScope1);
+            Assert.NotSame(fakeServiceFromScope2, scopedFakeServiceFromScope2);
+            Assert.NotSame(scopedFakeServiceFromScope1, scopedFakeServiceFromScope2);
         }
 
         [Fact]
