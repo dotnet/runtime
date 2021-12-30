@@ -340,6 +340,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             try
             {
+                // this can happen when the fullPath matches the root directory path
+                // but the root path is always created with a trailing slash
+                // this was masked by a side effect (bug) in RenamedEventArgs that was appending the trailing slash to fullPath value
+                // that behavior was changed with the fix for https://github.com/dotnet/runtime/issues/62606
+                if (fullPath.Length < _root.Length)
+                {
+                    return;
+                }
+
                 var fileSystemInfo = new FileInfo(fullPath);
                 if (FileSystemInfoHelper.IsExcluded(fileSystemInfo, _filters))
                 {
