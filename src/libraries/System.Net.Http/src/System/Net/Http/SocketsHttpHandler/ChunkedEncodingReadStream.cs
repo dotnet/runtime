@@ -21,18 +21,21 @@ namespace System.Net.Http
             /// infinite chunk length is sent.  This value is arbitrary and can be changed as needed.
             /// </remarks>
             private const int MaxChunkBytesAllowed = 16 * 1024;
-            /// <summary>How long a trailing header can be.  This value is arbitrary and can be changed as needed.</summary>
-            private const int MaxTrailingHeaderLength = 16 * 1024;
             /// <summary>The number of bytes remaining in the chunk.</summary>
             private ulong _chunkBytesRemaining;
             /// <summary>The current state of the parsing state machine for the chunked response.</summary>
             private ParsingState _state = ParsingState.ExpectChunkHeader;
             private readonly HttpResponseMessage _response;
+            private readonly int _trailingHeaderBytesAllowed;
 
             public ChunkedEncodingReadStream(HttpConnection connection, HttpResponseMessage response) : base(connection)
             {
                 Debug.Assert(response != null, "The HttpResponseMessage cannot be null.");
                 _response = response;
+
+                // _allowedReadLineBytes is reset when reading chunk indicators.
+                // save the original here, which will be the total header bytes minus already received headers.
+                _trailingHeaderBytesAllowed = connection._allowedReadLineBytes;
             }
 
             public override int Read(Span<byte> buffer)
@@ -361,6 +364,7 @@ namespace System.Net.Http
                             }
                             else
                             {
+                                _connection._allowedReadLineBytes = _trailingHeaderBytesAllowed;
                                 _state = ParsingState.ConsumeTrailers;
                                 goto case ParsingState.ConsumeTrailers;
                             }
@@ -406,39 +410,24 @@ namespace System.Net.Http
                         case ParsingState.ConsumeTrailers:
                             Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
-                            while (true)
+                            // Consume receive buffer. If the stream is disposed, pass a null response to avoid
+                            // processing headers for a connection returned to the pool.
+
+                            if (_connection!.ParseHeaders(IsDisposed ? null : _response, isFromTrailer: true))
                             {
-                                _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
-                                if (!_connection.TryReadNextLine(out currentLine))
-                                {
-                                    break;
-                                }
+                                // Dispose of the registration and then check whether cancellation has been
+                                // requested. This is necessary to make determinstic a race condition between
+                                // cancellation being requested and unregistering from the token.  Otherwise,
+                                // it's possible cancellation could be requested just before we unregister and
+                                // we then return a connection to the pool that has been or will be disposed
+                                // (e.g. if a timer is used and has already queued its callback but the
+                                // callback hasn't yet run).
+                                cancellationRegistration.Dispose();
+                                CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
-                                if (currentLine.IsEmpty)
-                                {
-                                    // Dispose of the registration and then check whether cancellation has been
-                                    // requested. This is necessary to make determinstic a race condition between
-                                    // cancellation being requested and unregistering from the token.  Otherwise,
-                                    // it's possible cancellation could be requested just before we unregister and
-                                    // we then return a connection to the pool that has been or will be disposed
-                                    // (e.g. if a timer is used and has already queued its callback but the
-                                    // callback hasn't yet run).
-                                    cancellationRegistration.Dispose();
-                                    CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
-
-                                    _state = ParsingState.Done;
-                                    _connection.CompleteResponse();
-                                    _connection = null;
-
-                                    break;
-                                }
-                                // Parse the trailer.
-                                else if (!IsDisposed)
-                                {
-                                    // Make sure that we don't inadvertently consume trailing headers
-                                    // while draining a connection that's being returned back to the pool.
-                                    HttpConnection.ParseHeaderNameValue(_connection, currentLine, _response, isFromTrailer: true);
-                                }
+                                _state = ParsingState.Done;
+                                _connection.CompleteResponse();
+                                _connection = null;
                             }
 
                             return default;

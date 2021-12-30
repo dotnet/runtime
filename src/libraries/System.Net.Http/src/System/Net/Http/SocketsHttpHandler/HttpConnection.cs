@@ -10,7 +10,10 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -57,7 +60,7 @@ namespace System.Net.Http
 
         private ValueTask<int>? _readAheadTask;
         private int _readAheadTaskLock; // 0 == free, 1 == held
-        private byte[] _readBuffer;
+        private SimdPaddedArray _readBuffer;
         private int _readOffset;
         private int _readLength;
 
@@ -88,7 +91,7 @@ namespace System.Net.Http
             _transportContext = transportContext;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
-            _readBuffer = new byte[InitialReadBufferSize];
+            _readBuffer = new SimdPaddedArray(InitialReadBufferSize);
 
             _weakThisRef = new WeakReference<HttpConnection>(this);
 
@@ -179,7 +182,7 @@ namespace System.Net.Http
                 try
                 {
 #pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
-                    _readAheadTask = _stream.ReadAsync(new Memory<byte>(_readBuffer));
+                    _readAheadTask = _stream.ReadAsync(_readBuffer.AsMemory());
 #pragma warning restore CA2012
                     return !_readAheadTask.Value.IsCompleted;
                 }
@@ -219,7 +222,7 @@ namespace System.Net.Http
                 await _stream.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
 
                 // We don't know for sure that the stream actually has data available, so we need to issue a real read now.
-                return await _stream.ReadAsync(new Memory<byte>(_readBuffer)).ConfigureAwait(false);
+                return await _stream.ReadAsync(_readBuffer.AsMemory()).ConfigureAwait(false);
             }
         }
 
@@ -246,7 +249,7 @@ namespace System.Net.Http
 
         private int ReadBufferSize => _readBuffer.Length;
 
-        private ReadOnlyMemory<byte> RemainingBuffer => new ReadOnlyMemory<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
+        private ReadOnlyMemory<byte> RemainingBuffer => _readBuffer.AsMemory(_readOffset, _readLength - _readOffset);
 
         private void ConsumeFromRemainingBuffer(int bytesToConsume)
         {
@@ -637,14 +640,9 @@ namespace System.Net.Http
                 }
 
                 // Parse the response headers.  Logic after this point depends on being able to examine headers in the response object.
-                while (true)
+                while (!ParseHeaders(response, isFromTrailer: false))
                 {
-                    ReadOnlyMemory<byte> line = await ReadNextResponseHeaderLineAsync(async, foldedHeadersAllowed: true).ConfigureAwait(false);
-                    if (IsLineEmpty(line))
-                    {
-                        break;
-                    }
-                    ParseHeaderNameValue(this, line.Span, response, isFromTrailer: false);
+                    await FillAsync(async).ConfigureAwait(false);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
@@ -1027,69 +1025,321 @@ namespace System.Net.Http
             }
         }
 
-        private static void ParseHeaderNameValue(HttpConnection connection, ReadOnlySpan<byte> line, HttpResponseMessage response, bool isFromTrailer)
+        internal bool ParseHeaders(HttpResponseMessage? response, bool isFromTrailer)
         {
-            Debug.Assert(line.Length > 0);
+            Span<byte> buffer = _readBuffer.AsSpan(_readOffset, _readLength - _readOffset);
 
-            int pos = 0;
-            while (line[pos] != (byte)':' && line[pos] != (byte)' ')
+            (bool finished, int bytesConsumed) =
+                Avx2.IsSupported ? ParseHeadersAvx2(buffer, response, isFromTrailer) :
+                ParseHeadersPortable(buffer, response, isFromTrailer);
+
+            _readOffset += bytesConsumed;
+            _allowedReadLineBytes -= bytesConsumed;
+            ThrowIfExceededAllowedReadLineBytes();
+
+            return finished;
+        }
+
+        private (bool finished, int bytesConsumed) ParseHeadersPortable(Span<byte> buffer, HttpResponseMessage? response, bool isFromTrailer)
+        {
+            int originalBufferLength = buffer.Length;
+
+            while (true)
             {
-                pos++;
-                if (pos == line.Length)
+                if (buffer.Length == 0) goto needMore;
+
+                int colIdx = buffer.IndexOfAny((byte)':', (byte)'\n');
+                if (colIdx < 0) goto needMore;
+
+                if (buffer[colIdx] == '\n')
                 {
-                    // Invalid header line that doesn't contain ':'.
-                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(line)));
+                    if ((colIdx == 1 && buffer[0] == '\r') || colIdx == 0)
+                    {
+                        return (finished: true, bytesConsumed: originalBufferLength - buffer.Length + colIdx + 1);
+                    }
+
+                    buffer = buffer.Slice(0, colIdx);
+                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer)));
+                }
+
+                int lfIdx = colIdx + 1;
+                if (lfIdx >= buffer.Length) goto needMore;
+
+                Span<byte> valueStart = buffer.Slice(lfIdx);
+                Span<byte> valueIter = valueStart;
+
+                while (true)
+                {
+                    lfIdx = valueIter.IndexOf((byte)'\n');
+                    if (lfIdx < 0) goto needMore;
+
+                    int crOrLfIdx = lfIdx - 1;
+                    if (crOrLfIdx < 0 || valueIter[crOrLfIdx] != '\r')
+                    {
+                        crOrLfIdx = lfIdx;
+                    }
+
+                    int spIdx = lfIdx + 1;
+                    if (spIdx >= valueIter.Length) goto needMore;
+
+                    if (valueIter[spIdx] is not (byte)'\t' and not (byte)' ')
+                    {
+                        // Found the end of the header value.
+
+                        if (response is not null)
+                        {
+                            ReadOnlySpan<byte> headerName = buffer.Slice(0, colIdx);
+                            ReadOnlySpan<byte> headerValue = valueStart.Slice(0, valueStart.Length - valueIter.Length + crOrLfIdx);
+                            AddResponseHeader(headerName, headerValue, response, isFromTrailer);
+                        }
+
+                        buffer = valueStart.Slice(valueStart.Length - valueIter.Length + spIdx);
+                        break;
+                    }
+
+                    // Found an obs-fold (CRLFHT/CRLFSP).
+                    // Replace with SPSPSP and keep looking for the final newline.
+                    // Also handles LFHT and LFSP.
+
+                    valueIter[crOrLfIdx] = (byte)' ';
+                    valueIter[lfIdx] = (byte)' ';
+                    valueIter[spIdx] = (byte)' ';
+
+                    valueIter = valueIter.Slice(spIdx + 1);
                 }
             }
 
-            if (pos == 0)
+        needMore:
+            return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
+        }
+
+        /// <remarks>
+        /// This method REQUIRES (32-1) bytes of valid address space after <paramref name="buffer"/>.
+        /// This is done via <see cref="SimdPaddedArray"/>.
+        /// It also assumes that it can always step backwards to a 32-byte aligned address.
+        /// </remarks>
+        private unsafe (bool finished, int bytesConsumed) ParseHeadersAvx2(Span<byte> buffer, HttpResponseMessage? response, bool isFromTrailer)
+        {
+            Vector256<byte> maskCol = Vector256.Create((byte)':');
+            Vector256<byte> maskLF = Vector256.Create((byte)'\n');
+
+            fixed (byte* vectorBegin = buffer)
             {
-                // Invalid empty header name.
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, ""));
+                byte* vectorEnd = vectorBegin + buffer.Length;
+                byte* nameStart = vectorBegin;
+
+                // The following goto, needMore, afterNeedMore are all here
+                // to reduce code size on the hot path as much as possible.
+
+                // Various points need to jump to needMore, so it must be in this
+                // root scope. The if here is inverted and manually implemented to allow this.
+
+                if (vectorBegin != vectorEnd)
+                {
+                    goto afterNeedMore;
+                }
+
+            needMore:
+                return (finished: false, bytesConsumed: (int)(nameStart - vectorBegin));
+
+            afterNeedMore:
+                // align to a 32 byte address for optimal loads.
+                byte* vectorIter = (byte*)((nint)vectorBegin & ~(32 - 1));
+
+                Vector256<byte> vector = Avx.LoadAlignedVector256(vectorIter);
+                uint foundLF = (uint)Avx2.MoveMask(Avx2.CompareEqual(vector, maskLF));
+                uint foundCol = foundLF | (uint)Avx2.MoveMask(Avx2.CompareEqual(vector, maskCol));
+
+                while (true)
+                {
+                    // Find the end of the header name, a colon.
+                    // Or, a CRLF or LF indicating end of headers.
+
+                    byte* col;
+                    do
+                    {
+                        int colIdx;
+                        while ((colIdx = BitOperations.TrailingZeroCount(foundCol)) == Vector256<byte>.Count)
+                        {
+                            vectorIter += Vector256<byte>.Count;
+                            if (vectorIter >= vectorEnd)
+                            {
+                                goto needMore;
+                            }
+
+                            // vectorIter may be past the end of buffer[^1]. This is why padding is required.
+
+                            vector = Avx.LoadAlignedVector256(vectorIter);
+                            foundLF = (uint)Avx2.MoveMask(Avx2.CompareEqual(vector, maskLF));
+                            foundCol = foundLF | (uint)Avx2.MoveMask(Avx2.CompareEqual(vector, maskCol));
+                        }
+
+                        foundCol ^= 1u << colIdx;
+                        col = vectorIter + colIdx;
+                    }
+                    // Branch will not be taken unless padding bytes prior to vectorBegin match.
+                    while (col < nameStart);
+
+                    if (col >= vectorEnd)
+                    {
+                        // Branch will not be taken unless padding bytes beyond vectorEnd match.
+                        goto needMore;
+                    }
+
+                    if (*col == '\n')
+                    {
+                        if ((col == nameStart + 1 && *nameStart == '\r') || col == nameStart)
+                        {
+                            // End of headers.
+                            return (finished: true, bytesConsumed: (int)(col - vectorBegin + 1));
+                        }
+                        else
+                        {
+                            // Found a newline without a colon.
+                            buffer = new Span<byte>(nameStart, (int)(col - nameStart));
+                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer)));
+                        }
+                    }
+
+                    // Found the start of header value.
+                    byte* valueStart = col + 1;
+                    if (valueStart == vectorEnd)
+                    {
+                        goto needMore;
+                    }
+
+                    // Find the end of the value, a CRLF or LF.
+                    byte* crOrLf;
+                    byte* lf;
+                    while (true)
+                    {
+                        do
+                        {
+                            int lfIdx;
+                            while ((lfIdx = BitOperations.TrailingZeroCount(foundLF)) == Vector256<byte>.Count)
+                            {
+                                vectorIter += Vector256<byte>.Count;
+                                if (vectorIter >= vectorEnd)
+                                {
+                                    goto needMore;
+                                }
+
+                                vector = Avx.LoadAlignedVector256(vectorIter);
+                                foundLF = (uint)Avx2.MoveMask(Avx2.CompareEqual(vector, maskLF));
+                                foundCol = foundLF | (uint)Avx2.MoveMask(Avx2.CompareEqual(vector, maskCol));
+                            }
+
+                            uint clearMask = ~(1u << lfIdx);
+                            foundLF &= clearMask;
+                            foundCol &= clearMask;
+                            lf = vectorIter + lfIdx;
+                        }
+                        // Branch will not be taken unless padding bytes prior to vectorBegin match.
+                        while (lf < col);
+
+                        if (lf >= vectorEnd)
+                        {
+                            // Branch will not be taken unless padding bytes beyond vectorEnd match.
+                            goto needMore;
+                        }
+
+                        crOrLf = lf - 1;
+                        if (crOrLf < valueStart || *crOrLf != '\r')
+                        {
+                            // Cold path: lone LF without a CR.
+                            crOrLf = lf;
+                        }
+
+                        byte* ht = lf + 1;
+                        if (ht == vectorEnd)
+                        {
+                            goto needMore;
+                        }
+
+                        if (*ht is not (byte)' ' and not (byte)'\t')
+                        {
+                            // Found the end of the header value.
+
+                            if (response is not null)
+                            {
+                                // Hot path: response will only be null when draining before headers are observed.
+                                Span<byte> name = new Span<byte>(nameStart, (int)(col - nameStart));
+                                Span<byte> value = new Span<byte>(valueStart, (int)(crOrLf - valueStart));
+                                AddResponseHeader(name, value, response, isFromTrailer);
+                            }
+
+                            nameStart = ht;
+                            break;
+                        }
+
+                        // Found an obs-fold: replace all bytes with SP.
+                        // Cold path: obs-fold is generally unused.
+                        *crOrLf = (byte)' ';
+                        *lf = (byte)' ';
+                        *ht = (byte)' ';
+                    } // Loop: continue searching for CRLF.
+                } // Loop: found a header, now search for the next name.
+            } // Pin
+        }
+
+        private void AddResponseHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value, HttpResponseMessage response, bool isFromTrailer)
+        {
+            // Skip trailing whitespace and check for null length.
+            while (true)
+            {
+                int spIdx = name.Length - 1;
+
+                if (spIdx < 0)
+                {
+                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, ""));
+                }
+
+                if (name[spIdx] != ' ')
+                {
+                    // hot path.
+                    break;
+                }
+
+                name = name.Slice(0, spIdx);
             }
 
-            if (!HeaderDescriptor.TryGet(line.Slice(0, pos), out HeaderDescriptor descriptor))
+            // Skip leading OWS for value.
+            // hot path: loop body runs only once.
+            while (value.Length != 0 && value[0] is (byte)' ' or (byte)'\t')
+            {
+                value = value.Slice(1);
+            }
+
+            // Skip trailing whitespace for value.
+            while (true)
+            {
+                int spIdx = value.Length - 1;
+                if (spIdx < 0 || value[spIdx] != ' ')
+                {
+                    // hot path.
+                    break;
+                }
+
+                value = value.Slice(0, spIdx);
+            }
+
+            if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {
                 // Invalid header name.
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(line.Slice(0, pos))));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
             }
 
             if (isFromTrailer && descriptor.KnownHeader != null && (descriptor.KnownHeader.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
             {
                 // Disallowed trailer fields.
                 // A recipient MUST ignore fields that are forbidden to be sent in a trailer.
-                if (NetEventSource.Log.IsEnabled()) connection.Trace($"Stripping forbidden {descriptor.Name} from trailer headers.");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Stripping forbidden {descriptor.Name} from trailer headers.");
                 return;
             }
 
-            // Eat any trailing whitespace
-            while (line[pos] == (byte)' ')
-            {
-                pos++;
-                if (pos == line.Length)
-                {
-                    // Invalid header line that doesn't contain ':'.
-                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(line)));
-                }
-            }
-
-            if (line[pos++] != ':')
-            {
-                // Invalid header line that doesn't contain ':'.
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(line)));
-            }
-
-            // Skip whitespace after colon
-            while (pos < line.Length && (line[pos] == (byte)' ' || line[pos] == (byte)'\t'))
-            {
-                pos++;
-            }
-
-            Debug.Assert(response.RequestMessage != null);
-            Encoding? valueEncoding = connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, response.RequestMessage);
+            Encoding? valueEncoding = _pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, response.RequestMessage!);
 
             // Note we ignore the return value from TryAddWithoutValidation. If the header can't be added, we silently drop it.
-            ReadOnlySpan<byte> value = line.Slice(pos);
             if (isFromTrailer)
             {
                 string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
@@ -1103,7 +1353,7 @@ namespace System.Net.Http
             else
             {
                 // Request headers returned on the response must be treated as custom headers.
-                string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
+                string headerValue = GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
                 response.Headers.TryAddWithoutValidation(
                     (descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor,
                     headerValue);
@@ -1452,7 +1702,7 @@ namespace System.Net.Http
 
         private bool TryReadNextLine(out ReadOnlySpan<byte> line)
         {
-            var buffer = new ReadOnlySpan<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
+            var buffer = _readBuffer.AsSpan(_readOffset, _readLength - _readOffset);
             int length = buffer.IndexOf((byte)'\n');
             if (length < 0)
             {
@@ -1480,7 +1730,7 @@ namespace System.Net.Http
             while (true)
             {
                 int scanOffset = _readOffset + previouslyScannedBytes;
-                int lfIndex = Array.IndexOf(_readBuffer, (byte)'\n', scanOffset, _readLength - scanOffset);
+                int lfIndex = Array.IndexOf(_readBuffer.BackingArray, (byte)'\n', scanOffset, _readLength - scanOffset);
                 if (lfIndex >= 0)
                 {
                     int startIndex = _readOffset;
@@ -1524,7 +1774,7 @@ namespace System.Net.Http
 
                             // Folded headers are only allowed within header field values, not within header field names,
                             // so if we haven't seen a colon, this is invalid.
-                            if (Array.IndexOf(_readBuffer, (byte)':', _readOffset, lfIndex - _readOffset) == -1)
+                            if (Array.IndexOf(_readBuffer.BackingArray, (byte)':', _readOffset, lfIndex - _readOffset) == -1)
                             {
                                 throw new HttpRequestException(SR.net_http_invalid_response_header_folder);
                             }
@@ -1554,7 +1804,7 @@ namespace System.Net.Http
                     ThrowIfExceededAllowedReadLineBytes();
                     _readOffset = lfIndex + 1;
 
-                    return new ReadOnlyMemory<byte>(_readBuffer, startIndex, length);
+                    return _readBuffer.AsMemory(startIndex, length);
                 }
 
                 // Couldn't find LF.  Read more. Note this may cause _readOffset to change.
@@ -1587,8 +1837,8 @@ namespace System.Net.Http
 
             _readOffset = 0;
             _readLength = async ?
-                await _stream.ReadAsync(_readBuffer).ConfigureAwait(false) :
-                _stream.Read(_readBuffer);
+                await _stream.ReadAsync(_readBuffer.AsMemory()).ConfigureAwait(false) :
+                _stream.Read(_readBuffer.AsSpan());
 
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {_readLength} bytes.");
         }
@@ -1611,27 +1861,27 @@ namespace System.Net.Http
             {
                 // There's some data in the buffer but it's not at the beginning.  Shift it
                 // down to make room for more.
-                Buffer.BlockCopy(_readBuffer, _readOffset, _readBuffer, 0, remaining);
+                Buffer.BlockCopy(_readBuffer.BackingArray, _readOffset, _readBuffer.BackingArray, 0, remaining);
                 _readOffset = 0;
                 _readLength = remaining;
             }
-            else if (remaining == _readBuffer.Length)
+            else if (remaining == ReadBufferSize)
             {
                 // The whole buffer is full, but the caller is still requesting more data,
                 // so increase the size of the buffer.
                 Debug.Assert(_readOffset == 0);
-                Debug.Assert(_readLength == _readBuffer.Length);
+                Debug.Assert(_readLength == ReadBufferSize);
 
-                var newReadBuffer = new byte[_readBuffer.Length * 2];
-                Buffer.BlockCopy(_readBuffer, 0, newReadBuffer, 0, remaining);
+                var newReadBuffer = new SimdPaddedArray(ReadBufferSize * 2);
+                Buffer.BlockCopy(_readBuffer.BackingArray, 0, newReadBuffer.BackingArray, 0, remaining);
                 _readBuffer = newReadBuffer;
                 _readOffset = 0;
                 _readLength = remaining;
             }
 
             int bytesRead = async ?
-                await _stream.ReadAsync(new Memory<byte>(_readBuffer, _readLength, _readBuffer.Length - _readLength)).ConfigureAwait(false) :
-                _stream.Read(_readBuffer, _readLength, _readBuffer.Length - _readLength);
+                await _stream.ReadAsync(_readBuffer.AsMemory(_readLength, ReadBufferSize - _readLength)).ConfigureAwait(false) :
+                _stream.Read(_readBuffer.AsSpan(_readLength, ReadBufferSize - _readLength));
 
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             if (bytesRead == 0)
@@ -1646,7 +1896,7 @@ namespace System.Net.Http
         {
             Debug.Assert(buffer.Length <= _readLength - _readOffset);
 
-            new Span<byte>(_readBuffer, _readOffset, buffer.Length).CopyTo(buffer);
+            _readBuffer.AsSpan(_readOffset, buffer.Length).CopyTo(buffer);
             _readOffset += buffer.Length;
         }
 
@@ -1730,7 +1980,7 @@ namespace System.Net.Http
 
             // Do a buffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
-            int bytesRead = _stream.Read(_readBuffer, 0, destination.Length == 0 ? 0 : _readBuffer.Length);
+            int bytesRead = _stream.Read(_readBuffer.AsSpan(0, destination.Length == 0 ? 0 : _readBuffer.Length));
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             _readLength = bytesRead;
 
@@ -1800,11 +2050,11 @@ namespace System.Net.Http
 
             if (async)
             {
-                return destination.WriteAsync(new ReadOnlyMemory<byte>(_readBuffer, offset, count), cancellationToken);
+                return destination.WriteAsync(_readBuffer.AsMemory(offset, count), cancellationToken);
             }
             else
             {
-                destination.Write(_readBuffer, offset, count);
+                destination.Write(_readBuffer.BackingArray, offset, count);
                 return default;
             }
         }
@@ -1879,7 +2129,7 @@ namespace System.Net.Http
             // use a temporary buffer from the ArrayPool so that the connection doesn't hog large
             // buffers from the pool for extended durations, especially if it's going to sit in the
             // connection pool for a prolonged period.
-            byte[]? origReadBuffer = null;
+            SimdPaddedArray? origReadBuffer = null;
             try
             {
                 while (true)
@@ -1901,14 +2151,14 @@ namespace System.Net.Http
                     // larger than the one we already have, then grow the connection's read buffer to that size.
                     if (origReadBuffer == null)
                     {
-                        byte[] currentReadBuffer = _readBuffer;
+                        SimdPaddedArray currentReadBuffer = _readBuffer;
                         if (remaining == currentReadBuffer.Length)
                         {
                             int desiredBufferSize = (int)Math.Min((ulong)bufferSize, length);
                             if (desiredBufferSize > currentReadBuffer.Length)
                             {
                                 origReadBuffer = currentReadBuffer;
-                                _readBuffer = ArrayPool<byte>.Shared.Rent(desiredBufferSize);
+                                _readBuffer = SimdPaddedArray.FromPool(desiredBufferSize);
                             }
                         }
                     }
@@ -1918,8 +2168,8 @@ namespace System.Net.Http
             {
                 if (origReadBuffer != null)
                 {
-                    byte[] tmp = _readBuffer;
-                    _readBuffer = origReadBuffer;
+                    byte[] tmp = _readBuffer.BackingArray;
+                    _readBuffer = origReadBuffer.GetValueOrDefault();
                     ArrayPool<byte>.Shared.Return(tmp);
 
                     // _readOffset and _readLength may not be within range of the original

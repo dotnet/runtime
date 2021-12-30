@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -80,6 +80,7 @@
     <Compile Include="System\Net\Http\RequestRetryType.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpMessageHandlerStage.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SimdPaddedArray.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -668,6 +669,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Security.Claims" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
