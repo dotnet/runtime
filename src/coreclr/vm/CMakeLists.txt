@@ -162,7 +162,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     decodemd.h
     disassembler.h
     domainassembly.h
-    domainassembly.inl
     dynamicmethod.h
     ecall.h
     eedbginterfaceimpl.h

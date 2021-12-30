@@ -65,7 +65,7 @@ enum NotificationStatus
 
 class DomainAssembly final
 {
-    public:
+public:
 
     // ------------------------------------------------------------
     // Public API
@@ -87,6 +87,22 @@ class DomainAssembly final
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return PTR_PEAssembly(m_pPEAssembly);
+    }
+
+    Assembly* DomainAssembly::GetAssembly()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        CONSISTENCY_CHECK(CheckLoaded());
+
+        return m_pAssembly;
+    }
+
+    Module* DomainAssembly::GetModule()
+    {
+        LIMITED_METHOD_CONTRACT;
+        CONSISTENCY_CHECK(CheckLoaded());
+
+        return m_pModule;
     }
 
     IMDInternalImport *GetMDImport()
@@ -139,15 +155,17 @@ class DomainAssembly final
     }
 #endif
 
-// ------------------------------------------------------------
-// Public API
-// ------------------------------------------------------------
+    BOOL DomainAssembly::IsCollectible()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_fCollectible;
+    }
 
-    Assembly* GetAssembly();
-    Module* GetModule();
-
-    BOOL IsCollectible();
-    ULONG HashIdentity();
+    ULONG DomainAssembly::HashIdentity()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetPEAssembly()->HashIdentity();
+    }
 
     // ------------------------------------------------------------
     // Loading state checks
