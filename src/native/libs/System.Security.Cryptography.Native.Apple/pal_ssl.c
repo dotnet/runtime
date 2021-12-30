@@ -156,19 +156,19 @@ int32_t AppleCryptoNative_SslSetBreakOnServerAuth(SSLContextRef sslContext, int3
 #pragma clang diagnostic pop
 }
 
+int32_t AppleCryptoNative_SslSetBreakOnCertRequested(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnCertRequested, setBreak, pOSStatus);
+#pragma clang diagnostic pop
+}
+
 int32_t AppleCryptoNative_SslSetBreakOnClientAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnClientAuth, setBreak, pOSStatus);
-#pragma clang diagnostic pop
-}
-
-int32_t AppleCryptoNative_SslSetBreakOnCertRequested(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
-{
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnCertRequested , setBreak, pOSStatus);
 #pragma clang diagnostic pop
 }
 
