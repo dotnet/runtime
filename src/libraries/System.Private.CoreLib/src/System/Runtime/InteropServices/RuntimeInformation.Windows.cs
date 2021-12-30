@@ -8,8 +8,7 @@ namespace System.Runtime.InteropServices
     public static partial class RuntimeInformation
     {
         private static string? s_osDescription;
-        private static volatile int s_osArch = -1;
-        private static volatile int s_processArch = -1;
+        private static volatile int s_osArchPlusOne;
 
         public static string OSDescription
         {
@@ -36,61 +35,38 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                Debug.Assert(sizeof(Architecture) == sizeof(int));
+                int osArch = s_osArchPlusOne - 1;
 
-                int osArch = s_osArch;
-
-                if (osArch == -1)
+                if (osArch < 0)
                 {
                     Interop.Kernel32.SYSTEM_INFO sysInfo;
                     unsafe
                     {
                         Interop.Kernel32.GetNativeSystemInfo(&sysInfo);
                     }
+                    osArch = (int)Map(sysInfo.wProcessorArchitecture);
 
-                    osArch = s_osArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
+                    s_osArchPlusOne = osArch + 1;
                 }
 
+                Debug.Assert(osArch >= 0);
                 return (Architecture)osArch;
             }
         }
 
-        public static Architecture ProcessArchitecture
-        {
-            get
-            {
-                Debug.Assert(sizeof(Architecture) == sizeof(int));
-
-                int processArch = s_processArch;
-
-                if (processArch == -1)
-                {
-                    Interop.Kernel32.SYSTEM_INFO sysInfo;
-                    unsafe
-                    {
-                        Interop.Kernel32.GetSystemInfo(&sysInfo);
-                    }
-
-                    processArch = s_processArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
-                }
-
-                return (Architecture)processArch;
-            }
-        }
-
-        private static Architecture Map(Interop.Kernel32.ProcessorArchitecture processorArchitecture)
+        private static Architecture Map(int processorArchitecture)
         {
             switch (processorArchitecture)
             {
-                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM64:
+                case Interop.Kernel32.PROCESSOR_ARCHITECTURE_ARM64:
                     return Architecture.Arm64;
-                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_ARM:
+                case Interop.Kernel32.PROCESSOR_ARCHITECTURE_ARM:
                     return Architecture.Arm;
-                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_AMD64:
+                case Interop.Kernel32.PROCESSOR_ARCHITECTURE_AMD64:
                     return Architecture.X64;
-                case Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL:
+                case Interop.Kernel32.PROCESSOR_ARCHITECTURE_INTEL:
                 default:
-                    Debug.Assert(processorArchitecture == Interop.Kernel32.ProcessorArchitecture.Processor_Architecture_INTEL, "Unidentified Architecture");
+                    Debug.Assert(processorArchitecture == Interop.Kernel32.PROCESSOR_ARCHITECTURE_INTEL, "Unidentified Architecture");
                     return Architecture.X86;
             }
         }

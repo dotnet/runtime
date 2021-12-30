@@ -38,11 +38,6 @@ const ASN1_OBJECT* CryptoNative_GetObjectDefinitionByName(const char* friendlyNa
     return OBJ_nid2obj(nid);
 }
 
-int32_t CryptoNative_ObjSn2Nid(const char* sn)
-{
-    return OBJ_sn2nid(sn);
-}
-
 int32_t CryptoNative_ObjTxt2Nid(const char* sn)
 {
     return OBJ_txt2nid(sn);
@@ -86,11 +81,6 @@ int32_t CryptoNative_Asn1OctetStringSet(ASN1_OCTET_STRING* s, const uint8_t* dat
 void CryptoNative_Asn1OctetStringFree(ASN1_STRING* a)
 {
     ASN1_OCTET_STRING_free(a);
-}
-
-void CryptoNative_Asn1StringFree(ASN1_STRING* a)
-{
-    ASN1_STRING_free(a);
 }
 
 int32_t CryptoNative_GetAsn1IntegerDerSize(ASN1_INTEGER* i)
