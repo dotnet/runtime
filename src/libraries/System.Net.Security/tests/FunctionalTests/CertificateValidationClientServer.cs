@@ -3,6 +3,7 @@
 
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,6 +51,9 @@ namespace System.Net.Security.Tests
             {
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
                 clientOptions.TargetHost = "localhost";
+                // Force Tls 1.2 to avoid issues with certain OpenSSL versions and Tls 1.3
+                // https://github.com/openssl/openssl/issues/7384
+                clientOptions.EnabledSslProtocols = SslProtocols.Tls12;
                 clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
                 clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, certificate, acceptableIssuers) =>
                 {
