@@ -730,7 +730,7 @@ public:
     // Gets properties for a module
     void GetModuleData(VMPTR_Module vmModule, ModuleInfo * pData);
 
-    // Gets properties for a domainfile
+    // Gets properties for a domain assembly
     void GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAssembly, DomainAssemblyInfo * pData);
 
     void GetModuleForDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule);

@@ -2564,10 +2564,10 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbAppDomain* pAppD
 {
     VMPTR_AppDomain appDomain;
     VMPTR_Module mod;
-    VMPTR_DomainAssembly domainFile;
+    VMPTR_DomainAssembly domainAssembly;
 
     HRESULT hr = E_FAIL;
-    if (GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainFile))
+    if (GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainAssembly))
     {
         if (pAppDomainOverride)
         {
@@ -14976,7 +14976,7 @@ void CordbProcess::UpdateThreadsForAdUnload(CordbAppDomain * pAppDomain)
 // CordbProcess::LookupClass
 // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
 // CordbClass instance doesn't exist.
-// Argument: (in) vmDomainAssembly - pointer to the domainfile for the module
+// Argument: (in) vmDomainAssembly - pointer to the domain assembly for the module
 //           (in) mdTypeDef    - metadata token for the class
 // Return value: pointer to a previously created CordbClass instance or NULL in none exists
 CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_DomainAssembly vmDomainAssembly, mdTypeDef classToken)

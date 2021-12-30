@@ -851,7 +851,7 @@ typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
 // For domain-neutral modules (like CoreLib), there is a DomainAssembly instance
 // for each appdomain the module lives in.
 // This is the canonical handle ICorDebug uses to a CLR module.
-DEFINE_VMPTR(class DomainAssembly,      PTR_DomainAssembly,     VMPTR_DomainAssembly);
+DEFINE_VMPTR(class DomainAssembly,  PTR_DomainAssembly, VMPTR_DomainAssembly);
 DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 
 // DomainAssembly derives from DomainAssembly and represents a manifest module.

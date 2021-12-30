@@ -1993,7 +1993,7 @@ public:
     //             simpleType  - CorElementType value corresponding to a simple type
     //     output: pMetadataToken - the metadata token corresponding to simpleType,
     //                              in the scope of vmDomainAssembly.
-    //             vmDomainAssembly   - the domainFile for simpleType
+    //             vmDomainAssembly   - the domainAssembly for simpleType
     // Notes:
     //    This is inspection-only. If the type is not yet loaded, it will throw CORDBG_E_CLASS_NOT_LOADED.
     //    It will not try to load a type.
