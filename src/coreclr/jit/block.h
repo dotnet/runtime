@@ -829,15 +829,15 @@ struct BasicBlock : private LIR::Range
         BBswtDesc*  bbJumpSwt;  // switch descriptor
     };
 
-    bool KindIs(BBjumpKinds oper) const
+    bool KindIs(BBjumpKinds kind) const
     {
-        return bbJumpKind == oper;
+        return bbJumpKind == kind;
     }
 
     template <typename... T>
-    bool KindIs(BBjumpKinds oper, T... rest) const
+    bool KindIs(BBjumpKinds kind, T... rest) const
     {
-        return KindIs(oper) || KindIs(rest...);
+        return KindIs(kind) || KindIs(rest...);
     }
 
     // NumSucc() gives the number of successors, and GetSucc() returns a given numbered successor.
