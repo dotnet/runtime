@@ -245,7 +245,7 @@
 
     <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
-      Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64' and '$(DotNetBuildFromSource)' != 'true'"/>
+      Test="true" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
