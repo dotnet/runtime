@@ -585,7 +585,7 @@ namespace Internal.TypeSystem.Ecma
             an.CultureName = _metadataReader.GetString(assemblyReference.Culture);
             an.ContentType = GetContentTypeFromAssemblyFlags(assemblyReference.Flags);
 
-            var assembly = _moduleResolver.ResolveAssembly(an);
+            var assembly = _moduleResolver.ResolveAssembly(an, throwIfNotFound: false);
             if (assembly == null)
                 return ResolutionFailure.GetAssemblyResolutionFailure(an.Name);
             else
