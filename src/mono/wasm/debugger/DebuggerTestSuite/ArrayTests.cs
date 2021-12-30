@@ -619,5 +619,29 @@ namespace DebuggerTests
                id_args["arrayIdx"] = "qwe";
                await GetProperties($"dotnet:valuetype:{id_args.ToString(Newtonsoft.Json.Formatting.None)}", expect_ok: false);
            });
+
+        [Fact]
+        public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
+            locals_fn: async (locals) =>
+           {
+               var this_obj = GetAndAssertObjectWithName(locals, "this");
+               var c_obj = GetAndAssertObjectWithName(await GetProperties(this_obj["value"]["objectId"].Value<string>()), "c");
+               var c_obj_id = c_obj["value"]?["objectId"]?.Value<string>();
+               Assert.NotNull(c_obj_id);
+
+               var c_props = await GetProperties(c_obj_id);
+
+               var pf_arr = GetAndAssertObjectWithName(c_props, "PointsField");
+
+               var invalid_accessors = new object[] { "NonExistant", "10000", "-2", 10000, -2, null, String.Empty };
+               foreach (var invalid_accessor in invalid_accessors)
+               {
+                   // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
+                   var res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok: true);
+                   AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
+               }
+           });
     }
 }
