@@ -513,7 +513,7 @@ class DebuggerModule
     DomainAssembly * GetDomainAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeDomainFile;
+        return m_pRuntimeDomainAssembly;
     }
 
     // Called by DebuggerModuleTable to set our primary module
@@ -528,7 +528,7 @@ class DebuggerModule
     DebuggerModule* m_pPrimaryModule;
 
     PTR_Module     m_pRuntimeModule;
-    PTR_DomainAssembly m_pRuntimeDomainFile;
+    PTR_DomainAssembly m_pRuntimeDomainAssembly;
 
     AppDomain*     m_pAppDomain;
 

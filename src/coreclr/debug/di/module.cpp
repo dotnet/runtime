@@ -86,9 +86,9 @@ CordbModule::CordbModule(
 
     if (!vmDomainAssembly.IsNull())
     {
-        DomainFileInfo dfInfo;
+        DomainAssemblyInfo dfInfo;
 
-        pProcess->GetDAC()->GetDomainFileData(vmDomainAssembly, &dfInfo); // throws
+        pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
         m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmDomainAssembly);
@@ -125,11 +125,11 @@ void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void 
 
     if (!pThis->m_vmDomainAssembly.IsNull())
     {
-        VMPTR_DomainAssembly vmDomainFileDeleted = pThis->m_vmDomainAssembly;
+        VMPTR_DomainAssembly vmDomainAssemblyDeleted = pThis->m_vmDomainAssembly;
 
-        CONSISTENCY_CHECK_MSGF((vmDomainFileDeleted != vmDomainAssembly),
-            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmDomainFileDeleted=%p\n",
-            VmPtrToCookie(vmDomainFileDeleted)));
+        CONSISTENCY_CHECK_MSGF((vmDomainAssemblyDeleted != vmDomainAssembly),
+            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmDomainAssemblyDeleted=%p\n",
+            VmPtrToCookie(vmDomainAssemblyDeleted)));
     }
 }
 

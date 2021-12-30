@@ -397,7 +397,7 @@ HRESULT ProfilerModuleEnum::Init()
 
     // When an assembly is loaded into an AppDomain, a DomainAssembly is
     // created (one per pairing of the AppDomain with the assembly). This means
-    // that we'll create multiple DomainFiles for the same module if it is loaded
+    // that we'll create multiple DomainAssemblys for the same module if it is loaded
     // domain-neutral (i.e., "shared"). The profiling API callbacks shield the profiler
     // from this, and only report a given module the first time it's loaded. So a
     // profiler sees only one ModuleLoadFinished for a module loaded domain-neutral, even

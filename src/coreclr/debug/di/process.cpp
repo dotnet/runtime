@@ -15018,8 +15018,8 @@ CordbModule * CordbProcess::LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAs
     RSLockHolder lockHolder(GetProcess()->GetProcessLock());
     _ASSERTE(!vmDomainAssembly.IsNull());
 
-    DomainFileInfo data;
-    GetDAC()->GetDomainFileData(vmDomainAssembly, &data); // throws
+    DomainAssemblyInfo data;
+    GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &data); // throws
 
     CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(data.vmAppDomain);
     return pAppDomain->LookupOrCreateModule(vmDomainAssembly);

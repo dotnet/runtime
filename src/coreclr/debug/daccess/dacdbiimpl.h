@@ -352,7 +352,7 @@ public:
     HRESULT GetDelegateFunctionData(
         DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_DomainAssembly *ppFunctionDomainFile,
+        OUT VMPTR_DomainAssembly *ppFunctionDomainAssembly,
         OUT mdMethodDef *pMethodDef);
 
     HRESULT GetDelegateTargetObject(
@@ -731,9 +731,9 @@ public:
     void GetModuleData(VMPTR_Module vmModule, ModuleInfo * pData);
 
     // Gets properties for a domainfile
-    void GetDomainFileData(VMPTR_DomainAssembly vmDomainAssembly, DomainFileInfo * pData);
+    void GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAssembly, DomainAssemblyInfo * pData);
 
-    void GetModuleForDomainFile(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule);
+    void GetModuleForDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule);
 
     // Yields true if the address is a CLR stub.
     BOOL IsTransitionStub(CORDB_ADDRESS address);

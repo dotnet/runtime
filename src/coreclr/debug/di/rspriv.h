@@ -2511,10 +2511,10 @@ public:
     CordbModule * GetModuleFromMetaDataInterface(IUnknown *pIMetaData);
 
     // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_Module vmModuleToken, VMPTR_DomainAssembly vmDomainFileToken);
+    CordbModule * LookupOrCreateModule(VMPTR_Module vmModuleToken, VMPTR_DomainAssembly vmDomainAssemblyToken);
 
     // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainFileToken);
+    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssemblyToken);
 
     // Callback from DAC for module enumeration
     static void ModuleEnumerationCallback(VMPTR_DomainAssembly vmModule, void * pUserData);

@@ -2653,18 +2653,18 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
         return hr;
 
     mdMethodDef functionMethodDef = 0;
-    VMPTR_DomainAssembly functionDomainFile;
+    VMPTR_DomainAssembly functionDomainAssembly;
     NativeCodeFunctionData nativeCodeForDelFunc;
 
-    hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainFile, &functionMethodDef);
+    hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainAssembly, &functionMethodDef);
     if (hr != S_OK)
         return hr;
 
     // TODO: How to ensure results are sanitized?
     // Also, this is expensive. Do we really care that much about this?
-    pDAC->GetNativeCodeInfo(functionDomainFile, functionMethodDef, &nativeCodeForDelFunc);
+    pDAC->GetNativeCodeInfo(functionDomainAssembly, functionMethodDef, &nativeCodeForDelFunc);
 
-    RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainFile));
+    RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainAssembly));
     RSSmartPtr<CordbFunction> func;
     {
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());

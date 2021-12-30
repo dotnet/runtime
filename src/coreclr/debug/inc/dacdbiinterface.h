@@ -588,7 +588,7 @@ public:
     //    pData - required out parameter which will be filled out with module properties
     //
     // Notes:
-    //    See definition of DomainFileInfo for more details about what properties
+    //    See definition of DomainAssemblyInfo for more details about what properties
     //    this gives back.
     virtual
     void GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData) = 0;
@@ -602,13 +602,13 @@ public:
     //    pData - required out parameter which will be filled out with module properties
     //
     // Notes:
-    //    See definition of DomainFileInfo for more details about what properties
+    //    See definition of DomainAssemblyInfo for more details about what properties
     //    this gives back.
     virtual
-    void GetDomainFileData(VMPTR_DomainAssembly vmDomainAssembly, OUT DomainFileInfo * pData) = 0;
+    void GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAssembly, OUT DomainAssemblyInfo * pData) = 0;
 
     virtual
-    void GetModuleForDomainFile(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule) = 0;
+    void GetModuleForDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule) = 0;
 
     //.........................................................................
     // These methods were the methods that DBI was calling from IXClrData in V2.
@@ -2731,7 +2731,7 @@ public:
     HRESULT GetDelegateFunctionData(
         DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_DomainAssembly *ppFunctionDomainFile,
+        OUT VMPTR_DomainAssembly *ppFunctionDomainAssembly,
         OUT mdMethodDef *pMethodDef) = 0;
 
     virtual

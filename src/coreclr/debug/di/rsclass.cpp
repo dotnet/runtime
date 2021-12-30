@@ -784,8 +784,8 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
             VMPTR_DomainAssembly vmDomainAssembly = m_pModule->GetRuntimeDomainAssembly();
             if (!vmDomainAssembly.IsNull())
             {
-                DomainFileInfo info;
-                pDac->GetDomainFileData(vmDomainAssembly, &info);
+                DomainAssemblyInfo info;
+                pDac->GetDomainAssemblyData(vmDomainAssembly, &info);
                 vmAppDomain = info.vmAppDomain;
             }
             pDac->GetClassInfo(vmAppDomain, vmTypeHandle, &m_classInfo);

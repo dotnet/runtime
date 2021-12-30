@@ -167,7 +167,7 @@ struct MSLAYOUT TargetBuffer
 // Whereas a DomainAssembly is like a { AppDomain, Module} pair. DomainAssembly corresponds
 // much more to ICorDebugModule (which also has appdomain affinity).
 //===================================================================================
-struct MSLAYOUT DomainFileInfo
+struct MSLAYOUT DomainAssemblyInfo
 {
     // The appdomain that the DomainAssembly is associated with.
     // Although VMPTR_Module may be shared across multiple domains, a DomainAssembly has appdomain affinity.

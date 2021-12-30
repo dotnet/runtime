@@ -856,7 +856,7 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_D
     }
 
     if (vmModule.IsNull())
-        GetProcess()->GetDAC()->GetModuleForDomainFile(vmDomainAssembly, &vmModule);
+        GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule);
 
     RSInitHolder<CordbModule> pModuleInit(new CordbModule(GetProcess(), vmModule, vmDomainAssembly));
     pModule = pModuleInit.TransferOwnershipToHash(&m_modules);

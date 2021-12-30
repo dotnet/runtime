@@ -9467,7 +9467,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
             _ASSERTE(pManifestModule->IsManifest());
             _ASSERTE(pManifestModule->GetAssembly() == pRuntimeModule->GetAssembly());
 
-            DomainAssembly * pManifestDomainFile = pManifestModule->GetDomainAssembly();
+            DomainAssembly * pManifestDomainAssembly = pManifestModule->GetDomainAssembly();
 
             DebuggerLockHolder dbgLockHolder(this);
 
@@ -9477,7 +9477,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
             DebuggerIPCEvent eventMetadataUpdate;
             InitIPCEvent(&eventMetadataUpdate, DB_IPCE_METADATA_UPDATE, NULL, pAppDomain);
 
-            eventMetadataUpdate.MetadataUpdateData.vmDomainAssembly.SetRawPtr(pManifestDomainFile);
+            eventMetadataUpdate.MetadataUpdateData.vmDomainAssembly.SetRawPtr(pManifestDomainAssembly);
 
             SendRawEvent(&eventMetadataUpdate);
         }
@@ -9940,7 +9940,7 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
 
         // Only notify for app domains where the module has been fully loaded already
         // We used to make a different check here domain->ContainsAssembly() but that
-        // triggers too early in the loading process. FindDomainFile will not become
+        // triggers too early in the loading process. FindDomainAssembly will not become
         // non-NULL until the module is fully loaded into the domain which is what we
         // want.
         if (classModule->GetDomainAssembly() != NULL )

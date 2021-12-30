@@ -3483,7 +3483,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
 HRESULT DacDbiInterfaceImpl::GetDelegateFunctionData(
     DelegateType delegateType,
     VMPTR_Object delegateObject,
-    OUT VMPTR_DomainAssembly *ppFunctionDomainFile,
+    OUT VMPTR_DomainAssembly *ppFunctionDomainAssembly,
     OUT mdMethodDef *pMethodDef)
 {
     DD_ENTER_MAY_THROW;
@@ -3514,7 +3514,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateFunctionData(
     if (hr != S_OK)
         return hr;
 
-    ppFunctionDomainFile->SetDacTargetPtr(dac_cast<TADDR>(pMD.GetDacPtr()->GetModule()->GetDomainAssembly()));
+    ppFunctionDomainAssembly->SetDacTargetPtr(dac_cast<TADDR>(pMD.GetDacPtr()->GetModule()->GetDomainAssembly()));
     *pMethodDef = pMD.GetDacPtr()->GetMemberDef();
 
     return hr;
@@ -4347,7 +4347,7 @@ void DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmModule, TargetBuffer *
 
 
 
-void DacDbiInterfaceImpl::GetModuleForDomainFile(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule)
+void DacDbiInterfaceImpl::GetModuleForDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule)
 {
     DD_ENTER_MAY_THROW;
 
@@ -4358,8 +4358,8 @@ void DacDbiInterfaceImpl::GetModuleForDomainFile(VMPTR_DomainAssembly vmDomainAs
 }
 
 
-// Implement IDacDbiInterface::GetDomainFileData
-void DacDbiInterfaceImpl::GetDomainFileData(VMPTR_DomainAssembly vmDomainAssembly, DomainFileInfo * pData)
+// Implement IDacDbiInterface::GetDomainAssemblyData
+void DacDbiInterfaceImpl::GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAssembly, DomainAssemblyInfo * pData)
 {
     DD_ENTER_MAY_THROW;
 

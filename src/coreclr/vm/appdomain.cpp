@@ -2522,7 +2522,7 @@ void AppDomain::LoadSystemAssemblies()
     LoadAssembly(NULL, SystemDomain::System()->SystemPEAssembly(), FILE_ACTIVE);
 }
 
-FileLoadLevel AppDomain::GetDomainFileLoadLevel(DomainAssembly *pFile)
+FileLoadLevel AppDomain::GetDomainAssemblyLoadLevel(DomainAssembly *pFile)
 {
     CONTRACTL
     {
@@ -3026,7 +3026,7 @@ DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel
     // lower level.  In such a case, we throw an exception which transiently fails the current
     // load, since it is likely we have not satisfied the caller.
     // (An alternate, and possibly preferable, strategy here would be for all callers to explicitly
-    // identify the minimum load level acceptable via CheckLoadDomainFile and throw from there.)
+    // identify the minimum load level acceptable via CheckLoadDomainAssembly and throw from there.)
 
     pFile->RequireLoadLevel((FileLoadLevel)(immediateTargetLevel-1));
 
