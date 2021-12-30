@@ -851,7 +851,7 @@ typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
 // For domain-neutral modules (like CoreLib), there is a DomainAssembly instance
 // for each appdomain the module lives in.
 // This is the canonical handle ICorDebug uses to a CLR module.
-DEFINE_VMPTR(class DomainAssembly,      PTR_DomainAssembly,     VMPTR_DomainFile);
+DEFINE_VMPTR(class DomainAssembly,      PTR_DomainAssembly,     VMPTR_DomainAssembly);
 DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 
 // DomainAssembly derives from DomainAssembly and represents a manifest module.
@@ -1285,7 +1285,7 @@ inline bool IsEqualOrCloserToRoot(FramePointer fp1, FramePointer fp2)
 struct MSLAYOUT DebuggerIPCE_FuncData
 {
     mdMethodDef funcMetadataToken;
-    VMPTR_DomainFile vmDomainFile;
+    VMPTR_DomainAssembly vmDomainAssembly;
 
     mdTypeDef   classMetadataToken;
 
@@ -1425,7 +1425,7 @@ struct MSLAYOUT DebuggerIPCE_STRData
         struct MSLAYOUT
         {
             mdMethodDef funcMetadataToken;
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             VMPTR_MethodDesc vmMethodDesc;
             CorDebugInternalFrameType frameType;
         } stubFrame;
@@ -1469,7 +1469,7 @@ struct MSLAYOUT DebuggerIPCE_BasicTypeData
     CorElementType  elementType;
     mdTypeDef       metadataToken;
     VMPTR_Module     vmModule;
-    VMPTR_DomainFile vmDomainFile;
+    VMPTR_DomainAssembly vmDomainAssembly;
     VMPTR_TypeHandle vmTypeHandle;
 };
 
@@ -1505,7 +1505,7 @@ struct MSLAYOUT DebuggerIPCE_ExpandedTypeData
          {
             mdTypeDef       metadataToken;
             VMPTR_Module vmModule;
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             VMPTR_TypeHandle typeHandle; // if non-null then further fetches will be needed to get type arguments
         } ClassTypeData;
 
@@ -1679,7 +1679,7 @@ struct MSLAYOUT DebuggerIPCE_FuncEvalInfo
     DebuggerIPCE_FuncEvalType  funcEvalType;
     mdMethodDef                funcMetadataToken;
     mdTypeDef                  funcClassMetadataToken;
-    VMPTR_DomainFile           vmDomainFile;
+    VMPTR_DomainAssembly           vmDomainAssembly;
     RSPTR_CORDBEVAL            funcEvalKey;
     bool                       evalDuringException;
 
@@ -1917,7 +1917,7 @@ struct MSLAYOUT DebuggerIPCEvent
         {
             // Module whos metadata is being updated
             // This tells the RS that the metadata for that module has become invalid.
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
 
         } MetadataUpdateData;
 
@@ -1960,13 +1960,13 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             // Module that was just loaded.
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
         }LoadModuleData;
 
 
         struct MSLAYOUT
         {
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             LSPTR_ASSEMBLY debuggerAssemblyToken;
         } UnloadModuleData;
 
@@ -1975,7 +1975,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // Queury PDB from OOP
         struct MSLAYOUT
         {
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
         } UpdateModuleSymsData;
 
         DebuggerMDANotification MDANotification;
@@ -1984,7 +1984,7 @@ struct MSLAYOUT DebuggerIPCEvent
         {
             LSPTR_BREAKPOINT breakpointToken;
             mdMethodDef  funcMetadataToken;
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             bool         isIL;
             SIZE_T       offset;
             SIZE_T       encVersion;
@@ -2064,7 +2064,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // Apply an EnC edit
         struct MSLAYOUT
         {
-            VMPTR_DomainFile vmDomainFile;      // Module to edit
+            VMPTR_DomainAssembly vmDomainAssembly;      // Module to edit
             DWORD cbDeltaMetadata;              // size of blob pointed to by pDeltaMetadata
             CORDB_ADDRESS pDeltaMetadata;       // pointer to delta metadata in debuggee
                                                 // it's the RS's responsibility to allocate and free
@@ -2081,20 +2081,20 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             mdTypeDef   classMetadataToken;
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } LoadClass;
 
         struct MSLAYOUT
         {
             mdTypeDef   classMetadataToken;
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             LSPTR_ASSEMBLY classDebuggerAssemblyToken;
         } UnloadClass;
 
         struct MSLAYOUT
         {
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             bool  flag;
         } SetClassLoad;
 
@@ -2125,7 +2125,7 @@ struct MSLAYOUT DebuggerIPCEvent
             CORDB_ADDRESS    startAddress;
             bool             fCanSetIPOnly;
             VMPTR_Thread     vmThreadToken;
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             mdMethodDef      mdMethod;
             VMPTR_MethodDesc vmMethodDesc;
             SIZE_T           offset;
@@ -2154,7 +2154,7 @@ struct MSLAYOUT DebuggerIPCEvent
         struct MSLAYOUT
         {
             // Domain file for the domain in which the notification occurred
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
 
             // metadata token for the type of the CustomNotification object's type
             mdTypeDef    classToken;
@@ -2219,7 +2219,7 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             BOOL             fAllowJitOpts;
             BOOL             fEnableEnC;
         } JitDebugInfo;
@@ -2227,7 +2227,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // EnC Remap opportunity
         struct MSLAYOUT
         {
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             mdMethodDef funcMetadataToken ;        // methodDef of function with remap opportunity
             SIZE_T          currentVersionNumber;  // version currently executing
             SIZE_T          resumeVersionNumber;   // latest version
@@ -2239,7 +2239,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // EnC Remap has taken place
         struct MSLAYOUT
         {
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             mdMethodDef funcMetadataToken;         // methodDef of function that was remapped
         } EnCRemapComplete;
 
@@ -2247,7 +2247,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // specific edit made by EnC (function add/update or field add).
         struct MSLAYOUT
         {
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             mdToken         memberMetadataToken;   // Either a methodDef token indicating the function that
                                                    // was updated/added, or a fieldDef token indicating the
                                                    // field which was added.
@@ -2268,7 +2268,7 @@ struct MSLAYOUT DebuggerIPCEvent
         // @todo - Perhaps we can bundle these up so we can set multiple funcs w/ 1 event?
         struct MSLAYOUT
         {
-            VMPTR_DomainFile vmDomainFile;
+            VMPTR_DomainAssembly vmDomainAssembly;
             mdMethodDef     funcMetadataToken;
             DWORD           dwStatus;
         } SetJMCFunctionStatus;

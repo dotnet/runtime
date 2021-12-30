@@ -2511,13 +2511,13 @@ public:
     CordbModule * GetModuleFromMetaDataInterface(IUnknown *pIMetaData);
 
     // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_Module vmModuleToken, VMPTR_DomainFile vmDomainFileToken);
+    CordbModule * LookupOrCreateModule(VMPTR_Module vmModuleToken, VMPTR_DomainAssembly vmDomainFileToken);
 
     // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFileToken);
+    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainFileToken);
 
     // Callback from DAC for module enumeration
-    static void ModuleEnumerationCallback(VMPTR_DomainFile vmModule, void * pUserData);
+    static void ModuleEnumerationCallback(VMPTR_DomainAssembly vmModule, void * pUserData);
 
     // Use DAC to add any modules for this assembly.
     void PrepopulateModules();
@@ -2549,7 +2549,7 @@ public:
     // Cache of modules in this appdomain. In the VM, modules live in an assembly.
     // This cache lives on the appdomain because we generally want to do appdomain (or process)
     // wide lookup.
-    // This is indexed by VMPTR_DomainFile, which has appdomain affinity.
+    // This is indexed by VMPTR_DomainAssembly, which has appdomain affinity.
     // This is populated by code:CordbAppDomain::LookupOrCreateModule (which may be invoked
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbModule>      m_modules;
@@ -3460,9 +3460,9 @@ public:
 
     // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
     // CordbClass instance doesn't exist.
-    CordbClass * LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_DomainFile vmDomainFile, mdTypeDef classToken);
+    CordbClass * LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_DomainAssembly vmDomainAssembly, mdTypeDef classToken);
 
-    CordbModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFile);
+    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     CordbUnmanagedThread *GetUnmanagedThread(DWORD dwThreadId)
@@ -4147,7 +4147,7 @@ class CordbModule : public CordbBase,
 public:
     CordbModule(CordbProcess *      process,
                 VMPTR_Module        vmModule,
-                VMPTR_DomainFile    vmDomainFile);
+                VMPTR_DomainAssembly    vmDomainAssembly);
 
     virtual ~CordbModule();
     virtual void Neuter();
@@ -4354,9 +4354,9 @@ public:
 
     const WCHAR * GetNGenImagePath();
 
-    const VMPTR_DomainFile GetRuntimeDomainFile ()
+    const VMPTR_DomainAssembly GetRuntimeDomainAssembly ()
     {
-        return m_vmDomainFile;
+        return m_vmDomainAssembly;
     }
 
     const VMPTR_Module GetRuntimeModule()
@@ -4391,7 +4391,7 @@ public:
 
     // The real handle into the VM for a module. This is appdomain aware.
     // This is the primary VM counterpart for the CordbModule.
-    VMPTR_DomainFile m_vmDomainFile;
+    VMPTR_DomainAssembly m_vmDomainAssembly;
 
     VMPTR_Module m_vmModule;
 
@@ -4806,7 +4806,7 @@ public:
     void DestNaryType(Instantiation *pInst);
 
     CorElementType GetElementType() { return m_elementType; }
-    VMPTR_DomainFile GetDomainAssembly();
+    VMPTR_DomainAssembly GetDomainAssembly();
     VMPTR_Module GetModule();
 
     // If this is a ptr type, get the CordbType that it points to.

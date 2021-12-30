@@ -2464,7 +2464,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
             CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainFile);
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainAssembly);
 
             hr = pModule->QueryInterface(IID_ICorDebugModule, reinterpret_cast<void**>(&currentStackFrame.pModule));
             _ASSERTE(SUCCEEDED(hr));
@@ -2653,7 +2653,7 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
         return hr;
 
     mdMethodDef functionMethodDef = 0;
-    VMPTR_DomainFile functionDomainFile;
+    VMPTR_DomainAssembly functionDomainFile;
     NativeCodeFunctionData nativeCodeForDelFunc;
 
     hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainFile, &functionMethodDef);

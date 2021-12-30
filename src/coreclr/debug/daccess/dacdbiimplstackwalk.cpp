@@ -522,14 +522,14 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
                 DebuggerEval *  pDE  = pFEF->GetDebuggerEval();
 
                 frameData.stubFrame.funcMetadataToken = pDE->m_methodToken;
-                frameData.stubFrame.vmDomainFile.SetHostPtr(
+                frameData.stubFrame.vmDomainAssembly.SetHostPtr(
                     pDE->m_debuggerModule ? pDE->m_debuggerModule->GetDomainAssembly() : NULL);
                 frameData.stubFrame.vmMethodDesc = VMPTR_MethodDesc::NullPtr();
             }
             else
             {
                 frameData.stubFrame.funcMetadataToken = (pMD == NULL ? NULL : pMD->GetMemberDef());
-                frameData.stubFrame.vmDomainFile.SetHostPtr(pDomainAssembly);
+                frameData.stubFrame.vmDomainAssembly.SetHostPtr(pDomainAssembly);
                 frameData.stubFrame.vmMethodDesc.SetHostPtr(pMD);
             }
 
@@ -783,7 +783,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         //
 
         pFuncData->funcMetadataToken = pMD->GetMemberDef();
-        pFuncData->vmDomainFile.SetHostPtr(pDomainAssembly);
+        pFuncData->vmDomainAssembly.SetHostPtr(pDomainAssembly);
 
         // PERF: this is expensive to get so I stopped fetching it eagerly
         // It is only needed if we haven't already got a cached copy

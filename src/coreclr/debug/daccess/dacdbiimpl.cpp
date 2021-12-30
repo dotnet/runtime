@@ -657,13 +657,13 @@ void DacDbiInterfaceImpl::GetAppDomainFullName(
 
 // Get the values of the JIT Optimization and EnC flags.
 void DacDbiInterfaceImpl::GetCompilerFlags (
-    VMPTR_DomainFile vmDomainFile,
+    VMPTR_DomainAssembly vmDomainAssembly,
     BOOL *pfAllowJITOpts,
     BOOL *pfEnableEnC)
 {
     DD_ENTER_MAY_THROW;
 
-    DomainAssembly * pDomainAssembly = vmDomainFile.GetDacPtr();
+    DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
 
     if (pDomainAssembly == NULL)
     {
@@ -712,14 +712,14 @@ bool DacDbiInterfaceImpl::CanSetEnCBits(Module * pModule)
 } // DacDbiInterfaceImpl::SetEnCBits
 
 // Set the values of the JIT optimization and EnC flags.
-HRESULT DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
+HRESULT DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_DomainAssembly vmDomainAssembly,
                                            BOOL             fAllowJitOpts,
                                            BOOL             fEnableEnC)
 {
     DD_ENTER_MAY_THROW;
 
     DWORD        dwBits      = 0;
-    DomainAssembly * pDomainAssembly = vmDomainFile.GetDacPtr();
+    DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
     Module *     pModule     = pDomainAssembly->GetModule();
     HRESULT      hr          = S_OK;
 
@@ -1082,14 +1082,14 @@ ULONG DacDbiInterfaceImpl::TranslateInstrumentedILOffsetToOriginal(ULONG        
 // a module and a token. The info will come from a MethodDesc, if
 // one exists or from metadata.
 //
-void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainFile vmDomainFile,
+void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly,
                                           mdToken          functionToken,
                                           TargetBuffer *   pCodeInfo,
                                           mdToken *        pLocalSigToken)
 {
     DD_ENTER_MAY_THROW;
 
-    DomainAssembly * pDomainAssembly = vmDomainFile.GetDacPtr();
+    DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
     Module *     pModule     = pDomainAssembly->GetModule();
     RVA          methodRVA   = 0;
     DWORD        implFlags;
@@ -1323,7 +1323,7 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
 // isn't currently available. In this case, all values in pCodeInfo will be
 // cleared.
 
-void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainFile         vmDomainFile,
+void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomainAssembly,
                                             mdToken                  functionToken,
                                             NativeCodeFunctionData * pCodeInfo)
 {
@@ -1334,7 +1334,7 @@ void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainFile         vmDomainFil
     // pre-initialize:
     pCodeInfo->Clear();
 
-    DomainAssembly * pDomainAssembly = vmDomainFile.GetDacPtr();
+    DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
     Module *     pModule     = pDomainAssembly->GetModule();
 
     MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
@@ -1760,7 +1760,7 @@ void DacDbiInterfaceImpl::GetClassInfo(VMPTR_AppDomain  vmAppDomain,
 } // DacDbiInterfaceImpl::GetClassInfo
 
 // DacDbi API: Get field information and object size for an instantiated generic type
-void DacDbiInterfaceImpl::GetInstantiationFieldInfo (VMPTR_DomainFile             vmDomainFile,
+void DacDbiInterfaceImpl::GetInstantiationFieldInfo (VMPTR_DomainAssembly             vmDomainAssembly,
                                                      VMPTR_TypeHandle             vmThExact,
                                                      VMPTR_TypeHandle             vmThApprox,
                                                      DacDbiArrayList<FieldData> * pFieldList,
@@ -1768,7 +1768,7 @@ void DacDbiInterfaceImpl::GetInstantiationFieldInfo (VMPTR_DomainFile           
 {
     DD_ENTER_MAY_THROW;
 
-    DomainAssembly * pDomainAssembly = vmDomainFile.GetDacPtr();
+    DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
     _ASSERTE(pDomainAssembly != NULL);
     AppDomain * pAppDomain = pDomainAssembly->GetAppDomain();
     TypeHandle  thExact;
@@ -2503,11 +2503,11 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
     pTypeInfo->ClassTypeData.vmModule.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule));
     if (pAppDomain)
     {
-        pTypeInfo->ClassTypeData.vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetDomainAssembly()));
+        pTypeInfo->ClassTypeData.vmDomainAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetDomainAssembly()));
     }
     else
     {
-        pTypeInfo->ClassTypeData.vmDomainFile = VMPTR_DomainFile::NullPtr();
+        pTypeInfo->ClassTypeData.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
     }
 } // DacDbiInterfaceImpl::GetClassTypeInfo
 
@@ -2567,7 +2567,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
         case ELEMENT_TYPE_BYREF:
             pTypeInfo->vmTypeHandle.SetDacTargetPtr(typeHandle.AsTAddr());
             pTypeInfo->metadataToken = mdTokenNil;
-            pTypeInfo->vmDomainFile = VMPTR_DomainFile::NullPtr();
+            pTypeInfo->vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
             break;
 
         case ELEMENT_TYPE_CLASS:
@@ -2590,11 +2590,11 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
             pTypeInfo->vmModule.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule));
             if (pAppDomain)
             {
-                pTypeInfo->vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetDomainAssembly()));
+                pTypeInfo->vmDomainAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetDomainAssembly()));
             }
             else
             {
-                pTypeInfo->vmDomainFile = VMPTR_DomainFile::NullPtr();
+                pTypeInfo->vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
             }
             break;
         }
@@ -2602,7 +2602,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
         default:
             pTypeInfo->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
             pTypeInfo->metadataToken = mdTokenNil;
-            pTypeInfo->vmDomainFile = VMPTR_DomainFile::NullPtr();
+            pTypeInfo->vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
             break;
     }
     return;
@@ -2889,7 +2889,7 @@ TypeHandle DacDbiInterfaceImpl::GetClassOrValueTypeHandle(DebuggerIPCE_BasicType
     // otherwise, have the loader look it up using the metadata token and domain file
     else
     {
-        DomainAssembly * pDomainAssembly = pData->vmDomainFile.GetDacPtr();
+        DomainAssembly * pDomainAssembly = pData->vmDomainAssembly.GetDacPtr();
         Module *     pModule = pDomainAssembly->GetModule();
 
         typeHandle = ClassLoader::LookupTypeDefOrRefInModule(pModule, pData->metadataToken);
@@ -3292,7 +3292,7 @@ void DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain    vmAppDomain,
                                         CorElementType     simpleType,
                                         mdTypeDef         *pMetadataToken,
                                         VMPTR_Module      *pVmModule,
-                                        VMPTR_DomainFile  *pVmDomainFile)
+                                        VMPTR_DomainAssembly  *pVmDomainAssembly)
 {
     DD_ENTER_MAY_THROW;
 
@@ -3300,8 +3300,8 @@ void DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain    vmAppDomain,
 
     // if we fail to get either a valid type handle or module, we will want to send back
     // a NULL domain file too, so we'll to preinitialize this here.
-    _ASSERTE(pVmDomainFile != NULL);
-    *pVmDomainFile = VMPTR_DomainFile::NullPtr();
+    _ASSERTE(pVmDomainAssembly != NULL);
+    *pVmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
     // FindLoadedElementType will return NULL if the type hasn't been loaded yet.
     TypeHandle typeHandle =  FindLoadedElementType(simpleType);
 
@@ -3322,8 +3322,8 @@ void DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain    vmAppDomain,
 
         if (pAppDomain)
         {
-            pVmDomainFile->SetHostPtr(pModule->GetDomainAssembly());
-            if (pVmDomainFile->IsNull())
+            pVmDomainAssembly->SetHostPtr(pModule->GetDomainAssembly());
+            if (pVmDomainAssembly->IsNull())
                 ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
         }
     }
@@ -3483,7 +3483,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
 HRESULT DacDbiInterfaceImpl::GetDelegateFunctionData(
     DelegateType delegateType,
     VMPTR_Object delegateObject,
-    OUT VMPTR_DomainFile *ppFunctionDomainFile,
+    OUT VMPTR_DomainAssembly *ppFunctionDomainFile,
     OUT mdMethodDef *pMethodDef)
 {
     DD_ENTER_MAY_THROW;
@@ -3735,7 +3735,7 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
             _ASSERTE(pDomainAssembly != NULL);
 
             currentFrame.vmAppDomain.SetHostPtr(pDomain);
-            currentFrame.vmDomainFile.SetHostPtr(pDomainAssembly);
+            currentFrame.vmDomainAssembly.SetHostPtr(pDomainAssembly);
             currentFrame.ip = currentElement.ip;
             currentFrame.methodDef = currentElement.pFunc->GetMemberDef();
             currentFrame.isLastForeignExceptionFrame = (currentElement.flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0;
@@ -3879,7 +3879,7 @@ FieldDesc * DacDbiInterfaceImpl::GetEnCFieldDesc(const EnCHangingFieldInfo * pEn
 {
         FieldDesc * pFD = NULL;
 
-        DomainAssembly * pDomainAssembly = pEnCFieldInfo->GetObjectTypeData().vmDomainFile.GetDacPtr();
+        DomainAssembly * pDomainAssembly = pEnCFieldInfo->GetObjectTypeData().vmDomainAssembly.GetDacPtr();
         Module     * pModule     = pDomainAssembly->GetModule();
 
         // get the type handle for the object
@@ -3918,7 +3918,7 @@ PTR_CBYTE DacDbiInterfaceImpl::GetPtrToEnCField(FieldDesc * pFD, const EnCHangin
 #else
 
     PTR_EditAndContinueModule pEnCModule;
-    DomainAssembly * pDomainAssembly = pEnCFieldInfo->GetObjectTypeData().vmDomainFile.GetDacPtr();
+    DomainAssembly * pDomainAssembly = pEnCFieldInfo->GetObjectTypeData().vmDomainAssembly.GetDacPtr();
     Module     * pModule     = pDomainAssembly->GetModule();
 
     // make sure we actually have an EditAndContinueModule
@@ -4090,7 +4090,7 @@ void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
                                                TypeRefData *       pTargetRefInfo)
 {
     DD_ENTER_MAY_THROW;
-    DomainAssembly * pDomainAssembly        = pTypeRefInfo->vmDomainFile.GetDacPtr();
+    DomainAssembly * pDomainAssembly        = pTypeRefInfo->vmDomainAssembly.GetDacPtr();
     Module *     pReferencingModule = pDomainAssembly->GetModule();
     BOOL         fSuccess = FALSE;
 
@@ -4119,7 +4119,7 @@ void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
 
         AppDomain * pAppDomain = pDomainAssembly->GetAppDomain();
 
-        pTargetRefInfo->vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pTargetModule->GetDomainAssembly()));
+        pTargetRefInfo->vmDomainAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pTargetModule->GetDomainAssembly()));
         pTargetRefInfo->typeToken = targetTypeDef;
     }
     else
@@ -4347,19 +4347,19 @@ void DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmModule, TargetBuffer *
 
 
 
-void DacDbiInterfaceImpl::GetModuleForDomainFile(VMPTR_DomainFile vmDomainFile, OUT VMPTR_Module * pModule)
+void DacDbiInterfaceImpl::GetModuleForDomainFile(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule)
 {
     DD_ENTER_MAY_THROW;
 
     _ASSERTE(pModule != NULL);
 
-    DomainAssembly * pDomainAssembly = vmDomainFile.GetDacPtr();
+    DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
     pModule->SetHostPtr(pDomainAssembly->GetModule());
 }
 
 
 // Implement IDacDbiInterface::GetDomainFileData
-void DacDbiInterfaceImpl::GetDomainFileData(VMPTR_DomainFile vmDomainFile, DomainFileInfo * pData)
+void DacDbiInterfaceImpl::GetDomainFileData(VMPTR_DomainAssembly vmDomainAssembly, DomainFileInfo * pData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -4367,7 +4367,7 @@ void DacDbiInterfaceImpl::GetDomainFileData(VMPTR_DomainFile vmDomainFile, Domai
 
     ZeroMemory(pData, sizeof(*pData));
 
-    DomainAssembly * pDomainAssembly  = vmDomainFile.GetDacPtr();
+    DomainAssembly * pDomainAssembly  = vmDomainAssembly.GetDacPtr();
     AppDomain  * pAppDomain   = pDomainAssembly->GetAppDomain();
 
     // @dbgtodo - is this efficient DAC usage (perhaps a dac-cop rule)? Are we round-tripping the pointer?
@@ -4498,17 +4498,17 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     {
         _ASSERTE(pDomainAssembly->IsLoaded());
 
-        VMPTR_DomainFile vmDomainFile = VMPTR_DomainFile::NullPtr();
-        vmDomainFile.SetHostPtr(pDomainAssembly);
+        VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+        vmDomainAssembly.SetHostPtr(pDomainAssembly);
 
-        fpCallback(vmDomainFile, pUserData);
+        fpCallback(vmDomainAssembly, pUserData);
     }
 }
 
 // Implementation of IDacDbiInterface::ResolveAssembly
 // Returns NULL if not found.
 VMPTR_DomainAssembly DacDbiInterfaceImpl::ResolveAssembly(
-    VMPTR_DomainFile vmScope,
+    VMPTR_DomainAssembly vmScope,
     mdToken tkAssemblyRef)
 {
     DD_ENTER_MAY_THROW;
@@ -6056,7 +6056,7 @@ void DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS             pTypedByRe
          "ref=0x%08x, cls=0x%08x, mod=0x%p\n",
          pObjectData->objRef,
          pObjectData->typedByrefType.metadataToken,
-         pObjectData->typedByrefType.vmDomainFile.GetDacPtr()));
+         pObjectData->typedByrefType.vmDomainAssembly.GetDacPtr()));
 } // DacDbiInterfaceImpl::GetTypedByRefInfo
 
 // Get the string data associated withn obj and put it into the pointers
@@ -7013,7 +7013,7 @@ bool DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS addr)
 }
 
 bool DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS addr, OUT VMPTR_AppDomain * pAppDomain,
-                                                OUT VMPTR_Module *pModule, OUT VMPTR_DomainFile *pDomainAssembly)
+                                                OUT VMPTR_Module *pModule, OUT VMPTR_DomainAssembly *pDomainAssembly)
 {
     DD_ENTER_MAY_THROW;
 

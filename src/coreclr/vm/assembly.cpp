@@ -1015,8 +1015,8 @@ Module * Assembly::FindModuleByTypeRef(
 #ifndef DACCESS_COMPILE
             if (loadFlag == Loader::Load)
             {
-                DomainAssembly* pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType);
-                RETURN(pActualDomainFile->GetModule());
+                DomainAssembly* pActualDomainAssembly = pModule->LoadModule(::GetAppDomain(), tkType);
+                RETURN(pActualDomainAssembly->GetModule());
             }
             else
             {
