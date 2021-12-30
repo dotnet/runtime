@@ -302,7 +302,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         }
 
         // We only consider back-edges that are BBJ_COND or BBJ_ALWAYS for loops.
-        if ((predBlock->bbJumpKind != BBJ_COND) && (predBlock->bbJumpKind != BBJ_ALWAYS))
+        if (!predBlock->KindIs(BBJ_COND, BBJ_ALWAYS))
         {
             continue;
         }
@@ -580,12 +580,12 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         reportAfter();
     }
 
-    if ((skipUnmarkLoop == false) &&                                              //
-        ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_COND)) && //
-        block->bbJumpDest->isLoopHead() &&                                        //
-        (block->bbJumpDest->bbNum <= block->bbNum) &&                             //
-        fgDomsComputed &&                                                         //
-        (fgCurBBEpochSize == fgDomBBcount + 1) &&                                 //
+    if ((skipUnmarkLoop == false) &&                  //
+        block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        //
+        block->bbJumpDest->isLoopHead() &&            //
+        (block->bbJumpDest->bbNum <= block->bbNum) && //
+        fgDomsComputed &&                             //
+        (fgCurBBEpochSize == fgDomBBcount + 1) &&     //
         fgReachable(block->bbJumpDest, block))
     {
         optUnmarkLoopBlocks(block->bbJumpDest, block);
@@ -1685,9 +1685,7 @@ public:
             return false;
         }
 
-        if ((bottom->bbJumpKind == BBJ_EHFINALLYRET) || (bottom->bbJumpKind == BBJ_EHFILTERRET) ||
-            (bottom->bbJumpKind == BBJ_EHCATCHRET) || (bottom->bbJumpKind == BBJ_CALLFINALLY) ||
-            (bottom->bbJumpKind == BBJ_SWITCH))
+        if (bottom->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_CALLFINALLY, BBJ_SWITCH))
         {
             // BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
             // BBJ_SWITCH that has a backward jump appears only for labeled break.
@@ -1829,7 +1827,7 @@ private:
             }
         }
         // Can we fall through into the loop?
-        else if (head->bbJumpKind == BBJ_NONE || head->bbJumpKind == BBJ_COND)
+        else if (head->KindIs(BBJ_NONE, BBJ_COND))
         {
             // The ENTRY is at the TOP (a do-while loop)
             return top;
@@ -2139,7 +2137,7 @@ private:
             return nullptr;
         }
 
-        if ((newMoveAfter->bbJumpKind == BBJ_ALWAYS) || (newMoveAfter->bbJumpKind == BBJ_COND))
+        if (newMoveAfter->KindIs(BBJ_ALWAYS, BBJ_COND))
         {
             unsigned int destNum = newMoveAfter->bbJumpDest->bbNum;
             if ((destNum >= top->bbNum) && (destNum <= bottom->bbNum) && !loopBlocks.IsMember(destNum))
@@ -2329,8 +2327,8 @@ private:
         }
 
         // Make sure we don't leave around a goto-next unless it's marked KEEP_BBJ_ALWAYS.
-        assert(((block->bbJumpKind != BBJ_COND) && (block->bbJumpKind != BBJ_ALWAYS)) ||
-               (block->bbJumpDest != newNext) || ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
+        assert(!block->KindIs(BBJ_COND, BBJ_ALWAYS) || (block->bbJumpDest != newNext) ||
+               ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
         return newBlock;
     }
 

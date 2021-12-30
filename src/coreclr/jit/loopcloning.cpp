@@ -767,7 +767,7 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
 {
     noway_assert(conds.Size() > 0);
     assert(slowHead != nullptr);
-    assert((insertAfter->bbJumpKind == BBJ_NONE) || (insertAfter->bbJumpKind == BBJ_COND));
+    assert(insertAfter->KindIs(BBJ_NONE, BBJ_COND));
 
     // Choose how to generate the conditions
     const bool generateOneConditionPerBlock = true;
@@ -1847,7 +1847,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // X
 
     BasicBlock* h = loop.lpHead;
-    if (h->bbJumpKind != BBJ_NONE && h->bbJumpKind != BBJ_ALWAYS)
+    if (!h->KindIs(BBJ_NONE, BBJ_ALWAYS))
     {
         // Make a new block to be the unique entry to the loop.
         JITDUMP("Create new unique single-successor entry to loop\n");
