@@ -36,19 +36,20 @@ namespace System.Net.Security.Tests
             _clientCertificate.Dispose();
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true, true)]
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]
         public async Task CertificateSelectionCallback_DelayedCertificate_OK(bool delayCertificate, bool sendClientCertificate)
         {
-             X509Certificate? remoteCertificate = null;
+            X509Certificate? remoteCertificate = null;
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             using (client)
             using (server)
             {
+                int count = 0;
                 SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions();
                 clientOptions.TargetHost = "localhost";
                 // Force Tls 1.2 to avoid issues with certain OpenSSL versions and Tls 1.3
@@ -57,8 +58,9 @@ namespace System.Net.Security.Tests
                 clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
                 clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, certificate, acceptableIssuers) =>
                 {
+                    count++;
                     remoteCertificate = certificate;
-                    if (delayCertificate && remoteCertificate == null)
+                    if (delayCertificate && count == 1)
                     {
                         // wait until we get remote certificate from peer e.g. handshake started.
                         return null;
@@ -98,7 +100,11 @@ namespace System.Net.Security.Tests
                 if (delayCertificate)
                 {
                     // LocalCertificateSelectionCallback should be called with real remote certificate.
-                    Assert.NotNull(remoteCertificate);
+                    if (!OperatingSystem.IsWindows())
+                    {
+                        // remote certificate does not work on windows.
+                        Assert.NotNull(remoteCertificate);
+                    }
                 }
             }
         }
