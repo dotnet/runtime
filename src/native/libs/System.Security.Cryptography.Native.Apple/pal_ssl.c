@@ -160,7 +160,7 @@ int32_t AppleCryptoNative_SslSetBreakOnCertRequested(SSLContextRef sslContext, i
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnCertRequested, setBreak, pOSStatus);
+    return SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnCertRequested, setBreak, pOSStatus);
 #pragma clang diagnostic pop
 }
 
