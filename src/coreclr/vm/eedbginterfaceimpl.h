@@ -301,7 +301,7 @@ public:
                           CorDebugThreadState state);
 
     // This is pretty much copied from VM\COMSynchronizable's
-    // INT32 __stdcall ThreadNative::GetThreadState, so propogate changes
+    // INT32 __stdcall ThreadNative::GetThreadState, so propagate changes
     // to both functions
     CorDebugUserState GetPartialUserState( Thread *pThread );
 

@@ -4898,11 +4898,18 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetObjectForCCW(CORDB_ADDRESS ccwPtr)
 
     OBJECTHANDLE ohCCW = NULL;
 
+#ifdef FEATURE_COMWRAPPERS
+    if (DACTryGetComWrappersHandleFromCCW(ccwPtr, &ohCCW) != S_OK)
+    {
+#endif
 #ifdef FEATURE_COMINTEROP
     ComCallWrapper *pCCW = DACGetCCWFromAddress(ccwPtr);
     if (pCCW)
     {
         ohCCW = pCCW->GetObjectHandle();
+    }
+#endif
+#ifdef FEATURE_COMWRAPPERS
     }
 #endif
 

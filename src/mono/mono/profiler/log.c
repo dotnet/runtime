@@ -3201,7 +3201,7 @@ profiler_thread_begin_function (const char *name8, const gunichar2* name16, size
 }
 
 #define profiler_thread_begin(name, send)							\
-	profiler_thread_begin_function (name, MONO_THREAD_NAME_WINDOWS_CONSTANT (name), G_N_ELEMENTS (name) - 1, (send))
+	profiler_thread_begin_function (name, MONO_THREAD_NAME_WINDOWS_CONSTANT (name), STRING_LENGTH (name), (send))
 
 static void
 profiler_thread_end (MonoProfilerThread *thread, MonoOSEvent *event, gboolean send)

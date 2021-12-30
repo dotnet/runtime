@@ -315,6 +315,7 @@ HANDLES(MPROP_5, "internal_from_handle_type", ves_icall_System_Reflection_Runtim
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
 HANDLES(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue, MonoObject, 1, (MonoObject))
+HANDLES(RUNH_6, "GetSpanDataFrom", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom, gpointer, 3, (MonoClassField_ptr, MonoType_ptr, gpointer))
 HANDLES(RUNH_2, "GetUninitializedObjectInternal", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectInternal, MonoObject, 1, (MonoType_ptr))
 HANDLES(RUNH_3, "InitializeArray", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray, void, 2, (MonoArray, MonoClassField_ptr))
 HANDLES(RUNH_7, "InternalGetHashCode", mono_object_hash_icall, int, 1, (MonoObject))

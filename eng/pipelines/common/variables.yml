@@ -15,6 +15,10 @@ variables:
   value: ${{ and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
 - name: isNotFullMatrix
   value: ${{ and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
+- name: isNotManualAndIsPR
+  value: ${{ and(not(in(variables['Build.DefinitionName'], 'runtime-staging-manual', 'runtime-manual')), eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
+- name: isManualOrIsNotPR
+  value: ${{ or(in(variables['Build.DefinitionName'], 'runtime-staging-manual', 'runtime-manual'), and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest'))) }}
 
 # We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml

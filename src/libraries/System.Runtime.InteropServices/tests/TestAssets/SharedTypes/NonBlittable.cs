@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace SharedTypes
@@ -121,44 +122,42 @@ namespace SharedTypes
 
     public unsafe ref struct Utf16StringMarshaler
     {
-        private ushort* ptr;
+        private ushort* allocated;
         private Span<ushort> span;
+        private bool isNullString;
 
         public Utf16StringMarshaler(string str)
+            : this(str, default(Span<byte>))
         {
-            ptr = str is null ? null : (ushort*)Marshal.StringToCoTaskMemUni(str);
-            span = default;
         }
 
         public Utf16StringMarshaler(string str, Span<byte> buffer)
         {
+            isNullString = false;
             if (str is null)
             {
-                ptr = null;
+                allocated = null;
                 span = default;
+                isNullString = true;
             }
-            else if ((str.Length + 1) < StackBufferSize)
+            else if ((str.Length + 1) < buffer.Length)
             {
                 span = MemoryMarshal.Cast<byte, ushort>(buffer);
                 str.AsSpan().CopyTo(MemoryMarshal.Cast<byte, char>(buffer));
                 // Supplied memory is in an undefined state so ensure
                 // there is a trailing null in the buffer.
                 span[str.Length] = '\0';
-                ptr = null;
+                allocated = null;
             }
             else
             {
-                span = default;
-                ptr = (ushort*)Marshal.StringToCoTaskMemUni(str);
+                allocated = (ushort*)Marshal.StringToCoTaskMemUni(str);
+                span = new Span<ushort>(allocated, str.Length + 1);
             }
         }
 
         public ref ushort GetPinnableReference()
         {
-            if (ptr != null)
-            {
-                return ref *ptr;
-            }
             return ref span.GetPinnableReference();
         }
 
@@ -166,45 +165,36 @@ namespace SharedTypes
         {
             get
             {
-                if (ptr == null && span != default)
-                {
-                    throw new InvalidOperationException();
-                }
-                return ptr;
+                return (ushort*)Unsafe.AsPointer(ref GetPinnableReference());
             }
             set
             {
-                ptr = value;
-                span = default;
+                allocated = value;
+                span = new Span<ushort>(value, value == null ? 0 : FindStringLength(value));
+                isNullString = value == null;
+
+                static int FindStringLength(ushort* ptr)
+                {
+                    // Implemented similarly to string.wcslen as we can't access that outside of CoreLib
+                    var searchSpace = new Span<ushort>(ptr, int.MaxValue);
+                    return searchSpace.IndexOf((ushort)0);
+                }
             }
         }
 
         public string ToManaged()
         {
-            if (ptr == null && span == default)
-            {
-                return null;
-            }
-            else if (ptr != null)
-            {
-                return Marshal.PtrToStringUni((IntPtr)ptr);
-            }
-            else
-            {
-                return MemoryMarshal.Cast<ushort, char>(span).ToString();
-            }
+            return isNullString ? null : MemoryMarshal.Cast<ushort, char>(span).ToString();
         }
 
         public void FreeNative()
         {
-            if (ptr != null)
-            {
-                Marshal.FreeCoTaskMem((IntPtr)ptr);
-            }
+            Marshal.FreeCoTaskMem((IntPtr)allocated);
         }
 
         public const int StackBufferSize = 0x100;
     }
+
 
     [NativeMarshalling(typeof(IntStructWrapperNative))]
     public struct IntStructWrapper
@@ -237,21 +227,8 @@ namespace SharedTypes
         }
 
         public ListMarshaller(List<T> managed, int sizeOfNativeElement)
+            :this(managed, Span<byte>.Empty, sizeOfNativeElement)
         {
-            allocatedMemory = default;
-            this.sizeOfNativeElement = sizeOfNativeElement;
-            if (managed is null)
-            {
-                managedList = null;
-                NativeValueStorage = default;
-                return;
-            }
-            managedList = managed;
-            this.sizeOfNativeElement = sizeOfNativeElement;
-            // Always allocate at least one byte when the array is zero-length.
-            int spaceToAllocate = Math.Max(managed.Count * sizeOfNativeElement, 1);
-            allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
-            NativeValueStorage = new Span<byte>((void*)allocatedMemory, spaceToAllocate);
         }
 
         public ListMarshaller(List<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
@@ -265,7 +242,7 @@ namespace SharedTypes
                 return;
             }
             managedList = managed;
-            // Always allocate at least one byte when the array is zero-length.
+            // Always allocate at least one byte when the list is zero-length.
             int spaceToAllocate = Math.Max(managed.Count * sizeOfNativeElement, 1);
             if (spaceToAllocate <= stackSpace.Length)
             {
@@ -304,8 +281,7 @@ namespace SharedTypes
         {
             get
             {
-                Debug.Assert(managedList is null || allocatedMemory != IntPtr.Zero);
-                return (byte*)allocatedMemory;
+                return (byte*)Unsafe.AsPointer(ref GetPinnableReference());
             }
             set
             {
@@ -326,10 +302,7 @@ namespace SharedTypes
 
         public void FreeNative()
         {
-            if (allocatedMemory != IntPtr.Zero)
-            {
-                Marshal.FreeCoTaskMem(allocatedMemory);
-            }
+            Marshal.FreeCoTaskMem(allocatedMemory);
         }
     }
 }

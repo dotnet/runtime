@@ -320,4 +320,4 @@ END:
 }
 
 
-.assembly add_ovf_u1.exe{}
+.assembly add_ovf_u1{}

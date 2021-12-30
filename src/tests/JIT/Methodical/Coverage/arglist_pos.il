@@ -14,7 +14,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module arglist_pos.exe
+.assembly extern xunit.core {}
 
 .class public auto ansi arglist_pos extends [mscorlib]System.Object
 {
@@ -33,6 +33,9 @@
 
   .method public hidebysig static int32 Main() il managed
   {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.try
 	{

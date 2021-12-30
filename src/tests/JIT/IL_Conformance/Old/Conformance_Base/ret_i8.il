@@ -77,4 +77,4 @@ END:
 }
 }
 
-.assembly ret_i8.exe{}
+.assembly ret_i8{}

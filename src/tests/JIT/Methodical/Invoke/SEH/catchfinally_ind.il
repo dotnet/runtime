@@ -11,10 +11,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'catchfinally'// as "catchfinally"
+.assembly 'catchfinally_ind'// as "catchfinally"
 {
 }
-.module 'catchfinally.exe'
+.assembly extern xunit.core {}
 // MVID: {15FE650F-7944-4B46-86D7-2ECCFDC924C2}
 .namespace JitTest
 {
@@ -183,6 +183,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       97 (0x61)
       .maxstack  1

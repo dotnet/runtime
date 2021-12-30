@@ -4,7 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -73,7 +73,7 @@ unsafe partial class GenericsTest
         }
         else
         {
-            Assert.AreEqual(Vector<long>.Count, 2);
+            Assert.Equal(Vector<long>.Count, 2);
             TestVectorL128();
         }
     }
@@ -84,14 +84,14 @@ unsafe partial class GenericsTest
 
         Vector<long> value2;
         GenericsNative.GetVectorL128Out(1L, 2L, &value2);
-        Assert.AreEqual(value2[0], 1L);
-        Assert.AreEqual(value2[1], 2L);
+        Assert.Equal(value2[0], 1L);
+        Assert.Equal(value2[1], 2L);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorL128Out(1L, 2L, out Vector<long> value3));
 
         Vector<long>* value4 = GenericsNative.GetVectorL128Ptr(1L, 2L);
-        Assert.AreEqual((*value4)[0], 1L);
-        Assert.AreEqual((*value4)[1], 2L);
+        Assert.Equal((*value4)[0], 1L);
+        Assert.Equal((*value4)[1], 2L);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorL128Ref(1L, 2L));
 
@@ -123,18 +123,18 @@ unsafe partial class GenericsTest
 
         Vector<long> value2;
         GenericsNative.GetVectorL256Out(1L, 2L, 3L, 4L, &value2);
-        Assert.AreEqual(value2[0], 1L);
-        Assert.AreEqual(value2[1], 2L);
-        Assert.AreEqual(value2[2], 3L);
-        Assert.AreEqual(value2[3], 4L);
+        Assert.Equal(value2[0], 1L);
+        Assert.Equal(value2[1], 2L);
+        Assert.Equal(value2[2], 3L);
+        Assert.Equal(value2[3], 4L);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorL256Out(1L, 2L, 3L, 4L, out Vector<long> value3));
 
         Vector<long>* value4 = GenericsNative.GetVectorL256Ptr(1L, 2L, 3L, 4L);
-        Assert.AreEqual((*value4)[0], 1L);
-        Assert.AreEqual((*value4)[1], 2L);
-        Assert.AreEqual((*value4)[2], 3L);
-        Assert.AreEqual((*value4)[3], 4L);
+        Assert.Equal((*value4)[0], 1L);
+        Assert.Equal((*value4)[1], 2L);
+        Assert.Equal((*value4)[2], 3L);
+        Assert.Equal((*value4)[3], 4L);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorL256Ref(1L, 2L, 3L, 4L));
 

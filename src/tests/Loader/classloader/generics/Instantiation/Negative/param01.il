@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // DESCRIPTION:
 // This tests that a MissingMethodException is thrown when a constructor
 // of a generic class is invoked via newobj without a type parameter.
@@ -22,7 +23,7 @@
            42 87 88 29 )                                     // B..)
   .ver 1:1:3300:0
 }
-.assembly Negative001
+.assembly 'param01'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -32,7 +33,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Negative001.exe
 // MVID: {9BF036B6-DE42-44EE-B1DF-CC4A10E1400C}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -182,6 +182,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       113 (0x71)
     .maxstack  1

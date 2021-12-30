@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Run CoreCLR OSS tests on Linux or Mac
 # Use the instructions here:

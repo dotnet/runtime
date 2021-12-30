@@ -52,15 +52,12 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == IntPtr.Zero; }
         }
 
-        protected override unsafe bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             Interop.NetSecurityNative.Status minorStatus;
-            fixed (IntPtr* handleRef = &handle)
-            {
-                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ReleaseName(&minorStatus, handleRef);
-                SetHandle(IntPtr.Zero);
-                return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
-            }
+            Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ReleaseName(out minorStatus, ref handle);
+            SetHandle(IntPtr.Zero);
+            return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
         }
 
         public SafeGssNameHandle()
@@ -144,15 +141,12 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == IntPtr.Zero; }
         }
 
-        protected override unsafe bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             Interop.NetSecurityNative.Status minorStatus;
-            fixed (IntPtr* handlePtr = &handle)
-            {
-                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ReleaseCred(&minorStatus, handlePtr);
-                SetHandle(IntPtr.Zero);
-                return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
-            }
+            Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ReleaseCred(out minorStatus, ref handle);
+            SetHandle(IntPtr.Zero);
+            return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
         }
 
         private static bool InitIsNtlmInstalled()
@@ -176,12 +170,9 @@ namespace Microsoft.Win32.SafeHandles
         protected override unsafe bool ReleaseHandle()
         {
             Interop.NetSecurityNative.Status minorStatus;
-            fixed (IntPtr* handlePtr = &handle)
-            {
-                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.DeleteSecContext(&minorStatus, handlePtr);
-                SetHandle(IntPtr.Zero);
-                return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
-            }
+            Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.DeleteSecContext(out minorStatus, ref handle);
+            SetHandle(IntPtr.Zero);
+            return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
         }
     }
 }

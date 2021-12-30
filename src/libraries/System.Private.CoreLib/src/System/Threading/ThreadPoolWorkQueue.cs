@@ -389,6 +389,7 @@ namespace System.Threading
         }
 
         internal bool loggingEnabled;
+        private bool _dispatchTimeSensitiveWorkFirst;
         internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>(); // SOS's ThreadPool command depends on this name
         internal readonly ConcurrentQueue<IThreadPoolWorkItem>? timeSensitiveWorkQueue =
             ThreadPool.SupportsTimeSensitiveWorkItems ? new ConcurrentQueue<IThreadPoolWorkItem>() : null;
@@ -594,27 +595,46 @@ namespace System.Threading
             // Before dequeuing the first work item, acknowledge that the thread request has been satisfied
             workQueue.MarkThreadRequestSatisfied();
 
-            object? workItem;
+            object? workItem = null;
             {
-                bool missedSteal = false;
-                workItem = workQueue.Dequeue(tl, ref missedSteal);
+#pragma warning disable CS0162 // Unreachable code detected. SupportsTimeSensitiveWorkItems may be a constant in some runtimes.
+                if (ThreadPool.SupportsTimeSensitiveWorkItems)
+                {
+                    // Alternate between checking for time-sensitive work or other work first, that way both sets of work items
+                    // get a chance to run in situations where worker threads are starved and work items that run also take over
+                    // the thread, sustaining starvation. For example, if time-sensitive work is always checked last here, timer
+                    // callbacks may not run when worker threads are continually starved.
+                    bool dispatchTimeSensitiveWorkFirst = workQueue._dispatchTimeSensitiveWorkFirst;
+                    workQueue._dispatchTimeSensitiveWorkFirst = !dispatchTimeSensitiveWorkFirst;
+                    if (dispatchTimeSensitiveWorkFirst)
+                    {
+                        workItem = workQueue.TryDequeueTimeSensitiveWorkItem();
+                    }
+                }
+#pragma warning restore CS0162
 
                 if (workItem == null)
                 {
-                    //
-                    // No work.
-                    // If we missed a steal, though, there may be more work in the queue.
-                    // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
-                    // that owns the contended work-stealing queue will pick up its own workitems in the meantime,
-                    // which will be more efficient than this thread doing it anyway.
-                    //
-                    if (missedSteal)
-                    {
-                        workQueue.EnsureThreadRequested();
-                    }
+                    bool missedSteal = false;
+                    workItem = workQueue.Dequeue(tl, ref missedSteal);
 
-                    // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
-                    return true;
+                    if (workItem == null)
+                    {
+                        //
+                        // No work.
+                        // If we missed a steal, though, there may be more work in the queue.
+                        // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
+                        // that owns the contended work-stealing queue will pick up its own workitems in the meantime,
+                        // which will be more efficient than this thread doing it anyway.
+                        //
+                        if (missedSteal)
+                        {
+                            workQueue.EnsureThreadRequested();
+                        }
+
+                        // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
+                        return true;
+                    }
                 }
 
                 // A work item was successfully dequeued, and there may be more work items to process. Request a thread to

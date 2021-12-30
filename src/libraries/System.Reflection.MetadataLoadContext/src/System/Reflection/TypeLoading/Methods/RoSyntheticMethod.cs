@@ -75,9 +75,6 @@ namespace System.Reflection.TypeLoading
             if (DeclaringType != other.DeclaringType)
                 return false;
 
-            if (ReturnType != other.ReturnType)
-                return false;
-
             if (_uniquifier != other._uniquifier)
                 return false;
 

@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 using static VariantNative;
 
 #pragma warning disable CS0612, CS0618

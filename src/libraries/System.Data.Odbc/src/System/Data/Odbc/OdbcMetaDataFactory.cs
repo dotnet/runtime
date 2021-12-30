@@ -590,7 +590,7 @@ namespace System.Data.Odbc
             string? stringValue;
             short int16Value;
             int int32Value;
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             // update the catalog separator
             stringValue = connection.GetInfoStringUnhandled(ODBC32.SQL_INFO.CATALOG_NAME_SEPARATOR);
@@ -631,7 +631,7 @@ namespace System.Data.Odbc
                 retcode = connection.GetInfoInt32Unhandled(ODBC32.SQL_INFO.SQL_OJ_CAPABILITIES_20, out int32Value);
             }
 
-            if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+            if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
                 Common.SupportedJoinOperators supportedJoinOperators = Common.SupportedJoinOperators.None;
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.LEFT) != 0)
@@ -658,7 +658,7 @@ namespace System.Data.Odbc
             retcode = connection.GetInfoInt16Unhandled(ODBC32.SQL_INFO.GROUP_BY, out int16Value);
             Common.GroupByBehavior groupByBehavior = Common.GroupByBehavior.Unknown;
 
-            if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+            if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
                 switch (int16Value)
                 {
@@ -691,7 +691,7 @@ namespace System.Data.Odbc
             retcode = connection.GetInfoInt16Unhandled(ODBC32.SQL_INFO.IDENTIFIER_CASE, out int16Value);
             Common.IdentifierCase identifierCase = Common.IdentifierCase.Unknown;
 
-            if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+            if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
                 switch (int16Value)
                 {
@@ -758,7 +758,7 @@ namespace System.Data.Odbc
             retcode = connection.GetInfoInt16Unhandled(ODBC32.SQL_INFO.QUOTED_IDENTIFIER_CASE, out int16Value);
             Common.IdentifierCase quotedIdentifierCase = Common.IdentifierCase.Unknown;
 
-            if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+            if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
                 switch (int16Value)
                 {

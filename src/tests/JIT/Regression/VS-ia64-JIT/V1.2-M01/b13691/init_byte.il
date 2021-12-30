@@ -25,7 +25,7 @@
 
   .ver 0:0:0:0
 }
-.module init_byte.exe
+.assembly extern xunit.core {}
 // MVID: {FDCD7B4C-5230-4304-82F7-A3D10057533E}
 .imagebase 0x00400000
 .file alignment 0x00001000
@@ -454,6 +454,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       842 (0x34a)
     .maxstack  4

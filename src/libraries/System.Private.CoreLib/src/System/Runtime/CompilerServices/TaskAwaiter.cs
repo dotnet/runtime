@@ -78,7 +78,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.InvalidOperationException">The awaiter was not properly initialized.</exception>
-        /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
+        /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public void OnCompleted(Action continuation)
         {
             OnCompletedInternal(m_task, continuation, continueOnCapturedContext: true, flowExecutionContext: true);

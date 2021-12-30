@@ -2115,5 +2115,5 @@ END:
 }
 
 
-.assembly ldc_conv_ovf_r8_i.exe{}
+.assembly ldc_conv_ovf_r8_i{}
 

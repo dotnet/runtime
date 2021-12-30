@@ -3383,7 +3383,7 @@ bool ReplayPolicy::FindContext(InlineContext* context)
     // Token and Hash we're looking for.
     mdMethodDef contextToken  = m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(context->GetCallee());
     unsigned    contextHash   = m_RootCompiler->compMethodHash(context->GetCallee());
-    unsigned    contextOffset = (unsigned)context->GetOffset();
+    unsigned    contextOffset = (unsigned)context->GetLocation().GetOffset();
 
     return FindInline(contextToken, contextHash, contextOffset);
 }
@@ -3573,7 +3573,7 @@ bool ReplayPolicy::FindInline(CORINFO_METHOD_HANDLE callee)
     int offset = -1;
     if (m_Offset != BAD_IL_OFFSET)
     {
-        offset = (int)jitGetILoffs(m_Offset);
+        offset = m_Offset;
     }
 
     unsigned calleeOffset = (unsigned)offset;

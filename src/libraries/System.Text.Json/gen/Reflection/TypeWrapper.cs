@@ -600,5 +600,7 @@ namespace System.Text.Json.Reflection
             }
             return base.Equals(o);
         }
+
+        public Location? Location => _typeSymbol.Locations.Length > 0 ? _typeSymbol.Locations[0] : null;
     }
 }

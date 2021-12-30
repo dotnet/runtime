@@ -42,25 +42,25 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
 {
     std::string tmp = to_lower(origSuffix);
 
-    // First, check to see if foo.origSuffix exists
+    // First, check to see if foo.origSuffix exists and is not a directory name
     size_t suffix_offset = fileName.find_last_of('.');
-    if ((SSIZE_T)suffix_offset <= 0 || (tmp != to_lower(fileName.substr(suffix_offset))) ||
-        (GetFileAttributesA(fileName.c_str()) == INVALID_FILE_ATTRIBUTES))
+    if ((SSIZE_T)suffix_offset <= 0 || (tmp != to_lower(fileName.substr(suffix_offset))))
+        return std::string();
+
+    DWORD attribs = GetFileAttributesA(fileName.c_str());
+    if ((attribs == INVALID_FILE_ATTRIBUTES) || (attribs & FILE_ATTRIBUTE_DIRECTORY))
         return std::string();
 
     // next, check foo.orig.new from foo.orig
     tmp = fileName + newSuffix;
-    if (GetFileAttributesA(tmp.c_str()) != INVALID_FILE_ATTRIBUTES)
+    attribs = GetFileAttributesA(tmp.c_str());
+    if ((attribs != INVALID_FILE_ATTRIBUTES) && !(attribs & FILE_ATTRIBUTE_DIRECTORY))
         return tmp;
 
-    // Now let's check for foo.new from foo.new.orig
-    tmp = fileName.substr(0, suffix_offset);
-    if (GetFileAttributesA(tmp.c_str()) != INVALID_FILE_ATTRIBUTES)
-        return tmp;
-
-    // Finally, lets try foo.orig from foo.new
-    tmp += newSuffix;
-    if (GetFileAttributesA(tmp.c_str()) != INVALID_FILE_ATTRIBUTES)
+    // Finally, lets try foo.new from foo.orig
+    tmp = fileName.substr(0, suffix_offset) + newSuffix;
+    attribs = GetFileAttributesA(tmp.c_str());
+    if ((attribs != INVALID_FILE_ATTRIBUTES) && !(attribs & FILE_ATTRIBUTE_DIRECTORY))
         return tmp;
 
     return std::string();

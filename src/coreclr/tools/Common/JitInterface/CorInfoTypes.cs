@@ -437,23 +437,15 @@ namespace Internal.JitInterface
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
     }
 
-    public enum CorInfoIntrinsics
+    // These are used to detect array methods as NamedIntrinsic in JIT importer,
+    // which otherwise don't have a name.
+    public enum CorInfoArrayIntrinsic
     {
-        CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
-        CORINFO_INTRINSIC_Array_Address,        // Get the address of an element in an array
-        CORINFO_INTRINSIC_Array_Set,            // Set the value of an element in an array
-        CORINFO_INTRINSIC_InitializeArray,      // initialize an array from static data
-        CORINFO_INTRINSIC_RTH_GetValueInternal,
-        CORINFO_INTRINSIC_Object_GetType,
-        CORINFO_INTRINSIC_StubHelpers_GetStubContext,
-        CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
-        CORINFO_INTRINSIC_StubHelpers_NextCallReturnAddress,
-        CORINFO_INTRINSIC_ByReference_Ctor,
-        CORINFO_INTRINSIC_ByReference_Value,
-        CORINFO_INTRINSIC_GetRawHandle,
+        GET = 0,
+        SET = 1,
+        ADDRESS = 2,
 
-        CORINFO_INTRINSIC_Count,
-        CORINFO_INTRINSIC_Illegal = -1,         // Not a true intrinsic,
+        ILLEGAL
     }
 
     // Can a value be accessed directly from JITed code.
@@ -603,7 +595,6 @@ namespace Internal.JitInterface
         // CORINFO_FLG_UNUSED = 0x04000000,
         CORINFO_FLG_DONT_INLINE = 0x10000000, // The method should not be inlined
         CORINFO_FLG_DONT_INLINE_CALLER = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
-        CORINFO_FLG_JIT_INTRINSIC = 0x40000000, // Method is a potential jit intrinsic; verify identity by name check
 
         // These are internal flags that can only be on Classes
         CORINFO_FLG_VALUECLASS = 0x00010000, // is the class a value class
@@ -618,7 +609,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
         // CORINFO_FLG_UNUSED = 0x04000000,
-        CORINFO_FLG_CONTAINS_STACK_PTR = 0x08000000, // This class has a stack pointer inside it
+        CORINFO_FLG_BYREF_LIKE = 0x08000000, // it is byref-like value type
         CORINFO_FLG_VARIANCE = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
         CORINFO_FLG_BEFOREFIELDINIT = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
         CORINFO_FLG_GENERIC_TYPE_VARIABLE = 0x40000000, // This is really a handle for a variable type

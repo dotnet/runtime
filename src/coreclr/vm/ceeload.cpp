@@ -1762,7 +1762,7 @@ BOOL Module::IsRuntimeWrapExceptions()
             // Then, find the named argument
             namedArgs[0].InitBoolField("WrapNonExceptionThrows");
 
-            IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
+            IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
 
             if (namedArgs[0].val.boolean)
                 fRuntimeWrapExceptions = TRUE;
@@ -7705,7 +7705,7 @@ void Module::ExpandAll()
                 //These are the only methods we can jit
                 && (pMD->IsStatic() || pMD->GetNumGenericMethodArgs() == 0
                     || pMD->HasClassInstantiation())
-                && (pMD->MayHaveNativeCode() && !pMD->IsFCallOrIntrinsic()))
+                && (pMD->MayHaveNativeCode() && !pMD->IsFCall()))
             {
                 pMD->PrepareInitialCode();
             }

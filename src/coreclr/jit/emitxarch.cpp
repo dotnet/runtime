@@ -150,6 +150,45 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// HasRegularWideForm: Many x86/x64 instructions follow a regular encoding scheme where the
+// byte-sized version of an instruction has the lowest bit of the opcode cleared
+// while the 32-bit version of the instruction (taking potential prefixes to
+// override operand size) has the lowest bit set. This function returns true if
+// the instruction follows this format.
+//
+// Note that this bit is called `w` in the encoding table in Section B.2 of
+// Volume 2 of the Intel Architecture Software Developer Manual.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction has a regular form where the 'w' bit needs to be set.
+bool emitter::HasRegularWideForm(instruction ins)
+{
+    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Wbit) != 0);
+}
+
+//------------------------------------------------------------------------
+// HasRegularWideImmediateForm: As above in HasRegularWideForm, many instructions taking
+// immediates have a regular form used to encode whether the instruction takes a sign-extended
+// 1-byte immediate or a (in 64-bit sign-extended) 4-byte immediate, by respectively setting and
+// clearing the second lowest bit.
+//
+// Note that this bit is called `s` in the encoding table in Section B.2 of
+// Volume 2 of the Intel Architecture Software Developer Manual.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction has a regular wide immediate form where the 's' bit needs to set.
+bool emitter::HasRegularWideImmediateForm(instruction ins)
+{
+    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Sbit) != 0);
+}
+
+//------------------------------------------------------------------------
 // DoesWriteZeroFlag: check if the instruction write the
 //     ZF flag.
 //
@@ -162,6 +201,21 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 bool emitter::DoesWriteZeroFlag(instruction ins)
 {
     return (CodeGenInterface::instInfo[ins] & Writes_ZF) != 0;
+}
+
+//------------------------------------------------------------------------
+// DoesWriteSignFlag: check if the instruction writes the
+//     SF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the SF flag, false otherwise.
+//
+bool emitter::DoesWriteSignFlag(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] & Writes_SF) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -338,6 +392,11 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
 {
     assert(reg != REG_NA);
 
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
     // Don't look back across IG boundaries (possible control flow)
     if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
     {
@@ -385,6 +444,79 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
     if ((treeOps == GT_EQ) || (treeOps == GT_NE))
     {
         if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// AreFlagsSetToForSignJumpOpt: checks if the previous instruction set the SF if the tree
+//                              node qualifies for a jg/jle to jns/js optimization
+//
+// Arguments:
+//    reg     - register of interest
+//    opSize  - size of register
+//    relop   - relational tree node
+//
+// Return Value:
+//    true if the tree node qualifies for the jg/jle to jns/js optimization
+//    false if not, or if we can't safely determine
+//
+// Notes:
+//    Currently only looks back one instruction.
+bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* relop)
+{
+    assert(reg != REG_NA);
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    // Don't look back across IG boundaries (possible control flow)
+    if (emitCurIGinsCnt == 0 && ((emitCurIG->igFlags & IGF_EXTEND) == 0))
+    {
+        return false;
+    }
+
+    instrDesc*  id      = emitLastIns;
+    instruction lastIns = id->idIns();
+    insFormat   fmt     = id->idInsFmt();
+
+    // make sure op1 is a reg
+    switch (fmt)
+    {
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_MRD:
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RWR:
+        case IF_RRD:
+        case IF_RRW:
+            break;
+        default:
+            return false;
+    }
+
+    if (id->idReg1() != reg)
+    {
+        return false;
+    }
+
+    // If we have a GT_GE/GT_LT which generates an jge/jl, and the previous instruction
+    // sets the SF, we can omit a test instruction and check for jns/js.
+    if ((relop->OperGet() == GT_GE || relop->OperGet() == GT_LT) && !GenCondition::FromRelop(relop).IsUnsigned())
+    {
+        if (DoesWriteSignFlag(lastIns) && IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }
@@ -1293,7 +1425,7 @@ const BYTE          emitter::emitInsModeFmtTab[] =
 // clang-format on
 
 #ifdef DEBUG
-unsigned const emitter::emitInsModeFmtCnt = _countof(emitInsModeFmtTab);
+unsigned const emitter::emitInsModeFmtCnt = ArrLen(emitInsModeFmtTab);
 #endif
 
 /*****************************************************************************
@@ -1387,7 +1519,7 @@ inline size_t insCode(instruction ins)
     };
     // clang-format on
 
-    assert((unsigned)ins < _countof(insCodes));
+    assert((unsigned)ins < ArrLen(insCodes));
     assert((insCodes[ins] != BAD_CODE));
 
     return insCodes[ins];
@@ -1420,7 +1552,7 @@ inline size_t insCodeACC(instruction ins)
     };
     // clang-format on
 
-    assert((unsigned)ins < _countof(insCodesACC));
+    assert((unsigned)ins < ArrLen(insCodesACC));
     assert((insCodesACC[ins] != BAD_CODE));
 
     return insCodesACC[ins];
@@ -1453,7 +1585,7 @@ inline size_t insCodeRR(instruction ins)
     };
     // clang-format on
 
-    assert((unsigned)ins < _countof(insCodesRR));
+    assert((unsigned)ins < ArrLen(insCodesRR));
     assert((insCodesRR[ins] != BAD_CODE));
 
     return insCodesRR[ins];
@@ -1482,7 +1614,7 @@ size_t          insCodesRM[] =
 // Returns true iff the give CPU instruction has an RM encoding.
 inline bool hasCodeRM(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesRM));
+    assert((unsigned)ins < ArrLen(insCodesRM));
     return ((insCodesRM[ins] != BAD_CODE));
 }
 
@@ -1493,7 +1625,7 @@ inline bool hasCodeRM(instruction ins)
 
 inline size_t insCodeRM(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesRM));
+    assert((unsigned)ins < ArrLen(insCodesRM));
     assert((insCodesRM[ins] != BAD_CODE));
 
     return insCodesRM[ins];
@@ -1522,7 +1654,7 @@ size_t          insCodesMI[] =
 // Returns true iff the give CPU instruction has an MI encoding.
 inline bool hasCodeMI(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesMI));
+    assert((unsigned)ins < ArrLen(insCodesMI));
     return ((insCodesMI[ins] != BAD_CODE));
 }
 
@@ -1533,7 +1665,7 @@ inline bool hasCodeMI(instruction ins)
 
 inline size_t insCodeMI(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesMI));
+    assert((unsigned)ins < ArrLen(insCodesMI));
     assert((insCodesMI[ins] != BAD_CODE));
 
     return insCodesMI[ins];
@@ -1562,7 +1694,7 @@ size_t          insCodesMR[] =
 // Returns true iff the give CPU instruction has an MR encoding.
 inline bool hasCodeMR(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesMR));
+    assert((unsigned)ins < ArrLen(insCodesMR));
     return ((insCodesMR[ins] != BAD_CODE));
 }
 
@@ -1573,7 +1705,7 @@ inline bool hasCodeMR(instruction ins)
 
 inline size_t insCodeMR(instruction ins)
 {
-    assert((unsigned)ins < _countof(insCodesMR));
+    assert((unsigned)ins < ArrLen(insCodesMR));
     assert((insCodesMR[ins] != BAD_CODE));
 
     return insCodesMR[ins];
@@ -2177,8 +2309,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_AMD64_ABI
-                    LclVarDsc* varDsc         = emitComp->lvaTable + var;
-                    bool       isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
+                    const LclVarDsc* varDsc         = emitComp->lvaGetDesc(var);
+                    bool             isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
                     // Register passed args could have a stack offset of 0.
                     noway_assert((int)offs < 0 || isRegPassedArg || emitComp->opts.IsOSR());
 #else  // !UNIX_AMD64_ABI
@@ -2805,7 +2937,8 @@ void emitter::emitIns(instruction ins)
              ins == INS_r_movsp || ins == INS_r_stosb || ins == INS_r_stosd || ins == INS_r_stosp || ins == INS_ret ||
              ins == INS_sahf || ins == INS_stosb || ins == INS_stosd || ins == INS_stosp
              // These instructions take zero operands
-             || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_sfence);
+             || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_sfence ||
+             ins == INS_pause);
 
         assert(assertCond);
     }
@@ -7536,7 +7669,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            VARSET_VALARG_TP      ptrVars,
                            regMaskTP             gcrefRegs,
                            regMaskTP             byrefRegs,
-                           IL_OFFSETX            ilOffset,
+                           const DebugInfo&      di,
                            regNumber             ireg,
                            regNumber             xreg,
                            unsigned              xmul,
@@ -7577,9 +7710,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
+    if (emitComp->opts.compDbgInfo && di.IsValid())
     {
-        codeGen->genIPmappingAdd(ilOffset, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
     }
 
     /*
@@ -8116,7 +8249,7 @@ const char* emitter::emitXMMregName(unsigned reg)
     };
 
     assert(reg < REG_COUNT);
-    assert(reg < _countof(regNames));
+    assert(reg < ArrLen(regNames));
 
     return regNames[reg];
 }
@@ -8134,7 +8267,7 @@ const char* emitter::emitYMMregName(unsigned reg)
     };
 
     assert(reg < REG_COUNT);
-    assert(reg < _countof(regNames));
+    assert(reg < ArrLen(regNames));
 
     return regNames[reg];
 }
@@ -8303,12 +8436,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     if (varx >= 0 && emitComp->opts.varNames)
     {
-        LclVarDsc*  varDsc;
-        const char* varName;
-
-        assert((unsigned)varx < emitComp->lvaCount);
-        varDsc  = emitComp->lvaTable + varx;
-        varName = emitComp->compLocalVarName(varx, offs);
+        const char* varName = emitComp->compLocalVarName(varx, offs);
 
         if (varName)
         {
@@ -8628,11 +8756,22 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
-/*****************************************************************************
- *
- *  Display the given instruction.
- */
-
+//--------------------------------------------------------------------
+// emitDispIns: Dump the given instruction to jitstdout.
+//
+// Arguments:
+//   id - The instruction
+//   isNew - Whether the instruction is newly generated (before encoding).
+//   doffs - If true, always display the passed-in offset.
+//   asmfm - Whether the instruction should be displayed in assembly format.
+//           If false some additional information may be printed for the instruction.
+//   offset - The offset of the instruction. Only displayed if doffs is true or if
+//            !isNew && !asmfm.
+//   code - Pointer to the actual code, used for displaying the address and encoded bytes
+//          if turned on.
+//   sz - The size of the instruction, used to display the encoded bytes.
+//   ig - The instruction group containing the instruction. Not used on xarch.
+//
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* code, size_t sz, insGroup* ig)
 {
@@ -9736,7 +9875,14 @@ void emitter::emitDispIns(
 #if FEATURE_LOOP_ALIGN
             if (ins == INS_align)
             {
-                printf("[%d bytes]", id->idCodeSize());
+                instrDescAlign* alignInstrId = (instrDescAlign*)id;
+                printf("[%d bytes", alignInstrId->idCodeSize());
+                // targetIG is only set for 1st of the series of align instruction
+                if ((alignInstrId->idaLoopHeadPredIG != nullptr) && (alignInstrId->loopHeadIG() != nullptr))
+                {
+                    printf(" for IG%02u", alignInstrId->loopHeadIG()->igNum);
+                }
+                printf("]");
             }
 #endif
             break;
@@ -9924,32 +10070,74 @@ static BYTE* emitOutputNOP(BYTE* dstRW, size_t nBytes)
 //
 BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 {
+    instrDescAlign* alignInstr = (instrDescAlign*)id;
+
+#ifdef DEBUG
+    // For cases where 'align' was placed behing a 'jmp' in an IG that does not
+    // immediately preced the loop IG, we do not know in advance the offset of
+    // IG having loop. For such cases, skip the padding calculation validation.
+    bool validatePadding = !alignInstr->isPlacedAfterJmp;
+#endif
+
     // Candidate for loop alignment
     assert(codeGen->ShouldAlignLoops());
-    assert(ig->isLoopAlign());
+    assert(ig->endsWithAlignInstr());
 
     unsigned paddingToAdd = id->idCodeSize();
 
     // Either things are already aligned or align them here.
-    assert((paddingToAdd == 0) || (((size_t)dst & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
+    assert(!validatePadding || (paddingToAdd == 0) ||
+           (((size_t)dst & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
 
     // Padding amount should not exceed the alignment boundary
     assert(0 <= paddingToAdd && paddingToAdd < emitComp->opts.compJitAlignLoopBoundary);
 
 #ifdef DEBUG
-    unsigned paddingNeeded = emitCalculatePaddingForLoopAlignment(ig, (size_t)dst, true);
-
-    // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
-    if (emitComp->opts.compJitAlignLoopAdaptive)
+    if (validatePadding)
     {
-        assert(paddingToAdd == paddingNeeded);
+        unsigned paddingNeeded =
+            emitCalculatePaddingForLoopAlignment(((instrDescAlign*)id)->idaIG->igNext, (size_t)dst, true);
+
+        // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
+        if (emitComp->opts.compJitAlignLoopAdaptive)
+        {
+            assert(paddingToAdd == paddingNeeded);
+        }
     }
 
     emitComp->loopsAligned++;
 #endif
 
     BYTE* dstRW = dst + writeableOffset;
-    dstRW       = emitOutputNOP(dstRW, paddingToAdd);
+
+#ifdef DEBUG
+    // Under STRESS_EMITTER, if this is the 'align' before the 'jmp' instruction,
+    // then add "int3" instruction. Since int3 takes 1 byte, we would only add
+    // it if paddingToAdd >= 1 byte.
+
+    if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp && paddingToAdd >= 1)
+    {
+        size_t int3Code = insCodeMR(INS_BREAKPOINT);
+        // There is no good way to squeeze in "int3" as well as display it
+        // in the disassembly because there is no corresponding instrDesc for
+        // it. As such, leave it as is, the "0xCC" bytecode will be seen next
+        // to the nop instruction in disasm.
+        // e.g. CC                   align    [1 bytes for IG29]
+        //
+        // if (emitComp->opts.disAsm)
+        //{
+        //    emitDispInsAddr(dstRW);
+
+        //    emitDispInsOffs(0, false);
+
+        //    printf("                      %-9s  ; stress-mode injected interrupt\n", "int3");
+        //}
+        dstRW += emitOutputByte(dstRW, int3Code);
+        paddingToAdd -= 1;
+    }
+#endif
+
+    dstRW = emitOutputNOP(dstRW, paddingToAdd);
     return dstRW - writeableOffset;
 }
 
@@ -9965,6 +10153,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     ssize_t   dsp;
     bool      dspInByte;
     bool      dspIsZero;
+    bool      isMoffset = false;
 
     instruction ins  = id->idIns();
     emitAttr    size = id->idOpSize();
@@ -10041,6 +10230,41 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             opsz = 1;
         }
     }
+#ifdef TARGET_X86
+    else
+    {
+        // Special case: "mov eax, [addr]" and "mov [addr], eax"
+        // Amd64: this is one case where addr can be 64-bit in size.  This is
+        // currently unused or not enabled on amd64 as it always uses RIP
+        // relative addressing which results in smaller instruction size.
+        if ((ins == INS_mov) && (id->idReg1() == REG_EAX) && (reg == REG_NA) && (rgx == REG_NA))
+        {
+            switch (id->idInsFmt())
+            {
+                case IF_RWR_ARD:
+
+                    assert(code == (insCodeRM(ins) | (insEncodeReg345(ins, REG_EAX, EA_PTRSIZE, NULL) << 8)));
+
+                    code &= ~((code_t)0xFFFFFFFF);
+                    code |= 0xA0;
+                    isMoffset = true;
+                    break;
+
+                case IF_AWR_RRD:
+
+                    assert(code == (insCodeMR(ins) | (insEncodeReg345(ins, REG_EAX, EA_PTRSIZE, NULL) << 8)));
+
+                    code &= ~((code_t)0xFFFFFFFF);
+                    code |= 0xA2;
+                    isMoffset = true;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+#endif // TARGET_X86
 
     // Emit VEX prefix if required
     // There are some callers who already add VEX prefix and call this routine.
@@ -10187,10 +10411,9 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Use the large version if this is not a byte. This trick will not
         // work in case of SSE2 and AVX instructions.
-        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && !IsSSEInstruction(ins) &&
-            !IsAVXInstruction(ins))
+        if ((size != EA_1BYTE) && HasRegularWideForm(ins))
         {
-            code++;
+            code |= 0x1;
         }
     }
     else if (CodeGen::instIsFP(ins))
@@ -10260,8 +10483,27 @@ GOT_DSP:
         dspInByte = false; // relocs can't be placed in a byte
     }
 
+    if (isMoffset)
+    {
+#ifdef TARGET_AMD64
+        // This code path should never be hit on amd64 since it always uses RIP relative addressing.
+        // In future if ever there is a need to enable this special case, also enable the logic
+        // that sets isMoffset to true on amd64.
+        unreached();
+#else // TARGET_X86
+
+        dst += emitOutputByte(dst, code);
+        dst += emitOutputSizeT(dst, dsp);
+
+        if (id->idIsDspReloc())
+        {
+            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), (void*)dsp, IMAGE_REL_BASED_MOFFSET);
+        }
+
+#endif // TARGET_X86
+    }
     // Is there a [scaled] index component?
-    if (rgx == REG_NA)
+    else if (rgx == REG_NA)
     {
         // The address is of the form "[reg+disp]"
         switch (reg)
@@ -10954,9 +11196,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Use the large version if this is not a byte
-        // TODO-XArch-Cleanup Can the need for the 'w' size bit be encoded in the instruction flags?
-        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && (!insIsCMOV(ins)) &&
-            !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
+        if ((size != EA_1BYTE) && HasRegularWideForm(ins))
         {
             code |= 0x1;
         }
@@ -11419,12 +11659,9 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             code &= 0x0000FFFF;
         }
 
-        if ((ins == INS_movsx || ins == INS_movzx || ins == INS_cmpxchg || ins == INS_xchg || ins == INS_xadd ||
-             insIsCMOV(ins)) &&
-            size != EA_1BYTE)
+        if (size != EA_1BYTE && HasRegularWideForm(ins))
         {
-            // movsx and movzx are 'big' opcodes but also have the 'w' bit
-            code++;
+            code |= 0x1;
         }
     }
     else if (CodeGen::instIsFP(ins))
@@ -12240,8 +12477,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         // Due to elided register moves, we can't have the following assert.
                         // For example, consider:
                         //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
-                        //        /--*  t85    byref                                                       
-                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx                 
+                        //        /--*  t85    byref
+                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx
                         // Here, V01 is type `long` on entry, then is stored as a byref. But because
                         // the register allocator assigned the same register, no instruction was
                         // generated, and we only (currently) make gcref/byref changes in emitter GC info
@@ -12591,7 +12828,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     }
 
     // "test" has no 's' bit
-    if (ins == INS_test)
+    if (!HasRegularWideImmediateForm(ins))
     {
         useSigned = false;
     }
@@ -13279,7 +13516,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 sz = sizeof(instrDescAlign);
                 // IG can be marked as not needing alignment after emitting align instruction
                 // In such case, skip outputting alignment.
-                if (ig->isLoopAlign())
+                if (ig->endsWithAlignInstr())
                 {
                     dst = emitOutputAlign(ig, id, dst);
                 }
@@ -14729,9 +14966,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     {
         case INS_align:
 #if FEATURE_LOOP_ALIGN
-            if (id->idCodeSize() == 0)
+            if ((id->idCodeSize() == 0) || ((instrDescAlign*)id)->isPlacedAfterJmp)
             {
-                // We're not going to generate any instruction, so it doesn't count for PerfScore.
+                // Either we're not going to generate 'align' instruction, or the 'align'
+                // instruction is placed immediately after unconditional jmp.
+                // In both cases, don't count for PerfScore.
+
                 result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
                 result.insLatency    = PERFSCORE_LATENCY_ZERO;
                 break;
@@ -16010,6 +16250,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_prefetchnta:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             break;
+
+        case INS_pause:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_140C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_140C;
+            break;
+        }
 
         default:
             // unhandled instruction insFmt combination

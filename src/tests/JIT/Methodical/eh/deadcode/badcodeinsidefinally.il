@@ -11,11 +11,11 @@
   .ver 0:0:0:0
 }
 .assembly extern common{}
-.assembly test
+.assembly 'badcodeinsidefinally'
 {
   .ver 0:0:0:0
 }
-.module badcodeinsidefinally.exe
+.assembly extern xunit.core {}
 
 
 .class public auto ansi beforefieldinit Test_badcodeinsidefinally
@@ -67,6 +67,9 @@
 
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (object V_0,
 	  class [mscorlib]System.IO.StringWriter expectedOut,

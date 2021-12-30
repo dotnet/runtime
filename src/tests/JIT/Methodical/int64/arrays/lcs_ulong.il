@@ -16,7 +16,7 @@
 .assembly 'lcs_ulong'// as "lcs_ulong"
 {
 }
-.module 'lcs_ulong.exe'
+.assembly extern xunit.core {}
 // MVID: {4FECC02C-D871-4196-A531-897C5458F477}
 .namespace JitTest
 {
@@ -623,6 +623,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       266 (0x10a)
       .maxstack  5

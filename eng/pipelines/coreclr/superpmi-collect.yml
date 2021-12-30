@@ -12,7 +12,7 @@ trigger:
     - src/coreclr/inc/jiteeversionguid.h
 
 # This pipeline is supposed to be run only on merged changes
-# and should not be triggerable from a PR. 
+# and should not be triggerable from a PR.
 pr: none
 
 schedules:
@@ -54,7 +54,6 @@ jobs:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
-      liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

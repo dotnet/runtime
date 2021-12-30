@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, EntryPoint = "EnumServicesStatusExW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool EnumServicesStatusEx(
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "EnumServicesStatusExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial bool EnumServicesStatusEx(
             SafeServiceHandle databaseHandle,
             int infolevel,
             int serviceType,

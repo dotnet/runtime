@@ -22,7 +22,7 @@ usage_list+=("-pgodatapath: path to profile guided optimization data.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
 usage_list+=("-staticanalyzer: use scan_build static analyzer.")
-usage_list+=("-component: Build individual components instead of the full project. Available options are 'jit', 'runtime', 'paltests', 'alljits', and 'iltools'. Can be specified multiple times.")
+usage_list+=("-component: Build individual components instead of the full project. Available options are 'hosts', 'jit', 'runtime', 'paltests', 'alljits', 'iltools', and 'nativeaot'. Can be specified multiple times.")
 
 setup_dirs_local()
 {
@@ -116,8 +116,6 @@ __CodeCoverage=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __Compiler=clang
-__CompilerMajorVersion=
-__CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0

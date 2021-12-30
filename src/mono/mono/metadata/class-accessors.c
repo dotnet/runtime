@@ -25,7 +25,10 @@ typedef enum {
 	PROP_FIELD_DEF_VALUES = 7, /* MonoFieldDefaultValue* */
 	PROP_DECLSEC_FLAGS = 8, /* guint32 */
 	PROP_WEAK_BITMAP = 9,
-	PROP_DIM_CONFLICTS = 10 /* GSList of MonoMethod* */
+	PROP_DIM_CONFLICTS = 10, /* GSList of MonoMethod* */
+	PROP_FIELD_DEF_VALUES_2BYTESWIZZLE = 11, /* MonoFieldDefaultValue* with default values swizzled at 2 byte boundaries*/ 
+	PROP_FIELD_DEF_VALUES_4BYTESWIZZLE = 12, /* MonoFieldDefaultValue* with default values swizzled at 4 byte boundaries*/ 
+	PROP_FIELD_DEF_VALUES_8BYTESWIZZLE = 13 /* MonoFieldDefaultValue* with default values swizzled at 8 byte boundaries*/ 
 }  InfrequentDataKind;
 
 /* Accessors based on class kind*/
@@ -382,10 +385,37 @@ mono_class_get_field_def_values (MonoClass *klass)
 	return (MonoFieldDefaultValue*)get_pointer_property (klass, PROP_FIELD_DEF_VALUES);
 }
 
+MonoFieldDefaultValue*
+mono_class_get_field_def_values_with_swizzle (MonoClass *klass, int swizzle)
+{
+	InfrequentDataKind dataKind = PROP_FIELD_DEF_VALUES;
+	if (swizzle == 2)
+		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
+	else if (swizzle == 4)
+		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
+	else
+		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
+	return (MonoFieldDefaultValue*)get_pointer_property (klass, dataKind);
+}
+
+
 void
 mono_class_set_field_def_values (MonoClass *klass, MonoFieldDefaultValue *values)
 {
 	set_pointer_property (klass, PROP_FIELD_DEF_VALUES, values);
+}
+
+void
+mono_class_set_field_def_values_with_swizzle (MonoClass *klass, MonoFieldDefaultValue *values, int swizzle)
+{
+	InfrequentDataKind dataKind = PROP_FIELD_DEF_VALUES;
+	if (swizzle == 2)
+		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
+	else if (swizzle == 4)
+		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
+	else
+		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
+	set_pointer_property (klass, dataKind, values);
 }
 
 guint32

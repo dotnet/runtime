@@ -311,7 +311,7 @@ namespace System.Xml.Xsl.Xslt
             }
             Debug.Assert(
                 (result & XslFlags.TypeFilter & ~XslFlags.Rtf) == 0,
-                "Instructions always return Rtf. node=" + node.NodeType.ToString() + " result=" + result.ToString()
+                $"Instructions always return Rtf. node={node.NodeType} result={result}"
             );
             return result;
         }
@@ -1171,7 +1171,7 @@ namespace System.Xml.Xsl.Xslt
                                 }
                                 else
                                 {
-                                    Debug.Fail("Unexpected XmlQueryType for script function: " + xt.ToString());
+                                    Debug.Fail($"Unexpected XmlQueryType for script function: {xt}");
                                 }
                             }
                         }
@@ -1453,7 +1453,7 @@ namespace System.Xml.Xsl.Xslt
                     var paramname = AstFactory.QName(variable.Name.LocalName, variable.Name.NamespaceUri, variable.Name.Prefix);
 
                     // For each variable in scope, add xsl:with-param to the xsl:call-template
-                    var withparam = AstFactory.VarPar(XslNodeType.WithParam, paramname, '$' + paramname.QualifiedName, XslVersion.Current);
+                    var withparam = AstFactory.VarPar(XslNodeType.WithParam, paramname, $"${paramname.QualifiedName}", XslVersion.Current);
                     XsltLoader.SetInfo(withparam, null, fakeCtxInfo);
                     withparam.Namespaces = variable.Namespaces;
                     calltemplate.AddContent(withparam);

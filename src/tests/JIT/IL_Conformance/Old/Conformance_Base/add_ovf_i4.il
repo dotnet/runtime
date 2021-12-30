@@ -414,4 +414,4 @@ END:
 }
 
 
-.assembly add_ovf_i4.exe{}
+.assembly add_ovf_i4{}

@@ -77,7 +77,7 @@ namespace System.IO.Tests
     }
 
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
-    [Collection("NoParallelTests")] // don't run in parallel, as file sharing logic is not thread-safe
+    [Collection(nameof(DisableParallelization))] // don't run in parallel, as file sharing logic is not thread-safe
     [OuterLoop("Requires admin privileges to create a file share")]
     [ConditionalClass(typeof(UncFilePathFileStreamStandaloneConformanceTests), nameof(CanShareFiles))]
     public class UncFilePathFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests

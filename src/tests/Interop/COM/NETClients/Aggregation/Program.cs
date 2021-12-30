@@ -7,6 +7,7 @@ namespace NetClient
     using System.Runtime.InteropServices;
 
     using TestLibrary;
+    using Xunit;
     using Server.Contract;
     using Server.Contract.Servers;
 
@@ -21,15 +22,15 @@ namespace NetClient
             var managedInner = new ManagedInner();
             var nativeOuter = (AggregationTesting)managedInner;
 
-            Assert.IsTrue(typeof(ManagedInner).IsCOMObject);
-            Assert.IsTrue(typeof(AggregationTestingClass).IsCOMObject);
-            Assert.IsFalse(typeof(AggregationTesting).IsCOMObject);
-            Assert.IsTrue(Marshal.IsComObject(managedInner));
-            Assert.IsTrue(Marshal.IsComObject(nativeOuter));
+            Assert.True(typeof(ManagedInner).IsCOMObject);
+            Assert.True(typeof(AggregationTestingClass).IsCOMObject);
+            Assert.False(typeof(AggregationTesting).IsCOMObject);
+            Assert.True(Marshal.IsComObject(managedInner));
+            Assert.True(Marshal.IsComObject(nativeOuter));
 
-            Assert.IsTrue(nativeOuter.IsAggregated());
-            Assert.IsTrue(nativeOuter.AreAggregated(managedInner, nativeOuter));
-            Assert.IsFalse(nativeOuter.AreAggregated(nativeOuter, new object()));
+            Assert.True(nativeOuter.IsAggregated());
+            Assert.True(nativeOuter.AreAggregated(managedInner, nativeOuter));
+            Assert.False(nativeOuter.AreAggregated(nativeOuter, new object()));
         }
 
         static int Main(string[] doNotUse)

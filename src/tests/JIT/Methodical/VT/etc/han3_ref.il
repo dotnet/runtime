@@ -12,7 +12,7 @@
 .assembly han3_ref // as "han3_ref"
 {
 }
-.module han3_ref.exe
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class value private auto ansi sealed Ring
@@ -244,6 +244,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (value class JitTest.Column V_0,

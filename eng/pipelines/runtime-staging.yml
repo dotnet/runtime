@@ -75,7 +75,7 @@ jobs:
     - iOSSimulator_x64
     - tvOSSimulator_x64
     # don't run tests on arm64 PRs until we can get significantly more devices
-    - ${{ if eq(variables['isFullMatrix'], true) }}:
+    - ${{ if eq(variables['isManualOrIsNotPR'], true) }}:
       - iOSSimulator_arm64
     variables:
       # map dependencies variables to local variables
@@ -93,6 +93,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -104,6 +105,7 @@ jobs:
           or(
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -131,6 +133,53 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        interpreter: true
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# MacCatalyst interp - requires AOT Compilation and Interp flags
+# Build the whole product using Mono and run libraries tests
+# The test app is built with the App Sandbox entitlement
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - MacCatalyst_x64
+    # don't run tests on arm64 PRs until we can get significantly more devices
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - MacCatalyst_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_AppSandbox
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true /p:EnableAppSandbox=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -179,6 +228,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -190,6 +240,7 @@ jobs:
           or(
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -220,6 +271,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -230,6 +282,7 @@ jobs:
           or(
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -257,19 +310,19 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
-      # Device tests are rolling build only
-      ${{ if eq(variables['isFullMatrix'], true) }}:
-        # extra steps, run tests
-        extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-        extraStepsParameters:
-          creator: dotnet-bot
-          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-          condition: >-
-            or(
-            eq(variables['librariesContainsChange'], true),
-            eq(variables['monoContainsChange'], true),
-            eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Build the whole product using Mono and run libraries tests
@@ -298,6 +351,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -308,6 +362,7 @@ jobs:
           or(
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -342,9 +397,10 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
       # NOTE: Per PR test execution is not recommended for runtime tests 
-      ${{ if eq(variables['isFullMatrix'], true) }}:
+      ${{ if eq(variables['isManualOrIsNotPR'], true) }}:
         # extra steps, run tests
         extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
         extraStepsParameters:
@@ -382,8 +438,9 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
-      ${{ if eq(variables['isFullMatrix'], true) }}:
+      ${{ if eq(variables['isManualOrIsNotPR'], true) }}:
         # extra steps, run tests
         extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
         extraStepsParameters:
@@ -421,9 +478,10 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
           eq(variables['isFullMatrix'], true))
       # don't run tests on PRs until we can get significantly more devices
-      # Turn off the testing for now, until https://github.com/dotnet/xharness/issues/663 gets resolved
+      # Turn off the testing for now, until https://github.com/dotnet/runtime/issues/60128 gets resolved
       # ${{ if eq(variables['isFullMatrix'], true) }}:
       #   # extra steps, run tests
       #   extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
@@ -450,8 +508,54 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: Browser_wasm_Windows
-      buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows
+      nameSuffix: Windows_wasm
+      buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows $(_runSmokeTestsOnlyArg)
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=windows $(_runSmokeTestsOnlyArg)
+        scenarios:
+        - normal
+        - WasmTestOnBrowser
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Browser_wasm, on windows, and run tests with AOT
+#
+# Disabled due to https://github.com/dotnet/runtime/issues/61721
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm_win
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Windows_wasm_AOT
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -459,21 +563,119 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
-      ${{ if eq(variables['isFullMatrix'], true) }}:
-        # extra steps, run tests
-        extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-        extraStepsParameters:
-          creator: dotnet-bot
-          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-          extraHelixArguments: /p:BrowserHost=windows
-          scenarios:
-          - normal
-          - wasmtestonbrowser
-          condition: >-
-            or(
-            eq(variables['librariesContainsChange'], true),
-            eq(variables['monoContainsChange'], true),
-            eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=windows /p:NeedsToBuildWasmAppsOnHelix=true $(_runSmokeTestsOnlyArg)
+        scenarios:
+        - normal
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Browser_wasm, on windows, and run Wasm.Build.Tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm_win
+    variables:
+      # map dependencies variables to local variables
+      - name: wasmbuildtestsContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Windows_wasm_WBT
+      buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows /p:TestWasmBuildTests=true /p:TestAssemblies=false
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=windows
+        scenarios:
+        - buildwasmapps
+        condition: >-
+          or(
+          eq(variables['wasmbuildtestsContainsChange'], true),
+          eq(variables['isManualOrIsNotPR'], true),
+          eq(variables['isFullMatrix'], true))
+
+# Wasm debugger tests
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: wasmdebuggertestsContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Mono_DebuggerTests
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        scenarios:
+        - wasmdebuggertests
+
+# Wasm debugger tests - windows
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm_win
+    variables:
+      # map dependencies variables to local variables
+      - name: wasmdebuggertestsContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Windows_wasm_DebuggerTests
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=windows
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=windows
+        scenarios:
+        - wasmdebuggertests
 
 #
 # CoreCLR Build for running Apple Silicon libraries-innerloop

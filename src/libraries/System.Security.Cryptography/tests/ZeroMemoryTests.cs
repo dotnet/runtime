@@ -5,7 +5,7 @@ using System.Buffers;
 using System.Reflection;
 using Xunit;
 
-namespace System.Security.Cryptography.Primitives.Tests
+namespace System.Security.Cryptography.Tests
 {
     public static class ZeroMemoryTests
     {

@@ -332,7 +332,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         protected override QilNode VisitChildren(QilNode parent)
         {
-            Debug.Fail("Visit" + parent.NodeType + " should never be called");
+            Debug.Fail($"Visit{parent.NodeType} should never be called");
             return parent;
         }
 
@@ -1768,7 +1768,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    Debug.Fail("Comparisons for datatype " + code + " are invalid.");
+                    Debug.Fail($"Comparisons for datatype {code} are invalid.");
                     break;
             }
         }
@@ -3676,7 +3676,7 @@ namespace System.Xml.Xsl.IlGen
                         NestedVisitEnsureStack(ndActualArg, typeof(XPathItem), false);
                     }
                     else
-                        Debug.Fail("Internal Xslt library may not use parameters of type " + clrTypeFormalArg);
+                        Debug.Fail($"Internal Xslt library may not use parameters of type {clrTypeFormalArg}");
                 }
                 else
                 {
@@ -3806,7 +3806,7 @@ namespace System.Xml.Xsl.IlGen
                 // If a conversion could not be found, then convert the source expression to item or item* and try again
                 NestedVisitEnsureStack(ndConv.Source, typeof(XPathItem), !typSrc.IsSingleton);
                 if (!GetXsltConvertMethod(typSrc.IsSingleton ? TypeFactory.Item : TypeFactory.ItemS, typDst, out meth))
-                    Debug.Fail("Conversion from " + ndConv.Source.XmlType + " to " + ndConv.TargetType + " is not supported.");
+                    Debug.Fail($"Conversion from {ndConv.Source.XmlType} to {ndConv.TargetType} is not supported.");
             }
 
             // XsltConvert.XXXToYYY(value);
@@ -4693,7 +4693,8 @@ namespace System.Xml.Xsl.IlGen
                          _iterCurr.Storage.ItemStorageType == GetItemStorageType(nd) ||
                          _iterCurr.Storage.ItemStorageType == typeof(XPathItem) ||
                          nd.XmlType!.TypeCode == XmlTypeCode.None,
-                         "QilNodeType " + nd.NodeType + " cannot be stored using type " + _iterCurr.Storage.ItemStorageType + ".");
+                         $"QilNodeType {nd.NodeType} cannot be stored using type {_iterCurr.Storage.ItemStorageType}."
+            );
 
             // If the nested iterator was constructed in branching mode,
             if (_iterCurr.IsBranching)

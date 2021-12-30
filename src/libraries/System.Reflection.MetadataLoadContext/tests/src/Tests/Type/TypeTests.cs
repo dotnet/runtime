@@ -252,6 +252,20 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        static void TestArrayGetMethodsResultEqualsFilteredGetMethod()
+        {
+            Type type = typeof(int[]).Project();
+
+            Assert.Equal(type.GetMethod("Get"), type.GetMethods().First(m => m.Name == "Get"));
+            Assert.Equal(type.GetMethod("Set"), type.GetMethods().First(m => m.Name == "Set"));
+            Assert.Equal(type.GetMethod("Address"), type.GetMethods().First(m => m.Name == "Address"));
+
+            Assert.NotEqual(type.GetMethod("Get"), type.GetMethods().First(m => m.Name == "Set"));
+            Assert.NotEqual(type.GetMethod("Set"), type.GetMethods().First(m => m.Name == "Address"));
+            Assert.NotEqual(type.GetMethod("Address"), type.GetMethods().First(m => m.Name == "Get"));
+        }
+
+        [Fact]
         public static void TestArrayAddressMethod()
         {
             bool expectedDefaultValue = true;

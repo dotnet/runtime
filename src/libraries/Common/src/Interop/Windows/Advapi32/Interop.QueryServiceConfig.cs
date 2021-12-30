@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, EntryPoint = "QueryServiceConfigW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool QueryServiceConfig(SafeServiceHandle serviceHandle, IntPtr queryServiceConfigPtr, int bufferSize, out int bytesNeeded);
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "QueryServiceConfigW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial bool QueryServiceConfig(SafeServiceHandle serviceHandle, IntPtr queryServiceConfigPtr, int bufferSize, out int bytesNeeded);
 
     }
 }

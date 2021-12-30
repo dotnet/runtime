@@ -56,12 +56,12 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenDir", CharSet = CharSet.Ansi, SetLastError = true)]
         internal static partial IntPtr OpenDir(string path);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetReadDirRBufferSize", SetLastError = false)]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetReadDirRBufferSize", SetLastError = false)]
         [SuppressGCTransition]
-        internal static extern int GetReadDirRBufferSize();
+        internal static partial int GetReadDirRBufferSize();
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR")]
-        internal static unsafe extern int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, DirectoryEntry* outputEntry);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR")]
+        internal static unsafe partial int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, DirectoryEntry* outputEntry);
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]
         internal static partial int CloseDir(IntPtr dir);

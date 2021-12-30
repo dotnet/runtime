@@ -1863,6 +1863,12 @@ namespace System.Threading.Tasks
             return Volatile.Read(ref m_contingentProperties)?.m_exceptionsHolder?.GetCancellationExceptionDispatchInfo(); // may be null
         }
 
+        /// <summary>Marks any exceptions stored in the Task as having been handled.</summary>
+        internal void MarkExceptionsAsHandled()
+        {
+            Volatile.Read(ref m_contingentProperties)?.m_exceptionsHolder?.MarkAsHandled(calledFromFinalizer: false);
+        }
+
         /// <summary>
         /// Throws an aggregate exception if the task contains exceptions.
         /// </summary>

@@ -7,10 +7,6 @@
 
 #include <palsuite.h>
 
-#ifndef _countof
-#define _countof(a) (sizeof(a) / sizeof(a[0]))
-#endif // !_countof
-
 const char *const SessionPrefix = "Local\\";
 const char *const GlobalPrefix = "Global\\";
 
@@ -207,7 +203,7 @@ bool StartProcess(const char *funcName)
     if (g_isStress)
     {
         test_strcpy(&g_processCommandLinePath[processCommandLinePathLength], " stress");
-        processCommandLinePathLength += _countof("stress") - 1;
+        processCommandLinePathLength += STRING_LENGTH("stress");
     }
 
     STARTUPINFO si;
@@ -416,8 +412,8 @@ bool NameTests()
     // Name too long. The maximum allowed length depends on the file system, so we're not checking for that.
     {
         char name[257];
-        memset(name, 'a', _countof(name) - 1);
-        name[_countof(name) - 1] = '\0';
+        memset(name, 'a', STRING_LENGTH(name));
+        name[STRING_LENGTH(name)] = '\0';
         TestCreateMutex(m, name);
         TestAssert(m == nullptr);
         TestAssert(GetLastError() == ERROR_FILENAME_EXCED_RANGE);
@@ -579,7 +575,7 @@ bool MutualExclusionTests()
         HANDLE waitHandles[] = {m2.GetHandle(), m.GetHandle()};
         TestAssert(
             WaitForMultipleObjects(
-                _countof(waitHandles),
+                ARRAY_SIZE(waitHandles),
                 waitHandles,
                 false /* waitAll */,
                 FailTimeoutMilliseconds) ==
@@ -587,7 +583,7 @@ bool MutualExclusionTests()
         TestAssert(GetLastError() == ERROR_NOT_SUPPORTED);
         TestAssert(
             WaitForMultipleObjects(
-                _countof(waitHandles),
+                ARRAY_SIZE(waitHandles),
                 waitHandles,
                 true /* waitAll */,
                 FailTimeoutMilliseconds) ==
@@ -1114,7 +1110,7 @@ bool (*const TestList[])() =
 bool RunTests()
 {
     bool allPassed = true;
-    for (SIZE_T i = 0; i < _countof(TestList); ++i)
+    for (SIZE_T i = 0; i < ARRAY_SIZE(TestList); ++i)
     {
         if (!TestList[i]())
         {
@@ -1125,7 +1121,7 @@ bool RunTests()
 }
 
 DWORD g_stressDurationMilliseconds = 0;
-LONG g_stressTestCounts[_countof(TestList)] = {0};
+LONG g_stressTestCounts[ARRAY_SIZE(TestList)] = {0};
 LONG g_stressResult = true;
 
 DWORD PALAPI StressTest(void *arg)
@@ -1154,8 +1150,8 @@ bool StressTests(DWORD durationMinutes)
     g_stressDurationMilliseconds = durationMinutes * (60 * 1000);
 
     // Start a thread for each test
-    HANDLE threadHandles[_countof(TestList)];
-    for (SIZE_T i = 0; i < _countof(threadHandles); ++i)
+    HANDLE threadHandles[ARRAY_SIZE(TestList)];
+    for (SIZE_T i = 0; i < ARRAY_SIZE(threadHandles); ++i)
     {
         TestAssert(StartThread(StressTest, reinterpret_cast<void *>(i), &threadHandles[i]));
     }
@@ -1163,7 +1159,7 @@ bool StressTests(DWORD durationMinutes)
     while (true)
     {
         DWORD waitResult =
-            WaitForMultipleObjects(_countof(threadHandles), threadHandles, true /* bWaitAll */, 10 * 1000 /* dwMilliseconds */);
+            WaitForMultipleObjects(ARRAY_SIZE(threadHandles), threadHandles, true /* bWaitAll */, 10 * 1000 /* dwMilliseconds */);
         TestAssert(waitResult == WAIT_OBJECT_0 || waitResult == WAIT_TIMEOUT);
         if (waitResult == WAIT_OBJECT_0)
         {
@@ -1171,7 +1167,7 @@ bool StressTests(DWORD durationMinutes)
         }
 
         Trace("'paltest_namedmutex_test1' stress test counts: ");
-        for (SIZE_T i = 0; i < _countof(g_stressTestCounts); ++i)
+        for (SIZE_T i = 0; i < ARRAY_SIZE(g_stressTestCounts); ++i)
         {
             if (i != 0)
             {
@@ -1183,7 +1179,7 @@ bool StressTests(DWORD durationMinutes)
         fflush(stdout);
     }
 
-    for (SIZE_T i = 0; i < _countof(threadHandles); ++i)
+    for (SIZE_T i = 0; i < ARRAY_SIZE(threadHandles); ++i)
     {
         CloseHandle(threadHandles[i]);
     }

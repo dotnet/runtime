@@ -31,11 +31,29 @@ namespace Microsoft.Interop
         { }
     }
 
+    /// <summary>
+    /// No marshalling information exists for the type.
+    /// </summary>
     public sealed record NoMarshallingInfo : MarshallingInfo
     {
         public static readonly MarshallingInfo Instance = new NoMarshallingInfo();
 
         private NoMarshallingInfo() { }
+    }
+
+    /// <summary>
+    /// Marshalling information is lacking because of support not because it is
+    /// unknown or non-existent.
+    /// </summary>
+    /// <remarks>
+    /// An indication of "missing support" will trigger the fallback logic, which is
+    /// the forwarder marshaler.
+    /// </remarks>
+    public sealed record MissingSupportMarshallingInfo : MarshallingInfo
+    {
+        public static readonly MarshallingInfo Instance = new MissingSupportMarshallingInfo();
+
+        private MissingSupportMarshallingInfo() { }
     }
 
     /// <summary>
@@ -137,6 +155,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// User-applied System.Runtime.InteropServices.NativeMarshallingAttribute
     /// with a contiguous collection marshaller
+    /// </summary>
     public sealed record NativeContiguousCollectionMarshallingInfo(
         ManagedTypeInfo NativeMarshallingType,
         ManagedTypeInfo? ValuePropertyType,
@@ -543,8 +562,8 @@ namespace Microsoft.Interop
 
             if (arrayMarshaller is null)
             {
-                // If the array marshaler type is not available, then we cannot marshal arrays.
-                return NoMarshallingInfo.Instance;
+                // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
+                return MissingSupportMarshallingInfo.Instance;
             }
 
             ITypeSymbol? valuePropertyType = ManualTypeMarshallingHelper.FindValueProperty(arrayMarshaller)?.Type;
@@ -741,9 +760,9 @@ namespace Microsoft.Interop
 
                 if (arrayMarshaller is null)
                 {
-                    // If the array marshaler type is not available, then we cannot marshal arrays.
-                    marshallingInfo = NoMarshallingInfo.Instance;
-                    return false;
+                    // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
+                    marshallingInfo = MissingSupportMarshallingInfo.Instance;
+                    return true;
                 }
 
                 ITypeSymbol? valuePropertyType = ManualTypeMarshallingHelper.FindValueProperty(arrayMarshaller)?.Type;

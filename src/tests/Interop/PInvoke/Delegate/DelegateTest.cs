@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 using static DelegateTestNative;
 
@@ -15,22 +15,22 @@ class DelegateTest
         int expectedValue = 987654;
         int TestFunction() => expectedValue;
 
-        Assert.IsTrue(ValidateDelegateReturnsExpected(expectedValue, TestFunction));
-        
+        Assert.True(ValidateDelegateReturnsExpected(expectedValue, TestFunction));
+
         {
             TestDelegate localDelegate = TestFunction;
-            Assert.IsTrue(ReplaceDelegate(expectedValue, ref localDelegate, out int newExpectedValue));
-            Assert.AreEqual(newExpectedValue, localDelegate());
+            Assert.True(ReplaceDelegate(expectedValue, ref localDelegate, out int newExpectedValue));
+            Assert.Equal(newExpectedValue, localDelegate());
         }
 
         {
             GetNativeTestFunction(out TestDelegate test, out int value);
-            Assert.AreEqual(value, test());
+            Assert.Equal(value, test());
         }
 
         {
             var returned = GetNativeTestFunctionReturned(out int value);
-            Assert.AreEqual(value, returned());
+            Assert.Equal(value, returned());
         }
 
         {
@@ -40,7 +40,7 @@ class DelegateTest
                 del = TestFunction
             };
 
-            Assert.IsTrue(ValidateCallbackWithValue(cb));
+            Assert.True(ValidateCallbackWithValue(cb));
         }
 
         {
@@ -50,13 +50,13 @@ class DelegateTest
                 del = TestFunction
             };
 
-            Assert.IsTrue(ValidateAndUpdateCallbackWithValue(ref cb));
-            Assert.AreEqual(cb.expectedValue, cb.del());
+            Assert.True(ValidateAndUpdateCallbackWithValue(ref cb));
+            Assert.Equal(cb.expectedValue, cb.del());
         }
 
         {
             GetNativeCallbackAndValue(out CallbackWithExpectedValue cb);
-            Assert.AreEqual(cb.expectedValue, cb.del());
+            Assert.Equal(cb.expectedValue, cb.del());
         }
     }
 
@@ -65,23 +65,23 @@ class DelegateTest
         int expectedValue = 987654;
         int TestFunction() => expectedValue;
 
-        Assert.IsTrue(ValidateDelegateValueMatchesExpected(expectedValue, TestFunction));
-        
+        Assert.True(ValidateDelegateValueMatchesExpected(expectedValue, TestFunction));
+
         {
             TestDelegate localDelegate = TestFunction;
-            Assert.IsTrue(ValidateDelegateValueMatchesExpectedAndClear(expectedValue, ref localDelegate));
-            Assert.AreEqual(null, localDelegate);
+            Assert.True(ValidateDelegateValueMatchesExpectedAndClear(expectedValue, ref localDelegate));
+            Assert.Equal(null, localDelegate);
         }
 
         {
             TestDelegate localDelegate = TestFunction;
-            Assert.IsTrue(DuplicateDelegate(expectedValue, localDelegate, out var outDelegate));
-            Assert.AreEqual(localDelegate, outDelegate);
+            Assert.True(DuplicateDelegate(expectedValue, localDelegate, out var outDelegate));
+            Assert.Equal(localDelegate, outDelegate);
         }
 
         {
             TestDelegate localDelegate = TestFunction;
-            Assert.AreEqual(localDelegate, DuplicateDelegateReturned(localDelegate));
+            Assert.Equal(localDelegate, DuplicateDelegateReturned(localDelegate));
         }
 
         {
@@ -91,7 +91,7 @@ class DelegateTest
                 del = TestFunction
             };
 
-            Assert.IsTrue(ValidateStructDelegateValueMatchesExpected(cb));
+            Assert.True(ValidateStructDelegateValueMatchesExpected(cb));
         }
 
         {
@@ -101,8 +101,8 @@ class DelegateTest
                 del = TestFunction
             };
 
-            Assert.IsTrue(ValidateDelegateValueMatchesExpectedAndClearStruct(ref cb));
-            Assert.AreEqual(null, cb.del);
+            Assert.True(ValidateDelegateValueMatchesExpectedAndClearStruct(ref cb));
+            Assert.Equal(null, cb.del);
         }
 
         {
@@ -112,8 +112,8 @@ class DelegateTest
                 del = TestFunction
             };
 
-            Assert.IsTrue(DuplicateStruct(cb, out var cbOut));
-            Assert.AreEqual(cbOut.expectedValue, cbOut.del());
+            Assert.True(DuplicateStruct(cb, out var cbOut));
+            Assert.Equal(cbOut.expectedValue, cbOut.del());
         }
 
         Assert.Throws<MarshalDirectiveException>(() => MarshalDelegateAsInterface(TestFunction));
@@ -131,8 +131,8 @@ class DelegateTest
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Test Failure: {e}"); 
-            return 101; 
+            Console.WriteLine($"Test Failure: {e}");
+            return 101;
         }
         return 100;
     }

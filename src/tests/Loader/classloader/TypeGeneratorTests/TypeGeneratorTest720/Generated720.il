@@ -8,6 +8,7 @@
 
 //TEST ASSEMBLY:
 .assembly Generated720 { .hash algorithm 0x00008004 }
+.assembly extern xunit.core {}
 
 .class public BaseClass0 
 {
@@ -5532,6 +5533,9 @@
 	}
 	.method public hidebysig static int32  Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  10
 		call void Generated720::MethodCallingTest()

@@ -14,7 +14,6 @@ namespace System.Net.Http.Functional.Tests
 {
     public class ImpersonatedAuthTests: IClassFixture<WindowsIdentityFixture>
     {
-        public static bool CanRunImpersonatedTests = PlatformDetection.IsWindows && PlatformDetection.IsNotWindowsNanoServer;
         private readonly WindowsIdentityFixture _fixture;
         private readonly ITestOutputHelper _output;
 
@@ -28,11 +27,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(CanRunImpersonatedTests))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task DefaultHandler_ImpersonificatedUser_Success(bool useNtlm)
+        public async Task DefaultHandler_ImpersonatedUser_Success(bool useNtlm)
         {
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>

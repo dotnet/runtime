@@ -17,6 +17,7 @@
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
+    <HostOS>$(_hostOS)</HostOS>
     <_hostOS Condition="'$(TargetOS)' == 'Browser'">Browser</_hostOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
@@ -54,7 +55,7 @@
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
 
-    <NetCoreAppLatestStableVersion>5.0</NetCoreAppLatestStableVersion>
+    <NetCoreAppLatestStableVersion>6.0</NetCoreAppLatestStableVersion>
     <NetCoreAppLatestStablePackageBaselineVersion>$(NetCoreAppLatestStableVersion).0</NetCoreAppLatestStablePackageBaselineVersion>
     <NetCoreAppLatestStable>net$(NetCoreAppLatestStableVersion)</NetCoreAppLatestStable>
 
@@ -162,13 +163,13 @@
 
     <!-- There are no WebAssembly tools, so use the default ones -->
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser'">linux-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and $([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and $([MSBuild]::IsOSPlatform('OSX'))">osx-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'windows'">win-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'osx'">osx-x64</_toolRuntimeRID>
 
     <!-- There are no Android tools, so use the default ones -->
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android'">linux-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android' and $([MSBuild]::IsOSPlatform('WINDOWS'))">win-x64</_toolRuntimeRID>
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android' and $([MSBuild]::IsOSPlatform('OSX'))">osx-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android' and '$(HostOS)' == 'windows'">win-x64</_toolRuntimeRID>
+    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'android' and '$(HostOS)' == 'osx'">osx-x64</_toolRuntimeRID>
 
     <!-- There are no Mac Catalyst, iOS or tvOS tools and it can be built on OSX only, so use that -->
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'maccatalyst' or '$(_runtimeOS)' == 'ios' or '$(_runtimeOS)' == 'iOSSimulator' or '$(_runtimeOS)' == 'tvos' or '$(_runtimeOS)' == 'tvOSSimulator'">osx-x64</_toolRuntimeRID>
@@ -244,6 +245,7 @@
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'Mono'">$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
+    <CoreLibProject Condition="'$(UseNativeAotCoreLib)' == 'true'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'nativeaot', 'System.Private.CoreLib', 'src', 'System.Private.CoreLib.csproj'))</CoreLibProject>
 
     <!-- this property is used by the SDK to pull in mono-based runtime packs -->
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(RuntimeFlavor)' == 'Mono'">true</UseMonoRuntime>
@@ -266,13 +268,11 @@
     <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
     <!-- Keep it in sync with PRERELEASE in eng/native/configureplatform.cmake -->
     <IsPrerelease>true</IsPrerelease>
-    <IsExperimentalAssembly>$(MSBuildProjectName.Contains('Experimental'))</IsExperimentalAssembly>
     <IsPrivateAssembly>$(MSBuildProjectName.Contains('Private'))</IsPrivateAssembly>
-    <!-- Experimental packages should not be stable -->
-    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and ($(IsExperimentalAssembly) or $(IsPrivateAssembly))">true</SuppressFinalPackageVersion>
-    <IsShippingAssembly Condition="$(IsExperimentalAssembly)">false</IsShippingAssembly>
+    <!-- Private packages should not be stable -->
+    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(IsPrivateAssembly)">true</SuppressFinalPackageVersion>
     <!-- We don't want Private packages to be shipped to NuGet.org -->
-    <IsShippingPackage Condition="$(MSBuildProjectName.Contains('Private')) or $(IsExperimentalAssembly)">false</IsShippingPackage>
+    <IsShippingPackage Condition="$(IsPrivateAssembly)">false</IsShippingPackage>
     <PlaceholderFile>$(RepositoryEngineeringDir)_._</PlaceholderFile>
   </PropertyGroup>
 
@@ -280,6 +280,8 @@
   <PropertyGroup>
     <!-- default to allowing all language features -->
     <LangVersion>preview</LangVersion>
+    <!-- default to max warnlevel -->
+    <AnalysisLevel Condition="'$(MSBuildProjectExtension)' == '.csproj'">preview</AnalysisLevel>
     <LangVersion Condition="'$(MSBuildProjectExtension)' == '.vbproj'">latest</LangVersion>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
@@ -295,9 +297,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <!-- We have very special projects that don't always contain default references. We also build MSBuild Tasks
-    and there are some implicit namespaces that clash, i.e System.Threading.Tasks. -->
-    <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
   </PropertyGroup>
 
   <PropertyGroup>

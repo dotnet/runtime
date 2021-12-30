@@ -15,7 +15,8 @@
 
 .assembly extern mscorlib{}
 .assembly extern System.Console{}
-.assembly a {}
+.assembly 'GitHub_23792' {}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit Test_GitHub_23792
        extends [mscorlib]System.Object
@@ -45,6 +46,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
   // Code size       119 (0x77)
   .maxstack  3

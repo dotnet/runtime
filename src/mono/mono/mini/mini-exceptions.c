@@ -840,12 +840,13 @@ mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_inf
 
 	method = jinfo_get_method (ji);
 	g_assert (method->is_inflated);
-	if (mono_method_get_context (method)->method_inst) {
+	if (mono_method_get_context (method)->method_inst || mini_method_is_default_method (method)) {
 		MonoMethodRuntimeGenericContext *mrgctx = (MonoMethodRuntimeGenericContext *)generic_info;
 
 		klass = mrgctx->class_vtable->klass;
 		context.method_inst = mrgctx->method_inst;
-		g_assert (context.method_inst);
+		if (!mini_method_is_default_method (method))
+			g_assert (context.method_inst);		
 	} else {
 		MonoVTable *vtable = (MonoVTable *)generic_info;
 
@@ -857,6 +858,12 @@ mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_inf
 		method_container_class = mono_class_get_generic_class (method->klass)->container_class;
 	else
 		method_container_class = method->klass;
+
+	if (mini_method_is_default_method (method)) {
+		if (mono_class_is_ginst (klass) || mono_class_is_gtd (klass))
+			context.class_inst = mini_class_get_context (klass)->class_inst;
+		return context;
+	}
 
 	/* class might refer to a subclass of method's class */
 	while (!(klass == method->klass || (mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->container_class == method_container_class))) {

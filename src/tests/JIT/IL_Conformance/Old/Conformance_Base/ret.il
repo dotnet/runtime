@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly ret.exe{}
+.assembly 'ret'{}
 
 .class public		_ret {
 

@@ -140,16 +140,16 @@ internal static partial class Interop
         /// Stops receiving events on the specified stream. The stream can be restarted and not miss any events.
         /// </summary>
         /// <param name="streamRef">The stream to stop receiving events on.</param>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern void FSEventStreamStop(IntPtr streamRef);
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial void FSEventStreamStop(IntPtr streamRef);
 
         /// <summary>
         /// Invalidates an EventStream and removes it from any RunLoops.
         /// </summary>
         /// <param name="streamRef">The FSEventStream to invalidate</param>
         /// <remarks>This can only be called after FSEventStreamScheduleWithRunLoop has be called</remarks>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern void FSEventStreamInvalidate(IntPtr streamRef);
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial void FSEventStreamInvalidate(IntPtr streamRef);
 
         /// <summary>
         /// Removes the event stream from the RunLoop.
@@ -167,7 +167,7 @@ internal static partial class Interop
         /// Releases a reference count on the specified EventStream and, if necessary, cleans the stream up.
         /// </summary>
         /// <param name="streamRef">The stream on which to decrement the reference count.</param>
-        [DllImport(Interop.Libraries.CoreServicesLibrary)]
-        internal static extern void FSEventStreamRelease(IntPtr streamRef);
+        [GeneratedDllImport(Interop.Libraries.CoreServicesLibrary)]
+        internal static partial void FSEventStreamRelease(IntPtr streamRef);
     }
 }

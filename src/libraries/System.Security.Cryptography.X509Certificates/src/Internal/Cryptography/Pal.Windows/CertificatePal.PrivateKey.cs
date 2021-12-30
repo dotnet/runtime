@@ -271,7 +271,7 @@ namespace Internal.Cryptography.Pal
                 int keySpec = 0;
                 if (!Interop.crypt32.CryptAcquireCertificatePrivateKey(
                     certificateContext,
-                    CryptAcquireFlags.CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG,
+                    Interop.Crypt32.CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG,
                     IntPtr.Zero,
                     out privateKey,
                     out keySpec,

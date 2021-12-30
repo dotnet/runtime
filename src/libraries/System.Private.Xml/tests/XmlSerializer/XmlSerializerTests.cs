@@ -8,6 +8,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 using System.Xml;
@@ -1960,6 +1962,51 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(x.Name, y.Name);
     }
 
+    [Fact]
+#if XMLSERIALIZERGENERATORTESTS
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("34072", TestRuntimes.Mono)]
+    public static void Xml_TypeInCollectibleALC()
+    {
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("XmlSerializerTests", true, fullPath);
+        wref = new WeakReference(alc);
+
+        // Load assembly by path. By name, and it gets loaded in the default ALC.
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+
+        // Ensure the type loaded in the intended non-Default ALC
+        var type = asm.GetType(typename);
+        Assert.Equal(AssemblyLoadContext.GetLoadContext(type.Assembly), alc);
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
+
+        // Round-Trip the instance
+        XmlSerializer serializer = new XmlSerializer(type);
+        var obj = Activator.CreateInstance(type);
+        var rtobj = SerializeAndDeserialize(obj, null, () => serializer, true);
+        Assert.NotNull(rtobj);
+        Assert.True(rtobj.Equals(obj));
+
+        alc.Unload();
+    }
+
+
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
     {
@@ -2080,11 +2127,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {
-        XmlSerializer serializer = new XmlSerializer(typeof(T));
-        if (serializerFactory != null)
-        {
-            serializer = serializerFactory();
-        }
+        XmlSerializer serializer = (serializerFactory != null) ? serializerFactory() : new XmlSerializer(typeof(T));
 
         using (MemoryStream ms = new MemoryStream())
         {

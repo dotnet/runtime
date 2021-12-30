@@ -597,7 +597,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                if (UnsafeNativeMethods.ConvertStringSidToSid(urnValue, ref pBytePtr))
+                if (Interop.Advapi32.ConvertStringSidToSid(urnValue, out pBytePtr) != Interop.BOOL.FALSE)
                 {
                     // Now we convert the native SID to a byte[] SID
                     sidB = Utils.ConvertNativeSidToByteArray(pBytePtr);
@@ -620,7 +620,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (IntPtr.Zero != pBytePtr)
-                    UnsafeNativeMethods.LocalFree(pBytePtr);
+                    Interop.Kernel32.LocalFree(pBytePtr);
             }
 
             StringBuilder stringizedBinarySid = new StringBuilder();

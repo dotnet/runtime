@@ -10,8 +10,8 @@
 }
 .assembly extern mscorlib {}
 .assembly extern common {}
-.assembly tryfinally {}
-.module tryfinally.exe
+.assembly 'tryfinallywith2endfinally' {}
+.assembly extern xunit.core {}
 
 .namespace hello
 {
@@ -40,6 +40,9 @@
     .method public hidebysig static int32 
             Main(string[] args) cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  1
 

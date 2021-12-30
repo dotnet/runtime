@@ -26,7 +26,7 @@ namespace Microsoft.Interop
 
         public bool IsSupported(TargetFramework target, Version version)
         {
-            return target is TargetFramework.Net && version.Major >= 6;
+            return target is TargetFramework.Net && version.Major >= 7;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)

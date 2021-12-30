@@ -2482,7 +2482,7 @@ namespace System.Data
                         if (foreign.Table == foreign.RelatedTable &&
                             foreign.Clone(clone) is ForeignKeyConstraint newforeign)
                         {
-                            // we cant make sure that we recieve a cloned FKC,since it depends if table and relatedtable be the same
+                            // we cant make sure that we receive a cloned FKC,since it depends if table and relatedtable be the same
                             clone.Constraints.Add(newforeign);
                         }
                     }

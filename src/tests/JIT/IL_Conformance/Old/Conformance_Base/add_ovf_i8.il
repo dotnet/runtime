@@ -414,4 +414,4 @@ END:
 }
 
 
-.assembly add_ovf_i8.exe{}
+.assembly add_ovf_i8{}

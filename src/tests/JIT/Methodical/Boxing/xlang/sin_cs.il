@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-.module 'sin_il_cs.exe'
 
 .assembly extern System.Console
 {
@@ -8,7 +7,8 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib { auto }
-.assembly 'sin_il_cs' {}
+.assembly 'sin_cs' {}
+.assembly extern xunit.core {}
 .assembly extern sinlib_cs
 {
 }
@@ -19,6 +19,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  3
       .locals (class System.Object V_0,

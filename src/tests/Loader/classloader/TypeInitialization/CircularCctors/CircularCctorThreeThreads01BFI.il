@@ -5,17 +5,17 @@
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.50103.00
 //  Copyright (C) Microsoft Corporation. All rights reserved.
 .assembly extern System.Console { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Threading.Thread { auto }
 // Metadata version: v2.0.50103
 .assembly extern mscorlib { auto }
 
-.assembly CircularCctorThreeThreads01
+.assembly 'CircularCctorThreeThreads01BFI'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module CircularCctorThreeThreads01.exe
 // MVID: {391DADEC-FC20-4965-82DE-5A0027055F7B}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -312,6 +312,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       244 (0xf4)
     .maxstack  3

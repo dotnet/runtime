@@ -19,11 +19,11 @@
 }
 .assembly extern common{}
 
-.assembly Except
+.assembly 'throw1dimarray'
 {
   .ver 0:0:0:0
 }
-.module Except.EXE
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
@@ -41,6 +41,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
   .maxstack  4

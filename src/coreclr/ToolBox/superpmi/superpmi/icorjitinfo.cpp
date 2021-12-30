@@ -24,11 +24,11 @@ ICorJitInfo* InitICorJitInfo(JitInstance* jitInstance)
 /**********************************************************************************/
 
 // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) &
-// CORINFO_FLG_JIT_INTRINSIC, except faster.
-bool MyICJI::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+// CORINFO_FLG_INTRINSIC, except faster.
+bool MyICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
-    jitInstance->mc->cr->AddCall("isJitIntrinsic");
-    return jitInstance->mc->repIsJitIntrinsic(ftn);
+    jitInstance->mc->cr->AddCall("isIntrinsic");
+    return jitInstance->mc->repIsIntrinsic(ftn);
 }
 
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
@@ -215,15 +215,6 @@ void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CO
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
     LogError("Hit unimplemented expandRawHandleIntrinsic");
     DebugBreakorAV(129);
-}
-
-// If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
-// getIntrinsicID() returns the intrinsic ID.
-CorInfoIntrinsics MyICJI::getIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand /* OUT */
-                                         )
-{
-    jitInstance->mc->cr->AddCall("getIntrinsicID");
-    return jitInstance->mc->repGetIntrinsicID(method, pMustExpand);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -480,18 +471,6 @@ uint32_t MyICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassAttribs");
     return jitInstance->mc->repGetClassAttribs(cls);
-}
-
-// Returns "TRUE" iff "cls" is a struct type such that return buffers used for returning a value
-// of this type must be stack-allocated.  This will generally be true only if the struct
-// contains GC pointers, and does not exceed some size limit.  Maintaining this as an invariant allows
-// an optimization: the JIT may assume that return buffer pointers for return types for which this predicate
-// returns TRUE are always stack allocated, and thus, that stores to the GC-pointer fields of such return
-// buffers do not require GC write barriers.
-bool MyICJI::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("isStructRequiringStackAllocRetBuf");
-    return jitInstance->mc->repIsStructRequiringStackAllocRetBuf(cls);
 }
 
 CORINFO_MODULE_HANDLE MyICJI::getClassModule(CORINFO_CLASS_HANDLE cls)
@@ -833,6 +812,13 @@ unsigned MyICJI::getArrayRank(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getArrayRank");
     return jitInstance->mc->repGetArrayRank(cls);
+}
+
+// Get the index of runtime provided array method
+CorInfoArrayIntrinsic MyICJI::getArrayIntrinsicID(CORINFO_METHOD_HANDLE hMethod)
+{
+    jitInstance->mc->cr->AddCall("getArrayIntrinsicID");
+    return jitInstance->mc->repGetArrayIntrinsicID(hMethod);
 }
 
 // Get static field data for an array
@@ -1284,10 +1270,13 @@ void MyICJI::getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn,     /* IN  */
 // return a directly callable address. This can be used similarly to the
 // value returned by getFunctionEntryPoint() except that it is
 // guaranteed to be multi callable entrypoint.
-void MyICJI::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult)
+void MyICJI::getFunctionFixedEntryPoint(
+                    CORINFO_METHOD_HANDLE ftn,
+                    bool isUnsafeFunctionPointer,
+                    CORINFO_CONST_LOOKUP* pResult)
 {
     jitInstance->mc->cr->AddCall("getFunctionFixedEntryPoint");
-    jitInstance->mc->repGetFunctionFixedEntryPoint(ftn, pResult);
+    jitInstance->mc->repGetFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
 // get the synchronization handle that is passed to monXstatic function

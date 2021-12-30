@@ -1107,7 +1107,7 @@ namespace System.Text.Json
         {
             if (expected != actual)
             {
-                throw ThrowHelper.GetJsonElementWrongTypeException(expected, actual);
+                ThrowHelper.ThrowJsonElementWrongTypeException(expected, actual);
             }
         }
 

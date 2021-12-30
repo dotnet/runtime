@@ -297,6 +297,7 @@ private:
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
+    GenTree* LowerBinaryArithmetic(GenTreeOp* node);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
@@ -595,7 +596,7 @@ private:
     // This ensures that the local's value is valid on-stack as expected for a *LCL_FLD.
     void verifyLclFldDoNotEnregister(unsigned lclNum)
     {
-        LclVarDsc* varDsc = &(comp->lvaTable[lclNum]);
+        LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
         // Do a couple of simple checks before setting lvDoNotEnregister.
         // This may not cover all cases in 'isRegCandidate()' but we don't want to
         // do an expensive check here. For non-candidates it is not harmful to set lvDoNotEnregister.

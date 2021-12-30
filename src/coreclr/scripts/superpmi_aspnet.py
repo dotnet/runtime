@@ -20,7 +20,7 @@ import zipfile
 from os import path
 from coreclr_arguments import *
 from superpmi import TempDir, determine_mcs_tool_path, determine_superpmi_tool_path, is_nonzero_length_file
-from azdo_pipelines_util import run_command
+from jitutil import run_command
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"
@@ -174,7 +174,9 @@ def build_and_run(coreclr_args):
 
         # note tricks to get one element tuples
 
-        runtime_options_list = [("Dummy=0",), ("TieredCompilation=0", ), ("TieredPGO=1", "TC_QuickJitForLoops=1"), ("TieredPGO=1", "TC_QuickJitForLoops=1", "ReadyToRun=0")]
+        runtime_options_list = [("Dummy=0",), ("TieredCompilation=0", ), ("TieredPGO=1", "TC_QuickJitForLoops=1"), ("TieredPGO=1", "TC_QuickJitForLoops=1", "ReadyToRun=0"),
+            ("TC_QuickJitForLoops=1", "ReadyToRun=0", "TC_OnStackReplacement=1", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=0"),
+            ("TieredPGO=1", "TC_QuickJitForLoops=1", "ReadyToRun=0", "TC_OnStackReplacement=1", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=100")]
 
         # runtime_options_list = [("TieredCompilation=0", )]
 

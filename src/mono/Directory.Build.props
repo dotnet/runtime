@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
+    <!-- Minimum target OS version, keep in sync with src/native/libs/build-native.sh -->
     <iOSVersionMin>10.0</iOSVersionMin>
     <tvOSVersionMin>10.0</tvOSVersionMin>
     <watchOSVersionMin>2.0</watchOSVersionMin>

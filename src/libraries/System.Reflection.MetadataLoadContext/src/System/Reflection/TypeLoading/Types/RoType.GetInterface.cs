@@ -31,7 +31,7 @@ namespace System.Reflection.TypeLoading
                 if (ns.Length != 0 && !ns.Equals(ifc.Namespace))
                     continue;
                 if (match != null)
-                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                    throw new AmbiguousMatchException();
                 match = ifc;
             }
             return match;

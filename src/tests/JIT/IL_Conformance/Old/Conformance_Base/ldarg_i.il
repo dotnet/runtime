@@ -37,4 +37,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldarg_i.exe{}
+.assembly ldarg_i{}

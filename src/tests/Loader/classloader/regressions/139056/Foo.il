@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 1.2.30612.00
 //  Copyright (C) Microsoft Corporation 1998-2003. All rights reserved.
@@ -26,7 +27,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Foo.exe
 // MVID: {E2294DFD-8443-4AA7-9104-BC680C3B8133}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -106,6 +106,9 @@
 
   .method public static int32 Main()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (class Bar V_0,
              	  class Foo V_1, 

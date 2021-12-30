@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
+#nullable disable
 
 using System;
 using System.Collections.Generic;
@@ -196,7 +197,7 @@ namespace CoreclrTestLib
     {
         public const int EXIT_SUCCESS_CODE = 0;
         public const string TIMEOUT_ENVIRONMENT_VAR = "__TestTimeout";
-        
+
         // Default timeout set to 10 minutes
         public const int DEFAULT_TIMEOUT_MS = 1000 * 60 * 10;
 
@@ -289,7 +290,7 @@ namespace CoreclrTestLib
             Debug.Assert(outputFile != errorFile);
 
             int exitCode = -100;
-            
+
             // If a timeout was given to us by an environment variable, use it instead of the default
             // timeout.
             string environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
@@ -387,7 +388,5 @@ namespace CoreclrTestLib
 
             return exitCode;
         }
-
-        
     }
 }

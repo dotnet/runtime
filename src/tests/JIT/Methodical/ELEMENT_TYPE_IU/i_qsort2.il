@@ -13,10 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'qsort'// as "qsort"
+.assembly 'i_qsort2'// as "qsort"
 {
 }
-.module 'qsort.exe'
+.assembly extern xunit.core {}
 // MVID: {D2333E3D-2CA6-4703-8D46-E41A46BDF801}
 .namespace QSortTest
 {
@@ -196,6 +196,9 @@
 
     .method private hidebysig static int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       134 (0x86)
       .maxstack  4

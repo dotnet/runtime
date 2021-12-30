@@ -19,28 +19,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private SymbolicRegexInfo(uint i) => _info = i;
 
-        /// <summary>Optimized lookup array for most common combinations.</summary>
-        /// <remarks>Most common cases will be 0 (no anchors and not nullable) and 1 (no anchors and nullable)</remarks>
-        private static readonly SymbolicRegexInfo[] s_infos = CreateSymbolicRegexInfos();
-
-        private static SymbolicRegexInfo[] CreateSymbolicRegexInfos()
-        {
-            var infos = new SymbolicRegexInfo[128];
-            for (uint i = 0; i < infos.Length; i++)
-            {
-                infos[i] = new SymbolicRegexInfo(i);
-            }
-            return infos;
-        }
-
-        private static SymbolicRegexInfo Mk(uint i)
-        {
-            SymbolicRegexInfo[] infos = s_infos;
-            return i < infos.Length ?
-                infos[i] :
-                new SymbolicRegexInfo(i);
-        }
-
         internal static SymbolicRegexInfo Mk(bool isAlwaysNullable = false, bool canBeNullable = false, bool startsWithLineAnchor = false,
             bool startsWithBoundaryAnchor = false, bool containsSomeAnchor = false,
             bool containsLineAnchor = false, bool containsSomeCharacter = false, bool isLazy = true)
@@ -87,7 +65,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 i |= IsLazyMask;
             }
 
-            return Mk(i);
+            return new SymbolicRegexInfo(i);
         }
 
         public bool IsNullable => (_info & IsAlwaysNullableMask) != 0;
@@ -121,7 +99,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             i = (i & ~IsLazyMask) | isLazy;
-            return Mk(i);
+            return new SymbolicRegexInfo(i);
         }
 
         public static SymbolicRegexInfo And(params SymbolicRegexInfo[] infos)
@@ -140,7 +118,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             i = (i & ~IsLazyMask) | isLazy;
             i = (i & ~(IsAlwaysNullableMask | CanBeNullableMask)) | isNullable;
-            return Mk(i);
+            return new SymbolicRegexInfo(i);
         }
 
         public static SymbolicRegexInfo Concat(SymbolicRegexInfo left_info, SymbolicRegexInfo right_info)
@@ -164,7 +142,10 @@ namespace System.Text.RegularExpressions.Symbolic
             uint i = body_info._info;
 
             // The loop is nullable if either the body is nullable or if the lower boud is 0
-            i |= lowerBound == 0 ? (IsAlwaysNullableMask | CanBeNullableMask) : 0;
+            if (lowerBound == 0)
+            {
+                i |= IsAlwaysNullableMask | CanBeNullableMask;
+            }
 
             // The loop is lazy iff it is marked lazy
             if (isLazy)
@@ -176,7 +157,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 i &= ~IsLazyMask;
             }
 
-            return Mk(i);
+            return new SymbolicRegexInfo(i);
         }
 
         public static SymbolicRegexInfo Not(SymbolicRegexInfo info) =>

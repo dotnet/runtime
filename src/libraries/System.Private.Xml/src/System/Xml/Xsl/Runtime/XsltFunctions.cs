@@ -302,7 +302,7 @@ namespace System.Xml.Xsl.Runtime
             }
             else
             {
-                Debug.Fail("Unexpected type: " + o.GetType().ToString());
+                Debug.Fail($"Unexpected type: {o.GetType()}");
                 return "external";
             }
         }

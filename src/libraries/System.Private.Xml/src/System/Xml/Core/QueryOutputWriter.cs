@@ -163,7 +163,7 @@ namespace System.Xml
             if (_outputDocType)
             {
                 _wrapped.WriteDocType(
-                        string.IsNullOrEmpty(prefix) ? localName : prefix + ":" + localName,
+                        string.IsNullOrEmpty(prefix) ? localName : $"{prefix}:{localName}",
                         _publicId,
                         _systemId,
                         null);

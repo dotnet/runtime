@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern RefX1 {}
 .assembly extern ValX1 {}
 
-.assembly Test_Test {}
+.assembly 'Test' {}
 
 .class public sequential ansi sealed beforefieldinit Gen<T>
        extends [mscorlib]System.ValueType
@@ -34,6 +35,9 @@
 {
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
     nop

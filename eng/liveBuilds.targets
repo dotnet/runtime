@@ -139,13 +139,20 @@
            Text="The 'libs' subset must be built before building this project. Missing artifacts: $(LibrariesNativeArtifactsPath). Configuration: '$(LibrariesConfiguration)'. To use a different configuration, specify the 'LibrariesConfiguration' property." />
   </Target>
 
-  <Target Name="ResolveLibrariesFromLocalBuild"
+  <Target Name="ResolveLibrariesRefAssembliesFromLocalBuild"
+          DependsOnTargets="EnsureLocalArtifactsExist">
+    <ItemGroup>
+      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' != 'true'" Include="$(LibrariesSharedFrameworkRefArtifactsPath)*.dll;$(LibrariesSharedFrameworkRefArtifactsPath)*.pdb" />
+      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' == 'true'" Include="$(LibrariesAllRefArtifactsPath)*.dll;$(LibrariesAllRefArtifactsPath)*.pdb" />
+    </ItemGroup>
+    <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The 'libs' subset must be built before building this project." />
+  </Target>
+
+  <Target Name="ResolveLibrariesRuntimeFilesFromLocalBuild"
           DependsOnTargets="
             EnsureLocalArtifactsExist;
             EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist">
     <ItemGroup>
-      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' != 'true'" Include="$(LibrariesSharedFrameworkRefArtifactsPath)*.dll;$(LibrariesSharedFrameworkRefArtifactsPath)*.pdb" />
-      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' == 'true'" Include="$(LibrariesAllRefArtifactsPath)*.dll;$(LibrariesAllRefArtifactsPath)*.pdb" />
       <LibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'" Include="
         $(LibrariesSharedFrameworkBinArtifactsPath)*.dll;
         $(LibrariesSharedFrameworkBinArtifactsPath)*.pdb"
@@ -169,6 +176,8 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
+        $(LibrariesNativeArtifactsPath)dotnet.d.ts;
+        $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
         $(LibrariesNativeArtifactsPath)*.dat;"
@@ -182,15 +191,28 @@
         NativeSubDirectory="src"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+                             Include="$(LibrariesNativeArtifactsPath)src\cjs\*.js"
+                             NativeSubDirectory="src\cjs"
+                             IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+                             Include="$(LibrariesNativeArtifactsPath)src\es6\*.js"
+                             NativeSubDirectory="src\es6"
+                             IsNative="true" />
+
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)include\wasm\*.h;"
         NativeSubDirectory="include\wasm"
         IsNative="true" />
     </ItemGroup>
 
-    <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The 'libs' subset must be built before building this project." />
     <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The 'libs' subset must be built before building this project." />
   </Target>
+
+  <Target Name="ResolveLibrariesFromLocalBuild"
+          DependsOnTargets="
+            ResolveLibrariesRefAssembliesFromLocalBuild;
+            ResolveLibrariesRuntimeFilesFromLocalBuild" />
 
   <PropertyGroup>
     <BundledRuntimeIdentifierGraphFile>$(RuntimeIdGraphDefinitionFile)</BundledRuntimeIdentifierGraphFile>

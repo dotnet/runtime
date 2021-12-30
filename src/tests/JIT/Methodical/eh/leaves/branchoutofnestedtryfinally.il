@@ -13,12 +13,12 @@
 {
 }
 .assembly extern common{}
-.assembly testit
+.assembly 'branchoutofnestedtryfinally'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module testit.exe
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
@@ -85,6 +85,9 @@
     .method public hidebysig static int32 
             Main(string[] args) cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals init (

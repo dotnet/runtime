@@ -5,7 +5,7 @@ using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 using static VariantNative;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 

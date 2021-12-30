@@ -1,0 +1,194 @@
+<!--
+***********************************************************************************************
+CLRTest.Execute.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file contains the logic for providing Execution Script generation.
+
+WARNING:   When setting properties based on their current state (for example:
+           <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
+           target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
+
+           Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
+
+***********************************************************************************************
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <BashScriptSnippetGen>$(BashScriptSnippetGen);GetNativeAotBashScript</BashScriptSnippetGen>
+    <BatchScriptSnippetGen>$(BatchScriptSnippetGen);GetNativeAotBatchScript</BatchScriptSnippetGen>
+  </PropertyGroup>
+
+  <!--
+    This returns the portion of the execution script that generates the required lines to run the test with native AOT.
+
+    Tests can opt out of ahead-of-time (AOT) compilation by setting this property in their project:
+
+      <NativeAotTest>false</NativeAotTest>
+  -->
+  <Target Name="GetNativeAotBashScript">
+
+    <PropertyGroup>
+      <NativeAotCleanupBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(NativeAotTest)' != 'false'">
+        <![CDATA[
+if [ ! -z ${RunNativeAot+x} ]%3B then
+    rm -rf native
+fi
+        ]]>
+    </NativeAotCleanupBashScript>
+
+      <NativeAotBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(NativeAotTest)' != 'false'">
+        <![CDATA[
+if [ ! -z ${RunNativeAot+x} ]%3B then
+    __Command=$_DebuggerFullPath
+    # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+    if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+        __Command+=" $__TestDotNetCmd"
+    else
+        __Command+=" dotnet"
+    fi
+
+    __Command+=" msbuild /p:IlcPath=$CORE_ROOT/nativeaot nativebuild.proj"
+    echo "Running Native AOT: $__Command"
+    $__Command
+    __naotExitCode=$?
+
+    if [ $__naotExitCode -ne 0 ]; then
+      echo Native AOT failed with exitcode: $__naotExitCode
+      exit 1
+    fi
+
+    # Copy the native component to the directory where the executable resides.
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        cp *.dylib  native/ 2>/dev/null
+    else
+        cp *.so  native/ 2>/dev/null
+    fi
+
+    ExePath=native/$(MSBuildProjectName)
+fi
+        ]]>
+      </NativeAotBashScript>
+
+      <BashCLRTestPreCommands>$(NativeAotCleanupBashScript);$(BashCLRTestPreCommands);$(NativeAotBashScript)</BashCLRTestPreCommands>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetNativeAotBatchScript">
+    <PropertyGroup>
+      <NativeAotMultimoduleIncompatibleScript Condition="'$(NativeAotMultimoduleIncompatible)' == 'true'">
+        <![CDATA[
+  ECHO SKIPPING EXECUTION BECAUSE TEST IS NOT COMPATIBLE WITH MULTIMODULE COMPILATION
+  popd
+  Exit /b 0
+        ]]>
+      </NativeAotMultimoduleIncompatibleScript>
+
+      <NativeAotCleanupBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(NativeAotTest)' != 'false'">
+        <![CDATA[
+if defined RunNativeAot (
+    rem Delete any leftover native compilation bits
+    IF EXIST native rmdir /s /q native
+)
+        ]]>
+    </NativeAotCleanupBatchScript>
+
+    <NativeAotBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(NativeAotTest)' != 'false'">
+        <![CDATA[
+if defined RunNativeAot (
+
+    set ExePath=native\$(MSBuildProjectName)
+
+    set __Command=!_DebuggerFullPath!
+    REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+    if defined __TestDotNetCmd (
+        set __Command=!__Command! "!__TestDotNetCmd!"
+    ) else (
+        set __Command=!__Command! "dotnet"
+    )
+
+    set __Command=!__Command! msbuild /p:IlcPath=!CORE_ROOT!\nativeaot nativebuild.proj
+
+    if defined NativeAotMultimodule (
+        set __Command=!__Command! /p:IlcMultiModule=true /p:DisableFrameworkLibGeneration=true /p:FrameworkLibPath=!CORE_ROOT!\nativeaot\sdk
+        $(NativeAotMultimoduleIncompatibleScript)
+    )
+
+    echo "!__Command!"
+    call !__Command!
+
+    if errorlevel 1 (
+        ECHO END COMPILATION - FAILED
+        ECHO FAILED
+        exit /b 1
+    )
+)
+        ]]>
+      </NativeAotBatchScript>
+
+      <CLRTestBatchPreCommands>$(NativeAotCleanupBatchScript);$(CLRTestBatchPreCommands);$(NativeAotBatchScript)</CLRTestBatchPreCommands>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CreateNativeAotBuildProjectFile"
+    Condition="'$(_WillCLRTestProjectBuild)' == 'true'"
+    Inputs="$(MSBuildProjectFullPath)"
+    Outputs="$(OutputPath)\nativebuild.proj"
+    BeforeTargets="Build">
+    <PropertyGroup>
+      <_RootEntryAssemblyLine Condition="$(CLRTestFullTrimming) == 'true'">&lt;TrimmerDefaultAction&gt;link&lt;/TrimmerDefaultAction&gt;</_RootEntryAssemblyLine>
+
+      <_NativeAotBuildProjectFile>
+        <![CDATA[
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="LinkNative">
+
+  <PropertyGroup>
+    <TargetName>$(MSBuildProjectName)</TargetName>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <OutputPath>%24(MSBuildProjectDirectory)\</OutputPath>
+    <IntermediateOutputPath>%24(MSBuildProjectDirectory)\</IntermediateOutputPath>
+    <TargetArchitecture>$(TargetArchitecture)</TargetArchitecture>
+    <Optimize>$(Optimize)</Optimize>
+    <SkipResolvePackageAssets>true</SkipResolvePackageAssets>
+    <SelfContained>true</SelfContained>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    $(_RootEntryAssemblyLine)
+  </PropertyGroup>
+
+  $(NativeAotProjectLines)
+
+  <ItemGroup>
+    <!-- Some tests consist of multiple assemblies - make sure ILC sees them -->
+    <IlcCompileInput Include="%24(MSBuildProjectDirectory)\*.dll" Exclude="%24(MSBuildProjectDirectory)\$(MSBuildProjectName).dll" />
+
+    <!-- Copy RuntimeHostConfigurationOptions -->
+@(RuntimeHostConfigurationOption->'    <RuntimeHostConfigurationOption Include="%(Identity)" Value="%(Value)" />', '%0A')
+  </ItemGroup>
+
+  <!-- We don't do anything in the Compile step since the test is already compiled to IL - the AOT compiler hooks up after this -->
+  <Target Name="CoreCompile" />
+
+  <Target Name="CreateManifestResourceNames" />
+
+  <Import Project="%24(IlcPath)\build\Microsoft.NETCore.Native.targets" />
+
+</Project>
+      ]]>
+      </_NativeAotBuildProjectFile>
+    </PropertyGroup>
+
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(OutputPath)\nativebuild.proj"
+      Lines="$(_NativeAotBuildProjectFile)"
+      Overwrite="true" />
+  </Target>
+
+</Project>

@@ -3,6 +3,10 @@ TOP=$(realpath $(CURDIR)/../../..)
 
 escape_quote = $(subst ",\",$(1))
 
+ifneq ($(V),)
+MSBUILD_ARGS+=/p:MonoVerboseBuild=true
+endif
+
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver
@@ -19,10 +23,11 @@ PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 NATIVE_BIN_DIR?=$(BINDIR)/native/net7.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
-SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
+SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/native/libs/System.Native
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
 XHARNESS_BROWSER?=chrome
 EMCC_DEFAULT_RSP=$(NATIVE_BIN_DIR)/src/emcc-default.rsp
+HELIX_TARGET_QUEUE?=Ubuntu.1804.Amd64.Open
 
 all: build-native icu-files source-files header-files
 
@@ -71,9 +76,6 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a
 
-EMCC_DEBUG_FLAGS =-g -Os -s -DDEBUG=1
-EMCC_RELEASE_FLAGS=-Oz
-
 ifeq ($(NOSTRIP),)
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
 else
@@ -83,11 +85,6 @@ endif
 #
 # Wasm builds
 #
-
-# $(1) - EMCC_FLAGS
-# $(2) - libs
-# $(3) - strip cmd
-define WasmBuildTemplate
 
 $(NATIVE_BIN_DIR):
 	mkdir -p $$@
@@ -101,7 +98,7 @@ $(NATIVE_BIN_DIR)/include/wasm:
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
-$(NATIVE_BIN_DIR)/dotnet.js: runtime/driver.c runtime/pinvoke.c runtime/pinvoke.h runtime/corebindings.c $(NATIVE_BIN_DIR)/src/runtime.iffe.js runtime/library-dotnet.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(2) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
+$(NATIVE_BIN_DIR)/dotnet.js: runtime/driver.c runtime/pinvoke.c runtime/pinvoke.h runtime/corebindings.c $(NATIVE_BIN_DIR)/src/cjs/runtime.cjs.iffe.js runtime/cjs/dotnet.cjs.lib.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.lib.js $(MONO_LIBS) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
 	$(DOTNET) build $(CURDIR)/wasm.proj $(_MSBUILD_WASM_BUILD_ARGS) /t:BuildWasmRuntimes $(MSBUILD_ARGS)
 
 $(EMCC_DEFAULT_RSP): $(CURDIR)/wasm.proj | $(NATIVE_BIN_DIR)/src Makefile
@@ -112,14 +109,6 @@ $(NATIVE_BIN_DIR)/src/emcc-props.json: $(EMSDK_PATH)/upstream/.emsdk_version | $
 
 build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/src/emcc-default.rsp $(NATIVE_BIN_DIR)/src/emcc-props.json
 
-endef
-
-ifeq ($(CONFIG),Debug)
-$(eval $(call WasmBuildTemplate,$(EMCC_DEBUG_FLAGS),$(MONO_LIBS),))
-else
-$(eval $(call WasmBuildTemplate,$(EMCC_RELEASE_FLAGS),$(MONO_LIBS),$(STRIP_CMD)))
-endif
-
 clean-emsdk:
 	$(RM) -rf $(EMSDK_LOCAL_PATH)
 
@@ -129,7 +118,7 @@ clean:
 icu-files: $(wildcard $(ICU_LIBDIR)/*.dat) $(ICU_LIBDIR)/libicuuc.a $(ICU_LIBDIR)/libicui18n.a | $(NATIVE_BIN_DIR)
 	cp $^ $(NATIVE_BIN_DIR)
 
-source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/library-dotnet.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js | $(NATIVE_BIN_DIR)/src
+source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/cjs/dotnet.cjs.lib.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.lib.js | $(NATIVE_BIN_DIR)/src
 	cp $^ $(NATIVE_BIN_DIR)/src
 
 header-files: runtime/pinvoke.h | $(NATIVE_BIN_DIR)/include/wasm
@@ -179,6 +168,32 @@ run-build-tests:
 
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+build-debugger-tests-helix:
+	$(DOTNET) build -restore -bl:$(TOP)/artifacts/log/$(CONFIG)/Wasm.Debugger.Tests.binlog \
+	/p:ContinuousIntegrationBuild=true /p:ArchiveTests=true \
+	$(TOP)/src/tests/BuildWasmApps/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
+	$(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+submit-debugger-tests-helix: build-debugger-tests-helix
+	EMSDK_PATH=$(EMSDK_PATH) BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
+		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
+		/p:TestRunNamePrefixSuffix=WasmDebugger /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
+		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
+		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
+		/p:_Scenarios=wasmdebuggertests \
+		$(_MSBUILD_WASM_BUILD_ARGS) \
+		$(MSBUILD_ARGS)
+
+submit-tests-helix:
+	echo "\n** This will submit all the available test zip files to helix **\n"
+	EMSDK_PATH=$(EMSDK_PATH) BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
+		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
+		/p:TestRunNamePrefixSuffix=WasmTests /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
+		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -v:n -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
+		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
+		$(_MSBUILD_WASM_BUILD_ARGS) \
+		$(MSBUILD_ARGS)
 
 run-debugger-tests:
 	if [ ! -z "$(TEST_FILTER)" ]; then \

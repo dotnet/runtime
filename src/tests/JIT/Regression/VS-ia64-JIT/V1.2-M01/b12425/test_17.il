@@ -3,7 +3,7 @@
 
 .assembly extern mscorlib{}
 .assembly test_17{}
-.module test_17.exe
+.assembly extern xunit.core {}
 
 .class interface public abstract auto ansi ITrees
 {
@@ -40,6 +40,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
 	ldtoken    Garden

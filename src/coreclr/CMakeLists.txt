@@ -84,12 +84,7 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
     set(STATIC_LIBS_ONLY 1)
-
-    if(CLR_CMAKE_TARGET_WIN32)
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Windows Native.Windows)
-    else()
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix Native.Unix)
-    endif()
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 #-----------------------------------------
@@ -138,6 +133,13 @@ include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
 add_subdirectory(tools/aot/jitinterface)
 
+
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
+  # NativeAOT only buildable for a subset of CoreCLR-supported configurations
+  if((CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_WIN32) AND (CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_AMD64) AND NOT (CLR_CMAKE_HOST_OSX AND CLR_CMAKE_HOST_ARCH_ARM64))
+    add_subdirectory(nativeaot)
+  endif()
+endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake

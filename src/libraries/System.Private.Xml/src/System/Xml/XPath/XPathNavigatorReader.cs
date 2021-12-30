@@ -1024,7 +1024,7 @@ namespace System.Xml.XPath
                     }
                     else if (_depth > 0 && _nav.MoveToParent())
                     {
-                        Debug.Assert(_nav.NodeType == XPathNodeType.Element, _nav.NodeType.ToString() + " == XPathNodeType.Element");
+                        Debug.Assert(_nav.NodeType == XPathNodeType.Element, $"{_nav.NodeType} == XPathNodeType.Element");
                         _nodeType = XmlNodeType.EndElement;
                         _state = State.EndElement;
                         _depth--;

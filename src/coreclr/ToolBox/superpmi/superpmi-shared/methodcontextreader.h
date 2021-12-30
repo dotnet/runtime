@@ -40,7 +40,7 @@ public:
     }
 };
 
-// The pack(4) directive is so that each entry is 12 bytes, intead of 16
+// The pack(4) directive is so that each entry is 12 bytes, instead of 16
 #pragma pack(push)
 #pragma pack(4)
 class MethodContextReader

@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [Collection(nameof(NonParallelTestCollection))]
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(SocketsHttpHandler_Http2KeepAlivePing_Test), nameof(IsSupported))]
     public sealed class SocketsHttpHandler_Http2KeepAlivePing_Test : HttpClientHandlerTestBase
     {

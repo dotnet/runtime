@@ -9,6 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly ldobj_I { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class public auto ansi beforefieldinit Test
@@ -1154,6 +1155,9 @@ ret
     .method public hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  8
 

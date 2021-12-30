@@ -278,4 +278,4 @@ END:
 }
 }
 
-.assembly mul_ovf_u8.exe{}
+.assembly mul_ovf_u8{}

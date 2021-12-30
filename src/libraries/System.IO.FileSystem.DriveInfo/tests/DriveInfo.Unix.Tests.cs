@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using Xunit;
 
-namespace System.IO.FileSystem.DriveInfoTests
+namespace System.IO.FileSystem.Tests
 {
     public partial class DriveInfoUnixTests
     {

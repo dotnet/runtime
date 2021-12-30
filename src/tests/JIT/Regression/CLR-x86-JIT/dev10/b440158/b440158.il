@@ -9,7 +9,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
   .ver 2:0:0:0
 }
-.assembly Contains
+.assembly 'b440158'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   
@@ -17,7 +17,7 @@
   .hash algorithm 0x00008004
   .ver 2:0:30414:3
 }
-.module Contains.exe
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -287,6 +287,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  5
     .locals init (class Driver`2<valuetype ValX1`1<string>,class RefX1`1<int32>> V_0)

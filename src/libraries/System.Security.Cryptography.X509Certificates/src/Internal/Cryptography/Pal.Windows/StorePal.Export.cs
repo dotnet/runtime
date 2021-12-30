@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography.Pal.Native;
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
@@ -93,29 +92,29 @@ namespace Internal.Cryptography.Pal
                     }
 
                 case X509ContentType.SerializedStore:
-                    return SaveToMemoryStore(CertStoreSaveAs.CERT_STORE_SAVE_AS_STORE);
+                    return SaveToMemoryStore(Interop.Crypt32.CertStoreSaveAs.CERT_STORE_SAVE_AS_STORE);
 
                 case X509ContentType.Pkcs7:
-                    return SaveToMemoryStore(CertStoreSaveAs.CERT_STORE_SAVE_AS_PKCS7);
+                    return SaveToMemoryStore(Interop.Crypt32.CertStoreSaveAs.CERT_STORE_SAVE_AS_PKCS7);
 
                 default:
                     throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);
             }
         }
 
-        private byte[] SaveToMemoryStore(CertStoreSaveAs dwSaveAs)
+        private byte[] SaveToMemoryStore(Interop.Crypt32.CertStoreSaveAs dwSaveAs)
         {
             unsafe
             {
                 Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
-                if (!Interop.crypt32.CertSaveStore(_certStore, Interop.Crypt32.CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
+                if (!Interop.Crypt32.CertSaveStore(_certStore, Interop.Crypt32.CertEncodingType.All, dwSaveAs, Interop.Crypt32.CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                 byte[] exportedData = new byte[blob.cbData];
                 fixed (byte* pExportedData = exportedData)
                 {
                     blob.pbData = new IntPtr(pExportedData);
-                    if (!Interop.crypt32.CertSaveStore(_certStore, Interop.Crypt32.CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
+                    if (!Interop.Crypt32.CertSaveStore(_certStore, Interop.Crypt32.CertEncodingType.All, dwSaveAs, Interop.Crypt32.CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
 

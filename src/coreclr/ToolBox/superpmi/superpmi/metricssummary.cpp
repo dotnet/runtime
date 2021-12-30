@@ -41,8 +41,11 @@ bool MetricsSummary::SaveToFile(const char* path)
 
     char buffer[4096];
     int len =
-        sprintf_s(buffer, sizeof(buffer), "Successful compiles,Failing compiles,Code bytes\n%d,%d,%lld\n",
-            SuccessfulCompiles, FailingCompiles, NumCodeBytes);
+        sprintf_s(
+            buffer, sizeof(buffer),
+            "Successful compiles,Failing compiles,Missing compiles,Code bytes,Diffed code bytes\n"
+            "%d,%d,%d,%lld,%lld\n",
+            SuccessfulCompiles, FailingCompiles, MissingCompiles, NumCodeBytes, NumDiffedCodeBytes);
     DWORD numWritten;
     if (!WriteFile(file.get(), buffer, static_cast<DWORD>(len), &numWritten, nullptr) || numWritten != static_cast<DWORD>(len))
     {
@@ -73,18 +76,21 @@ bool MetricsSummary::LoadFromFile(const char* path, MetricsSummary* metrics)
         return false;
     }
  
-    if (sscanf_s(content.data(), "Successful compiles,Failing compiles,Code bytes\n%d,%d,%lld\n",
-        &metrics->SuccessfulCompiles, &metrics->FailingCompiles, &metrics->NumCodeBytes) != 3)
-    {
-        return false;
-    }
+    int scanResult =
+        sscanf_s(
+            content.data(),
+            "Successful compiles,Failing compiles,Missing compiles,Code bytes,Diffed code bytes\n"
+            "%d,%d,%d,%lld,%lld\n",
+            &metrics->SuccessfulCompiles, &metrics->FailingCompiles, &metrics->MissingCompiles, &metrics->NumCodeBytes, &metrics->NumDiffedCodeBytes);
 
-    return true;
+    return scanResult == 5;
 }
 
 void MetricsSummary::AggregateFrom(const MetricsSummary& other)
 {
     SuccessfulCompiles += other.SuccessfulCompiles;
     FailingCompiles += other.FailingCompiles;
+    MissingCompiles += other.MissingCompiles;
     NumCodeBytes += other.NumCodeBytes;
+    NumDiffedCodeBytes += other.NumDiffedCodeBytes;
 }

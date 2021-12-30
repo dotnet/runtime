@@ -2,32 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { bind_runtime_method } from "./method-binding";
-
-export type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
-
-export interface ManagedPointer {
-    __brandManagedPointer: "ManagedPointer"
-}
-
-export interface NativePointer {
-    __brandNativePointer: "NativePointer"
-}
-
-export interface VoidPtr extends NativePointer {
-    __brand: "VoidPtr"
-}
-
-export interface CharPtr extends NativePointer {
-    __brand: "CharPtr"
-}
-
-export interface Int32Ptr extends NativePointer {
-    __brand: "Int32Ptr"
-}
-
-export interface CharPtrPtr extends NativePointer {
-    __brand: "CharPtrPtr"
-}
+import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./types/emscripten";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -75,10 +50,9 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 export type MonoConfig = {
     isError: false,
     assembly_root: string, // the subfolder containing managed assemblies and pdbs
-    assets: (AssetEntry | AssemblyEntry | SatelliteAssemblyEntry | VfsEntry | IcuData)[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
+    assets: AllAssetEntryTypes[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
     debug_level?: number, // Either this or the next one needs to be set
     enable_debugging?: number, // Either this or the previous one needs to be set
-    fetch_file_cb?: Request, // a function (string) invoked to fetch a given file. If no callback is provided a default implementation appropriate for the current environment will be selected (readFileSync in node, fetch elsewhere). If no default implementation is available this call will fail.
     globalization_mode: GlobalizationMode, // configures the runtime's globalization mode
     diagnostic_tracing?: boolean // enables diagnostic log messages during startup
     remote_sources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
@@ -96,6 +70,8 @@ export type MonoConfigError = {
     message: string,
     error: any
 }
+
+export type AllAssetEntryTypes = AssetEntry | AssemblyEntry | SatelliteAssemblyEntry | VfsEntry | IcuData;
 
 // Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 export type AssetEntry = {
@@ -156,6 +132,7 @@ export type RuntimeHelpers = {
 
     loaded_files: string[];
     config: MonoConfig | MonoConfigError;
+    fetch: (url: string) => Promise<Response>;
 }
 
 export const wasm_type_symbol = Symbol.for("wasm type");
@@ -177,17 +154,36 @@ export type CoverageProfilerOptions = {
 }
 
 // how we extended emscripten Module
-export type EmscriptenModuleMono = EmscriptenModule & {
-    disableDotNet6Compatibility?: boolean,
+export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 
-    // backward compatibility
+export type DotnetModuleConfig = {
+    disableDotnet6Compatibility?: boolean,
+
     config?: MonoConfig | MonoConfigError,
     configSrc?: string,
+    scriptDirectory?: string,
     onConfigLoaded?: () => void;
-    onDotNetReady?: () => void;
+    onDotnetReady?: () => void;
 
-    /**
-     * @deprecated DEPRECATED! backward compatibility https://github.com/search?q=mono_bind_static_method&type=Code
-     */
-    mono_bind_static_method: (fqn: string, signature: string) => Function,
+    imports?: DotnetModuleConfigImports;
+} & EmscriptenModule
+
+export type DotnetModuleConfigImports = {
+    require?: (name: string) => any;
+    fetch?: (url: string) => Promise<Response>;
+    fs?: {
+        promises?: {
+            readFile?: (path: string) => Promise<string | Buffer>,
+        }
+        readFileSync?: (path: string, options: any | undefined) => string,
+    };
+    crypto?: {
+        randomBytes?: (size: number) => Buffer
+    };
+    ws?: WebSocket & { Server: any };
+    path?: {
+        normalize?: (path: string) => string,
+        dirname?: (path: string) => string,
+    };
+    url?: any;
 }

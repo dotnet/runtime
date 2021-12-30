@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -326,6 +327,43 @@ namespace System.Text.RegularExpressions.Tests
                         };
                     }
                 }
+
+#if !NETFRAMEWORK // these tests currently fail on .NET Framework, and we need to check IsDynamicCodeCompiled but that doesn't exist on .NET Framework
+                if (engine != RegexEngine.Interpreter && // these tests currently fail with RegexInterpreter
+                    RuntimeFeature.IsDynamicCodeCompiled) // if dynamic code isn't compiled, RegexOptions.Compiled falls back to the interpreter, for which these tests currently fail
+                {
+                    // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
+                    yield return new object[]
+                    {
+                        engine, "@(a*)+?", "@", RegexOptions.None, new[]
+                        {
+                            new CaptureData("@", 0, 1)
+                        }
+                    };
+
+                    // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
+                    yield return new object[]
+                    {
+                        engine, @"(?:){93}", "x", RegexOptions.None, new[]
+                        {
+                            new CaptureData("", 0, 0),
+                            new CaptureData("", 1, 0)
+                        }
+                    };
+
+                    if (!RegexHelpers.IsNonBacktracking(engine)) // atomic subexpressions aren't supported
+                    {
+                        // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
+                        yield return new object[]
+                        {
+                            engine, @"()(?>\1+?).\b", "xxxx", RegexOptions.None, new[]
+                            {
+                                new CaptureData("x", 3, 1),
+                            }
+                        };
+                    }
+                }
+#endif
             }
         }
 
@@ -336,9 +374,6 @@ namespace System.Text.RegularExpressions.Tests
             Regex regexAdvanced = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             VerifyMatches(regexAdvanced.Matches(input), expected);
             VerifyMatches(regexAdvanced.Match(input), expected);
-
-            VerifyMatches(Regex.Matches(input, pattern, options), expected);
-            VerifyMatches(Regex.Match(input, pattern, options), expected);
         }
 
         private static void VerifyMatches(Match match, CaptureData[] expected)
@@ -361,18 +396,18 @@ namespace System.Text.RegularExpressions.Tests
         private static void VerifyMatch(Match match, CaptureData expected)
         {
             Assert.True(match.Success);
-            RegexAssert.Equal(expected.Value, match);
             Assert.Equal(expected.Index, match.Index);
             Assert.Equal(expected.Length, match.Length);
+            RegexAssert.Equal(expected.Value, match);
 
-            RegexAssert.Equal(expected.Value, match.Groups[0]);
             Assert.Equal(expected.Index, match.Groups[0].Index);
             Assert.Equal(expected.Length, match.Groups[0].Length);
+            RegexAssert.Equal(expected.Value, match.Groups[0]);
 
             Assert.Equal(1, match.Captures.Count);
-            RegexAssert.Equal(expected.Value, match.Captures[0]);
             Assert.Equal(expected.Index, match.Captures[0].Index);
             Assert.Equal(expected.Length, match.Captures[0].Length);
+            RegexAssert.Equal(expected.Value, match.Captures[0]);
         }
 
         [Fact]

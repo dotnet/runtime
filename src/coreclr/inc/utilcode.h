@@ -39,6 +39,8 @@
 #include "contract.h"
 #include "entrypoints.h"
 
+#include<minipal/utils.h>
+
 #include "clrnt.h"
 
 #include "random.h"
@@ -150,17 +152,7 @@ typedef LPSTR   LPUTF8;
 #endif
 
 #include <stddef.h> // for offsetof
-
-#ifndef NumItems
-// Number of elements in a fixed-size array
-#define NumItems(s) (sizeof(s) / sizeof(s[0]))
-#endif
-
-#ifndef StrLen
-// Number of characters in a string literal. Excludes terminating NULL.
-#define StrLen(str) (NumItems(str) - 1)
-#endif
-
+#include <minipal/utils.h>
 
 #define IS_DIGIT(ch) (((ch) >= W('0')) && ((ch) <= W('9')))
 #define DIGIT_TO_INT(ch) ((ch) - W('0'))
@@ -647,8 +639,8 @@ public:
     {
         if (id != UICULTUREID_DONTCARE)
         {
-            wcsncpy_s(m_LangId, NumItems(m_LangId), id, NumItems(m_LangId));
-            m_LangId[NumItems(m_LangId)-1] = W('\0');
+            wcsncpy_s(m_LangId, ARRAY_SIZE(m_LangId), id, ARRAY_SIZE(m_LangId));
+            m_LangId[STRING_LENGTH(m_LangId)] = W('\0');
         }
         else
         {

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 CORECLRROOT=~/src/coreclr
 TESTROOT=~/test

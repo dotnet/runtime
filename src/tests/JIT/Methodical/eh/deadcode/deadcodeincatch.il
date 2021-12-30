@@ -10,7 +10,7 @@
   .ver 4:0:0:0
 }
 .assembly extern common {}
-.assembly trycatch
+.assembly 'deadcodeincatch'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -18,7 +18,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module trycatch.exe
+.assembly extern xunit.core {}
 // MVID: {3B8B6D1B-A317-4591-BD66-1D1000E3767F}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -115,6 +115,9 @@
     .method public hidebysig static int32 
             Main(string[] args) cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  1
       ldstr   "hello"

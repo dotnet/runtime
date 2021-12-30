@@ -26,7 +26,6 @@
 //
 //   * no patchpoints in handler regions
 //   * no patchpoints for localloc methods
-//   * no patchpoints for synchronized methods (workaround)
 //
 class PatchpointTransformer
 {
@@ -57,35 +56,33 @@ public:
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
+                // We can't OSR from funclets.
+                //
+                assert(!block->hasHndIndex());
+
                 // Clear the patchpoint flag.
                 //
                 block->bbFlags &= ~BBF_PATCHPOINT;
 
-                // If block is in a handler region, don't insert a patchpoint.
-                // We can't OSR from funclets.
-                //
-                // TODO: check this earlier, somehow, and fall back to fully
-                // optimizing the method (ala QJFL=0).
-                if (compiler->ehGetBlockHndDsc(block) != nullptr)
-                {
-                    JITDUMP("Patchpoint: skipping patchpoint for " FMT_BB " as it is in a handler\n", block->bbNum);
-                    continue;
-                }
-
-                JITDUMP("Patchpoint: loop patchpoint in " FMT_BB "\n", block->bbNum);
-                assert(block != compiler->fgFirstBB);
+                JITDUMP("Patchpoint: regular patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformBlock(block);
                 count++;
             }
             else if (block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT)
             {
-                if (compiler->ehGetBlockHndDsc(block) != nullptr)
-                {
-                    JITDUMP("Patchpoint: skipping partial compilation patchpoint for " FMT_BB
-                            " as it is in a handler\n",
-                            block->bbNum);
-                    continue;
-                }
+                // We can't OSR from funclets.
+                // Also, we don't import the IL for these blocks.
+                //
+                assert(!block->hasHndIndex());
+
+                // If we're instrumenting, we should not have decided to
+                // put class probes here, as that is driven by looking at IL.
+                //
+                assert((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0);
+
+                // Clear the partial comp flag.
+                //
+                block->bbFlags &= ~BBF_PARTIAL_COMPILATION_PATCHPOINT;
 
                 JITDUMP("Patchpoint: partial compilation patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformPartialCompilation(block);
@@ -273,34 +270,8 @@ PhaseStatus Compiler::fgTransformPatchpoints()
     // We should only be adding patchpoints at Tier0, so should not be in an inlinee
     assert(!compIsForInlining());
 
-    // We currently can't do OSR in methods with localloc.
-    // Such methods don't have a fixed relationship between frame and stack pointers.
-    //
-    // This is true whether or not the localloc was executed in the original method.
-    //
-    // TODO: handle this case, or else check this earlier and fall back to fully
-    // optimizing the method (ala QJFL=0).
-    if (compLocallocUsed)
-    {
-        JITDUMP("\n -- unable to handle methods with localloc\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    // We currently can't do OSR in synchronized methods. We need to alter
-    // the logic in fgAddSyncMethodEnterExit for OSR to not try and obtain the
-    // monitor (since the original method will have done so) and set the monitor
-    // obtained flag to true (or reuse the original method slot value).
-    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
-    {
-        JITDUMP("\n -- unable to handle synchronized methods\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    if (opts.IsReversePInvoke())
-    {
-        JITDUMP(" -- unable to handle Reverse P/Invoke\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
+    // We should be allowed to have patchpoints in this method.
+    assert(compCanHavePatchpoints());
 
     PatchpointTransformer ppTransformer(this);
     int                   count = ppTransformer.Run();

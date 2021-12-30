@@ -7,9 +7,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly constrained
+.assembly 'constrained2'
 {
 }
+.assembly extern xunit.core {}
 .class public auto ansi beforefieldinit Test_constrained2
        extends [mscorlib]System.Object
 {
@@ -29,6 +30,9 @@
 
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       17 (0x11)
     .maxstack  8

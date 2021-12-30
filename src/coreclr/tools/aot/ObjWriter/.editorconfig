@@ -1,0 +1,3 @@
+[*.{cpp,h}]
+
+indent_size = 2

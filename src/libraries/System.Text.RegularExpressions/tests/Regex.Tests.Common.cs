@@ -48,11 +48,11 @@ namespace System.Text.RegularExpressions.Tests
             return start == 0;
         }
 
-        public static Regex CreateRegexInCulture(string pattern, RegexOptions options, Globalization.CultureInfo culture)
+        public static async Task<Regex> GetRegexAsync(RegexEngine engine, string pattern, RegexOptions options, Globalization.CultureInfo culture)
         {
             using (new System.Tests.ThreadCultureChange(culture))
             {
-                return new Regex(pattern, options);
+                return await GetRegexAsync(engine, pattern, options);
             }
         }
 
@@ -116,7 +116,7 @@ namespace System.Text.RegularExpressions.Tests
             // - Handle NonBacktrackingSourceGenerated
 
             return
-                options is null ? new Regex(pattern, RegexOptions.Compiled | OptionsFromEngine(engine)) :
+                options is null ? new Regex(pattern, OptionsFromEngine(engine)) :
                 matchTimeout is null ? new Regex(pattern, options.Value | OptionsFromEngine(engine)) :
                 new Regex(pattern, options.Value | OptionsFromEngine(engine), matchTimeout.Value);
         }
@@ -136,7 +136,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 (string pattern, RegexOptions? options, TimeSpan? matchTimeout) = regexes[i];
                 results[i] =
-                    options is null ? new Regex(pattern, RegexOptions.Compiled | OptionsFromEngine(engine)) :
+                    options is null ? new Regex(pattern, OptionsFromEngine(engine)) :
                     matchTimeout is null ? new Regex(pattern, options.Value | OptionsFromEngine(engine)) :
                     new Regex(pattern, options.Value | OptionsFromEngine(engine), matchTimeout.Value);
             }

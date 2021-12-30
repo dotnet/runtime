@@ -229,7 +229,8 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &simdSize);
         }
     }
-    else if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (numArgs != 0))
+    else if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (numArgs != 0) &&
+             !SimdAsHWIntrinsicInfo::KeepBaseTypeFromRet(intrinsic))
     {
         // We need to fixup the clsHnd in the case we are an intrinsic on Vector
         // The first argument will be the appropriate Vector<T> handle to use
@@ -674,6 +675,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     return gtNewSimdAbsNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
+
                 case NI_VectorT128_Sum:
                 {
 
@@ -693,6 +695,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
                 }
+
                 case NI_VectorT256_Sum:
                 {
                     // HorizontalAdd combines pairs so we need log2(vectorLength) passes to sum all elements together.
@@ -730,11 +733,26 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     return gtNewSimdAsHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, 16);
                 }
+
+                case NI_VectorT128_WidenLower:
+                case NI_VectorT256_WidenLower:
+                {
+                    return gtNewSimdWidenLowerNode(retType, op1, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_WidenUpper:
+                case NI_VectorT256_WidenUpper:
+                {
+                    return gtNewSimdWidenUpperNode(retType, op1, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ true);
+                }
 #elif defined(TARGET_ARM64)
                 case NI_VectorT128_Abs:
                 {
                     return gtNewSimdAbsNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
+
                 case NI_VectorT128_Sum:
                 {
                     GenTree* tmp;
@@ -781,6 +799,18 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                             unreached();
                         }
                     }
+                }
+
+                case NI_VectorT128_WidenLower:
+                {
+                    return gtNewSimdWidenLowerNode(retType, op1, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_WidenUpper:
+                {
+                    return gtNewSimdWidenUpperNode(retType, op1, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ true);
                 }
 #else
 #error Unsupported platform
@@ -915,6 +945,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                             /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_VectorT128_Narrow:
+                case NI_VectorT256_Narrow:
+                {
+                    return gtNewSimdNarrowNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ true);
+                }
+
                 case NI_VectorT128_op_Multiply:
                 case NI_VectorT256_op_Multiply:
                 {
@@ -952,6 +989,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     return gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize,
                                             /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_Narrow:
+                {
+                    return gtNewSimdNarrowNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_op_Multiply:

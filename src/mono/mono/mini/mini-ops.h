@@ -639,6 +639,11 @@ MINI_OP(OP_FGETHIGH32, "float_gethigh32", IREG, FREG, NONE)
 
 MINI_OP(OP_JUMP_TABLE, "jump_table", IREG, NONE, NONE)
 
+/* Same as OP_IMUL_OVF_UN, but throws an OutOfMemoryException */
+/* Emulated */
+MINI_OP(OP_IMUL_OVF_UN_OOM,   "int_mul_ovf_un_oom", IREG, IREG, IREG)
+MINI_OP(OP_LMUL_OVF_UN_OOM,   "long_mul_ovf_un_oom", LREG, LREG, LREG)
+
 /* aot compiler */
 MINI_OP(OP_AOTCONST, "aotconst", IREG, NONE, NONE)
 MINI_OP(OP_PATCH_INFO, "patch_info", NONE, NONE, NONE)

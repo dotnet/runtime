@@ -66,7 +66,7 @@ namespace System.Reflection
                 result.Append('[');
                 int count = array.Count;
                 result.Append(count.ToString());
-                result.Append(']');
+                result.Append("] { ");
 
                 for (int i = 0; i < count; i++)
                 {

@@ -31,8 +31,16 @@ public class IcallTableGenerator : Task
 
     public override bool Execute()
     {
-        GenIcallTable(RuntimeIcallTableFile!, Assemblies!.Select(item => item.ItemSpec).ToArray());
-        return true;
+        try
+        {
+            GenIcallTable(RuntimeIcallTableFile!, Assemblies!.Select(item => item.ItemSpec).ToArray());
+            return !Log.HasLoggedErrors;
+        }
+        catch (LogAsErrorException laee)
+        {
+            Log.LogError(laee.Message);
+            return false;
+        }
     }
 
     //
@@ -152,20 +160,9 @@ public class IcallTableGenerator : Task
             icallClass.Icalls.TryGetValue (method.Name, out icall);
             if (icall == null)
             {
-                // Then with signature
-                var sig = new StringBuilder (method.Name + "(");
-                int pindex = 0;
-                foreach (var par in method.GetParameters())
-                {
-                    if (pindex > 0)
-                        sig.Append (',');
-                    var t = par.ParameterType;
-                    AppendType (sig, t);
-                    pindex++;
-                }
-                sig.Append (')');
-                if (icallClass.Icalls.ContainsKey (sig.ToString ()))
-                    icall = icallClass.Icalls [sig.ToString ()];
+                string? methodSig = BuildSignature(method, className);
+                if (methodSig != null && icallClass.Icalls.ContainsKey (methodSig))
+                    icall = icallClass.Icalls [methodSig];
             }
             if (icall == null)
                 // Registered at runtime
@@ -178,6 +175,33 @@ public class IcallTableGenerator : Task
 
         foreach (var nestedType in type.GetNestedTypes())
             ProcessType(nestedType);
+
+        string? BuildSignature(MethodInfo method, string className)
+        {
+            // Then with signature
+            var sig = new StringBuilder (method.Name + "(");
+            int pindex = 0;
+            foreach (var par in method.GetParameters())
+            {
+                if (pindex > 0)
+                    sig.Append (',');
+                var t = par.ParameterType;
+                try
+                {
+                    AppendType (sig, t);
+                }
+                catch (NotImplementedException nie)
+                {
+                    Log.LogWarning($"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}::{method.Name}'" +
+                                    $" because type '{nie.Message}' is not supported for parameter named '{par.Name}'. Ignoring.");
+                    return null;
+                }
+                pindex++;
+            }
+            sig.Append (')');
+
+            return sig.ToString();
+        }
     }
 
     // Append the type name used by the runtime icall tables

@@ -68,7 +68,7 @@ namespace Microsoft.Win32.SafeHandles
                     {
                         Interop.Crypt32.CryptAcquireContextFlags flags = (pProvInfo->dwFlags & Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | Interop.Crypt32.CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
                         IntPtr hProv;
-                        _ = Interop.cryptoapi.CryptAcquireContext(out hProv, pProvInfo->pwszContainerName, pProvInfo->pwszProvName, pProvInfo->dwProvType, flags);
+                        _ = Interop.Advapi32.CryptAcquireContext(out hProv, pProvInfo->pwszContainerName, pProvInfo->pwszProvName, pProvInfo->dwProvType, flags);
 
                         // Called CryptAcquireContext solely for the side effect of deleting the key containers. When called with these flags, no actual
                         // hProv is returned (so there's nothing to clean up.)

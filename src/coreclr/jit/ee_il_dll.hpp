@@ -56,9 +56,9 @@ bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 FORCEINLINE
-bool Compiler::eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool Compiler::eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
-    return info.compCompHnd->isJitIntrinsic(ftn);
+    return info.compCompHnd->isIntrinsic(ftn);
 }
 
 FORCEINLINE
@@ -68,9 +68,9 @@ bool Compiler::eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 }
 
 FORCEINLINE
-var_types Compiler::eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd)
+var_types Compiler::eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd)
 {
-    return JITtype2varType(info.compCompHnd->getFieldType(fldHnd));
+    return JITtype2varType(info.compCompHnd->getFieldType(fldHnd, pStructHnd));
 }
 
 FORCEINLINE

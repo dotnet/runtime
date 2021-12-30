@@ -9,8 +9,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test'
+.assembly 'u_seq'
 { }
+.assembly extern xunit.core {}
 .class private auto ansi Test_u_seq extends [mscorlib]System.Object
 {
 .method private hidebysig static native unsigned int calc(native unsigned int, native unsigned int) il managed
@@ -47,6 +48,9 @@ stop:
 
 .method private hidebysig static int32 Main() il managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack  5
 	ldc.i4.s 6

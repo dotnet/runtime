@@ -48,7 +48,9 @@ check_prereqs()
 
 build_native()
 {
-    eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+    if [[ ! -e "$__RepoRootDir/artifacts/obj/_version.c" ]]; then
+        eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+    fi
 
     targetOS="$1"
     platformArch="$2"
@@ -115,7 +117,7 @@ build_native()
             scan_build=scan-build
         fi
 
-        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
+        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -257,7 +259,7 @@ while :; do
         break
     fi
 
-    lowerI="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
+    lowerI="$(echo "${1/--/-}" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
         -\?|-h|--help)
             usage
@@ -302,15 +304,7 @@ while :; do
             ;;
 
         clang*|-clang*)
-                __Compiler=clang
-                # clangx.y or clang-x.y
-                version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"
-                parts=(${version//./ })
-                __CompilerMajorVersion="${parts[0]}"
-                __CompilerMinorVersion="${parts[1]}"
-                if [[ -z "$__CompilerMinorVersion" && "$__CompilerMajorVersion" -le 6 ]]; then
-                    __CompilerMinorVersion=0;
-                fi
+            __Compiler="$lowerI"
             ;;
 
         cmakeargs|-cmakeargs)
@@ -338,12 +332,7 @@ while :; do
             ;;
 
         gcc*|-gcc*)
-                __Compiler=gcc
-                # gccx.y or gcc-x.y
-                version="$(echo "$lowerI" | tr -d '[:alpha:]-=')"
-                parts=(${version//./ })
-                __CompilerMajorVersion="${parts[0]}"
-                __CompilerMinorVersion="${parts[1]}"
+            __Compiler="$lowerI"
             ;;
 
         keepnativesymbols|-keepnativesymbols)
@@ -452,7 +441,7 @@ if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
     # Darwin that doesn't use rootfs
-    if [[ ! -n "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
         export ROOTFS_DIR
     fi

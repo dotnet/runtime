@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 .assembly test5{}
 .assembly extern test5{}
 .assembly extern mscorlib{}
@@ -48,6 +49,9 @@
 }
 
 .method public static int32 Main(){
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init(int32 retVal)
     // there's no way to get to Foo through TypeRef

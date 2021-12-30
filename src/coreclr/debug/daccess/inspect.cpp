@@ -2296,7 +2296,7 @@ ClrDataTypeDefinition::GetName(
             if ((status =
                  GetFullClassNameFromMetadata(m_module->GetMDImport(),
                                               m_token,
-                                              NumItems(classNameBuf),
+                                              ARRAY_SIZE(classNameBuf),
                                               classNameBuf)) == S_OK)
             {
                 status = ConvertUtf8(classNameBuf, bufLen, nameLen, nameBuf);

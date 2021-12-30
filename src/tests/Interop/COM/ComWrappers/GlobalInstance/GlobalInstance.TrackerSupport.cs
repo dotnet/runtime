@@ -8,6 +8,7 @@ namespace ComWrappersTests.GlobalInstance
 
     using ComWrappersTests.Common;
     using TestLibrary;
+    using Xunit;
 
     partial class Program
     {
@@ -17,11 +18,11 @@ namespace ComWrappersTests.GlobalInstance
 
             var testObj = new Test();
             IntPtr comWrapper1 = Marshal.GetIUnknownForObject(testObj);
-            Assert.IsNull(GlobalComWrappers.Instance.LastComputeVtablesObject, "ComWrappers instance should not have been called");
+            Assert.Null(GlobalComWrappers.Instance.LastComputeVtablesObject);
 
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
             object objWrapper = Marshal.GetObjectForIUnknown(trackerObjRaw);
-            Assert.IsFalse(objWrapper is FakeWrapper, $"ComWrappers instance should not have been called");
+            Assert.False(objWrapper is FakeWrapper, $"ComWrappers instance should not have been called");
         }
 
         static int Main(string[] doNotUse)

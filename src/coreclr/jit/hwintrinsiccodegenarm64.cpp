@@ -51,7 +51,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
     }
     else
     {
-        const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrin->gtHWIntrinsicId);
+        const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrin->GetHWIntrinsicId());
 
         if (category == HW_Category_SIMDByIndexedElement)
         {
@@ -71,13 +71,13 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
             assert(varTypeIsSIMD(indexedElementOpType));
 
             const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
-            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, indexedElementSimdSize, intrin->GetSimdBaseType(),
-                                             &immLowerBound, &immUpperBound);
+            HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), indexedElementSimdSize,
+                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
         }
         else
         {
-            HWIntrinsicInfo::lookupImmBounds(intrin->gtHWIntrinsicId, intrin->GetSimdSize(), intrin->GetSimdBaseType(),
-                                             &immLowerBound, &immUpperBound);
+            HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), intrin->GetSimdSize(),
+                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
         }
 
         nonConstImmReg = immOp->GetRegNum();
@@ -95,7 +95,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
             // these by
             // using the same approach as in hwintrinsicxarch.cpp - adding an additional indirection level in form of a
             // branch table.
-            assert(!HWIntrinsicInfo::GeneratesMultipleIns(intrin->gtHWIntrinsicId));
+            assert(!HWIntrinsicInfo::GeneratesMultipleIns(intrin->GetHWIntrinsicId()));
             branchTargetReg = intrin->GetSingleTempReg();
         }
 
@@ -255,6 +255,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         emitSize = emitActualTypeSize(intrin.baseType);
         opt      = INS_OPTS_NONE;
     }
+    else if (intrin.category == HW_Category_Special)
+    {
+        assert(intrin.id == NI_ArmBase_Yield);
+
+        emitSize = EA_UNKNOWN;
+        opt      = INS_OPTS_NONE;
+    }
     else
     {
         emitSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
@@ -264,7 +271,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     const bool isRMW               = node->isRMWHWIntrinsic(compiler);
     const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
-    genConsumeHWIntrinsicOperands(node);
+    genConsumeMultiOpOperands(node);
 
     if (intrin.IsTableDriven())
     {
@@ -442,6 +449,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubw2 : INS_ssubw2;
                 }
                 break;
+
+            case NI_ArmBase_Yield:
+            {
+                ins = INS_yield;
+                break;
+            }
 
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
@@ -734,6 +747,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 }
                 break;
+
+            case NI_ArmBase_Yield:
+            {
+                GetEmitter()->emitIns(ins);
+                break;
+            }
 
             // mvni doesn't support the range of element types, so hard code the 'opts' value.
             case NI_Vector64_get_Zero:

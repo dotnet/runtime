@@ -12,12 +12,13 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 2:0:3600:0
 }
-.assembly template
+.assembly 'params-none'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit Test_params_none
        extends [mscorlib]System.Object
@@ -55,6 +56,9 @@
 
   .method public hidebysig static int32  Main() cil managed noinlining
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       78 (0x4e)
     .maxstack  2

@@ -716,14 +716,14 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.freach.freac
     //<Expects Status=success></Expects>
     // <Code>
 
-    public enum color
+    public enum Color
     {
         Red,
         Blue,
         Green
     }
 
-    public enum cars
+    public enum Cars
     {
         Toyota,
         Lexus,
@@ -814,42 +814,42 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.freach.freac
             }
 
             ;
-            color[] x13 = new color[]
+            Color[] x13 = new Color[]
             {
-            color.Red, color.Green
+            Color.Red, Color.Green
             }
 
             ;
-            cars[] x14 = new cars[]
+            Cars[] x14 = new Cars[]
             {
-            cars.Toyota, cars.BMW
+            Cars.Toyota, Cars.BMW
             }
 
             ;
             // From sybte, byte, short, ushort, int, uint, long, ulong, char, float, double, decimal to enum-type
-            foreach (color y in (dynamic)x1)
+            foreach (Color y in (dynamic)x1)
                 i++;
-            foreach (color y in (dynamic)x2)
+            foreach (Color y in (dynamic)x2)
                 i++;
-            foreach (color y in (dynamic)x3)
+            foreach (Color y in (dynamic)x3)
                 i++;
-            foreach (color y in (dynamic)x4)
+            foreach (Color y in (dynamic)x4)
                 i++;
-            foreach (color y in (dynamic)x5)
+            foreach (Color y in (dynamic)x5)
                 i++;
-            foreach (color y in (dynamic)x6)
+            foreach (Color y in (dynamic)x6)
                 i++;
-            foreach (color y in (dynamic)x7)
+            foreach (Color y in (dynamic)x7)
                 i++;
-            foreach (color y in (dynamic)x8)
+            foreach (Color y in (dynamic)x8)
                 i++;
-            foreach (color y in (dynamic)x9)
+            foreach (Color y in (dynamic)x9)
                 i++;
-            foreach (color y in (dynamic)x10)
+            foreach (Color y in (dynamic)x10)
                 i++;
-            foreach (color y in (dynamic)x11)
+            foreach (Color y in (dynamic)x11)
                 i++;
-            foreach (color y in (dynamic)x12)
+            foreach (Color y in (dynamic)x12)
                 i++;
             // From enum type to sybte, byte, short, ushort, int, uint, long, ulong, char, float, double, decimal
             foreach (sbyte y in (dynamic)x13)
@@ -877,7 +877,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.freach.freac
             foreach (decimal y in (dynamic)x13)
                 i++;
             // From one enum type to another enum type
-            foreach (color y in (dynamic)x14)
+            foreach (Color y in (dynamic)x14)
                 i++;
             return 0;
         }

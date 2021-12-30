@@ -60,4 +60,4 @@ FAIL:
 	ret
 }
 }
-.assembly not_u4.exe{}
+.assembly not_u4{}

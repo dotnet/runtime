@@ -275,4 +275,4 @@ FAIL:
 	ret
 }
 }
-.assembly add_I4.exe{}
+.assembly add_I4{}

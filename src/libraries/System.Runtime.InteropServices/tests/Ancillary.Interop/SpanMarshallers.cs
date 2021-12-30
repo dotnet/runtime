@@ -20,20 +20,8 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
 
         public ReadOnlySpanMarshaller(ReadOnlySpan<T> managed, int sizeOfNativeElement)
+            :this(managed, Span<byte>.Empty, sizeOfNativeElement)
         {
-            _allocatedMemory = default;
-            _sizeOfNativeElement = sizeOfNativeElement;
-            if (managed.Length == 0)
-            {
-                _managedSpan = default;
-                NativeValueStorage = default;
-                return;
-            }
-            _managedSpan = managed;
-            _sizeOfNativeElement = sizeOfNativeElement;
-            int spaceToAllocate = managed.Length * sizeOfNativeElement;
-            _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
-            NativeValueStorage = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
         }
 
         public ReadOnlySpanMarshaller(ReadOnlySpan<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
@@ -81,8 +69,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         {
             get
             {
-                Debug.Assert(_managedSpan.IsEmpty || _allocatedMemory != IntPtr.Zero);
-                return (byte*)_allocatedMemory;
+                return (byte*)Unsafe.AsPointer(ref GetPinnableReference());
             }
             set
             {
@@ -222,7 +209,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             {
                 if (_inner.ManagedValues.Length == 0)
                 {
-                    return (byte*)0x1;
+                    return (byte*)0xa5a5a5a5;
                 }
                 return _inner.Value;
             }
@@ -293,7 +280,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             {
                 if (_inner.ManagedValues.Length == 0)
                 {
-                    return (byte*)0x1;
+                    return (byte*)0xa5a5a5a5;
                 }
                 return _inner.Value;
             }
@@ -369,8 +356,11 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         {
             get
             {
-                Debug.Assert(_data.IsEmpty || _allocatedMemory != null);
-                return _allocatedMemory;
+                if (_allocatedMemory  != null)
+                {
+                    return _allocatedMemory;
+                }
+                return (T*)Unsafe.AsPointer(ref GetPinnableReference());
             }
             set
             {

@@ -111,12 +111,12 @@ The libraries build contains some native code. This includes shims over libc, op
 
 - Building in debug mode for platform x64
 ```bash
-./src/libraries/Native/build-native.sh debug x64
+./src/native/libs/build-native.sh debug x64
 ```
 
 - The following example shows how you would do an arm cross-compile build
 ```bash
-./src/libraries/Native/build-native.sh debug arm cross verbose
+./src/native/libs/build-native.sh debug arm cross verbose
 ```
 
 For Windows, replace `build-native.sh` with `build-native.cmd`.

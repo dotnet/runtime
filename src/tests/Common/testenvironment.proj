@@ -187,7 +187,11 @@
     <TestEnvironment Include="gcstress0xc_jitminopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
     <TestEnvironment Include="jitosr" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
+    <TestEnvironment Include="jitosr_pgo" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
+    <TestEnvironment Include="jitpartialcompilation_pgo" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
+    <TestEnvironment Include="jitpartialcompilation_osr"  TC_OnStackReplacement="1" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
+    <TestEnvironment Include="jitpartialcompilation_osr_pgo"  TC_OnStackReplacement="1" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />

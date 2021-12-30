@@ -13,8 +13,8 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCreate")]
         internal static partial SafeHmacCtxHandle HmacCreate(ref byte key, int keyLen, IntPtr md);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacDestroy")]
-        internal static extern void HmacDestroy(IntPtr ctx);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacDestroy")]
+        internal static partial void HmacDestroy(IntPtr ctx);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacReset")]
         internal static partial int HmacReset(SafeHmacCtxHandle ctx);
@@ -31,8 +31,8 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCurrent")]
         internal static partial int HmacCurrent(SafeHmacCtxHandle ctx, ref byte data, ref int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacOneShot")]
-        private static unsafe extern int HmacOneShot(IntPtr type, byte* key, int keySize, byte* source, int sourceSize, byte* md, int* mdSize);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacOneShot")]
+        private static unsafe partial int HmacOneShot(IntPtr type, byte* key, int keySize, byte* source, int sourceSize, byte* md, int* mdSize);
 
         internal static unsafe int HmacOneShot(IntPtr type, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
         {

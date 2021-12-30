@@ -240,7 +240,7 @@ typedef struct {
 	MonoGraphOptions value;
 } GraphName;
 
-static const GraphName 
+static const GraphName
 graph_names [] = {
 	{"cfg",      "Control Flow",                            MONO_GRAPH_CFG},
 	{"dtree",    "Dominator Tree",                          MONO_GRAPH_DTREE},
@@ -324,7 +324,7 @@ opt_sets [] = {
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_ABCREM,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_ABCREM,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_CMOV,
-       DEFAULT_OPTIMIZATIONS, 
+       DEFAULT_OPTIMIZATIONS,
 };
 
 static const guint32
@@ -621,7 +621,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 			if (opt)
 				fprintf (mini_stats_fd, " ");
 			fprintf (mini_stats_fd, "%s", n);
-		
+
 
 		}
 		fprintf (mini_stats_fd, "));\n");
@@ -704,7 +704,7 @@ mini_regression_list (int verbose, int count, char *images [])
 {
 	int i, total, total_run, run;
 	MonoAssembly *ass;
-	
+
 	total_run =  total = 0;
 	for (i = 0; i < count; ++i) {
 		MonoAssemblyOpenRequest req;
@@ -718,13 +718,13 @@ mini_regression_list (int verbose, int count, char *images [])
 		total_run += run;
 	}
 	if (total > 0){
-		g_print ("Overall results: tests: %d, failed: %d, opt combinations: %d (pass: %.2f%%)\n", 
+		g_print ("Overall results: tests: %d, failed: %d, opt combinations: %d (pass: %.2f%%)\n",
 			 total_run, total, (int)G_N_ELEMENTS (opt_sets), 100.0*(total_run-total)/total_run);
 	} else {
-		g_print ("Overall results: tests: %d, 100%% pass, opt combinations: %d\n", 
+		g_print ("Overall results: tests: %d, 100%% pass, opt combinations: %d\n",
 			 total_run, (int)G_N_ELEMENTS (opt_sets));
 	}
-	
+
 	return total;
 }
 
@@ -1299,7 +1299,7 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 	args.opts = opts;
 	args.recompilation_times = recompilation_times;
 
-	/* 
+	/*
 	 * Need to create a mono thread since compilation might trigger
 	 * running of managed code.
 	 */
@@ -1316,7 +1316,7 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
  * \param argv argument vector
  * Start execution of a program.
  */
-int 
+int
 mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
 	int rv;
@@ -1363,7 +1363,7 @@ mono_jit_exec_internal (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
 		mono_environment_exitcode_set (1);
 		return 1;
 	}
-	
+
 	if (mono_llvm_only) {
 		MonoObject *exc = NULL;
 		int res;
@@ -1389,7 +1389,7 @@ mono_jit_exec_internal (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
 	}
 }
 
-typedef struct 
+typedef struct
 {
 	MonoDomain *domain;
 	const char *file;
@@ -1446,7 +1446,7 @@ static void main_thread_handler (gpointer user_data)
 			exit (1);
 		}
 
-		/* 
+		/*
 		 * This must be done in a thread managed by mono since it can invoke
 		 * managed code.
 		 */
@@ -1461,7 +1461,7 @@ static int
 load_agent (MonoDomain *domain, char *desc)
 {
 	ERROR_DECL (error);
-	char* col = strchr (desc, ':');	
+	char* col = strchr (desc, ':');
 	char *agent, *args;
 	MonoAssembly *agent_assembly;
 	MonoImage *image;
@@ -1489,7 +1489,7 @@ load_agent (MonoDomain *domain, char *desc)
 		return 2;
 	}
 
-	/* 
+	/*
 	 * Can't use mono_jit_exec (), as it sets things which might confuse the
 	 * real Main method.
 	 */
@@ -1508,7 +1508,7 @@ load_agent (MonoDomain *domain, char *desc)
 		g_free (agent);
 		return 1;
 	}
-	
+
 	mono_thread_set_main (mono_thread_current ());
 
 	if (args) {
@@ -1527,7 +1527,7 @@ load_agent (MonoDomain *domain, char *desc)
 		g_free (agent);
 		return 1;
 	}
-	
+
 
 	pa [0] = main_args;
 	/* Pass NULL as 'exc' so unhandled exceptions abort the runtime */
@@ -1547,7 +1547,7 @@ static void
 mini_usage_jitdeveloper (void)
 {
 	int i;
-	
+
 	fprintf (stdout,
 		 "Runtime and JIT debugging options:\n"
 		 "    --apply-bindings=FILE  Apply assembly bindings from FILE (only for AOT)\n"
@@ -1571,9 +1571,9 @@ mini_usage_jitdeveloper (void)
 		 "\n"
 		 "The options supported by MONO_DEBUG can also be passed on the command line.\n"
 		 "\n"
-		 "Other options:\n" 
+		 "Other options:\n"
 		 "    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
-	
+
 	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
 		fprintf (stdout, "                           %-10s %s\n", graph_names [i].name, graph_names [i].desc);
 	}
@@ -1583,7 +1583,7 @@ static void
 mini_usage_list_opt (void)
 {
 	int i;
-	
+
 	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i)
 		fprintf (stdout, "                           %-10s %s\n", optflag_get_name (i), optflag_get_desc (i));
 }
@@ -1601,7 +1601,7 @@ mini_usage (void)
  		"    --debugger-agent=options Enable the debugger agent\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
-#ifdef __linux__		
+#ifdef __linux__
 		"    --jitmap               Output a jit method map to /tmp/perf-PID.map\n"
 #endif
 #ifdef ENABLE_JIT_DUMP
@@ -1683,7 +1683,7 @@ mini_debug_usage (void)
 #endif
 
 static char *
-mono_get_version_info (void) 
+mono_get_version_info (void)
 {
 	GString *output;
 	output = g_string_new ("");
@@ -1790,8 +1790,8 @@ mono_jit_parse_options (int argc, char * argv[])
 	int mini_verbose_level = 0;
 	guint32 opt;
 
-	/* 
-	 * Some options have no effect here, since they influence the behavior of 
+	/*
+	 * Some options have no effect here, since they influence the behavior of
 	 * mono_main ().
 	 */
 
@@ -1840,7 +1840,7 @@ mono_jit_parse_options (int argc, char * argv[])
 				fprintf (stderr, "Missing method name in --break command line option\n");
 				exit (1);
 			}
-			
+
 			if (!mono_debugger_insert_breakpoint (argv [++i], FALSE))
 				fprintf (stderr, "Error: invalid method name '%s'\n", argv [i]);
 		} else if (strncmp (argv[i], "--gc-params=", 12) == 0) {
@@ -1867,8 +1867,8 @@ mono_jit_parse_options (int argc, char * argv[])
 	}
 
 	if (trace_options != NULL) {
-		/* 
-		 * Need to call this before mini_init () so we can trace methods 
+		/*
+		 * Need to call this before mini_init () so we can trace methods
 		 * compiled there too.
 		 */
 		mono_jit_trace_calls = mono_trace_set_options (trace_options);
@@ -1932,7 +1932,7 @@ static void
 darwin_change_default_file_handles ()
 {
 	struct rlimit limit;
-	
+
 	if (getrlimit (RLIMIT_NOFILE, &limit) == 0){
 		if (limit.rlim_cur < 1024){
 			limit.rlim_cur = MAX(1024,limit.rlim_cur);
@@ -1971,7 +1971,7 @@ switch_arch (char* argv[], const char* target_arch)
 #endif
 
 #define MONO_HANDLERS_ARGUMENT "--handlers="
-#define MONO_HANDLERS_ARGUMENT_LEN G_N_ELEMENTS(MONO_HANDLERS_ARGUMENT)-1
+#define MONO_HANDLERS_ARGUMENT_LEN STRING_LENGTH(MONO_HANDLERS_ARGUMENT)
 
 static void
 apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_domain_configuration_file)
@@ -2115,7 +2115,7 @@ mono_main (int argc, char* argv[])
 		mono_init_jemalloc ();
 
 #endif
-	
+
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
@@ -2242,7 +2242,7 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "Missing method name in --break command line option\n");
 				return 1;
 			}
-			
+
 			if (!mono_debugger_insert_breakpoint (argv [++i], FALSE))
 				fprintf (stderr, "Error: invalid method name '%s'\n", argv [i]);
 		} else if (strcmp (argv [i], "--break-at-bb") == 0) {
@@ -2343,7 +2343,7 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "error: --compile option requires a method name argument\n");
 				return 1;
 			}
-			
+
 			mname = argv [++i];
 			action = DO_BENCH;
 		} else if (strncmp (argv [i], "--graph=", 8) == 0) {
@@ -2351,7 +2351,7 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "error: --graph option requires a method name argument\n");
 				return 1;
 			}
-			
+
 			mono_graph_options = mono_parse_graph_options (argv [i] + 8);
 			mname = argv [++i];
 			action = DO_DRAW;
@@ -2360,7 +2360,7 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "error: --graph option requires a method name argument\n");
 				return 1;
 			}
-			
+
 			mname = argv [++i];
 			mono_graph_options = MONO_GRAPH_CFG;
 			action = DO_DRAW;
@@ -2538,8 +2538,8 @@ mono_main (int argc, char* argv[])
 	mono_set_rootdir ();
 
 	if (trace_options != NULL){
-		/* 
-		 * Need to call this before mini_init () so we can trace methods 
+		/*
+		 * Need to call this before mini_init () so we can trace methods
 		 * compiled there too.
 		 */
 		mono_jit_trace_calls = mono_trace_set_options (trace_options);
@@ -2587,7 +2587,7 @@ mono_main (int argc, char* argv[])
 
 		g_ptr_array_free (agents, TRUE);
 	}
-	
+
 	switch (action) {
 	case DO_SINGLE_METHOD_REGRESSION:
 	case DO_REGRESSION:
@@ -2668,7 +2668,7 @@ mono_main (int argc, char* argv[])
 #endif
 
 		main_args.domain = domain;
-		main_args.file = aname;		
+		main_args.file = aname;
 		main_args.argc = argc - i;
 		main_args.argv = argv + i;
 		main_args.opts = opt;
@@ -2744,7 +2744,7 @@ mono_main (int argc, char* argv[])
 			const char *n;
 			double no_opt_time = 0.0;
 			GTimer *timer = g_timer_new ();
-			fprintf (mini_stats_fd, "$stattitle = \'Compilations times for %s\';\n", 
+			fprintf (mini_stats_fd, "$stattitle = \'Compilations times for %s\';\n",
 				 mono_method_full_name (method, TRUE));
 			fprintf (mini_stats_fd, "@data = (\n");
 			fprintf (mini_stats_fd, "[");
@@ -2775,7 +2775,7 @@ mono_main (int argc, char* argv[])
 			fprintf (mini_stats_fd, "]");
 			if (no_opt_time > 0.0) {
 				fprintf (mini_stats_fd, ", \n[");
-				for (i = 0; i < G_N_ELEMENTS (opt_sets); i++) 
+				for (i = 0; i < G_N_ELEMENTS (opt_sets); i++)
 					fprintf (mini_stats_fd, "%f,", no_opt_time);
 				fprintf (mini_stats_fd, "]");
 			}
@@ -2803,7 +2803,7 @@ mono_main (int argc, char* argv[])
 /**
  * mono_jit_init:
  */
-MonoDomain * 
+MonoDomain *
 mono_jit_init (const char *file)
 {
 	MonoDomain *ret = mini_init (file, NULL);
@@ -2831,7 +2831,7 @@ mono_jit_init (const char *file)
  * \returns the \c MonoDomain representing the domain where the assembly
  * was loaded.
  */
-MonoDomain * 
+MonoDomain *
 mono_jit_init_version (const char *domain_name, const char *runtime_version)
 {
 	MonoDomain *ret = mini_init (domain_name, runtime_version);
@@ -2839,7 +2839,7 @@ mono_jit_init_version (const char *domain_name, const char *runtime_version)
 	return ret;
 }
 
-MonoDomain * 
+MonoDomain *
 mono_jit_init_version_for_test_only (const char *domain_name, const char *runtime_version)
 {
 	MonoDomain *ret = mini_init (domain_name, runtime_version);
@@ -2849,7 +2849,7 @@ mono_jit_init_version_for_test_only (const char *domain_name, const char *runtim
 /**
  * mono_jit_cleanup:
  */
-void        
+void
 mono_jit_cleanup (MonoDomain *domain)
 {
 	MONO_STACKDATA (dummy);
@@ -2956,7 +2956,7 @@ mono_jit_set_aot_mode (MonoAotMode mode)
 	g_assert (!inited);
 	mono_aot_mode = mode;
 	inited = TRUE;
-	
+
 	mono_runtime_set_execution_mode (mode);
 }
 
@@ -3018,8 +3018,8 @@ mono_set_crash_chaining (gboolean chain_crashes)
 
 /**
  * mono_parse_options_from:
- * \param options string containing strings 
- * \param ref_argc pointer to the \c argc variable that might be updated 
+ * \param options string containing strings
+ * \param ref_argc pointer to the \c argc variable that might be updated
  * \param ref_argv pointer to the \c argv string vector variable that might be updated
  *
  * This function parses the contents of the \c MONO_ENV_OPTIONS
@@ -3031,7 +3031,7 @@ mono_set_crash_chaining (gboolean chain_crashes)
  *
  * The \ character can be used to escape the next character which will
  * be added to the current element verbatim.  Typically this is used
- * inside quotes.   If the quotes are not balanced, this method 
+ * inside quotes.   If the quotes are not balanced, this method
  *
  * If the environment variable is empty, no changes are made
  * to the values pointed by \p ref_argc and \p ref_argv.
@@ -3131,7 +3131,7 @@ mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboo
 			break;
 		}
 	}
-	if (in_quotes) 
+	if (in_quotes)
 		return g_strdup_printf ("Unmatched quotes in value: [%s]\n", options);
 
 	if (buffer->len != 0)
@@ -3214,7 +3214,7 @@ mono_parse_response_options (const char *options, int *ref_argc, char **ref_argv
 
 /**
  * mono_parse_env_options:
- * \param ref_argc pointer to the \c argc variable that might be updated 
+ * \param ref_argc pointer to the \c argc variable that might be updated
  * \param ref_argv pointer to the \c argv string vector variable that might be updated
  *
  * This function parses the contents of the \c MONO_ENV_OPTIONS
@@ -3226,7 +3226,7 @@ mono_parse_response_options (const char *options, int *ref_argc, char **ref_argv
  *
  * The \ character can be used to escape the next character which will
  * be added to the current element verbatim.  Typically this is used
- * inside quotes.   If the quotes are not balanced, this method 
+ * inside quotes.   If the quotes are not balanced, this method
  *
  * If the environment variable is empty, no changes are made
  * to the values pointed by \p ref_argc and \p ref_argv.
@@ -3245,7 +3245,7 @@ void
 mono_parse_env_options (int *ref_argc, char **ref_argv [])
 {
 	char *ret;
-	
+
 	char *env_options = g_getenv ("MONO_ENV_OPTIONS");
 	if (env_options == NULL)
 		return;

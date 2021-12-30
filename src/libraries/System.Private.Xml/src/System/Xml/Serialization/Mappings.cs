@@ -132,11 +132,11 @@ namespace System.Xml.Serialization
         {
             if (Any)
             {
-                return (Namespace == null ? "##any" : Namespace) + ":" + Name;
+                return $"{(Namespace == null ? "##any" : Namespace)}:{Name}";
             }
             else
             {
-                return Namespace == defaultNs ? Name : Namespace + ":" + Name;
+                return Namespace == defaultNs ? Name : $"{Namespace}:{Name}";
             }
         }
     }

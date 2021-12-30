@@ -45,7 +45,7 @@ jobs:
     # Compute job name from template parameters
     ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     ${{ if and(ne(parameters.testGroup, 'clrTools'), ne(parameters.compilerName, 'gcc')) }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}{5}',
         parameters.runtimeVariant,
@@ -227,6 +227,11 @@ jobs:
     - ${{ if and(ne(parameters.isOfficialBuild, true), ne(parameters.disableClrTest, true)) }}:
       - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
+
+    # Build libs.native, host.native and mono with gcc
+    - ${{ if eq(parameters.compilerName, 'gcc') }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) libs.native+host.native+mono $(compilerArg) $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
+        displayName: Build libs.native+host.native+mono
 
     # Sign and add entitlements to these MacOS binaries
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:

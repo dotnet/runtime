@@ -726,8 +726,6 @@ public:
             delete [] ((BYTE*) m_pPatchpointInfoFromJit);
 
         m_pPatchpointInfoFromJit = NULL;
-        m_pPatchpointInfoFromRuntime = NULL;
-        m_ilOffset = 0;
 #endif
 
 #ifdef FEATURE_EH_FUNCLETS

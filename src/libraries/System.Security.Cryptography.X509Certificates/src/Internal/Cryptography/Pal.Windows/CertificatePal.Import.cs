@@ -139,7 +139,7 @@ namespace Internal.Cryptography.Pal
                 certInfo.SerialNumber.pbData = pCmsgSignerInfo->SerialNumber.pbData;
 
                 SafeCertContextHandle? pCertContext = null;
-                if (!Interop.crypt32.CertFindCertificateInStore(hCertStore, CertFindType.CERT_FIND_SUBJECT_CERT, &certInfo, ref pCertContext))
+                if (!Interop.crypt32.CertFindCertificateInStore(hCertStore, Interop.Crypt32.CertFindType.CERT_FIND_SUBJECT_CERT, &certInfo, ref pCertContext))
                     throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                 return pCertContext;
             }

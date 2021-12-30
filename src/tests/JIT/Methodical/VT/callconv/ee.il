@@ -12,10 +12,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'call' // as "call"
+.assembly 'ee' // as "call"
 {
 }
-.module call.exe
+.assembly extern xunit.core {}
 // MVID: {CF1D567F-C985-45B8-8028-219BDC43D791}
 .namespace JitTest
 {
@@ -249,6 +249,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       227 (0xe3)
       .maxstack  4

@@ -13,7 +13,7 @@ namespace System.Net.Test.Common
         public const string DigestAuthWebServer = "http://apacheweb.linux.contoso.com/auth/digest/";
 
         public static bool Enabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_RUNTIME_ENTERPRISETESTS_ENABLED"));
-        // Folowing credentials are used only in docker scenario, it is not leaking any secrets.
+        // Following credentials are used only in docker scenario, it is not leaking any secrets.
         public static NetworkCredential ValidNetworkCredentials => new NetworkCredential("user1", "PLACEHOLDERcorrect20");
         public static NetworkCredential ValidDomainNetworkCredentials => new NetworkCredential("user1", "PLACEHOLDERcorrect20", "LINUX" );
         public static NetworkCredential InvalidNetworkCredentials => new NetworkCredential("user1", "PLACEHOLDERwong");

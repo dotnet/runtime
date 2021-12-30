@@ -123,7 +123,7 @@ namespace Internal.Cryptography.Pal.Native
             {
                 int cb = 0;
 
-                if (!Interop.crypt32.CryptDecodeObjectPointer(
+                if (!Interop.Crypt32.CryptDecodeObjectPointer(
                     Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
@@ -137,7 +137,7 @@ namespace Internal.Cryptography.Pal.Native
 
                 byte* decoded = stackalloc byte[cb];
 
-                if (!Interop.crypt32.CryptDecodeObjectPointer(
+                if (!Interop.Crypt32.CryptDecodeObjectPointer(
                     Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,

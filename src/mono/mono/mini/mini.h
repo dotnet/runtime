@@ -667,7 +667,13 @@ typedef enum {
 	/* Vtype returned as an int */
 	LLVMArgVtypeAsScalar,
 	/* Address to local vtype passed as argument (using register or stack). */
-	LLVMArgVtypeAddr
+	LLVMArgVtypeAddr,
+	/*
+	 * On WASM, a one element vtype is passed/returned as a scalar with the same
+	 * type as the element.
+	 * esize is the size of the value.
+	 */
+	LLVMArgWasmVtypeAsScalar
 } LLVMArgStorage;
 
 typedef struct {
@@ -751,6 +757,7 @@ struct MonoInst {
 			int *phi_args;
 			MonoCallInst *call_inst;
 			GList *exception_clauses;
+			const char *exc_name;
 		} op [2];
 		gint64 i8const;
 		double r8const;
@@ -901,6 +908,9 @@ enum {
 
 #define inst_newa_len   data.op[0].src
 #define inst_newa_class data.op[1].klass
+
+/* In _OVF opcodes */
+#define inst_exc_name  data.op[0].exc_name
 
 #define inst_var    data.op[0].var
 #define inst_vtype  data.op[1].vtype
@@ -1064,8 +1074,10 @@ typedef enum {
 	MONO_RGCTX_INFO_METHOD_FTNDESC                = 33,
 	/* mono_type_size () for a class */
 	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34,
-	/* A gsharedvt_out wrapper for a method */
-	MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT    = 35
+	/* The InterpMethod for a method */
+	MONO_RGCTX_INFO_INTERP_METHOD                 = 35,
+	/* The llvmonly interp entry for a method */
+	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */
@@ -1097,7 +1109,8 @@ typedef struct {
 	gpointer infos [MONO_ZERO_LEN_ARRAY];
 } MonoMethodRuntimeGenericContext;
 
-#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (MONO_ABI_SIZEOF (MonoMethodRuntimeGenericContext) - MONO_ZERO_LEN_ARRAY * TARGET_SIZEOF_VOID_P)
+/* MONO_ABI_SIZEOF () would include the 'infos' field as well */
+#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (TARGET_SIZEOF_VOID_P * 2)
 
 #define MONO_RGCTX_SLOT_MAKE_RGCTX(i)	(i)
 #define MONO_RGCTX_SLOT_MAKE_MRGCTX(i)	((i) | 0x80000000)
@@ -1479,6 +1492,7 @@ typedef struct {
 	guint            code_exec_only : 1;
 	guint            interp_entry_only : 1;
 	guint            after_method_to_ir : 1;
+	guint            disable_inline_rgctx_fetch : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -1981,6 +1995,7 @@ enum {
 	MONO_EXC_ARRAY_TYPE_MISMATCH,
 	MONO_EXC_ARGUMENT,
 	MONO_EXC_ARGUMENT_OUT_OF_RANGE,
+	MONO_EXC_ARGUMENT_OUT_OF_MEMORY,
 	MONO_EXC_INTRINS_NUM
 };
 

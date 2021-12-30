@@ -277,4 +277,4 @@ FAIL:
 	ret
 }
 }
-.assembly add_i8.exe{}
+.assembly add_i8{}

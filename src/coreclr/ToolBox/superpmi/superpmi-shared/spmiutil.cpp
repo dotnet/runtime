@@ -158,8 +158,18 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
         *quote = W(' ');
     }
 
+    // Convert non-ASCII to ASCII for simplicity.
+    for (quote = fileName; *quote != '\0'; quote++)
+    {
+        WCHAR ch = *quote;
+        if ((ch <= 32) || (ch >= 127)) // Only allow textual ASCII characters
+        {
+            *quote = W('_');
+        }
+    }
+
     // Remove any illegal or annoying characters from the file name by converting them to underscores.
-    while ((quote = wcspbrk(fileName, W("=<>:\"/\\|?! *.,"))) != nullptr)
+    while ((quote = wcspbrk(fileName, W("()=<>:\"/\\|?! *.,"))) != nullptr)
     {
         *quote = W('_');
     }
@@ -172,7 +182,6 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
     const size_t fileNameLength     = wcslen(fileName);
     const size_t randomStringLength = 8;
     const size_t maxPathLength      = MAX_PATH - 50;
-    bool         appendRandomString = false;
 
     // See how long the folder part is, and start building the file path with the folder part.
     //
@@ -201,31 +210,8 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
     // Now figure out the file name part.
     //
     const size_t maxFileNameLength = maxPathLength - fullPathLength;
-    size_t usableFileNameLength = 0;
-
-    if (fileNameLength == 0)
-    {
-        // No file name provided. Use random string.
-        //
-        fullPathLength += randomStringLength;
-        appendRandomString = true;
-    }
-    else if (fileNameLength < maxFileNameLength)
-    {
-        // Reasonable length file name, use as is.
-        //
-        usableFileNameLength = fileNameLength;
-        fullPathLength += fileNameLength;
-        appendRandomString = false;
-    }
-    else
-    {
-        // Overly long file name, truncate and add random string.
-        //
-        usableFileNameLength = maxFileNameLength - randomStringLength;
-        fullPathLength += maxFileNameLength;
-        appendRandomString = true;
-    }
+    size_t usableFileNameLength = min(fileNameLength, maxFileNameLength - randomStringLength);
+    fullPathLength += usableFileNameLength + randomStringLength;
 
     // Append the file name part
     //
@@ -236,22 +222,19 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
     //
     ReplaceIllegalCharacters(fullPath + folderPathLength + 1);
 
-    // Append random string, if we're using it.
+    // Append a random string to improve uniqueness.
     //
-    if (appendRandomString)
-    {
-       unsigned randomNumber = 0;
+    unsigned randomNumber = 0;
 
 #ifdef TARGET_UNIX
-       PAL_Random(&randomNumber, sizeof(randomNumber));
+    PAL_Random(&randomNumber, sizeof(randomNumber));
 #else  // !TARGET_UNIX
-       rand_s(&randomNumber);
+    rand_s(&randomNumber);
 #endif // !TARGET_UNIX
 
-       WCHAR randomString[randomStringLength + 1];
-       swprintf_s(randomString, randomStringLength + 1, W("%08X"), randomNumber);
-       wcsncat_s(fullPath, fullPathLength + 1, randomString, randomStringLength);
-    }
+    WCHAR randomString[randomStringLength + 1];
+    swprintf_s(randomString, randomStringLength + 1, W("%08X"), randomNumber);
+    wcsncat_s(fullPath, fullPathLength + 1, randomString, randomStringLength);
 
     // Append extension
     //

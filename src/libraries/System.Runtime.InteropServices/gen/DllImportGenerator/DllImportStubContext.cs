@@ -200,8 +200,10 @@ namespace Microsoft.Interop
             else
             {
                 generatorFactory = new DefaultMarshallingGeneratorFactory(options);
-                AttributedMarshallingModelGeneratorFactory attributedMarshallingFactory = new(generatorFactory, options);
-                generatorFactory = attributedMarshallingFactory;
+                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, options);
+                // We don't need to include the later generator factories for collection elements
+                // as the later generator factories only apply to parameters or to the synthetic return value for PreserveSig support.
+                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, options);
                 if (!dllImportData.PreserveSig)
                 {
                     // Create type info for native out param
@@ -231,7 +233,6 @@ namespace Microsoft.Interop
                 }
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
-                attributedMarshallingFactory.ElementMarshallingGeneratorFactory = generatorFactory;
             }
             typeInfos.Add(retTypeInfo);
 

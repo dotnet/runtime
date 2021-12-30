@@ -1,9 +1,6 @@
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
 FROM $SDK_BASE_IMAGE
 
-RUN echo "DOTNET_SDK_VERSION="$DOTNET_SDK_VERSION
-RUN echo "DOTNET_VERSION="$DOTNET_VERSION
-
 WORKDIR /app
 COPY . .
 
@@ -19,8 +16,13 @@ RUN unzip $PACKAGES_DIR.zip
 RUN dpkg -i $PACKAGES_DIR/$MSQUIC_PACKAGE
 RUN rm -rf $PACKAGES_DIR*
 
+ARG VERSION=7.0
 ARG CONFIGURATION=Release
-RUN dotnet build -c $CONFIGURATION
+
+RUN dotnet build -c $CONFIGURATION \
+    -p:TargetingPacksTargetsLocation=/live-runtime-artifacts/targetingpacks.targets \
+    -p:MicrosoftNetCoreAppRefPackDir=/live-runtime-artifacts/microsoft.netcore.app.ref/ \
+    -p:MicrosoftNetCoreAppRuntimePackDir=/live-runtime-artifacts/microsoft.netcore.app.runtime.linux-x64/$CONFIGURATION/
 
 # Enable dump collection
 ENV COMPlus_DbgEnableMiniDump=1
@@ -29,6 +31,8 @@ ENV COMPlus_DbgMiniDumpName="/share/coredump.%p"
 
 EXPOSE 5001
 
+ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
 ENV HTTPSTRESS_ARGS=''
-CMD dotnet run --no-build -c $CONFIGURATION -- $HTTPSTRESS_ARGS
+CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/dotnet exec \
+    ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS

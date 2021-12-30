@@ -138,19 +138,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     CONTRACT_END;
 
     Assembly *pLoadedAssembly = NULL;
-
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
-
-    // Force the image to be loaded and mapped so that subsequent loads do not
-    // map a duplicate copy.
-    if (pImage->IsFile())
-    {
-        pImage->Load();
-    }
-    else
-    {
-        pImage->LoadNoFile();
-    }
 
     DWORD dwMessageID = IDS_EE_FILELOAD_ERROR_GENERIC;
 
@@ -251,11 +239,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     _ASSERTE((ptrAssemblyArray != NULL) && (cbAssemblyArrayLength > 0));
     _ASSERTE((ptrSymbolArray == NULL) || (cbSymbolArrayLength > 0));
 
-    // We must have a flat image stashed away since we need a private
-    // copy of the data which we can verify before doing the mapping.
-    PVOID pAssemblyArray = reinterpret_cast<PVOID>(ptrAssemblyArray);
-
-    PEImageHolder pILImage(PEImage::LoadFlat(pAssemblyArray, (COUNT_T)cbAssemblyArrayLength));
+    PEImageHolder pILImage(PEImage::CreateFromByteArray((BYTE*)ptrAssemblyArray, (COUNT_T)cbAssemblyArrayLength));
 
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->CheckILFormat())
@@ -318,7 +302,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativ
     _ASSERTE(ptrNativeAssemblyBinder != NULL);
     _ASSERTE(hModule != NULL);
 
-    PEImageHolder pILImage(PEImage::LoadImage((HMODULE)hModule));
+    PEImageHolder pILImage(PEImage::CreateFromHMODULE((HMODULE)hModule));
 
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->HasCorHeader())

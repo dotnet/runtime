@@ -4,7 +4,7 @@
 using System;
 using System.Reflection;
 using System.Text;
-using TestLibrary;
+using Xunit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -95,36 +95,36 @@ unsafe class PlatformDefaultMemberFunctionTest
     {
         PlatformDefaultMemberFunctionNative.SizeF result = instance->vtable->getSize(instance, 1234);
 
-        Assert.AreEqual(instance->width, result.width);
-        Assert.AreEqual(instance->height, result.height);
+        Assert.Equal(instance->width, result.width);
+        Assert.Equal(instance->height, result.height);
     }
 
     private static void Test4ByteHFA(PlatformDefaultMemberFunctionNative.C* instance)
     {
         PlatformDefaultMemberFunctionNative.Width result = instance->vtable->getWidth(instance);
 
-        Assert.AreEqual(instance->width, result.width);
+        Assert.Equal(instance->width, result.width);
     }
 
     private static void Test4ByteNonHFA(PlatformDefaultMemberFunctionNative.C* instance)
     {
         PlatformDefaultMemberFunctionNative.IntWrapper result = instance->vtable->getHeightAsInt(instance);
 
-        Assert.AreEqual((int)instance->height, result.i);
+        Assert.Equal((int)instance->height, result.i);
     }
 
     private static void TestEnum(PlatformDefaultMemberFunctionNative.C* instance)
     {
         PlatformDefaultMemberFunctionNative.E result = instance->vtable->getE(instance);
 
-        Assert.AreEqual(instance->dummy, result);
+        Assert.Equal(instance->dummy, result);
     }
 
     private static void TestCLong(PlatformDefaultMemberFunctionNative.C* instance)
     {
         CLong result = instance->vtable->getWidthAsLong(instance);
 
-        Assert.AreEqual((nint)instance->width, result.Value);
+        Assert.Equal((nint)instance->width, result.Value);
     }
 
     private static void Test8ByteHFAUnmanagedCallersOnly()
@@ -132,8 +132,8 @@ unsafe class PlatformDefaultMemberFunctionTest
         PlatformDefaultMemberFunctionNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         PlatformDefaultMemberFunctionNative.SizeF result = PlatformDefaultMemberFunctionNative.GetSizeFromManaged(&c);
 
-        Assert.AreEqual(c.width, result.width);
-        Assert.AreEqual(c.height, result.height);
+        Assert.Equal(c.width, result.width);
+        Assert.Equal(c.height, result.height);
     }
 
     private static void Test4ByteHFAUnmanagedCallersOnly()
@@ -141,7 +141,7 @@ unsafe class PlatformDefaultMemberFunctionTest
         PlatformDefaultMemberFunctionNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         PlatformDefaultMemberFunctionNative.Width result = PlatformDefaultMemberFunctionNative.GetWidthFromManaged(&c);
 
-        Assert.AreEqual(c.width, result.width);
+        Assert.Equal(c.width, result.width);
     }
 
     private static void Test4ByteNonHFAUnmanagedCallersOnly()
@@ -149,7 +149,7 @@ unsafe class PlatformDefaultMemberFunctionTest
         PlatformDefaultMemberFunctionNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         PlatformDefaultMemberFunctionNative.IntWrapper result = PlatformDefaultMemberFunctionNative.GetHeightAsIntFromManaged(&c);
 
-        Assert.AreEqual((int)c.height, result.i);
+        Assert.Equal((int)c.height, result.i);
     }
 
     private static void TestEnumUnmanagedCallersOnly()
@@ -157,7 +157,7 @@ unsafe class PlatformDefaultMemberFunctionTest
         PlatformDefaultMemberFunctionNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         PlatformDefaultMemberFunctionNative.E result = PlatformDefaultMemberFunctionNative.GetEFromManaged(&c);
 
-        Assert.AreEqual(c.dummy, result);
+        Assert.Equal(c.dummy, result);
     }
 
     private static void TestCLongUnmanagedCallersOnly()
@@ -165,7 +165,7 @@ unsafe class PlatformDefaultMemberFunctionTest
         PlatformDefaultMemberFunctionNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         CLong result = PlatformDefaultMemberFunctionNative.GetWidthAsLongFromManaged(&c);
 
-        Assert.AreEqual((nint)c.width, result.Value);
+        Assert.Equal((nint)c.width, result.Value);
     }
 
     private static PlatformDefaultMemberFunctionNative.C CreateCWithUnmanagedCallersOnlyVTable(float width, float height)

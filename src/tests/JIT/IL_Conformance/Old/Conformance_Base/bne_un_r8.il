@@ -1000,4 +1000,4 @@ FAIL:
 	ret
 }
 }
-.assembly bne_un_r8.exe{}
+.assembly bne_un_r8{}

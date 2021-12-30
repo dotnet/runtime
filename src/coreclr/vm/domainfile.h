@@ -587,6 +587,8 @@ private:
     void Allocate();
     void DeliverSyncEvents();
     void DeliverAsyncEvents();
+    void RegisterWithHostAssembly();
+    void UnregisterFromHostAssembly();
 #endif
 
  public:

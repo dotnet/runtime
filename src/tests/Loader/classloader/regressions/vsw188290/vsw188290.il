@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.31013.0
 //  Copyright (C) Microsoft Corporation 1998-2003. All rights reserved.
@@ -16,7 +17,7 @@
            37 E9 11 BE )                                     // 7...
   .ver 2:0:3600:0
 }
-.assembly initialize
+.assembly 'vsw188290'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -27,7 +28,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module initialize.exe
 // MVID: {31E86D7D-808F-4F1C-A755-94B3084C6466}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -95,6 +95,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       247 (0xf7)
     .maxstack  5

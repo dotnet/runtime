@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'refloc_f4'// as "refloc_f4"
+.assembly 'refloc_r4'// as "refloc_f4"
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -17,7 +17,7 @@
   
   
 }
-.module 'refloc_f4.exe'
+.assembly extern xunit.core {}
 // MVID: {759403EF-2C74-4EEF-AB3C-166B1C468873}
 .namespace Test
 {
@@ -118,6 +118,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       67 (0x43)
       .maxstack  2

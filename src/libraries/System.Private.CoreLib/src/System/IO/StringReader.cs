@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,7 +12,6 @@ namespace System.IO
     {
         private string? _s;
         private int _pos;
-        private int _length;
 
         public StringReader(string s)
         {
@@ -21,7 +21,6 @@ namespace System.IO
             }
 
             _s = s;
-            _length = s.Length;
         }
 
         public override void Close()
@@ -33,7 +32,6 @@ namespace System.IO
         {
             _s = null;
             _pos = 0;
-            _length = 0;
             base.Dispose(disposing);
         }
 
@@ -44,16 +42,19 @@ namespace System.IO
         //
         public override int Peek()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
-            }
-            if (_pos == _length)
-            {
-                return -1;
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            return _s[_pos];
+            int pos = _pos;
+            if ((uint)pos < (uint)s.Length)
+            {
+                return s[pos];
+            }
+
+            return -1;
         }
 
         // Reads the next character from the underlying string. The returned value
@@ -61,16 +62,20 @@ namespace System.IO
         //
         public override int Read()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
-            }
-            if (_pos == _length)
-            {
-                return -1;
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            return _s[_pos++];
+            int pos = _pos;
+            if ((uint)pos < (uint)s.Length)
+            {
+                _pos++;
+                return s[pos];
+            }
+
+            return -1;
         }
 
         // Reads a block of characters. This method will read up to count
@@ -98,10 +103,10 @@ namespace System.IO
             }
             if (_s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            int n = _length - _pos;
+            int n = _s.Length - _pos;
             if (n > 0)
             {
                 if (n > count)
@@ -124,12 +129,13 @@ namespace System.IO
                 return base.Read(buffer);
             }
 
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            int n = _length - _pos;
+            int n = s.Length - _pos;
             if (n > 0)
             {
                 if (n > buffer.Length)
@@ -137,7 +143,7 @@ namespace System.IO
                     n = buffer.Length;
                 }
 
-                _s.AsSpan(_pos, n).CopyTo(buffer);
+                s.AsSpan(_pos, n).CopyTo(buffer);
                 _pos += n;
             }
 
@@ -148,22 +154,20 @@ namespace System.IO
 
         public override string ReadToEnd()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            string s;
-            if (_pos == 0)
+            int pos = _pos;
+            _pos = s.Length;
+
+            if (pos != 0)
             {
-                s = _s;
-            }
-            else
-            {
-                s = _s.Substring(_pos, _length - _pos);
+                s = s.Substring(pos);
             }
 
-            _pos = _length;
             return s;
         }
 
@@ -175,38 +179,43 @@ namespace System.IO
         //
         public override string? ReadLine()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            int i = _pos;
-            while (i < _length)
+            int pos = _pos;
+            if ((uint)pos >= (uint)s.Length)
             {
-                char ch = _s[i];
-                if (ch == '\r' || ch == '\n')
+                return null;
+            }
+
+            ReadOnlySpan<char> remaining = s.AsSpan(pos);
+            int foundLineLength = remaining.IndexOfAny('\r', '\n');
+            if (foundLineLength >= 0)
+            {
+                string result = s.Substring(pos, foundLineLength);
+
+                char ch = remaining[foundLineLength];
+                pos += foundLineLength + 1;
+                if (ch == '\r')
                 {
-                    string result = _s.Substring(_pos, i - _pos);
-                    _pos = i + 1;
-                    if (ch == '\r' && _pos < _length && _s[_pos] == '\n')
+                    if ((uint)pos < (uint)s.Length && s[pos] == '\n')
                     {
-                        _pos++;
+                        pos++;
                     }
-
-                    return result;
                 }
+                _pos = pos;
 
-                i++;
-            }
-
-            if (i > _pos)
-            {
-                string result = _s.Substring(_pos, i - _pos);
-                _pos = i;
                 return result;
             }
-
-            return null;
+            else
+            {
+                string result = s.Substring(pos);
+                _pos = s.Length;
+                return result;
+            }
         }
 
         #region Task based Async APIs
@@ -264,5 +273,11 @@ namespace System.IO
             cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) :
             new ValueTask<int>(Read(buffer.Span));
         #endregion
+
+        [DoesNotReturn]
+        private static void ThrowObjectDisposedException_ReaderClosed()
+        {
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+        }
     }
 }

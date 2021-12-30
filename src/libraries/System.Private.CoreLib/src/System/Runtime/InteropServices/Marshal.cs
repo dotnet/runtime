@@ -104,6 +104,7 @@ namespace System.Runtime.InteropServices
             return string.CreateStringFromEncoding((byte*)ptr, byteLen, Encoding.UTF8);
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
         public static int SizeOf(object structure)
         {
             if (structure is null)
@@ -124,6 +125,7 @@ namespace System.Runtime.InteropServices
             return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
         public static int SizeOf(Type t)
         {
             if (t is null)
@@ -378,6 +380,7 @@ namespace System.Runtime.InteropServices
 
         public static int ReadInt32(IntPtr ptr) => ReadInt32(ptr, 0);
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static IntPtr ReadIntPtr(object ptr, int ofs)
         {
 #if TARGET_64BIT
@@ -464,6 +467,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteInt16(IntPtr ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt16([In, Out]object ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
 
         public static void WriteInt16(IntPtr ptr, char val) => WriteInt16(ptr, 0, (short)val);
@@ -501,6 +505,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteIntPtr(object ptr, int ofs, IntPtr val)
         {
 #if TARGET_64BIT
@@ -563,6 +568,8 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+            Justification = "AOT compilers can see the T.")]
         public static void StructureToPtr<T>([DisallowNull] T structure, IntPtr ptr, bool fDeleteOld)
         {
             StructureToPtr((object)structure!, ptr, fDeleteOld);
@@ -572,6 +579,7 @@ namespace System.Runtime.InteropServices
         /// Creates a new instance of "structuretype" and marshals data from a
         /// native memory block to it.
         /// </summary>
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static object? PtrToStructure(IntPtr ptr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type structureType)
@@ -602,6 +610,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Marshals data from a native memory block to a preallocated structure class.
         /// </summary>
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void PtrToStructure(IntPtr ptr, object structure)
         {
             PtrToStructureHelper(ptr, structure, allowValueClasses: false);
@@ -633,6 +642,8 @@ namespace System.Runtime.InteropServices
             return (T)structure;
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+            Justification = "AOT compilers can see the T.")]
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
 // CoreCLR has a different implementation for Windows only
@@ -1151,6 +1162,7 @@ namespace System.Runtime.InteropServices
             return type.FullName;
         }
 
+        [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetDelegateForFunctionPointer<TDelegate> overload instead.")]
         public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t)
         {
             if (ptr == IntPtr.Zero)
@@ -1205,6 +1217,7 @@ namespace System.Runtime.InteropServices
             return (TDelegate)(object)GetDelegateForFunctionPointerInternal(ptr, t);
         }
 
+        [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
         public static IntPtr GetFunctionPointerForDelegate(Delegate d)
         {
             if (d is null)
@@ -1215,6 +1228,8 @@ namespace System.Runtime.InteropServices
             return GetFunctionPointerForDelegateInternal(d);
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+            Justification = "AOT compilers can see the T.")]
         public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull
         {
             return GetFunctionPointerForDelegate((Delegate)(object)d);

@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 class ExactSpellingTest
 {
@@ -149,7 +149,7 @@ class ExactSpellingTest
 
     private static void Verify(int expectedReturnValue, int expectedParameterValue, int actualReturnValue, int actualParameterValue)
     {
-        Assert.AreEqual(expectedReturnValue, actualReturnValue);
-        Assert.AreEqual(expectedParameterValue, actualParameterValue);
+        Assert.Equal(expectedReturnValue, actualReturnValue);
+        Assert.Equal(expectedParameterValue, actualParameterValue);
     }
 }

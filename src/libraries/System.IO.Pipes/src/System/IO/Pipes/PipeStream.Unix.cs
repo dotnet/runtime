@@ -434,23 +434,6 @@ namespace System.IO.Pipes
             return LazyInitializer.EnsureInitialized(ref _asyncActiveSemaphore, () => new SemaphoreSlim(1, 1));
         }
 
-        private static void CreateDirectory(string directoryPath)
-        {
-            int result = Interop.Sys.MkDir(directoryPath, (int)Interop.Sys.Permissions.Mask);
-
-            // If successful created, we're done.
-            if (result >= 0)
-                return;
-
-            // If the directory already exists, consider it a success.
-            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-            if (errorInfo.Error == Interop.Error.EEXIST)
-                return;
-
-            // Otherwise, fail.
-            throw Interop.GetExceptionForIoErrno(errorInfo, directoryPath, isDirectory: true);
-        }
-
         /// <summary>Creates an anonymous pipe.</summary>
         /// <param name="reader">The resulting reader end of the pipe.</param>
         /// <param name="writer">The resulting writer end of the pipe.</param>

@@ -322,4 +322,4 @@ FAIL:
 	ret
 }
 }
-.assembly sub_i4.exe{}
+.assembly sub_i4{}

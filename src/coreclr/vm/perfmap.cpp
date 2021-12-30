@@ -247,7 +247,7 @@ void PerfMap::LogImage(PEAssembly * pPEAssembly)
     EX_TRY
     {
         WCHAR wszSignature[39];
-        GetNativeImageSignature(pPEAssembly, wszSignature, lengthof(wszSignature));
+        GetNativeImageSignature(pPEAssembly, wszSignature, ARRAY_SIZE(wszSignature));
 
         m_PerfInfo->LogImage(pPEAssembly, wszSignature);
     }
@@ -393,7 +393,7 @@ NativeImagePerfMap::NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath)
     // Get the native image signature (GUID).
     // Used to ensure that we match symbols to the correct NGEN image.
     WCHAR wszSignature[39];
-    GetNativeImageSignature(pAssembly->GetManifestFile(), wszSignature, lengthof(wszSignature));
+    GetNativeImageSignature(pAssembly->GetManifestFile(), wszSignature, ARRAY_SIZE(wszSignature));
 
     // Build the path to the perfmap file, which consists of <inputpath><imagesimplename>.ni.<signature>.map.
     // Example: /tmp/System.Private.CoreLib.ni.{GUID}.map

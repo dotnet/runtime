@@ -10,6 +10,7 @@
 #include "error_codes.h"
 #include "utils.h"
 #include <type_traits>
+#include <minipal/utils.h>
 
 using comhost::clsid_map_entry;
 using comhost::clsid_map;
@@ -273,7 +274,7 @@ namespace
         if (res != ERROR_SUCCESS)
             return __HRESULT_FROM_WIN32(res);
 
-        WCHAR regKeyProgIdClsidPath[ARRAYSIZE(regKeyProgIdPath) * 2];
+        WCHAR regKeyProgIdClsidPath[ARRAY_SIZE(regKeyProgIdPath) * 2];
         ::swprintf_s(regKeyProgIdClsidPath, L"%s\\CLSID", regKeyProgIdPath);
 
         HKEY regProgIdClsidRaw;
@@ -350,7 +351,7 @@ namespace
         if (res != ERROR_SUCCESS)
             return __HRESULT_FROM_WIN32(res);
 
-        WCHAR regKeyServerPath[ARRAYSIZE(regKeyClsidPath) * 2];
+        WCHAR regKeyServerPath[ARRAY_SIZE(regKeyClsidPath) * 2];
         ::swprintf_s(regKeyServerPath, L"%s\\InProcServer32", regKeyClsidPath);
 
         HKEY regServerKeyRaw;
@@ -411,7 +412,7 @@ namespace
         if (!entry.progid.empty())
         {
             // Register the ProgID in the CLSID key
-            WCHAR regKeyProgIdPath[ARRAYSIZE(regKeyClsidPath) * 2];
+            WCHAR regKeyProgIdPath[ARRAY_SIZE(regKeyClsidPath) * 2];
             ::swprintf_s(regKeyProgIdPath, L"%s\\ProgID", regKeyClsidPath);
 
             HKEY regProgIdKeyRaw;

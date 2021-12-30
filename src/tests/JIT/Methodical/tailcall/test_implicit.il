@@ -6,7 +6,7 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
-.assembly tailcall
+.assembly 'test_implicit'
 {
 
 
@@ -14,7 +14,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module tailcall.exe
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -270,6 +270,9 @@ ret
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  3
     .locals init (class Class1 V_0,

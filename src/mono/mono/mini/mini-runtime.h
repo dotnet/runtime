@@ -111,6 +111,13 @@ jit_code_hash_unlock (MonoJitMemoryManager *jit_mm)
 	mono_locks_os_release(&(jit_mm)->jit_code_hash_lock, DomainJitCodeHashLock);
 }
 
+/* Per vtable data maintained by the EE */
+typedef struct {
+	/* interp virtual method table */
+	gpointer *interp_vtable;
+	MonoFtnDesc **gsharedvt_vtable;
+} MonoVTableEEData;
+
 /*
  * Stores state need to resume exception handling when using LLVM
  */

@@ -399,7 +399,7 @@ namespace System.Transactions.Tests
                                         break;
                                     }
 
-                                // Final test - wrap the DoAsyncTSTaskWorkAsync in syncronous scope
+                                // Final test - wrap the DoAsyncTSTaskWorkAsync in synchronous scope
                                 case 54:
                                     {
                                         string txId1 = null;
@@ -437,7 +437,7 @@ namespace System.Transactions.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
-        public void AsyncTSAndDependantClone(bool requiresNew, bool syncronizeScope, string txId)
+        public void AsyncTSAndDependantClone(bool requiresNew, bool synchronizeScope, string txId)
         {
             string txId1 = null;
             string txId2 = null;
@@ -458,9 +458,9 @@ namespace System.Transactions.Tests
                 {
                     try
                     {
-                        // Since we use BlockCommitUntilComplete dependent transaction to syncronize the root TransactionScope, the ambient Tx may not be available and will be disposed and block on Commit.
-                        // The flag will ensure we explicitly syncronize before disposing the root TransactionScope and the ambient transaction will still be available in the Task.
-                        if (syncronizeScope)
+                        // Since we use BlockCommitUntilComplete dependent transaction to synchronize the root TransactionScope, the ambient Tx may not be available and will be disposed and block on Commit.
+                        // The flag will ensure we explicitly synchronize before disposing the root TransactionScope and the ambient transaction will still be available in the Task.
+                        if (synchronizeScope)
                         {
                             txId2 = AssertAndGetCurrentTransactionId();
                         }
@@ -472,7 +472,7 @@ namespace System.Transactions.Tests
                             scope2.Complete();
                         }
 
-                        if (syncronizeScope)
+                        if (synchronizeScope)
                         {
                             txId4 = AssertAndGetCurrentTransactionId();
                         }
@@ -483,7 +483,7 @@ namespace System.Transactions.Tests
                         dependentTx.Dispose();
                     }
 
-                    if (syncronizeScope)
+                    if (synchronizeScope)
                     {
                         txId5 = AssertAndGetCurrentTransactionId();
                     }
@@ -500,7 +500,7 @@ namespace System.Transactions.Tests
 
                 txId6 = AssertAndGetCurrentTransactionId();
 
-                if (syncronizeScope)
+                if (synchronizeScope)
                 {
                     task1.Wait();
                 }
@@ -513,7 +513,7 @@ namespace System.Transactions.Tests
 
             Assert.Equal(txId1, txId3);
             Assert.Equal(txId3, txId6);
-            if (syncronizeScope)
+            if (synchronizeScope)
             {
                 Assert.Equal(txId1, txId2);
                 Assert.Equal(txId1, txId4);

@@ -60,6 +60,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public string Description { get; set; }
         public DateTimeOffset StartDate { get; set; }
         public DateTimeOffset EndDate { get; set; }
+        public TimeSpan Offset { get; set; }
     }
 
     public class CampaignSummaryViewModel
@@ -151,4 +152,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     internal struct MyStruct { }
+
+    public struct PersonStruct
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+    }
 }

@@ -247,7 +247,7 @@ namespace System.Xml
                         InitDecAttr();
                     for (int i = 0; i < _nDeclarationAttrCount; i++)
                     {
-                        strb.Append(decNodeAttributes[i].name + "=\"" + decNodeAttributes[i].value + "\"");
+                        strb.Append($"{decNodeAttributes[i].name}=\"{decNodeAttributes[i].value}\"");
                         if (i != (_nDeclarationAttrCount - 1))
                             strb.Append(' ');
                     }
@@ -859,7 +859,7 @@ namespace System.Xml
             if (prefix.Length == 0)
                 attrName = "xmlns";
             else
-                attrName = "xmlns:" + prefix;
+                attrName = $"xmlns:{prefix}";
 
             // walk up the XmlNode parent chain, looking for the xmlns attribute
             XmlNode? node = _curNode;

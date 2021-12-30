@@ -290,8 +290,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListBind(method));
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GlobalMethod()
         {
             ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
@@ -301,7 +300,5 @@ namespace System.Linq.Expressions.Tests
             MethodInfo globalMethodInfo = module.GetMethod(globalMethod.Name);
             AssertExtensions.Throws<ArgumentException>("propertyAccessor", () => Expression.ListBind(globalMethodInfo));
         }
-#endif
-
     }
 }

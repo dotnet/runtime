@@ -99,7 +99,7 @@ PAL_XUNIT_TEST_LIST=$PAL_TEST_OUTPUT_DIR/pal_tests.xml
 PAL_OUT_FILE=$PAL_TEST_OUTPUT_DIR/pal_test_out
 
 # Remove and recreate the temporary test output directory, and the directory where output files were requested to be copied.
-if [ "$COPY_TO_TEST_OUTPUT_DIR" == "$PAL_TEST_OUTPUT_DIR" ]; then
+if [[ "$COPY_TO_TEST_OUTPUT_DIR" == "$PAL_TEST_OUTPUT_DIR" ]]; then
   if [ -e $PAL_TEST_OUTPUT_DIR ]; then
     rm -f -r $PAL_TEST_OUTPUT_DIR
   fi
@@ -158,15 +158,15 @@ do
   # Change back to the output directory, and remove the test's working directory if it's empty
   cd $PAL_TEST_OUTPUT_DIR
   rmdir $TEST_WORKING_DIR 2>/dev/null
-  
+
   TEST_XUNIT_NAME=$(dirname $TEST_NAME)
   TEST_XUNIT_CLASSNAME=$(dirname $TEST_XUNIT_NAME)
   TEST_XUNIT_NAME=${TEST_XUNIT_NAME#*/}
   TEST_XUNIT_NAME=${TEST_XUNIT_NAME#*/}
-  
+
   TEST_XUNIT_NAME=$(echo $TEST_XUNIT_NAME | tr / .)
   TEST_XUNIT_CLASSNAME=$(echo $TEST_XUNIT_CLASSNAME | tr / .)
-  
+
   echo -n "<test name=\"$TEST_XUNIT_CLASSNAME.$TEST_XUNIT_NAME\" type=\"$TEST_XUNIT_CLASSNAME\" method=\"$TEST_XUNIT_NAME\" time=\"$(($ENDTIME - $STARTTIME))\" result=\"" >> $PAL_XUNIT_TEST_LIST_TMP
 
   # If the exit code is 0 then the test passed, otherwise record a failure.
@@ -175,10 +175,10 @@ do
     echo "Pass\" />" >> $PAL_XUNIT_TEST_LIST_TMP
   else
     echo "Fail\" >" >> $PAL_XUNIT_TEST_LIST_TMP
-    echo "<failure exception-type=\"Exit code: $TEST_EXIT_CODE\">" >> $PAL_XUNIT_TEST_LIST_TMP  
-    echo "<message><![CDATA[$(cat $PAL_OUT_FILE)]]></message>" >> $PAL_XUNIT_TEST_LIST_TMP  
-    echo "<output><![CDATA[$(cat $PAL_OUT_FILE)]]></output>" >> $PAL_XUNIT_TEST_LIST_TMP  
-    echo "</failure>" >> $PAL_XUNIT_TEST_LIST_TMP  
+    echo "<failure exception-type=\"Exit code: $TEST_EXIT_CODE\">" >> $PAL_XUNIT_TEST_LIST_TMP
+    echo "<message><![CDATA[$(cat $PAL_OUT_FILE)]]></message>" >> $PAL_XUNIT_TEST_LIST_TMP
+    echo "<output><![CDATA[$(cat $PAL_OUT_FILE)]]></output>" >> $PAL_XUNIT_TEST_LIST_TMP
+    echo "</failure>" >> $PAL_XUNIT_TEST_LIST_TMP
     echo "</test>" >> $PAL_XUNIT_TEST_LIST_TMP
     FAILED_TEST="$TEST_NAME. Exit code: $TEST_EXIT_CODE"
     echo

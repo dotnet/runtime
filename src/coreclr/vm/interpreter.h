@@ -907,7 +907,6 @@ public:
 
 #if INTERP_ILSTUBS
     void*      GetStubContext() { return m_stubContext; }
-    void*      GetStubContextAddr() { return &m_stubContext; }
 #endif
 
     OBJECTREF* GetAddressOfSecurityObject() { return &m_securityObject; }

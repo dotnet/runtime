@@ -577,7 +577,7 @@ inline bool leafAddInRange(GenTree* leaf, int lower, int upper, int multiple = 1
     return leafInRange(leaf->gtGetOp2(), lower, upper, multiple);
 }
 
-inline bool isCandidateVar(LclVarDsc* varDsc)
+inline bool isCandidateVar(const LclVarDsc* varDsc)
 {
     return varDsc->lvLRACandidate;
 }
@@ -1015,10 +1015,7 @@ private:
     {
         if (tree->IsLocal())
         {
-            unsigned int lclNum = tree->AsLclVarCommon()->GetLclNum();
-            assert(lclNum < compiler->lvaCount);
-            LclVarDsc* varDsc = compiler->lvaTable + tree->AsLclVarCommon()->GetLclNum();
-
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(tree->AsLclVarCommon());
             return isCandidateVar(varDsc);
         }
         return false;
@@ -1097,7 +1094,7 @@ private:
 
     Interval* getIntervalForLocalVarNode(GenTreeLclVarCommon* tree)
     {
-        LclVarDsc* varDsc = &compiler->lvaTable[tree->GetLclNum()];
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
         assert(varDsc->lvTracked);
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
@@ -1804,13 +1801,13 @@ private:
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
 #ifdef TARGET_XARCH
-    int BuildRMWUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
+    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates = RBM_NONE);
 #endif // !TARGET_XARCH
     // This is the main entry point for building the RefPositions for a node.
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
 
-    void getTgtPrefOperands(GenTreeOp* tree, bool& prefOp1, bool& prefOp2);
+    void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);
     bool supportsSpecialPutArg();
 
     int BuildSimple(GenTree* tree);

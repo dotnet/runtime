@@ -34,7 +34,7 @@ public: // COM activation
     static void MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe);
 
 public: // Unwrapping support
-    static IUnknown* GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId);
+    static IUnknown* GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId, _Out_ bool* isAggregated);
     static bool HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ bool* isActive);
 
 public: // GC interaction

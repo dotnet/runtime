@@ -42,8 +42,8 @@ internal static partial class Interop
             None = 0,
         }
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorFree")]
-        internal static extern void CryptorFree(IntPtr handle);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorFree")]
+        internal static partial void CryptorFree(IntPtr handle);
 
         [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorCreate")]
         internal static unsafe partial int CryptorCreate(

@@ -51,7 +51,7 @@ namespace System.Data.ProviderBase
 
             // NOTE - We copied this code from System.Security.Principal.Win32.CreateWellKnownSid...
 
-            if (0 == UnsafeNativeMethods.CreateWellKnownSid((int)sidType, null, resultSid, ref length))
+            if (0 == UnsafeNativeMethods.CreateWellKnownSid((int)sidType, null, out resultSid, ref length))
             {
                 IntegratedSecurityError(Win32_CreateWellKnownSid);
             }

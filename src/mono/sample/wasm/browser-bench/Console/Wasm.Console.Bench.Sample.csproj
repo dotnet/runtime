@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Console.Bench.Sample.csproj</_SampleProject>
+    <_SampleAssembly>Wasm.Console.Bench.Sample.dll</_SampleAssembly>
+    <SignAssembly>False</SignAssembly>
+  </PropertyGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
+
+  <ItemGroup>
+    <Compile Include="../*.cs" />
+    <Compile Remove="../Browser.cs" />
+    <PackageReference Include="Mono.Options" Version="6.12.0.148" />
+  </ItemGroup>
+</Project>

@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
     /// <summary>
     /// Helper methods for systemd Services.
     /// </summary>
-    public static class SystemdHelpers
+    public static partial class SystemdHelpers
     {
         private static bool? _isSystemdService;
 
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             return false;
         }
 
-        [DllImport("libc", EntryPoint = "getppid")]
-        private static extern int GetParentPid();
+        [GeneratedDllImport("libc", EntryPoint = "getppid")]
+        private static partial int GetParentPid();
     }
 }

@@ -12,6 +12,7 @@ namespace System.Diagnostics
     /// <internalonly/>
     internal sealed class ThreadInfo
     {
+#pragma warning disable CS0649 // The fields are unused on iOS/tvOS as the respective managed logic (mostly around libproc) is excluded.
         internal ulong _threadId;
         internal int _processId;
         internal int _basePriority;
@@ -19,5 +20,6 @@ namespace System.Diagnostics
         internal IntPtr _startAddress;
         internal ThreadState _threadState;
         internal ThreadWaitReason _threadWaitReason;
+#pragma warning restore CS0649
     }
 }

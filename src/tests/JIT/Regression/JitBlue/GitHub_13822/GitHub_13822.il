@@ -8,6 +8,7 @@
 .assembly GitHub_13822
 {
 }
+.assembly extern xunit.core {}
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -47,6 +48,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
               ldc.i4.0

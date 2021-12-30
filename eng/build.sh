@@ -166,7 +166,7 @@ while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
 
   if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
-    if [ $opt == "help" ]; then
+    if [[ "$opt" == "help" ]]; then
       showSubsetHelp
       exit 0
     fi
@@ -190,7 +190,7 @@ while [[ $# > 0 ]]; do
         exit 0
       else
         passedSubset="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-        if [ $passedSubset == "help" ]; then
+        if [[ "$passedSubset" == "help" ]]; then
           showSubsetHelp
           exit 0
         fi
@@ -461,7 +461,7 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
+if [[ "$os" == "Browser" && "$arch" != "wasm" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
 fi

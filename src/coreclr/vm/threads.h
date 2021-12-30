@@ -280,7 +280,7 @@ struct TailCallArgBuffer
 #define SWITCHED_OUT_FIBER_OSID 0xbaadf00d;
 
 #ifdef _DEBUG
-// A thread doesn't recieve its id until fully constructed.
+// A thread doesn't receive its id until fully constructed.
 #define UNINITIALIZED_THREADID 0xbaadf00d
 #endif //_DEBUG
 
@@ -3606,7 +3606,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
-        DWORD newValue = 
+        DWORD newValue =
 #endif // _DEBUG
         ++m_dwProfilerEvacuationCounters[slot];
         _ASSERTE(newValue != 0U);
@@ -3617,7 +3617,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
-        DWORD newValue = 
+        DWORD newValue =
 #endif // _DEBUG
         --m_dwProfilerEvacuationCounters[slot];
         _ASSERTE(newValue != (DWORD)-1);

@@ -353,4 +353,4 @@ FAIL:
 	ret
 }
 }
-.assembly rem_i4.exe{}
+.assembly rem_i4{}

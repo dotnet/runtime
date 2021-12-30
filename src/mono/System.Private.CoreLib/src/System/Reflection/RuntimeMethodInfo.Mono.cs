@@ -374,10 +374,10 @@ namespace System.Reflection
         internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> parameters)
+        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> parameters)
         {
             Exception? exc;
-            object? o = null;
+            object? o;
 
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -541,9 +541,8 @@ namespace System.Reflection
         private Attribute GetDllImportAttribute()
         {
             string entryPoint;
-            string? dllName = null;
-            int token = MetadataToken;
-            PInvokeAttributes flags = 0;
+            string? dllName;
+            PInvokeAttributes flags;
 
             GetPInvoke(out flags, out entryPoint, out dllName);
 
@@ -624,8 +623,8 @@ namespace System.Reflection
                 return null;
 
             string entryPoint;
-            string? dllName = null;
-            PInvokeAttributes flags = 0;
+            string? dllName;
+            PInvokeAttributes flags;
 
             GetPInvoke(out flags, out entryPoint, out dllName);
 
@@ -862,7 +861,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> arguments)
+        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return InternalInvoke(obj, arguments, wrapExceptions);
@@ -885,7 +884,7 @@ namespace System.Reflection
         private object? InternalInvoke(object? obj, Span<object?> parameters, bool wrapExceptions)
         {
             Exception exc;
-            object? o = null;
+            object? o;
 
             if (wrapExceptions)
             {

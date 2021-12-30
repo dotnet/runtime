@@ -127,6 +127,17 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void Invoke_TwoDimensionalArray_CustomBinder_IncorrectTypeArguments()
+        {
+            var ctor = typeof(int[,]).GetConstructor(new[] { typeof(int), typeof(int) });
+            var args = new object[] { "1", "2" };
+            var arr = (int[,])ctor.Invoke(BindingFlags.Default, new ConvertStringToIntBinder(), args, null);
+            Assert.Equal(2, arr.Length);
+            Assert.True(args[0] is int);
+            Assert.True(args[1] is int);
+        }
+
+        [Fact]
         public void Invoke_OneParameter()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
@@ -141,6 +152,19 @@ namespace System.Reflection.Tests
             ClassWith3Constructors obj = (ClassWith3Constructors)constructors[2].Invoke(new object[] { 101, "hello" });
             Assert.Equal(101, obj.intValue);
             Assert.Equal("hello", obj.stringValue);
+        }
+
+        [Fact]
+        public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArgument()
+        {
+            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
+
+            var args = new object[] { "101", "hello" };
+            ClassWith3Constructors obj = (ClassWith3Constructors)constructors[2].Invoke(BindingFlags.Default, new ConvertStringToIntBinder(), args, null);
+            Assert.Equal(101, obj.intValue);
+            Assert.Equal("hello", obj.stringValue);
+            Assert.True(args[0] is int);
+            Assert.True(args[1] is string);
         }
 
         [Fact]
@@ -248,8 +272,6 @@ namespace System.Reflection.Tests
             this.intValue = intValue;
             this.stringValue = stringValue;
         }
-
-        public string Method1(DateTime dt) => "";
     }
 
     public static class ClassWithStaticConstructor

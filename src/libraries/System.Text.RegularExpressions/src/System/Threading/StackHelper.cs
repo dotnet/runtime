@@ -32,13 +32,6 @@ namespace System.Threading
         // also plays nicely with the thread pool's sync-over-async aggressive thread injection policies.
 
         /// <summary>Calls the provided action on the stack of a different thread pool thread.</summary>
-        /// <param name="action">The action to invoke.</param>
-        public static void CallOnEmptyStack(Action action) =>
-            Task.Run(() => action())
-                .ContinueWith(t => t.GetAwaiter().GetResult(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default)
-                .GetAwaiter().GetResult();
-
-        /// <summary>Calls the provided action on the stack of a different thread pool thread.</summary>
         /// <typeparam name="TArg1">The type of the first argument to pass to the function.</typeparam>
         /// <param name="action">The action to invoke.</param>
         /// <param name="arg1">The first argument to pass to the action.</param>
