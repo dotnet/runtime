@@ -277,6 +277,8 @@ add_library(mono-ee-interp STATIC "${interp_sources}")
 install(TARGETS mono-ee-interp LIBRARY)
 endif()
 
+message(STATUS, "ENABLE_LLVM in mini = ${ENABLE_LLVM}")
+
 if(ENABLE_LLVM)
 set(llvm_sources
     mini-llvm.c

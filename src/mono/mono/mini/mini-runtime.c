@@ -122,7 +122,7 @@ int mini_verbose = 0;
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
  * it can load AOT code compiled by LLVM.
  */
-gboolean mono_use_llvm = FALSE;
+gboolean mono_use_llvm = TRUE;
 
 gboolean mono_use_fast_math = FALSE;
 

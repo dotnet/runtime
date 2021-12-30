@@ -14,6 +14,8 @@ set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
 set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(NOT MONO_LIB_NAME)
   set(MONO_LIB_NAME "monosgen-2.0")
 endif()
@@ -510,6 +512,9 @@ set(MONO_llvm_extra_libs_aarch64codegen_900 "LLVMAArch64CodeGen" "LLVMGlobalISel
 ######################################
 # LLVM CHECKS
 ######################################
+
+message(STATUS, "LLVM_PREFIX = ${LLVM_PREFIX}")
+
 set(LLVM_LIBS)
 if(LLVM_PREFIX)
   if(TARGET_ARCH STREQUAL "x86_64")
@@ -585,6 +590,9 @@ if(LLVM_PREFIX)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
+  add_definitions(-DENABLE_LLVM=1)
+
+  message(STATUS, "ENABLE_LLVM = ${ENABLE_LLVM}")
 endif()
 
 ######################################

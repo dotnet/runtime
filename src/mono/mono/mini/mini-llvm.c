@@ -221,6 +221,7 @@ typedef struct {
 #define FREG 'f'
 #define VREG 'v'
 #define XREG 'x'
+#define ZREG 'z'
 #define LREG 'l'
 /* keep in sync with the enum in mini.h */
 const char
@@ -259,7 +260,7 @@ mini_llvm_ins_info[] = {
 #define ctx_ok(ctx) (!(ctx)->cfg->disable_llvm)
 
 enum {
-	MAX_VECTOR_ELEMS = 32, // 2 vectors * 128 bits per vector / 8 bits per element
+	MAX_VECTOR_ELEMS = 64, // 2 vectors * 128 bits per vector / 8 bits per element
 	ARM64_MAX_VECTOR_ELEMS = 16,
 };
 
@@ -317,6 +318,7 @@ static LLVMTypeRef i1_t, i2_t, i4_t, i8_t, r4_t, r8_t;
 static LLVMTypeRef sse_i1_t, sse_i2_t, sse_i4_t, sse_i8_t, sse_r4_t, sse_r8_t;
 static LLVMTypeRef v64_i1_t, v64_i2_t, v64_i4_t, v64_i8_t, v64_r4_t, v64_r8_t;
 static LLVMTypeRef v128_i1_t, v128_i2_t, v128_i4_t, v128_i8_t, v128_r4_t, v128_r8_t;
+static LLVMTypeRef v512_i1_t, v512_i2_t, v512_i4_t, v512_i8_t, v512_r4_t, v512_r8_t;
 
 static LLVMTypeRef void_func_t;
 
@@ -336,19 +338,21 @@ static void create_aot_info_var (MonoLLVMModule *module);
 static void set_invariant_load_flag (LLVMValueRef v);
 static void set_nonnull_load_flag (LLVMValueRef v);
 
+// Anthony: Check this change, will it work?
 enum {
-	INTRIN_scalar = 1 << 0,
-	INTRIN_vector64 = 1 << 1,
-	INTRIN_vector128 = 1 << 2,
-	INTRIN_vectorwidths = 3,
-	INTRIN_vectormask = 0x7,
+	INTRIN_scalar = 1 << 0,			// 0
+	INTRIN_vector64 = 1 << 1,		// 1
+	INTRIN_vector128 = 1 << 2,	// 4
+	INTRIN_vector512 = 1 << 3,	// 8
+	INTRIN_vectorwidths = 4,
+	INTRIN_vectormask = 0xF,
 
-	INTRIN_int8 = 1 << 3,
-	INTRIN_int16 = 1 << 4,
-	INTRIN_int32 = 1 << 5,
-	INTRIN_int64 = 1 << 6,
-	INTRIN_float32 = 1 << 7,
-	INTRIN_float64 = 1 << 8,
+	INTRIN_int8 = 1 << 4,				// 8
+	INTRIN_int16 = 1 << 5,			// 16
+	INTRIN_int32 = 1 << 6,			// 32
+	INTRIN_int64 = 1 << 7,			// 64
+	INTRIN_float32 = 1 << 8,		// 128
+	INTRIN_float64 = 1 << 9,		// 256
 	INTRIN_elementwidths = 6,
 };
 
@@ -415,6 +419,7 @@ ovr_tag_to_llvm_type (llvm_ovr_tag_t tag)
 	int ew = 0;
 	if (tag & INTRIN_vector64) vw = 1;
 	else if (tag & INTRIN_vector128) vw = 2;
+	else if (tag & INTRIN_vector512) vw = 8;
 
 	if (tag & INTRIN_int16) ew = 1;
 	else if (tag & INTRIN_int32) ew = 2;
@@ -437,6 +442,7 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	switch (size) {
 	case 8: ret |= INTRIN_vector64; break;
 	case 16: ret |= INTRIN_vector128; break;
+	case 64: ret |= INTRIN_vector512; break;
 	}
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	switch (etype->type) {
@@ -593,7 +599,7 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector4")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1")) {
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);
 		switch (etype->type) {
@@ -659,6 +665,40 @@ type_to_sse_type (int type)
 		return LLVMVectorType (LLVMDoubleType (), 2);
 	case MONO_TYPE_R4:
 		return LLVMVectorType (LLVMFloatType (), 4);
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
+/* Return the 512 bit SIMD type corresponding to the mono type TYPE */
+static inline G_GNUC_UNUSED LLVMTypeRef
+type_to_avx512_type (int type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return LLVMVectorType (LLVMInt8Type (), 64);
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+		return LLVMVectorType (LLVMInt16Type (), 32);
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+		return LLVMVectorType (LLVMInt32Type (), 16);
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+		return LLVMVectorType (LLVMInt64Type (), 8);
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return LLVMVectorType (LLVMInt64Type (), 8);
+#else
+		return LLVMVectorType (LLVMInt32Type (), 16);
+#endif
+	case MONO_TYPE_R8:
+		return LLVMVectorType (LLVMDoubleType (), 8);
+	case MONO_TYPE_R4:
+		return LLVMVectorType (LLVMFloatType (), 16);
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -7667,6 +7707,44 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ZBINOP: {
+			gboolean scalar = ins->opcode == OP_XBINOP_SCALAR;
+			gboolean byscalar = ins->opcode == OP_XBINOP_BYSCALAR;
+			LLVMValueRef result = NULL;
+			LLVMValueRef args [] = { lhs, rhs };
+			if (scalar)
+				for (int i = 0; i < 2; ++i)
+					args [i] = scalar_from_vector (ctx, args [i]);
+			if (byscalar) {
+				LLVMTypeRef t = LLVMTypeOf (args [0]);
+				unsigned int elems = LLVMGetVectorSize (t);
+				args [1] = broadcast_element (ctx, scalar_from_vector (ctx, args [1]), elems);
+			}
+			LLVMValueRef l = args [0];
+			LLVMValueRef r = args [1];
+			switch (ins->inst_c0) {
+			case OP_IADD:
+				result = LLVMBuildAdd (builder, l, r, "");
+				break;
+			case OP_FADD:
+				result = LLVMBuildFAdd (builder, l, r, "");
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			if (scalar)
+				result = vector_from_scalar (ctx, LLVMTypeOf (lhs), result);
+			values [ins->dreg] = result;
+			break;
+		}
+
+		case OP_ZADDROUND: {
+			LLVMValueRef args [] = { lhs, rhs, arg3 };
+			IntrinsicId id = INTRINS_AVX512_ADDROUND;
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+
 		case OP_XBINOP_FORCEINT: {
 			LLVMTypeRef t = LLVMTypeOf (lhs);
 			LLVMTypeRef elem_t = LLVMGetElementType (t);
@@ -12266,7 +12344,7 @@ add_intrinsic (LLVMModuleRef module, int id)
 		llvm_ovr_tag_t spec = intrin_arm64_ovr [id];
 		for (int vw = 0; vw < INTRIN_vectorwidths; ++vw) {
 			for (int ew = 0; ew < INTRIN_elementwidths; ++ew) {
-				llvm_ovr_tag_t vec_bit = INTRIN_vector128 >> ((INTRIN_vectorwidths - 1) - vw);
+				llvm_ovr_tag_t vec_bit = INTRIN_vector512 >> ((INTRIN_vectorwidths - 1) - vw);
 				llvm_ovr_tag_t elem_bit = INTRIN_int8 << ew;
 				llvm_ovr_tag_t test = vec_bit | elem_bit;
 				if ((spec & test) == test) {
@@ -12403,6 +12481,15 @@ mono_llvm_init (gboolean enable_jit)
 	intrin_types [2][3] = v128_i8_t = sse_i8_t = type_to_sse_type (MONO_TYPE_I8);
 	intrin_types [2][4] = v128_r4_t = sse_r4_t = type_to_sse_type (MONO_TYPE_R4);
 	intrin_types [2][5] = v128_r8_t = sse_r8_t = type_to_sse_type (MONO_TYPE_R8);
+
+	intrin_types [3][0] = v512_i1_t = type_to_avx512_type (MONO_TYPE_I1);
+	intrin_types [3][1] = v512_i2_t = type_to_avx512_type (MONO_TYPE_I2);
+	intrin_types [3][2] = v512_i4_t = type_to_avx512_type (MONO_TYPE_I4);
+	intrin_types [3][3] = v512_i8_t = type_to_avx512_type (MONO_TYPE_I8);
+	intrin_types [3][4] = v512_r4_t = type_to_avx512_type (MONO_TYPE_R4);
+	intrin_types [3][5] = v512_r8_t = type_to_avx512_type (MONO_TYPE_R8);
+
+
 
 	intrins_id_to_intrins = g_hash_table_new (NULL, NULL);
 
@@ -13702,6 +13789,7 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 		{ "popcnt",	MONO_CPU_X86_POPCNT },
 		{ "avx",	MONO_CPU_X86_AVX },
 		{ "avx2",	MONO_CPU_X86_AVX2 },
+		{ "avx512",	MONO_CPU_X86_AVX512 },
 		{ "fma",	MONO_CPU_X86_FMA },
 		{ "lzcnt",	MONO_CPU_X86_LZCNT },
 		{ "bmi",	MONO_CPU_X86_BMI1 },

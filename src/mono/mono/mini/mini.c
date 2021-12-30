@@ -4437,6 +4437,9 @@ mini_get_cpu_features (MonoCompile* cfg)
 	features |= MONO_CPU_ARM64_NEON; 
 #endif
 
+	// Anthony: Hack in feature
+	features |= MONO_CPU_X86_AVX512;
+
 	// apply parameters passed via -mattr
 	return (features | mono_cpu_features_enabled) & ~mono_cpu_features_disabled;
 }

@@ -85,6 +85,12 @@ alloc_xreg (MonoCompile *cfg)
 }
 
 static inline guint32
+alloc_zreg (MonoCompile *cfg)
+{
+	return alloc_ireg (cfg);
+}
+
+static inline guint32
 alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 {
 	switch (stack_type) {
