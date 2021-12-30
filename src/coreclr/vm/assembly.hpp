@@ -479,8 +479,6 @@ private:
     PTR_BaseDomain        m_pDomain;        // Parent Domain
     PTR_ClassLoader       m_pClassLoader;   // Single Loader
 
-
-
     PTR_MethodDesc        m_pEntryPoint;    // Method containing the entry point
     PTR_Module            m_pModule;
     PTR_PEAssembly        m_pPEAssembly;

@@ -1109,8 +1109,7 @@ void DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
-    //sizeof(DomainAssembly) == 0x60
-    DAC_ENUM_VTHIS();
+    DAC_ENUM_DTHIS();
 
     // Modules are needed for all minidumps, but they are enumerated elsewhere
     // so we don't need to duplicate effort; thus we do noting with m_pModule.

@@ -1080,7 +1080,7 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    DAC_ENUM_VTHIS();
+    DAC_ENUM_DTHIS();
     EMEM_OUT(("MEM: %p PEAssembly\n", dac_cast<TADDR>(this)));
 
 #ifdef _DEBUG

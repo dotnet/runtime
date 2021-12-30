@@ -65,16 +65,14 @@ enum NotificationStatus
 
 class DomainAssembly final
 {
-    VPTR_BASE_CONCRETE_VTABLE_CLASS(DomainAssembly);
-
-  public:
+    public:
 
     // ------------------------------------------------------------
     // Public API
     // ------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    virtual ~DomainAssembly();
+    ~DomainAssembly();
     DomainAssembly() {LIMITED_METHOD_CONTRACT;};
 #endif
 
@@ -266,7 +264,7 @@ class DomainAssembly final
 #endif // DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -400,12 +398,6 @@ class DomainAssembly final
             if (m_type == ExType_ClrEx)
                 delete m_pEx;
         }
-    };
-
-    void ReleaseManagedData()
-    {
-        if (m_pError)
-            m_pError->ConvertToHResult();
     };
 
 public:
