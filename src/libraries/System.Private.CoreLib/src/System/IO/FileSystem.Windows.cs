@@ -147,7 +147,7 @@ namespace System.IO
 
         private static SafeFileHandle OpenHandleToWriteAttributes(string fullPath, bool asDirectory)
         {
-            if (fullPath.Length == PathInternal.GetRootLength(fullPath) && fullPath[1] == Path.VolumeSeparatorChar)
+            if (fullPath.Length == PathInternal.GetRootLength(fullPath.AsSpan()) && fullPath[1] == Path.VolumeSeparatorChar)
             {
                 // intentionally not fullpath, most upstack public APIs expose this as path.
                 throw new ArgumentException(SR.Arg_PathIsVolume, "path");
