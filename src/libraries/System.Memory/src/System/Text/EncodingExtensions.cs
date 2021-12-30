@@ -59,7 +59,7 @@ namespace System.Text
             {
                 // Allocate a stateful Encoder instance and chunk this.
 
-                Convert(encoding.GetEncoder(), chars, writer, flush: true, out long totalBytesWritten, out bool completed);
+                Convert(encoding.GetEncoder(), chars, writer, flush: true, out long totalBytesWritten, out _);
                 return totalBytesWritten;
             }
         }
@@ -95,7 +95,7 @@ namespace System.Text
             }
             else
             {
-                Convert(encoding.GetEncoder(), chars, writer, flush: true, out long bytesWritten, out bool completed);
+                Convert(encoding.GetEncoder(), chars, writer, flush: true, out long bytesWritten, out _);
                 return bytesWritten;
             }
         }
@@ -270,7 +270,7 @@ namespace System.Text
             {
                 // Allocate a stateful Decoder instance and chunk this.
 
-                Convert(encoding.GetDecoder(), bytes, writer, flush: true, out long totalCharsWritten, out bool completed);
+                Convert(encoding.GetDecoder(), bytes, writer, flush: true, out long totalCharsWritten, out _);
                 return totalCharsWritten;
             }
         }
@@ -306,7 +306,7 @@ namespace System.Text
             }
             else
             {
-                Convert(encoding.GetDecoder(), bytes, writer, flush: true, out long charsWritten, out bool completed);
+                Convert(encoding.GetDecoder(), bytes, writer, flush: true, out long charsWritten, out _);
                 return charsWritten;
             }
         }

@@ -311,7 +311,7 @@ namespace System.Net.Http
             {
                 // Only check whether we have a quoted char, if we have at least 3 characters left to read (i.e.
                 // quoted char + closing char). Otherwise the closing char may be considered part of the quoted char.
-                int quotedPairLength = 0;
+                int quotedPairLength;
                 if ((current + 2 < input.Length) &&
                     (GetQuotedPairLength(input, current, out quotedPairLength) == HttpParseResult.Parsed))
                 {
@@ -338,7 +338,7 @@ namespace System.Net.Http
                         return HttpParseResult.InvalidFormat;
                     }
 
-                    int nestedLength = 0;
+                    int nestedLength;
                     HttpParseResult nestedResult = GetExpressionLength(input, current, openChar, closeChar,
                         supportsNesting, nestedCount + 1, out nestedLength);
 
@@ -382,7 +382,7 @@ namespace System.Net.Http
         private static bool IsValidHostName(string host)
         {
             // Also add user info (u@) to make sure 'host' doesn't include user info.
-            return Uri.TryCreate("http://u@" + host + "/", UriKind.Absolute, out Uri? hostUri);
+            return Uri.TryCreate("http://u@" + host + "/", UriKind.Absolute, out _);
         }
     }
 }

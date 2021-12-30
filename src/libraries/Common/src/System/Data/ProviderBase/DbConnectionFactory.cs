@@ -386,7 +386,7 @@ namespace System.Data.ProviderBase
             // if two threads happen to hit this at the same time.  One will be GC'd
             if (metaDataFactory == null)
             {
-                bool allowCache = false;
+                bool allowCache;
                 metaDataFactory = CreateMetaDataFactory(internalConnection, out allowCache);
                 if (allowCache)
                 {

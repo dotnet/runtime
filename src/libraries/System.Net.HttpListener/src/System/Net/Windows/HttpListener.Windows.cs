@@ -96,15 +96,13 @@ namespace System.Net
 
         private void SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY property, IntPtr info, uint infosize)
         {
-            uint statusCode = Interop.HttpApi.ERROR_SUCCESS;
-
             Debug.Assert(_urlGroupId != 0, "SetUrlGroupProperty called with invalid url group id");
             Debug.Assert(info != IntPtr.Zero, "SetUrlGroupProperty called with invalid pointer");
 
             //
             // Set the url group property using Http Api.
             //
-            statusCode = Interop.HttpApi.HttpSetUrlGroupProperty(
+            uint statusCode = Interop.HttpApi.HttpSetUrlGroupProperty(
                 _urlGroupId, property, info, infosize);
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
@@ -153,7 +151,6 @@ namespace System.Net
 
         private void SetupV2Config()
         {
-            uint statusCode = Interop.HttpApi.ERROR_SUCCESS;
             ulong id = 0;
 
             //
@@ -175,7 +172,7 @@ namespace System.Net
 
             try
             {
-                statusCode = Interop.HttpApi.HttpCreateServerSession(
+                uint statusCode = Interop.HttpApi.HttpCreateServerSession(
                     Interop.HttpApi.s_version, &id, 0);
 
                 if (statusCode != Interop.HttpApi.ERROR_SUCCESS)

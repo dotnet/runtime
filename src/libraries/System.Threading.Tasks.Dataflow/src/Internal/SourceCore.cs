@@ -543,7 +543,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // Peek at the next message if there is one, so we can offer it.
             DataflowMessageHeader header = default(DataflowMessageHeader);
-            TOutput? message = default(TOutput);
+            TOutput? message;
             bool offerJustToLinkToTarget = false;
 
             // If offering isn't enabled and if we're not doing this as

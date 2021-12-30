@@ -304,9 +304,6 @@ namespace System.Globalization
                         destination.Append('M', occurrences);
                         break;
                     case 'G':
-                        // 'G' in ICU is the era, which maps to 'g' in .NET
-                        occurrences = CountOccurrences(input, 'G', ref index);
-
                         // it doesn't matter how many 'G's, since .NET only supports 'g' or 'gg', and they
                         // have the same meaning
                         destination.Append('g');

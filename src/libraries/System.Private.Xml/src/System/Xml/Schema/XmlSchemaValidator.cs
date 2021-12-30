@@ -1353,7 +1353,7 @@ namespace System.Xml.Schema
         private object? ValidateElementContext(XmlQualifiedName elementName, out bool invalidElementInContext)
         {
             object? particle = null;
-            int errorCode = 0;
+            int errorCode;
             XmlQualifiedName head;
             XmlSchemaElement? headElement = null;
             invalidElementInContext = false;
@@ -1697,7 +1697,7 @@ namespace System.Xml.Schema
             XmlQualifiedName xsiTypeName = XmlQualifiedName.Empty;
             if (xsiType != null)
             {
-                object? typedVal = null;
+                object? typedVal;
                 Exception? exception = s_dtQName.TryParseValue(xsiType, _nameTable, _nsResolver, out typedVal);
                 if (exception != null)
                 {
@@ -1990,13 +1990,13 @@ namespace System.Xml.Schema
 
         private object? CheckAttributeValue(object value, SchemaAttDef attdef)
         {
-            object? typedValue = null;
+            object? typedValue;
             SchemaDeclBase decl = attdef as SchemaDeclBase;
 
             XmlSchemaDatatype dtype = attdef.Datatype;
             Debug.Assert(dtype != null);
             string? stringValue = value as string;
-            Exception? exception = null;
+            Exception? exception;
 
             if (stringValue != null)
             {
@@ -2032,7 +2032,7 @@ namespace System.Xml.Schema
 
         private object? CheckElementValue(string stringValue)
         {
-            object? typedValue = null;
+            object? typedValue;
             SchemaDeclBase decl = (_context.ElementDecl as SchemaDeclBase)!;
 
             XmlSchemaDatatype dtype = decl.Datatype;
@@ -2675,7 +2675,7 @@ namespace System.Xml.Schema
             if (getParticles)
             {
                 string ContinuationString = SR.Format(SR.Sch_ContinuationString, new string[] { " " });
-                XmlSchemaParticle? currentParticle = null;
+                XmlSchemaParticle? currentParticle;
                 XmlSchemaParticle? nextParticle = null;
                 XmlQualifiedName currentQName;
                 ArrayList expectedNames = new ArrayList();

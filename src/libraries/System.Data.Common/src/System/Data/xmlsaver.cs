@@ -1074,7 +1074,7 @@ namespace System.Data
 
         internal void SetPath(XmlWriter xw)
         {
-            FileStream? fs = null;
+            FileStream? fs;
 
             DataTextWriter? sw = xw as DataTextWriter;
             fs = (sw != null) ? sw.BaseStream as FileStream : null;
@@ -1729,7 +1729,7 @@ namespace System.Data
             Debug.Assert(_dsElement != null);
 
             XmlElement root = dc.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_ELEMENT, Keywords.XSDNS);
-            bool fWriteOrdinals = false;
+            bool fWriteOrdinals;
             bool fUnqualified = false;
 
             if (((table.DataSet == null) || (_ds != null && table.Namespace != _ds.Namespace)) && (_schFormat == SchemaFormat.Remoting))
@@ -1859,7 +1859,7 @@ namespace System.Data
                     root.SetAttribute(Keywords.TYPE, NewDiffgramGen.QualifiedName((string)_prefixes[table.TypeName.Namespace]!, table.TypeName.Name));
             }
 
-            XmlElement? compositor = null;
+            XmlElement? compositor;
 
             DataColumn? colTxt = table.XmlText;
 
@@ -1993,7 +1993,7 @@ namespace System.Data
 
             for (int i = 0; i < constraints.Count; i++)
             {
-                XmlElement? constraint = null;
+                XmlElement? constraint;
                 DataColumn[] fields;
 
                 if (constraints[i] is UniqueConstraint)
@@ -2545,7 +2545,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private void GenerateColumn(DataRow row, DataColumn col, DataRowVersion version)
         {
-            string? value = null;
+            string? value;
 
             value = col.GetColumnValueAsString(row, version); // this is useless for CTD
             if (value == null)

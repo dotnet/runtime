@@ -705,7 +705,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (DocumentHandle dh in asmMetadataReader.Documents)
             {
-                var document = asmMetadataReader.GetDocument(dh);
+                asmMetadataReader.GetDocument(dh);
             }
 
             if (pdbMetadataReader != null)
@@ -1031,7 +1031,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public IEnumerable<SourceFile> Add(SessionId id, string name, byte[] assembly_data, byte[] pdb_data, CancellationToken token)
         {
-            AssemblyInfo assembly = null;
+            AssemblyInfo assembly;
             try
             {
                 assembly = new AssemblyInfo(monoProxy, id, name, assembly_data, pdb_data, token);

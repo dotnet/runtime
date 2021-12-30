@@ -577,8 +577,7 @@ namespace System.IO.Compression
                 bool finished;
                 do
                 {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+                    finished = _deflater.Finish(_buffer, out _);
                 } while (!finished);
             }
         }
@@ -625,8 +624,7 @@ namespace System.IO.Compression
                 bool finished;
                 do
                 {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+                    finished = _deflater.Finish(_buffer, out _);
                 } while (!finished);
             }
         }

@@ -717,7 +717,9 @@ namespace System.Security.Cryptography
                 pinHandle.Free();
             }
             ArrayPool<byte>.Shared.Return(rentedBuffer);
+#pragma warning disable IDE0059
             rentedBuffer = null;
+#pragma warning restore IDE0059
         }
 
         private void CheckCopyToArguments(Stream destination, int bufferSize)

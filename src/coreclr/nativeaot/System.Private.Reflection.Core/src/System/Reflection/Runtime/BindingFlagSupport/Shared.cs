@@ -149,11 +149,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public static M GetImplicitlyOverriddenBaseClassMember<M>(this M member) where M : MemberInfo
         {
             MemberPolicies<M> policies = MemberPolicies<M>.Default;
-            MethodAttributes visibility;
-            bool isStatic;
             bool isVirtual;
             bool isNewSlot;
-            policies.GetMemberAttributes(member, out visibility, out isStatic, out isVirtual, out isNewSlot);
+            policies.GetMemberAttributes(member, out _, out _, out isVirtual, out isNewSlot);
             if (isNewSlot || !isVirtual)
             {
                 return null;
@@ -174,11 +172,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     {
                         continue;
                     }
-                    MethodAttributes candidateVisibility;
-                    bool isCandidateStatic;
                     bool isCandidateVirtual;
-                    bool isCandidateNewSlot;
-                    policies.GetMemberAttributes(member, out candidateVisibility, out isCandidateStatic, out isCandidateVirtual, out isCandidateNewSlot);
+                    policies.GetMemberAttributes(member, out _, out _, out isCandidateVirtual, out _);
                     if (!isCandidateVirtual)
                     {
                         continue;

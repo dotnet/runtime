@@ -166,7 +166,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     string[] stringValues = (string[])value[valueCount];
-                    byte[][] tempValues = null;
+                    byte[][] tempValues;
                     if (stringValues != null)
                     {
                         tempValues = new byte[stringValues.Length][];
@@ -360,7 +360,7 @@ namespace System.DirectoryServices.Protocols
                         if (fmt == 'b')
                         {
                             // should return a bool
-                            bool boolResult = false;
+                            bool boolResult;
                             if (result == 0)
                                 boolResult = false;
                             else
@@ -405,7 +405,7 @@ namespace System.DirectoryServices.Protocols
                 else if (fmt == 'v')
                 {
                     //null terminate strings
-                    byte[][] byteArrayresult = null;
+                    byte[][] byteArrayresult;
                     string[] stringArray = null;
 
                     byteArrayresult = DecodingMultiByteArrayHelper(berElement, 'V', ref error);
@@ -432,7 +432,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else if (fmt == 'V')
                 {
-                    byte[][] result = null;
+                    byte[][] result;
 
                     result = DecodingMultiByteArrayHelper(berElement, fmt, ref error);
                     if (!BerPal.IsBerDecodeError(error))
@@ -465,7 +465,7 @@ namespace System.DirectoryServices.Protocols
 
         private static int EncodingByteArrayHelper(SafeBerHandle berElement, byte[] tempValue, char fmt, nuint tag)
         {
-            int error = 0;
+            int error;
 
             // one byte array, one int arguments
             if (tempValue != null)
@@ -486,7 +486,9 @@ namespace System.DirectoryServices.Protocols
 
         private static byte[] DecodingByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
         {
+#pragma warning disable IDE0059 // TODO: https://github.com/dotnet/roslyn/issues/42761
             error = 0;
+#pragma warning restore IDEOO59
             IntPtr result = IntPtr.Zero;
             BerVal binaryValue = new BerVal();
             byte[] byteArray = null;
@@ -522,7 +524,7 @@ namespace System.DirectoryServices.Protocols
         private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
         {
             IntPtr berValArray = IntPtr.Zero;
-            IntPtr tempPtr = IntPtr.Zero;
+            IntPtr tempPtr;
             BerVal[] managedBervalArray = null;
             int error = 0;
 
@@ -597,7 +599,7 @@ namespace System.DirectoryServices.Protocols
             IntPtr ptrResult = IntPtr.Zero;
             int i = 0;
             ArrayList binaryList = new ArrayList();
-            IntPtr tempPtr = IntPtr.Zero;
+            IntPtr tempPtr;
             byte[][] result = null;
 
             try

@@ -56,18 +56,15 @@ namespace System.Data.Odbc
         protected override DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
         {
             Debug.Assert(internalConnection != null, "internalConnection may not be null.");
+#pragma warning disable IDE0059
             cacheMetaDataFactory = false;
+#pragma warning restore IDE0059
 
             OdbcConnection odbcOuterConnection = ((OdbcConnectionOpen)internalConnection).OuterConnection;
             Debug.Assert(odbcOuterConnection != null, "outer connection may not be null.");
 
             // get the DBMS Name
-            object? driverName = null;
-            string? stringValue = odbcOuterConnection.GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME);
-            if (stringValue != null)
-            {
-                driverName = stringValue;
-            }
+            odbcOuterConnection.GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME);
 
             Stream? XMLStream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("System.Data.Odbc.OdbcMetaData.xml");
             cacheMetaDataFactory = true;
