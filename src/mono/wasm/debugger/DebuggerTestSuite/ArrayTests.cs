@@ -643,5 +643,59 @@ namespace DebuggerTests
                    AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
                }
            });
+        
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task InspectPrimitiveTypeMultiArrayLocals(bool use_cfo)
+        {
+            var debugger_test_loc = "dotnet://debugger-test.dll/debugger-array-test.cs";
+
+            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+                $"'[debugger-test] DebuggerTests.MultiDimensionalArray:run'" +
+                "); }, 1);";
+
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 343, 12, "run");
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(3, locals.Count());
+            var int_arr_1 = !use_cfo ?
+                            await GetProperties(locals[0]["value"]["objectId"].Value<string>()) : 
+                            await GetObjectWithCFO((locals[0]["value"]["objectId"].Value<string>()));
+
+            CheckNumber(int_arr_1, "0", 0);
+            CheckNumber(int_arr_1, "1", 1);
+            var int_arr_2 = !use_cfo ?
+                await GetProperties(locals[1]["value"]["objectId"].Value<string>()) : 
+                await GetObjectWithCFO((locals[1]["value"]["objectId"].Value<string>()));
+            CheckNumber(int_arr_2, "0, 0", 0);
+            CheckNumber(int_arr_2, "0, 1", 1);
+            CheckNumber(int_arr_2, "0, 2", 2);
+            CheckNumber(int_arr_2, "1, 0", 10);
+            CheckNumber(int_arr_2, "1, 1", 11);
+            CheckNumber(int_arr_2, "1, 2", 12);
+
+            var int_arr_3 = !use_cfo ?
+                await GetProperties(locals[2]["value"]["objectId"].Value<string>()) : 
+                await GetObjectWithCFO((locals[2]["value"]["objectId"].Value<string>()));
+            CheckNumber(int_arr_3, "0, 0, 0", 0);
+            CheckNumber(int_arr_3, "0, 0, 1", 1);
+            CheckNumber(int_arr_3, "0, 0, 2", 2);
+            CheckNumber(int_arr_3, "0, 1, 0", 10);
+            CheckNumber(int_arr_3, "0, 1, 1", 11);
+            CheckNumber(int_arr_3, "0, 1, 2", 12);
+            CheckNumber(int_arr_3, "0, 2, 0", 20);
+            CheckNumber(int_arr_3, "0, 2, 1", 21);
+            CheckNumber(int_arr_3, "0, 2, 2", 22);
+            CheckNumber(int_arr_3, "1, 0, 0", 100);
+            CheckNumber(int_arr_3, "1, 0, 1", 101);
+            CheckNumber(int_arr_3, "1, 0, 2", 102);
+            CheckNumber(int_arr_3, "1, 1, 0", 110);
+            CheckNumber(int_arr_3, "1, 1, 1", 111);
+            CheckNumber(int_arr_3, "1, 1, 2", 112);
+            CheckNumber(int_arr_3, "1, 2, 0", 120);
+            CheckNumber(int_arr_3, "1, 2, 1", 121);
+            CheckNumber(int_arr_3, "1, 2, 2", 122);
+        }
     }
 }
