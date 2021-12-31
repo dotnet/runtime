@@ -77,7 +77,7 @@ namespace System.Net.NetworkInformation
                     return IPStatus.SourceQuench;
 
                 case IcmpV4MessageType.TimeExceeded:
-                    return IPStatus.TimeExceeded;
+                    return IPStatus.TtlExpired;
 
                 case IcmpV4MessageType.ParameterProblemBadIPHeader:
                     return IPStatus.BadHeader;

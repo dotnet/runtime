@@ -77,11 +77,11 @@ namespace System.Net.NetworkInformation
                     switch ((IcmpV6TimeExceededCode)code)
                     {
                         case IcmpV6TimeExceededCode.HopLimitExceeded:
-                            return IPStatus.TimeExceeded;
+                            return IPStatus.TtlExpired;
                         case IcmpV6TimeExceededCode.FragmentReassemblyTimeExceeded:
                             return IPStatus.TtlReassemblyTimeExceeded;
                         default:
-                            return IPStatus.TimeExceeded;
+                            return IPStatus.TtlExpired;
                     }
 
                 case IcmpV6MessageType.ParameterProblem:
