@@ -264,7 +264,7 @@
     <Compile Include="Compiler\DependencyAnalysis\CallingConventionConverterKey.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingStubMapNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\StructMarshallingStubMapNode.cs" />    
+    <Compile Include="Compiler\DependencyAnalysis\StructMarshallingStubMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IObjectDumper.cs" />
@@ -478,4 +478,21 @@
       <Link>Pgo\PgoFormat.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Resources\Strings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 </Project>
