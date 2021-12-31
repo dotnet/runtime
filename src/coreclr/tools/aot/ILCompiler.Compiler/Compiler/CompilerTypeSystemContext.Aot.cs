@@ -27,6 +27,7 @@ namespace ILCompiler
 
         private TypeDesc[] _arrayOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+        private MetadataType _arrayOfTType;
 
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures)
             : base(details)
@@ -167,6 +168,23 @@ namespace ILCompiler
         protected override DelegateInfo CreateDelegateInfo(TypeDesc delegateType)
         {
             return new DelegateInfo(delegateType, _delegateFeatures);
+        }
+
+        internal DefType GetClosestDefType(TypeDesc type)
+        {
+            if (type.IsArray)
+            {
+                if (!type.IsArrayTypeWithoutGenericInterfaces())
+                {
+                    MetadataType arrayShadowType = _arrayOfTType ?? (_arrayOfTType = SystemModule.GetType("System", "Array`1"));
+                    return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
+                }
+
+                return GetWellKnownType(WellKnownType.Array);
+            }
+
+            Debug.Assert(type is DefType);
+            return (DefType)type;
         }
 
         private readonly LazyGenericsSupport.GenericCycleDetector _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector();
