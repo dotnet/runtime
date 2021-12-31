@@ -294,7 +294,9 @@ namespace Internal.Cryptography.Pal
                         return string.Empty;
 
                     uint spanLength = (cbData + 1) / 2;
-                    Span<char> buffer = spanLength <= 256 ? stackalloc char[spanLength] : new char[spanLength];
+                    Span<char> buffer = spanLength <= 256 ?
+                        stackalloc char[(int)spanLength] : // Already checked to be a size that won't overflow.
+                        new char[spanLength];
                     fixed (char* ptr = &MemoryMarshal.GetReference(buffer))
                     {
                         if (!Interop.Crypt32.CertGetCertificateContextPropertyString(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, (byte*)ptr, ref cbData))
