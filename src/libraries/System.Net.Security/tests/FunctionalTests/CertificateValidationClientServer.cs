@@ -5,7 +5,6 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -36,7 +35,7 @@ namespace System.Net.Security.Tests
             _clientCertificate.Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(true, true)]
         [InlineData(false, true)]
         [InlineData(true, false)]
