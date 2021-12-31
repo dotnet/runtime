@@ -207,6 +207,8 @@ namespace Internal.IL
 
         public void Verify()
         {
+            FatalCheck(_ilBytes.Length > 0, VerifierError.CodeSizeZero);
+
             _instructionBoundaries = new bool[_ilBytes.Length];
 
             FindBasicBlocks();
@@ -284,8 +286,6 @@ namespace Internal.IL
         /// </summary>
         private void InitialPass()
         {
-            FatalCheck(_ilBytes.Length > 0, VerifierError.CodeSizeZero);
-
             _modifiesThisPtr = false;
             _validTargetOffsets = new bool[_ilBytes.Length];
 
