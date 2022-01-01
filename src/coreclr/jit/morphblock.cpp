@@ -281,15 +281,11 @@ void MorphInitBlockHelper::PrepareDst()
         m_dstLclNum    = m_dstLclNode->GetLclNum();
         m_dstLclOffset = m_dstLclNode->GetLclOffs();
 
-#if LOCAL_ASSERTION_PROP
-
         // Kill everything about m_dstLclNum (and its field locals)
         if (m_comp->optLocalAssertionProp && (m_comp->optAssertionCount > 0))
         {
             m_comp->fgKillDependentAssertions(m_dstLclNum DEBUGARG(m_asg));
         }
-
-#endif // LOCAL_ASSERTION_PROP
     }
 
 #if defined(DEBUG)
@@ -1483,12 +1479,10 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             noway_assert(m_comp->lvaGetDesc(m_dstLclNum)->IsAddressExposed());
         }
 
-#if LOCAL_ASSERTION_PROP
         if (m_comp->optLocalAssertionProp)
         {
             m_comp->optAssertionGen(asgOneFld);
         }
-#endif // LOCAL_ASSERTION_PROP
 
         if (addrSpillAsg != nullptr)
         {

@@ -14,8 +14,8 @@ namespace Internal.Runtime.CompilerServices
             bool slotChanged = false;
 
             IntPtr resolution = IntPtr.Zero;
-            IntPtr functionPointer = IntPtr.Zero;
-            IntPtr genericDictionary = IntPtr.Zero;
+            IntPtr functionPointer;
+            IntPtr genericDictionary;
 
             bool lookForDefaultImplementations = false;
 

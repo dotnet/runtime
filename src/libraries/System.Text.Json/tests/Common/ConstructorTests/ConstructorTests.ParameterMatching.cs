@@ -1322,5 +1322,68 @@ namespace System.Text.Json.Serialization.Tests
 
             public ClassWithIgnoredSameType(ClassWithIgnoredSameType prop) { }
         }
+
+        [Fact]
+        public void StructWithPropertyInit_DeseralizeEmptyObject()
+        {
+            string json = @"{}";
+            var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            Assert.Equal(42, obj.A);
+            Assert.Equal(0, obj.B);
+        }
+
+        [Fact]
+        public void StructWithPropertyInit_OverrideInitedProperty()
+        {
+            string json = @"{""A"":43}";
+            var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            Assert.Equal(43, obj.A);
+            Assert.Equal(0, obj.B);
+            
+            json = @"{""A"":0,""B"":44}";
+            obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            Assert.Equal(0, obj.A);
+            Assert.Equal(44, obj.B);
+            
+            json = @"{""B"":45}";
+            obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            Assert.Equal(42, obj.A); // JSON doesn't set A property so it's expected to be 42
+            Assert.Equal(45, obj.B);
+        }
+
+        public struct StructWithPropertyInit
+        {
+            public long A { get; set; } = 42;
+            public long B { get; set; }
+        }
+
+        [Fact]
+        public void StructWithFieldInit_DeseralizeEmptyObject()
+        {
+            string json = @"{}";
+            var obj = JsonSerializer.Deserialize<StructWithFieldInit>(json);
+            Assert.Equal(0, obj.A);
+            Assert.Equal(42, obj.B);
+        }
+
+        public struct StructWithFieldInit
+        {
+            public long A;
+            public long B = 42;
+        }
+
+        [Fact]
+        public void StructWithExplicitParameterlessCtor_DeseralizeEmptyObject()
+        {
+            string json = @"{}";
+            var obj = JsonSerializer.Deserialize<StructWithExplicitParameterlessCtor>(json);
+            Assert.Equal(42, obj.A);
+        }
+
+        public struct StructWithExplicitParameterlessCtor
+        {
+            public long A;
+            public StructWithExplicitParameterlessCtor() => A = 42;
+        }
     }
 }

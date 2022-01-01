@@ -7,6 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly pointer { }
 .field public static int32 temp at D_00004000
 .method public static class System.String 
@@ -56,8 +57,13 @@
   IL_0047:  ret
 } 
 
+.class public auto ansi beforefieldinit Test_pointer extends [mscorlib]System.Object
+{
 .method public static int32 main() il managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  2
   .locals (int32 V_0,
@@ -95,6 +101,16 @@
   IL_003c:  ldc.i4 0x64
   			ret
 } 
+
+.method public hidebysig  specialname rtspecialname
+        instance void .ctor() il managed
+{
+  .maxstack  8
+  IL_0000:  ldarg.0
+  IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+  IL_0006:  ret
+}
+}
 
 .data D_00004000 = bytearray (
                  00 00 00 00) 

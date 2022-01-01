@@ -3,6 +3,10 @@ TOP=$(realpath $(CURDIR)/../../..)
 
 escape_quote = $(subst ",\",$(1))
 
+ifneq ($(V),)
+MSBUILD_ARGS+=/p:MonoVerboseBuild=true
+endif
+
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver

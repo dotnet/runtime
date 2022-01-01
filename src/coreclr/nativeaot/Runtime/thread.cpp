@@ -1202,10 +1202,7 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
         // The TSF_DoNotTriggerGc mode is handled by the fast path (InlineTryFastReversePInvoke or equivalent assembly code)
         ASSERT(!IsDoNotTriggerGcSet());
 
-        // The platform specific assembly PInvoke helpers will route this fault to the class library inferred from the return
-        // address for nicer error reporting. For configurations without assembly helpers, we are going to fail fast without
-        // going through the class library here.
-        // RhpReversePInvokeBadTransition(return address);
+        PalPrintFatalError("\nFatal error. Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.\n");
         RhFailFast();
    }
 
