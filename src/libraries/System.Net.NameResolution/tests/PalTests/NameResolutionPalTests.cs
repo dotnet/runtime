@@ -181,12 +181,22 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(aliases);
             Assert.NotNull(addresses);
 
-            string name = NameResolutionPal.TryGetNameInfo(addresses[0], out error, out nativeErrorCode);
-            if (error == SocketError.HostNotFound)
+            // Not all addresses returned by TryGetAddInfo can be resolved to host names, depending on network configuration.
+            // However at least one should be.
+            string name = null;
+            foreach(IPAddress address in addresses)
+            {
+                name = NameResolutionPal.TryGetNameInfo(address, out error, out nativeErrorCode);
+                if (error != SocketError.HostNotFound)
+                {
+                    break;
+                }
+            }
+
+            if (error == SocketError.HostNotFound && Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 // On Unix, getaddrinfo returns private ipv4 address for hostname. If the OS doesn't have the
                 // reverse dns lookup entry for this address, getnameinfo returns host not found.
-                Assert.Equal(PlatformID.Unix, Environment.OSVersion.Platform);
                 return;
             }
 
