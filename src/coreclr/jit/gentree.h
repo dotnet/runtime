@@ -82,15 +82,9 @@ enum genTreeOps : BYTE
 #endif
 };
 
-/*****************************************************************************
- *
- *  The following enum defines a set of bit flags that can be used
- *  to classify expression tree nodes. Note that some operators will
- *  have more than one bit set, as follows:
- *
- *          GTK_LOGOP    implies    GTK_BINOP
- */
-
+// The following enum defines a set of bit flags that can be used
+// to classify expression tree nodes.
+//
 enum genTreeKinds
 {
     GTK_SPECIAL = 0x0000, // unclassified operator (special handling reqd)
@@ -100,7 +94,7 @@ enum genTreeKinds
     GTK_UNOP  = 0x0004, // unary        operator
     GTK_BINOP = 0x0008, // binary       operator
 //            = 0x0010, // unused
-    GTK_LOGOP = 0x0020, // logical      operator
+//            = 0x0020, // unused
 
     GTK_KINDMASK = 0x007F, // operator kind mask
 
@@ -118,7 +112,7 @@ enum genTreeKinds
 
     /* Define composite value(s) */
 
-    GTK_SMPOP = (GTK_UNOP | GTK_BINOP | GTK_LOGOP)
+    GTK_SMPOP = (GTK_UNOP | GTK_BINOP)
 };
 
 /*****************************************************************************/
@@ -1367,16 +1361,6 @@ public:
     bool OperIsLocalRead() const
     {
         return OperIsLocalRead(OperGet());
-    }
-
-    static bool OperIsLogical(genTreeOps gtOper)
-    {
-        return (OperKind(gtOper) & GTK_LOGOP) != 0;
-    }
-
-    bool OperIsLogical() const
-    {
-        return (OperKind(gtOper) & GTK_LOGOP) != 0;
     }
 
     static bool OperIsCompare(genTreeOps gtOper)

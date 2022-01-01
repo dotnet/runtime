@@ -110,9 +110,9 @@ GTNODE(MOD              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(UDIV             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(UMOD             , GenTreeOp          ,0,GTK_BINOP)
 
-GTNODE(OR               , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
-GTNODE(XOR              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
-GTNODE(AND              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
+GTNODE(OR               , GenTreeOp          ,1,GTK_BINOP)
+GTNODE(XOR              , GenTreeOp          ,1,GTK_BINOP)
+GTNODE(AND              , GenTreeOp          ,1,GTK_BINOP)
 
 GTNODE(LSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSH              , GenTreeOp          ,0,GTK_BINOP)
