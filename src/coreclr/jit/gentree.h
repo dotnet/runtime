@@ -1189,11 +1189,6 @@ public:
         return (OperKind(gtOper) & GTK_LEAF) != 0;
     }
 
-    static bool OperIsCompare(genTreeOps gtOper)
-    {
-        return (OperKind(gtOper) & GTK_RELOP) != 0;
-    }
-
     static bool OperIsLocal(genTreeOps gtOper)
     {
         bool result = (OperKind(gtOper) & GTK_LOCAL) != 0;
@@ -1375,11 +1370,6 @@ public:
         return OperIsLocalRead(OperGet());
     }
 
-    bool OperIsCompare() const
-    {
-        return (OperKind(gtOper) & GTK_RELOP) != 0;
-    }
-
     static bool OperIsLogical(genTreeOps gtOper)
     {
         return (OperKind(gtOper) & GTK_LOGOP) != 0;
@@ -1388,6 +1378,16 @@ public:
     bool OperIsLogical() const
     {
         return (OperKind(gtOper) & GTK_LOGOP) != 0;
+    }
+
+    static bool OperIsCompare(genTreeOps gtOper)
+    {
+        return (OperKind(gtOper) & GTK_RELOP) != 0;
+    }
+
+    bool OperIsCompare() const
+    {
+        return (OperKind(gtOper) & GTK_RELOP) != 0;
     }
 
     static bool OperIsShift(genTreeOps gtOper)
@@ -1507,16 +1507,6 @@ public:
     bool OperIsSimple() const
     {
         return OperIsSimple(gtOper);
-    }
-
-    static bool OperIsRelop(genTreeOps gtOper)
-    {
-        return (OperKind(gtOper) & GTK_RELOP) != 0;
-    }
-
-    bool OperIsRelop() const
-    {
-        return OperIsRelop(gtOper);
     }
 
 #ifdef FEATURE_SIMD
