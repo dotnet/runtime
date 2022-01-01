@@ -5945,7 +5945,7 @@ public:
 
     bool fgReorderBlocks();
 
-    void fgDetermineFirstColdBlock();
+    PhaseStatus fgDetermineFirstColdBlock();
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
 
@@ -6926,7 +6926,7 @@ public:
         }
 
 #ifdef DEBUG
-        void lpValidatePreHeader()
+        void lpValidatePreHeader() const
         {
             // If this is called, we expect there to be a pre-header.
             assert(lpFlags & LPFLG_HAS_PREHEAD);
@@ -6986,6 +6986,8 @@ public:
                        BasicBlock*   bottom,
                        BasicBlock*   exit,
                        unsigned char exitCnt);
+
+    void optClearLoopIterInfo();
 
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
