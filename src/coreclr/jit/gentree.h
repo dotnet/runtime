@@ -88,7 +88,6 @@ enum genTreeOps : BYTE
  *  to classify expression tree nodes. Note that some operators will
  *  have more than one bit set, as follows:
  *
- *          GTK_RELOP    implies    GTK_BINOP
  *          GTK_LOGOP    implies    GTK_BINOP
  */
 
@@ -100,7 +99,7 @@ enum genTreeKinds
     GTK_LEAF  = 0x0002, // leaf         operator
     GTK_UNOP  = 0x0004, // unary        operator
     GTK_BINOP = 0x0008, // binary       operator
-    GTK_RELOP = 0x0010, // comparison   operator
+//            = 0x0010, // unused
     GTK_LOGOP = 0x0020, // logical      operator
 
     GTK_KINDMASK = 0x007F, // operator kind mask
@@ -119,7 +118,7 @@ enum genTreeKinds
 
     /* Define composite value(s) */
 
-    GTK_SMPOP = (GTK_UNOP | GTK_BINOP | GTK_RELOP | GTK_LOGOP)
+    GTK_SMPOP = (GTK_UNOP | GTK_BINOP | GTK_LOGOP)
 };
 
 /*****************************************************************************/
@@ -1382,12 +1381,13 @@ public:
 
     static bool OperIsCompare(genTreeOps gtOper)
     {
-        return (OperKind(gtOper) & GTK_RELOP) != 0;
+        static_assert_no_msg(OpersAreContigious(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE));
+        return (GT_EQ <= gtOper) && (gtOper <= GT_TEST_NE);
     }
 
     bool OperIsCompare() const
     {
-        return (OperKind(gtOper) & GTK_RELOP) != 0;
+        return OperIsCompare(OperGet());
     }
 
     static bool OperIsShift(genTreeOps gtOper)

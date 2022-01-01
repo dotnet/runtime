@@ -2189,7 +2189,7 @@ AssertionIndex Compiler::optCreateJtrueAssertions(GenTree*                   op1
 AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
 {
     GenTree* relop = tree->gtGetOp1();
-    if ((relop->OperKind() & GTK_RELOP) == 0)
+    if (!relop->OperIsCompare())
     {
         return NO_ASSERTION_INDEX;
     }
@@ -2349,7 +2349,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     GenTree* relop = tree->AsOp()->gtOp1;
-    if ((relop->OperKind() & GTK_RELOP) == 0)
+    if (!relop->OperIsCompare())
     {
         return NO_ASSERTION_INDEX;
     }
@@ -3608,7 +3608,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
 
 GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    assert(tree->OperKind() & GTK_RELOP);
+    assert(tree->OperIsCompare());
 
     if (!optLocalAssertionProp)
     {

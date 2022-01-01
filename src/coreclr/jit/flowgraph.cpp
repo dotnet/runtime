@@ -1269,7 +1269,7 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     // If tree is a relop and we need an 4-byte integer
     //  then we never need to insert a cast
     //
-    if ((tree->OperKind() & GTK_RELOP) && (genActualType(toType) == TYP_INT))
+    if (tree->OperIsCompare() && (genActualType(toType) == TYP_INT))
     {
         return false;
     }

@@ -4191,7 +4191,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
             }
         }
-        else if (kind & GTK_RELOP)
+        else if (GenTree::OperIsCompare(oper))
         {
             /* Float compares remove both operands from the FP stack */
             /* Also FP comparison uses EAX for flags */
@@ -15699,7 +15699,7 @@ bool GenTree::isContained() const
     // these actually produce a register (the flags reg, we just don't model it)
     // and are a separate instruction from the branch that consumes the result.
     // They can only produce a result if the child is a SIMD equality comparison.
-    else if (OperKind() & GTK_RELOP)
+    else if (OperIsCompare())
     {
         assert(isMarkedContained == false);
     }
