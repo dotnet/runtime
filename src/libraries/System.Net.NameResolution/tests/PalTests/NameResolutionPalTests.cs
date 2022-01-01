@@ -155,7 +155,18 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(aliases);
             Assert.NotNull(addresses);
 
-            string name = NameResolutionPal.TryGetNameInfo(addresses[0], out error, out nativeErrorCode);
+            // Not all addresses returned by TryGetAddInfo can be resolved to host names, depending on network configuration.
+            // However at least one should be.
+            string name = null;
+            foreach(IPAddress address in addresses)
+            {
+                name = NameResolutionPal.TryGetNameInfo(address, out error, out nativeErrorCode);
+                if (error != SocketError.HostNotFound)
+                {
+                    break;
+                }
+            }
+
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(name);
         }
