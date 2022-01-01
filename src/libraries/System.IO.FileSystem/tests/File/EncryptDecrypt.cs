@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 namespace System.IO.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-    public class EncryptDecrypt : FileSystemTest
+    public partial class EncryptDecrypt : FileSystemTest
     {
         private readonly ITestOutputHelper _output;
 
@@ -64,7 +64,7 @@ namespace System.IO.Tests
                 }
                 catch (IOException e)
                 {
-                    _output.WriteLine($"Encrypt failed with {e.Message}. Logging some EFS diagnostics..");
+                    _output.WriteLine($"Encrypt failed with {e.Message} 0x{e.HResult:X}");
                     LogEFSDiagnostics();
                     throw;
                 }
@@ -82,73 +82,6 @@ namespace System.IO.Tests
             }
         }
 
-        private void LogEFSDiagnostics()
-        {
-            try
-            {
-                using var sc = new ServiceController("EFS");
-                _output.WriteLine($"EFS service is: {sc.Status}");
-                if (sc.Status != ServiceControllerStatus.Running)
-                {
-                    _output.WriteLine("Trying to start EFS service");
-                    sc.Start();
-                    _output.WriteLine($"EFS service is now: {sc.Status}");
-                }
-            }
-            catch(Exception e)
-            {
-                _output.WriteLine(e.ToString());
-            }
-
-            var hours = 1; // how many hours to look backwards
-            var query = @$"
-                        <QueryList>
-                          <Query Id='0' Path='System'>
-                            <Select Path='System'>
-                                *[System[Provider/@Name='Server']]
-                            </Select>
-                            <Select Path='System'>
-                                *[System[Provider/@Name='Service Control Manager']]
-                            </Select>
-                            <Select Path='System'>
-                                *[System[Provider/@Name='Microsoft-Windows-EFS']]
-                            </Select>
-                            <Suppress Path='System'>
-                                *[System[TimeCreated[timediff(@SystemTime) &gt;= {hours * 60 * 60 * 1000L}]]]
-                            </Suppress>
-                          </Query>
-                        </QueryList> ";
-
-            var eventQuery = new EventLogQuery("System", PathType.LogName, query);
-
-            var eventReader = new EventLogReader(eventQuery);
-
-            EventRecord record = eventReader.ReadEvent();
-            var garbage = new string[] { "Background Intelligent", "Intel", "Defender", "Intune", "BITS", "NetBT"};
-
-            _output.WriteLine("=====  Dumping recent relevant events: =====");
-            while (record != null)
-            {
-                string description = "";
-                try
-                {
-                    description = record.FormatDescription();
-                }
-                catch (EventLogException) { }
-
-                foreach (string term in garbage)
-                {
-                    if (description.Contains(term, StringComparison.OrdinalIgnoreCase))
-                        goto next;
-                }
-
-                _output.WriteLine($"{record.TimeCreated} {record.ProviderName} [{record.LevelDisplayName} {record.Id}] {description.Replace("\r\n", "  ")}");
-
-            next:
-                record = eventReader.ReadEvent();
-            }
-
-            _output.WriteLine("==== Finished dumping =====");
-        }
+        partial void LogEFSDiagnostics(); // no-op on Unix currently
     }
 }
