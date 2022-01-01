@@ -1158,6 +1158,21 @@ public:
         return OperIs(oper) || OperIs(rest...);
     }
 
+private:
+    static constexpr bool OpersAreContigious(genTreeOps firstOper, genTreeOps secondOper)
+    {
+        return (firstOper + 1) == secondOper;
+    }
+
+    template <typename... Opers>
+    static constexpr bool OpersAreContigious(genTreeOps firstOper, genTreeOps secondOper, Opers... otherOpers)
+    {
+        return OpersAreContigious(firstOper, secondOper) && OpersAreContigious(secondOper, otherOpers...);
+    }
+
+    static_assert_no_msg(OpersAreContigious(GT_ADD, GT_SUB, GT_MUL));
+
+public:
     static bool OperIsConst(genTreeOps gtOper)
     {
         return (OperKind(gtOper) & GTK_CONST) != 0;
