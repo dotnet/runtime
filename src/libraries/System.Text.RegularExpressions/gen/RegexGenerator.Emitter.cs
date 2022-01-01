@@ -223,7 +223,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
 
             writer.WriteLine("            // Description:");
-            DescribeExpression(writer, rm.Code.Tree.Root.Child(0), "            // "); // skip implicit root capture
+            DescribeExpression(writer, rm.Code.Tree.Root.Child(0), "            // ", rm.Code.Tree); // skip implicit root capture
             writer.WriteLine();
 
             writer.WriteLine($"            protected override bool FindFirstChar()");
@@ -1702,7 +1702,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Put the node's code into its own scope. If the node contains labels that may need to
                 // be visible outside of its scope, the scope is still emitted for clarity but is commented out.
-                using (EmitScope(writer, DescribeNode(node), faux: PossiblyBacktracks(node) && !node.IsAtomicByParent()))
+                using (EmitScope(writer, DescribeNode(node, rm.Code.Tree), faux: PossiblyBacktracks(node) && !node.IsAtomicByParent()))
                 {
                     switch (node.Type)
                     {
@@ -3395,7 +3395,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Gets a textual description of the node fit for rendering in a comment in source.</summary>
-        private static string DescribeNode(RegexNode node) =>
+        private static string DescribeNode(RegexNode node, RegexTree regexTree = null) =>
             node.Type switch
             {
                 RegexNode.Alternate => $"Match with {node.ChildCount()} alternative expressions{(node.IsAtomicByParent() ? ", atomically" : "")}.",
@@ -3403,8 +3403,8 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.Beginning => "Match if at the beginning of the string.",
                 RegexNode.Bol => "Match if at the beginning of a line.",
                 RegexNode.Boundary => $"Match if at a word boundary.",
-                RegexNode.Capture when node.N != -1 => $"{DescribeNonNegative(node.M)} capturing group. Uncaptures the {DescribeNonNegative(node.N)} capturing group.",
-                RegexNode.Capture when node.N == -1 => $"{DescribeNonNegative(node.M)} capturing group.",
+                RegexNode.Capture when node.N != -1 => $"{DescribeNonNegative(node.M)} capturing group ({Literal(DescribeCapture(node.M, regexTree))}). Uncaptures the {DescribeNonNegative(node.N)} capturing group ({Literal(DescribeCapture(node.N, regexTree))}).",
+                RegexNode.Capture when node.N == -1 => $"{DescribeNonNegative(node.M)} capturing group ({Literal(DescribeCapture(node.M, regexTree))}).",
                 RegexNode.Concatenate => "Match a sequence of expressions.",
                 RegexNode.ECMABoundary => $"Match if at a word boundary (according to ECMAScript rules).",
                 RegexNode.Empty => $"Match an empty string.",
@@ -3436,8 +3436,9 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="writer">The writer to which the description should be written.</param>
         /// <param name="node">The node being written.</param>
         /// <param name="prefix">The prefix to write at the beginning of every line, including a "//" for a comment.</param>
+        /// <param name="regexTree">regex tree</param>
         /// <param name="depth">The depth of the current node.</param>
-        private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, int depth = 0)
+        private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, RegexTree regexTree, int depth = 0)
         {
             bool skip = node.Type switch
             {
@@ -3468,7 +3469,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Write out the line for the node.
                 const char BulletPoint = '\u25CB';
-                writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {tag}{DescribeNode(node)}");
+                writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {tag}{DescribeNode(node, regexTree)}");
             }
 
             // Recur into each of its children.
@@ -3476,7 +3477,7 @@ namespace System.Text.RegularExpressions.Generator
             for (int i = 0; i < childCount; i++)
             {
                 int childDepth = skip ? depth : depth + 1;
-                DescribeExpression(writer, node.Child(i), prefix, childDepth);
+                DescribeExpression(writer, node.Child(i), prefix, regexTree, childDepth);
             }
         }
 
@@ -3585,6 +3586,12 @@ namespace System.Text.RegularExpressions.Generator
             None,
             /// <summary>The IsWordChar helper is required.</summary>
             IsWordChar
+        }
+
+        /// <summary>describes capture name</summary>
+        private static string DescribeCapture(int capNum, RegexTree regexTree)
+        {
+            return RegexParser.GroupNameFromNumber(null, regexTree.CapsList, regexTree.Caps.Count, capNum);
         }
     }
 }
