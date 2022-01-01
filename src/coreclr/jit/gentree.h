@@ -88,7 +88,6 @@ enum genTreeOps : BYTE
  *  to classify expression tree nodes. Note that some operators will
  *  have more than one bit set, as follows:
  *
- *          GTK_CONST    implies    GTK_LEAF
  *          GTK_RELOP    implies    GTK_BINOP
  *          GTK_LOGOP    implies    GTK_BINOP
  */
@@ -97,7 +96,7 @@ enum genTreeKinds
 {
     GTK_SPECIAL = 0x0000, // unclassified operator (special handling reqd)
 
-    GTK_CONST = 0x0001, // constant     operator
+//            = 0x0001, // unused
     GTK_LEAF  = 0x0002, // leaf         operator
     GTK_UNOP  = 0x0004, // unary        operator
     GTK_BINOP = 0x0008, // binary       operator
@@ -686,6 +685,17 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
+constexpr bool OpersAreContigious(genTreeOps firstOper, genTreeOps secondOper)
+{
+    return (firstOper + 1) == secondOper;
+}
+
+template <typename... Opers>
+constexpr bool OpersAreContigious(genTreeOps firstOper, genTreeOps secondOper, Opers... otherOpers)
+{
+    return OpersAreContigious(firstOper, secondOper) && OpersAreContigious(secondOper, otherOpers...);
+}
+
 #ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
@@ -1158,29 +1168,15 @@ public:
         return OperIs(oper) || OperIs(rest...);
     }
 
-private:
-    static constexpr bool OpersAreContigious(genTreeOps firstOper, genTreeOps secondOper)
-    {
-        return (firstOper + 1) == secondOper;
-    }
-
-    template <typename... Opers>
-    static constexpr bool OpersAreContigious(genTreeOps firstOper, genTreeOps secondOper, Opers... otherOpers)
-    {
-        return OpersAreContigious(firstOper, secondOper) && OpersAreContigious(secondOper, otherOpers...);
-    }
-
-    static_assert_no_msg(OpersAreContigious(GT_ADD, GT_SUB, GT_MUL));
-
-public:
     static bool OperIsConst(genTreeOps gtOper)
     {
-        return (OperKind(gtOper) & GTK_CONST) != 0;
+        static_assert_no_msg(OpersAreContigious(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR));
+        return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_STR);
     }
 
     bool OperIsConst() const
     {
-        return (OperKind(gtOper) & GTK_CONST) != 0;
+        return OperIsConst(gtOper);
     }
 
     static bool OperIsLeaf(genTreeOps gtOper)

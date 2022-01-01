@@ -34,10 +34,10 @@ GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,GTK_LEAF|GTK_NOTLIR)    // Place
 //  Constant nodes:
 //-----------------------------------------------------------------------------
 
-GTNODE(CNS_INT          , GenTreeIntCon      ,0,(GTK_LEAF|GTK_CONST))
-GTNODE(CNS_LNG          , GenTreeLngCon      ,0,(GTK_LEAF|GTK_CONST))
-GTNODE(CNS_DBL          , GenTreeDblCon      ,0,(GTK_LEAF|GTK_CONST))
-GTNODE(CNS_STR          , GenTreeStrCon      ,0,(GTK_LEAF|GTK_CONST))
+GTNODE(CNS_INT          , GenTreeIntCon      ,0,GTK_LEAF)
+GTNODE(CNS_LNG          , GenTreeLngCon      ,0,GTK_LEAF)
+GTNODE(CNS_DBL          , GenTreeDblCon      ,0,GTK_LEAF)
+GTNODE(CNS_STR          , GenTreeStrCon      ,0,GTK_LEAF)
 
 //-----------------------------------------------------------------------------
 //  Unary  operators (1 operand):
