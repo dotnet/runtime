@@ -16,15 +16,22 @@
 GTNODE(NONE             , char               ,0,GTK_SPECIAL)
 
 //-----------------------------------------------------------------------------
+//  Nodes related to locals:
+//-----------------------------------------------------------------------------
+
+GTNODE(PHI              , GenTreePhi         ,0,GTK_SPECIAL)            // phi node for ssa.
+GTNODE(PHI_ARG          , GenTreePhiArg      ,0,GTK_LEAF)               // phi(phiarg, phiarg, phiarg)
+GTNODE(LCL_VAR          , GenTreeLclVar      ,0,GTK_LEAF)               // local variable
+GTNODE(LCL_FLD          , GenTreeLclFld      ,0,GTK_LEAF)               // field in a non-primitive variable
+GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,(GTK_UNOP|GTK_NOVALUE)) // store to local variable
+GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,(GTK_UNOP|GTK_NOVALUE)) // store to a part of the variable
+GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)               // address of local variable
+GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)               // address of field in a non-primitive variable
+
+//-----------------------------------------------------------------------------
 //  Leaf nodes (i.e. these nodes have no sub-operands):
 //-----------------------------------------------------------------------------
 
-GTNODE(LCL_VAR          , GenTreeLclVar      ,0,(GTK_LEAF|GTK_LOCAL))     // local variable
-GTNODE(LCL_FLD          , GenTreeLclFld      ,0,(GTK_LEAF|GTK_LOCAL))     // field in a non-primitive variable
-GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)               // address of local variable
-GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)               // address of field in a non-primitive variable
-GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,(GTK_UNOP|GTK_LOCAL|GTK_NOVALUE)) // store to local variable
-GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,(GTK_UNOP|GTK_LOCAL|GTK_NOVALUE)) // store to field in a non-primitive variable
 GTNODE(CATCH_ARG        , GenTree            ,0,GTK_LEAF)               // Exception object in a catch block
 GTNODE(LABEL            , GenTree            ,0,GTK_LEAF)               // Jump-target
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,GTK_LEAF)               // Address of a function
@@ -258,13 +265,6 @@ GTNODE(RETFILT          , GenTreeOp          ,0,(GTK_UNOP|GTK_NOVALUE))   // end
 #if !defined(FEATURE_EH_FUNCLETS)
 GTNODE(END_LFIN         , GenTreeVal         ,0,(GTK_LEAF|GTK_NOVALUE))   // end locally-invoked finally
 #endif // !FEATURE_EH_FUNCLETS
-
-//-----------------------------------------------------------------------------
-//  Nodes used for optimizations.
-//-----------------------------------------------------------------------------
-
-GTNODE(PHI              , GenTreePhi         ,0,GTK_SPECIAL)              // phi node for ssa.
-GTNODE(PHI_ARG          , GenTreePhiArg      ,0,(GTK_LEAF|GTK_LOCAL))     // phi(phiarg, phiarg, phiarg)
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
