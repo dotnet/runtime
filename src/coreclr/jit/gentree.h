@@ -87,32 +87,20 @@ enum genTreeOps : BYTE
 //
 enum genTreeKinds
 {
-    GTK_SPECIAL = 0x0000, // unclassified operator (special handling reqd)
+    GTK_SPECIAL = 0x00, // special operator
+    GTK_LEAF    = 0x01, // leaf    operator
+    GTK_UNOP    = 0x02, // unary   operator
+    GTK_BINOP   = 0x04, // binary  operator
 
-//            = 0x0001, // unused
-    GTK_LEAF  = 0x0002, // leaf         operator
-    GTK_UNOP  = 0x0004, // unary        operator
-    GTK_BINOP = 0x0008, // binary       operator
-//            = 0x0010, // unused
-//            = 0x0020, // unused
+    GTK_KINDMASK = (GTK_SPECIAL | GTK_LEAF | GTK_UNOP | GTK_BINOP), // operator kind mask
+    GTK_SMPOP    = (GTK_UNOP | GTK_BINOP),
 
-    GTK_KINDMASK = 0x007F, // operator kind mask
-
-    GTK_COMMUTE = 0x0080, // commutative  operator
-
-    GTK_EXOP = 0x0100, // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
-                       // by adding non-node fields to unary or binary operator.
-
-//              = 0x0200, // unused
-
-    GTK_NOVALUE = 0x0400, // node does not produce a value
-    GTK_NOTLIR  = 0x0800, // node is not allowed in LIR
-
-    GTK_NOCONTAIN = 0x1000, // this node is a value, but may not be contained
-
-    /* Define composite value(s) */
-
-    GTK_SMPOP = (GTK_UNOP | GTK_BINOP)
+    GTK_COMMUTE = 0x08,   // commutative  operator
+    GTK_EXOP    = 0x10,   // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
+                          // by adding non-node fields to unary or binary operator.
+    GTK_NOVALUE   = 0x20, // node does not produce a value
+    GTK_NOTLIR    = 0x40, // node is not allowed in LIR
+    GTK_NOCONTAIN = 0x80, // this node is a value, but may not be contained
 };
 
 /*****************************************************************************/
@@ -1046,7 +1034,7 @@ public:
     int gtUseNum; // use-ordered traversal within the function
 #endif
 
-    static const unsigned short gtOperKindTable[];
+    static const unsigned char gtOperKindTable[];
 
     static unsigned OperKind(unsigned gtOper)
     {
@@ -1184,7 +1172,8 @@ public:
 
     static bool OperIsLocal(genTreeOps gtOper)
     {
-        static_assert_no_msg(OpersAreContigious(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
+        static_assert_no_msg(
+            OpersAreContigious(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
         return (GT_PHI_ARG <= gtOper) && (gtOper <= GT_STORE_LCL_FLD);
     }
 

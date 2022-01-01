@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-const unsigned short GenTree::gtOperKindTable[] = {
+const unsigned char GenTree::gtOperKindTable[] = {
 #define GTNODE(en, st, cm, ok) (ok) + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
