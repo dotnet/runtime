@@ -26,7 +26,7 @@ namespace System.IO.Tests
                     _output.WriteLine($"EFS service is now: {sc.Status}");
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
             }
