@@ -17,6 +17,7 @@
 .class public auto ansi TestStack
        extends ['mscorlib']System.Object
 {
+  .field public static int32 s_exitCode;
   .field public int32[] Stack
   .field public int32 top
   .method public hidebysig instance void
@@ -58,13 +59,13 @@
     IL_003c:  brtrue.s   IL_0051
 
     IL_003e:  ldc.i4.s   100
-    IL_0040:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_0040:  stsfld     int32 TestStack::s_exitCode
     IL_0045:  ldstr      "Test passed"
     IL_004a:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_004f:  br.s       IL_0061
 
     IL_0051:  ldc.i4.1
-    IL_0052:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_0052:  stsfld     int32 TestStack::s_exitCode
     IL_0057:  ldstr      "Test failed"
     IL_005c:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0061:  br.s       IL_0063
@@ -139,7 +140,7 @@
 .class public auto ansi Test_switch5
        extends ['mscorlib']System.Object
 {
-  .method public hidebysig static void Main() il managed
+  .method public hidebysig static int32 Main() il managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -161,8 +162,7 @@
     IL_001b:  ldloc.0
     IL_001c:  ldc.i4.3
     IL_001d:  call       instance void TestStack::DoSwitch(int32)
-    IL_0022:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
-              call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
+              ldsfld     int32 TestStack::s_exitCode
               ret
   }
 
