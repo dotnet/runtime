@@ -303,7 +303,7 @@ namespace Internal.Cryptography.Pal
                             return string.Empty;
                     }
 
-                    return new string(buffer.Slice(0, (cbData / 2) - 1));
+                    return new string(buffer.Slice(0, ((int)cbData / 2) - 1));
                 }
             }
 
