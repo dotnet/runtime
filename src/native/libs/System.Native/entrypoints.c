@@ -21,7 +21,6 @@
 #include "pal_networkstatistics.h"
 #include "pal_process.h"
 #include "pal_random.h"
-#include "pal_runtimeextensions.h"
 #include "pal_runtimeinformation.h"
 #include "pal_searchpath.h"
 #include "pal_signal.h"
@@ -118,7 +117,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_AlignedRealloc)
     DllImportEntry(SystemNative_Calloc)
     DllImportEntry(SystemNative_Free)
-    DllImportEntry(SystemNative_GetUsableSize)
     DllImportEntry(SystemNative_Malloc)
     DllImportEntry(SystemNative_MemSet)
     DllImportEntry(SystemNative_Realloc)
@@ -214,18 +212,15 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetProcessPath)
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes)
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes)
-    DllImportEntry(SystemNative_GetNodeName)
     DllImportEntry(SystemNative_GetUnixName)
     DllImportEntry(SystemNative_GetUnixRelease)
     DllImportEntry(SystemNative_GetUnixVersion)
     DllImportEntry(SystemNative_GetOSArchitecture)
-    DllImportEntry(SystemNative_GetProcessArchitecture)
     DllImportEntry(SystemNative_SearchPath)
     DllImportEntry(SystemNative_SearchPath_TempDirectory)
     DllImportEntry(SystemNative_RegisterForSigChld)
     DllImportEntry(SystemNative_SetDelayedSigChildConsoleConfigurationHandler)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)
-    DllImportEntry(SystemNative_InitializeTerminalAndSignalHandling)
     DllImportEntry(SystemNative_SNPrintF)
     DllImportEntry(SystemNative_Sysctl)
     DllImportEntry(SystemNative_MapTcpState)

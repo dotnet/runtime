@@ -2992,7 +2992,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_IMUL_OVF:
 			x86_imul_reg_reg (code, ins->sreg1, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, "OverflowException");
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, ins->inst_exc_name);
 			break;
 		case OP_IMUL_OVF_UN: {
 			/* the mul operation and the exception check should most likely be split */
@@ -3028,7 +3028,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_pop_reg (code, X86_EDX);
 			if (saved_eax)
 				x86_pop_reg (code, X86_EAX);
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, "OverflowException");
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, ins->inst_exc_name);
 			break;
 		}
 		case OP_ICONST:

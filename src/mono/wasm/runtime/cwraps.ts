@@ -21,7 +21,7 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_parse_runtime_options", null, ["number", "number"]],
     ["mono_wasm_strdup", "number", ["string"]],
     ["mono_background_exec", null, []],
-    ["mono_set_timeout_exec", null, ["number"]],
+    ["mono_set_timeout_exec", null, []],
     ["mono_wasm_load_icu_data", "number", ["number"]],
     ["mono_wasm_get_icudt_name", "string", ["string"]],
     ["mono_wasm_add_assembly", "number", ["string", "number", "number"]],
@@ -82,7 +82,7 @@ export interface t_Cwraps {
     mono_wasm_strdup(value: string): number;
     mono_wasm_parse_runtime_options(length: number, argv: VoidPtr): void;
     mono_background_exec(): void;
-    mono_set_timeout_exec(id: number): void;
+    mono_set_timeout_exec(): void;
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_get_icudt_name(name: string): string;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
