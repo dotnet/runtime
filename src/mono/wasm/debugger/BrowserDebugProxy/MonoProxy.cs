@@ -675,7 +675,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     objectValuesOpt |= GetObjectCommandOptions.OwnProperties;
                 }
             }
-            //Console.WriteLine($"RuntimeGetProperties - {args}");
             try {
                 switch (objectId.Scheme)
                 {

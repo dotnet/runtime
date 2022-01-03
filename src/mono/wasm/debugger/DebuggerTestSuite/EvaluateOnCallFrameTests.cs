@@ -971,7 +971,6 @@ namespace DebuggerTests
                 {
                     item["name"] = string.Concat("listRootHidden[", item["name"], "]");
                 }
-                // Console.WriteLine(testRootHiddenProps);
                 var mergedRefItems = new JArray(refListElementsProp.Union(refArrayProp));
                 Assert.Equal(mergedRefItems, testRootHiddenProps);
            });

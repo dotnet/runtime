@@ -2389,7 +2389,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 // but we are going to ignore that here, because otherwise vscode/chrome don't
                 // seem to ask for inherited fields at all.
                 //if (ownProperties)
-                //break;
+                    //break;
                 /*if (accessorPropertiesOnly)
                     break;*/
             }
