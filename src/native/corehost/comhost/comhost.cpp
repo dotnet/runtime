@@ -338,15 +338,14 @@ namespace
 
         RegKey regKey{ regKeyRaw };
 
-        // Set the default value for all COM host servers
-        const WCHAR defServerName[] = _X("CoreCLR COMHost Server");
+        // Set the default value, type name - this matches RegAsm behavior.
         res = ::RegSetValueExW(
             regKey.get(),
             nullptr,
             0,
             REG_SZ,
-            reinterpret_cast<const BYTE*>(defServerName),
-            static_cast<DWORD>(sizeof(defServerName)));
+            reinterpret_cast<const BYTE*>(entry.type.c_str()),
+            static_cast<DWORD>(entry.type.size() + 1) * sizeof(entry.type[0]));
         if (res != ERROR_SUCCESS)
             return __HRESULT_FROM_WIN32(res);
 
@@ -430,14 +429,14 @@ namespace
 
             regKey.reset(regProgIdKeyRaw);
 
-            // The default value for the key is the ProgID
+            // The default value for the key is the type - this matches RegAsm behavior.
             res = ::RegSetValueExW(
                 regKey.get(),
                 nullptr,
                 0,
                 REG_SZ,
-                reinterpret_cast<const BYTE*>(entry.progid.c_str()),
-                static_cast<DWORD>(entry.progid.size() + 1) * sizeof(entry.progid[0]));
+                reinterpret_cast<const BYTE*>(entry.type.c_str()),
+                static_cast<DWORD>(entry.type.size() + 1) * sizeof(entry.type[0]));
             if (res != ERROR_SUCCESS)
                 return __HRESULT_FROM_WIN32(res);
 
