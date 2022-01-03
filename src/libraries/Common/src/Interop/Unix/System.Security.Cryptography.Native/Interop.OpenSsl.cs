@@ -78,7 +78,7 @@ internal static partial class Interop
         // This is helper function to adjust requested protocols based on CipherSuitePolicy and system capability.
         private static SslProtocols CalculateEffectiveProtocols(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols;
+            SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols & ~((SslProtocols)1);
 
             if (!Interop.Ssl.Tls13Supported)
             {
