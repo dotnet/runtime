@@ -16,7 +16,7 @@
 #endif
 #if !HAVE_GETIFADDRS && TARGET_ANDROID
 #include <dlfcn.h>
-#include <pthread.h>
+#include <stdatomic.h>
 #endif
 #include <net/if.h>
 #include <netinet/in.h>
@@ -130,12 +130,13 @@ static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
 static bool ensure_getifaddrs_is_loaded()
 {
-    static bool loading_already_attempted = false;
-    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+    static atomic_bool initialized = false;
+    static atomic_bool access_guard = true;
 
-    if (pthread_mutex_lock(&lock) == 0)
+    while (!atomic_load(&initialized))
     {
-        if (!loading_already_attempted)
+        bool access_guard_initial_value = true;
+        if (atomic_compare_exchange_strong(&access_guard, &access_guard_initial_value, false))
         {
             void *libc = dlopen("libc.so", RTLD_NOW);
             if (libc)
@@ -144,10 +145,8 @@ static bool ensure_getifaddrs_is_loaded()
                 freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
             }
 
-            loading_already_attempted = true;
+            atomic_store(&initialized, true);
         }
-
-        pthread_mutex_unlock(&lock);
     }
 
     return getifaddrs != NULL && freeifaddrs != NULL;
