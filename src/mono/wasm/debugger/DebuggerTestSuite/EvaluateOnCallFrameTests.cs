@@ -995,6 +995,27 @@ namespace DebuggerTests
                await RuntimeEvaluateAndCheck(
                    ("a.valueToCheck", TNumber(20)));
            });
+
+        [Fact]
+        public async Task EvaluateProtectionLevels() =>  await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateProtectionLevels", "Evaluate", 2, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateProtectionLevels:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+               var (obj, _) = await EvaluateOnCallFrame(id, "testClass");
+               var (pub, internalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
+            
+               Assert.True(pub[0] != null);
+               Assert.True(internalAndProtected[0] != null);
+               Assert.True(internalAndProtected[1] != null);
+               Assert.True(priv[0] != null);
+
+               Assert.Equal(pub[0]["value"]["value"], "public");
+               Assert.Equal(internalAndProtected[0]["value"]["value"], "internal");
+               Assert.Equal(internalAndProtected[1]["value"]["value"], "protected");
+               Assert.Equal(priv[0]["value"]["value"], "private");
+           });
     }
 
 }
