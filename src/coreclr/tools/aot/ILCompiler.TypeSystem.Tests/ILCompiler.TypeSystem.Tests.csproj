@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>ILCompiler.TypeSystem.ReadyToRun.Tests</AssemblyName>
+    <AssemblyName>ILCompiler.TypeSystem.Tests</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Configurations>Debug;Release;Checked</Configurations>
     <!-- This seems to be required for supporting assemblies to be copied into the output -->
@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
-    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
     <!-- Make sure the test data gets built -->
     <ProjectReference Include="CoreTestAssembly\CoreTestAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
