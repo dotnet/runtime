@@ -1190,10 +1190,7 @@ namespace System
             // FALSE    =     transition time is wall clock time
             // ABSENT   =     transition time is wall clock time
             //
-            for (int i = 0; i < t.IsStdCount && i < t.TypeCount && index < data.Length; i++)
-            {
-                index++;
-            }
+            index += (int)Math.Min(t.IsStdCount, t.TypeCount);
 
             // read in the GMT Time table.  There should be a 1:1 mapping between Type-Index and GMT Time table
             // entries.
@@ -1202,10 +1199,7 @@ namespace System
             // FALSE    =     transition time is local time
             // ABSENT   =     transition time is local time
             //
-            for (int i = 0; i < t.IsGmtCount && i < t.TypeCount && index < data.Length; i++)
-            {
-                index++;
-            }
+            index += (int)Math.Min(t.IsGmtCount, t.TypeCount);
 
             if (t.Version != TZVersion.V1)
             {
