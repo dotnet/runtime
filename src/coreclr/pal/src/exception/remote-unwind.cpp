@@ -1383,11 +1383,9 @@ StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encodi
 #define AMD64_SYSCALL_OPCODE 0x050f
 
 static bool
-StepWithCompactNoEncoding(const libunwindInfo* info)
+StepSyscallWrapper(const libunwindInfo* info)
 {
-    // We get here because we found the function the IP is in the compact unwind info, but the encoding is 0. This
-    // usually ends the unwind but here we check that the function is a syscall "wrapper" and assume there is no
-    // frame and pop the return address.
+    // Check that the function is a syscall "wrapper" and assume there is no frame and pop the return address.
     uint16_t opcode;
     unw_word_t addr = info->Context->Rip - sizeof(opcode);
     if (!ReadValue16(info, &addr, &opcode)) {
@@ -1402,7 +1400,7 @@ StepWithCompactNoEncoding(const libunwindInfo* info)
         }
         // Is the IP pointing just after a "syscall" opcode + 1?
         if (opcode != AMD64_SYSCALL_OPCODE) {
-            ERROR("StepWithCompactNoEncoding: not in syscall wrapper function\n");
+            ERROR("StepSysCallWrapper: not in syscall wrapper function\n");
             return false;
         }
     }
@@ -1414,7 +1412,7 @@ StepWithCompactNoEncoding(const libunwindInfo* info)
     }
     info->Context->Rip = ip;
     info->Context->Rsp += sizeof(uint64_t);
-    TRACE("StepWithCompactNoEncoding: SUCCESS new rip %p rsp %p\n", (void*)info->Context->Rip, (void*)info->Context->Rsp);
+    TRACE("StepSysCallWrapper: SUCCESS new rip %p rsp %p\n", (void*)info->Context->Rip, (void*)info->Context->Rsp);
     return true;
 }
 
@@ -1560,7 +1558,10 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
 #if defined(TARGET_AMD64)
     if (compactEncoding == 0)
     {
-        return StepWithCompactNoEncoding(info);
+        // We get here because we found the function the IP is in the compact unwind info, but the
+        // encoding is 0. This usually ends the unwind. Check if the IP is in a syscall "wrapper"
+        // and assume there is no frame and pop the return address.
+        return StepSyscallWrapper(info);
     }
     switch (compactEncoding & UNWIND_X86_64_MODE_MASK)
     {
@@ -2131,6 +2132,11 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
 #endif
     if (!result)
     {
+#if defined(TARGET_AMD64)
+        // If we fail to find any unwind info, check if the IP is in a syscall "wrapper" and assume there
+        // is no frame and pop the return address.
+        result = StepSyscallWrapper(&info);
+#endif
         goto exit;
     }
     if (step)
