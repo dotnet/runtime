@@ -138,7 +138,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 {
 #if !HAVE_GETIFADDRS && TARGET_ANDROID
     // Workaround for Android API < 24
-    if (!ensure_getifaddrs_is_loaded())
+    if (!ensure_getifaddrs_is_available())
     {
         errno = ENOTSUP;
         return -1;
@@ -292,7 +292,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 {
 #if !HAVE_GETIFADDRS && TARGET_ANDROID
     // Workaround for Android API < 24
-    if (!ensure_getifaddrs_is_loaded())
+    if (!ensure_getifaddrs_is_available())
     {
         errno = ENOTSUP;
         return -1;
