@@ -35,8 +35,8 @@ namespace System.IO.Tests
 
         partial void LogEFSDiagnostics()
         {
-            var hours = 1; // how many hours to look backwards
-            var query = @$"
+            int hours = 1; // how many hours to look backwards
+            string query = @$"
                         <QueryList>
                           <Query Id='0' Path='System'>
                             <Select Path='System'>
@@ -56,7 +56,7 @@ namespace System.IO.Tests
 
             var eventQuery = new EventLogQuery("System", PathType.LogName, query);
 
-            var eventReader = new EventLogReader(eventQuery);
+            using var eventReader = new EventLogReader(eventQuery);
 
             EventRecord record = eventReader.ReadEvent();
             var garbage = new string[] { "Background Intelligent", "Intel", "Defender", "Intune", "BITS", "NetBT"};
