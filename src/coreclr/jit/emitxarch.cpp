@@ -54,6 +54,11 @@ bool emitter::IsBMIInstruction(instruction ins)
     return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
 }
 
+bool emitter::IsSHAInstruction(instruction ins)
+{
+    return (ins >= INS_sha1msg1) && (ins <= INS_sha256rnds2);
+}
+
 regNumber emitter::getBmiRegNumber(instruction ins)
 {
     switch (ins)
