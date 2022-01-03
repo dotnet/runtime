@@ -51,6 +51,8 @@ namespace System.IO.Tests
                 string fileContentRead = File.ReadAllText(tmpFileName);
                 Assert.Equal(textContentToEncrypt, fileContentRead);
 
+                EnsureEFSServiceStarted();
+
                 try
                 {
                     File.Encrypt(tmpFileName);
@@ -81,6 +83,8 @@ namespace System.IO.Tests
                 File.Delete(tmpFileName);
             }
         }
+
+        partial void EnsureEFSServiceStarted(); // no-op on Unix
 
         partial void LogEFSDiagnostics(); // no-op on Unix currently
     }

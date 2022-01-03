@@ -4,6 +4,7 @@
 using Microsoft.DotNet.XUnitExtensions;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
+using System.Linq;
 using System.Security;
 using System.ServiceProcess;
 using Xunit;
@@ -13,7 +14,7 @@ namespace System.IO.Tests
 {
     public partial class EncryptDecrypt
     {
-        partial void LogEFSDiagnostics()
+        partial void EnsureEFSServiceStarted()
         {
             try
             {
@@ -30,7 +31,10 @@ namespace System.IO.Tests
             {
                 _output.WriteLine(e.ToString());
             }
+        }
 
+        partial void LogEFSDiagnostics()
+        {
             var hours = 1; // how many hours to look backwards
             var query = @$"
                         <QueryList>
@@ -67,15 +71,11 @@ namespace System.IO.Tests
                 }
                 catch (EventLogException) { }
 
-                foreach (string term in garbage)
+                if (!garbage.Any(term => description.Contains(term, StringComparison.OrdinalIgnoreCase)))
                 {
-                    if (description.Contains(term, StringComparison.OrdinalIgnoreCase))
-                        goto next;
+                    _output.WriteLine($"{record.TimeCreated} {record.ProviderName} [{record.LevelDisplayName} {record.Id}] {description.Replace("\r\n", "  ")}");
                 }
 
-                _output.WriteLine($"{record.TimeCreated} {record.ProviderName} [{record.LevelDisplayName} {record.Id}] {description.Replace("\r\n", "  ")}");
-
-            next:
                 record = eventReader.ReadEvent();
             }
 
