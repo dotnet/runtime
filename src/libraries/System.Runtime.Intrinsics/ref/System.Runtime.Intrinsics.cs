@@ -31,6 +31,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<System.UInt64> Create(ulong value) { throw null; }
 
         public static System.Runtime.Intrinsics.Vector512<T> Create<T>(T value) where T : struct { throw null; }
+
+        public static T GetElement<T>(this System.Runtime.Intrinsics.Vector512<T> vector, int index) where T : struct { throw null; }
     }
     public readonly partial struct Vector512<T> : System.IEquatable<System.Runtime.Intrinsics.Vector512<T>> where T : struct
     {

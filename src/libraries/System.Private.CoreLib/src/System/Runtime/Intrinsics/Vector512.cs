@@ -626,5 +626,38 @@ namespace System.Runtime.Intrinsics
 
             return Unsafe.As<Vector512<TFrom>, Vector512<TTo>>(ref vector);
         }
+
+        /// <summary>Gets the element at the specified index.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the element from.</param>
+        /// <param name="index">The index of the element to get.</param>
+        /// <returns>The value of the element at <paramref name="index" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        public static T GetElement<T>(this Vector512<T> vector, int index)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
+
+            if ((uint)(index) >= (uint)(Vector512<T>.Count))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            return vector.GetElementUnsafe(index);
+        }
+
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static T GetElementUnsafe<T>(in this Vector512<T> vector, int index)
+            where T : struct
+        {
+            Debug.Assert((index >= 0) && (index < Vector512<T>.Count));
+            return Unsafe.Add(ref Unsafe.As<Vector512<T>, T>(ref Unsafe.AsRef(in vector)), index);
+        }
+
+
     }
 }
