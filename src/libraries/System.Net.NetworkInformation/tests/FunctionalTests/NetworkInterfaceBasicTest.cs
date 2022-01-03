@@ -56,7 +56,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]  // Some APIs are not supported on Linux
+        [PlatformSpecific(TestPlatforms.Linux|TestPlatforms.Android)]  // Some APIs are not supported on Linux and Android
         public void BasicTest_AccessInstanceProperties_NoExceptions_Linux()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
