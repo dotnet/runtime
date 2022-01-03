@@ -22,9 +22,10 @@
 // Image base: 0x000000001AB30000
 
 
+.namespace Test_tailcall {
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public abstract auto ansi beforefieldinit Test_tailcall.Base
+.class public abstract auto ansi beforefieldinit Base
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -164,7 +165,7 @@
 
 } // end of class Test.Base
 
-.class public auto ansi beforefieldinit Test_tailcall.Child
+.class public auto ansi beforefieldinit Child
        extends Test_tailcall.Base
 {
   .method public hidebysig virtual final 
@@ -347,7 +348,7 @@
 
 } // end of class Test.Child
 
-.class public auto ansi beforefieldinit Test_tailcall.GrandChild
+.class public auto ansi beforefieldinit GrandChild
        extends Test_tailcall.Child
 {
   .method public hidebysig virtual final 
@@ -584,7 +585,7 @@
 
 } // end of class Test.GrandChild
 
-.class public abstract auto ansi sealed beforefieldinit Test_tailcall.Program
+.class public abstract auto ansi sealed beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallFromInsideGrandChild() cil managed
@@ -646,7 +647,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test_tailcall.Assert
+.class public abstract auto ansi sealed beforefieldinit Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,
@@ -707,9 +708,4 @@
   } // end of method Assert::AreEqual
 
 } // end of class Test.Assert
-
-
-// =============================================================
-
-// *********** DISASSEMBLY COMPLETE ***********************
-// WARNING: Created Win32 resource file nonvirtualcalls_tailcall.res
+}
