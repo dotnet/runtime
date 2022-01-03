@@ -429,14 +429,14 @@ namespace
 
             regKey.reset(regProgIdKeyRaw);
 
-            // The default value for the key is the type - this matches RegAsm behavior.
+            // The default value for the key is the ProgID
             res = ::RegSetValueExW(
                 regKey.get(),
                 nullptr,
                 0,
                 REG_SZ,
-                reinterpret_cast<const BYTE*>(entry.type.c_str()),
-                static_cast<DWORD>(entry.type.size() + 1) * sizeof(entry.type[0]));
+                reinterpret_cast<const BYTE*>(entry.progid.c_str()),
+                static_cast<DWORD>(entry.progid.size() + 1) * sizeof(entry.progid[0]));
             if (res != ERROR_SUCCESS)
                 return __HRESULT_FROM_WIN32(res);
 
