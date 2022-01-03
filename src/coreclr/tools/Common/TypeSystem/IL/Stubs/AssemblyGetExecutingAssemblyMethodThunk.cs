@@ -44,6 +44,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return $"GetExecutingAssembly_{ExecutingAssembly.GetName().Name}";
+            }
+        }
+
         public override TypeDesc OwningType
         {
             get;

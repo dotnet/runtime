@@ -256,8 +256,7 @@ namespace System
         // Used by the singular GetXXX APIs (Event, Field, Interface, NestedType) where prefixLookup is not supported.
         private static void FilterHelper(BindingFlags bindingFlags, ref string? name, out bool ignoreCase, out MemberListType listType)
         {
-            bool prefixLookup;
-            FilterHelper(bindingFlags, ref name, false, out prefixLookup, out ignoreCase, out listType);
+            FilterHelper(bindingFlags, ref name, false, out _, out ignoreCase, out listType);
         }
 
         // Only called by GetXXXCandidates, GetInterfaces, and GetNestedTypes when FilterHelper has set "prefixLookup" to true.
@@ -584,8 +583,7 @@ namespace System
             Type[]? types, bool allowPrefixLookup)
         {
             bool prefixLookup, ignoreCase;
-            MemberListType listType;
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out _);
 
             if (!string.IsNullOrEmpty(name) && name != ConstructorInfo.ConstructorName && name != ConstructorInfo.TypeConstructorName)
                 return new ListBuilder<ConstructorInfo>(0);
@@ -660,7 +658,6 @@ namespace System
             FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
 
             RuntimeFieldInfo[] cache = GetFields_internal(name, bindingAttr, listType, this);
-            bindingAttr ^= BindingFlags.DeclaredOnly;
 
             ListBuilder<FieldInfo> candidates = new ListBuilder<FieldInfo>(cache.Length);
             for (int i = 0; i < cache.Length; i++)
@@ -677,12 +674,12 @@ namespace System
 
         private ListBuilder<Type> GetNestedTypeCandidates(string? fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
-            bool prefixLookup, ignoreCase;
+            bool prefixLookup;
             bindingAttr &= ~BindingFlags.Static;
             string? name, ns;
             MemberListType listType;
             SplitName(fullname, out name, out ns);
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out _, out listType);
 
             RuntimeType[] cache = GetNestedTypes_internal(name, bindingAttr, listType);
             ListBuilder<Type> candidates = new ListBuilder<Type>(cache.Length);
@@ -800,7 +797,7 @@ namespace System
                     {
                         MethodInfo methodInfo = candidates[j];
                         if (!System.DefaultBinder.CompareMethodSig(methodInfo, firstCandidate))
-                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                            throw new AmbiguousMatchException();
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
@@ -871,7 +868,7 @@ namespace System
                 {
                     if (returnType is null)
                         // if we are here we have no args or property type to select over and we have more than one property with that name
-                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                        throw new AmbiguousMatchException();
                 }
             }
 
@@ -889,9 +886,8 @@ namespace System
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            bool ignoreCase;
             MemberListType listType;
-            FilterHelper(bindingAttr, ref name!, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name!, out _, out listType);
 
             RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             EventInfo? match = null;
@@ -904,7 +900,7 @@ namespace System
                 if ((bindingAttr & eventInfo.BindingFlags) == eventInfo.BindingFlags)
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                        throw new AmbiguousMatchException();
 
                     match = eventInfo;
                 }
@@ -918,14 +914,12 @@ namespace System
         {
             if (name == null) throw new ArgumentNullException();
 
-            bool ignoreCase;
             MemberListType listType;
-            FilterHelper(bindingAttr, ref name!, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name!, out _, out listType);
 
             RuntimeFieldInfo[] cache = GetFields_internal(name, bindingAttr, listType, this);
             FieldInfo? match = null;
 
-            bindingAttr ^= BindingFlags.DeclaredOnly;
             bool multipleStaticFieldMatches = false;
 
             for (int i = 0; i < cache.Length; i++)
@@ -935,7 +929,7 @@ namespace System
                     if (match != null)
                     {
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
-                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                            throw new AmbiguousMatchException();
 
                         if ((match.DeclaringType!.IsInterface == true) && (fieldInfo.DeclaringType!.IsInterface == true))
                             multipleStaticFieldMatches = true;
@@ -947,7 +941,7 @@ namespace System
             }
 
             if (multipleStaticFieldMatches && match!.DeclaringType!.IsInterface)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
 
             return match;
         }
@@ -966,9 +960,8 @@ namespace System
                 bindingAttr |= BindingFlags.IgnoreCase;
 
             string? name, ns;
-            MemberListType listType;
             SplitName(fullname, out name, out ns);
-            FilterHelper(bindingAttr, ref name, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, out ignoreCase, out _);
 
             List<RuntimeType>? list = null;
             StringComparison nameComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
@@ -998,7 +991,7 @@ namespace System
                 if (FilterApplyType(iface, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                        throw new AmbiguousMatchException();
 
                     match = iface;
                 }
@@ -1012,12 +1005,11 @@ namespace System
         {
             if (fullname == null) throw new ArgumentNullException(nameof(fullname));
 
-            bool ignoreCase;
             bindingAttr &= ~BindingFlags.Static;
             string? name, ns;
             MemberListType listType;
             SplitName(fullname, out name, out ns);
-            FilterHelper(bindingAttr, ref name, out ignoreCase, out listType);
+            FilterHelper(bindingAttr, ref name, out _, out listType);
             RuntimeType[] cache = GetNestedTypes_internal(name, bindingAttr, listType);
             RuntimeType? match = null;
 
@@ -1027,7 +1019,7 @@ namespace System
                 if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                        throw new AmbiguousMatchException();
 
                     match = nestedType;
                 }
@@ -1401,7 +1393,7 @@ namespace System
         {
             CreateInstanceCheckThis();
 
-            object? server = null;
+            object? server;
 
             try
             {
@@ -2252,7 +2244,7 @@ namespace System
             if (IsInterface || HasElementType || IsGenericParameter)
                 return null;
 
-            int pack = 0, size = 0;
+            int pack, size;
             LayoutKind layoutKind = LayoutKind.Auto;
             switch (Attributes & TypeAttributes.LayoutMask)
             {

@@ -517,21 +517,6 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 #endif
 }
 
-#define ADD_BINOP(op) do {	\
-		MONO_INST_NEW (cfg, ins, (op));	\
-		sp -= 2;	\
-		ins->sreg1 = sp [0]->dreg;	\
-		ins->sreg2 = sp [1]->dreg;	\
-		type_from_op (cfg, ins, sp [0], sp [1]);	\
-		CHECK_TYPE (ins);	\
-		if (ovf_exc) ins->inst_exc_name = ovf_exc; else ins->inst_exc_name = "OverflowException"; ovf_exc = NULL; \
-		/* Have to insert a widening op */		 \
-        add_widen_op (cfg, ins, &sp [0], &sp [1]);		 \
-        ins->dreg = alloc_dreg ((cfg), (MonoStackType)(ins)->type); \
-        MONO_ADD_INS ((cfg)->cbb, (ins)); \
-        *sp++ = mono_decompose_opcode ((cfg), (ins));	\
-	} while (0)
-
 #define ADD_UNOP(op) do {	\
 		MONO_INST_NEW (cfg, ins, (op));	\
 		sp--;	\
@@ -8674,7 +8659,37 @@ calli_end:
 		case MONO_CEE_MUL_OVF_UN:
 		case MONO_CEE_SUB_OVF:
 		case MONO_CEE_SUB_OVF_UN:
-			ADD_BINOP (il_op);
+			MONO_INST_NEW (cfg, ins, il_op);
+			sp -= 2;
+			ins->sreg1 = sp [0]->dreg;
+			ins->sreg2 = sp [1]->dreg;
+			type_from_op (cfg, ins, sp [0], sp [1]);
+			CHECK_TYPE (ins);
+			if (ovf_exc)
+				ins->inst_exc_name = ovf_exc;
+			else
+				ins->inst_exc_name = "OverflowException";
+			/* Have to insert a widening op */
+			add_widen_op (cfg, ins, &sp [0], &sp [1]);
+			ins->dreg = alloc_dreg (cfg, (MonoStackType)(ins)->type);
+			MONO_ADD_INS ((cfg)->cbb, ins);
+			/* The opcode might be emulated, so need to special case this */
+			if (ovf_exc && mono_find_jit_opcode_emulation (ins->opcode)) {
+				switch (ins->opcode) {
+				case OP_IMUL_OVF_UN:
+					/* This opcode is just a placeholder, it will be emulated also */
+					ins->opcode = OP_IMUL_OVF_UN_OOM;
+					break;
+				case OP_LMUL_OVF_UN:
+					/* This opcode is just a placeholder, it will be emulated also */
+					ins->opcode = OP_LMUL_OVF_UN_OOM;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+			}
+			ovf_exc = NULL;
+			*sp++ = mono_decompose_opcode (cfg, ins);
 			break;
 		case MONO_CEE_CPOBJ:
 			GSHAREDVT_FAILURE (il_op);

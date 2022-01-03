@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>main.cjs</WasmMainJSPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <WasmDebugLevel>1</WasmDebugLevel>
+    <WasmEnableES6>false</WasmEnableES6>
+    <RunAOTCompilation>false</RunAOTCompilation>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Console.Node.CJS.Sample.csproj</_SampleProject>
+    <_SampleAssembly>Wasm.Console.Node.CJS.Sample.dll</_SampleAssembly>
+  </PropertyGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithNode" />
+</Project>

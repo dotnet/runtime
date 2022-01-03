@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>ILCompiler.Compiler.Tests.Assets</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <SkipTestRun>true</SkipTestRun>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Don't add references to the netstandard platform since this is a core assembly -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\nativeaot\Test.CoreLib\src\Test.CoreLib.csproj" />
+  </ItemGroup>
+
+</Project>
