@@ -21,6 +21,10 @@ struct _MonoClassMetadataUpdateInfo {
 	GArray *added_members; /* a set of Method or Field table tokens of any methods or fields added to this class */
 
 	GPtrArray *added_fields; /* a set of MonoClassMetadataUpdateField* values for every added field. */
+
+	struct _MonoClassRuntimeMetadataUpdateInfo {
+		
+	} runtime;
 };
 
 typedef struct _MonoClassMetadataUpdateField {
@@ -28,6 +32,10 @@ typedef struct _MonoClassMetadataUpdateField {
 	uint32_t generation; /* when this field was added */
 	uint32_t token; /* the Field table token where this field was defined. (this won't make
 			 * sense for generic instances, once EnC is supported there) */
+	/* if non-zero the EnC update came before the parent class was initialized.  The field is
+	 * stored in the instance at this offset.  MonoClassField:offset is -1.  Not used for static
+	 * fields. */
+	int before_init_instance_offset;
 } MonoClassMetadataUpdateField;
 
 #endif/*_MONO_COMPONENT_HOT_RELOAD_INTERNALS_H*/
