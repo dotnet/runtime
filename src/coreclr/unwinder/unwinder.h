@@ -29,7 +29,7 @@ protected:
     // Given a control PC, return the base of the module it is in.  For jitted managed code, this is the
     // start of the code heap.
     static HRESULT GetModuleBase(      DWORD64  address,
-                                 __out PDWORD64 pdwBase);
+                                 _Out_ PDWORD64 pdwBase);
 
     // Given a control PC, return the function entry of the functoin it is in.
     static HRESULT GetFunctionEntry(                       DWORD64 address,
