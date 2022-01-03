@@ -122,33 +122,11 @@ struct ifaddrs
 #endif
 
 #if !HAVE_GETIFADDRS && TARGET_ANDROID
-// Try to load the getifaddrs and freeifaddrs functions manually.
-// This workaround is necessary on Android prior to API 24 and it can be removed once
-// we drop support for earlier Android versions.
-static int (*getifaddrs)(struct ifaddrs**) = NULL;
-static void (*freeifaddrs)(struct ifaddrs*) = NULL;
+__attribute__((weak)) int getifaddrs(struct ifaddrs**);
+__attribute__((weak)) void freeifaddrs(struct ifaddrs*);
 
-static bool ensure_getifaddrs_is_loaded()
+static bool ensure_getifaddrs_is_available()
 {
-    static atomic_bool initialized = false;
-    static atomic_bool access_guard = true;
-
-    while (!atomic_load(&initialized))
-    {
-        bool access_guard_initial_value = true;
-        if (atomic_compare_exchange_strong(&access_guard, &access_guard_initial_value, false))
-        {
-            void *libc = dlopen("libc.so", RTLD_NOW);
-            if (libc)
-            {
-                getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
-                freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
-            }
-
-            atomic_store(&initialized, true);
-        }
-    }
-
     return getifaddrs != NULL && freeifaddrs != NULL;
 }
 #endif
