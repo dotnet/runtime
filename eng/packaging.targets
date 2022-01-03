@@ -47,7 +47,7 @@
 
     <!-- Always update the package version in servicing. -->
     <Version>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</Version>
-    <Version Condition="'$(VersionSuffix)' != ''">$(Version)-$(VersionSuffix)</Version>
+    <Version Condition="'$(VersionSuffix)' != '' and '$(GeneratePackageOnBuild)' == 'true'">$(Version)-$(VersionSuffix)</Version>
     <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
     <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
     <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
