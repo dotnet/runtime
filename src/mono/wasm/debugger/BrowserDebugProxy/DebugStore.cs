@@ -477,6 +477,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class TypeInfo
     {
+        private readonly ILogger logger;
         internal AssemblyInfo assembly;
         private TypeDefinition type;
         private List<MethodInfo> methods;
@@ -486,8 +487,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableProperties = new();
 
-        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type)
+        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type, ILogger logger)
         {
+            this.logger = logger;
             this.assembly = assembly;
             var metadataReader = assembly.asmMetadataReader;
             Token = MetadataTokens.GetToken(metadataReader, typeHandle);
@@ -514,7 +516,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var fieldName = metadataReader.GetString(fieldDefinition.Name);
                     AppendToBrowsable(DebuggerBrowsableFields, fieldDefinition.GetCustomAttributes(), fieldName);
                 }
-                catch { continue; }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Failed to read browsable attributes of a field. ({ex.Message})");
+                    continue;
+                }
             }
 
             foreach (var prop in type.GetProperties())
@@ -525,7 +531,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var propName = metadataReader.GetString(propDefinition.Name);
                     AppendToBrowsable(DebuggerBrowsableProperties, propDefinition.GetCustomAttributes(), propName);
                 }
-                catch { continue; }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Failed to read browsable attributes of a property. ({ex.Message})");
+                    continue;
+                }
             }
 
             void AppendToBrowsable(Dictionary<string, DebuggerBrowsableState?> dict, CustomAttributeHandleCollection customAttrs, string fieldName)
@@ -705,7 +715,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
 
-                var typeInfo = new TypeInfo(this, type, typeDefinition);
+                var typeInfo = new TypeInfo(this, type, typeDefinition, logger);
                 TypesByName[typeInfo.FullName] = typeInfo;
                 TypesByToken[typeInfo.Token] = typeInfo;
                 if (pdbMetadataReader != null)

@@ -2392,10 +2392,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     parentFields.AddRange(await GetTypeFields(typeIdsIncludingParents[i], token));
 
                 var ownDuplicatedFields = ownFields.Where(field => objects.Any(obj =>
-                        field.Name.Equals(obj.Key) &&
-                        (obj.Value["isOwn"] == null ||
-                        obj.Value["isOwn"].Value<bool>() ||
-                        !obj.Value["isOwn"].Value<bool>())));
+                        field.Name.Equals(obj.Key)));
 
                 var parentDuplicatedFields = parentFields.Where(field => objects.Any(obj =>
                         field.Name.Equals(obj.Key) &&
