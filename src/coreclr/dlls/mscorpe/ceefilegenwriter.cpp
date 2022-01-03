@@ -487,7 +487,7 @@ ErrExit:
     return hr;
 } // HRESULT CeeFileGenWriter::generateImage()
 
-HRESULT CeeFileGenWriter::setOutputFileName(__in LPWSTR fileName)
+HRESULT CeeFileGenWriter::setOutputFileName(_In_ LPWSTR fileName)
 {
     if (m_outputFileName)
         delete[] m_outputFileName;
@@ -498,7 +498,7 @@ HRESULT CeeFileGenWriter::setOutputFileName(__in LPWSTR fileName)
     return S_OK;
 } // HRESULT CeeFileGenWriter::setOutputFileName()
 
-HRESULT CeeFileGenWriter::setResourceFileName(__in LPWSTR fileName)
+HRESULT CeeFileGenWriter::setResourceFileName(_In_ LPWSTR fileName)
 {
     if (m_resourceFileName)
         delete[] m_resourceFileName;
@@ -1294,7 +1294,7 @@ HRESULT CeeFileGenWriter::setVTableEntry(ULONG size, ULONG offset)
     return setVTableEntry64(size,(void*)(ULONG_PTR)offset);
 } // HRESULT CeeFileGenWriter::setVTableEntry()
 
-HRESULT CeeFileGenWriter::computeSectionOffset(CeeSection &section, __in char *ptr,
+HRESULT CeeFileGenWriter::computeSectionOffset(CeeSection &section, _In_ char *ptr,
                                                unsigned *offset)
 {
     *offset = section.computeOffset(ptr);
@@ -1302,7 +1302,7 @@ HRESULT CeeFileGenWriter::computeSectionOffset(CeeSection &section, __in char *p
     return S_OK;
 } // HRESULT CeeFileGenWriter::computeSectionOffset()
 
-HRESULT CeeFileGenWriter::computeOffset(__in char *ptr,
+HRESULT CeeFileGenWriter::computeOffset(_In_ char *ptr,
                                         CeeSection **pSection, unsigned *offset)
 {
     TESTANDRETURNPOINTER(pSection);

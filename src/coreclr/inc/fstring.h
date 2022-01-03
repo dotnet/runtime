@@ -24,13 +24,13 @@ namespace FString
     // Caller of Unicode_Utf8 and Utf8_Unicode must pass in a buffer of size at least length + 1.
 
     // Scan for ASCII only string, calculate result UTF8 string length
-    HRESULT Unicode_Utf8_Length(__in_z LPCWSTR pString, __out bool * pAllAscii, __out DWORD * pLength);
+    HRESULT Unicode_Utf8_Length(__in_z LPCWSTR pString, _Out_ bool * pAllAscii, _Out_ DWORD * pLength);
 
     // Convert UNICODE string to UTF8 string. Direct/fast conversion if ASCII
     HRESULT Unicode_Utf8(__in_z LPCWSTR pString, bool allAscii, __out_z LPSTR pBuffer, DWORD length);
 
     // Scan for ASCII string, calculate result UNICODE string length
-    HRESULT Utf8_Unicode_Length(__in_z LPCSTR pString, __out bool * pAllAscii, __out DWORD * pLength);
+    HRESULT Utf8_Unicode_Length(__in_z LPCSTR pString, _Out_ bool * pAllAscii, _Out_ DWORD * pLength);
 
     // Convert UTF8 string to UNICODE. Direct/fast conversion if ASCII
     HRESULT Utf8_Unicode(__in_z LPCSTR pString, bool allAscii, __out_z LPWSTR pBuffer, DWORD length);

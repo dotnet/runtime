@@ -149,14 +149,14 @@ ULONG                   g_ulMetaInfoFilter = MDInfo::dumpDefault;
 // Validator module type.
 DWORD g_ValModuleType = ValidatorModuleTypeInvalid;
 IMetaDataDispenserEx *g_pDisp = NULL;
-void DisplayFile(__in __nullterminated WCHAR* szFile,
+void DisplayFile(_In_ __nullterminated WCHAR* szFile,
                  BOOL isFile,
                  ULONG DumpFilter,
                  __in_opt __nullterminated WCHAR* szObjFile,
                  strPassBackFn pDisplayString);
 extern mdMethodDef      g_tkEntryPoint; // integration with MetaInfo
 
-DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName); // see DRES.CPP
+DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName); // see DRES.CPP
 
 struct VTableRef
 {
@@ -1343,7 +1343,7 @@ mdToken ResolveTypeDefReflectionNotation(IMDInternalImport *pIMDI,
 }
 
 mdToken ResolveTypeRefReflectionNotation(IMDInternalImport *pIMDI,
-                                         __in __nullterminated const char* szNamespace,
+                                         _In_ __nullterminated const char* szNamespace,
                                          __inout __nullterminated char* szName,
                                          mdToken tkResScope)
 {
@@ -6923,7 +6923,7 @@ void DumpVtable(void* GUICookie)
     }
 }
 // MetaInfo integration:
-void DumpMI(__in __nullterminated const char *str)
+void DumpMI(_In_ __nullterminated const char *str)
 {
     static BOOL fInit = TRUE;
     static char* szStr = &szString[0];
@@ -6955,7 +6955,7 @@ void DumpMI(__in __nullterminated const char *str)
     }
 }
 
-void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nullterminated const char* pszObjFileName, void* GUICookie)
+void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, __in_opt __nullterminated const char* pszObjFileName, void* GUICookie)
 {
     const WCHAR* pch = wcsrchr(pwzFileName,L'.');
 
@@ -7334,7 +7334,7 @@ void CloseNamespace(__inout __nullterminated char* szString)
     }
 }
 
-FILE* OpenOutput(__in __nullterminated const WCHAR* wzFileName)
+FILE* OpenOutput(_In_ __nullterminated const WCHAR* wzFileName)
 {
     FILE*   pfile = NULL;
         if(g_uCodePage == 0xFFFFFFFF) _wfopen_s(&pfile,wzFileName,W("wb"));
@@ -7348,7 +7348,7 @@ FILE* OpenOutput(__in __nullterminated const WCHAR* wzFileName)
     return pfile;
 }
 
-FILE* OpenOutput(__in __nullterminated const char* szFileName)
+FILE* OpenOutput(_In_ __nullterminated const char* szFileName)
 {
     return OpenOutput(UtfToUnicode(szFileName));
 }
