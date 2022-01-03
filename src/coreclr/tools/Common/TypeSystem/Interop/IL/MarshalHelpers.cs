@@ -848,7 +848,11 @@ namespace Internal.TypeSystem.Interop
         internal static MarshallerKind GetRuntimeDisabledMarshallingMarshallerKind(
             TypeDesc type)
         {
-            if (type.IsPrimitive && type.Category != TypeFlags.Void)
+            if (type.Category == TypeFlags.Void)
+            {
+                return MarshallerKind.VoidReturn;
+            }
+            if (type.IsPrimitive)
             {
                 return MarshallerKind.BlittableValue;
             }

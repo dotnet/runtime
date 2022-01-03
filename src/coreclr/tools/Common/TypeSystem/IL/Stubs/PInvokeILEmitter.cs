@@ -12,7 +12,7 @@ namespace Internal.IL.Stubs
 {
     /// <summary>
     /// Provides method bodies for PInvoke methods
-    /// 
+    ///
     /// This by no means intends to provide full PInvoke support. The intended use of this is to
     /// a) prevent calls getting generated to targets that require a full marshaller
     /// (this compiler doesn't provide that), and b) offer a hand in some very simple marshalling
@@ -75,7 +75,7 @@ namespace Internal.IL.Stubs
             int indexOffset = 0;
             if (!methodSig.IsStatic && direction == MarshalDirection.Forward)
             {
-                // For instance methods(eg. Forward delegate marshalling thunk), first argument is 
+                // For instance methods(eg. Forward delegate marshalling thunk), first argument is
                 // the instance
                 indexOffset = 1;
             }
@@ -92,7 +92,7 @@ namespace Internal.IL.Stubs
                     // if we don't have metadata for the parameter, create a dummy one
                     parameterMetadata = new ParameterMetadata(i, ParameterMetadataAttributes.None, null);
                 }
-                else 
+                else
                 {
                     Debug.Assert(i == parameterMetadataArray[parameterIndex].Index);
                     parameterMetadata = parameterMetadataArray[parameterIndex++];
@@ -108,7 +108,7 @@ namespace Internal.IL.Stubs
                     {
                         // PreserveSig = false can only show up an regular forward PInvokes
                         Debug.Assert(direction == MarshalDirection.Forward);
-                    
+
                         parameterType = methodSig.Context.GetByRefType(parameterType);
                         isHRSwappedRetVal = true;
                     }
@@ -166,10 +166,10 @@ namespace Internal.IL.Stubs
             if (delegateMethod.Kind == DelegateMarshallingMethodThunkKind.ReverseOpenStatic)
             {
                 //
-                // For Open static delegates call 
+                // For Open static delegates call
                 //     InteropHelpers.GetCurrentCalleeOpenStaticDelegateFunctionPointer()
                 // which returns a function pointer. Just call the function pointer and we are done.
-                // 
+                //
                 TypeDesc[] parameters = new TypeDesc[_marshallers.Length - 1];
                 for (int i = 1; i < _marshallers.Length; i++)
                 {
@@ -213,7 +213,7 @@ namespace Internal.IL.Stubs
             else if (delegateMethod.Kind == DelegateMarshallingMethodThunkKind
                 .ForwardNativeFunctionWrapper)
             {
-                // if the SetLastError flag is set in UnmanagedFunctionPointerAttribute, clear the error code before doing P/Invoke 
+                // if the SetLastError flag is set in UnmanagedFunctionPointerAttribute, clear the error code before doing P/Invoke
                 if (_flags.SetLastError)
                 {
                     callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
@@ -245,7 +245,7 @@ namespace Internal.IL.Stubs
                 MethodSignatureFlags unmanagedCallingConvention = _flags.UnmanagedCallingConvention;
                 if (unmanagedCallingConvention == MethodSignatureFlags.None)
                     unmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConvention;
- 
+
                 MethodSignature nativeSig = new MethodSignature(
                     MethodSignatureFlags.Static | unmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes);
 
@@ -277,9 +277,17 @@ namespace Internal.IL.Stubs
             TypeDesc nativeReturnType = _flags.PreserveSig ? _marshallers[0].NativeParameterType : context.GetWellKnownType(WellKnownType.Int32);
             TypeDesc[] nativeParameterTypes = new TypeDesc[isHRSwappedRetVal ? _marshallers.Length : _marshallers.Length - 1];
 
-            // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke 
+            bool runtimeMarshallingEnabled = _targetMethod is not EcmaMethod ecmaMethod
+                    || MarshalHelpers.IsRuntimeMarshallingEnabled(ecmaMethod.Module);
+
+            // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke
             if (_flags.SetLastError)
             {
+                if (!runtimeMarshallingEnabled)
+                {
+                    // When runtime marshalling is disabled, we don't support SetLastError
+                    throw new NotSupportedException();
+                }
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                             InteropTypes.GetPInvokeMarshal(context).GetKnownMethod("ClearLastError", null)));
             }
@@ -291,6 +299,11 @@ namespace Internal.IL.Stubs
 
             if (isHRSwappedRetVal)
             {
+                if (!runtimeMarshallingEnabled)
+                {
+                    // When runtime marshalling is disabled, we don't support HResult-return-swapping
+                    throw new NotSupportedException();
+                }
                 nativeParameterTypes[_marshallers.Length - 1] = _marshallers[0].NativeParameterType;
             }
 
@@ -384,6 +397,9 @@ namespace Internal.IL.Stubs
 
         private MethodIL EmitIL()
         {
+            if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))
+                throw new NotSupportedException();
+
             PInvokeILCodeStreams pInvokeILCodeStreams = new PInvokeILCodeStreams();
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;
             ILCodeStream marshallingCodestream = pInvokeILCodeStreams.MarshallingCodeStream;
@@ -437,8 +453,8 @@ namespace Internal.IL.Stubs
             return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(_targetMethod), IsStubRequired());
         }
 
-        public static MethodIL EmitIL(MethodDesc method, 
-            PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration, 
+        public static MethodIL EmitIL(MethodDesc method,
+            PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration,
             InteropStateManager interopStateManager)
         {
             try

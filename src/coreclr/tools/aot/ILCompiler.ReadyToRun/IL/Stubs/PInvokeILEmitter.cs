@@ -48,8 +48,7 @@ namespace Internal.IL.Stubs
             if (_importMetadata.Flags.SetLastError)
             {
                 if (_targetMethod is EcmaMethod ecmaMethod
-                    && ecmaMethod.Module.Assembly is EcmaAssembly assembly
-                    && assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute"))
+                    && !MarshalHelpers.IsRuntimeMarshallingEnabled(ecmaMethod.Module))
                 {
                     // When runtime marshalling is disabled, we don't support generating the stub IL
                     // in Ready-to-Run so we can correctly throw an exception at runtime when the user tries to
