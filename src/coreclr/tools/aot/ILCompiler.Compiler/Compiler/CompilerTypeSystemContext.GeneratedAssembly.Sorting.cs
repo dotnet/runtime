@@ -3,16 +3,18 @@
 
 using System;
 
-namespace Internal.TypeSystem
+using Internal.TypeSystem;
+
+namespace ILCompiler
 {
-    partial class TypeSystemContext
+    partial class CompilerTypeSystemContext
     {
         // Functionality related to determinstic ordering of types and members
         partial class CompilerGeneratedType : MetadataType
         {
-            protected internal override int ClassCode => -1036681447;
+            protected override int ClassCode => -1036681447;
 
-            protected internal override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
+            protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
             {
                 // Should be a singleton
                 throw new NotSupportedException();

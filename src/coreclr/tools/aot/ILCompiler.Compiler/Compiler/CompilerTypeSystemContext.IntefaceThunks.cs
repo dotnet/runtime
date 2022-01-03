@@ -149,7 +149,7 @@ namespace ILCompiler
             }
             protected override DefaultInterfaceMethodImplementationInstantiationThunk CreateValueFromKey(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key)
             {
-                TypeDesc owningTypeOfThunks = key.TargetMethod.Context.GeneratedAssembly.GetGlobalModuleType();
+                TypeDesc owningTypeOfThunks = ((CompilerTypeSystemContext)key.TargetMethod.Context).GeneratedAssembly.GetGlobalModuleType();
                 return new DefaultInterfaceMethodImplementationInstantiationThunk(owningTypeOfThunks, key.TargetMethod, key.InterfaceIndex);
             }
         }
