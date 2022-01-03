@@ -3556,9 +3556,9 @@ interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, M
 	MonoClassField *field = NULL;
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
 		field = (MonoClassField *) mono_method_get_wrapper_data (method, token);
-		*klass = field->parent;
+		*klass = m_field_get_parent (field);
 
-		mono_class_setup_fields (field->parent);
+		mono_class_setup_fields (m_field_get_parent (field));
 	} else {
 		field = mono_field_from_token_checked (m_class_get_image (method->klass), token, klass, generic_context, error);
 		return_val_if_nok (error, NULL);
@@ -4091,7 +4091,7 @@ static void
 interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 {
 	// Initialize the offset for the field
-	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
+	MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 	return_if_nok (error);
 
 	push_simple_type (td, STACK_TYPE_MP);
@@ -4164,7 +4164,7 @@ static void
 interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, gboolean is_load, MonoError *error)
 {
 	// Initialize the offset for the field
-	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
+	MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 	return_if_nok (error);
 
 	if (mono_class_field_is_special_static (field)) {
@@ -6146,11 +6146,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoType *ftype = mono_field_get_type_internal (field);
 			mt = mint_type (ftype);
 			klass = mono_class_from_mono_type_internal (ftype);
-			gboolean in_corlib = m_class_get_image (field->parent) == mono_defaults.corlib;
+			gboolean in_corlib = m_class_get_image (m_field_get_parent (field)) == mono_defaults.corlib;
 
 			if (in_corlib && !strcmp (field->name, "IsLittleEndian") &&
-				!strcmp (m_class_get_name (field->parent), "BitConverter") &&
-				!strcmp (m_class_get_name_space (field->parent), "System"))
+				!strcmp (m_class_get_name (m_field_get_parent (field)), "BitConverter") &&
+				!strcmp (m_class_get_name_space (m_field_get_parent (field)), "System"))
 			{
 				interp_add_ins (td, (TARGET_BYTE_ORDER == G_LITTLE_ENDIAN) ? MINT_LDC_I4_1 : MINT_LDC_I4_0);
 				push_simple_type (td, STACK_TYPE_I4);

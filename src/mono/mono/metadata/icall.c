@@ -1839,7 +1839,7 @@ MonoReflectionMarshalAsAttributeHandle
 ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionFieldHandle field_h, MonoError *error)
 {
 	MonoClassField *field = MONO_HANDLE_GETVAL (field_h, field);
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 
 	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
 	if (mono_class_is_gtd (klass) ||
@@ -1873,11 +1873,11 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField 
 	g_assert (handle);
 
 	if (!type) {
-		klass = handle->parent;
+		klass = m_field_get_parent (handle);
 	} else {
 		klass = mono_class_from_mono_type_internal (type);
 
-		gboolean found = klass == handle->parent || mono_class_has_parent (klass, handle->parent);
+		gboolean found = klass == m_field_get_parent (handle) || mono_class_has_parent (klass, m_field_get_parent (handle));
 
 		if (!found)
 			/* The managed code will throw the exception */
@@ -2014,7 +2014,7 @@ gint32
 ves_icall_RuntimeFieldInfo_GetFieldOffset (MonoReflectionFieldHandle field, MonoError *error)
 {
 	MonoClassField *class_field = MONO_HANDLE_GETVAL (field, field);
-	mono_class_setup_fields (class_field->parent);
+	mono_class_setup_fields (m_field_get_parent (class_field));
 
 	return class_field->offset - MONO_ABI_SIZEOF (MonoObject);
 }
@@ -2026,7 +2026,7 @@ ves_icall_RuntimeFieldInfo_GetParentType (MonoReflectionFieldHandle field, MonoB
 
 	if (declaring) {
 		MonoClassField *f = MONO_HANDLE_GETVAL (field, field);
-		parent = f->parent;
+		parent = m_field_get_parent (f);
 	} else {
 		parent = MONO_HANDLE_GETVAL (field, klass);
 	}
@@ -2133,7 +2133,7 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 		  (!isref && v == NULL && value_gchandle == 0));
 
 	if (type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		MonoVTable *vtable = mono_class_vtable_checked (cf->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (cf), error);
 		goto_if_nok (error, leave);
 
 		if (!vtable->initialized) {
@@ -2179,7 +2179,7 @@ ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle fi
 	MonoClassField *field = MONO_HANDLE_GETVAL (field_h, field);
 	MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 
-	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (field->parent))) {
+	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (field)))) {
 		mono_error_set_not_implemented (error, "");
 		return MONO_HANDLE_NEW (MonoObject, NULL);
 	} else if (MONO_TYPE_IS_REFERENCE (field->type)) {
@@ -2196,9 +2196,9 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionFieldHandle fi
 
 	g_assert (obj);
 
-	mono_class_setup_fields (f->parent);
+	mono_class_setup_fields (m_field_get_parent (f));
 
-	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (f->parent))) {
+	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (f)))) {
 		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
 		return_if_nok (error);
 		ves_icall_RuntimeFieldInfo_SetValueInternal (field_h, objHandle, value_h, error);
@@ -2226,7 +2226,7 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 	MonoType *t;
 	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL); // FIXME? Not always needed.
 
-	mono_class_init_internal (field->parent);
+	mono_class_init_internal (m_field_get_parent (field));
 
 	t = mono_field_get_type_checked (field, error);
 	goto_if_nok (error, return_null);
@@ -2234,8 +2234,8 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 	if (!(t->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
 		goto invalid_operation;
 
-	if (image_is_dynamic (m_class_get_image (field->parent))) {
-		MonoClass *klass = field->parent;
+	if (image_is_dynamic (m_class_get_image (m_field_get_parent (field)))) {
+		MonoClass *klass = m_field_get_parent (field);
 		int fidx = field - m_class_get_fields (klass);
 		MonoFieldDefaultValue *def_values = mono_class_get_field_def_values (klass);
 
@@ -5959,7 +5959,7 @@ ves_icall_System_Reflection_RuntimeModule_ResolveMemberToken (MonoImage *image, 
 	case MONO_TABLE_FIELD: {
 		MonoClassField *f = module_resolve_field_token (image, token, type_args, method_args, error, merror);
 		if (f) {
-			return MONO_HANDLE_CAST (MonoObject, mono_field_get_object_handle (f->parent, f, merror));
+			return MONO_HANDLE_CAST (MonoObject, mono_field_get_object_handle (m_field_get_parent (f), f, merror));
 		}
 		else
 			return NULL_HANDLE;
@@ -5975,7 +5975,7 @@ ves_icall_System_Reflection_RuntimeModule_ResolveMemberToken (MonoImage *image, 
 		else {
 			MonoClassField *f = module_resolve_field_token (image, token, type_args, method_args, error, merror);
 			if (f) {
-				return MONO_HANDLE_CAST (MonoObject, mono_field_get_object_handle (f->parent, f, merror));
+				return MONO_HANDLE_CAST (MonoObject, mono_field_get_object_handle (m_field_get_parent (f), f, merror));
 			}
 			else
 				return NULL_HANDLE;

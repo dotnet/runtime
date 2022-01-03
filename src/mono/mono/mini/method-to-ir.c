@@ -9566,7 +9566,7 @@ calli_end:
 
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
 				field = (MonoClassField *)mono_method_get_wrapper_data (method, token);
-				klass = field->parent;
+				klass = m_field_get_parent (field);
 			}
 			else {
 				klass = NULL;
@@ -9748,7 +9748,7 @@ calli_end:
 			context_used = mini_class_check_context_used (cfg, klass);
 
 			if (ftype->attrs & FIELD_ATTRIBUTE_LITERAL) {
-				mono_error_set_field_missing (cfg->error, field->parent, field->name, NULL, "Using static instructions with literal field");
+				mono_error_set_field_missing (cfg->error, m_field_get_parent (field), field->name, NULL, "Using static instructions with literal field");
 				CHECK_CFG_ERROR;
 			}
 
@@ -9823,7 +9823,7 @@ calli_end:
 					(context_used && is_special_static)) {
 				MonoInst *iargs [1];
 
-				g_assert (field->parent);
+				g_assert (m_field_get_parent (field));
 				if (context_used) {
 					iargs [0] = emit_get_rgctx_field (cfg, context_used,
 						field, MONO_RGCTX_INFO_CLASS_FIELD);
@@ -9868,7 +9868,7 @@ calli_end:
 			} else if (cfg->compile_aot && addr) {
 				MonoInst *iargs [1];
 
-				g_assert (field->parent);
+				g_assert (m_field_get_parent (field));
 				EMIT_NEW_FIELDCONST (cfg, iargs [0], field);
 				ins = mono_emit_jit_icall (cfg, mono_class_static_field_address, iargs);
 			} else {
@@ -10404,7 +10404,7 @@ field_access_end:
 				} else if (handle_class == mono_defaults.typehandle_class) {
 					context_used = mini_class_check_context_used (cfg, mono_class_from_mono_type_internal ((MonoType *)handle));
 				} else if (handle_class == mono_defaults.fieldhandle_class)
-					context_used = mini_class_check_context_used (cfg, ((MonoClassField*)handle)->parent);
+					context_used = mini_class_check_context_used (cfg, m_field_get_parent (((MonoClassField*)handle)));
 				else if (handle_class == mono_defaults.methodhandle_class)
 					context_used = mini_method_check_context_used (cfg, (MonoMethod *)handle);
 				else

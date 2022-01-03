@@ -2932,7 +2932,7 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 	MonoCustomAttrEntry *attr;
 	int aindex;
 	gint32 ret = 1;
-	cinfo = mono_custom_attrs_from_field_checked (f->parent, f, error);
+	cinfo = mono_custom_attrs_from_field_checked (m_field_get_parent (f), f, error);
 	goto_if_nok (error, leave);
 	attr = NULL;
 	if (cinfo) {
@@ -7734,12 +7734,12 @@ field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoClassField *f = decode_fieldid (p, &p, end, &domain, &err);
 
 		buffer_add_string (buf, f->name);
-		buffer_add_typeid (buf, domain, f->parent);
+		buffer_add_typeid (buf, domain, m_field_get_parent (f));
 		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
 		buffer_add_int (buf, f->type->attrs);
 		if (CHECK_PROTOCOL_VERSION (2, 59)) {
 			buffer_add_int (buf, f->type->type);
-			buffer_add_int (buf, m_class_get_type_token (f->parent));
+			buffer_add_int (buf, m_class_get_type_token (m_field_get_parent (f)));
 			buffer_add_int (buf, m_class_get_type_token (mono_class_from_mono_type_internal (f->type)));
 		}
 		break;
@@ -7796,7 +7796,7 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 	/* Check that the field belongs to the object */
 	found = FALSE;
 	for (k = klass; k; k = m_class_get_parent(k)) {
-		if (k == f->parent) {
+		if (k == m_field_get_parent (f)) {
 			found = TRUE;
 			break;
 		}
@@ -7804,7 +7804,7 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 	if (!found)
 		return -1;
 
-	vtable = mono_class_vtable_checked(f->parent, error);
+	vtable = mono_class_vtable_checked(m_field_get_parent (f), error);
 	if (!is_ok(error))
 		return -1;
 
@@ -8127,7 +8127,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			/* Check that the field belongs to the object */
 			found = FALSE;
 			for (k = klass; k; k = m_class_get_parent (k)) {
-				if (k == f->parent) {
+				if (k == m_field_get_parent (f)) {
 					found = TRUE;
 					break;
 				}
@@ -8137,7 +8137,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			// FIXME: Check for literal/const
 
-			vtable = mono_class_vtable_checked (f->parent, error);
+			vtable = mono_class_vtable_checked (m_field_get_parent (f), error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -9634,7 +9634,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			/* Check that the field belongs to the object */
 			found = FALSE;
 			for (k = obj_type; k; k = m_class_get_parent (k)) {
-				if (k == f->parent) {
+				if (k == m_field_get_parent (f)) {
 					found = TRUE;
 					break;
 				}
@@ -9650,7 +9650,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (f->parent, error);
+				vtable = mono_class_vtable_checked (m_field_get_parent (f), error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_object;
@@ -9681,7 +9681,7 @@ get_field_value:
 			/* Check that the field belongs to the object */
 			found = FALSE;
 			for (k = obj_type; k; k = m_class_get_parent (k)) {
-				if (k == f->parent) {
+				if (k == m_field_get_parent (f)) {
 					found = TRUE;
 					break;
 				}
@@ -9697,7 +9697,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (f->parent, error);
+				vtable = mono_class_vtable_checked (m_field_get_parent (f), error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_fieldid;
