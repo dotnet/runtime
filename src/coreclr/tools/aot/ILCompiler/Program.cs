@@ -57,7 +57,7 @@ namespace ILCompiler
         private bool _reflectedOnly;
         private bool _scanReflection;
         private bool _methodBodyFolding;
-        private bool _singleThreaded;
+        private int _parallelism = Environment.ProcessorCount;
         private string _instructionSet;
         private string _guard;
 
@@ -205,7 +205,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set (format: 'Key=Value')");
                 syntax.DefineOptionList("feature", ref _featureSwitches, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
-                syntax.DefineOption("singlethreaded", ref _singleThreaded, "Run compilation on a single thread");
+                syntax.DefineOption("parallelism", ref _parallelism, "Maximum number of threads to use during compilation");
                 syntax.DefineOption("instructionset", ref _instructionSet, "Instruction set to allow or disallow");
                 syntax.DefineOption("guard", ref _guard, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
                 syntax.DefineOption("preinitstatics", ref _preinitStatics, "Interpret static constructors at compile time if possible (implied by -O)");
@@ -730,7 +730,7 @@ namespace ILCompiler
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots)
                     .UseMetadataManager(metadataManager)
-                    .UseSingleThread(enable: _singleThreaded)
+                    .UseParallelism(_parallelism)
                     .UseInteropStubManager(interopStubManager);
 
                 if (_scanDgmlLogFileName != null)
@@ -759,7 +759,7 @@ namespace ILCompiler
                 .UseInstructionSetSupport(instructionSetSupport)
                 .UseBackendOptions(_codegenOptions)
                 .UseMethodBodyFolding(enable: _methodBodyFolding)
-                .UseSingleThread(enable: _singleThreaded)
+                .UseParallelism(_parallelism)
                 .UseMetadataManager(metadataManager)
                 .UseInteropStubManager(interopStubManager)
                 .UseLogger(logger)
