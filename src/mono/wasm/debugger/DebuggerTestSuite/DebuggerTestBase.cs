@@ -672,7 +672,6 @@ namespace DebuggerTests
                 }
                 return;
             }
-            
             // Not an array
             var exp = exp_o as JObject;
             if (exp == null)
@@ -801,7 +800,7 @@ namespace DebuggerTests
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
         internal async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
-            if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:")) //FALSE
+            if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
             {
                 var fn_decl = "function () { return this; }";
                 var cfo_args = JObject.FromObject(new
