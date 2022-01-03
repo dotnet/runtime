@@ -10791,8 +10791,8 @@ namespace System.IO
         public abstract long Seek(long offset, System.IO.SeekOrigin origin);
         public abstract void SetLength(long value);
         public static System.IO.Stream Synchronized(System.IO.Stream stream) { throw null; }
-        protected static void ValidateBufferArguments([System.Diagnostics.CodeAnalysis.NotNullAttribute] byte[]? buffer, int offset, int count) { }
-        protected static void ValidateCopyToArguments([System.Diagnostics.CodeAnalysis.NotNullAttribute] System.IO.Stream? destination, int bufferSize) { }
+        protected static void ValidateBufferArguments([System.Diagnostics.CodeAnalysis.NotNullAttribute] byte[] buffer, int offset, int count) { }
+        protected static void ValidateCopyToArguments([System.Diagnostics.CodeAnalysis.NotNullAttribute] System.IO.Stream destination, int bufferSize) { }
         public abstract void Write(byte[] buffer, int offset, int count);
         public virtual void Write(System.ReadOnlySpan<byte> buffer) { }
         public System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count) { throw null; }
