@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly DefaultImpl
+.assembly DefaultInterfaceMethod
 {
 }
 
@@ -15,7 +15,6 @@
 		instance void Method () cil managed
 	{
 	}
-
 }
 
 .class public auto ansi beforefieldinit ChildClassDoesNotImplementDefaultInterfaceMethod_ValidType_Valid
