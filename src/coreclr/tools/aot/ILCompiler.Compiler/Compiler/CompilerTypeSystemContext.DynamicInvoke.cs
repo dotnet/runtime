@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.IL.Stubs;
+using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace Internal.TypeSystem
+namespace ILCompiler
 {
-    partial class TypeSystemContext
+    partial class CompilerTypeSystemContext
     {
         private class DynamicInvokeThunkHashtable : LockFreeReaderHashtable<DynamicInvokeMethodSignature, DynamicInvokeMethodThunk>
         {
@@ -17,7 +18,7 @@ namespace Internal.TypeSystem
             protected override int GetValueHashCode(DynamicInvokeMethodThunk value) => value.TargetSignature.GetHashCode();
             protected override DynamicInvokeMethodThunk CreateValueFromKey(DynamicInvokeMethodSignature key)
             {
-                return new DynamicInvokeMethodThunk(key.Context.GeneratedAssembly.GetGlobalModuleType(), key);
+                return new DynamicInvokeMethodThunk(((CompilerTypeSystemContext)key.Context).GeneratedAssembly.GetGlobalModuleType(), key);
             }
         }
         DynamicInvokeThunkHashtable _dynamicInvokeThunks = new DynamicInvokeThunkHashtable();

@@ -4,13 +4,19 @@
 using System;
 
 using Internal.IL;
+using Internal.TypeSystem;
 
-namespace Internal.TypeSystem
+namespace ILCompiler
 {
-    public abstract partial class TypeSystemContext
+    partial class CompilerTypeSystemContext
     {
         private class DelegateInfoHashtable : LockFreeReaderHashtable<TypeDesc, DelegateInfo>
         {
+            private readonly DelegateFeature _delegateFeatures;
+
+            public DelegateInfoHashtable(DelegateFeature features)
+                => _delegateFeatures = features;
+
             protected override int GetKeyHashCode(TypeDesc key)
             {
                 return key.GetHashCode();
@@ -29,24 +35,15 @@ namespace Internal.TypeSystem
             }
             protected override DelegateInfo CreateValueFromKey(TypeDesc key)
             {
-                return key.Context.CreateDelegateInfo(key);
+                return new DelegateInfo(key, _delegateFeatures);
             }
         }
 
-        private DelegateInfoHashtable _delegateInfoHashtable = new DelegateInfoHashtable();
+        private readonly DelegateInfoHashtable _delegateInfoHashtable;
 
         public DelegateInfo GetDelegateInfo(TypeDesc delegateType)
         {
             return _delegateInfoHashtable.GetOrCreateValue(delegateType);
-        }
-
-        /// <summary>
-        /// Creates a <see cref="DelegateInfo"/> for a given delegate type.
-        /// </summary>
-        protected virtual DelegateInfo CreateDelegateInfo(TypeDesc key)
-        {
-            // Type system contexts that support creating delegate infos need to override.
-            throw new NotSupportedException();
         }
     }
 }
