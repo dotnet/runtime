@@ -129,12 +129,14 @@ namespace System.Diagnostics
                 // Passing a default string for "at" in case SR.UsingResourceKeys() is true
                 // as this is a special case and we don't want to have "Word_At" on stack traces.
                 string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
-                builder.AppendFormat("   {0} ", word_At);
+                builder.Append("   ").Append(word_At).Append(' ');
                 builder.AppendLine(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo));
             }
             if (_isLastFrameFromForeignExceptionStackTrace)
             {
-                builder.AppendLine(SR.StackTrace_EndStackTraceFromPreviousThrow);
+                // Passing default for Exception_EndStackTraceFromPreviousThrow in case SR.UsingResourceKeys is set.
+                builder.AppendLine(SR.GetResourceString(nameof(SR.Exception_EndStackTraceFromPreviousThrow),
+                    defaultString: "--- End of stack trace from previous location ---"));
             }
         }
     }

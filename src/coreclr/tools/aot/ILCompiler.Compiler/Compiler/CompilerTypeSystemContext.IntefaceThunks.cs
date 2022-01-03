@@ -194,6 +194,14 @@ namespace ILCompiler
                 }
             }
 
+            public override string DiagnosticName
+            {
+                get
+                {
+                    return _targetMethod.DiagnosticName;
+                }
+            }
+
             public MethodDesc BaseMethod => _targetMethod;
 
             public string Prefix => $"__InstantiatingStub_{_interfaceIndex}_";
@@ -274,6 +282,7 @@ namespace ILCompiler
             public override TypeDesc OwningType => _owningType;
 
             public override string Name => _methodRepresented.Name;
+            public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature
             {

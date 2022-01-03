@@ -139,7 +139,7 @@ While the object file format is highly target specific, the compiler represents 
 On a high level, the role of the object writer is to go over all the marked `ObjectNode`s in the graph, retrieve their data, defined symbols, and relocations to other symbols, and store them in the object file.
 
 NativeAOT compiler contains multiple object writers:
-* Native object writer (`src/coreclr/tools/aot/ObjWriter`) based on LLVM that is capable of producing Windows PE, Linux ELF, and macOS Mach-O file formats
+* Native object writer based on LLVM that is capable of producing Windows PE, Linux ELF, and macOS Mach-O file formats
 * Native object writer based on LLVM for WebAssembly
 * Ready to run object writer that generates mixed CIL/native executables in the ready to run format for CoreCLR
 

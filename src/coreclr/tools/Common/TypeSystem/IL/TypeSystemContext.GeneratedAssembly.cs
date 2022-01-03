@@ -89,7 +89,23 @@ namespace Internal.TypeSystem
                 get;
             }
 
+            public override string DiagnosticName
+            {
+                get
+                {
+                    return Name;
+                }
+            }
+
             public override string Namespace
+            {
+                get
+                {
+                    return "Internal.CompilerGenerated";
+                }
+            }
+
+            public override string DiagnosticNamespace
             {
                 get
                 {

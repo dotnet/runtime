@@ -1,0 +1,1 @@
+This sample uses CommonJS version of `dotnet.js` running on NodeJS

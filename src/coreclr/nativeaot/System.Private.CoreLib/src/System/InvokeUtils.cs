@@ -320,13 +320,13 @@ namespace System
         {
             if (targetMethodOrDelegate == null)
             {
-                throw new ArgumentException(SR.Arg_DefaultValueMissingException);
+                throw new ArgumentException(SR.Arg_VarMissNull);
             }
 
             bool hasDefaultValue = RuntimeAugments.Callbacks.TryGetDefaultParameterValue(targetMethodOrDelegate, thType, argIndex, out object defaultValue);
             if (!hasDefaultValue)
             {
-                throw new ArgumentException(SR.Arg_DefaultValueMissingException, "parameters");
+                throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
             }
 
             // Note that we might return null even for value types which cannot have null value here.

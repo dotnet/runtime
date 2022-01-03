@@ -132,7 +132,7 @@ jobs:
       value: ''
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrRuntimeComponentsBuildArg
-        value: '-component runtime -component alljits -component paltests '
+        value: '-component runtime -component alljits -component paltests -component nativeaot '
     - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x86')) }}:
       - name: clrRuntimeComponentsBuildArg
         value: '-component runtime -component jit -component iltools '
