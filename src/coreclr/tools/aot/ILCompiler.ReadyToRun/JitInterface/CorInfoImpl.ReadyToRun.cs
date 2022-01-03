@@ -2582,7 +2582,7 @@ namespace Internal.JitInterface
             else
             {
                 var sig = HandleToObject(callSiteSig->methodSignature);
-                return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>());
+                return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>(), ((MetadataType)HandleToObject(callSiteSig->scope).OwningMethod.OwningType).Module);
             }
         }
 

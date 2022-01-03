@@ -55,17 +55,21 @@ namespace Internal.IL.Stubs
         {
             MarshalDirection direction = MarshalDirection.Forward;
             MethodSignature methodSig;
+            bool runtimeMarshallingEnabled;
             switch (targetMethod)
             {
                 case DelegateMarshallingMethodThunk delegateMethod:
                     methodSig = delegateMethod.DelegateSignature;
                     direction = delegateMethod.Direction;
+                    runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(delegateMethod.DelegateType.Module);
                     break;
                 case CalliMarshallingMethodThunk calliMethod:
                     methodSig = calliMethod.TargetSignature;
+                    runtimeMarshallingEnabled = calliMethod.UseRuntimeMarshalling;
                     break;
                 default:
                     methodSig = targetMethod.Signature;
+                    runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(((EcmaMethod)targetMethod).Module);
                     break;
             }
             int indexOffset = 0;
@@ -114,20 +118,36 @@ namespace Internal.IL.Stubs
                     parameterType = methodSig[i - 1];
                 }
 
-                marshallers[i] = Marshaller.CreateMarshaller(parameterType,
-                                                    parameterIndex,
-                                                    methodSig.GetEmbeddedSignatureData(),
-                                                    MarshallerType.Argument,
-                                                    parameterMetadata.MarshalAsDescriptor,
-                                                    direction,
-                                                    marshallers,
-                                                    interopStateManager,
-                                                    indexOffset + parameterMetadata.Index,
-                                                    flags,
-                                                    parameterMetadata.In,
-                                                    isHRSwappedRetVal ? true : parameterMetadata.Out,
-                                                    isHRSwappedRetVal ? false : parameterMetadata.Return
-                                                    );
+                if (runtimeMarshallingEnabled)
+                {
+                    marshallers[i] = Marshaller.CreateMarshaller(parameterType,
+                                                        parameterIndex,
+                                                        methodSig.GetEmbeddedSignatureData(),
+                                                        MarshallerType.Argument,
+                                                        parameterMetadata.MarshalAsDescriptor,
+                                                        direction,
+                                                        marshallers,
+                                                        interopStateManager,
+                                                        indexOffset + parameterMetadata.Index,
+                                                        flags,
+                                                        parameterMetadata.In,
+                                                        isHRSwappedRetVal ? true : parameterMetadata.Out,
+                                                        isHRSwappedRetVal ? false : parameterMetadata.Return
+                                                        );
+                }
+                else
+                {
+                    marshallers[i] = Marshaller.CreateDisabledRuntimeMarshallingMarshaller(
+                        parameterType,
+                        parameterIndex,
+                        MarshallerType.Argument,
+                        direction,
+                        marshallers,
+                        interopStateManager,
+                        indexOffset + parameterMetadata.Index,
+                        flags,
+                        parameterMetadata.Return);
+                }
             }
 
             return marshallers;

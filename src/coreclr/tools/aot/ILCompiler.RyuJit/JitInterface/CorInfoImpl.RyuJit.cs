@@ -15,6 +15,7 @@ using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using Internal.TypeSystem.Interop;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -1799,7 +1800,9 @@ namespace Internal.JitInterface
 #if DEBUG
                 MethodSignature methodSignature = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
 
-                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(methodSignature);
+                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
+                    methodSignature,
+                    MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)HandleToObject(callSiteSig->scope).OwningMethod.OwningType).Module));
                 Debug.Assert(!IsPInvokeStubRequired(stub));
 #endif
 
@@ -1833,7 +1836,9 @@ namespace Internal.JitInterface
             if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == 0)
                 return false;
 
-            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(signature);
+            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
+                signature,
+                MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)methodIL.OwningMethod.OwningType).Module));
             if (!mustConvert && !IsPInvokeStubRequired(stub))
                 return false;
 

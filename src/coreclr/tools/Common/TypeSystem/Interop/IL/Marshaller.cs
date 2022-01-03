@@ -382,6 +382,58 @@ namespace Internal.TypeSystem.Interop
 
             return marshaller;
         }
+
+        /// <summary>
+        /// Create a marshaller
+        /// </summary>
+        /// <param name="parameterType">type of the parameter to marshal</param>
+        /// <returns>The created Marshaller</returns>
+        public static Marshaller CreateDisabledRuntimeMarshallingMarshaller(TypeDesc parameterType,
+            int? parameterIndex,
+            MarshallerType marshallerType,
+            MarshalDirection direction,
+            Marshaller[] marshallers,
+#if !READYTORUN
+            InteropStateManager interopStateManager,
+#endif
+            int index,
+            PInvokeFlags flags,
+            bool isReturn)
+        {
+            bool isAnsi = flags.CharSet switch
+            {
+                CharSet.Ansi => true,
+                CharSet.Unicode => false,
+                CharSet.Auto => !parameterType.Context.Target.IsWindows,
+                _ => true
+            };
+
+            MarshallerKind marshallerKind = MarshalHelpers.GetRuntimeDisabledMarshallingMarshallerKind(parameterType);
+
+            TypeSystemContext context = parameterType.Context;
+            // Create the marshaller based on MarshallerKind
+            Marshaller marshaller = CreateMarshaller(marshallerKind);
+            marshaller.Context = context;
+#if !READYTORUN
+            marshaller.InteropStateManager = interopStateManager;
+#endif
+            marshaller.MarshallerKind = marshallerKind;
+            marshaller.MarshallerType = marshallerType;
+            marshaller.ElementMarshallerKind = MarshallerKind.Unknown;
+            marshaller.ManagedParameterType = parameterType;
+            marshaller.ManagedType = parameterType.IsByRef ? parameterType.GetParameterType() : parameterType;
+            marshaller.Return = isReturn;
+            marshaller.IsManagedByRef = parameterType.IsByRef;
+            marshaller.IsNativeByRef = marshaller.IsManagedByRef;
+            marshaller.MarshalDirection = direction;
+            marshaller.MarshalAsDescriptor = null;
+            marshaller.Marshallers = marshallers;
+            marshaller.Index = index;
+            marshaller.PInvokeFlags = flags;
+            marshaller.In = true;
+            marshaller.Out = marshaller.IsManagedByRef;
+            return marshaller;
+        }
         #endregion
 
 

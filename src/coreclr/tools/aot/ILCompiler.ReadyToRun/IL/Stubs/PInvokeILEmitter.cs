@@ -12,6 +12,7 @@ using Internal.TypeSystem.Interop;
 using Internal.JitInterface;
 
 using Debug = System.Diagnostics.Debug;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
@@ -46,6 +47,15 @@ namespace Internal.IL.Stubs
             // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke
             if (_importMetadata.Flags.SetLastError)
             {
+                if (_targetMethod is EcmaMethod ecmaMethod
+                    && ecmaMethod.Module.Assembly is EcmaAssembly assembly
+                    && assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute"))
+                {
+                    // When runtime marshalling is disabled, we don't support generating the stub IL
+                    // in Ready-to-Run so we can correctly throw an exception at runtime when the user tries to
+                    // use SetLastError=true when marshalling is disabled.
+                    throw new NotSupportedException();
+                }
                 callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
                             stubHelpersType.GetKnownMethod("ClearLastError", null)));
             }

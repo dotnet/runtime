@@ -5,6 +5,7 @@ using System;
 using Internal.IL;
 using Debug = System.Diagnostics.Debug;
 using Internal.IL.Stubs;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop
 {
@@ -844,6 +845,24 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        internal static MarshallerKind GetRuntimeDisabledMarshallingMarshallerKind(
+            TypeDesc type)
+        {
+            if (type.IsPrimitive && type.Category != TypeFlags.Void)
+            {
+                return MarshallerKind.BlittableValue;
+            }
+            else if (type.IsPointer || type.IsFunctionPointer)
+            {
+                return MarshallerKind.BlittableValue;
+            }
+            else if (type.IsValueType && !((DefType)type).ContainsGCPointers)
+            {
+                return MarshallerKind.BlittableValue;
+            }
+            return MarshallerKind.Invalid;
+        }
+
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
         {
             if (!target.IsOSX)
@@ -860,6 +879,11 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
+        }
+
+        public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
+        {
+            return module.Assembly is not EcmaAssembly assembly || assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
         }
     }
 }
