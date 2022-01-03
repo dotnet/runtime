@@ -154,7 +154,7 @@ internal static partial class Interop
 
         internal static class Capabilities
         {
-            // needs separate type to be sure OpenSSL is initialized.
+            // needs separate type (separate static cctor) to be sure OpenSSL is initialized.
             internal static readonly bool Tls13Supported = Tls13SupportedImpl() != 0;
         }
 
