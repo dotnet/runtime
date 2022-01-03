@@ -5,8 +5,12 @@
 
 struct StructWithShortAndBool
 {
-    short s;
     bool b;
+    short s;
+    // Make sure we don't have any cases where the native code could return a value of this type one way,
+    // but an invalid managed declaration would expect it differently. This ensures that test failures won't be
+    // due to crashes from a mismatched return scheme in the calling convention.
+    int padding;
 };
 
 struct StructWithWCharAndShort
@@ -39,11 +43,17 @@ extern "C" DLL_EXPORT BYTE PassThrough(BYTE b)
 
 extern "C" DLL_EXPORT void Invalid(...) {}
 
-#ifdef _WIN32
+
 extern "C" DLL_EXPORT bool STDMETHODCALLTYPE CheckStructWithShortAndBoolWithVariantBool(StructWithShortAndBool str, short s, VARIANT_BOOL b)
 {
     // Specifically use VARIANT_TRUE here as invalid marshalling (in the "disabled runtime marshalling" case) will incorrectly marshal VARAINT_TRUE
     // but could accidentally marshal VARIANT_FALSE correctly since it is 0, which is the same representation as a zero or sign extension of the C# false value.
     return str.s == s && str.b == (b == VARIANT_TRUE);
 }
-#endif
+
+using CheckStructWithShortAndBoolWithVariantBoolCallback = bool (STDMETHODCALLTYPE*)(StructWithShortAndBool, short, VARIANT_BOOL);
+
+extern "C" DLL_EXPORT CheckStructWithShortAndBoolWithVariantBoolCallback STDMETHODCALLTYPE GetStructWithShortAndBoolWithVariantBoolCallback()
+{
+    return &CheckStructWithShortAndBoolWithVariantBool;
+}

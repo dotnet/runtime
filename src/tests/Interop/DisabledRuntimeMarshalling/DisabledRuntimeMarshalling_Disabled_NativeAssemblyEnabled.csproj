@@ -3,8 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Common/*.cs" />
-    <Compile Include="DefaultOnly/*.cs" />
+    <Compile Include="PInvokeAssemblyMarshallingEnabled/*.cs" />
+    <Compile Include="FunctionPointers.cs" />
     <Compile Include="RuntimeMarshallingDisabledAttribute.cs" />
   </ItemGroup>
   <ItemGroup>

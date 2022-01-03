@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using Xunit;
 using static DisabledRuntimeMarshallingNative;
 
-namespace DisabledRuntimeMarshalling.DisabledMarshallingOnly;
+namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingDisabled;
 
 public class PInvokes
 {

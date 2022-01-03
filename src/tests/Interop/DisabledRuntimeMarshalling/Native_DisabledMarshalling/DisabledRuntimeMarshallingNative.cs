@@ -9,21 +9,23 @@ public unsafe class DisabledRuntimeMarshallingNative
 {
     public struct StructWithShortAndBool
     {
-        short s;
         bool b;
+        short s;
+        int padding;
 
         public StructWithShortAndBool(short s, bool b)
         {
             this.s = s;
             this.b = b;
+            this.padding = 0;
         }
     }
 
     public struct StructWithShortAndBoolWithMarshalAs
     {
-        short s;
         [MarshalAs(UnmanagedType.VariantBool)]
         bool b;
+        short s;
 
         public StructWithShortAndBoolWithMarshalAs(short s, bool b)
         {
@@ -99,8 +101,8 @@ public unsafe class DisabledRuntimeMarshallingNative
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     public static extern delegate*<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
 
-    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "GetStructWithShortAndBoolCallback")]
-    public static extern delegate*<StructWithShortAndBoolWithMarshalAs, short, bool, bool> GetStructWithShortAndBoolWithMarshalAsCallback();
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    public static extern delegate*<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolWithVariantBoolCallback();
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
     public static extern bool GetByteAsBool(byte b);
@@ -110,5 +112,5 @@ public unsafe class DisabledRuntimeMarshallingNative
     public static extern bool CheckStructWithShortAndBoolWithVariantBool_FailureExpected(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
 
     public delegate bool CheckStructWithShortAndBoolCallback(StructWithShortAndBool str, short s, bool b);
-    public delegate bool CheckStructWithShortAndBoolWithMarshalAsCallback(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.I4)] bool b);
+    public delegate bool CheckStructWithShortAndBoolWithVariantBoolCallback(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
 }

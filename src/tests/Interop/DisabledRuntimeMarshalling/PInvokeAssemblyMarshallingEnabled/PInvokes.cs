@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using Xunit;
 using static DisabledRuntimeMarshallingNative;
 
-namespace DisabledRuntimeMarshalling.DefaultOnly;
+namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingEnabled;
 
 public class PInvokes
 {
@@ -16,7 +16,8 @@ public class PInvokes
         short s = 42;
         bool b = true;
 
-        Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBool(s, b), s, b));
+        // By default, bool is a 4-byte Windows BOOL, which will cause us to incorrectly marshal back the struct from native code.
+        Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBool(s, b), s, b));
 
         // We use a the "green check mark" character so that we use both bytes and
         // have a value that can't be accidentally round-tripped.
@@ -24,6 +25,7 @@ public class PInvokes
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShort(s, c), s, c));
 
     }
+
     [Fact]
     public static void StructWithDefaultNonBlittableFields_MarshalAsInfo()
     {
@@ -36,7 +38,14 @@ public class PInvokes
         // have a value that can't be accidentally round-tripped.
         char c = '✅';
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShortWithMarshalAs(s, c), s, c));
+    }
 
-        Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool(new StructWithShortAndBool(s, b), s, b));
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public static void StructWithDefaultNonBlittableFields_MarshalAsInfo_WindowsOnly()
+    {
+        short s = 41;
+        bool b = true;
+        Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool(new StructWithShortAndBoolWithMarshalAs(s, b), s, b));
     }
 }

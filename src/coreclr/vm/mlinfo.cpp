@@ -1163,7 +1163,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_byref = TRUE;
 #endif
 
-    const bool useBuiltInMarshalling = ms == MARSHAL_SCENARIO_NDIRECT && pModule->IsRuntimeMarshallingEnabled();
+    const bool useBuiltInMarshalling = ms != MARSHAL_SCENARIO_NDIRECT || pModule->IsRuntimeMarshallingEnabled();
 
     // Retrieve the native type for the current parameter.
     if (!ParseNativeTypeInfo(token, pModule->GetMDImport(), &ParamInfo))

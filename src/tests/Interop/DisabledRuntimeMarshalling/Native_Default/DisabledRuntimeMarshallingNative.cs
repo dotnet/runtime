@@ -9,22 +9,23 @@ public unsafe class DisabledRuntimeMarshallingNative
 {
     public struct StructWithShortAndBool
     {
-        short s;
-        [MarshalAs(UnmanagedType.U1)]
         bool b;
+        short s;
+        int padding;
 
         public StructWithShortAndBool(short s, bool b)
         {
             this.s = s;
             this.b = b;
+            this.padding = 0;
         }
     }
 
     public struct StructWithShortAndBoolWithMarshalAs
     {
-        short s;
         [MarshalAs(UnmanagedType.U1)]
         bool b;
+        short s;
 
         public StructWithShortAndBoolWithMarshalAs(short s, bool b)
         {
@@ -90,8 +91,8 @@ public unsafe class DisabledRuntimeMarshallingNative
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     public static extern delegate*<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
 
-    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "GetStructWithShortAndBoolCallback")]
-    public static extern delegate*<StructWithShortAndBoolWithMarshalAs, short, bool, bool> GetStructWithShortAndBoolWithMarshalAsCallback();
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    public static extern delegate*<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolWithVariantBoolCallback();
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
     [return:MarshalAs(UnmanagedType.U1)]
@@ -99,8 +100,8 @@ public unsafe class DisabledRuntimeMarshallingNative
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     [return:MarshalAs(UnmanagedType.U1)]
-    public static extern bool CheckStructWithShortAndBoolWithVariantBool(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
+    public static extern bool CheckStructWithShortAndBoolWithVariantBool(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
 
     public delegate bool CheckStructWithShortAndBoolCallback(StructWithShortAndBool str, short s, bool b);
-    public delegate bool CheckStructWithShortAndBoolWithMarshalAsCallback(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.Bool)] bool b);
+    public delegate bool CheckStructWithShortAndBoolWithMarshalAsAndVariantBoolCallback(StructWithShortAndBoolWithMarshalAs str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
 }

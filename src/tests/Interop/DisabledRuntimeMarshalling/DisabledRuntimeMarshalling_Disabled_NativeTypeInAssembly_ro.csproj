@@ -6,8 +6,8 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Common/*.cs" />
-    <Compile Include="DisabledMarshallingOnly/*.cs" />
+    <Compile Include="PInvokeAssemblyMarshallingDisabled/*.cs" />
+    <Compile Include="FunctionPointers.cs" />
     <Compile Include="Native_DisabledMarshalling/DisabledRuntimeMarshallingNative.cs" />
     <Compile Include="RuntimeMarshallingDisabledAttribute.cs" />
     <ProjectReference Include="CMakeLists.txt" />

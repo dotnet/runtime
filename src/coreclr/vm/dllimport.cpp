@@ -3618,7 +3618,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnInteropStubSetup: '%s' ", pSigDesc->m_pDebugName));
 #endif // _DEBUG
 
-    bool builtInMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pModule->IsRuntimeMarshallingEnabled();
+    bool builtInMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pSigDesc->m_pModule->IsRuntimeMarshallingEnabled();
     if (SF_IsCOMStub(dwStubFlags))
     {
         _ASSERTE(0 == nlType);
