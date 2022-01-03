@@ -287,12 +287,6 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
     // Set baseline flags if OS has not exposed mechanism for us to determine CPU capabilities
     flags->Set(InstructionSet_ArmBase);
     flags->Set(InstructionSet_AdvSimd);
-
-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
-    // osx-arm64 never traps DC ZVA execution
-    flags->Set(InstructionSet_Dczva);
-#endif
-
     //    flags->Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
 #endif // HAVE_AUXV_HWCAP_H
 #elif defined(TARGET_ARM64)
