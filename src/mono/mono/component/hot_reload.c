@@ -231,6 +231,9 @@ struct _BaselineInfo {
 	/* TRUE if any published update modified an existing row */
 	gboolean any_modified_rows [MONO_TABLE_NUM];
 
+	/* A list of MonoClassMetadataUpdateInfo* that need to be cleaned up */
+	GSList *klass_info;
+
 	/* Parents for added methods, fields, etc */
 	GHashTable *member_parent; /* maps added methoddef or fielddef tokens to typedef tokens */
 };
@@ -342,10 +345,26 @@ baseline_info_init (MonoImage *image_base)
 }
 
 static void
+klass_info_destroy (gpointer value, gpointer user_data G_GNUC_UNUSED)
+{
+	MonoClassMetadataUpdateInfo *info = (MonoClassMetadataUpdateInfo *)value;
+	g_array_free (info->added_members, TRUE);
+	/* The MonoClassMetadataUpdateField is allocated from the class mempool, don't free it here */
+	g_ptr_array_free (info->added_fields, TRUE);
+
+	/* The MonoClassMetadataUpdateInfo itself is allocated from the class mempool, don't free it here */
+}
+
+static void
 baseline_info_destroy (BaselineInfo *info)
 {
 	if (info->method_table_update)
 		g_hash_table_destroy (info->method_table_update);
+
+	if (info->klass_info) {
+		g_slist_foreach (info->klass_info, klass_info_destroy, NULL);
+		g_slist_free (info->klass_info);
+	}
 	g_free (info);
 }
 
@@ -695,6 +714,14 @@ hot_reload_update_cancel (uint32_t generation)
 	publish_unlock ();
 }
 
+static void
+add_class_info_to_baseline (MonoClass *klass, MonoClassMetadataUpdateInfo *klass_info)
+{
+	MonoImage *image = m_class_get_image (klass);
+	BaselineInfo *baseline_info = baseline_info_lookup (image);
+	baseline_info->klass_info = g_slist_prepend (baseline_info->klass_info, klass_info);
+}
+
 static MonoClassMetadataUpdateInfo *
 mono_class_get_or_add_metadata_update_info (MonoClass *klass)
 {
@@ -706,6 +733,7 @@ mono_class_get_or_add_metadata_update_info (MonoClass *klass)
 	info = mono_class_get_metadata_update_info (klass);
 	if (!info) {
 		info = mono_class_alloc0 (klass, sizeof (MonoClassMetadataUpdateInfo));
+		add_class_info_to_baseline (klass, info);
 		mono_class_set_metadata_update_info (klass, info);
 	}
 	mono_loader_unlock ();
