@@ -19,7 +19,6 @@ namespace ILCompiler
             get;
         }
 
-        private readonly DelegateFeature _delegateFeatures;
         private readonly MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         private readonly RuntimeDeterminedFieldLayoutAlgorithm _runtimeDeterminedFieldLayoutAlgorithm = new RuntimeDeterminedFieldLayoutAlgorithm();
         private readonly VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
@@ -37,7 +36,7 @@ namespace ILCompiler
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
-            _delegateFeatures = delegateFeatures;
+            _delegateInfoHashtable = new DelegateInfoHashtable(delegateFeatures);
 
             GenericsConfig = new SharedGenericsConfiguration();
         }
@@ -163,11 +162,6 @@ namespace ILCompiler
             IEnumerable<MethodDesc> metadataMethods = virtualOnly ? type.GetVirtualMethods() : type.GetMethods();
             foreach (var m in metadataMethods)
                 yield return m;
-        }
-
-        protected override DelegateInfo CreateDelegateInfo(TypeDesc delegateType)
-        {
-            return new DelegateInfo(delegateType, _delegateFeatures);
         }
 
         internal DefType GetClosestDefType(TypeDesc type)

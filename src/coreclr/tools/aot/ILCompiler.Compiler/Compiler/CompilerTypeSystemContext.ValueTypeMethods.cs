@@ -3,13 +3,14 @@
 
 using System.Collections.Generic;
 
+using Internal.TypeSystem;
 using Internal.IL.Stubs;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace Internal.TypeSystem
+namespace ILCompiler
 {
-    public abstract partial class TypeSystemContext
+    partial class CompilerTypeSystemContext
     {
         private MethodDesc _objectEqualsMethod;
 
@@ -154,7 +155,7 @@ namespace Internal.TypeSystem
                         // Would be a suprise if this wasn't a valuetype. We checked ContainsGCPointers above.
                         Debug.Assert(fieldType.IsValueType);
 
-                        MethodDesc objectEqualsMethod = fieldType.Context._objectEqualsMethod;
+                        MethodDesc objectEqualsMethod = ((CompilerTypeSystemContext)fieldType.Context)._objectEqualsMethod;
 
                         // If the field overrides Equals, we can't use the fast helper because we need to call the method.
                         if (fieldType.FindVirtualFunctionTargetMethodOnObjectType(objectEqualsMethod).OwningType == fieldType)

@@ -270,7 +270,7 @@ namespace ILCompiler
             return argSyntax;
         }
 
-        private IReadOnlyCollection<MethodDesc> CreateInitializerList(TypeSystemContext context)
+        private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
             List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc>();
 
@@ -278,7 +278,7 @@ namespace ILCompiler
             // any user code runs.
             foreach (string initAssemblyName in _initAssemblies)
             {
-                ModuleDesc assembly = context.ResolveAssembly(new AssemblyName(initAssemblyName));
+                ModuleDesc assembly = context.ResolveAssembly(new AssemblyName(initAssemblyName), throwIfNotFound: true);
                 assembliesWithInitalizers.Add(assembly);
             }
 

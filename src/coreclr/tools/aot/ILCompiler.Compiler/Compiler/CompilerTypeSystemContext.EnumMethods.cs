@@ -3,13 +3,14 @@
 
 using System.Collections.Generic;
 
+using Internal.TypeSystem;
 using Internal.IL.Stubs;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace Internal.TypeSystem
+namespace ILCompiler
 {
-    public abstract partial class TypeSystemContext
+    partial class CompilerTypeSystemContext
     {
         private class EnumInfo
         {

@@ -726,7 +726,8 @@ namespace Internal.IL.Stubs
                     Debug.Assert(_delegateInfo.Thunks[i] == null);
 
                     var sig = new DynamicInvokeMethodSignature(_delegateInfo.Signature);
-                    MethodDesc thunk = Context.GetDynamicInvokeThunk(sig);
+                    // TODO: layering violation. Should move delegate thunk stuff to ILCompiler.Compiler.
+                    MethodDesc thunk = ((ILCompiler.CompilerTypeSystemContext)Context).GetDynamicInvokeThunk(sig);
 
                     if (thunk.HasInstantiation)
                     {
