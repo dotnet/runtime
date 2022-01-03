@@ -7524,13 +7524,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
     }
 
     // We have to handle the case where the LHS is a comma.  In that case, we don't evaluate the comma,
-    // so we give it VNForVoid, and we're really interested in the effective value.
-    GenTree* lhsCommaIter = lhs;
-    while (lhsCommaIter->OperGet() == GT_COMMA)
-    {
-        lhsCommaIter->gtVNPair.SetBoth(vnStore->VNForVoid());
-        lhsCommaIter = lhsCommaIter->AsOp()->gtOp2;
-    }
+    // and we're really just interested in the effective value.
     lhs = lhs->gtEffectiveVal();
 
     // Now, record the new VN for an assignment (performing the indicated "state update").
@@ -7686,8 +7680,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
 
             // Indicates whether the argument of the IND is the address of a local.
             bool wasLocal = false;
-
-            lhs->gtVNPair = rhsVNPair;
 
             VNFuncApp funcApp;
             ValueNum  argVN = arg->gtVNPair.GetLiberal();
@@ -7923,10 +7915,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                         newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
                                                                     storeVal, indType);
                     }
-
-                    // It is not strictly necessary to set the lhs value number,
-                    // but the dumps read better with it set to the 'storeVal' that we just computed
-                    lhs->gtVNPair.SetBoth(storeVal);
 
                     // Update the GcHeap value.
                     recordGcHeapStore(tree, newHeapVN DEBUGARG("StoreField"));
@@ -8574,19 +8562,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     // We have a Def (write) of the LclVar
 
-                    // TODO-Review: For the short term, we have a workaround for copyblk/initblk.  Those that use
-                    // addrSpillTemp will have a statement like "addrSpillTemp = addr(local)."  If we previously decided
-                    // that this block operation defines the local, we will have labeled the "local" node as a DEF
-                    // This flag propagates to the "local" on the RHS.  So we'll assume that this is correct,
-                    // and treat it as a def (to a new, unique VN).
-                    //
+                    // The below block ensures we give VNs to the fields of
+                    // "CanBeReplacedWithItsField" struct locals. To the numbering
+                    // of block assignments, those appear as untracked locals, but
+                    // we need to give the SSA defs they represent a VN.
                     if (lcl->GetSsaNum() != SsaConfig::RESERVED_SSA_NUM)
                     {
                         ValueNum uniqVN = vnStore->VNForExpr(compCurBB, lcl->TypeGet());
                         varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair.SetBoth(uniqVN);
                     }
 
-                    lcl->gtVNPair = ValueNumPair(); // Avoid confusion -- we don't set the VN of a lcl being defined.
+                    // Location nodes get VNForVoid (no exceptions needed).
+                    lcl->gtVNPair = vnStore->VNPForVoid();
                 }
             }
             break;
@@ -8627,6 +8614,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         ValueNumPair lclVNPair = varDsc->GetPerSsaData(ssaNum)->m_vnPair;
                         tree->gtVNPair = vnStore->VNPairApplySelectors(lclVNPair, lclFld->GetFieldSeq(), indType);
                     }
+                }
+                else
+                {
+                    // A location node (LHS).
+                    lclFld->gtVNPair = vnStore->VNPForVoid();
                 }
             }
             break;
@@ -8711,6 +8703,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         clsVarVNPair         = vnStore->VNPairForCast(clsVarVNPair, castToType, castToType);
                     }
                     tree->gtVNPair = clsVarVNPair;
+                }
+                else
+                {
+                    // Location nodes get the "Void" VN.
+                    tree->gtVNPair = vnStore->VNPForVoid();
                 }
                 break;
 
@@ -9079,6 +9076,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                 }
             }
+
+            // To be able to propagate exception sets, we give location nodes the "Void" VN.
+            if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
+            {
+                tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), addrXvnp);
+            }
         }
         else if (tree->OperGet() == GT_CAST)
         {
@@ -9194,28 +9197,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     case GT_COMMA:
                     {
-                        ValueNumPair op1vnp;
-                        ValueNumPair op1Xvnp;
-                        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
-                        ValueNumPair op2vnp;
-                        ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
-                        GenTree*     op2     = tree->gtGetOp2();
-
-                        if (op2->OperIsIndir() && ((op2->gtFlags & GTF_IND_ASG_LHS) != 0))
-                        {
-                            // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
-                            op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
-                        }
-                        else if ((op2->OperGet() == GT_CLS_VAR) && (op2->gtFlags & GTF_CLS_VAR_ASG_LHS))
-                        {
-                            // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
-                            op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
-                        }
-                        else
-                        {
-                            vnStore->VNPUnpackExc(op2->gtVNPair, &op2vnp, &op2Xvnp);
-                        }
-                        tree->gtVNPair = vnStore->VNPWithExc(op2vnp, vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp));
+                        ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(tree->AsOp()->gtOp1->gtVNPair);
+                        tree->gtVNPair       = vnStore->VNPWithExc(tree->AsOp()->gtOp2->gtVNPair, op1Xvnp);
                     }
                     break;
 
@@ -10593,16 +10576,8 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
     // Combine the excChkSet with exception set of op1
     ValueNumPair excSetBoth = vnStore->VNPExcSetUnion(excChkSet, vnpBaseExc);
 
-    // Retrieve the Normal VN for tree, note that it may be NoVN, so we handle that case
-    ValueNumPair vnpNorm = vnStore->VNPNormalPair(tree->gtVNPair);
-
-    // For as GT_IND on the lhs of an assignment we will get a NoVN value
-    if (vnpNorm.GetLiberal() == ValueNumStore::NoVN)
-    {
-        // Use the special Void VN value instead.
-        vnpNorm = vnStore->VNPForVoid();
-    }
-    tree->gtVNPair = vnStore->VNPWithExc(vnpNorm, excSetBoth);
+    // Retrieve the Normal VN for tree and combine it with the final exception set.
+    tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPNormalPair(tree->gtVNPair), excSetBoth);
 }
 
 //--------------------------------------------------------------------------------
@@ -10983,14 +10958,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 // ToDo: model the exceptions for Intrinsics
                 break;
 
-            case GT_IND: // Implicit null check.
-                if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
-                {
-                    // Don't add exception set on LHS of assignment
-                    break;
-                }
-                FALLTHROUGH;
-
+            case GT_IND:
             case GT_BLK:
             case GT_OBJ:
             case GT_DYN_BLK:
