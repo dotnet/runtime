@@ -81,7 +81,7 @@ void GetStringFromAddr(DWORD_PTR dwAddr, __out_ecount(cchMaxAssertStackLevelStri
 *       Exactly the contents of RtlCaptureContext for Win7 - Win2K doesn't
 *       support this, so we need it for CoreCLR 4, if we require Win2K support
 ****************************************************************************/
-extern "C" void __stdcall ClrCaptureContext(__out PCONTEXT ctx);
+extern "C" void __stdcall ClrCaptureContext(_Out_ PCONTEXT ctx);
 #else // HOST_X86 && !TARGET_UNIX
 #define ClrCaptureContext RtlCaptureContext
 #endif // HOST_X86 && !TARGET_UNIX

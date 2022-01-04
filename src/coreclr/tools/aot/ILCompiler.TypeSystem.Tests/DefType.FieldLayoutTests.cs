@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Interop;
 
 using Xunit;
 

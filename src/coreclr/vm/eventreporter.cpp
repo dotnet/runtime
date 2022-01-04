@@ -165,7 +165,7 @@ EventReporter::EventReporter(EventReporterType type)
 // Return Value:
 //    None.
 //
-void EventReporter::AddDescription(__in WCHAR *pString)
+void EventReporter::AddDescription(_In_ WCHAR *pString)
 {
     CONTRACTL
     {

@@ -320,17 +320,42 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<double> ConvertToDouble(Vector256<long> vector)
         {
-            Unsafe.SkipInit(out Vector256<double> result);
-
-            for (int i = 0; i < Vector256<double>.Count; i++)
+            if (Avx2.IsSupported)
             {
-                var value = (double)vector.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                // Based on __m256d int64_to_double_fast_precise(const __m256i v)
+                // from https://stackoverflow.com/a/41223013/12860347. CC BY-SA 4.0
+
+                Vector256<int> lowerBits;
+
+                lowerBits = vector.AsInt32();
+                lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000).AsInt32(), 0b10101010);           // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)
+
+                var upperBits = Avx2.ShiftRightLogical(vector, 32);                                             // Extract the 32 most significant bits of vector
+                upperBits = Avx2.Xor(upperBits, Create(0x45300000_80000000));                                   // Flip the msb of upperBits and blend with the bit representation of double(2^84 + 2^63)
+
+                var result = Avx.Subtract(upperBits.AsDouble(), Create(0x45300000_80100000).AsDouble());        // Compute in double precision: (upper - (2^84 + 2^63 + 2^52)) + lower
+                return Avx.Add(result, lowerBits.AsDouble());
+            }
+            else
+            {
+                return SoftwareFallback(vector);
             }
 
-            return result;
+            static Vector256<double> SoftwareFallback(Vector256<long> vector)
+            {
+                Unsafe.SkipInit(out Vector256<double> result);
+
+                for (int i = 0; i < Vector256<double>.Count; i++)
+                {
+                    var value = (double)vector.GetElementUnsafe(i);
+                    result.SetElementUnsafe(i, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Converts a <see cref="Vector256{UInt64}" /> to a <see cref="Vector256{Double}" />.</summary>
@@ -338,17 +363,42 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<double> ConvertToDouble(Vector256<ulong> vector)
         {
-            Unsafe.SkipInit(out Vector256<double> result);
-
-            for (int i = 0; i < Vector256<double>.Count; i++)
+            if (Avx2.IsSupported)
             {
-                var value = (double)vector.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                // Based on __m256d uint64_to_double_fast_precise(const __m256i v)
+                // from https://stackoverflow.com/a/41223013/12860347. CC BY-SA 4.0
+
+                Vector256<uint> lowerBits;
+
+                lowerBits = vector.AsUInt32();
+                lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000UL).AsUInt32(), 0b10101010);        // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)                                                 */
+
+                var upperBits = Avx2.ShiftRightLogical(vector, 32);                                             // Extract the 32 most significant bits of vector
+                upperBits = Avx2.Xor(upperBits, Create(0x45300000_00000000UL));                                 // Blend upperBits with the bit representation of double(2^84)
+
+                var result = Avx.Subtract(upperBits.AsDouble(), Create(0x45300000_00100000UL).AsDouble());      // Compute in double precision: (upper - (2^84 + 2^52)) + lower
+                return Avx.Add(result, lowerBits.AsDouble());
+            }
+            else
+            {
+                return SoftwareFallback(vector);
             }
 
-            return result;
+            static Vector256<double> SoftwareFallback(Vector256<ulong> vector)
+            {
+                Unsafe.SkipInit(out Vector256<double> result);
+
+                for (int i = 0; i < Vector256<double>.Count; i++)
+                {
+                    var value = (double)vector.GetElementUnsafe(i);
+                    result.SetElementUnsafe(i, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Converts a <see cref="Vector256{Single}" /> to a <see cref="Vector256{Int32}" />.</summary>
@@ -407,17 +457,56 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<float> ConvertToSingle(Vector256<uint> vector)
         {
-            Unsafe.SkipInit(out Vector256<float> result);
-
-            for (int i = 0; i < Vector256<float>.Count; i++)
+            if (Avx2.IsSupported)
             {
-                var value = (float)vector.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                // This first bit of magic works because float can exactly represent integers up to 2^24
+                //
+                // This means everything between 0 and 2^16 (ushort.MaxValue + 1) are exact and so
+                // converting each of the upper and lower halves will give an exact result
+
+                var lowerBits = Avx2.And(vector, Create(0x0000FFFFU)).AsInt32();
+                var upperBits = Avx2.ShiftRightLogical(vector, 16).AsInt32();
+
+                var lower = Avx.ConvertToVector256Single(lowerBits);
+                var upper = Avx.ConvertToVector256Single(upperBits);
+
+                // This next bit of magic works because all multiples of 65536, at least up to 65535
+                // are likewise exactly representable
+                //
+                // This means that scaling upper by 65536 gives us the exactly representable base value
+                // and then the remaining lower value, which is likewise up to 65535 can be added on
+                // giving us a result that will correctly round to the nearest representable value
+
+                if (Fma.IsSupported)
+                {
+                    return Fma.MultiplyAdd(upper, Vector256.Create(65536.0f), lower);
+                }
+                else
+                {
+                    var result = Avx.Multiply(upper, Vector256.Create(65536.0f));
+                    return Avx.Add(result, lower);
+                }
+            }
+            else
+            {
+                return SoftwareFallback(vector);
             }
 
-            return result;
+            static Vector256<float> SoftwareFallback(Vector256<uint> vector)
+            {
+                Unsafe.SkipInit(out Vector256<float> result);
+
+                for (int i = 0; i < Vector256<float>.Count; i++)
+                {
+                    var value = (float)vector.GetElementUnsafe(i);
+                    result.SetElementUnsafe(i, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Converts a <see cref="Vector256{Single}" /> to a <see cref="Vector256{UInt32}" />.</summary>

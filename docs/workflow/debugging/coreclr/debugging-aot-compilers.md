@@ -19,7 +19,7 @@ Built in debugging aids in the managed compilers
 ---------------------------------
 
 - When debugging a multi-threaded component of the compiler and not investigating a multi-threading issue itself, it is generally advisable to disable the use of multiple threads.
-To do this use the `--parallelism 1` switch (for crossgen2) or `--singlethreaded` (for ILC) to specify that the maximum parallelism of the process shall be 1.
+To do this use the `--parallelism 1` switch to specify that the maximum parallelism of the process shall be 1.
 
 - When debugging the behavior of compiling a single method, the compiler may be instructed to only compile a single method. This is done via the various --singlemethod options
 

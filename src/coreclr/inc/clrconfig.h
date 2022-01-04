@@ -131,7 +131,7 @@ public:
     static BOOL IsConfigOptionSpecified(LPCWSTR name);
 
     // Free a string returned by GetConfigValue
-    static void FreeConfigString(__in __in_z LPWSTR name);
+    static void FreeConfigString(_In_ __in_z LPWSTR name);
 
     // Initialize the configuration.
     static void Initialize();

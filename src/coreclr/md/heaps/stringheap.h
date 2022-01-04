@@ -172,7 +172,7 @@ public:
     // Fills *pcbSize with 0 on error.
     __checkReturn
     inline HRESULT GetAlignedSize(
-        __out UINT32 *pcbSize) const
+        _Out_ UINT32 *pcbSize) const
     {
         return m_StringPool.GetSaveSize(pcbSize);
     }
@@ -192,7 +192,7 @@ public:
     __checkReturn
     inline HRESULT SaveToStream_Aligned(
              UINT32   nStartIndex,
-        __in IStream *pStream) const
+        _In_ IStream *pStream) const
     {
         if (nStartIndex == 0)
         {
@@ -220,7 +220,7 @@ public:
     __checkReturn
     inline HRESULT AddString(
         __in_z LPCSTR  szString,
-        __out  UINT32 *pnIndex)
+        _Out_  UINT32 *pnIndex)
     {
         return m_StringPool.AddString(szString, pnIndex);
     }
@@ -230,7 +230,7 @@ public:
     __checkReturn
     inline HRESULT AddStringW(
         __in_z LPCWSTR wszString,
-        __out  UINT32 *pnIndex)
+        _Out_  UINT32 *pnIndex)
     {
         return m_StringPool.AddStringW(wszString, pnIndex);
     }
@@ -281,7 +281,7 @@ public:
     // Gets size (in bytes) aligned to 4-bytes of adds made from the beginning of the last EnC session.
     __checkReturn
     inline HRESULT GetEnCSessionAddedHeapSize_Aligned(
-        __out UINT32 *pcbSize) const
+        _Out_ UINT32 *pcbSize) const
     {
         if (m_StringPool.HaveEdits())
         {
