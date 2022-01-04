@@ -623,7 +623,12 @@ namespace DebuggerTests
                         AssertEqual("Function", get["className"]?.Value<string>(), $"{label}-className");
                         AssertStartsWith($"get {exp_val["type_name"]?.Value<string>()} ()", get["description"]?.Value<string>(), $"{label}-description");
                         AssertEqual("function", get["type"]?.Value<string>(), $"{label}-type");
-
+                        var expectedValue = exp_val["value"];
+                        if (expectedValue.Type != JTokenType.Null)
+                        {
+                            var valueAfterRunGet = await GetProperties(get["objectId"]?.Value<string>());
+                            await CheckValue(valueAfterRunGet[0]?["value"], expectedValue, exp_val["type_name"]?.Value<string>());
+                        }
                         break;
                     }
 
@@ -1059,7 +1064,7 @@ namespace DebuggerTests
 
         internal static JObject TIgnore() => JObject.FromObject(new { __custom_type = "ignore_me" });
 
-        internal static JObject TGetter(string type) => JObject.FromObject(new { __custom_type = "getter", type_name = type });
+        internal static JObject TGetter(string type, JObject value = null) => JObject.FromObject(new { __custom_type = "getter", type_name = type, value = value});
 
         internal static JObject TDateTime(DateTime dt) => JObject.FromObject(new
         {

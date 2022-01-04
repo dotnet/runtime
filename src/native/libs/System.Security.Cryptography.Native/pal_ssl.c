@@ -463,13 +463,6 @@ X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
     return SSL_get_client_CA_list(ssl);
 }
 
-void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback)
-{
-    int mode = SSL_VERIFY_PEER;
-
-    SSL_CTX_set_verify(ctx, mode, callback);
-}
-
 void CryptoNative_SslSetVerifyPeer(SSL* ssl)
 {
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);

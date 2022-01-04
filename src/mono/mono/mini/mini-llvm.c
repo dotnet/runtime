@@ -7287,7 +7287,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			val = call_intrins (ctx, intrins, args, "");
 			values [ins->dreg] = LLVMBuildExtractValue (builder, val, 0, dname);
 			ovf = LLVMBuildExtractValue (builder, val, 1, "");
-			emit_cond_system_exception (ctx, bb, "OverflowException", ovf, FALSE);
+			emit_cond_system_exception (ctx, bb, ins->inst_exc_name, ovf, FALSE);
 			if (!ctx_ok (ctx))
 				break;
 			builder = ctx->builder;
