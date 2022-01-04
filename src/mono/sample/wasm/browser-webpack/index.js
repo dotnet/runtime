@@ -24,7 +24,7 @@ async function main() {
     const element = document.createElement('div');
 
     const ret = await dotnetMeaning();
-    element.innerHTML = `${ret} as computed on dotnet`;
+    element.textContent = `${ret} as computed on dotnet`;
 
     document.body.appendChild(element);
 }
