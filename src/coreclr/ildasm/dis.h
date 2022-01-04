@@ -63,7 +63,7 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
 void DumpPermissions(mdToken tkOwner, void* GUICookie);
 void DumpHeader(IMAGE_COR20_HEADER *CORHeader, void* GUICookie);
 void DumpHeaderDetails(IMAGE_COR20_HEADER *CORHeader, void* GUICookie);
-void DumpMetaInfo(_In_ __nullterminated const WCHAR* pszFileName, __in_opt __nullterminated const char* pszObjFileName, void* GUICookie);
+void DumpMetaInfo(_In_ __nullterminated const WCHAR* pszFileName, _In_opt_z_ const char* pszObjFileName, void* GUICookie);
 void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie);
 BOOL DumpFile();
 void Cleanup();
@@ -77,7 +77,7 @@ char * DumpQString(void* GUICookie,
 void DumpVtable(void* GUICookie);
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
-                        __in_ecount(cbString) WCHAR* pszString,
+                        _In_reads_(cbString) WCHAR* pszString,
                         ULONG cbString,
                         bool SwapString = false);
 
@@ -141,7 +141,7 @@ extern WCHAR   wzUniBuf[]; // defined in dis.cpp
 #define SZSTRING_SIZE 131072
 extern char   szString[]; // defined in dis.cpp
 
-char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString,
+char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString,
                       mdToken tok,
                       void* GUICookie=NULL,
                       BOOL fSplit=FALSE);

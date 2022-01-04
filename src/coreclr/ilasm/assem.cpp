@@ -1478,7 +1478,7 @@ acceptable.  Do NOT use for cryptographic purposes.
 */
 
 unsigned hash(
-     __in_ecount(length) const BYTE *k,        /* the key */
+     _In_reads_(length) const BYTE *k,        /* the key */
      unsigned  length,   /* the length of the key */
      unsigned  initval)  /* the previous hash, or an arbitrary value */
 {

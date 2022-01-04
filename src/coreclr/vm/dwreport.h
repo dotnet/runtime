@@ -55,18 +55,18 @@ BOOL IsWatsonEnabled();
 BOOL RegisterOutOfProcessWatsonCallbacks();
 
 int DwGetAssemblyVersion(               // Number of characters written.
-    __in_z LPCWSTR  wszFilePath,         // Path to the executable.
-    __inout_ecount(cchBuf) WCHAR *pBuf, // Put description here.
+    _In_z_ LPCWSTR  wszFilePath,         // Path to the executable.
+    _Inout_updates_(cchBuf) WCHAR *pBuf, // Put description here.
     int cchBuf);
 
 HRESULT DwGetFileVersionInfo(               // S_OK or error
-    __in_z LPCWSTR wszFilePath,             // Path to the executable.
+    _In_z_ LPCWSTR wszFilePath,             // Path to the executable.
     USHORT& major,
     USHORT& minor,
     USHORT& build,
     USHORT& revision);
 
-BOOL ContainsUnicodeChars(__in_z LPCWSTR wsz);
+BOOL ContainsUnicodeChars(_In_z_ LPCWSTR wsz);
 
 // Proxy parameters for Resetting Watson buckets
 struct ResetWatsonBucketsParams

@@ -27,7 +27,7 @@ public:
         _Out_ PVOID *HandlerData,
         _Out_ PDWORD EstablisherFrame,
         __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-        __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine);
+        _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine);
 };
 #endif // FEATURE_EH_FUNCLETS
 
