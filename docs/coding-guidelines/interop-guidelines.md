@@ -168,7 +168,7 @@ When defining the P/Invoke signatures and structs, we follow the guidelines in t
 
 The runtime makes use of [source-generated p/invokes](../design/features/source-generator-pinvokes.md) whenever possible (see [the compatibility doc](../design/libraries/DllImportGenerator/Compatibility.md) for unsupported scenarios). Methods should be marked `GeneratedDllImport` and be `static` and `partial`.
 
-If implicit framewok references are disabled (as is the case for most libraries projects), explicit references to the below are required for marshalling arrays:
+If implicit framework references are disabled (as is the case for most libraries projects), explicit references to the below are required for marshalling arrays:
   - `System.Memory`
   - `System.Runtime.CompilerServices.Unsafe`
 
