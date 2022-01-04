@@ -920,5 +920,20 @@ namespace System.Text.Json.Nodes.Tests
             });
             Assert.Equal(1, index);
         }
+
+        [Fact]
+        public void NullJsonNodeOptionsCheck()
+        {
+	    var options = new JsonNodeOptions()
+	    {
+	        PropertyNameCaseInsensitive = true
+	    };
+	    IEnumerable<KeyValuePair<string, JsonNode?>> props = new List<KeyValuePair<string, JsonNode?>>();
+            
+	    var jObject = new JsonObject(props, options);
+
+	    Assert.NotNull(jObject.Options);
+	    Assert.True(jObject.Options.Value.PropertyNameCaseInsensitive);
+        }
     }
 }
