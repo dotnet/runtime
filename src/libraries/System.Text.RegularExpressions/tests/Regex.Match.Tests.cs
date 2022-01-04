@@ -279,6 +279,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (".[abc]", "xYZAbC", RegexOptions.IgnoreCase, 0, 6, true, "ZA");
                 yield return (".[abc]", "xYzXyZx", RegexOptions.IgnoreCase, 0, 6, false, "");
 
+                // Sets containing characters that differ by a bit
+                yield return ("123[Aa]", "123a", RegexOptions.None, 0, 4, true, "123a");
+                yield return ("123[0p]", "123p", RegexOptions.None, 0, 4, true, "123p");
+                yield return ("123[Aa@]", "123@", RegexOptions.None, 0, 4, true, "123@");
+
                 // "\D+"
                 yield return (@"\D+", "12321", RegexOptions.None, 0, 5, false, string.Empty);
 
