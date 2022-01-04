@@ -3640,7 +3640,13 @@ static void CreateNDirectStubWorker(StubState*               pss,
                  &pSigDesc->m_typeContext);
 
     if (SF_IsVarArgStub(dwStubFlags))
+    {
+        if (!builtInMarshallingEnabled)
+        {
+            COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_VARARGS);
+        }
         msig.SetTreatAsVarArg();
+    }
 
     bool fThisCall = (unmgdCallConv == CorInfoCallConvExtension::Thiscall);
 
@@ -3666,7 +3672,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
         {
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_LCID);
         }
-        // The code to handle the LCID  will call MarshalLCID before calling MarshalArgument
+        // The code to handle the LCID will call MarshalLCID before calling MarshalArgument
         // on the argument the LCID should go after. So we just bump up the index here.
         iLCIDArg++;
     }
