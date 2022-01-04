@@ -5198,7 +5198,7 @@ namespace System
     {
         private int _dummyPrimitive;
     }
-    public partial struct RuntimeFieldHandle : System.Runtime.Serialization.ISerializable
+    public partial struct RuntimeFieldHandle : System.IEquatable<System.RuntimeFieldHandle>, System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -5210,7 +5210,7 @@ namespace System
         public static bool operator ==(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
         public static bool operator !=(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
     }
-    public partial struct RuntimeMethodHandle : System.Runtime.Serialization.ISerializable
+    public partial struct RuntimeMethodHandle : System.IEquatable<System.RuntimeMethodHandle>, System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -5223,7 +5223,7 @@ namespace System
         public static bool operator ==(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
         public static bool operator !=(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
     }
-    public partial struct RuntimeTypeHandle : System.Runtime.Serialization.ISerializable
+    public partial struct RuntimeTypeHandle : System.IEquatable<System.RuntimeTypeHandle>, System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
         private int _dummyPrimitive;
