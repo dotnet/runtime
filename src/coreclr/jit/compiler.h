@@ -6406,6 +6406,9 @@ private:
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
+    GenTree* fgOptimizeAddition(GenTreeOp* add);
+    GenTree* fgOptimizeMultiply(GenTreeOp* mul);
+    GenTree* fgOptimizeBitwiseAnd(GenTreeOp* andOp);
     GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
