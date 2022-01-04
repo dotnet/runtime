@@ -41,10 +41,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 "Shipping",
                 $"{id}.{dirs.MicrosoftNETCoreAppVersion}.nupkg");
 
-            // If the nuspec exists, the nupkg should exist.
-            Assert.True(File.Exists(nupkgPath));
-
-            return new NuGetArtifactTester(nupkgPath);
+            return File.Exists(nupkgPath) ? new NuGetArtifactTester(nupkgPath) : null;
         }
 
         public PackageIdentity Identity { get; }

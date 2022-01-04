@@ -81,7 +81,7 @@ namespace DebuggerTests
                var dt = new DateTime(5, 6, 7, 8, 9, 10);
                await CheckProps(locals, new
                {
-                   ipa = TArray("int*[]", 3)
+                   ipa = TArray("int*[]", "int*[3]")
                }, "locals", num_fields: 26);
 
                var ipa_elems = await CompareObjectPropertiesFor(locals, "ipa", new[]
@@ -112,7 +112,7 @@ namespace DebuggerTests
                var dt = new DateTime(5, 6, 7, 8, 9, 10);
                await CheckProps(locals, new
                {
-                   ippa = TArray("int**[]", 5)
+                   ippa = TArray("int**[]", "int**[5]")
                }, "locals", num_fields: 26);
 
                var ippa_elems = await CompareObjectPropertiesFor(locals, "ippa", new[]
@@ -223,7 +223,7 @@ namespace DebuggerTests
                var dt = new DateTime(5, 6, 7, 8, 9, 10);
                await CheckProps(locals, new
                {
-                   dtpa = TArray("System.DateTime*[]", 2)
+                   dtpa = TArray("System.DateTime*[]", "System.DateTime*[2]")
                }, "locals", num_fields: 26);
 
                // dtpa
@@ -256,7 +256,7 @@ namespace DebuggerTests
                var dt = new DateTime(5, 6, 7, 8, 9, 10);
                await CheckProps(locals, new
                {
-                   gspa = TArray("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>*[]", 3),
+                   gspa = TArray("DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>*[]", "DebuggerTests.GenericStructWithUnmanagedT<System.DateTime>*[3]"),
                }, "locals", num_fields: 26);
 
                // dtpa
@@ -323,7 +323,7 @@ namespace DebuggerTests
                var dt = new DateTime(5, 6, 7, 8, 9, 10);
                await CheckProps(locals, new
                {
-                   dtppa = TArray("System.DateTime**[]", 3),
+                   dtppa = TArray("System.DateTime**[]", "System.DateTime**[3]"),
                }, "locals", num_fields: 26);
 
                // DateTime**[] dtppa = new DateTime**[] { &dtp, &dtp_null, null };
@@ -395,8 +395,8 @@ namespace DebuggerTests
                {
                    ip = TPointer("int*"),
                    ipp = TPointer("int**"),
-                   ipa = TArray("int*[]", 3),
-                   ippa = TArray("int**[]", 5)
+                   ipa = TArray("int*[]", "int*[3]"),
+                   ippa = TArray("int**[]", "int**[5]")
                }, "locals", num_fields: 8);
 
                // ip
@@ -468,8 +468,8 @@ namespace DebuggerTests
                {
                    dtp = TPointer("System.DateTime*"),
                    dtpp = TPointer("System.DateTime**"),
-                   dtpa = TArray("System.DateTime*[]", 2),
-                   dtppa = TArray("System.DateTime**[]", 3)
+                   dtpa = TArray("System.DateTime*[]", "System.DateTime*[2]"),
+                   dtppa = TArray("System.DateTime**[]", "System.DateTime**[3]")
                }, "locals", num_fields: 8);
 
                // *dtp

@@ -51,19 +51,16 @@ void CodeGen::genInitializeRegisterState()
             continue;
         }
 
-        // Is this a floating-point argument?
-        if (varDsc->IsFloatRegType())
+        if (varDsc->lvAddrExposed)
         {
             continue;
         }
 
-        noway_assert(!varTypeUsesFloatReg(varDsc->TypeGet()));
-
         // Mark the register as holding the variable
-        assert(varDsc->GetRegNum() != REG_STK);
-        if (!varDsc->lvAddrExposed)
+        regNumber reg = varDsc->GetRegNum();
+        if (genIsValidIntReg(reg))
         {
-            regSet.verifyRegUsed(varDsc->GetRegNum());
+            regSet.verifyRegUsed(reg);
         }
     }
 }
