@@ -2122,10 +2122,10 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
     unw_proc_info_t procInfo;
     bool step;
 #if defined(TARGET_AMD64)
-    TRACE("Unwind: rip %p rsp %p rbp %p\n", (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
+    TRACE("Unwind: base %p rip %p rsp %p rbp %p\n", (void*)baseAddress, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     result = GetProcInfo(context->Rip, &procInfo, &info, &step, false);
 #elif defined(TARGET_ARM64)
-    TRACE("Unwind: pc %p sp %p fp %p\n", (void*)context->Pc, (void*)context->Sp, (void*)context->Fp);
+    TRACE("Unwind: base %p pc %p sp %p fp %p\n", (void*)baseAddress, (void*)context->Pc, (void*)context->Sp, (void*)context->Fp);
     result = GetProcInfo(context->Pc, &procInfo, &info, &step, false);
 #else
 #error Unexpected architecture
