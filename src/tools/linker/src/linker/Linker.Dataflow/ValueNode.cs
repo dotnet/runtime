@@ -104,12 +104,13 @@ namespace Mono.Linker.Dataflow
 			case AnnotatedStringValue:
 			case ConstIntValue:
 			case MethodParameterValue:
+			case MethodThisParameterValue:
 			case MethodReturnValue:
-			case SystemTypeForGenericParameterValue:
+			case GenericParameterValue:
 			case RuntimeTypeHandleForGenericParameterValue:
 			case SystemReflectionMethodBaseValue:
 			case RuntimeMethodHandleValue:
-			case LoadFieldValue:
+			case FieldValue:
 				break;
 
 			//
@@ -259,10 +260,10 @@ namespace Mono.Linker.Dataflow
 	/// This is a System.Type value which represents generic parameter (basically result of typeof(T))
 	/// Its actual type is unknown, but it can have annotations.
 	/// </summary>
-	record SystemTypeForGenericParameterValue : LeafValueWithDynamicallyAccessedMemberNode
+	record GenericParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public SystemTypeForGenericParameterValue (GenericParameter genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			: base (genericParameter, dynamicallyAccessedMemberTypes)
+		public GenericParameterValue (GenericParameter genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			: base (dynamicallyAccessedMemberTypes)
 		{
 			// Should be System.Type, but we don't have a use case for it
 			StaticType = null;
@@ -279,7 +280,7 @@ namespace Mono.Linker.Dataflow
 	}
 
 	/// <summary>
-	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="SystemTypeForGenericParameterValue"/> node.
+	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="GenericParameterValue"/> node.
 	/// </summary>
 	record RuntimeTypeHandleForGenericParameterValue : LeafValueNode
 	{
@@ -367,13 +368,12 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	abstract record LeafValueWithDynamicallyAccessedMemberNode : LeafValueNode
 	{
-		public LeafValueWithDynamicallyAccessedMemberNode (IMetadataTokenProvider sourceContext, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public LeafValueWithDynamicallyAccessedMemberNode (DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
-			SourceContext = sourceContext;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
-		public IMetadataTokenProvider SourceContext { get; }
+		public virtual LeafValueWithDynamicallyAccessedMemberNode SourceValue { get => this; }
 
 		/// <summary>
 		/// The bitfield of dynamically accessed member types the node guarantees
@@ -386,14 +386,23 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	record MethodParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodParameterValue (TypeDefinition? staticType, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
-			: base (sourceContext, dynamicallyAccessedMemberTypes)
+		public MethodParameterValue (TypeDefinition? staticType, MethodDefinition method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			: base (dynamicallyAccessedMemberTypes)
 		{
 			StaticType = staticType;
+			Method = method;
 			ParameterIndex = parameterIndex;
 		}
 
+		public MethodDefinition Method { get; }
+
+		/// <summary>
+		/// This is the index of non-implicit parameter - so the index into MethodDefinition.Parameters array.
+		/// It's NOT the IL parameter index which could be offset by 1 if the method has an implicit this.
+		/// </summary>
 		public int ParameterIndex { get; }
+
+		public ParameterDefinition ParameterDefinition => Method.Parameters[ParameterIndex];
 
 		protected override string NodeToString ()
 		{
@@ -402,16 +411,40 @@ namespace Mono.Linker.Dataflow
 	}
 
 	/// <summary>
+	/// A value that came from the implicit this parameter of a method
+	/// </summary>
+	record MethodThisParameterValue : LeafValueWithDynamicallyAccessedMemberNode
+	{
+		public MethodThisParameterValue (MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			: base (dynamicallyAccessedMemberTypes)
+		{
+			StaticType = method.DeclaringType;
+			Method = method;
+		}
+
+		public MethodDefinition Method { get; }
+
+		protected override string NodeToString ()
+		{
+			return ValueNodeDump.ValueNodeToString (this, DynamicallyAccessedMemberTypes);
+		}
+	}
+
+	/// <summary>
 	/// String with a known annotation.
 	/// </summary>
 	record AnnotatedStringValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public AnnotatedStringValue (IMetadataTokenProvider sourceContext, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			: base (sourceContext, dynamicallyAccessedMemberTypes)
+		public AnnotatedStringValue (LeafValueWithDynamicallyAccessedMemberNode sourceValue)
+			: base (sourceValue.DynamicallyAccessedMemberTypes)
 		{
 			// Should be System.String, but we don't have a use case for it
 			StaticType = null;
+
+			SourceValue = sourceValue;
 		}
+
+		public override LeafValueWithDynamicallyAccessedMemberNode SourceValue { get; }
 
 		protected override string NodeToString ()
 		{
@@ -424,11 +457,14 @@ namespace Mono.Linker.Dataflow
 	/// </summary>
 	record MethodReturnValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodReturnValue (TypeDefinition? staticType, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, IMetadataTokenProvider sourceContext)
-			: base (sourceContext, dynamicallyAccessedMemberTypes)
+		public MethodReturnValue (TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			: base (dynamicallyAccessedMemberTypes)
 		{
 			StaticType = staticType;
+			Method = method;
 		}
+
+		public MethodDefinition Method { get; }
 
 		protected override string NodeToString ()
 		{
@@ -437,13 +473,12 @@ namespace Mono.Linker.Dataflow
 	}
 
 	/// <summary>
-	/// A representation of a ldfld.  Note that we don't have a representation of objects containing fields
-	/// so there isn't much that can be done with this node type yet.
+	/// A representation of a field. Typically a result of ldfld.
 	/// </summary>
-	record LoadFieldValue : LeafValueWithDynamicallyAccessedMemberNode
+	record FieldValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public LoadFieldValue (TypeDefinition? staticType, FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			: base (fieldToLoad, dynamicallyAccessedMemberTypes)
+		public FieldValue (TypeDefinition? staticType, FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			: base (dynamicallyAccessedMemberTypes)
 		{
 			StaticType = staticType;
 			Field = fieldToLoad;

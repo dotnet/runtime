@@ -54,7 +54,7 @@ namespace Mono.Linker.Dataflow
 			this._context = context;
 		}
 
-		internal MultiValue MethodReturnValue { private set; get; }
+		internal MultiValue ReturnValue { private set; get; }
 
 		protected virtual void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
 		{
@@ -222,7 +222,7 @@ namespace Mono.Linker.Dataflow
 
 			BasicBlockIterator blockIterator = new BasicBlockIterator (methodBody);
 
-			MethodReturnValue = new ();
+			ReturnValue = new ();
 			foreach (Instruction operation in methodBody.Instructions) {
 				int curBasicBlock = blockIterator.MoveNext (operation);
 
@@ -428,7 +428,7 @@ namespace Mono.Linker.Dataflow
 				case Code.Ldsfld:
 				case Code.Ldflda:
 				case Code.Ldsflda:
-					ScanLdfld (operation, currentStack, thisMethod, methodBody);
+					ScanLdfld (operation, currentStack, methodBody);
 					break;
 
 				case Code.Newarr: {
@@ -582,7 +582,7 @@ namespace Mono.Linker.Dataflow
 						}
 						if (hasReturnValue) {
 							StackSlot retValue = PopUnknown (currentStack, 1, methodBody, operation.Offset);
-							MethodReturnValue = MultiValueLattice.Meet (MethodReturnValue, retValue.Value);
+							ReturnValue = MultiValueLattice.Meet (ReturnValue, retValue.Value);
 						}
 						ClearStack (ref currentStack);
 						break;
@@ -694,7 +694,11 @@ namespace Mono.Linker.Dataflow
 		{
 			ParameterDefinition param = (ParameterDefinition) operation.Operand;
 			var valueToStore = PopUnknown (currentStack, 1, methodBody, operation.Offset);
-			HandleStoreParameter (thisMethod, param.Sequence, operation, valueToStore.Value);
+			var targetValue = GetMethodParameterValue (thisMethod, param.Sequence);
+			if (targetValue is MethodParameterValue targetParameterValue)
+				HandleStoreParameter (thisMethod, targetParameterValue, operation, valueToStore.Value);
+
+			// If the targetValue is MethodThisValue do nothing - it should never happen really, and if it does, there's nothing we can track there
 		}
 
 		private void ScanLdloc (
@@ -771,21 +775,20 @@ namespace Mono.Linker.Dataflow
 			StackSlot destination = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 
 			foreach (var uniqueDestination in destination.Value) {
-				if (uniqueDestination is LoadFieldValue fieldDestination) {
-					HandleStoreField (methodBody.Method, fieldDestination.Field, operation, valueToStore.Value);
+				if (uniqueDestination is FieldValue fieldDestination) {
+					HandleStoreField (methodBody.Method, fieldDestination, operation, valueToStore.Value);
 				} else if (uniqueDestination is MethodParameterValue parameterDestination) {
-					HandleStoreParameter (methodBody.Method, parameterDestination.ParameterIndex, operation, valueToStore.Value);
+					HandleStoreParameter (methodBody.Method, parameterDestination, operation, valueToStore.Value);
 				}
 			}
 
 		}
 
-		protected abstract MultiValue GetFieldValue (MethodDefinition method, FieldDefinition field);
+		protected abstract MultiValue GetFieldValue (FieldDefinition field);
 
 		private void ScanLdfld (
 			Instruction operation,
 			Stack<StackSlot> currentStack,
-			MethodDefinition thisMethod,
 			MethodBody methodBody)
 		{
 			Code code = operation.OpCode.Code;
@@ -796,7 +799,7 @@ namespace Mono.Linker.Dataflow
 
 			FieldDefinition? field = _context.TryResolve ((FieldReference) operation.Operand);
 			if (field != null) {
-				StackSlot slot = new StackSlot (GetFieldValue (thisMethod, field), isByRef);
+				StackSlot slot = new StackSlot (GetFieldValue (field), isByRef);
 				currentStack.Push (slot);
 				return;
 			}
@@ -804,11 +807,11 @@ namespace Mono.Linker.Dataflow
 			PushUnknown (currentStack);
 		}
 
-		protected virtual void HandleStoreField (MethodDefinition method, FieldDefinition field, Instruction operation, MultiValue valueToStore)
+		protected virtual void HandleStoreField (MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore)
 		{
 		}
 
-		protected virtual void HandleStoreParameter (MethodDefinition method, int index, Instruction operation, MultiValue valueToStore)
+		protected virtual void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore)
 		{
 		}
 
@@ -824,7 +827,14 @@ namespace Mono.Linker.Dataflow
 
 			FieldDefinition? field = _context.TryResolve ((FieldReference) operation.Operand);
 			if (field != null) {
-				HandleStoreField (thisMethod, field, operation, valueToStoreSlot.Value);
+				foreach (var value in GetFieldValue (field)) {
+					// GetFieldValue may return different node types, in which case they can't be stored to.
+					// At least not yet.
+					if (value is not FieldValue fieldValue)
+						continue;
+
+					HandleStoreField (thisMethod, fieldValue, operation, valueToStoreSlot.Value);
+				}
 			}
 		}
 
