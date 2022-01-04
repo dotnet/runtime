@@ -50,7 +50,12 @@ namespace System.Globalization
             index = _sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
             if (index >= 0)
             {
-                _sName = string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
+                // It is possible alternateSortName not set even if the normalized culture name has "@collation=".
+                // "zh-TW-u-co-zhuyin" is a good example of that. The term "u-co-" in the name means that the following part will be the sort name.
+                // That is mean "zh-TW-u-co-zhuyin" will have the equivalent ICU name "zh-TW@collation=zhuyin" and .NET name zh-TW_zhuyin.
+                _sName = alternateSortName.Length == 0 ?
+                            string.Concat(_sWindowsName.AsSpan(0, index), "_", _sWindowsName.AsSpan(index + ICU_COLLATION_KEYWORD.Length)) :
+                            string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
             }
             else
             {
