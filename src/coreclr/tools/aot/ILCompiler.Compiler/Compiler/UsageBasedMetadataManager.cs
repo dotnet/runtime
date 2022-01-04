@@ -245,7 +245,15 @@ namespace ILCompiler
                 bool fullyRoot;
                 string reason;
 
-                if (_rootEntireAssembliesModules.Contains(assemblyName))
+                // Compat with https://github.com/dotnet/linker/issues/1541 IL Linker bug:
+                // Asking to root an assembly with entrypoint will not actually root things in the assembly.
+                // We need to emulate this because the SDK injects a root for the entrypoint assembly right now
+                // because of IL Linker's implementation details (IL Linker won't root Main() by itself).
+                // TODO: We should technically reflection-root Main() here but hopefully the above issue
+                // will be fixed before it comes to that being necessary.
+                bool isEntrypointAssembly = module is EcmaModule ecmaModule && ecmaModule.PEReader.PEHeaders.IsExe;
+
+                if (!isEntrypointAssembly && _rootEntireAssembliesModules.Contains(assemblyName))
                 {
                     // If the assembly was specified as a root on the command line, root it
                     fullyRoot = true;
@@ -786,10 +794,28 @@ namespace ILCompiler
                 }
             }
 
+            var rootedCctorContexts = new List<MetadataType>();
+            foreach (NonGCStaticsNode cctorContext in GetCctorContextMapping())
+            {
+                // If we generated a static constructor and the owning type, this might be something
+                // that gets fed to RuntimeHelpers.RunClassConstructor. RunClassConstructor
+                // also works on reflection blocked types and there is a possibility that we
+                // wouldn't have generated the cctor otherwise.
+                //
+                // This is a heuristic and we'll possibly root more cctor contexts than
+                // strictly necessary, but it's not worth introducing a new node type
+                // in the compiler just so we can propagate this knowledge from dataflow analysis
+                // (that detects RunClassConstructor usage) and this spot.
+                if (!TypeGeneratesEEType(cctorContext.Type))
+                    continue;
+
+                rootedCctorContexts.Add(cctorContext.Type);
+            }
+
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
                 _modulesWithMetadata, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
-                reflectableFields.ToEnumerable(), _customAttributesWithMetadata);
+                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, rootedCctorContexts);
         }
 
         private struct ReflectableEntityBuilder<T>

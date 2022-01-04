@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 
-.assembly Test1 {}
+.assembly '1087985874' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 .class FullProof {

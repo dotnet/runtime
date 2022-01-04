@@ -13,7 +13,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module nonvirtualcalls_tailcall.exe
 // MVID: {EC3860F1-6469-489C-86D2-A81D88AE196E}
 .imagebase 0x00400000
 .file alignment 0x00000200

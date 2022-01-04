@@ -350,12 +350,12 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 			mono_error_set_bad_image (error, image, "Bad field token 0x%08x", token);
 			return NULL;
 		}
-		*retklass = result->parent;
+		*retklass = m_field_get_parent (result);
 		return result;
 	}
 
 	if ((field = (MonoClassField *)mono_conc_hashtable_lookup (image->field_cache, GUINT_TO_POINTER (token)))) {
-		*retklass = field->parent;
+		*retklass = m_field_get_parent (field);
 		return field;
 	}
 
@@ -387,7 +387,8 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		}
 	}
 
-	if (field && field->parent && !mono_class_is_ginst (field->parent) && !mono_class_is_gtd (field->parent)) {
+	MonoClass *field_parent = NULL;
+	if (field && ((field_parent = m_field_get_parent (field))) && !mono_class_is_ginst (field_parent) && !mono_class_is_gtd (field_parent)) {
 		mono_image_lock (image);
 		mono_conc_hashtable_insert (image->field_cache, GUINT_TO_POINTER (token), field);
 		mono_image_unlock (image);

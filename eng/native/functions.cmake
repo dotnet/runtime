@@ -376,6 +376,25 @@ function(install_symbol_file symbol_file destination_path)
   endif()
 endfunction()
 
+function(install_static_library targetName destination component)
+  if (NOT "${component}" STREQUAL "${targetName}")
+    get_property(definedComponents GLOBAL PROPERTY CLR_CMAKE_COMPONENTS)
+    list(FIND definedComponents "${component}" componentIdx)
+    if (${componentIdx} EQUAL -1)
+      message(FATAL_ERROR "The ${component} component is not defined. Add a call to `add_component(${component})` to define the component in the build.")
+    endif()
+    add_dependencies(${component} ${targetName})
+  endif()
+  install (TARGETS ${targetName} DESTINATION ${destination} COMPONENT ${component})
+  if (WIN32)
+    set_target_properties(${targetName} PROPERTIES
+        COMPILE_PDB_NAME "${targetName}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+    )
+    install (FILES "$<TARGET_FILE_DIR:${targetName}>/${targetName}.pdb" DESTINATION ${destination} COMPONENT ${component})
+  endif()
+endfunction()
+
 # install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName])
 function(install_clr)
   set(multiValueArgs TARGETS DESTINATIONS)

@@ -6,6 +6,7 @@
     <RunAnalyzers>false</RunAnalyzers>
     <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
+    <OutputType>library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +25,10 @@
     <ProjectReference Include="..\debugger-test-with-full-debug-type\debugger-test-with-full-debug-type.csproj" Private="true"/>
   </ItemGroup>
 
-  <Target Name="PrepareForWasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+  <Target Name="PrepareForWasmBuildApp" DependsOnTargets="Build">
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)native')"
+           Text="Cannot find %24(MicrosoftNetCoreAppRuntimePackRidDir)=$(MicrosoftNetCoreAppRuntimePackRidDir)native. Make sure to set the runtime configuration with %24(RuntimeConfiguration). Current value: $(RuntimeConfiguration)" />
+
     <PropertyGroup>
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>    
       <WasmAppDir>$(AppDir)</WasmAppDir>

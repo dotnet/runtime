@@ -10838,7 +10838,7 @@ private:
 class CorpubAppDomain  : public CordbCommonBase, public ICorPublishAppDomain
 {
 public:
-    CorpubAppDomain (__in LPWSTR szAppDomainName, ULONG Id);
+    CorpubAppDomain (_In_ LPWSTR szAppDomainName, ULONG Id);
     virtual ~CorpubAppDomain();
 
 #ifdef _DEBUG

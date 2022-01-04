@@ -1344,11 +1344,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
             if (pMD->IsLCGMethod() || pMD->IsILStub())
             {
                 // In heap dumps, trying to format the signature can fail
-                // in certain cases because StoredSigMethodDesc::m_pSig points
-                // to the IMAGE_MAPPED layout (in the PEImage::m_pLayouts array).
-                // We save only the IMAGE_LOADED layout to the heap dump. Rather
-                // than bloat the dump, we just drop the signature in these
-                // cases.
+                // in certain cases.
 
                 str.Clear();
                 TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst);

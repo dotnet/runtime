@@ -11,12 +11,11 @@
   .ver 0:0:0:0
 }
 .assembly extern common{}
-.assembly test
+.assembly 'badcodeaftertry'
 {
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module badcodeaftertry.exe
 
 
 .class public auto ansi beforefieldinit Test_badcodeaftertry

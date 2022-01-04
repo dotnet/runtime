@@ -29,7 +29,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module non_virtual_calls_to_instance_methods.dll
 // MVID: {6E650FE8-EE99-4C1A-8206-71823E127FC2}
 .imagebase 0x0000000140000000
 .file alignment 0x00000200

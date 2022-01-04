@@ -92,7 +92,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
 }
 
 HRESULT
-ConvertUtf8(__in LPCUTF8 utf8,
+ConvertUtf8(_In_ LPCUTF8 utf8,
             ULONG32 bufLen,
             ULONG32* nameLen,
             __out_ecount_part_opt(bufLen, *nameLen) PWSTR buffer)
@@ -228,7 +228,7 @@ GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
 }
 
 HRESULT
-SplitFullName(__in_z __in PCWSTR fullName,
+SplitFullName(__in_z _In_ PCWSTR fullName,
               SplitSyntax syntax,
               ULONG32 memberDots,
               __deref_out_opt LPUTF8* namespaceName,
@@ -401,7 +401,7 @@ SplitFullName(__in_z __in PCWSTR fullName,
 }
 
 int
-CompareUtf8(__in LPCUTF8 str1, __in LPCUTF8 str2, __in ULONG32 nameFlags)
+CompareUtf8(_In_ LPCUTF8 str1, _In_ LPCUTF8 str2, _In_ ULONG32 nameFlags)
 {
     if (nameFlags & CLRDATA_BYNAME_CASE_INSENSITIVE)
     {
@@ -7565,9 +7565,9 @@ typedef struct _WER_RUNTIME_EXCEPTION_INFORMATION
 //    else detailed error code.
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventGetWatsonBucket(__in PDWORD pContext,
-                                                 __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                                 __out GenericModeBlock * pGMB)
+STDAPI OutOfProcessExceptionEventGetWatsonBucket(_In_ PDWORD pContext,
+                                                 _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                                 _Out_ GenericModeBlock * pGMB)
 {
     HANDLE hProcess = pExceptionInformation->hProcess;
     HANDLE hThread  = pExceptionInformation->hThread;
@@ -7656,12 +7656,12 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(__in PDWORD pContext,
 //    Since this is called by external modules it's important that we don't let any exceptions leak out (see Win8 95224).
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventCallback(__in PDWORD pContext,
-                                          __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                          __out BOOL * pbOwnershipClaimed,
+STDAPI OutOfProcessExceptionEventCallback(_In_ PDWORD pContext,
+                                          _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                          _Out_ BOOL * pbOwnershipClaimed,
                                           __out_ecount(*pchSize) PWSTR pwszEventName,
                                           __inout PDWORD pchSize,
-                                          __out PDWORD pdwSignatureCount)
+                                          _Out_ PDWORD pdwSignatureCount)
 {
     SUPPORTS_DAC_HOST_ONLY;
 
@@ -7748,9 +7748,9 @@ STDAPI OutOfProcessExceptionEventCallback(__in PDWORD pContext,
 //    Since this is called by external modules it's important that we don't let any exceptions leak out (see Win8 95224).
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
-                                                   __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                                   __in DWORD dwIndex,
+STDAPI OutOfProcessExceptionEventSignatureCallback(_In_ PDWORD pContext,
+                                                   _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                                   _In_ DWORD dwIndex,
                                                    __out_ecount(*pchName) PWSTR pwszName,
                                                    __inout PDWORD pchName,
                                                    __out_ecount(*pchValue) PWSTR pwszValue,
@@ -7873,12 +7873,12 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
 //    this function are of the pwszName and pwszValue buffers.
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventDebuggerLaunchCallback(__in PDWORD pContext,
-                                                        __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                                        __out BOOL * pbCustomDebuggerNeeded,
+STDAPI OutOfProcessExceptionEventDebuggerLaunchCallback(_In_ PDWORD pContext,
+                                                        _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                                        _Out_ BOOL * pbCustomDebuggerNeeded,
                                                         __out_ecount_opt(*pchSize) PWSTR pwszDebuggerLaunch,
                                                         __inout PDWORD pchSize,
-                                                        __out BOOL * pbAutoLaunchDebugger)
+                                                        _Out_ BOOL * pbAutoLaunchDebugger)
 {
     SUPPORTS_DAC_HOST_ONLY;
 

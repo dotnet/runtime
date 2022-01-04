@@ -156,7 +156,7 @@ const char* ERRORMSG(__in_opt __nullterminated const char* szOrig)
         return szOrig;
 }
 
-const char* ANCHORPT(__in __nullterminated const char* szOrig, mdToken tk)
+const char* ANCHORPT(_In_ __nullterminated const char* szOrig, mdToken tk)
 {
     CONTRACTL
     {
@@ -179,7 +179,7 @@ const char* ANCHORPT(__in __nullterminated const char* szOrig, mdToken tk)
     else
         return szOrig;
 }
-const char* JUMPPT(__in __nullterminated const char* szOrig, mdToken tk)
+const char* JUMPPT(_In_ __nullterminated const char* szOrig, mdToken tk)
 {
     CONTRACTL
     {
@@ -212,7 +212,7 @@ const char* AMP(void) { return g_fDumpHTML ? "&amp;" : "&"; }
 
 /******************************************************************************/
 // Function: convert spec.symbols to esc sequences and single-quote if necessary
-const char* UnquotedProperName(__in __nullterminated const char* name, unsigned len/*=(unsigned)-1*/)
+const char* UnquotedProperName(_In_ __nullterminated const char* name, unsigned len/*=(unsigned)-1*/)
 {
     CONTRACTL
     {
@@ -268,7 +268,7 @@ const char* UnquotedProperName(__in __nullterminated const char* name, unsigned 
 }
 /******************************************************************************/
 // Function: convert spec.symbols to esc sequences and single-quote if necessary
-const char* ProperName(__in __nullterminated const char* name, bool isLocalName)
+const char* ProperName(_In_ __nullterminated const char* name, bool isLocalName)
 {
     CONTRACTL
     {

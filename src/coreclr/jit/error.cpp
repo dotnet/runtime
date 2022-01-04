@@ -279,7 +279,7 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
     const char* msg       = why;
     LogEnv*     env       = JitTls::GetLogEnv();
     const int   BUFF_SIZE = 8192;
-    char*       buff      = (char*)alloca(BUFF_SIZE);
+    char*       buff      = (char*)_alloca(BUFF_SIZE);
     const char* phaseName = "unknown phase";
     if (env->compiler)
     {

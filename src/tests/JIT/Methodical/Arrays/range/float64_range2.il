@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'test'
+.assembly 'float64_range2'
 {
 
 
@@ -29,7 +29,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 .namespace JitTest
 {
   .class private auto ansi Test

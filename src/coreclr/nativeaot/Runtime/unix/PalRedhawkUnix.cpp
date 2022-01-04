@@ -71,17 +71,6 @@ using std::nullptr_t;
 
 #define PalRaiseFailFastException RaiseFailFastException
 
-#define FATAL_ASSERT(e, msg) \
-    do \
-    { \
-        if (!(e)) \
-        { \
-            fprintf(stderr, "FATAL ERROR: " msg); \
-            RhFailFast(); \
-        } \
-    } \
-    while(0)
-
 #define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
 
 #define PAGE_NOACCESS           0x01
@@ -724,7 +713,7 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
     // message, so there is not much that can be done here.
-    write(STDERR_FILENO, message, sizeof(message));
+    write(STDERR_FILENO, message, strlen(message));
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)
@@ -829,7 +818,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
 {
     static void* pBuffer;
-    return _InterlockedExchangePointer(&pBuffer, pNewBuffer);
+    return PalInterlockedExchangePointer(&pBuffer, pNewBuffer);
 }
 
 extern "C" HANDLE GetCurrentProcess()

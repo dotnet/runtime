@@ -8,10 +8,9 @@
 }
 .assembly extern mscorlib {}
 .assembly extern common {}
-.assembly rethrowinfinallyaftercatch {}
+.assembly 'rethrowinfinallyinsidecatch' {}
 .assembly extern xunit.core {}
 
-.module rethrowinfinallyaftercatch.exe
 
 .namespace Test
 {

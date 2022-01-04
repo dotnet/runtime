@@ -178,8 +178,8 @@ public:
 
     __checkReturn
     inline HRESULT AddRecord(
-        __out                        BYTE  **ppbRecord,
-        __out                        UINT32 *pnIndex)
+        _Out_                        BYTE  **ppbRecord,
+        _Out_                        UINT32 *pnIndex)
     {
         return m_RecordStorage.AddRecord(ppbRecord, pnIndex);
     }

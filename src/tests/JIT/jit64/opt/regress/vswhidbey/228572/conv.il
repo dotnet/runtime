@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 
-.assembly Conv_test {}
+.assembly 'conv' {}
 .assembly extern mscorlib{auto}
 .class Conv_test {
 .method static int32 Main_test() {

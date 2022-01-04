@@ -215,7 +215,7 @@ namespace System.Drawing.Printing
                 if (ret == 0)
                     return;
 
-                cups_dests_size = Marshal.SizeOf(typeof(CUPS_DESTS));
+                cups_dests_size = Marshal.SizeOf<CUPS_DESTS>();
                 ptr = dests;
                 for (int i = 0; i < ret; i++)
                 {
@@ -237,7 +237,7 @@ namespace System.Drawing.Printing
                 if (ppd_handle == IntPtr.Zero)
                     return;
 
-                printer_dest = (CUPS_DESTS)Marshal.PtrToStructure(ptr, typeof(CUPS_DESTS))!;
+                printer_dest = Marshal.PtrToStructure<CUPS_DESTS>(ptr)!;
                 options = new NameValueCollection();
                 paper_names = new NameValueCollection();
                 paper_sources = new NameValueCollection();
@@ -261,7 +261,7 @@ namespace System.Drawing.Printing
                 settings.DefaultPageSettings.PaperSize = LoadPrinterPaperSizes(ppd_handle, settings, defsize, paper_names);
                 LoadPrinterResolutionsAndDefault(printer, settings, ppd_handle);
 
-                ppd = (PPD_FILE)Marshal.PtrToStructure(ppd_handle, typeof(PPD_FILE))!;
+                ppd = Marshal.PtrToStructure<PPD_FILE>(ppd_handle)!;
                 settings.landscape_angle = ppd.landscape;
                 settings.supports_color = (ppd.color_device == 0) ? false : true;
                 settings.can_duplex = options["Duplex"] != null;
@@ -295,14 +295,14 @@ namespace System.Drawing.Printing
         {
             CUPS_OPTIONS cups_options;
             string? option_name, option_value;
-            int cups_size = Marshal.SizeOf(typeof(CUPS_OPTIONS));
+            int cups_size = Marshal.SizeOf<CUPS_OPTIONS>();
 
             LoadOptionList(ppd, "PageSize", paper_names, out defsize);
             LoadOptionList(ppd, "InputSlot", paper_sources, out defsource);
 
             for (int j = 0; j < numOptions; j++)
             {
-                cups_options = (CUPS_OPTIONS)Marshal.PtrToStructure(options, typeof(CUPS_OPTIONS))!;
+                cups_options = Marshal.PtrToStructure<CUPS_OPTIONS>(options)!;
                 option_name = Marshal.PtrToStringAnsi(cups_options.name);
                 option_value = Marshal.PtrToStringAnsi(cups_options.val);
 
@@ -329,11 +329,11 @@ namespace System.Drawing.Printing
         {
             CUPS_OPTIONS cups_options;
             string? option_name, option_value;
-            int cups_size = Marshal.SizeOf(typeof(CUPS_OPTIONS));
+            int cups_size = Marshal.SizeOf<CUPS_OPTIONS>();
             NameValueCollection list = new NameValueCollection();
             for (int j = 0; j < numOptions; j++)
             {
-                cups_options = (CUPS_OPTIONS)Marshal.PtrToStructure(options, typeof(CUPS_OPTIONS))!;
+                cups_options = Marshal.PtrToStructure<CUPS_OPTIONS>(options)!;
                 option_name = Marshal.PtrToStringAnsi(cups_options.name);
                 option_value = Marshal.PtrToStringAnsi(cups_options.val);
 
@@ -362,13 +362,13 @@ namespace System.Drawing.Printing
             IntPtr ptr = IntPtr.Zero;
             PPD_OPTION ppd_option;
             PPD_CHOICE choice;
-            int choice_size = Marshal.SizeOf(typeof(PPD_CHOICE));
+            int choice_size = Marshal.SizeOf<PPD_CHOICE>();
             defoption = null;
 
             ptr = LibcupsNative.ppdFindOption(ppd, option_name);
             if (ptr != IntPtr.Zero)
             {
-                ppd_option = (PPD_OPTION)Marshal.PtrToStructure(ptr, typeof(PPD_OPTION))!;
+                ppd_option = Marshal.PtrToStructure<PPD_OPTION>(ptr)!;
 #if PrintDebug
                 Console.WriteLine (" OPTION  key:{0} def:{1} text: {2}", ppd_option.keyword, ppd_option.defchoice, ppd_option.text);
 #endif
@@ -376,7 +376,7 @@ namespace System.Drawing.Printing
                 ptr = ppd_option.choices;
                 for (int c = 0; c < ppd_option.num_choices; c++)
                 {
-                    choice = (PPD_CHOICE)Marshal.PtrToStructure(ptr, typeof(PPD_CHOICE))!;
+                    choice = Marshal.PtrToStructure<PPD_CHOICE>(ptr)!;
                     list.Add(choice.choice, choice.text);
 #if PrintDebug
                     Console.WriteLine ("       choice:{0} - text: {1}", choice.choice, choice.text);
@@ -460,12 +460,12 @@ namespace System.Drawing.Printing
             PaperSize ps;
 
             PaperSize defsize = new PaperSize(GetPaperKind(827, 1169), "A4", 827, 1169);
-            ppd = (PPD_FILE)Marshal.PtrToStructure(ppd_handle, typeof(PPD_FILE))!;
+            ppd = Marshal.PtrToStructure<PPD_FILE>(ppd_handle)!;
             ptr = ppd.sizes;
             float w, h;
             for (int i = 0; i < ppd.num_sizes; i++)
             {
-                size = (PPD_SIZE)Marshal.PtrToStructure(ptr, typeof(PPD_SIZE))!;
+                size = Marshal.PtrToStructure<PPD_SIZE>(ptr)!;
                 real_name = paper_names[size.name]!;
                 w = size.width * 100 / 72;
                 h = size.length * 100 / 72;
@@ -475,7 +475,7 @@ namespace System.Drawing.Printing
                 if (def_size == ps.Kind.ToString())
                     defsize = ps;
                 settings.paper_sizes!.Add(ps);
-                ptr = (IntPtr)((long)ptr + Marshal.SizeOf(size));
+                ptr = (IntPtr)((long)ptr + Marshal.SizeOf<PPD_SIZE>());
             }
 
             return defsize;
@@ -577,7 +577,7 @@ namespace System.Drawing.Printing
                         IntPtr ptr_printers = dests;
                         for (int i = 0; i < n_printers; i++)
                         {
-                            var printer = (CUPS_DESTS)Marshal.PtrToStructure(ptr_printers, typeof(CUPS_DESTS))!;
+                            var printer = Marshal.PtrToStructure<CUPS_DESTS>(ptr_printers)!;
                             string name = Marshal.PtrToStringAnsi(printer.name)!;
 
                             if (printer.is_default == 1 ||
@@ -606,7 +606,7 @@ namespace System.Drawing.Printing
                             string comment = options["printer-comment"] as string ?? string.Empty;
 
                             printers.Add(name, new SysPrn.Printer(string.Empty, string.Empty, status, comment));
-                            ptr_printers = (IntPtr)((long)ptr_printers + Marshal.SizeOf(typeof(CUPS_DESTS)));
+                            ptr_printers = (IntPtr)((long)ptr_printers + Marshal.SizeOf<CUPS_DESTS>());
                         }
                     }
                     finally
@@ -632,7 +632,7 @@ namespace System.Drawing.Printing
             bool found = false;
             CUPS_DESTS cups_dests;
             IntPtr dests = IntPtr.Zero, ptr_printers, ptr_printer;
-            int cups_dests_size = Marshal.SizeOf(typeof(CUPS_DESTS));
+            int cups_dests_size = Marshal.SizeOf<CUPS_DESTS>();
 
             if (!s_cupsInitialized)
                 return;
@@ -660,7 +660,7 @@ namespace System.Drawing.Printing
                 if (!found)
                     return;
 
-                cups_dests = (CUPS_DESTS)Marshal.PtrToStructure(ptr_printers, typeof(CUPS_DESTS))!;
+                cups_dests = Marshal.PtrToStructure<CUPS_DESTS>(ptr_printers)!;
 
                 NameValueCollection options = LoadPrinterOptions(cups_dests.options, cups_dests.num_options);
 

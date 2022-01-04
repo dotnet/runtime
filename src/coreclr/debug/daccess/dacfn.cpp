@@ -89,7 +89,7 @@ DacExceptionFilter(Exception* ex, ClrDataAccess* access,
 }
 
 void __cdecl
-DacWarning(__in char* format, ...)
+DacWarning(_In_ char* format, ...)
 {
     char text[256];
     va_list args;

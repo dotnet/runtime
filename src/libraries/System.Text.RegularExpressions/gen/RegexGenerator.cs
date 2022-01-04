@@ -49,7 +49,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     Debug.Assert(state.Item1 is not null);
                     object? result = GetRegexTypeToEmit(state.Item2, state.Item1, cancellationToken);
-                    return result is RegexType regexType ? EmitRegexType(regexType) : result;
+                    return result is RegexType regexType ? EmitRegexType(regexType, state.Item2) : result;
                 })
                 .Collect();
 

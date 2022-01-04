@@ -10,7 +10,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'try'// as "try"
+.assembly 'fault'// as "try"
 {
 }
 .assembly extern xunit.core {}
