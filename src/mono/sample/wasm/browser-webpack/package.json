@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build:dotnet": "dnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
+    "build:dotnet": "dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
     "build:webpack": "webpack",
     "build": "npm run build:dotnet && npm run build:webpack"
   },
