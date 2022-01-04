@@ -303,7 +303,8 @@ namespace System.Reflection.PortableExecutable
             // mapped field data:
             if (mappedFieldDataBuilderOpt != null)
             {
-                builder.Align(MappedFieldDataAlignment);
+                if (mappedFieldDataBuilderOpt.Count != 0)
+                    builder.Align(MappedFieldDataAlignment);
                 builder.LinkSuffix(mappedFieldDataBuilderOpt);
             }
 
