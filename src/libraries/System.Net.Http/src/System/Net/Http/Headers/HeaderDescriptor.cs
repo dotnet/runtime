@@ -72,8 +72,6 @@ namespace System.Net.Http.Headers
 
         public bool Equals(KnownHeader other) => ReferenceEquals(_descriptor, other);
 
-        public bool Equals(string other) => string.Equals(_descriptor as string, other, StringComparison.OrdinalIgnoreCase);
-
         public bool Equals(HeaderDescriptor other)
         {
             object? descriptor = _descriptor;

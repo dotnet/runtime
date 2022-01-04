@@ -33,7 +33,7 @@ namespace System.Net.Http.Headers
         public bool Contains(string headerName) =>
             _headers is HttpHeaders headers &&
             headers.TryGetHeaderDescriptor(headerName, out HeaderDescriptor descriptor) &&
-            headers.TryGetHeaderValue(descriptor, out _);
+            headers.ContainsEntry(descriptor);
 
         /// <summary>Gets the values for the specified header name.</summary>
         /// <param name="headerName">The name of the header.</param>
@@ -83,7 +83,7 @@ namespace System.Net.Http.Headers
         /// <summary>Gets an enumerator that iterates through the <see cref="HttpHeadersNonValidated"/>.</summary>
         /// <returns>An enumerator that iterates through the <see cref="HttpHeadersNonValidated"/>.</returns>
         public Enumerator GetEnumerator() =>
-            _headers is HttpHeaders headers && headers.GetEntries() is HeaderEntry[] entries ?
+            _headers is HttpHeaders headers && headers.GetEntriesGroupedByName() is HeaderEntry[] entries ?
                 new Enumerator(entries) :
                 default;
 
