@@ -1642,9 +1642,9 @@ void EEJitManager::SetCpuInfo()
     // These calls are very important as it ensures the flags are consistent with any
     // removals specified above. This includes removing corresponding 64-bit ISAs
     // and any other implications such as SSE2 depending on SSE or AdvSimd on ArmBase
-
-    CPUCompileFlags.EnsureValidInstructionSetSupport();
+    
     CPUCompileFlags.Set64BitInstructionSetVariants();
+    CPUCompileFlags.EnsureValidInstructionSetSupport();
 
     m_CPUCompileFlags = CPUCompileFlags;
 }
