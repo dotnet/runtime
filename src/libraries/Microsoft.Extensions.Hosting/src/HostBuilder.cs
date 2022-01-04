@@ -119,9 +119,9 @@ namespace Microsoft.Extensions.Hosting
 
         /// <summary>
         /// Run the given actions to initialize the host. This can only be called once.
-        /// Adds host application lifetime service to the host.
         /// </summary>
         /// <returns>An initialized <see cref="IHost"/></returns>
+        /// <remarks>Adds basic services to the host such as application lifetime, host environment and logging.</remarks>
         public IHost Build()
         {
             if (_hostBuilt)
