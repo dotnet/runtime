@@ -1625,7 +1625,6 @@ fail:
 void
 ves_icall_System_RuntimeTypeHandle_internal_from_name (char *name,
 					  MonoStackCrawlMark *stack_mark,
-					  MonoQCallAssemblyHandle callerAssembly,
 					  MonoObjectHandleOnStack res,
 					  MonoBoolean throwOnError,
 					  MonoBoolean ignoreCase,
@@ -1634,8 +1633,6 @@ ves_icall_System_RuntimeTypeHandle_internal_from_name (char *name,
 	MonoTypeNameParse info;
 	gboolean free_info = FALSE;
 	MonoAssembly *caller_assembly;
-
-	/* The callerAssembly argument is unused for now */
 
 	free_info = TRUE;
 	if (!mono_reflection_parse_type_checked (name, &info, error))

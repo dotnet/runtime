@@ -361,7 +361,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void internal_from_name(IntPtr name, ref StackCrawlMark stackMark, QCallAssembly callerAssembly, ObjectHandleOnStack res, bool throwOnError, bool ignoreCase);
+        private static extern void internal_from_name(IntPtr name, ref StackCrawlMark stackMark, ObjectHandleOnStack res, bool throwOnError, bool ignoreCase);
 
         [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
@@ -377,13 +377,10 @@ namespace System
                     return null;
 
             RuntimeType? t = null;
-            RuntimeAssembly? assembly = null;
-            var a = new QCallAssembly(ref assembly!);
             using (var namePtr = new Mono.SafeStringMarshal(typeName)) {
                 internal_from_name(
                                    namePtr.Value,
                                    ref stackMark,
-                                   a, //new QCallAssembly(ref assembly),
                                    ObjectHandleOnStack.Create (ref t), throwOnError, ignoreCase);
                 if (throwOnError && t == null)
                     throw new TypeLoadException("Error loading '" + typeName + "'");
