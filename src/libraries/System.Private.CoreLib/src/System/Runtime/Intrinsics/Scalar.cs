@@ -658,6 +658,133 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ShiftLeft(T value, int shiftCount)
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return (T)(object)(byte)((byte)(object)value << (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return (T)(object)(short)((short)(object)value << (shiftCount & 15));
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return (T)(object)(int)((int)(object)value << shiftCount);
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return (T)(object)(long)((long)(object)value << shiftCount);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)value << shiftCount);
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)value << shiftCount);
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return (T)(object)(sbyte)((sbyte)(object)value << (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return (T)(object)(ushort)((ushort)(object)value << (shiftCount & 15));
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                return (T)(object)(uint)((uint)(object)value << shiftCount);
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                return (T)(object)(ulong)((ulong)(object)value << shiftCount);
+            }
+            else
+            {
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ShiftRightArithmetic(T value, int shiftCount)
+        {
+            if (typeof(T) == typeof(short))
+            {
+                return (T)(object)(short)((short)(object)value >> (shiftCount & 15));
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return (T)(object)(int)((int)(object)value >> shiftCount);
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return (T)(object)(long)((long)(object)value >> shiftCount);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nint)(object)value >> shiftCount);
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return (T)(object)(sbyte)((sbyte)(object)value >> (shiftCount & 7));
+            }
+            else
+            {
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ShiftRightLogical(T value, int shiftCount)
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return (T)(object)(byte)((byte)(object)value >> (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return (T)(object)(short)((ushort)(short)(object)value >> (shiftCount & 15));
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return (T)(object)(int)((uint)(int)(object)value >> shiftCount);
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return (T)(object)(long)((ulong)(long)(object)value >> shiftCount);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)((nuint)(nint)(object)value >> shiftCount);
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)((nuint)(object)value >> shiftCount);
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return (T)(object)(sbyte)((byte)(sbyte)(object)value >> (shiftCount & 7));
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return (T)(object)(ushort)((ushort)(object)value >> (shiftCount & 15));
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                return (T)(object)(uint)((uint)(object)value >> shiftCount);
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                return (T)(object)(ulong)((ulong)(object)value >> shiftCount);
+            }
+            else
+            {
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Sqrt(T value)
         {
             if (typeof(T) == typeof(byte))

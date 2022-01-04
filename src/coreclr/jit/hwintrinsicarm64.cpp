@@ -1001,6 +1001,45 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_ShiftLeft:
+        case NI_Vector128_ShiftLeft:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impSIMDPopStack(retType);
+            op1 = impSIMDPopStack(retType);
+
+            retNode = gtNewSimdBinOpNode(GT_LSH, retType, op1, op2, simdBaseJitType, simdSize,
+                                         /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector64_ShiftRightArithmetic:
+        case NI_Vector128_ShiftRightArithmetic:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impSIMDPopStack(retType);
+            op1 = impSIMDPopStack(retType);
+
+            retNode = gtNewSimdBinOpNode(GT_RSH, retType, op1, op2, simdBaseJitType, simdSize,
+                                         /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector64_ShiftRightLogical:
+        case NI_Vector128_ShiftRightLogical:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impSIMDPopStack(retType);
+            op1 = impSIMDPopStack(retType);
+
+            retNode = gtNewSimdBinOpNode(GT_RSZ, retType, op1, op2, simdBaseJitType, simdSize,
+                                         /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
         case NI_Vector64_Sqrt:
         case NI_Vector128_Sqrt:
         {
