@@ -17,9 +17,9 @@ namespace JIT.HardwareIntrinsics.General
 {
     public static partial class Program
     {
-        private static void ConvertToDoubleDouble()
+        private static void ConvertToDoubleInt64()
         {
-            var test = new VectorUnaryOpTest__ConvertToDoubleDouble();
+            var test = new VectorUnaryOpTest__ConvertToDoubleInt64();
 
             // Validates basic functionality works, using Unsafe.Read
             test.RunBasicScenario_UnsafeRead();
@@ -52,7 +52,7 @@ namespace JIT.HardwareIntrinsics.General
         }
     }
 
-    public sealed unsafe class VectorUnaryOpTest__ConvertToDoubleDouble
+    public sealed unsafe class VectorUnaryOpTest__ConvertToDoubleInt64
     {
         private struct DataTable
         {
@@ -64,9 +64,9 @@ namespace JIT.HardwareIntrinsics.General
 
             private ulong alignment;
 
-            public DataTable(UInt64[] inArray1, Double[] outArray, int alignment)
+            public DataTable(Int64[] inArray1, Double[] outArray, int alignment)
             {
-                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<UInt64>();
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Int64>();
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<Double>();
                 if ((alignment != 32 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
                 {
@@ -81,7 +81,7 @@ namespace JIT.HardwareIntrinsics.General
 
                 this.alignment = (ulong)alignment;
 
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<UInt64, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<Int64, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
             }
 
             public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
@@ -101,19 +101,19 @@ namespace JIT.HardwareIntrinsics.General
 
         private struct TestStruct
         {
-            public Vector128<UInt64> _fld1;
+            public Vector128<Int64> _fld1;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt64(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt64>, byte>(ref testStruct._fld1), ref Unsafe.As<UInt64, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetInt64(); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref testStruct._fld1), ref Unsafe.As<Int64, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
                 return testStruct;
             }
 
-            public void RunStructFldScenario(VectorUnaryOpTest__ConvertToDoubleDouble testClass)
+            public void RunStructFldScenario(VectorUnaryOpTest__ConvertToDoubleInt64 testClass)
             {
                 var result = Vector128.ConvertToDouble(_fld1);
 
@@ -124,31 +124,31 @@ namespace JIT.HardwareIntrinsics.General
 
         private static readonly int LargestVectorSize = 16;
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<UInt64>>() / sizeof(UInt64);
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Int64>>() / sizeof(Int64);
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Double>>() / sizeof(Double);
 
-        private static UInt64[] _data1 = new UInt64[Op1ElementCount];
+        private static Int64[] _data1 = new Int64[Op1ElementCount];
 
-        private static Vector128<UInt64> _clsVar1;
+        private static Vector128<Int64> _clsVar1;
 
-        private Vector128<UInt64> _fld1;
+        private Vector128<Int64> _fld1;
 
         private DataTable _dataTable;
 
-        static VectorUnaryOpTest__ConvertToDoubleDouble()
+        static VectorUnaryOpTest__ConvertToDoubleInt64()
         {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt64(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt64>, byte>(ref _clsVar1), ref Unsafe.As<UInt64, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetInt64(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _clsVar1), ref Unsafe.As<Int64, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
         }
 
-        public VectorUnaryOpTest__ConvertToDoubleDouble()
+        public VectorUnaryOpTest__ConvertToDoubleInt64()
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt64(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt64>, byte>(ref _fld1), ref Unsafe.As<UInt64, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetInt64(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _fld1), ref Unsafe.As<Int64, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt64(); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetInt64(); }
             _dataTable = new DataTable(_data1, new Double[RetElementCount], LargestVectorSize);
         }
 
@@ -159,7 +159,7 @@ namespace JIT.HardwareIntrinsics.General
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
             var result = Vector128.ConvertToDouble(
-                Unsafe.Read<Vector128<UInt64>>(_dataTable.inArray1Ptr)
+                Unsafe.Read<Vector128<Int64>>(_dataTable.inArray1Ptr)
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -171,7 +171,7 @@ namespace JIT.HardwareIntrinsics.General
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
             var method = typeof(Vector128).GetMethod(nameof(Vector128.ConvertToDouble), new Type[] {
-                typeof(Vector128<UInt64>)
+                typeof(Vector128<Int64>)
             });
 
             if (method is null)
@@ -187,7 +187,7 @@ namespace JIT.HardwareIntrinsics.General
             }
 
             var result = method.Invoke(null, new object[] {
-                Unsafe.Read<Vector128<UInt64>>(_dataTable.inArray1Ptr)
+                Unsafe.Read<Vector128<Int64>>(_dataTable.inArray1Ptr)
             });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Double>)(result));
@@ -210,7 +210,7 @@ namespace JIT.HardwareIntrinsics.General
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var op1 = Unsafe.Read<Vector128<UInt64>>(_dataTable.inArray1Ptr);
+            var op1 = Unsafe.Read<Vector128<Int64>>(_dataTable.inArray1Ptr);
             var result = Vector128.ConvertToDouble(op1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -221,7 +221,7 @@ namespace JIT.HardwareIntrinsics.General
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new VectorUnaryOpTest__ConvertToDoubleDouble();
+            var test = new VectorUnaryOpTest__ConvertToDoubleInt64();
             var result = Vector128.ConvertToDouble(test._fld1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -257,12 +257,12 @@ namespace JIT.HardwareIntrinsics.General
             test.RunStructFldScenario(this);
         }
 
-        private void ValidateResult(Vector128<UInt64> op1, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<Int64> op1, void* result, [CallerMemberName] string method = "")
         {
-            UInt64[] inArray1 = new UInt64[Op1ElementCount];
+            Int64[] inArray1 = new Int64[Op1ElementCount];
             Double[] outArray = new Double[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<UInt64, byte>(ref inArray1[0]), op1);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Int64, byte>(ref inArray1[0]), op1);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Double>>());
 
             ValidateResult(inArray1, outArray, method);
@@ -270,16 +270,16 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateResult(void* op1, void* result, [CallerMemberName] string method = "")
         {
-            UInt64[] inArray1 = new UInt64[Op1ElementCount];
+            Int64[] inArray1 = new Int64[Op1ElementCount];
             Double[] outArray = new Double[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt64, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<Int64>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Double>>());
 
             ValidateResult(inArray1, outArray, method);
         }
 
-        private void ValidateResult(UInt64[] firstOp, Double[] result, [CallerMemberName] string method = "")
+        private void ValidateResult(Int64[] firstOp, Double[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
@@ -301,7 +301,7 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Vector128)}.{nameof(Vector128.ConvertToDouble)}<Double>(Vector128<UInt64>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Vector128)}.{nameof(Vector128.ConvertToDouble)}<Double>(Vector128<Int64>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
