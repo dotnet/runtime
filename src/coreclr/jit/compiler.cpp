@@ -2242,9 +2242,8 @@ void Compiler::compSetProcessor()
 
     // The VM will set the ISA flags depending on actual hardware support
     // and any specified config switches specified by the user.
-    opts.setSupportedISAs(jitFlags.GetInstructionSetFlags());
 
-    opts.compSupportsISA         = 0;
+    opts.setSupportedISAs(jitFlags.GetInstructionSetFlags());
     opts.compSupportsISAReported = 0;
     opts.compSupportsISAExactly  = 0;
 
