@@ -98,7 +98,22 @@ namespace System.Threading.RateLimiting
                 // Don't queue if queue limit reached
                 if (_queueCount + permitCount > _options.QueueLimit)
                 {
-                    return new ValueTask<RateLimitLease>(QueueLimitLease);
+                    if (_options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst)
+                    {
+                        // remove oldest items from queue until there is space for the newest request
+                        do
+                        {
+                            RequestRegistration oldestRequest = _queue.DequeueHead();
+                            _queueCount -= oldestRequest.Count;
+                            Debug.Assert(_queueCount >= 0);
+                            oldestRequest.Tcs.TrySetResult(FailedLease);
+                        }
+                        while (_queueCount + permitCount > _options.QueueLimit);
+                    }
+                    else
+                    {
+                        return new ValueTask<RateLimitLease>(QueueLimitLease);
+                    }
                 }
 
                 TaskCompletionSource<RateLimitLease> tcs = new TaskCompletionSource<RateLimitLease>(TaskCreationOptions.RunContinuationsAsynchronously);
