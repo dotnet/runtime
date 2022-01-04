@@ -102,6 +102,7 @@ namespace System.Net.Security.Tests
                     if (!OperatingSystem.IsWindows())
                     {
                         // remote certificate does not work on windows.
+                        // https://github.com/dotnet/runtime/issues/63321
                         Assert.NotNull(remoteCertificate);
                     }
                 }
