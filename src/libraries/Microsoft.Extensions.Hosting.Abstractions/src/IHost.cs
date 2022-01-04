@@ -13,12 +13,13 @@ namespace Microsoft.Extensions.Hosting
     public interface IHost : IDisposable
     {
         /// <summary>
-        /// The programs configured services.
+        /// The services configured for the program (e.g. using <see cref="M:HostBuilder.ConfigureServices(Action<HostBuilderContext,IServiceCollection>)" />).
         /// </summary>
         IServiceProvider Services { get; }
 
         /// <summary>
-        /// Start the program.
+        /// Start the <see cref="P:IHost.Services" /> configured for the program.
+        /// The application will run until interrupted or until <see cref="M:IHostApplicationLifetime.StopApplication()" /> is called.
         /// </summary>
         /// <param name="cancellationToken">Used to abort program start.</param>
         /// <returns>A <see cref="Task"/> that will be completed when the <see cref="IHost"/> starts.</returns>
