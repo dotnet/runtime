@@ -817,6 +817,27 @@ namespace DebuggerTests
             var testPropertiesRootHidden = new TestEvaluatePropertiesRootHidden();
         }
     }
+
+    public static class EvaluateProtectionLevels
+    {
+        public class TestClass
+        {
+            public string fieldPublic = "public";
+            private string fieldPrivate = "private";
+            internal string fieldInternal = "internal";
+            protected string fieldProtected = "protected";
+
+            public TestClass()
+            {
+                var a = fieldPrivate;
+            }
+        }
+
+        public static void Evaluate()
+        {
+            var testClass = new TestClass();
+        }
+    }
 }
 
 namespace DebuggerTestsV2
