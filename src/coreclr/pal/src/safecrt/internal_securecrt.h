@@ -29,7 +29,7 @@
 #define __in_z_opt
 #define __out_ecount_z_opt( x )
 #define __in_z
-#define __in
+#define _In_
 
 /*
  * The original SafeCRT implemention allows runtime control over buffer checking.

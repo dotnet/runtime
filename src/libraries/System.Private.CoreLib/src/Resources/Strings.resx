@@ -1824,7 +1824,7 @@
     <value>Pointer startIndex and length do not refer to a valid string.</value>
   </data>
   <data name="ArgumentOutOfRange_PeriodTooLarge" xml:space="preserve">
-    <value>Period must be less than 2^32-2.</value>
+    <value>Period must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_PositionLessThanCapacityRequired" xml:space="preserve">
     <value>The position may not be greater or equal to the capacity of the accessor.</value>
@@ -1854,7 +1854,7 @@
     <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
   </data>
   <data name="ArgumentOutOfRange_TimeoutTooLarge" xml:space="preserve">
-    <value>Time-out interval must be less than 2^32-2.</value>
+    <value>Time-out interval must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>

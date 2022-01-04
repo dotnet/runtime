@@ -114,7 +114,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="fldHandle">A field handle that specifies the location of the data to be referred to by the ReadOnlySpan{T}. The Rva of the field must be aligned on a natural boundary of type T</param>
         /// <returns>A ReadOnlySpan{T} of the data stored in the field</returns>
         /// <exception cref="ArgumentException"><paramref name="fldHandle"/> does not refer to a field which is an Rva, is misaligned, or T is of an invalid type.</exception>
-        /// <remarks>This method is intended for compiler user rather than use directly in code. T must be one of byte, sbyte, char, short, ushort, int, long, ulong, float, or double.</remarks>
+        /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, char, short, ushort, int, long, ulong, float, or double.</remarks>
         [Intrinsic]
         public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) => new ReadOnlySpan<T>(GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length), length);
     }

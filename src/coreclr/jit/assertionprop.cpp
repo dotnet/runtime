@@ -2558,8 +2558,14 @@ void Compiler::optAssertionGen(GenTree* tree)
     switch (tree->gtOper)
     {
         case GT_ASG:
+            // An indirect store - we can create a non-null assertion. Note that we do not lose out
+            // on the dataflow assertions here as local propagation only deals with LCL_VAR LHSs.
+            if (tree->AsOp()->gtGetOp1()->OperIsIndir())
+            {
+                assertionInfo = optCreateAssertion(tree->AsOp()->gtGetOp1()->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
+            }
             // VN takes care of non local assertions for assignments and data flow.
-            if (optLocalAssertionProp)
+            else if (optLocalAssertionProp)
             {
                 assertionInfo = optCreateAssertion(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2, OAK_EQUAL);
             }
@@ -2573,14 +2579,24 @@ void Compiler::optAssertionGen(GenTree* tree)
         case GT_BLK:
         case GT_DYN_BLK:
         case GT_IND:
-        case GT_NULLCHECK:
-            // All indirections create non-null assertions
-            assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
+            // R-value indirections create non-null assertions, but not all indirections are R-values.
+            // Those under ADDR nodes or on the LHS of ASGs are "locations", and will not end up
+            // dereferencing their operands. We cannot reliably detect them here, however, and so
+            // will have to rely on the conservative approximation of the GTF_NO_CSE flag.
+            if (tree->CanCSE())
+            {
+                assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
+            }
             break;
 
         case GT_ARR_LENGTH:
-            // An array length is an indirection (but doesn't derive from GenTreeIndir).
+            // An array length is an (always R-value) indirection (but doesn't derive from GenTreeIndir).
             assertionInfo = optCreateAssertion(tree->AsArrLen()->ArrRef(), nullptr, OAK_NOT_EQUAL);
+            break;
+
+        case GT_NULLCHECK:
+            // Explicit null checks always create non-null assertions.
+            assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
             break;
 
         case GT_BOUNDS_CHECK:

@@ -228,7 +228,7 @@ namespace
     HRESULT GetConfigDWORD(
         LPCWSTR name,
         DWORD defValue,
-        __out DWORD *result,
+        _Out_ DWORD *result,
         LookupOptions options)
     {
         CONTRACTL

@@ -41,7 +41,7 @@ namespace System.Text.RegularExpressions.Generator
         };
 
         /// <summary>Generates the code for one regular expression class.</summary>
-        private static (string, ImmutableArray<Diagnostic>) EmitRegexType(RegexType regexClass)
+        private static (string, ImmutableArray<Diagnostic>) EmitRegexType(RegexType regexClass, Compilation compilation)
         {
             var sb = new StringBuilder(1024);
             var writer = new IndentedTextWriter(new StringWriter(sb));
@@ -82,7 +82,7 @@ namespace System.Text.RegularExpressions.Generator
             generatedName += ComputeStringHash(generatedName).ToString("X");
 
             // Generate the regex type
-            ImmutableArray<Diagnostic> diagnostics = EmitRegexMethod(writer, regexClass.Method, generatedName);
+            ImmutableArray<Diagnostic> diagnostics = EmitRegexMethod(writer, regexClass.Method, generatedName, compilation);
 
             while (writer.Indent != 0)
             {
@@ -149,7 +149,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Generates the code for a regular expression method.</summary>
-        private static ImmutableArray<Diagnostic> EmitRegexMethod(IndentedTextWriter writer, RegexMethod rm, string id)
+        private static ImmutableArray<Diagnostic> EmitRegexMethod(IndentedTextWriter writer, RegexMethod rm, string id, Compilation compilation)
         {
             string patternExpression = Literal(rm.Pattern);
             string optionsExpression = Literal(rm.Options);
@@ -173,6 +173,8 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine("}");
                 return ImmutableArray.Create(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, rm.MethodSyntax.GetLocation()));
             }
+
+            bool allowUnsafe = compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
 
             writer.WriteLine($"new {id}();");
             writer.WriteLine();
@@ -231,6 +233,10 @@ namespace System.Text.RegularExpressions.Generator
             writer.Indent -= 4;
             writer.WriteLine($"            }}");
             writer.WriteLine();
+            if (allowUnsafe)
+            {
+                writer.WriteLine($"            [global::System.Runtime.CompilerServices.SkipLocalsInit]");
+            }
             writer.WriteLine($"            protected override void Go()");
             writer.WriteLine($"            {{");
             writer.Indent += 4;
