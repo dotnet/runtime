@@ -44,7 +44,7 @@ include(../eglib/CMakeLists.txt)
 include(../utils/CMakeLists.txt)
 include(../metadata/CMakeLists.txt)
 include(../sgen/CMakeLists.txt)
-if(INTERNAL_ZLIB)  # TODO: hook up HAVE_SYS_ZLIB instead
+if(INTERNAL_ZLIB)
   include(../zlib/CMakeLists.txt)
 elseif(HAVE_SYS_ZLIB)
   set(Z_LIBS z)
