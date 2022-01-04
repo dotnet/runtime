@@ -4,6 +4,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+#pragma warning disable IDE0060
+
 namespace Internal.Runtime.InteropServices
 {
     public static class ComActivator
@@ -11,22 +13,25 @@ namespace Internal.Runtime.InteropServices
         /// <summary>
         /// Internal entry point for unmanaged COM activation API from native code
         /// </summary>
+        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        private static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* _)
+        private static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
 
         /// <summary>
         /// Internal entry point for registering a managed COM server API from native code
         /// </summary>
+        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        private static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* _)
+        private static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
 
         /// <summary>
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
+        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
-        private static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* _)
+        private static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
     }
 }
