@@ -3280,7 +3280,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             else
             {
                 // issue a full memory barrier before a volatile StInd
-                instGen_MemoryBarrier(BARRIER_STORE_ONLY);
+                // Note: We cannot issue store barrier ishst because it is a weaker barrier.
+                // The loads can get rearranged around the barrier causing to read wrong
+                // value.
+                instGen_MemoryBarrier();
             }
         }
 
@@ -9396,43 +9399,30 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     emitter::instrDesc* lastMemBarrier = GetEmitter()->emitLastMemBarrier;
     if ((lastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
     {
-        bool wasPrevBarrierLdOrStOnly = false;
+        BarrierKind prevBarrierKind = BARRIER_FULL;
         if (lastMemBarrier->idSmallCns() == INS_BARRIER_ISHLD)
         {
-            wasPrevBarrierLdOrStOnly = true;
-        }
-        else if (lastMemBarrier->idSmallCns() == INS_BARRIER_ISHST)
-        {
-            wasPrevBarrierLdOrStOnly = true;
+            prevBarrierKind = BARRIER_LOAD_ONLY;
         }
         else
         {
-            // Currently we only emit three kinds of barriers on arm64:
+            // Currently we only emit two kinds of barriers on arm64:
             //  ISH   - Full (inner shareable domain)
             //  ISHLD - LoadOnly (inner shareable domain)
-            //  ISHST - StoreOnly (inner shareable domain)
             assert(lastMemBarrier->idSmallCns() == INS_BARRIER_ISH);
         }
 
-        if (wasPrevBarrierLdOrStOnly && (barrierKind == BARRIER_FULL))
+        if ((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL))
         {
-            // Previous memory barrier: load-only or store-only, current: full
+            // Previous memory barrier: load-only, current: full
             // Upgrade the previous one to full
+            assert((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL));
             lastMemBarrier->idSmallCns(INS_BARRIER_ISH);
         }
     }
     else
     {
-        insBarrier ins = INS_BARRIER_ISH;
-        if (barrierKind == BARRIER_LOAD_ONLY)
-        {
-            ins = INS_BARRIER_ISHLD;
-        }
-        else if (barrierKind == BARRIER_STORE_ONLY)
-        {
-            ins = INS_BARRIER_ISHST;
-        }
-        GetEmitter()->emitIns_BARR(INS_dmb, ins);
+        GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
     }
 }
 
