@@ -11,6 +11,20 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
+                ["Store.Vector128.UInt16"] = Store_Vector128_UInt16,
+                ["Store.Vector128.UInt32"] = Store_Vector128_UInt32,
+                ["Store.Vector128.UInt64"] = Store_Vector128_UInt64,
+                ["StoreSelectedScalar.Vector64.Byte.7"] = StoreSelectedScalar_Vector64_Byte_7,
+                ["StoreSelectedScalar.Vector64.Int16.3"] = StoreSelectedScalar_Vector64_Int16_3,
+                ["StoreSelectedScalar.Vector64.Int32.1"] = StoreSelectedScalar_Vector64_Int32_1,
+                ["StoreSelectedScalar.Vector64.SByte.7"] = StoreSelectedScalar_Vector64_SByte_7,
+                ["StoreSelectedScalar.Vector64.Single.1"] = StoreSelectedScalar_Vector64_Single_1,
+                ["StoreSelectedScalar.Vector64.UInt16.3"] = StoreSelectedScalar_Vector64_UInt16_3,
+                ["StoreSelectedScalar.Vector64.UInt32.1"] = StoreSelectedScalar_Vector64_UInt32_1,
+                ["StoreSelectedScalar.Vector128.Byte.15"] = StoreSelectedScalar_Vector128_Byte_15,
+                ["StoreSelectedScalar.Vector128.Double.1"] = StoreSelectedScalar_Vector128_Double_1,
+                ["StoreSelectedScalar.Vector128.Int16.7"] = StoreSelectedScalar_Vector128_Int16_7,
+                ["StoreSelectedScalar.Vector128.Int32.3"] = StoreSelectedScalar_Vector128_Int32_3,
                 ["StoreSelectedScalar.Vector128.Int64.1"] = StoreSelectedScalar_Vector128_Int64_1,
                 ["StoreSelectedScalar.Vector128.SByte.15"] = StoreSelectedScalar_Vector128_SByte_15,
                 ["StoreSelectedScalar.Vector128.Single.3"] = StoreSelectedScalar_Vector128_Single_3,
@@ -97,20 +111,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["SubtractWideningUpper.Vector128.Int64.Vector128.Int32"] = SubtractWideningUpper_Vector128_Int64_Vector128_Int32,
                 ["SubtractWideningUpper.Vector128.SByte.Vector128.SByte"] = SubtractWideningUpper_Vector128_SByte_Vector128_SByte,
                 ["SubtractWideningUpper.Vector128.UInt16.Vector128.Byte"] = SubtractWideningUpper_Vector128_UInt16_Vector128_Byte,
-                ["SubtractWideningUpper.Vector128.UInt16.Vector128.UInt16"] = SubtractWideningUpper_Vector128_UInt16_Vector128_UInt16,
-                ["SubtractWideningUpper.Vector128.UInt32.Vector128.UInt16"] = SubtractWideningUpper_Vector128_UInt32_Vector128_UInt16,
-                ["SubtractWideningUpper.Vector128.UInt32.Vector128.UInt32"] = SubtractWideningUpper_Vector128_UInt32_Vector128_UInt32,
-                ["SubtractWideningUpper.Vector128.UInt64.Vector128.UInt32"] = SubtractWideningUpper_Vector128_UInt64_Vector128_UInt32,
-                ["VectorTableLookup.Vector64.Byte"] = VectorTableLookup_Vector64_Byte,
-                ["VectorTableLookup.Vector64.SByte"] = VectorTableLookup_Vector64_SByte,
-                ["VectorTableLookupExtension.Vector64.Byte"] = VectorTableLookupExtension_Vector64_Byte,
-                ["VectorTableLookupExtension.Vector64.SByte"] = VectorTableLookupExtension_Vector64_SByte,
-                ["Xor.Vector64.Byte"] = Xor_Vector64_Byte,
-                ["Xor.Vector64.Double"] = Xor_Vector64_Double,
-                ["Xor.Vector64.Int16"] = Xor_Vector64_Int16,
-                ["Xor.Vector64.Int32"] = Xor_Vector64_Int32,
-                ["Xor.Vector64.Int64"] = Xor_Vector64_Int64,
-                ["Xor.Vector64.SByte"] = Xor_Vector64_SByte,
             };
         }
     }

@@ -8,6 +8,20 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.Int32.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.SByte.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.UInt16.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.UInt32.1.cs" />
@@ -94,20 +108,6 @@
     <Compile Include="Store.Vector128.Int64.cs" />
     <Compile Include="Store.Vector128.SByte.cs" />
     <Compile Include="Store.Vector128.Single.cs" />
-    <Compile Include="Store.Vector128.UInt16.cs" />
-    <Compile Include="Store.Vector128.UInt32.cs" />
-    <Compile Include="Store.Vector128.UInt64.cs" />
-    <Compile Include="StoreSelectedScalar.Vector64.Byte.7.cs" />
-    <Compile Include="StoreSelectedScalar.Vector64.Int16.3.cs" />
-    <Compile Include="StoreSelectedScalar.Vector64.Int32.1.cs" />
-    <Compile Include="StoreSelectedScalar.Vector64.SByte.7.cs" />
-    <Compile Include="StoreSelectedScalar.Vector64.Single.1.cs" />
-    <Compile Include="StoreSelectedScalar.Vector64.UInt16.3.cs" />
-    <Compile Include="StoreSelectedScalar.Vector64.UInt32.1.cs" />
-    <Compile Include="StoreSelectedScalar.Vector128.Byte.15.cs" />
-    <Compile Include="StoreSelectedScalar.Vector128.Double.1.cs" />
-    <Compile Include="StoreSelectedScalar.Vector128.Int16.7.cs" />
-    <Compile Include="StoreSelectedScalar.Vector128.Int32.3.cs" />
     <Compile Include="Program.AdvSimd_Part14.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

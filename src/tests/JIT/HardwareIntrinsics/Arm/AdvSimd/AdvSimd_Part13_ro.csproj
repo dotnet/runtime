@@ -8,6 +8,20 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ShiftRightAndInsert.Vector128.Int64.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.SByte.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.UInt16.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.UInt32.cs" />
+    <Compile Include="ShiftRightAndInsert.Vector128.UInt64.cs" />
+    <Compile Include="ShiftRightAndInsertScalar.Vector64.Int64.cs" />
+    <Compile Include="ShiftRightAndInsertScalar.Vector64.UInt64.cs" />
+    <Compile Include="ShiftRightArithmetic.Vector64.Int16.1.cs" />
+    <Compile Include="ShiftRightArithmetic.Vector64.Int32.1.cs" />
+    <Compile Include="ShiftRightArithmetic.Vector64.SByte.1.cs" />
+    <Compile Include="ShiftRightArithmetic.Vector128.Int16.1.cs" />
+    <Compile Include="ShiftRightArithmetic.Vector128.Int32.1.cs" />
+    <Compile Include="ShiftRightArithmetic.Vector128.Int64.1.cs" />
+    <Compile Include="ShiftRightArithmetic.Vector128.SByte.1.cs" />
     <Compile Include="ShiftRightArithmeticAdd.Vector64.Int16.1.cs" />
     <Compile Include="ShiftRightArithmeticAdd.Vector64.Int32.1.cs" />
     <Compile Include="ShiftRightArithmeticAdd.Vector64.SByte.1.cs" />
@@ -94,20 +108,6 @@
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.UInt16.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingLower.Vector64.UInt32.1.cs" />
     <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.Byte.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.Int16.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.Int32.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.SByte.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.UInt16.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateLower.Vector64.UInt32.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.Byte.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.Int16.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.Int32.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.SByte.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.UInt16.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingSaturateUpper.Vector128.UInt32.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.Byte.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.Int16.1.cs" />
-    <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.Int32.1.cs" />
     <Compile Include="Program.AdvSimd_Part13.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

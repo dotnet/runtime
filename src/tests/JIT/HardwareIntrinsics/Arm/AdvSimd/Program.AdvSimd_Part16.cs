@@ -11,6 +11,20 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
+                ["SubtractWideningUpper.Vector128.UInt16.Vector128.UInt16"] = SubtractWideningUpper_Vector128_UInt16_Vector128_UInt16,
+                ["SubtractWideningUpper.Vector128.UInt32.Vector128.UInt16"] = SubtractWideningUpper_Vector128_UInt32_Vector128_UInt16,
+                ["SubtractWideningUpper.Vector128.UInt32.Vector128.UInt32"] = SubtractWideningUpper_Vector128_UInt32_Vector128_UInt32,
+                ["SubtractWideningUpper.Vector128.UInt64.Vector128.UInt32"] = SubtractWideningUpper_Vector128_UInt64_Vector128_UInt32,
+                ["VectorTableLookup.Vector64.Byte"] = VectorTableLookup_Vector64_Byte,
+                ["VectorTableLookup.Vector64.SByte"] = VectorTableLookup_Vector64_SByte,
+                ["VectorTableLookupExtension.Vector64.Byte"] = VectorTableLookupExtension_Vector64_Byte,
+                ["VectorTableLookupExtension.Vector64.SByte"] = VectorTableLookupExtension_Vector64_SByte,
+                ["Xor.Vector64.Byte"] = Xor_Vector64_Byte,
+                ["Xor.Vector64.Double"] = Xor_Vector64_Double,
+                ["Xor.Vector64.Int16"] = Xor_Vector64_Int16,
+                ["Xor.Vector64.Int32"] = Xor_Vector64_Int32,
+                ["Xor.Vector64.Int64"] = Xor_Vector64_Int64,
+                ["Xor.Vector64.SByte"] = Xor_Vector64_SByte,
                 ["Xor.Vector64.Single"] = Xor_Vector64_Single,
                 ["Xor.Vector64.UInt16"] = Xor_Vector64_UInt16,
                 ["Xor.Vector64.UInt32"] = Xor_Vector64_UInt32,

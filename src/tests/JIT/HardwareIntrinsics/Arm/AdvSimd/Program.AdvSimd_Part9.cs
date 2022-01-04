@@ -11,6 +11,20 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
+                ["MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector64.Int32.Vector64.Int32.1"] = MultiplyRoundedDoublingBySelectedScalarSaturateHigh_Vector64_Int32_Vector64_Int32_1,
+                ["MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector64.Int32.Vector128.Int32.3"] = MultiplyRoundedDoublingBySelectedScalarSaturateHigh_Vector64_Int32_Vector128_Int32_3,
+                ["MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector128.Int16.Vector64.Int16.2"] = MultiplyRoundedDoublingBySelectedScalarSaturateHigh_Vector128_Int16_Vector64_Int16_2,
+                ["MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector128.Int16.Vector128.Int16.7"] = MultiplyRoundedDoublingBySelectedScalarSaturateHigh_Vector128_Int16_Vector128_Int16_7,
+                ["MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector128.Int32.Vector64.Int32.1"] = MultiplyRoundedDoublingBySelectedScalarSaturateHigh_Vector128_Int32_Vector64_Int32_1,
+                ["MultiplyRoundedDoublingBySelectedScalarSaturateHigh.Vector128.Int32.Vector128.Int32.3"] = MultiplyRoundedDoublingBySelectedScalarSaturateHigh_Vector128_Int32_Vector128_Int32_3,
+                ["MultiplyRoundedDoublingSaturateHigh.Vector64.Int16"] = MultiplyRoundedDoublingSaturateHigh_Vector64_Int16,
+                ["MultiplyRoundedDoublingSaturateHigh.Vector64.Int32"] = MultiplyRoundedDoublingSaturateHigh_Vector64_Int32,
+                ["MultiplyRoundedDoublingSaturateHigh.Vector128.Int16"] = MultiplyRoundedDoublingSaturateHigh_Vector128_Int16,
+                ["MultiplyRoundedDoublingSaturateHigh.Vector128.Int32"] = MultiplyRoundedDoublingSaturateHigh_Vector128_Int32,
+                ["MultiplyScalarBySelectedScalar.Vector64.Single.Vector64.Single.1"] = MultiplyScalarBySelectedScalar_Vector64_Single_Vector64_Single_1,
+                ["MultiplyScalarBySelectedScalar.Vector64.Single.Vector128.Single.3"] = MultiplyScalarBySelectedScalar_Vector64_Single_Vector128_Single_3,
+                ["MultiplySubtract.Vector64.Byte"] = MultiplySubtract_Vector64_Byte,
+                ["MultiplySubtract.Vector64.Int16"] = MultiplySubtract_Vector64_Int16,
                 ["MultiplySubtract.Vector64.Int32"] = MultiplySubtract_Vector64_Int32,
                 ["MultiplySubtract.Vector64.SByte"] = MultiplySubtract_Vector64_SByte,
                 ["MultiplySubtract.Vector64.UInt16"] = MultiplySubtract_Vector64_UInt16,
@@ -97,20 +111,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["NegateSaturate.Vector128.SByte"] = NegateSaturate_Vector128_SByte,
                 ["NegateScalar.Vector64.Double"] = NegateScalar_Vector64_Double,
                 ["NegateScalar.Vector64.Single"] = NegateScalar_Vector64_Single,
-                ["Not.Vector64.Byte"] = Not_Vector64_Byte,
-                ["Not.Vector64.Double"] = Not_Vector64_Double,
-                ["Not.Vector64.Int16"] = Not_Vector64_Int16,
-                ["Not.Vector64.Int32"] = Not_Vector64_Int32,
-                ["Not.Vector64.Int64"] = Not_Vector64_Int64,
-                ["Not.Vector64.SByte"] = Not_Vector64_SByte,
-                ["Not.Vector64.Single"] = Not_Vector64_Single,
-                ["Not.Vector64.UInt16"] = Not_Vector64_UInt16,
-                ["Not.Vector64.UInt32"] = Not_Vector64_UInt32,
-                ["Not.Vector64.UInt64"] = Not_Vector64_UInt64,
-                ["Not.Vector128.Byte"] = Not_Vector128_Byte,
-                ["Not.Vector128.Double"] = Not_Vector128_Double,
-                ["Not.Vector128.Int16"] = Not_Vector128_Int16,
-                ["Not.Vector128.Int32"] = Not_Vector128_Int32,
             };
         }
     }

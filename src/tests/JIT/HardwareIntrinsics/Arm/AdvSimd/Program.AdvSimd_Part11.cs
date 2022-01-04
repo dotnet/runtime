@@ -11,6 +11,20 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
+                ["ReverseElement8.Vector64.UInt32"] = ReverseElement8_Vector64_UInt32,
+                ["ReverseElement8.Vector64.UInt64"] = ReverseElement8_Vector64_UInt64,
+                ["ReverseElement8.Vector128.Int16"] = ReverseElement8_Vector128_Int16,
+                ["ReverseElement8.Vector128.Int32"] = ReverseElement8_Vector128_Int32,
+                ["ReverseElement8.Vector128.Int64"] = ReverseElement8_Vector128_Int64,
+                ["ReverseElement8.Vector128.UInt16"] = ReverseElement8_Vector128_UInt16,
+                ["ReverseElement8.Vector128.UInt32"] = ReverseElement8_Vector128_UInt32,
+                ["ReverseElement8.Vector128.UInt64"] = ReverseElement8_Vector128_UInt64,
+                ["RoundAwayFromZero.Vector64.Single"] = RoundAwayFromZero_Vector64_Single,
+                ["RoundAwayFromZero.Vector128.Single"] = RoundAwayFromZero_Vector128_Single,
+                ["RoundAwayFromZeroScalar.Vector64.Double"] = RoundAwayFromZeroScalar_Vector64_Double,
+                ["RoundAwayFromZeroScalar.Vector64.Single"] = RoundAwayFromZeroScalar_Vector64_Single,
+                ["RoundToNearest.Vector64.Single"] = RoundToNearest_Vector64_Single,
+                ["RoundToNearest.Vector128.Single"] = RoundToNearest_Vector128_Single,
                 ["RoundToNearestScalar.Vector64.Double"] = RoundToNearestScalar_Vector64_Double,
                 ["RoundToNearestScalar.Vector64.Single"] = RoundToNearestScalar_Vector64_Single,
                 ["RoundToNegativeInfinity.Vector64.Single"] = RoundToNegativeInfinity_Vector64_Single,
@@ -97,20 +111,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["ShiftLeftLogicalSaturate.Vector128.Int32.1"] = ShiftLeftLogicalSaturate_Vector128_Int32_1,
                 ["ShiftLeftLogicalSaturate.Vector128.Int64.1"] = ShiftLeftLogicalSaturate_Vector128_Int64_1,
                 ["ShiftLeftLogicalSaturate.Vector128.SByte.1"] = ShiftLeftLogicalSaturate_Vector128_SByte_1,
-                ["ShiftLeftLogicalSaturate.Vector128.UInt16.1"] = ShiftLeftLogicalSaturate_Vector128_UInt16_1,
-                ["ShiftLeftLogicalSaturate.Vector128.UInt32.1"] = ShiftLeftLogicalSaturate_Vector128_UInt32_1,
-                ["ShiftLeftLogicalSaturate.Vector128.UInt64.1"] = ShiftLeftLogicalSaturate_Vector128_UInt64_1,
-                ["ShiftLeftLogicalSaturateScalar.Vector64.Int64.1"] = ShiftLeftLogicalSaturateScalar_Vector64_Int64_1,
-                ["ShiftLeftLogicalSaturateScalar.Vector64.UInt64.1"] = ShiftLeftLogicalSaturateScalar_Vector64_UInt64_1,
-                ["ShiftLeftLogicalSaturateUnsigned.Vector64.Int16.1"] = ShiftLeftLogicalSaturateUnsigned_Vector64_Int16_1,
-                ["ShiftLeftLogicalSaturateUnsigned.Vector64.Int32.1"] = ShiftLeftLogicalSaturateUnsigned_Vector64_Int32_1,
-                ["ShiftLeftLogicalSaturateUnsigned.Vector64.SByte.1"] = ShiftLeftLogicalSaturateUnsigned_Vector64_SByte_1,
-                ["ShiftLeftLogicalSaturateUnsigned.Vector128.Int16.1"] = ShiftLeftLogicalSaturateUnsigned_Vector128_Int16_1,
-                ["ShiftLeftLogicalSaturateUnsigned.Vector128.Int32.1"] = ShiftLeftLogicalSaturateUnsigned_Vector128_Int32_1,
-                ["ShiftLeftLogicalSaturateUnsigned.Vector128.Int64.1"] = ShiftLeftLogicalSaturateUnsigned_Vector128_Int64_1,
-                ["ShiftLeftLogicalSaturateUnsigned.Vector128.SByte.1"] = ShiftLeftLogicalSaturateUnsigned_Vector128_SByte_1,
-                ["ShiftLeftLogicalSaturateUnsignedScalar.Vector64.Int64.1"] = ShiftLeftLogicalSaturateUnsignedScalar_Vector64_Int64_1,
-                ["ShiftLeftLogicalScalar.Vector64.Int64.1"] = ShiftLeftLogicalScalar_Vector64_Int64_1,
             };
         }
     }

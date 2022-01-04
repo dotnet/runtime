@@ -377,17 +377,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        if (intrin.op2->isContained())
-                        {
-                            assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
-                            assert(intrin.op2->IsVectorZero());
-
-                            GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
-                        }
-                        else
-                        {
-                            GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                        }
+                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                     }
                     break;
 
@@ -504,6 +494,27 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Crc32_Arm64_ComputeCrc32:
             case NI_Crc32_Arm64_ComputeCrc32C:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+
+            case NI_AdvSimd_Arm64_CompareEqual:
+                if (intrin.op1->isContained())
+                {
+                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+                    assert(intrin.op1->IsVectorZero());
+
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+                else if (intrin.op2->isContained())
+                {
+                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+                    assert(intrin.op2->IsVectorZero());
+
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                }
                 break;
 
             case NI_AdvSimd_AbsoluteCompareLessThan:
