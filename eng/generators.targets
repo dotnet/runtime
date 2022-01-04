@@ -72,12 +72,6 @@
                         and '$(IsSourceProject)' == 'true'
                         and '$(MSBuildProjectExtension)' == '.csproj'
                         and ('@(Reference)' != '' and @(Reference->AnyHaveMetadataValue('Identity', 'System.Text.RegularExpressions')))" />
-    <EnabledGenerators Include="RegexGenerator"
-                       Condition="'$(EnableRegexGenerator)' == ''
-                        and '$(IsFrameworkSupportFacade)' != 'true'
-                        and '$(IsSourceProject)' == 'true'
-                        and '$(MSBuildProjectExtension)' == '.csproj'
-                        and ('$(TargetFrameworkIdentifier)' == '.NETStandard' or '$(TargetFrameworkIdentifier)' == '.NETFramework')" />
   </ItemGroup>
 
   <!-- Use this complex ItemGroup-based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
