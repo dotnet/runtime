@@ -685,6 +685,7 @@ struct Native
     public S ToManaged() => new S { b = i != 0 };
 
     public const int BufferSize = 1;
+    public const bool RequiresStackBuffer = false;
 }
 ";
         public static string CustomStructMarshallingOptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S") + @"
