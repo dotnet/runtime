@@ -358,6 +358,97 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        public async Task SendAsync_MultipleEntriesPerHeaderName_ValuesMayNotBeGrouped(bool manyHeaders, bool enumerateHeadersBeforeSend, bool valuesShouldBeGrouped)
+        {
+            Assert.True(valuesShouldBeGrouped || !manyHeaders, "Values will be grouped if we go over the HttpHeaders.ArrayThreshold");
+            Assert.True(valuesShouldBeGrouped || !enumerateHeadersBeforeSend, "Enumerating the values forces them to be grouped by name");
+
+            if (PlatformDetection.IsBrowser)
+            {
+                valuesShouldBeGrouped = true;
+            }
+
+#if !NETCOREAPP
+            valuesShouldBeGrouped = true;
+#endif
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                {
+                    Version = UseVersion
+                };
+
+                request.Headers.TryAddWithoutValidation("foo", "foo-single-1");
+                request.Headers.TryAddWithoutValidation("bar", "bar-single-1");
+                request.Headers.TryAddWithoutValidation("foo", new[] { "foo-multi-1", "foo-multi-2" });
+                request.Headers.TryAddWithoutValidation("bar", "bar-single-2");
+                request.Headers.TryAddWithoutValidation("foo", "foo-single-2");
+
+                if (manyHeaders)
+                {
+                    for (int i = 0; i < 100; i++)
+                    {
+                        request.Headers.TryAddWithoutValidation($"dummy-{i}", "dummy");
+                    }
+                }
+
+                if (enumerateHeadersBeforeSend)
+                {
+                    _ = request.Headers.ToArray();
+                }
+
+                using HttpClient client = CreateHttpClient();
+
+                (await client.SendAsync(TestAsync, request)).Dispose();
+            },
+            async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+                HttpHeaderData[] headers = requestData.Headers.Where(h => h.Name == "foo" || h.Name == "bar").ToArray();
+
+                if (valuesShouldBeGrouped)
+                {
+                    Assert.Equal(2, headers.Length);
+
+                    if (manyHeaders)
+                    {
+                        // Ordering is not preserved after HttpHeaders.ArrayThreshold
+                        headers = headers.OrderByDescending(h => h.Name).ToArray();
+                    }
+
+                    Assert.Equal("foo", headers[0].Name);
+                    Assert.Equal("foo-single-1, foo-multi-1, foo-multi-2, foo-single-2", headers[0].Value);
+
+                    Assert.Equal("bar", headers[1].Name);
+                    Assert.Equal("bar-single-1, bar-single-2", headers[1].Value);
+                }
+                else
+                {
+                    Assert.Equal(5, headers.Length);
+
+                    Assert.Equal("foo", headers[0].Name);
+                    Assert.Equal("foo-single-1", headers[0].Value);
+
+                    Assert.Equal("bar", headers[1].Name);
+                    Assert.Equal("bar-single-1", headers[1].Value);
+
+                    Assert.Equal("foo", headers[2].Name);
+                    Assert.Equal("foo-multi-1, foo-multi-2", headers[2].Value);
+
+                    Assert.Equal("bar", headers[3].Name);
+                    Assert.Equal("bar-single-2", headers[3].Value);
+
+                    Assert.Equal("foo", headers[4].Name);
+                    Assert.Equal("foo-single-2", headers[4].Value);
+                }
+            });
+        }
+
+        [Theory]
         [InlineData(false, false)]
         [InlineData(true, false)]
         [InlineData(false, true)]

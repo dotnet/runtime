@@ -28,6 +28,7 @@ namespace System.Net.Test.Common
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
         private bool _expectClientDisconnect;
+        private List<HttpHeaderData> _dynamicHeaderTable = new();
 
         private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
@@ -490,12 +491,15 @@ namespace System.Net.Test.Common
             new HttpHeaderData("www-authenticate", "")
         };
 
-        private static HttpHeaderData GetHeaderForIndex(int index)
+        private HttpHeaderData GetHeaderForIndex(int index)
         {
-            return s_staticTable[index - 1];
+            index--;
+            return index < s_staticTable.Length
+                ? s_staticTable[index]
+                : _dynamicHeaderTable[index - s_staticTable.Length];
         }
 
-        private static (int bytesConsumed, HttpHeaderData headerData) DecodeLiteralHeader(ReadOnlySpan<byte> headerBlock, byte prefixMask)
+        private (int bytesConsumed, HttpHeaderData headerData) DecodeLiteralHeader(ReadOnlySpan<byte> headerBlock, byte prefixMask)
         {
             int i = 0;
 
@@ -520,7 +524,7 @@ namespace System.Net.Test.Common
             return (i, new HttpHeaderData(name, value));
         }
 
-        private static (int bytesConsumed, HttpHeaderData headerData) DecodeHeader(ReadOnlySpan<byte> headerBlock)
+        private (int bytesConsumed, HttpHeaderData headerData) DecodeHeader(ReadOnlySpan<byte> headerBlock)
         {
             int i = 0;
 
@@ -536,7 +540,11 @@ namespace System.Net.Test.Common
             else if ((b & 0b11000000) == 0b01000000)
             {
                 // Literal with indexing
-                return DecodeLiteralHeader(headerBlock, 0b00111111);
+                (int bytesConsumed, HttpHeaderData headerData) = DecodeLiteralHeader(headerBlock, 0b00111111);
+
+                _dynamicHeaderTable.Insert(0, headerData);
+
+                return (bytesConsumed, headerData);
             }
             else if ((b & 0b11100000) == 0b00100000)
             {
