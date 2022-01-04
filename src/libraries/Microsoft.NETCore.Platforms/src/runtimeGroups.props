@@ -31,6 +31,11 @@
       <Architectures>x64</Architectures>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="manjaro">
+      <Parent>arch</Parent>
+      <Architectures>x64</Architectures>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="browser">
       <Parent>any</Parent>
       <Architectures>wasm</Architectures>
