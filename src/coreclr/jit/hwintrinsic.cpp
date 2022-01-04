@@ -596,12 +596,6 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
         return false;
     }
 
-    if ((baseJitType == CORINFO_TYPE_NATIVEINT) || (baseJitType == CORINFO_TYPE_NATIVEUINT))
-    {
-        // We don't want to support the general purpose helpers for nint/nuint until after they go through API review.
-        return false;
-    }
-
     var_types baseType = JitType2PreciseVarType(baseJitType);
 
     // We don't actually check the intrinsic outside of the false case as we expect
