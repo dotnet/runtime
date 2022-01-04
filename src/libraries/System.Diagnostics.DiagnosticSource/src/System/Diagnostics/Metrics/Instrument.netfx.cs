@@ -17,7 +17,8 @@ namespace System.Diagnostics.Metrics
 #endif
     public abstract partial class Instrument<T> : Instrument where T : struct
     {
-        [ThreadStatic] private KeyValuePair<string, object?>[] ts_tags;
+        [ThreadStatic]
+        private static KeyValuePair<string, object?>[] ts_tags;
 
         private const int MaxTagsCount = 8;
 
