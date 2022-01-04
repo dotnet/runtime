@@ -376,8 +376,9 @@ namespace System.Text.RegularExpressions.Generator
             }
             writer.WriteLine();
 
+            const string NoStartingPositionFound = "NoStartingPositionFound";
             writer.WriteLine("// No starting position found");
-            writer.WriteLine("ReturnFalse:");
+            writer.WriteLine($"{NoStartingPositionFound}:");
             writer.WriteLine("base.runtextpos = end;");
             writer.WriteLine("return false;");
 
@@ -399,7 +400,7 @@ namespace System.Text.RegularExpressions.Generator
                             additionalDeclarations.Add("int beginning = base.runtextbeg;");
                             using (EmitBlock(writer, "if (pos > beginning)"))
                             {
-                                writer.WriteLine("goto ReturnFalse;");
+                                writer.WriteLine($"goto {NoStartingPositionFound};");
                             }
                             writer.WriteLine("return true;");
                             return true;
@@ -408,7 +409,7 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine("// Start \\G anchor");
                             using (EmitBlock(writer, "if (pos > base.runtextstart)"))
                             {
-                                writer.WriteLine("goto ReturnFalse;");
+                                writer.WriteLine($"goto {NoStartingPositionFound};");
                             }
                             writer.WriteLine("return true;");
                             return true;
@@ -444,7 +445,7 @@ namespace System.Text.RegularExpressions.Generator
                                 writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos), '\\n');");
                                 using (EmitBlock(writer, "if (newlinePos < 0 || newlinePos + pos + 1 > end)"))
                                 {
-                                    writer.WriteLine("goto ReturnFalse;");
+                                    writer.WriteLine($"goto {NoStartingPositionFound};");
                                 }
                                 writer.WriteLine("pos = newlinePos + pos + 1;");
                             }
@@ -517,7 +518,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"int indexOfPos = {indexOf};");
                         using (EmitBlock(writer, "if (indexOfPos < 0)"))
                         {
-                            writer.WriteLine("goto ReturnFalse;");
+                            writer.WriteLine($"goto {NoStartingPositionFound};");
                         }
                         writer.WriteLine("i += indexOfPos;");
                         writer.WriteLine();
@@ -526,7 +527,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             using (EmitBlock(writer, $"if (i >= span.Length - {minRequiredLength - 1})"))
                             {
-                                writer.WriteLine("goto ReturnFalse;");
+                                writer.WriteLine($"goto {NoStartingPositionFound};");
                             }
                             writer.WriteLine();
                         }
@@ -1128,7 +1129,11 @@ namespace System.Text.RegularExpressions.Generator
 
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
 
-                TransferSliceStaticPosToPos();
+                if (sliceStaticPos > 0)
+                {
+                    TransferSliceStaticPosToPos();
+                    writer.WriteLine();
+                }
 
                 // If the specified capture hasn't yet captured anything, fail to match... except when using RegexOptions.ECMAScript,
                 // in which case per ECMA 262 section 21.2.2.9 the backreference should succeed.
@@ -1999,7 +2004,7 @@ namespace System.Text.RegularExpressions.Generator
                         break;
 
                     case RegexNode.EndZ:
-                        writer.WriteLine($"if ({sliceSpan}.Length - 1 > {sliceStaticPos} || ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
+                        writer.WriteLine($"if ({sliceSpan}.Length > {sliceStaticPos + 1} || ({IsSliceLengthGreaterThanSliceStaticPos()} && {sliceSpan}[{sliceStaticPos}] != '\\n'))");
                         using (EmitBlock(writer, null))
                         {
                             writer.WriteLine($"goto {doneLabel};");
@@ -3375,7 +3380,7 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.End => "Match if at the end of the string.",
                 RegexNode.EndZ => "Match if at the end of the string or if before an ending newline.",
                 RegexNode.Eol => "Match if at the end of a line.",
-                RegexNode.Loop or RegexNode.Lazyloop => $"Loop {DescribeLoop(node)}.",
+                RegexNode.Loop or RegexNode.Lazyloop => node.M == 0 && node.N == 1 ? $"Optional ({(node.Type is RegexNode.Loop ? "greedy" : "lazy")})." : $"Loop {DescribeLoop(node)}.",
                 RegexNode.Multi => $"Match the string {Literal(node.Str!)}.",
                 RegexNode.NonBoundary => $"Match if at anything other than a word boundary.",
                 RegexNode.NonECMABoundary => $"Match if at anything other than a word boundary (according to ECMAScript rules).",
@@ -3394,8 +3399,6 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.Testref => $"Conditionally match {(node.ChildCount() == 1 ? "an expression" : "one of two expressions")} depending on whether the {DescribeNonNegative(node.M)} capture group matched.",
                 RegexNode.UpdateBumpalong => $"Advance the next matching position.",
                 _ => $"Unknown node type {node.Type}",
-
-                // Concatenation
             };
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
@@ -3478,6 +3481,7 @@ namespace System.Text.RegularExpressions.Generator
                     (2, int.MaxValue) => " at least twice",
                     (_, int.MaxValue) => $" at least {node.M} times",
                     (0, 1) => ", optionally",
+                    (0, _) => $"at most {node.N} times",
                     _ => $" at least {node.M} and at most {node.N} times"
                 };
 
