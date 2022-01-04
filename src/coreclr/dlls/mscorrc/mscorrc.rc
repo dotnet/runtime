@@ -196,6 +196,7 @@ BEGIN
     IDS_EE_NDIRECT_GETPROCADDRESS_NONAME    "A library name must be specified in a DllImport attribute applied to non-IJW methods."
     IDS_EE_NDIRECT_DISABLEDMARSHAL_SETLASTERROR "Setting SetLastError=true is not supported when runtime marshalling is disabled."
     IDS_EE_NDIRECT_DISABLEDMARSHAL_LCID     "The LCIDConversionAttribute is not supported when runtime marshalling is disabled."
+    IDS_EE_NDIRECT_DISABLEDMARSHAL_PRESERVESIG "Setting PreserveSig to false for a P/Invoke is not supported when runtime marshalling is disabled."
     IDS_EE_CLASS_CONSTRAINTS_VIOLATION      "GenericArguments[%1], '%2', on '%3' violates the constraint of type parameter '%4'."
     IDS_EE_METHOD_CONSTRAINTS_VIOLATION     "Method %1.%2: type argument '%3' violates the constraint of type parameter '%4'."
     IDS_EE_NOSYNCHRONIZED                   "Synchronized attribute cannot be used with this method type."

@@ -3671,6 +3671,11 @@ static void CreateNDirectStubWorker(StubState*               pss,
         iLCIDArg++;
     }
 
+    if (!builtInMarshallingEnabled && SF_IsHRESULTSwapping(dwStubFlags))
+    {
+        COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_PRESERVESIG);
+    }
+
     int numArgs = msig.NumFixedArgs();
 
     // thiscall must have at least one parameter (the "this")

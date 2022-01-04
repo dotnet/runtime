@@ -54,6 +54,12 @@ public class PInvokes
     }
 
     [Fact]
+    public static void PreserveSig_False_NotSupported()
+    {
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithHResultSwap());
+    }
+
+    [Fact]
     public static void NoBooleanNormalization()
     {
         byte byteVal = 42;

@@ -97,6 +97,8 @@ public unsafe class DisabledRuntimeMarshallingNative
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     [LCIDConversion(0)]
     public static extern void CallWithLCID();
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", PreserveSig = false)]
+    public static extern int CallWithHResultSwap();
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     public static extern delegate*<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
