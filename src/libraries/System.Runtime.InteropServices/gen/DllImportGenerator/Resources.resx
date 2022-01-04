@@ -124,7 +124,7 @@
     <value>Type '{0}' is marked with 'BlittableTypeAttribute' but is not blittable</value>
   </data>
   <data name="CallerAllocConstructorMustHaveBufferSizeConstantDescription" xml:space="preserve">
-    <value>When constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer.</value>
+    <value>When a constructor taking a Span&lt;byte&gt; is specified on the native type, the type must also have a public integer constant named BufferSize to provide the size of the caller-allocated buffer.</value>
   </data>
   <data name="CallerAllocConstructorMustHaveBufferSizeConstantMessage" xml:space="preserve">
     <value>The native type '{0}' must have a 'public const int BufferSize' field that specifies the size of the stack buffer because it has a constructor that takes a caller-allocated Span&lt;byte&gt;</value>
