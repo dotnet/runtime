@@ -83,7 +83,7 @@ namespace Internal.TypeSystem.Interop
                 }
                 else
                 {
-                    marshallers[i] = CreateDisabledRuntimeMarshallingMarshaller(
+                    marshallers[i] = CreateDisabledMarshaller(
                         parameterType,
                         parameterIndex,
                         MarshallerType.Argument,

@@ -388,7 +388,7 @@ namespace Internal.TypeSystem.Interop
         /// </summary>
         /// <param name="parameterType">type of the parameter to marshal</param>
         /// <returns>The created Marshaller</returns>
-        public static Marshaller CreateDisabledRuntimeMarshallingMarshaller(TypeDesc parameterType,
+        public static Marshaller CreateDisabledMarshaller(TypeDesc parameterType,
             int? parameterIndex,
             MarshallerType marshallerType,
             MarshalDirection direction,
@@ -400,14 +400,6 @@ namespace Internal.TypeSystem.Interop
             PInvokeFlags flags,
             bool isReturn)
         {
-            bool isAnsi = flags.CharSet switch
-            {
-                CharSet.Ansi => true,
-                CharSet.Unicode => false,
-                CharSet.Auto => !parameterType.Context.Target.IsWindows,
-                _ => true
-            };
-
             MarshallerKind marshallerKind = MarshalHelpers.GetRuntimeDisabledMarshallingMarshallerKind(parameterType);
 
             TypeSystemContext context = parameterType.Context;
@@ -1665,7 +1657,7 @@ namespace Internal.TypeSystem.Interop
     class AnsiStringMarshaller : Marshaller
     {
 #if READYTORUN
-        const int MAX_LOCAL_BUFFER_LENGTH = 260 + 1; // MAX_PATH + 1 
+        const int MAX_LOCAL_BUFFER_LENGTH = 260 + 1; // MAX_PATH + 1
 
         private ILLocalVariable? _localBuffer = null;
 #endif
@@ -1702,7 +1694,7 @@ namespace Internal.TypeSystem.Interop
                 .GetKnownMethod("ConvertToNative", null);
 
             bool bPassByValueInOnly = In && !Out && !IsManagedByRef;
-            
+
             if (bPassByValueInOnly)
             {
                 var bufSize = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
@@ -1737,7 +1729,7 @@ namespace Internal.TypeSystem.Interop
                 codeStream.EmitStLoc(bufSize);
 
                 // if (MAX_LOCAL_BUFFER_LENGTH < BufSize ) goto NoOptimize
-                codeStream.EmitLdc(MAX_LOCAL_BUFFER_LENGTH + 1); 
+                codeStream.EmitLdc(MAX_LOCAL_BUFFER_LENGTH + 1);
                 codeStream.EmitLdLoc(bufSize);
                 codeStream.Emit(ILOpcode.clt);
                 codeStream.Emit(ILOpcode.brtrue, noOptimize);

@@ -47,8 +47,7 @@ namespace Internal.IL.Stubs
             // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke
             if (_importMetadata.Flags.SetLastError)
             {
-                if (_targetMethod is EcmaMethod ecmaMethod
-                    && !MarshalHelpers.IsRuntimeMarshallingEnabled(ecmaMethod.Module))
+                if (!MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)_targetMethod.OwningType).Module))
                 {
                     // When runtime marshalling is disabled, we don't support generating the stub IL
                     // in Ready-to-Run so we can correctly throw an exception at runtime when the user tries to

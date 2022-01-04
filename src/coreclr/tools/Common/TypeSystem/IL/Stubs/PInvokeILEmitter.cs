@@ -12,11 +12,6 @@ namespace Internal.IL.Stubs
 {
     /// <summary>
     /// Provides method bodies for PInvoke methods
-    ///
-    /// This by no means intends to provide full PInvoke support. The intended use of this is to
-    /// a) prevent calls getting generated to targets that require a full marshaller
-    /// (this compiler doesn't provide that), and b) offer a hand in some very simple marshalling
-    /// situations (but support for this part might go away as the product matures).
     /// </summary>
     public struct PInvokeILEmitter
     {
@@ -65,11 +60,11 @@ namespace Internal.IL.Stubs
                     break;
                 case CalliMarshallingMethodThunk calliMethod:
                     methodSig = calliMethod.TargetSignature;
-                    runtimeMarshallingEnabled = calliMethod.UseRuntimeMarshalling;
+                    runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(calliMethod.ModuleContext);
                     break;
                 default:
                     methodSig = targetMethod.Signature;
-                    runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(((EcmaMethod)targetMethod).Module);
+                    runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)targetMethod.OwningType).Module);
                     break;
             }
             int indexOffset = 0;
@@ -137,7 +132,7 @@ namespace Internal.IL.Stubs
                 }
                 else
                 {
-                    marshallers[i] = Marshaller.CreateDisabledRuntimeMarshallingMarshaller(
+                    marshallers[i] = Marshaller.CreateDisabledMarshaller(
                         parameterType,
                         parameterIndex,
                         MarshallerType.Argument,
@@ -277,8 +272,7 @@ namespace Internal.IL.Stubs
             TypeDesc nativeReturnType = _flags.PreserveSig ? _marshallers[0].NativeParameterType : context.GetWellKnownType(WellKnownType.Int32);
             TypeDesc[] nativeParameterTypes = new TypeDesc[isHRSwappedRetVal ? _marshallers.Length : _marshallers.Length - 1];
 
-            bool runtimeMarshallingEnabled = _targetMethod is not EcmaMethod ecmaMethod
-                    || MarshalHelpers.IsRuntimeMarshallingEnabled(ecmaMethod.Module);
+            bool runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)_targetMethod.OwningType).Module);
 
             // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke
             if (_flags.SetLastError)

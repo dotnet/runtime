@@ -1028,7 +1028,7 @@ namespace Internal.JitInterface
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
 
             Debug.Assert(!type.IsString && !type.IsArray && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
-            
+
             pHasSideEffects = type.HasFinalizer;
 
             if (type.RequiresAlign8())
@@ -1794,7 +1794,7 @@ namespace Internal.JitInterface
 
                 MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
                     methodSignature,
-                    MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)HandleToObject(callSiteSig->scope).OwningMethod.OwningType).Module));
+                    ((MetadataType)HandleToObject(callSiteSig->scope).OwningMethod.OwningType).Module);
                 Debug.Assert(!IsPInvokeStubRequired(stub));
 #endif
 
@@ -1830,7 +1830,7 @@ namespace Internal.JitInterface
 
             MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(
                 signature,
-                MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)methodIL.OwningMethod.OwningType).Module));
+                ((MetadataType)methodIL.OwningMethod.OwningType).Module);
             if (!mustConvert && !IsPInvokeStubRequired(stub))
                 return false;
 

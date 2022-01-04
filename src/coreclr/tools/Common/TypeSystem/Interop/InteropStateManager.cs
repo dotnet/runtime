@@ -38,7 +38,7 @@ namespace Internal.TypeSystem
         //
         // Delegate Marshalling Stubs
         //
-        
+
         /// <summary>
         /// Generates marshalling stubs for open static delegates
         /// </summary>
@@ -105,9 +105,9 @@ namespace Internal.TypeSystem
         }
 
         //
-        //  Struct Marshalling 
+        //  Struct Marshalling
         //  To support struct marshalling compiler needs to generate a native type which
-        //  imitates the original struct being passed to managed side with corresponding 
+        //  imitates the original struct being passed to managed side with corresponding
         //  fields of marshalled types. Additionally it needs to generate three thunks
         //      1. Managed to Native Thunk: For forward marshalling
         //      2. Native to Managed Thunk: For reverse marshalling
@@ -186,9 +186,9 @@ namespace Internal.TypeSystem
             return _pInvokeLazyFixupFieldHashtable.GetOrCreateValue(method);
         }
 
-        public MethodDesc GetPInvokeCalliStub(MethodSignature signature, bool useRuntimeMarshalling)
+        public MethodDesc GetPInvokeCalliStub(MethodSignature signature, ModuleDesc moduleContext)
         {
-            return _pInvokeCalliHashtable.GetOrCreateValue((signature, useRuntimeMarshalling));
+            return _pInvokeCalliHashtable.GetOrCreateValue(new CalliMarshallingMethodThunkKey(signature, moduleContext));
         }
 
         private class NativeStructTypeHashtable : LockFreeReaderHashtable<MetadataType, NativeStructType>
@@ -355,7 +355,7 @@ namespace Internal.TypeSystem
 
             protected override DelegateMarshallingMethodThunk CreateValueFromKey(DelegateMarshallingStubHashtableKey key)
             {
-                return new DelegateMarshallingMethodThunk(key.DelegateType, _owningType, 
+                return new DelegateMarshallingMethodThunk(key.DelegateType, _owningType,
                     _interopStateManager, key.Kind);
             }
 
@@ -478,34 +478,36 @@ namespace Internal.TypeSystem
             }
         }
 
-        private class PInvokeCalliHashtable : LockFreeReaderHashtable<(MethodSignature Signature, bool UseRuntimeMarshalling), CalliMarshallingMethodThunk>
+        private readonly record struct CalliMarshallingMethodThunkKey(MethodSignature Signature, ModuleDesc ModuleContext);
+
+        private class PInvokeCalliHashtable : LockFreeReaderHashtable<CalliMarshallingMethodThunkKey, CalliMarshallingMethodThunk>
         {
             private readonly InteropStateManager _interopStateManager;
             private readonly TypeDesc _owningType;
 
-            protected override int GetKeyHashCode((MethodSignature Signature, bool UseRuntimeMarshalling) key)
+            protected override int GetKeyHashCode(CalliMarshallingMethodThunkKey key)
             {
                 return key.GetHashCode();
             }
 
             protected override int GetValueHashCode(CalliMarshallingMethodThunk value)
             {
-                return value.TargetSignature.GetHashCode();
+                return new CalliMarshallingMethodThunkKey(value.TargetSignature, value.ModuleContext).GetHashCode();
             }
 
-            protected override bool CompareKeyToValue((MethodSignature Signature, bool UseRuntimeMarshalling) key, CalliMarshallingMethodThunk value)
+            protected override bool CompareKeyToValue(CalliMarshallingMethodThunkKey key, CalliMarshallingMethodThunk value)
             {
-                return key.Equals(value.TargetSignature);
+                return key.Signature.Equals(value.TargetSignature);
             }
 
             protected override bool CompareValueToValue(CalliMarshallingMethodThunk value1, CalliMarshallingMethodThunk value2)
             {
-                return value1.TargetSignature.Equals(value2.TargetSignature);
+                return value1.TargetSignature.Equals(value2.TargetSignature) && value1.ModuleContext == value2.ModuleContext;
             }
 
-            protected override CalliMarshallingMethodThunk CreateValueFromKey((MethodSignature Signature, bool UseRuntimeMarshalling) key)
+            protected override CalliMarshallingMethodThunk CreateValueFromKey(CalliMarshallingMethodThunkKey key)
             {
-                return new CalliMarshallingMethodThunk(key.Signature, _owningType, _interopStateManager, key.UseRuntimeMarshalling);
+                return new CalliMarshallingMethodThunk(key.Signature, _owningType, _interopStateManager, key.ModuleContext);
             }
 
             public PInvokeCalliHashtable(InteropStateManager interopStateManager, TypeDesc owningType)
