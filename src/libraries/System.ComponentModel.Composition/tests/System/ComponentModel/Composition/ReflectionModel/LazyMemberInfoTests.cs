@@ -175,6 +175,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
             });
         }
 
+        [Fact]
+        public void Equals_PassNullReturnsFalse()
+        {
+            Assert.False(new LazyMemberInfo().Equals(null));
+        }
+
         private static IEnumerable<Tuple<MemberInfo, Tuple<MemberTypes, MemberInfo[]>>> GetMembersAndAccessors(Type type)
         {
             yield return new Tuple<MemberInfo, Tuple<MemberTypes, MemberInfo[]>>(
