@@ -1014,6 +1014,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_Sum:
+        case NI_Vector128_Sum:
+        {
+            assert(sig->numArgs == 1);
+
+            op1     = impSIMDPopStack(retType);
+            retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
         case NI_Vector64_WidenLower:
         case NI_Vector128_WidenLower:
         {

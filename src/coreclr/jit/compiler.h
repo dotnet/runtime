@@ -3300,6 +3300,9 @@ public:
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdSumNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
                                GenTree*    op1,

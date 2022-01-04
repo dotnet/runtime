@@ -1500,6 +1500,35 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_Sum:
+        case NI_Vector256_Sum:
+        {
+            assert(sig->numArgs == 1);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_SSE3))
+                {
+                    // Floating-point types require SSE3.HorizontalAdd
+                    break;
+                }
+            }
+            else if (!compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+            {
+                // Integral types require SSSE3.HorizontalAdd
+                break;
+            }
+            else if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
+            {
+                // byte, sbyte, long, and ulong all would require more work to support
+                break;
+            }
+
+            op1     = impSIMDPopStack(retType);
+            retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
         case NI_Vector128_ToScalar:
         case NI_Vector256_ToScalar:
         {

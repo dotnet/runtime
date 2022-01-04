@@ -183,6 +183,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> OnesComplement<T>(System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Sqrt<T>(System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Subtract<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
+        public static T Sum<T>(System.Runtime.Intrinsics.Vector128<T> v) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> ToVector256Unsafe<T>(this System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> ToVector256<T>(this System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
@@ -400,6 +401,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> OnesComplement<T>(System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Sqrt<T>(System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Subtract<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
+        public static T Sum<T>(System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         public static bool TryCopyTo<T>(this System.Runtime.Intrinsics.Vector256<T> vector, System.Span<T> destination) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -589,6 +591,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<T> OnesComplement<T>(System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Sqrt<T>(System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Subtract<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
+        public static T Sum<T>(System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> ToVector128Unsafe<T>(this System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> ToVector128<T>(this System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }

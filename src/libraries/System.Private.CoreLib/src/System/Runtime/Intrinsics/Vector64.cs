@@ -2072,6 +2072,24 @@ namespace System.Runtime.Intrinsics
         public static Vector64<T> Subtract<T>(Vector64<T> left, Vector64<T> right)
             where T : struct => left - right;
 
+        /// <summary>Computes the sum of all elements in a vector.</summary>
+        /// <param name="vector">The vector whose elements will be summed.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The sum of all elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        public static T Sum<T>(Vector64<T> vector)
+            where T : struct
+        {
+            T sum = default;
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                sum = Scalar<T>.Add(sum, vector.GetElementUnsafe(index));
+            }
+
+            return sum;
+        }
+
         /// <summary>Converts the given vector to a scalar containing the value of the first element.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the first element from.</param>
