@@ -94,6 +94,21 @@ endif()
 
 check_include_files("sys/types.h;sys/user.h" HAVE_SYS_USER_H)
 
+check_c_source_compiles(
+  "
+  #include <zlib.h>
+  int main(void)
+  {
+    #if defined(ZLIB_VERNUM) && (ZLIB_VERNUM >= 0x1230)
+    #else
+    #error No good zlib found
+    #endif
+    return 0;
+  }
+  "
+  HAVE_SYS_ZLIB)
+
+
 if(NOT HOST_DARWIN)
   # getentropy was introduced in macOS 10.12 / iOS 10.0
   ac_check_funcs (getentropy)
